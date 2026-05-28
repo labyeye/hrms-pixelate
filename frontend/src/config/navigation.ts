@@ -16,6 +16,8 @@ import {
   Fingerprint,
   Gift,
   CreditCard,
+  SlidersHorizontal,
+  Nfc,
 } from "lucide-react";
 
 export interface NavItem {
@@ -122,6 +124,12 @@ const allGroups: NavGroup[] = [
         icon: Fingerprint,
         roles: ["super_admin", "hr_manager"],
       },
+      {
+        title: "NFC Manager",
+        href: "/nfc-manager",
+        icon: Nfc,
+        roles: ["super_admin", "hr_manager"],
+      },
     ],
   },
   {
@@ -131,6 +139,12 @@ const allGroups: NavGroup[] = [
         title: "Payroll",
         href: "/payroll",
         icon: DollarSign,
+        roles: ["super_admin", "hr_manager"],
+      },
+      {
+        title: "Payroll Settings",
+        href: "/payroll-settings",
+        icon: SlidersHorizontal,
         roles: ["super_admin", "hr_manager"],
       },
       {

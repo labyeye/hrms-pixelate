@@ -274,6 +274,23 @@ export const biometricAPI = {
   },
 };
 
+export const payrollConfigAPI = {
+  getAllConfigs: () => request("/payroll-config/employee-configs"),
+  getConfig: (employeeId: string) =>
+    request(`/payroll-config/employee-configs/${employeeId}`),
+  upsertConfig: (employeeId: string, body: object) =>
+    request(`/payroll-config/employee-configs/${employeeId}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  getDeductionRules: () => request("/payroll-config/deduction-rules"),
+  upsertDeductionRules: (body: object) =>
+    request("/payroll-config/deduction-rules", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+};
+
 export const companyAPI = {
   create: (body: object) =>
     request<{ success: boolean; data: any }>("/company", {

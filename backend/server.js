@@ -66,6 +66,7 @@ app.use("/api/billing", require("./routes/billingRoutes"));
 app.use("/api/payment-methods", require("./routes/paymentMethodRoutes"));
 app.use("/api/biometric", require("./routes/biometricRoutes"));
 app.use("/api/holidays", require("./routes/holidayRoutes"));
+app.use("/api/payroll-config", require("./routes/payrollConfigRoutes"));
 
 app.get("/api/health", (req, res) =>
   res.json({ status: "ok", service: "HRMS API" }),

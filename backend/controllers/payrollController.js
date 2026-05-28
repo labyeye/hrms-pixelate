@@ -1,6 +1,9 @@
 const asyncHandler = require("express-async-handler");
 const Payroll = require("../models/Payroll");
 const Employee = require("../models/Employee");
+const Attendance = require("../models/Attendance");
+const EmployeePayrollConfig = require("../models/EmployeePayrollConfig");
+const DeductionRule = require("../models/DeductionRule");
 const { safePagination } = require("../middleware/validate");
 const { sendWhatsApp, payrollPaidMsg } = require("../services/whatsappService");
 
@@ -60,30 +63,79 @@ const processPayroll = asyncHandler(async (req, res) => {
     throw new Error("Valid month (1-12) and year are required");
   }
 
-  // Company-scoped
   const employees = await Employee.find({
     company: req.user.company,
     status: "active",
   });
+
+  const deductionRule = await DeductionRule.findOne({ company: req.user.company });
+
+  // Date range for the requested month
+  const startDate = new Date(y, m - 1, 1);
+  const endDate = new Date(y, m, 0);
+  const totalDaysInMonth = endDate.getDate();
+
   const payrolls = [];
 
   for (const emp of employees) {
-    const existing = await Payroll.findOne({
-      employee: emp._id,
-      month: m,
-      year: y,
-    });
+    const existing = await Payroll.findOne({ employee: emp._id, month: m, year: y });
     if (existing) continue;
 
-    const basic = emp.salary || 0;
-    const hra = basic * 0.4;
-    const da = basic * 0.1;
-    const ta = 1500;
-    const gross = basic + hra + da + ta;
+    // Use per-employee config if set, fall back to employee.salary
+    const config = await EmployeePayrollConfig.findOne({
+      employee: emp._id,
+      company: req.user.company,
+    });
+
+    const basic = config?.basicSalary ?? emp.salary ?? 0;
+    const hra = config?.hra ?? basic * 0.4;
+    const da = config?.da ?? basic * 0.1;
+    const ta = config?.ta ?? 1500;
+    const medicalAllowance = config?.medicalAllowance ?? 0;
+    const otherAllowances = config?.otherAllowances ?? 0;
+    const gross = basic + hra + da + ta + medicalAllowance + otherAllowances;
+
+    // Attendance for this month
+    const attendances = await Attendance.find({
+      employee: emp._id,
+      date: { $gte: startDate, $lte: endDate },
+    });
+
+    const presentDays = attendances.filter((a) =>
+      ["present", "late"].includes(a.status),
+    ).length;
+    const lateDays = attendances.filter((a) => a.status === "late").length;
+    const absentDays = attendances.filter((a) => a.status === "absent").length;
+    const leaveDays = attendances.filter((a) => a.status === "on_leave").length;
+
+    // Standard statutory deductions
     const pf = basic * 0.12;
     const esi = gross * 0.0175;
     const tds = gross > 50000 ? gross * 0.1 : 0;
-    const totalDed = pf + esi + tds;
+
+    // Attendance-based deductions from global deduction rules
+    let lateDeduction = 0;
+    let absentDeduction = 0;
+    const dailySalary = totalDaysInMonth > 0 ? gross / totalDaysInMonth : 0;
+
+    if (deductionRule) {
+      if (deductionRule.lateDeductionType === "fixed") {
+        lateDeduction = lateDays * deductionRule.lateDeductionAmount;
+      } else {
+        lateDeduction =
+          lateDays * (dailySalary * (deductionRule.lateDeductionAmount / 100));
+      }
+      if (deductionRule.absentDeductionType === "fixed") {
+        absentDeduction = absentDays * deductionRule.absentDeductionAmount;
+      } else {
+        absentDeduction =
+          absentDays *
+          (dailySalary * (deductionRule.absentDeductionAmount / 100));
+      }
+    }
+
+    const otherDeductions = lateDeduction + absentDeduction;
+    const totalDed = pf + esi + tds + otherDeductions;
 
     payrolls.push({
       company: req.user.company,
@@ -94,14 +146,18 @@ const processPayroll = asyncHandler(async (req, res) => {
       hra,
       da,
       ta,
+      medicalAllowance,
+      otherAllowances,
       grossSalary: gross,
       pf,
       esi,
       tds,
+      otherDeductions,
       totalDeductions: totalDed,
-      netSalary: gross - totalDed,
-      workingDays: 26,
-      presentDays: 26,
+      netSalary: Math.max(0, gross - totalDed),
+      workingDays: totalDaysInMonth,
+      presentDays,
+      leaveDays,
       status: "processed",
       processedBy: req.user._id,
     });

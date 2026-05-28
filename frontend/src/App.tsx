@@ -21,6 +21,8 @@ import ReportsPage from "./pages/ReportsPage";
 import BiometricPage from "./pages/BiometricPage";
 import BiometricDevicePage from "./pages/BiometricDevicePage";
 import HolidaysPage from "./pages/HolidaysPage";
+import NfcManagerPage from "./pages/NfcManagerPage";
+import PayrollSettingsPage from "./pages/PayrollSettingsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -201,6 +203,22 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <SettingsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/nfc-manager"
+        element={
+          <ProtectedRoute>
+            <NfcManagerPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/payroll-settings"
+        element={
+          <ProtectedRoute>
+            <PayrollSettingsPage />
           </ProtectedRoute>
         }
       />
