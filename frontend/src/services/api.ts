@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+const BASE_URL = import.meta.env.VITE_API_URL;
 
 export const getToken = () => localStorage.getItem("hrms_token");
 export const setToken = (t: string) => localStorage.setItem("hrms_token", t);
