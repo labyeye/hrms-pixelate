@@ -4,7 +4,7 @@ export const getToken = () => localStorage.getItem("hrms_token");
 export const setToken = (t: string) => localStorage.setItem("hrms_token", t);
 export const removeToken = () => localStorage.removeItem("hrms_token");
 
-async function request(endpoint: string, options: RequestInit = {}) {
+async function request<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
   const res = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
