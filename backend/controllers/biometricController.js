@@ -1,0 +1,440 @@
+const asyncHandler = require("express-async-handler");
+const BiometricLocation = require("../models/BiometricLocation");
+const BiometricDevice = require("../models/BiometricDevice");
+const BiometricLog = require("../models/BiometricLog");
+const Attendance = require("../models/Attendance");
+const Employee = require("../models/Employee");
+const { isHolidayDate } = require("./holidayController");
+const {
+  sendWhatsApp,
+  checkInMsg,
+  checkOutMsg,
+} = require("../services/whatsappService");
+
+// ─── Locations ────────────────────────────────────────────────────────────────
+
+const getLocations = asyncHandler(async (req, res) => {
+  const locations = await BiometricLocation.find({
+    company: req.user.company,
+  }).sort({ createdAt: -1 });
+  res.json({ success: true, data: locations });
+});
+
+const createLocation = asyncHandler(async (req, res) => {
+  const { name, address, description } = req.body;
+  if (!name) {
+    res.status(400);
+    throw new Error("Location name is required");
+  }
+  const location = await BiometricLocation.create({
+    company: req.user.company,
+    name,
+    address,
+    description,
+  });
+  res.status(201).json({ success: true, data: location });
+});
+
+const updateLocation = asyncHandler(async (req, res) => {
+  const location = await BiometricLocation.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!location) {
+    res.status(404);
+    throw new Error("Location not found");
+  }
+  const { name, address, description, isActive } = req.body;
+  if (name !== undefined) location.name = name;
+  if (address !== undefined) location.address = address;
+  if (description !== undefined) location.description = description;
+  if (isActive !== undefined) location.isActive = isActive;
+  await location.save();
+  res.json({ success: true, data: location });
+});
+
+const deleteLocation = asyncHandler(async (req, res) => {
+  const location = await BiometricLocation.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!location) {
+    res.status(404);
+    throw new Error("Location not found");
+  }
+  await BiometricDevice.updateMany(
+    { location: location._id },
+    { isActive: false },
+  );
+  await location.deleteOne();
+  res.json({ success: true, message: "Location deleted" });
+});
+
+// ─── Devices ──────────────────────────────────────────────────────────────────
+
+const getDevices = asyncHandler(async (req, res) => {
+  const devices = await BiometricDevice.find({ company: req.user.company })
+    .populate("location", "name address")
+    .populate("nfcCards.employee", "firstName lastName employeeId")
+    .sort({ createdAt: -1 });
+  res.json({ success: true, data: devices });
+});
+
+const createDevice = asyncHandler(async (req, res) => {
+  const { name, location } = req.body;
+  if (!name || !location) {
+    res.status(400);
+    throw new Error("Name and location are required");
+  }
+  const loc = await BiometricLocation.findOne({
+    _id: location,
+    company: req.user.company,
+  });
+  if (!loc) {
+    res.status(404);
+    throw new Error("Location not found");
+  }
+  const device = await BiometricDevice.create({
+    company: req.user.company,
+    location,
+    name,
+  });
+  await device.populate("location", "name address");
+  res.status(201).json({ success: true, data: device });
+});
+
+const updateDevice = asyncHandler(async (req, res) => {
+  const device = await BiometricDevice.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!device) {
+    res.status(404);
+    throw new Error("Device not found");
+  }
+  const { name, isActive } = req.body;
+  if (name !== undefined) device.name = name;
+  if (isActive !== undefined) device.isActive = isActive;
+  await device.save();
+  res.json({ success: true, data: device });
+});
+
+const deleteDevice = asyncHandler(async (req, res) => {
+  const device = await BiometricDevice.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!device) {
+    res.status(404);
+    throw new Error("Device not found");
+  }
+  await device.deleteOne();
+  res.json({ success: true, message: "Device deleted" });
+});
+
+const regenerateDeviceToken = asyncHandler(async (req, res) => {
+  const crypto = require("crypto");
+  const device = await BiometricDevice.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!device) {
+    res.status(404);
+    throw new Error("Device not found");
+  }
+  device.deviceToken = crypto.randomBytes(32).toString("hex");
+  await device.save();
+  res.json({ success: true, data: { deviceToken: device.deviceToken } });
+});
+
+// ─── NFC Cards ────────────────────────────────────────────────────────────────
+
+const assignNfcCard = asyncHandler(async (req, res) => {
+  const { uid, employeeId, label } = req.body;
+  if (!uid || !employeeId) {
+    res.status(400);
+    throw new Error("NFC UID and employee ID are required");
+  }
+
+  const device = await BiometricDevice.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!device) {
+    res.status(404);
+    throw new Error("Device not found");
+  }
+
+  const employee = await Employee.findOne({
+    _id: employeeId,
+    company: req.user.company,
+  });
+  if (!employee) {
+    res.status(404);
+    throw new Error("Employee not found");
+  }
+
+  // Check if UID already assigned on ANY device in this company
+  const existingDevice = await BiometricDevice.findOne({
+    company: req.user.company,
+    "nfcCards.uid": uid,
+  });
+  if (existingDevice) {
+    res.status(400);
+    throw new Error("This NFC card UID is already assigned");
+  }
+
+  if (device.nfcCards.length >= 10) {
+    res.status(400);
+    throw new Error("Maximum 10 NFC cards per device");
+  }
+
+  device.nfcCards.push({ uid, employee: employeeId, label });
+  await device.save();
+  await device.populate("nfcCards.employee", "firstName lastName employeeId");
+  res.json({ success: true, data: device });
+});
+
+const removeNfcCard = asyncHandler(async (req, res) => {
+  const device = await BiometricDevice.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!device) {
+    res.status(404);
+    throw new Error("Device not found");
+  }
+  device.nfcCards = device.nfcCards.filter((c) => c.uid !== req.params.uid);
+  await device.save();
+  res.json({ success: true, data: device });
+});
+
+// ─── Device Public Endpoint (no user auth — uses device token) ────────────────
+
+const getDeviceInfo = asyncHandler(async (req, res) => {
+  const device = await BiometricDevice.findOne({
+    deviceToken: req.params.token,
+    isActive: true,
+  })
+    .populate("location", "name address")
+    .populate("nfcCards.employee", "firstName lastName employeeId");
+  if (!device) {
+    res.status(404);
+    throw new Error("Device not found or inactive");
+  }
+  device.lastSeenAt = new Date();
+  await device.save();
+  // Only expose NFC UIDs needed for matching — do NOT expose employee names/IDs to the device
+  res.json({
+    success: true,
+    data: {
+      _id: device._id,
+      name: device.name,
+      location: device.location,
+      nfcUids: device.nfcCards.map((c) => c.uid),
+    },
+  });
+});
+
+const recordBiometric = asyncHandler(async (req, res) => {
+  const { deviceToken, method, nfcUid, employeeId, type } = req.body;
+  // type: check_in | check_out
+
+  const device = await BiometricDevice.findOne({
+    deviceToken,
+    isActive: true,
+  }).populate("location");
+  if (!device) {
+    res.status(404);
+    throw new Error("Device not found or inactive");
+  }
+
+  let employee;
+
+  if (method === "nfc") {
+    if (!nfcUid) {
+      res.status(400);
+      throw new Error("NFC UID is required");
+    }
+    const card = device.nfcCards.find((c) => c.uid === nfcUid);
+    if (!card) {
+      res.status(404);
+      throw new Error("NFC card not registered on this device");
+    }
+    employee = await Employee.findById(card.employee).select(
+      "firstName lastName employeeId phone",
+    );
+  } else if (method === "pin" || method === "face") {
+    if (!employeeId) {
+      res.status(400);
+      throw new Error("Employee ID is required");
+    }
+    employee = await Employee.findOne({
+      _id: employeeId,
+      company: device.company,
+    }).select("firstName lastName employeeId phone");
+    if (!employee) {
+      res.status(404);
+      throw new Error("Employee not found");
+    }
+  } else {
+    res.status(400);
+    throw new Error("Invalid method");
+  }
+
+  // Auto-determine check_in / check_out if not provided
+  const now = new Date();
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+
+  // Check if today is a company holiday
+  const holiday = await isHolidayDate(device.company, today);
+
+  let logType = type;
+  if (!logType) {
+    const existingLog = await BiometricLog.findOne({
+      employee: employee._id,
+      timestamp: { $gte: today },
+    }).sort({ timestamp: -1 });
+    logType = existingLog?.type === "check_in" ? "check_out" : "check_in";
+  }
+
+  // Update attendance — mark as holiday if applicable
+  const attendanceUpdate = {
+    employee: employee._id,
+    date: today,
+    markedBy: null,
+  };
+
+  if (holiday) {
+    attendanceUpdate.status = "holiday";
+    attendanceUpdate.notes = `Holiday: ${holiday.name}`;
+  } else if (logType === "check_in") {
+    attendanceUpdate.checkIn = now;
+    attendanceUpdate.status = now.getHours() >= 10 ? "late" : "present";
+  } else {
+    const existing = await Attendance.findOne({
+      employee: employee._id,
+      date: today,
+    });
+    if (existing?.checkIn) {
+      attendanceUpdate.checkOut = now;
+      attendanceUpdate.workHours = (now - existing.checkIn) / 3600000;
+    }
+  }
+
+  const attendance = await Attendance.findOneAndUpdate(
+    { employee: employee._id, date: today },
+    { $set: attendanceUpdate },
+    { upsert: true, new: true },
+  );
+
+  const log = await BiometricLog.create({
+    company: device.company,
+    employee: employee._id,
+    device: device._id,
+    location: device.location._id,
+    method,
+    type: logType,
+    nfcUid: method === "nfc" ? nfcUid : undefined,
+    attendance: attendance._id,
+    timestamp: now,
+  });
+
+  device.lastSeenAt = now;
+  await device.save();
+
+  if (employee.phone) {
+    try {
+      if (logType === "check_in") {
+        await sendWhatsApp(
+          employee.phone,
+          checkInMsg(employee, device.location.name, now),
+          "whatsappNotifyCheckIn",
+        );
+      } else {
+        await sendWhatsApp(
+          employee.phone,
+          checkOutMsg(
+            employee,
+            device.location.name,
+            now,
+            attendanceUpdate.workHours,
+          ),
+          "whatsappNotifyCheckIn",
+        );
+      }
+    } catch {}
+  }
+
+  res.json({
+    success: true,
+    data: {
+      employee: {
+        name: `${employee.firstName} ${employee.lastName}`,
+        employeeId: employee.employeeId,
+      },
+      type: logType,
+      timestamp: now,
+      location: device.location.name,
+      attendance,
+      holiday: holiday ? holiday.name : null,
+    },
+  });
+});
+
+// ─── Logs ─────────────────────────────────────────────────────────────────────
+
+const getLogs = asyncHandler(async (req, res) => {
+  const { safePagination } = require("../middleware/validate");
+  const { page, limit, skip } = safePagination(req.query, 50, 200);
+  const { locationId, deviceId, employeeId, date } = req.query;
+
+  const filter = { company: req.user.company };
+  if (locationId) filter.location = locationId;
+  if (deviceId) filter.device = deviceId;
+  if (employeeId) filter.employee = employeeId;
+  if (date) {
+    const d = new Date(date);
+    if (!isNaN(d.getTime())) {
+      d.setHours(0, 0, 0, 0);
+      const end = new Date(d);
+      end.setHours(23, 59, 59, 999);
+      filter.timestamp = { $gte: d, $lte: end };
+    }
+  }
+
+  const total = await BiometricLog.countDocuments(filter);
+  const logs = await BiometricLog.find(filter)
+    .populate("employee", "firstName lastName employeeId")
+    .populate("device", "name")
+    .populate("location", "name")
+    .sort({ timestamp: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  res.json({
+    success: true,
+    data: logs,
+    total,
+    page,
+    pages: Math.ceil(total / limit),
+  });
+});
+
+module.exports = {
+  getLocations,
+  createLocation,
+  updateLocation,
+  deleteLocation,
+  getDevices,
+  createDevice,
+  updateDevice,
+  deleteDevice,
+  regenerateDeviceToken,
+  assignNfcCard,
+  removeNfcCard,
+  getDeviceInfo,
+  recordBiometric,
+  getLogs,
+};

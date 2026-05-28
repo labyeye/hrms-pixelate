@@ -1,0 +1,289 @@
+import { useState, useEffect, useCallback } from "react";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { departmentAPI } from "@/services/api";
+import { Department } from "@/types/hrms";
+import { cn } from "@/lib/utils";
+import { Plus, Building2, Users, Edit, X } from "lucide-react";
+
+const DEPT_BG_COLORS = [
+  "bg-[#024BAB]",
+  "bg-[#FA731C]",
+  "bg-[#00C48C]",
+  "bg-[#A855F7]",
+  "bg-[#EF4444]",
+  "bg-[#FFD60A]",
+  "bg-[#0D9488]",
+  "bg-[#EC4899]",
+];
+
+interface DeptForm {
+  name: string;
+  code: string;
+  description: string;
+  budget: string;
+}
+const EMPTY_FORM: DeptForm = {
+  name: "",
+  code: "",
+  description: "",
+  budget: "",
+};
+
+export default function DepartmentsPage() {
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editDept, setEditDept] = useState<Department | null>(null);
+  const [form, setForm] = useState<DeptForm>(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await departmentAPI.getAll();
+      if (res.success) setDepartments(res.data);
+    } catch {}
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const openAdd = () => {
+    setEditDept(null);
+    setForm(EMPTY_FORM);
+    setShowModal(true);
+  };
+  const openEdit = (d: Department) => {
+    setEditDept(d);
+    setForm({
+      name: d.name,
+      code: d.code,
+      description: d.description || "",
+      budget: String(d.budget || ""),
+    });
+    setShowModal(true);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      if (editDept)
+        await departmentAPI.update(editDept._id, {
+          ...form,
+          budget: Number(form.budget) || 0,
+        });
+      else
+        await departmentAPI.create({
+          ...form,
+          budget: Number(form.budget) || 0,
+        });
+      setShowModal(false);
+      load();
+    } catch (err: any) {
+      alert(err.message);
+    }
+    setSaving(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Deactivate this department?")) return;
+    try {
+      await departmentAPI.delete(id);
+      load();
+    } catch {}
+  };
+
+  return (
+    <AppLayout title="Departments">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <p className="text-sm font-medium text-muted-foreground">
+          {departments.length} department{departments.length !== 1 ? "s" : ""} ·{" "}
+          {departments.reduce((s, d) => s + (d.headcount || 0), 0)} total
+          headcount
+        </p>
+        <button
+          onClick={openAdd}
+          className="nb-btn bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5"
+        >
+          <Plus className="w-4 h-4" /> Add Department
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center h-48">
+          <div className="w-8 h-8 bg-[#024BAB] border-2 border-black animate-bounce" />
+        </div>
+      ) : departments.length === 0 ? (
+        <div className="nb-card bg-white p-12 flex flex-col items-center justify-center">
+          <Building2 className="w-12 h-12 text-muted-foreground/30 mb-3" />
+          <p className="font-bold text-black">No departments yet</p>
+          <button
+            onClick={openAdd}
+            className="nb-btn bg-[#024BAB] text-white px-4 py-2 text-sm mt-4"
+          >
+            Create First Department
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {departments.map((dept, i) => (
+            <div key={dept._id} className="nb-card bg-white p-5 nb-card-hover">
+              <div className="flex items-start justify-between mb-4">
+                <div
+                  className={cn(
+                    "w-12 h-12 border-2 border-black flex items-center justify-center shrink-0",
+                    DEPT_BG_COLORS[i % DEPT_BG_COLORS.length],
+                  )}
+                >
+                  <Building2 className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => openEdit(dept)}
+                    className="p-1.5 border-2 border-transparent hover:border-black hover:bg-[#024BAB]/10 transition-colors"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(dept._id)}
+                    className="p-1.5 border-2 border-transparent hover:border-black hover:bg-red-50 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5 text-red-600" />
+                  </button>
+                </div>
+              </div>
+
+              <h3 className="font-display font-bold text-lg text-black">
+                {dept.name}
+              </h3>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                {dept.code}
+              </p>
+              {dept.description && (
+                <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                  {dept.description}
+                </p>
+              )}
+
+              <div className="flex items-center justify-between pt-3 border-t border-black/10">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-6 h-6 bg-[#024BAB]/10 border border-black/20 flex items-center justify-center">
+                    <Users className="w-3.5 h-3.5 text-[#024BAB]" />
+                  </div>
+                  <span className="text-sm font-bold text-black">
+                    {dept.headcount || 0}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    employees
+                  </span>
+                </div>
+                {dept.head && (
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-5 h-5 bg-[#FA731C] border border-black flex items-center justify-center text-[9px] font-bold text-white">
+                      {(dept.head as any)?.name?.[0]?.toUpperCase()}
+                    </div>
+                    <span className="text-xs font-medium text-black truncate max-w-20">
+                      {(dept.head as any)?.name}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="nb-card bg-white w-full max-w-md">
+            <div className="flex items-center justify-between p-5 border-b-2 border-black">
+              <h3 className="font-display font-bold text-lg">
+                {editDept ? "Edit Department" : "Add Department"}
+              </h3>
+              <button onClick={() => setShowModal(false)}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSave} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Department Name
+                </label>
+                <input
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className="nb-input w-full px-3 py-2 text-sm"
+                  required
+                  placeholder="e.g. Engineering"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Code
+                </label>
+                <input
+                  value={form.code}
+                  onChange={(e) =>
+                    setForm({ ...form, code: e.target.value.toUpperCase() })
+                  }
+                  className="nb-input w-full px-3 py-2 text-sm uppercase"
+                  required
+                  placeholder="e.g. ENG"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={form.description}
+                  onChange={(e) =>
+                    setForm({ ...form, description: e.target.value })
+                  }
+                  className="nb-input w-full px-3 py-2 text-sm resize-none"
+                  rows={2}
+                  placeholder="Optional description"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Budget (₹)
+                </label>
+                <input
+                  type="number"
+                  value={form.budget}
+                  onChange={(e) => setForm({ ...form, budget: e.target.value })}
+                  className="nb-input w-full px-3 py-2 text-sm"
+                  placeholder="Annual budget"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="nb-btn bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold flex-1"
+                >
+                  {saving
+                    ? "Saving..."
+                    : editDept
+                      ? "Save Changes"
+                      : "Create Department"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="nb-btn bg-white text-black px-4 py-2.5 text-sm font-bold"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </AppLayout>
+  );
+}
