@@ -160,13 +160,7 @@ export const billingAPI = {
       method: "POST",
       body: JSON.stringify({ plan, billingCycle }),
     }),
-  verifyPayment: (payload: {
-    razorpay_order_id: string;
-    razorpay_payment_id: string;
-    razorpay_signature: string;
-    plan: string;
-    billingCycle: string;
-  }) =>
+  verifyPayment: (payload: { orderId: string; trackingId?: string | null }) =>
     request<{ success: boolean; message: string; data: any }>(
       "/billing/verify-payment",
       {

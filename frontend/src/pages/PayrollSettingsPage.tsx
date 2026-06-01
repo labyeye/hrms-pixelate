@@ -130,13 +130,14 @@ export default function PayrollSettingsPage() {
           // Prefill basic from employee.salary
           setConfig({ ...EMPTY_CONFIG, basicSalary: emp.salary || 0 });
         }
-      } catch {
+      } catch (e: any) {
         setConfig({ ...EMPTY_CONFIG, basicSalary: emp.salary || 0 });
+        toast({ title: "Error loading payroll config", description: e.message, variant: "destructive" });
       } finally {
         setConfigLoading(false);
       }
     },
-    [],
+    [toast],
   );
 
   const selectEmployee = (emp: Employee) => {
@@ -149,7 +150,7 @@ export default function PayrollSettingsPage() {
     setConfigSaving(true);
     try {
       await payrollConfigAPI.upsertConfig(selectedEmployee._id, config);
-      toast({ title: "Payroll settings saved", description: `Saved for ${selectedEmployee.firstName} ${selectedEmployee.lastName}` });
+      toast({ title: "Payroll settings saved", description: `Saved for ${selectedEmployee.firstName} ${selectedEmployee.lastName}`, variant: "success" });
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {
@@ -162,7 +163,7 @@ export default function PayrollSettingsPage() {
     setRulesSaving(true);
     try {
       await payrollConfigAPI.upsertDeductionRules(rules);
-      toast({ title: "Deduction rules saved", description: "Global rules updated for all employees" });
+      toast({ title: "Deduction rules saved", description: "Global rules updated for all employees", variant: "success" });
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {

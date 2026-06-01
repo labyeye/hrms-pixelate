@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { ToastProvider } from "@/hooks/use-toast";
 import { Users2 } from "lucide-react";
 import DashboardPage from "./pages/DashboardPage";
 import EmployeesPage from "./pages/EmployeesPage";
@@ -23,6 +24,8 @@ import BiometricDevicePage from "./pages/BiometricDevicePage";
 import HolidaysPage from "./pages/HolidaysPage";
 import NfcManagerPage from "./pages/NfcManagerPage";
 import PayrollSettingsPage from "./pages/PayrollSettingsPage";
+import PaymentSuccessPage from "./pages/PaymentSuccessPage";
+import PaymentFailedPage from "./pages/PaymentFailedPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -81,6 +84,27 @@ function AppRoutes() {
         element={
           isAuthenticated ? (
             <OnboardingPage />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+      {/* HDFC SmartGateway callback pages — require auth but not active subscription */}
+      <Route
+        path="/payment/success"
+        element={
+          isAuthenticated ? (
+            <PaymentSuccessPage />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+      <Route
+        path="/payment/failed"
+        element={
+          isAuthenticated ? (
+            <PaymentFailedPage />
           ) : (
             <Navigate to="/login" replace />
           )
@@ -231,11 +255,13 @@ function AppRoutes() {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </AuthProvider>
+    <ToastProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </AuthProvider>
+    </ToastProvider>
   </QueryClientProvider>
 );
 

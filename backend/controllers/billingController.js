@@ -1,20 +1,11 @@
 const asyncHandler = require("express-async-handler");
-const Razorpay = require("razorpay");
-const crypto = require("crypto");
 const Company = require("../models/Company");
 const Plan = require("../models/Plan");
 const Subscription = require("../models/Subscription");
 const Invoice = require("../models/Invoice");
-
-function getRazorpay() {
-  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-    throw new Error("Razorpay credentials not configured");
-  }
-  return new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET,
-  });
-}
+const User = require("../models/User");
+const hdfcPayment = require("../services/hdfcPaymentService");
+const { sendPaymentConfirmations } = require("../services/notificationService");
 
 // Get available plans from DB
 const getPlans = asyncHandler(async (req, res) => {
@@ -26,21 +17,15 @@ const getPlans = asyncHandler(async (req, res) => {
 const getSubscription = asyncHandler(async (req, res) => {
   const company = await Company.findOne({ createdBy: req.user._id });
   if (!company) {
-    return res
-      .status(404)
-      .json({ success: false, message: "Company not found" });
+    return res.status(404).json({ success: false, message: "Company not found" });
   }
-
-  const subscription = await Subscription.findOne({
-    company: company._id,
-  }).populate("company", "name email");
-
+  const subscription = await Subscription.findOne({ company: company._id }).populate(
+    "company",
+    "name email",
+  );
   if (!subscription) {
-    return res
-      .status(404)
-      .json({ success: false, message: "No active subscription found" });
+    return res.status(404).json({ success: false, message: "No active subscription found" });
   }
-
   res.json({ success: true, data: subscription });
 });
 
@@ -48,71 +33,88 @@ const getSubscription = asyncHandler(async (req, res) => {
 const getInvoices = asyncHandler(async (req, res) => {
   const company = await Company.findOne({ createdBy: req.user._id });
   if (!company) {
-    return res
-      .status(404)
-      .json({ success: false, message: "Company not found" });
+    return res.status(404).json({ success: false, message: "Company not found" });
   }
-
   const invoices = await Invoice.find({ company: company._id })
     .sort({ createdAt: -1 })
     .limit(20);
   res.json({ success: true, data: invoices });
 });
 
-// Create Razorpay payment order
+// Create HDFC SmartGateway payment order
 const createOrder = asyncHandler(async (req, res) => {
   const { plan: planId, billingCycle = "monthly" } = req.body;
 
   if (!planId || !["starter", "professional", "enterprise"].includes(planId)) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Invalid plan. Choose starter, professional, or enterprise",
-      });
+    res.status(400);
+    throw new Error("Invalid plan. Choose starter, professional, or enterprise");
   }
   if (!["monthly", "yearly"].includes(billingCycle)) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Invalid billing cycle" });
+    res.status(400);
+    throw new Error("Invalid billing cycle");
   }
 
   const plan = await Plan.findOne({ planType: planId, active: true });
   if (!plan) {
-    return res.status(404).json({ success: false, message: "Plan not found" });
+    res.status(404);
+    throw new Error("Plan not found");
   }
 
   const company = await Company.findOne({ createdBy: req.user._id });
   if (!company) {
-    return res
-      .status(404)
-      .json({ success: false, message: "Company not found" });
+    res.status(404);
+    throw new Error("Company not found. Complete company setup first.");
   }
 
-  const razorpay = getRazorpay();
-
-  // Amount in paise (multiply ₹ × 100)
   const amountRupees =
     billingCycle === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
-  const amountPaise = amountRupees * 100;
 
-  const order = await razorpay.orders.create({
-    amount: amountPaise,
+  const orderId = hdfcPayment.generateOrderId();
+
+  const orderResult = await hdfcPayment.createOrder({
+    orderId,
+    amount: amountRupees,
     currency: "INR",
-    receipt: `rcpt_${Date.now()}`,
-    notes: {
+    customer: {
+      name: req.user.name,
+      email: req.user.email,
+      phone: req.user.phone || company.phone || "",
+      address: company.address || "India",
+      city: company.city || "",
+      state: company.state || "",
+      pincode: company.pincode || "",
       userId: req.user._id.toString(),
       companyId: company._id.toString(),
-      planId,
-      billingCycle,
     },
   });
+
+  // Store pending order metadata so we can look it up on callback
+  await Subscription.findOneAndUpdate(
+    { company: company._id },
+    {
+      company: company._id,
+      plan: planId,
+      monthlyPrice: plan.monthlyPrice,
+      yearlyPrice: plan.yearlyPrice,
+      maxEmployees: plan.maxEmployees,
+      billingCycle,
+      startDate: new Date(),
+      renewalDate: new Date(),
+      status: "inactive",
+      paymentStatus: "pending",
+      paymentMethod: "hdfc_smartgateway",
+      amountPaid: 0,
+      hdfcOrderId: orderId,
+    },
+    { upsert: true, new: true },
+  );
 
   res.json({
     success: true,
     data: {
-      orderId: order.id,
-      amount: amountPaise,
+      orderId: orderResult.orderId,
+      paymentUrl: orderResult.paymentUrl,
+      amount: amountRupees,
       currency: "INR",
       plan: planId,
       billingCycle,
@@ -120,120 +122,118 @@ const createOrder = asyncHandler(async (req, res) => {
   });
 });
 
-// Verify Razorpay payment and activate subscription
+// Verify HDFC payment and activate subscription
+// Called by frontend after HDFC redirects to /payment/success
 const verifyPayment = asyncHandler(async (req, res) => {
-  const {
-    razorpay_order_id,
-    razorpay_payment_id,
-    razorpay_signature,
-    plan: planId,
-    billingCycle,
-  } = req.body;
+  const { orderId, trackingId } = req.body;
 
-  if (
-    !razorpay_order_id ||
-    !razorpay_payment_id ||
-    !razorpay_signature ||
-    !planId ||
-    !billingCycle
-  ) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Missing required payment fields" });
+  if (!orderId) {
+    res.status(400);
+    throw new Error("orderId is required");
   }
 
-  const secret = process.env.RAZORPAY_KEY_SECRET;
-  if (!secret) {
-    return res
-      .status(500)
-      .json({ success: false, message: "Payment gateway not configured" });
+  const verification = await hdfcPayment.verifyPayment({ orderId, trackingId });
+
+  if (!verification.isSuccess) {
+    res.status(400);
+    throw new Error(
+      `Payment not successful. Status: ${verification.status || "unknown"}`,
+    );
   }
 
-  const body = `${razorpay_order_id}|${razorpay_payment_id}`;
-  const expected = crypto
-    .createHmac("sha256", secret)
-    .update(body)
-    .digest("hex");
-  if (
-    !crypto.timingSafeEqual(
-      Buffer.from(expected),
-      Buffer.from(razorpay_signature),
-    )
-  ) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Payment verification failed — signature mismatch",
-      });
+  // Find the pending subscription for this order
+  const subscription = await Subscription.findOne({ hdfcOrderId: orderId });
+  if (!subscription) {
+    res.status(404);
+    throw new Error("Order not found. Please contact support.");
   }
 
-  const plan = await Plan.findOne({ planType: planId, active: true });
-  if (!plan) {
-    return res.status(404).json({ success: false, message: "Plan not found" });
-  }
-
-  const company = await Company.findOne({ createdBy: req.user._id });
+  const company = await Company.findById(subscription.company);
   if (!company) {
-    return res
-      .status(404)
-      .json({ success: false, message: "Company not found" });
+    res.status(404);
+    throw new Error("Company not found");
   }
 
+  const plan = await Plan.findOne({ planType: subscription.plan, active: true });
   const amountPaid =
-    billingCycle === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
+    subscription.billingCycle === "yearly"
+      ? subscription.yearlyPrice
+      : subscription.monthlyPrice;
 
   const startDate = new Date();
   const renewalDate = new Date();
-  if (billingCycle === "yearly") {
+  if (subscription.billingCycle === "yearly") {
     renewalDate.setFullYear(renewalDate.getFullYear() + 1);
   } else {
     renewalDate.setMonth(renewalDate.getMonth() + 1);
   }
 
-  await Company.findByIdAndUpdate(company._id, { status: "active" });
-
-  let subscription = await Subscription.findOneAndUpdate(
-    { company: company._id },
+  // Activate subscription
+  const updatedSub = await Subscription.findByIdAndUpdate(
+    subscription._id,
     {
-      plan: planId,
-      monthlyPrice: plan.monthlyPrice,
-      yearlyPrice: plan.yearlyPrice,
-      maxEmployees: plan.maxEmployees,
-      billingCycle,
       startDate,
       renewalDate,
       status: "active",
       paymentStatus: "completed",
-      paymentMethod: "razorpay",
       amountPaid,
+      hdfcTrackingId: verification.trackingId,
+      hdfcBankRefNo: verification.bankRefNo,
     },
-    { upsert: true, new: true },
+    { new: true },
   );
 
+  // Activate company
   await Company.findByIdAndUpdate(company._id, {
-    subscription: subscription._id,
+    status: "active",
+    subscription: updatedSub._id,
   });
 
-  // Create invoice record
-  const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
+  // Create invoice
+  const invoiceNumber = `INV-${Date.now().toString().slice(-8)}`;
   await Invoice.create({
     company: company._id,
-    subscription: subscription._id,
+    subscription: updatedSub._id,
     invoiceNumber,
-    plan: plan.name,
-    billingCycle,
+    plan: plan ? plan.name : subscription.plan,
+    billingCycle: subscription.billingCycle,
     amount: amountPaid,
     status: "paid",
     paidAt: new Date(),
-    razorpayOrderId: razorpay_order_id,
-    razorpayPaymentId: razorpay_payment_id,
+    hdfcOrderId: orderId,
+    hdfcTrackingId: verification.trackingId,
   });
+
+  // Send email + WhatsApp confirmation (non-blocking)
+  const user = await User.findById(company.createdBy);
+  const dashboardUrl =
+    process.env.FRONTEND_URL
+      ? `${process.env.FRONTEND_URL}/`
+      : "https://hrms.pixelatenest.com/";
+
+  sendPaymentConfirmations({
+    toEmail: user?.email || company.email,
+    toName: user?.name || company.name,
+    toPhone: user?.phone || company.phone || "",
+    companyName: company.name,
+    planName: plan ? plan.name : subscription.plan,
+    amount: amountPaid,
+    billingCycle: subscription.billingCycle,
+    renewalDate,
+    dashboardUrl,
+    invoiceNumber,
+  }).catch((err) => console.error("[Notifications]", err.message));
 
   res.json({
     success: true,
     message: "Subscription activated successfully",
-    data: { plan: plan.name, subscription },
+    data: {
+      plan: plan ? plan.name : subscription.plan,
+      billingCycle: subscription.billingCycle,
+      amount: amountPaid,
+      renewalDate,
+      invoiceNumber,
+    },
   });
 });
 

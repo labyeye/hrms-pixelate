@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AppSidebar } from "./AppSidebar";
 import { AppHeader } from "./AppHeader";
+import { Toaster } from "@/components/ui/Toaster";
 
 interface AppLayoutProps {
   title: string;
@@ -28,6 +29,7 @@ export function AppLayout({ title, children }: AppLayoutProps) {
         <AppHeader title={title} onMenuOpen={() => setMobileOpen(true)} />
         <main className="flex-1 p-4 sm:p-6 overflow-auto">{children}</main>
       </div>
+      <Toaster />
     </div>
   );
 }
