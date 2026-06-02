@@ -4,7 +4,9 @@ import { getNavGroupsForRole } from "@/config/navigation";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, LogOut, X } from "lucide-react";
 import { useState } from "react";
-import logo from "../../../assets/logo.png";
+import nesthrlogo from "../../../assets/logo.png";
+import nesthrlogosmall from "../../../assets/nesthr.png";
+
 interface AppSidebarProps {
   mobileOpen: boolean;
   onClose: () => void;
@@ -30,21 +32,28 @@ export function AppSidebar({ mobileOpen, onClose }: AppSidebarProps) {
         )}
         style={{ width: collapsed ? undefined : "15.5rem" }}
       >
-        {/* Logo */}
         <div
           className={cn(
             "h-16 flex items-center border-b-2 border-black shrink-0",
             collapsed ? "lg:justify-center lg:px-2 px-4 gap-3" : "px-4 gap-3",
           )}
         >
-          <div className="w-9 h-9 bg-[#ffffff] flex items-center justify-center shrink-0">
-            <img src={logo} alt="NestHR" />
-          </div>
-          <div className={cn(collapsed && "lg:hidden")}>
-            <span className="font-display font-bold text-black text-[15px] block leading-tight">
-              NestHR
-            </span>
-          </div>
+          <img
+            src={nesthrlogo}
+            alt="NestHR"
+            className={cn(
+              "h-14 w-auto object-contain shrink-0",
+              collapsed && "lg:hidden",
+            )}
+          />
+          <img
+            src={nesthrlogosmall}
+            alt="NestHR"
+            className={cn(
+              "hidden items-center justify-center w-10 h-10 shrink-0",
+              collapsed && "lg:flex",
+            )}
+          />
           <button
             onClick={onClose}
             className="ml-auto lg:hidden p-1 hover:bg-[#024BAB]/10 border border-transparent hover:border-black transition-colors"
