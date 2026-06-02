@@ -24,4 +24,7 @@ const employeePayrollConfigSchema = new mongoose.Schema(
 
 employeePayrollConfigSchema.index({ employee: 1 }, { unique: true });
 
-module.exports = mongoose.model("EmployeePayrollConfig", employeePayrollConfigSchema);
+module.exports = mongoose.model(
+  "EmployeePayrollConfig",
+  employeePayrollConfigSchema,
+);

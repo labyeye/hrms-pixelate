@@ -61,8 +61,14 @@ export default function NfcManagerPage() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-  const [assignForm, setAssignForm] = useState({ uid: "", deviceId: "", label: "" });
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
+    null,
+  );
+  const [assignForm, setAssignForm] = useState({
+    uid: "",
+    deviceId: "",
+    label: "",
+  });
   const [assigning, setAssigning] = useState(false);
   const [showAssignForm, setShowAssignForm] = useState(false);
 
@@ -114,11 +120,16 @@ export default function NfcManagerPage() {
   });
 
   const selectedCards = selectedEmployee
-    ? (cardsByEmployee.get(selectedEmployee._id) || [])
+    ? cardsByEmployee.get(selectedEmployee._id) || []
     : [];
 
   const handleAssign = async () => {
-    if (!selectedEmployee || !assignForm.uid.trim() || !assignForm.deviceId || assigning)
+    if (
+      !selectedEmployee ||
+      !assignForm.uid.trim() ||
+      !assignForm.deviceId ||
+      assigning
+    )
       return;
     setAssigning(true);
     try {
@@ -127,7 +138,10 @@ export default function NfcManagerPage() {
         employeeId: selectedEmployee._id,
         label: assignForm.label,
       });
-      toast({ title: "NFC card assigned", description: `Card ${assignForm.uid} linked to ${selectedEmployee.firstName}` });
+      toast({
+        title: "NFC card assigned",
+        description: `Card ${assignForm.uid} linked to ${selectedEmployee.firstName}`,
+      });
       setAssignForm({ uid: "", deviceId: "", label: "" });
       setShowAssignForm(false);
       await fetchData();
@@ -139,7 +153,12 @@ export default function NfcManagerPage() {
   };
 
   const handleRevoke = async (card: AssignedCard) => {
-    if (!confirm(`Remove NFC card ${card.uid} from ${selectedEmployee?.firstName}?`)) return;
+    if (
+      !confirm(
+        `Remove NFC card ${card.uid} from ${selectedEmployee?.firstName}?`,
+      )
+    )
+      return;
     try {
       await biometricAPI.removeNfcCard(card.deviceId, card.uid);
       toast({ title: "NFC card removed" });
@@ -270,7 +289,8 @@ export default function NfcManagerPage() {
                         </div>
                         <div>
                           <h2 className="font-black text-xl">
-                            {selectedEmployee.firstName} {selectedEmployee.lastName}
+                            {selectedEmployee.firstName}{" "}
+                            {selectedEmployee.lastName}
                           </h2>
                           <p className="text-sm font-mono text-gray-500 mt-0.5">
                             {selectedEmployee.employeeId}
@@ -297,29 +317,43 @@ export default function NfcManagerPage() {
                     <div className="grid grid-cols-2 gap-3 mt-4">
                       {selectedEmployee.email && (
                         <div className="bg-white border border-gray-200 px-3 py-2">
-                          <p className="text-xs font-black uppercase text-gray-400">Email</p>
-                          <p className="text-sm font-medium mt-0.5">{selectedEmployee.email}</p>
+                          <p className="text-xs font-black uppercase text-gray-400">
+                            Email
+                          </p>
+                          <p className="text-sm font-medium mt-0.5">
+                            {selectedEmployee.email}
+                          </p>
                         </div>
                       )}
                       {selectedEmployee.phone && (
                         <div className="bg-white border border-gray-200 px-3 py-2">
-                          <p className="text-xs font-black uppercase text-gray-400">Phone</p>
-                          <p className="text-sm font-medium mt-0.5">{selectedEmployee.phone}</p>
+                          <p className="text-xs font-black uppercase text-gray-400">
+                            Phone
+                          </p>
+                          <p className="text-sm font-medium mt-0.5">
+                            {selectedEmployee.phone}
+                          </p>
                         </div>
                       )}
                       {deptName(selectedEmployee) && (
                         <div className="bg-white border border-gray-200 px-3 py-2 flex items-center gap-2">
                           <Building2 className="w-4 h-4 text-gray-400" />
                           <div>
-                            <p className="text-xs font-black uppercase text-gray-400">Department</p>
-                            <p className="text-sm font-medium">{deptName(selectedEmployee)}</p>
+                            <p className="text-xs font-black uppercase text-gray-400">
+                              Department
+                            </p>
+                            <p className="text-sm font-medium">
+                              {deptName(selectedEmployee)}
+                            </p>
                           </div>
                         </div>
                       )}
                       <div className="bg-white border border-gray-200 px-3 py-2 flex items-center gap-2">
                         <CreditCard className="w-4 h-4 text-gray-400" />
                         <div>
-                          <p className="text-xs font-black uppercase text-gray-400">NFC Cards</p>
+                          <p className="text-xs font-black uppercase text-gray-400">
+                            NFC Cards
+                          </p>
                           <p className="text-sm font-black text-[#024BAB]">
                             {selectedCards.length} assigned
                           </p>
@@ -342,7 +376,10 @@ export default function NfcManagerPage() {
                           <input
                             value={assignForm.uid}
                             onChange={(e) =>
-                              setAssignForm((p) => ({ ...p, uid: e.target.value }))
+                              setAssignForm((p) => ({
+                                ...p,
+                                uid: e.target.value,
+                              }))
                             }
                             placeholder="e.g. A3F2B1C0"
                             className="w-full border-2 border-black px-3 py-2 text-sm font-mono focus:outline-none"
@@ -355,7 +392,10 @@ export default function NfcManagerPage() {
                           <input
                             value={assignForm.label}
                             onChange={(e) =>
-                              setAssignForm((p) => ({ ...p, label: e.target.value }))
+                              setAssignForm((p) => ({
+                                ...p,
+                                label: e.target.value,
+                              }))
                             }
                             placeholder="e.g. Main Card"
                             className="w-full border-2 border-black px-3 py-2 text-sm focus:outline-none"
@@ -368,13 +408,18 @@ export default function NfcManagerPage() {
                           <select
                             value={assignForm.deviceId}
                             onChange={(e) =>
-                              setAssignForm((p) => ({ ...p, deviceId: e.target.value }))
+                              setAssignForm((p) => ({
+                                ...p,
+                                deviceId: e.target.value,
+                              }))
                             }
                             className="w-full border-2 border-black px-3 py-2 text-sm bg-white focus:outline-none"
                           >
                             <option value="">Select device</option>
                             {devices
-                              .filter((d) => d.isActive && d.nfcCards.length < 10)
+                              .filter(
+                                (d) => d.isActive && d.nfcCards.length < 10,
+                              )
                               .map((d) => (
                                 <option key={d._id} value={d._id}>
                                   {d.name} — {d.location?.name}
@@ -385,10 +430,16 @@ export default function NfcManagerPage() {
                         <div className="col-span-2 flex gap-2">
                           <button
                             onClick={handleAssign}
-                            disabled={!assignForm.uid || !assignForm.deviceId || assigning}
+                            disabled={
+                              !assignForm.uid ||
+                              !assignForm.deviceId ||
+                              assigning
+                            }
                             className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-black text-xs uppercase disabled:opacity-50"
                           >
-                            {assigning && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                            {assigning && (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            )}
                             {assigning ? "Assigning..." : "Assign Card"}
                           </button>
                           <button
@@ -464,11 +515,14 @@ export default function NfcManagerPage() {
                               </div>
                               <div className="col-span-2 text-gray-400">
                                 Assigned:{" "}
-                                {new Date(card.assignedAt).toLocaleDateString("en-IN", {
-                                  day: "numeric",
-                                  month: "short",
-                                  year: "numeric",
-                                })}
+                                {new Date(card.assignedAt).toLocaleDateString(
+                                  "en-IN",
+                                  {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                  },
+                                )}
                               </div>
                             </div>
                           </div>

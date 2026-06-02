@@ -68,7 +68,9 @@ const processPayroll = asyncHandler(async (req, res) => {
     status: "active",
   });
 
-  const deductionRule = await DeductionRule.findOne({ company: req.user.company });
+  const deductionRule = await DeductionRule.findOne({
+    company: req.user.company,
+  });
 
   // Date range for the requested month
   const startDate = new Date(y, m - 1, 1);
@@ -78,7 +80,11 @@ const processPayroll = asyncHandler(async (req, res) => {
   const payrolls = [];
 
   for (const emp of employees) {
-    const existing = await Payroll.findOne({ employee: emp._id, month: m, year: y });
+    const existing = await Payroll.findOne({
+      employee: emp._id,
+      month: m,
+      year: y,
+    });
     if (existing) continue;
 
     // Use per-employee config if set, fall back to employee.salary
@@ -221,6 +227,7 @@ const markPaid = asyncHandler(async (req, res) => {
         payroll.employee.phone,
         payrollPaidMsg(payroll.employee, payroll),
         "whatsappNotifyPayroll",
+        req.user.company,
       );
     } catch {}
   }

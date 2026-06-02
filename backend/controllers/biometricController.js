@@ -143,8 +143,17 @@ const regenerateDeviceToken = asyncHandler(async (req, res) => {
     throw new Error("Device not found");
   }
   device.deviceToken = crypto.randomBytes(32).toString("hex");
+  device.activationCode = crypto.randomBytes(4).toString("hex").toUpperCase();
+  device.activated = false;
+  device.activatedAt = undefined;
   await device.save();
-  res.json({ success: true, data: { deviceToken: device.deviceToken } });
+  res.json({
+    success: true,
+    data: {
+      deviceToken: device.deviceToken,
+      activationCode: device.activationCode,
+    },
+  });
 });
 
 // ─── NFC Cards ────────────────────────────────────────────────────────────────
@@ -207,6 +216,45 @@ const removeNfcCard = asyncHandler(async (req, res) => {
   device.nfcCards = device.nfcCards.filter((c) => c.uid !== req.params.uid);
   await device.save();
   res.json({ success: true, data: device });
+});
+
+// ─── Device Registration (hardware device / agent calls this once) ───────────
+
+const registerDevice = asyncHandler(async (req, res) => {
+  const { activationCode, model, mac, ip } = req.body;
+  if (!activationCode) {
+    res.status(400);
+    throw new Error("activationCode is required");
+  }
+
+  const device = await BiometricDevice.findOne({
+    activationCode: activationCode.toUpperCase().trim(),
+    isActive: true,
+  }).populate("location", "name address");
+
+  if (!device) {
+    res.status(404);
+    throw new Error("Invalid activation code");
+  }
+
+  // Mark activated and store device metadata
+  device.activated = true;
+  device.activatedAt = new Date();
+  device.lastSeenAt = new Date();
+  if (model) device.deviceMeta.model = model;
+  if (mac) device.deviceMeta.mac = mac;
+  if (ip) device.deviceMeta.ip = ip;
+  await device.save();
+
+  res.json({
+    success: true,
+    data: {
+      deviceToken: device.deviceToken,
+      deviceName: device.name,
+      location: device.location?.name,
+      nfcUids: device.nfcCards.map((c) => c.uid),
+    },
+  });
 });
 
 // ─── Device Public Endpoint (no user auth — uses device token) ────────────────
@@ -351,6 +399,7 @@ const recordBiometric = asyncHandler(async (req, res) => {
           employee.phone,
           checkInMsg(employee, device.location.name, now),
           "whatsappNotifyCheckIn",
+          device.company,
         );
       } else {
         await sendWhatsApp(
@@ -362,6 +411,7 @@ const recordBiometric = asyncHandler(async (req, res) => {
             attendanceUpdate.workHours,
           ),
           "whatsappNotifyCheckIn",
+          device.company,
         );
       }
     } catch {}
@@ -434,6 +484,7 @@ module.exports = {
   regenerateDeviceToken,
   assignNfcCard,
   removeNfcCard,
+  registerDevice,
   getDeviceInfo,
   recordBiometric,
   getLogs,

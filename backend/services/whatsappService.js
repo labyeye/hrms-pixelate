@@ -1,47 +1,39 @@
 const https = require("https");
-const querystring = require("querystring");
 const Setting = require("../models/Setting");
 
-// Send a WhatsApp message via Twilio REST API (no extra package needed)
+// Meta WhatsApp Business Cloud API
 // eventKey: "whatsappNotifyLeave" | "whatsappNotifyPayroll" | "whatsappNotifyCheckIn" | undefined
-async function sendWhatsApp(to, message, eventKey) {
+// companyId: ObjectId — used to load the right per-client credentials
+async function sendWhatsApp(to, message, eventKey, companyId) {
   try {
-    const setting = await Setting.findOne();
+    const setting = await Setting.findOne({ company: companyId });
     if (!setting?.whatsappEnabled) return;
-    // Check per-event toggle (default true if not set)
     if (eventKey && setting[eventKey] === false) return;
 
-    const sid = setting.twilioAccountSid || process.env.TWILIO_ACCOUNT_SID;
-    const token = setting.twilioAuthToken || process.env.TWILIO_AUTH_TOKEN;
-    const from =
-      setting.twilioWhatsappFrom ||
-      process.env.TWILIO_WHATSAPP_FROM ||
-      "whatsapp:+14155238886";
+    const accessToken = setting.metaAccessToken;
+    const phoneNumberId = setting.metaPhoneNumberId;
+    if (!accessToken || !phoneNumberId) return;
 
-    if (!sid || !token) return;
+    // Meta expects digits only, no + or spaces (e.g. 919876543210)
+    const toNumber = to.replace(/^\+/, "").replace(/\s/g, "");
 
-    // Normalize "to" number — must be whatsapp:+COUNTRYCODE...
-    const toNumber = to.startsWith("whatsapp:")
-      ? to
-      : `whatsapp:${to.startsWith("+") ? to : `+${to}`}`;
-
-    const body = querystring.stringify({
-      From: from,
-      To: toNumber,
-      Body: message,
+    const body = JSON.stringify({
+      messaging_product: "whatsapp",
+      to: toNumber,
+      type: "text",
+      text: { preview_url: false, body: message },
     });
 
     await new Promise((resolve, reject) => {
       const req = https.request(
         {
-          hostname: "api.twilio.com",
-          path: `/2010-04-01/Accounts/${sid}/Messages.json`,
+          hostname: "graph.facebook.com",
+          path: `/v20.0/${phoneNumberId}/messages`,
           method: "POST",
           headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
+            "Content-Type": "application/json",
             "Content-Length": Buffer.byteLength(body),
-            Authorization:
-              "Basic " + Buffer.from(`${sid}:${token}`).toString("base64"),
+            Authorization: `Bearer ${accessToken}`,
           },
         },
         (res) => {
@@ -50,7 +42,7 @@ async function sendWhatsApp(to, message, eventKey) {
           res.on("end", () => {
             if (res.statusCode >= 200 && res.statusCode < 300)
               resolve(JSON.parse(data));
-            else reject(new Error(`Twilio ${res.statusCode}: ${data}`));
+            else reject(new Error(`Meta API ${res.statusCode}: ${data}`));
           });
         },
       );
@@ -59,7 +51,6 @@ async function sendWhatsApp(to, message, eventKey) {
       req.end();
     });
   } catch (err) {
-    // WhatsApp is a non-critical side-effect — log and continue
     console.error("[WhatsApp]", err.message);
   }
 }

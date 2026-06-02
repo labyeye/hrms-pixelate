@@ -2,6 +2,12 @@ const mongoose = require("mongoose");
 
 const settingSchema = new mongoose.Schema(
   {
+    company: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
+      unique: true,
+      sparse: true,
+    },
     companyName: {
       type: String,
       default: "",
@@ -66,11 +72,11 @@ const settingSchema = new mongoose.Schema(
         "This is a computer-generated document.",
       ],
     },
-    // WhatsApp / Twilio integration
+    // WhatsApp — Meta Business Cloud API (per-company credentials)
     whatsappEnabled: { type: Boolean, default: false },
-    twilioAccountSid: { type: String, default: "" },
-    twilioAuthToken: { type: String, default: "" },
-    twilioWhatsappFrom: { type: String, default: "whatsapp:+14155238886" },
+    metaAccessToken: { type: String, default: "" },
+    metaPhoneNumberId: { type: String, default: "" },
+    metaWabaId: { type: String, default: "" },
     whatsappNotifyCheckIn: { type: Boolean, default: true },
     whatsappNotifyLeave: { type: Boolean, default: true },
     whatsappNotifyPayroll: { type: Boolean, default: true },

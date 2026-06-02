@@ -13,7 +13,8 @@ export default function PaymentFailedPage() {
   const navigate = useNavigate();
 
   const rawReason = searchParams.get("reason") || "";
-  const reason = REASONS[rawReason] || rawReason || "Payment could not be completed.";
+  const reason =
+    REASONS[rawReason] || rawReason || "Payment could not be completed.";
 
   return (
     <div className="min-h-screen bg-[#F0F6FF] flex flex-col">
@@ -22,7 +23,9 @@ export default function PaymentFailedPage() {
           <div className="w-9 h-9 bg-[#024BAB] border-2 border-black flex items-center justify-center">
             <Zap className="w-5 h-5 text-white" />
           </div>
-          <span className="font-display font-black text-xl text-black">NestHR</span>
+          <span className="font-display font-black text-xl text-black">
+            NestHR
+          </span>
         </div>
       </header>
 
@@ -39,12 +42,16 @@ export default function PaymentFailedPage() {
             </div>
 
             <div className="p-6 border-b-2 border-black">
-              <p className="text-sm font-medium text-gray-600 text-center">{reason}</p>
+              <p className="text-sm font-medium text-gray-600 text-center">
+                {reason}
+              </p>
             </div>
 
             {/* Common causes */}
             <div className="p-5 bg-[#FFF8F0] border-b-2 border-black">
-              <p className="text-xs font-black uppercase text-gray-500 mb-3">Common causes</p>
+              <p className="text-xs font-black uppercase text-gray-500 mb-3">
+                Common causes
+              </p>
               <ul className="space-y-1 text-xs font-medium text-gray-600">
                 <li>• Insufficient balance or card limit exceeded</li>
                 <li>• Transaction declined by your bank</li>
@@ -71,7 +78,10 @@ export default function PaymentFailedPage() {
               </button>
               <p className="text-xs text-gray-400 text-center font-medium">
                 Money deducted but not activated?{" "}
-                <a href="mailto:support@pixelatenest.com" className="text-[#024BAB] underline font-bold">
+                <a
+                  href="mailto:support@pixelatenest.com"
+                  className="text-[#024BAB] underline font-bold"
+                >
                   Contact support
                 </a>
               </p>

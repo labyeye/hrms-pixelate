@@ -608,8 +608,8 @@ export default function SettingsPage() {
                       Enable WhatsApp Notifications
                     </p>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      Send automated WhatsApp messages via Twilio for leave,
-                      payroll and attendance events
+                      Send automated WhatsApp messages via Meta Business API for
+                      leave, payroll and attendance events
                     </p>
                   </div>
                   <button
@@ -635,59 +635,61 @@ export default function SettingsPage() {
                   </button>
                 </div>
 
-                {/* Twilio Credentials */}
+                {/* Meta WhatsApp Credentials */}
                 <div className="space-y-4">
                   <h3 className="text-xs font-black uppercase tracking-wider text-gray-500">
-                    Twilio Credentials
+                    Meta WhatsApp Business API Credentials
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <InputField
+                        label="System User Access Token"
+                        name="metaAccessToken"
+                        value={settings?.metaAccessToken || ""}
+                        placeholder="EAAxxxxxxxxxxxxxxxxxxxxxxxx"
+                        type="password"
+                      />
+                    </div>
                     <InputField
-                      label="Account SID"
-                      name="twilioAccountSid"
-                      value={settings?.twilioAccountSid || ""}
-                      placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                      label="WhatsApp Phone Number ID"
+                      name="metaPhoneNumberId"
+                      value={settings?.metaPhoneNumberId || ""}
+                      placeholder="1234567890123456"
                     />
                     <InputField
-                      label="Auth Token"
-                      name="twilioAuthToken"
-                      value={settings?.twilioAuthToken || ""}
-                      placeholder="Your Twilio Auth Token"
-                      type="password"
-                    />
-                    <InputField
-                      label="WhatsApp From Number"
-                      name="twilioWhatsappFrom"
-                      value={
-                        settings?.twilioWhatsappFrom || "whatsapp:+14155238886"
-                      }
-                      placeholder="whatsapp:+14155238886"
+                      label="WhatsApp Business Account ID"
+                      name="metaWabaId"
+                      value={settings?.metaWabaId || ""}
+                      placeholder="9876543210987654"
                     />
                   </div>
                   <div className="p-3 bg-blue-50 border-2 border-[#024BAB]/30 text-xs text-gray-600 space-y-1">
                     <p className="font-black text-[#024BAB]">
-                      How to set up Twilio WhatsApp
+                      How to set up Meta WhatsApp Business API
                     </p>
                     <p>
-                      1. Create a free account at <strong>twilio.com</strong>
+                      1. Go to <strong>developers.facebook.com</strong> → My
+                      Apps → Create App → Business
                     </p>
                     <p>
-                      2. Go to Console → Messaging → Try it out → Send a
-                      WhatsApp message
+                      2. Add the <strong>WhatsApp</strong> product to your app
                     </p>
                     <p>
-                      3. For sandbox: From number is{" "}
+                      3. Under WhatsApp → Getting Started, copy your{" "}
+                      <strong>Phone Number ID</strong> and{" "}
+                      <strong>WhatsApp Business Account ID</strong>
+                    </p>
+                    <p>
+                      4. Create a <strong>System User</strong> in Meta Business
+                      Manager and generate a permanent token with{" "}
                       <code className="bg-white px-1 border">
-                        whatsapp:+14155238886
-                      </code>
+                        whatsapp_business_messaging
+                      </code>{" "}
+                      permission
                     </p>
                     <p>
-                      4. Each employee must send{" "}
-                      <strong>"join &lt;sandbox-keyword&gt;"</strong> to the
-                      sandbox number once to opt in
-                    </p>
-                    <p>
-                      5. Employee phone numbers in their profile must include
-                      country code (e.g. +919876543210)
+                      5. Employee phone numbers must include country code
+                      without + (e.g. 919876543210)
                     </p>
                   </div>
                 </div>

@@ -37,7 +37,9 @@ function getMerchantCredentials() {
 }
 
 function basicAuth(merchantId, accessKey) {
-  return "Basic " + Buffer.from(`${merchantId}:${accessKey}`).toString("base64");
+  return (
+    "Basic " + Buffer.from(`${merchantId}:${accessKey}`).toString("base64")
+  );
 }
 
 function httpsPost(hostname, path, body, headers) {
@@ -65,8 +67,7 @@ function httpsPost(hostname, path, body, headers) {
             } else {
               reject(
                 new Error(
-                  parsed.message ||
-                    `HDFC API error ${res.statusCode}: ${data}`,
+                  parsed.message || `HDFC API error ${res.statusCode}: ${data}`,
                 ),
               );
             }
@@ -129,9 +130,7 @@ async function createOrder({ orderId, amount, currency = "INR", customer }) {
   // TODO: Map the actual response field names from HDFC docs
   // Common field names: payment_url, paymentPageUrl, payment_link
   const paymentUrl =
-    response.payment_url ||
-    response.paymentPageUrl ||
-    response.payment_link;
+    response.payment_url || response.paymentPageUrl || response.payment_link;
 
   if (!paymentUrl) {
     throw new Error(
@@ -180,8 +179,7 @@ async function verifyPayment({ orderId, trackingId }) {
 
   // TODO: Map the actual status field names from HDFC docs
   // Common field names: order_status, status, payment_status
-  const status =
-    (response.order_status || response.status || "").toUpperCase();
+  const status = (response.order_status || response.status || "").toUpperCase();
 
   const isSuccess = status === "SUCCESS" || status === "CAPTURED";
 

@@ -13,14 +13,17 @@ import {
   X,
   RefreshCw,
   CreditCard,
-  Users,
-  Clock,
   Loader2,
   Eye,
+  EyeOff,
   ExternalLink,
   ToggleLeft,
   ToggleRight,
   Copy,
+  Wifi,
+  Monitor,
+  Terminal,
+  CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -51,6 +54,10 @@ interface Device {
   name: string;
   location: { _id: string; name: string; address?: string };
   deviceToken: string;
+  activationCode: string;
+  activated: boolean;
+  activatedAt?: string;
+  deviceMeta?: { model?: string; mac?: string; ip?: string };
   nfcCards: NfcCard[];
   isActive: boolean;
   lastSeenAt?: string;
@@ -255,16 +262,40 @@ export default function BiometricPage() {
   };
 
   const handleRegenerateToken = async (deviceId: string) => {
-    if (!confirm("Regenerate device token? The device page URL will change."))
+    if (
+      !confirm(
+        "Regenerate token? Both the terminal URL and activation code will change — reconnection required.",
+      )
+    )
       return;
     try {
       const res = await biometricAPI.regenerateDeviceToken(deviceId);
       setDevices((prev) =>
         prev.map((d) =>
-          d._id === deviceId ? { ...d, deviceToken: res.data.deviceToken } : d,
+          d._id === deviceId
+            ? {
+                ...d,
+                deviceToken: res.data.deviceToken,
+                activationCode: res.data.activationCode,
+                activated: false,
+              }
+            : d,
         ),
       );
-      toast({ title: "Token regenerated" });
+      setSelectedDevice((prev) =>
+        prev && prev._id === deviceId
+          ? {
+              ...prev,
+              deviceToken: res.data.deviceToken,
+              activationCode: res.data.activationCode,
+              activated: false,
+            }
+          : prev,
+      );
+      toast({
+        title: "Token regenerated",
+        description: "New activation code is ready.",
+      });
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     }
@@ -726,13 +757,51 @@ export default function BiometricPage() {
                       </div>
                     </div>
 
-                    {/* Device token */}
-                    <div className="mt-4 p-3 bg-gray-50 border-2 border-dashed border-gray-300">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-black uppercase text-gray-500">
-                          Device Page URL
+                    {/* Connection status */}
+                    <div className="mt-3 flex items-center gap-2">
+                      {selectedDevice.activated ? (
+                        <span className="flex items-center gap-1.5 text-xs font-black text-green-700 bg-green-50 border border-green-300 px-2 py-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Connected
+                          {selectedDevice.deviceMeta?.model &&
+                            ` · ${selectedDevice.deviceMeta.model}`}
+                          {selectedDevice.deviceMeta?.ip &&
+                            ` · ${selectedDevice.deviceMeta.ip}`}
                         </span>
-                        <div className="flex gap-1.5">
+                      ) : (
+                        <span className="flex items-center gap-1.5 text-xs font-black text-yellow-700 bg-yellow-50 border border-yellow-300 px-2 py-1">
+                          <Wifi className="w-3.5 h-3.5" />
+                          Awaiting connection
+                        </span>
+                      )}
+                      {selectedDevice.lastSeenAt && (
+                        <span className="text-xs text-gray-400">
+                          Last seen{" "}
+                          {new Date(selectedDevice.lastSeenAt).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Setup panel — two approaches */}
+                    <div className="mt-4 space-y-3">
+                      {/* Option A: Browser / tablet terminal */}
+                      <div className="p-3 bg-blue-50 border-2 border-[#024BAB]/20">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Monitor className="w-4 h-4 text-[#024BAB]" />
+                          <span className="text-xs font-black uppercase text-[#024BAB]">
+                            Option A — Browser Terminal (Tablet / Kiosk)
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-600 mb-2">
+                          Open this URL on any tablet or PC at the office. Works
+                          with NFC, PIN, and face modes.
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <code className="flex-1 text-xs font-mono bg-white border border-gray-200 px-2 py-1.5 text-gray-700 truncate">
+                            {showTokenFor === selectedDevice._id
+                              ? devicePageUrl(selectedDevice.deviceToken)
+                              : "••••••••••••••••••••••••••••••••"}
+                          </code>
                           <button
                             onClick={() =>
                               setShowTokenFor(
@@ -741,12 +810,14 @@ export default function BiometricPage() {
                                   : selectedDevice._id,
                               )
                             }
-                            className="text-xs font-black text-[#024BAB] flex items-center gap-1 hover:underline"
+                            className="p-1.5 border border-gray-200 hover:border-black"
+                            title="Show/hide URL"
                           >
-                            <Eye className="w-3 h-3" />
-                            {showTokenFor === selectedDevice._id
-                              ? "Hide"
-                              : "Show"}
+                            {showTokenFor === selectedDevice._id ? (
+                              <EyeOff className="w-3.5 h-3.5" />
+                            ) : (
+                              <Eye className="w-3.5 h-3.5" />
+                            )}
                           </button>
                           <button
                             onClick={() =>
@@ -754,33 +825,94 @@ export default function BiometricPage() {
                                 devicePageUrl(selectedDevice.deviceToken),
                               )
                             }
-                            className="text-xs font-black text-gray-500 flex items-center gap-1 hover:text-black"
+                            className="p-1.5 border border-gray-200 hover:border-black"
+                            title="Copy URL"
                           >
-                            <Copy className="w-3 h-3" /> Copy URL
+                            <Copy className="w-3.5 h-3.5" />
                           </button>
                           <a
                             href={devicePageUrl(selectedDevice.deviceToken)}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-xs font-black text-gray-500 flex items-center gap-1 hover:text-black"
+                            className="p-1.5 border border-gray-200 hover:border-black"
+                            title="Open terminal"
                           >
-                            <ExternalLink className="w-3 h-3" /> Open
+                            <ExternalLink className="w-3.5 h-3.5" />
                           </a>
                         </div>
                       </div>
-                      {showTokenFor === selectedDevice._id && (
-                        <p className="text-xs font-mono text-gray-600 break-all mt-1">
-                          {devicePageUrl(selectedDevice.deviceToken)}
+
+                      {/* Option B: Hardware device / local agent */}
+                      <div className="p-3 bg-gray-50 border-2 border-gray-200">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Terminal className="w-4 h-4 text-gray-600" />
+                          <span className="text-xs font-black uppercase text-gray-600">
+                            Option B — Hardware Device / Local Agent
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 mb-3">
+                          Enter these details in the device web panel or agent
+                          config. The device calls{" "}
+                          <code className="bg-white px-1 border">
+                            /api/biometric/register
+                          </code>{" "}
+                          once with the activation code to auto-connect.
                         </p>
-                      )}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-black text-gray-500 w-28 shrink-0">
+                              Server URL
+                            </span>
+                            <code className="flex-1 text-xs font-mono bg-white border border-gray-200 px-2 py-1 text-gray-700 truncate">
+                              {window.location.origin}/api/biometric/register
+                            </code>
+                            <button
+                              onClick={() =>
+                                copyToClipboard(
+                                  `${window.location.origin}/api/biometric/register`,
+                                )
+                              }
+                              className="p-1 hover:text-black text-gray-400"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-black text-gray-500 w-28 shrink-0">
+                              Activation Code
+                            </span>
+                            <code className="flex-1 text-sm font-mono font-black bg-white border-2 border-black px-2 py-1 text-black tracking-widest">
+                              {selectedDevice.activationCode || "——"}
+                            </code>
+                            <button
+                              onClick={() =>
+                                copyToClipboard(selectedDevice.activationCode)
+                              }
+                              className="p-1 hover:text-black text-gray-400"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <p className="text-xs text-gray-400">
+                            The device will call{" "}
+                            <code className="bg-white px-1 border">
+                              POST /register
+                            </code>{" "}
+                            with{" "}
+                            <code className="bg-white px-1 border">{`{ "activationCode": "XXXXXXXX" }`}</code>{" "}
+                            and receive back the permanent device token.
+                          </p>
+                        </div>
+                      </div>
+
                       <button
                         onClick={() =>
                           handleRegenerateToken(selectedDevice._id)
                         }
-                        className="mt-2 flex items-center gap-1 text-xs font-black text-red-500 hover:underline"
+                        className="flex items-center gap-1 text-xs font-black text-red-500 hover:underline"
                       >
-                        <RefreshCw className="w-3 h-3" /> Regenerate Token
-                        (invalidates current URL)
+                        <RefreshCw className="w-3 h-3" /> Regenerate token
+                        (invalidates both URLs)
                       </button>
                     </div>
                   </div>

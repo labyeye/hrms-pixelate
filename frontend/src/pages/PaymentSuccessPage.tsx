@@ -2,7 +2,14 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { billingAPI } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
-import { CheckCircle, Loader2, Zap, ArrowRight, Mail, MessageCircle } from "lucide-react";
+import {
+  CheckCircle,
+  Loader2,
+  Zap,
+  ArrowRight,
+  Mail,
+  MessageCircle,
+} from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 type Status = "verifying" | "success" | "failed";
@@ -24,12 +31,16 @@ export default function PaymentSuccessPage() {
 
   useEffect(() => {
     const orderId = searchParams.get("order_id") || searchParams.get("orderId");
-    const trackingId = searchParams.get("tracking_id") || searchParams.get("trackingId");
-    const hdfcStatus = searchParams.get("order_status") || searchParams.get("status");
+    const trackingId =
+      searchParams.get("tracking_id") || searchParams.get("trackingId");
+    const hdfcStatus =
+      searchParams.get("order_status") || searchParams.get("status");
 
     // If HDFC already signals failure in the URL, skip verification
     if (hdfcStatus && !["Success", "success", "SUCCESS"].includes(hdfcStatus)) {
-      navigate("/payment/failed?reason=" + encodeURIComponent(hdfcStatus), { replace: true });
+      navigate("/payment/failed?reason=" + encodeURIComponent(hdfcStatus), {
+        replace: true,
+      });
       return;
     }
 
@@ -54,8 +65,8 @@ export default function PaymentSuccessPage() {
         setErrorMsg(err.message || "Payment verification failed.");
         setStatus("failed");
       });
-  // run once on mount
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -66,18 +77,21 @@ export default function PaymentSuccessPage() {
           <div className="w-9 h-9 bg-[#024BAB] border-2 border-black flex items-center justify-center">
             <Zap className="w-5 h-5 text-white" />
           </div>
-          <span className="font-display font-black text-xl text-black">NestHR</span>
+          <span className="font-display font-black text-xl text-black">
+            NestHR
+          </span>
         </div>
       </header>
 
       <main className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
-
           {/* Verifying */}
           {status === "verifying" && (
             <div className="bg-white border-2 border-black nb-shadow p-10 text-center">
               <Loader2 className="w-12 h-12 animate-spin text-[#024BAB] mx-auto mb-4" />
-              <h2 className="font-black text-xl text-black mb-2">Confirming your payment</h2>
+              <h2 className="font-black text-xl text-black mb-2">
+                Confirming your payment
+              </h2>
               <p className="text-sm text-gray-500 font-medium">
                 Please wait while we verify your payment with HDFC SmartGateway…
               </p>
@@ -90,7 +104,9 @@ export default function PaymentSuccessPage() {
               {/* Green top bar */}
               <div className="bg-green-500 border-b-2 border-black p-6 text-center">
                 <CheckCircle className="w-12 h-12 text-white mx-auto mb-3" />
-                <h1 className="font-black text-2xl text-white">Payment Successful!</h1>
+                <h1 className="font-black text-2xl text-white">
+                  Payment Successful!
+                </h1>
                 <p className="text-green-100 font-medium text-sm mt-1">
                   Your NestHR subscription is now active
                 </p>
@@ -100,37 +116,50 @@ export default function PaymentSuccessPage() {
               <div className="p-6 space-y-3 border-b-2 border-black">
                 <div className="flex justify-between text-sm">
                   <span className="font-bold text-gray-500">Invoice</span>
-                  <span className="font-black text-black font-mono">{details.invoiceNumber}</span>
+                  <span className="font-black text-black font-mono">
+                    {details.invoiceNumber}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="font-bold text-gray-500">Plan</span>
-                  <span className="font-black text-black uppercase">{details.plan}</span>
+                  <span className="font-black text-black uppercase">
+                    {details.plan}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="font-bold text-gray-500">Billing</span>
-                  <span className="font-black text-black capitalize">{details.billingCycle}</span>
+                  <span className="font-black text-black capitalize">
+                    {details.billingCycle}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm border-t-2 border-black pt-3">
-                  <span className="font-black text-sm uppercase">Amount Paid</span>
+                  <span className="font-black text-sm uppercase">
+                    Amount Paid
+                  </span>
                   <span className="font-black text-xl text-[#024BAB]">
                     ₹{details.amount.toLocaleString("en-IN")}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="font-bold text-gray-500">Next Renewal</span>
-                  <span className="font-black text-black">{formatDate(details.renewalDate)}</span>
+                  <span className="font-black text-black">
+                    {formatDate(details.renewalDate)}
+                  </span>
                 </div>
               </div>
 
               {/* Notifications sent */}
               <div className="p-4 bg-[#F0F6FF] border-b-2 border-black">
-                <p className="text-xs font-black uppercase text-gray-500 mb-2">Confirmations sent to</p>
+                <p className="text-xs font-black uppercase text-gray-500 mb-2">
+                  Confirmations sent to
+                </p>
                 <div className="flex gap-4 text-xs font-bold text-gray-600">
                   <span className="flex items-center gap-1">
                     <Mail className="w-3.5 h-3.5 text-[#024BAB]" /> Email
                   </span>
                   <span className="flex items-center gap-1">
-                    <MessageCircle className="w-3.5 h-3.5 text-green-600" /> WhatsApp
+                    <MessageCircle className="w-3.5 h-3.5 text-green-600" />{" "}
+                    WhatsApp
                   </span>
                 </div>
               </div>
@@ -157,8 +186,12 @@ export default function PaymentSuccessPage() {
               <div className="w-12 h-12 bg-red-100 border-2 border-red-500 flex items-center justify-center mx-auto mb-4">
                 <span className="text-red-500 font-black text-xl">✕</span>
               </div>
-              <h2 className="font-black text-xl text-black mb-2">Verification Failed</h2>
-              <p className="text-sm text-gray-500 font-medium mb-6">{errorMsg}</p>
+              <h2 className="font-black text-xl text-black mb-2">
+                Verification Failed
+              </h2>
+              <p className="text-sm text-gray-500 font-medium mb-6">
+                {errorMsg}
+              </p>
               <div className="space-y-3">
                 <button
                   onClick={() => navigate("/onboarding")}
@@ -168,14 +201,16 @@ export default function PaymentSuccessPage() {
                 </button>
                 <p className="text-xs text-gray-400 font-medium">
                   If money was deducted, contact{" "}
-                  <a href="mailto:support@pixelatenest.com" className="text-[#024BAB] underline">
+                  <a
+                    href="mailto:support@pixelatenest.com"
+                    className="text-[#024BAB] underline"
+                  >
                     support@pixelatenest.com
                   </a>
                 </p>
               </div>
             </div>
           )}
-
         </div>
       </main>
     </div>

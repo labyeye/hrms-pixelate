@@ -6,7 +6,9 @@ const Employee = require("../models/Employee");
 // ── Employee Payroll Configs ────────────────────────────────────────────────
 
 const getAllConfigs = asyncHandler(async (req, res) => {
-  const configs = await EmployeePayrollConfig.find({ company: req.user.company })
+  const configs = await EmployeePayrollConfig.find({
+    company: req.user.company,
+  })
     .populate({
       path: "employee",
       select: "firstName lastName employeeId designation department salary",
@@ -35,7 +37,8 @@ const upsertConfig = asyncHandler(async (req, res) => {
     throw new Error("Employee not found");
   }
 
-  const { basicSalary, hra, da, ta, medicalAllowance, otherAllowances } = req.body;
+  const { basicSalary, hra, da, ta, medicalAllowance, otherAllowances } =
+    req.body;
 
   const config = await EmployeePayrollConfig.findOneAndUpdate(
     { employee: employeeId, company: req.user.company },

@@ -18,7 +18,9 @@ import {
 import { cn } from "@/lib/utils";
 
 declare global {
-  interface Window { Razorpay: any; }
+  interface Window {
+    Razorpay: any;
+  }
 }
 
 type Step = "company" | "employees" | "plan" | "payment";
@@ -106,7 +108,11 @@ function StepIndicator({ current }: { current: Step }) {
               <span
                 className={cn(
                   "text-[10px] font-black uppercase mt-1 tracking-wide",
-                  active ? "text-[#FA731C]" : done ? "text-[#024BAB]" : "text-gray-400",
+                  active
+                    ? "text-[#FA731C]"
+                    : done
+                      ? "text-[#024BAB]"
+                      : "text-gray-400",
                 )}
               >
                 {step.label}
@@ -132,7 +138,9 @@ export default function OnboardingPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [step, setStep] = useState<Step>(user?.company ? "employees" : "company");
+  const [step, setStep] = useState<Step>(
+    user?.company ? "employees" : "company",
+  );
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
   const [employeeCount, setEmployeeCount] = useState<number | "">("");
   const [selectedPlan, setSelectedPlan] = useState<string>("professional");
@@ -156,8 +164,13 @@ export default function OnboardingPage() {
   }, [employeeCount]);
 
   const handleCreateCompany = async (formData: {
-    name: string; email: string; phone: string;
-    industry: string; website: string; gstNumber: string; panNumber: string;
+    name: string;
+    email: string;
+    phone: string;
+    industry: string;
+    website: string;
+    gstNumber: string;
+    panNumber: string;
   }) => {
     setCompanyError("");
     setCompanyLoading(true);
@@ -165,14 +178,27 @@ export default function OnboardingPage() {
       const res = await companyAPI.create(formData);
       const company = res.data;
       updateUser({
-        company: { id: company._id, name: company.name, email: company.email, status: company.status },
+        company: {
+          id: company._id,
+          name: company.name,
+          email: company.email,
+          status: company.status,
+        },
       });
-      toast({ title: "Company created!", description: "Now tell us about your team.", variant: "success" });
+      toast({
+        title: "Company created!",
+        description: "Now tell us about your team.",
+        variant: "success",
+      });
       setStep("employees");
     } catch (err: any) {
       const msg = err.message || "Failed to create company";
       if (msg.includes("User already has a company")) {
-        toast({ title: "Company already exists", description: "Redirecting...", variant: "destructive" });
+        toast({
+          title: "Company already exists",
+          description: "Redirecting...",
+          variant: "destructive",
+        });
         setTimeout(() => navigate("/", { replace: true }), 1800);
       } else {
         setCompanyError(msg);
@@ -186,11 +212,19 @@ export default function OnboardingPage() {
   const handleEmployeeContinue = () => {
     const count = Number(employeeCount);
     if (!count || count < 1) {
-      toast({ title: "Enter employee count", description: "How many people will use NestHR?", variant: "destructive" });
+      toast({
+        title: "Enter employee count",
+        description: "How many people will use NestHR?",
+        variant: "destructive",
+      });
       return;
     }
     if (count > 100) {
-      toast({ title: "Enterprise+", description: "For over 100 employees, contact us for a custom plan.", variant: "destructive" });
+      toast({
+        title: "Enterprise+",
+        description: "For over 100 employees, contact us for a custom plan.",
+        variant: "destructive",
+      });
       return;
     }
     setStep("plan");
@@ -201,19 +235,25 @@ export default function OnboardingPage() {
     try {
       const res = await billingAPI.createOrder(selectedPlan, billing);
       const { paymentUrl } = res.data;
-      if (!paymentUrl) throw new Error("Payment URL not received. Please try again.");
+      if (!paymentUrl)
+        throw new Error("Payment URL not received. Please try again.");
       // Full-page redirect to HDFC SmartGateway
       window.location.href = paymentUrl;
     } catch (err: any) {
-      toast({ title: "Could not initiate payment", description: err.message || "Please try again.", variant: "destructive" });
+      toast({
+        title: "Could not initiate payment",
+        description: err.message || "Please try again.",
+        variant: "destructive",
+      });
       setPaying(false);
     }
   };
 
   const plan = PLANS.find((p) => p.id === selectedPlan)!;
-  const planPrice = billing === "yearly"
-    ? Math.round(plan.yearlyPrice / 12)
-    : plan.monthlyPrice;
+  const planPrice =
+    billing === "yearly"
+      ? Math.round(plan.yearlyPrice / 12)
+      : plan.monthlyPrice;
   const planTotal = billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
 
   return (
@@ -225,9 +265,14 @@ export default function OnboardingPage() {
             <div className="w-9 h-9 bg-[#024BAB] border-2 border-black flex items-center justify-center">
               <Zap className="w-5 h-5 text-white" />
             </div>
-            <span className="font-display font-black text-xl text-black">NestHR</span>
+            <span className="font-display font-black text-xl text-black">
+              NestHR
+            </span>
           </div>
-          <button onClick={logout} className="text-sm font-bold text-black hover:text-[#024BAB] transition-colors">
+          <button
+            onClick={logout}
+            className="text-sm font-bold text-black hover:text-[#024BAB] transition-colors"
+          >
             Logout
           </button>
         </div>
@@ -240,8 +285,12 @@ export default function OnboardingPage() {
         {step === "company" && (
           <div>
             <div className="text-center mb-8">
-              <h1 className="font-display font-black text-3xl text-black mb-2">Set up your company</h1>
-              <p className="text-gray-500 font-medium text-sm">Your legal and contact details</p>
+              <h1 className="font-display font-black text-3xl text-black mb-2">
+                Set up your company
+              </h1>
+              <p className="text-gray-500 font-medium text-sm">
+                Your legal and contact details
+              </p>
             </div>
             <div className="bg-white border-2 border-black p-8 max-w-2xl mx-auto nb-shadow">
               <CompanyDetailsForm
@@ -258,7 +307,9 @@ export default function OnboardingPage() {
         {step === "employees" && (
           <div>
             <div className="text-center mb-8">
-              <h1 className="font-display font-black text-3xl text-black mb-2">How big is your team?</h1>
+              <h1 className="font-display font-black text-3xl text-black mb-2">
+                How big is your team?
+              </h1>
               <p className="text-gray-500 font-medium text-sm">
                 We'll recommend the right plan based on your team size
               </p>
@@ -273,7 +324,13 @@ export default function OnboardingPage() {
                 min={1}
                 max={100}
                 value={employeeCount}
-                onChange={(e) => setEmployeeCount(e.target.value === "" ? "" : Math.max(1, parseInt(e.target.value) || 1))}
+                onChange={(e) =>
+                  setEmployeeCount(
+                    e.target.value === ""
+                      ? ""
+                      : Math.max(1, parseInt(e.target.value) || 1),
+                  )
+                }
                 placeholder="e.g. 15"
                 autoFocus
                 className="w-full border-2 border-black px-4 py-3 text-2xl font-black text-center focus:outline-none focus:ring-2 focus:ring-[#024BAB] mb-2"
@@ -301,15 +358,25 @@ export default function OnboardingPage() {
               </div>
 
               {employeeCount !== "" && Number(employeeCount) > 0 && (
-                <div className={cn(
-                  "flex items-center gap-2 p-3 border-2 border-black mb-5 text-sm font-black",
-                  Number(employeeCount) <= 10 ? "bg-blue-50" : Number(employeeCount) <= 25 ? "bg-orange-50" : "bg-purple-50",
-                )}>
+                <div
+                  className={cn(
+                    "flex items-center gap-2 p-3 border-2 border-black mb-5 text-sm font-black",
+                    Number(employeeCount) <= 10
+                      ? "bg-blue-50"
+                      : Number(employeeCount) <= 25
+                        ? "bg-orange-50"
+                        : "bg-purple-50",
+                  )}
+                >
                   <Zap className="w-4 h-4 shrink-0" />
                   <span>
                     We recommend the{" "}
                     <span className="uppercase">
-                      {Number(employeeCount) <= 10 ? "Starter" : Number(employeeCount) <= 25 ? "Professional" : "Enterprise"}
+                      {Number(employeeCount) <= 10
+                        ? "Starter"
+                        : Number(employeeCount) <= 25
+                          ? "Professional"
+                          : "Enterprise"}
                     </span>{" "}
                     plan for {employeeCount} employees
                   </span>
@@ -331,9 +398,13 @@ export default function OnboardingPage() {
         {step === "plan" && (
           <div>
             <div className="text-center mb-8">
-              <h1 className="font-display font-black text-3xl text-black mb-2">Choose your plan</h1>
+              <h1 className="font-display font-black text-3xl text-black mb-2">
+                Choose your plan
+              </h1>
               <p className="text-gray-500 font-medium text-sm">
-                {employeeCount ? `Based on ${employeeCount} employees — we've highlighted the best fit` : "Select the plan that suits your team"}
+                {employeeCount
+                  ? `Based on ${employeeCount} employees — we've highlighted the best fit`
+                  : "Select the plan that suits your team"}
               </p>
             </div>
 
@@ -344,7 +415,9 @@ export default function OnboardingPage() {
                   onClick={() => setBilling("monthly")}
                   className={cn(
                     "px-6 py-3 text-sm font-black uppercase transition-all border-r-2 border-black",
-                    billing === "monthly" ? "bg-[#024BAB] text-white" : "text-black hover:bg-gray-50",
+                    billing === "monthly"
+                      ? "bg-[#024BAB] text-white"
+                      : "text-black hover:bg-gray-50",
                   )}
                 >
                   Monthly
@@ -353,7 +426,9 @@ export default function OnboardingPage() {
                   onClick={() => setBilling("yearly")}
                   className={cn(
                     "px-6 py-3 text-sm font-black uppercase relative transition-all",
-                    billing === "yearly" ? "bg-[#024BAB] text-white" : "text-black hover:bg-gray-50",
+                    billing === "yearly"
+                      ? "bg-[#024BAB] text-white"
+                      : "text-black hover:bg-gray-50",
                   )}
                 >
                   Yearly
@@ -370,12 +445,20 @@ export default function OnboardingPage() {
                 const isSelected = selectedPlan === p.id;
                 const isRecommended =
                   employeeCount !== "" &&
-                  (p.id === "starter" && Number(employeeCount) <= 10 ||
-                    p.id === "professional" && Number(employeeCount) > 10 && Number(employeeCount) <= 25 ||
-                    p.id === "enterprise" && Number(employeeCount) > 25);
-                const isTooSmall = employeeCount !== "" && p.maxEmployees < Number(employeeCount);
-                const price = billing === "yearly" ? Math.round(p.yearlyPrice / 12) : p.monthlyPrice;
-                const total = billing === "yearly" ? p.yearlyPrice : p.monthlyPrice;
+                  ((p.id === "starter" && Number(employeeCount) <= 10) ||
+                    (p.id === "professional" &&
+                      Number(employeeCount) > 10 &&
+                      Number(employeeCount) <= 25) ||
+                    (p.id === "enterprise" && Number(employeeCount) > 25));
+                const isTooSmall =
+                  employeeCount !== "" &&
+                  p.maxEmployees < Number(employeeCount);
+                const price =
+                  billing === "yearly"
+                    ? Math.round(p.yearlyPrice / 12)
+                    : p.monthlyPrice;
+                const total =
+                  billing === "yearly" ? p.yearlyPrice : p.monthlyPrice;
 
                 return (
                   <button
@@ -384,8 +467,12 @@ export default function OnboardingPage() {
                     disabled={isTooSmall}
                     className={cn(
                       "relative p-6 border-2 transition-all text-left flex flex-col",
-                      isSelected ? "border-black bg-white nb-shadow" : "border-black bg-white",
-                      isTooSmall ? "opacity-40 cursor-not-allowed" : "hover:nb-shadow-sm cursor-pointer",
+                      isSelected
+                        ? "border-black bg-white nb-shadow"
+                        : "border-black bg-white",
+                      isTooSmall
+                        ? "opacity-40 cursor-not-allowed"
+                        : "hover:nb-shadow-sm cursor-pointer",
                     )}
                   >
                     {isRecommended && !isTooSmall && (
@@ -404,14 +491,20 @@ export default function OnboardingPage() {
                       </div>
                     )}
 
-                    <h3 className="font-black text-xl text-black mb-1">{p.name}</h3>
-                    <p className="text-xs text-gray-500 font-medium mb-4">{p.description}</p>
+                    <h3 className="font-black text-xl text-black mb-1">
+                      {p.name}
+                    </h3>
+                    <p className="text-xs text-gray-500 font-medium mb-4">
+                      {p.description}
+                    </p>
 
                     <div className="mb-4 pb-4 border-b-2 border-black">
                       <div className="font-display font-black text-3xl text-[#024BAB]">
                         ₹{price.toLocaleString("en-IN")}
                       </div>
-                      <div className="text-xs text-gray-500 font-medium">/month</div>
+                      <div className="text-xs text-gray-500 font-medium">
+                        /month
+                      </div>
                       {billing === "yearly" && (
                         <div className="text-xs text-green-600 font-black mt-0.5">
                           ₹{total.toLocaleString("en-IN")} billed yearly
@@ -444,7 +537,10 @@ export default function OnboardingPage() {
                 Continue to Payment
                 <ChevronRight className="w-4 h-4" />
               </button>
-              <button onClick={() => setStep("employees")} className="w-full text-center text-xs text-gray-400 hover:text-black font-bold mt-3 transition-colors">
+              <button
+                onClick={() => setStep("employees")}
+                className="w-full text-center text-xs text-gray-400 hover:text-black font-bold mt-3 transition-colors"
+              >
                 ← Back
               </button>
             </div>
@@ -455,9 +551,12 @@ export default function OnboardingPage() {
         {step === "payment" && (
           <div>
             <div className="text-center mb-8">
-              <h1 className="font-display font-black text-3xl text-black mb-2">Confirm & Pay</h1>
+              <h1 className="font-display font-black text-3xl text-black mb-2">
+                Confirm & Pay
+              </h1>
               <p className="text-gray-500 font-medium text-sm">
-                You'll be redirected to HDFC SmartGateway to complete payment securely
+                You'll be redirected to HDFC SmartGateway to complete payment
+                securely
               </p>
             </div>
 
@@ -465,34 +564,53 @@ export default function OnboardingPage() {
               {/* Order summary */}
               <div className="bg-white border-2 border-black nb-shadow">
                 <div className="p-5 border-b-2 border-black bg-[#F0F6FF]">
-                  <p className="font-black text-xs uppercase text-gray-500">Order Summary</p>
+                  <p className="font-black text-xs uppercase text-gray-500">
+                    Order Summary
+                  </p>
                 </div>
                 <div className="p-5 space-y-3">
                   <div className="flex justify-between items-center text-sm">
                     <span className="font-bold text-gray-600">Plan</span>
-                    <span className="font-black text-black uppercase">{plan.name}</span>
+                    <span className="font-black text-black uppercase">
+                      {plan.name}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="font-bold text-gray-600">Billing</span>
-                    <span className="font-black text-black capitalize">{billing}</span>
+                    <span className="font-black text-black capitalize">
+                      {billing}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="font-bold text-gray-600">Employees</span>
-                    <span className="font-black text-black">Up to {plan.maxEmployees}</span>
+                    <span className="font-black text-black">
+                      Up to {plan.maxEmployees}
+                    </span>
                   </div>
                   {billing === "yearly" && (
                     <div className="flex justify-between items-center text-sm">
-                      <span className="font-bold text-gray-600">Monthly equiv.</span>
-                      <span className="font-black text-gray-500">₹{planPrice.toLocaleString("en-IN")}/mo</span>
+                      <span className="font-bold text-gray-600">
+                        Monthly equiv.
+                      </span>
+                      <span className="font-black text-gray-500">
+                        ₹{planPrice.toLocaleString("en-IN")}/mo
+                      </span>
                     </div>
                   )}
                   <div className="border-t-2 border-black pt-3 flex justify-between items-center">
                     <span className="font-black text-sm uppercase">Total</span>
-                    <span className="font-black text-xl text-[#024BAB]">₹{planTotal.toLocaleString("en-IN")}</span>
+                    <span className="font-black text-xl text-[#024BAB]">
+                      ₹{planTotal.toLocaleString("en-IN")}
+                    </span>
                   </div>
                   {billing === "yearly" && (
                     <div className="bg-green-50 border border-green-200 p-2 text-xs font-bold text-green-700 text-center">
-                      You save ₹{(plan.monthlyPrice * 12 - plan.yearlyPrice).toLocaleString("en-IN")} compared to monthly billing
+                      You save ₹
+                      {(
+                        plan.monthlyPrice * 12 -
+                        plan.yearlyPrice
+                      ).toLocaleString("en-IN")}{" "}
+                      compared to monthly billing
                     </div>
                   )}
                 </div>
@@ -500,22 +618,33 @@ export default function OnboardingPage() {
 
               {/* What happens next */}
               <div className="bg-white border-2 border-black p-5">
-                <p className="font-black text-xs uppercase text-gray-500 mb-3">What happens next</p>
+                <p className="font-black text-xs uppercase text-gray-500 mb-3">
+                  What happens next
+                </p>
                 <ol className="space-y-2 text-xs font-medium text-gray-600">
                   <li className="flex items-start gap-2">
-                    <span className="w-5 h-5 bg-[#024BAB] text-white flex items-center justify-center font-black text-[10px] shrink-0 mt-0.5">1</span>
+                    <span className="w-5 h-5 bg-[#024BAB] text-white flex items-center justify-center font-black text-[10px] shrink-0 mt-0.5">
+                      1
+                    </span>
                     You'll be redirected to HDFC SmartGateway (secure page)
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="w-5 h-5 bg-[#024BAB] text-white flex items-center justify-center font-black text-[10px] shrink-0 mt-0.5">2</span>
+                    <span className="w-5 h-5 bg-[#024BAB] text-white flex items-center justify-center font-black text-[10px] shrink-0 mt-0.5">
+                      2
+                    </span>
                     Complete payment using net banking, UPI, card, or wallet
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="w-5 h-5 bg-[#024BAB] text-white flex items-center justify-center font-black text-[10px] shrink-0 mt-0.5">3</span>
-                    HDFC redirects you back and your subscription activates instantly
+                    <span className="w-5 h-5 bg-[#024BAB] text-white flex items-center justify-center font-black text-[10px] shrink-0 mt-0.5">
+                      3
+                    </span>
+                    HDFC redirects you back and your subscription activates
+                    instantly
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="w-5 h-5 bg-[#024BAB] text-white flex items-center justify-center font-black text-[10px] shrink-0 mt-0.5">4</span>
+                    <span className="w-5 h-5 bg-[#024BAB] text-white flex items-center justify-center font-black text-[10px] shrink-0 mt-0.5">
+                      4
+                    </span>
                     Confirmation sent to your email and WhatsApp
                   </li>
                 </ol>
@@ -534,7 +663,8 @@ export default function OnboardingPage() {
                 ) : (
                   <>
                     <ExternalLink className="w-5 h-5" />
-                    Pay ₹{planTotal.toLocaleString("en-IN")} via HDFC SmartGateway
+                    Pay ₹{planTotal.toLocaleString("en-IN")} via HDFC
+                    SmartGateway
                   </>
                 )}
               </button>
@@ -544,7 +674,10 @@ export default function OnboardingPage() {
                 Secured by HDFC SmartGateway · PCI-DSS compliant
               </div>
 
-              <button onClick={() => setStep("plan")} className="w-full text-center text-xs text-gray-400 hover:text-black font-bold transition-colors">
+              <button
+                onClick={() => setStep("plan")}
+                className="w-full text-center text-xs text-gray-400 hover:text-black font-bold transition-colors"
+              >
                 ← Back to plan selection
               </button>
             </div>

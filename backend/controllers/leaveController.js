@@ -168,6 +168,7 @@ const createLeave = asyncHandler(async (req, res) => {
           hr.phone,
           leaveAppliedHRMsg(hr, emp, leave),
           "whatsappNotifyLeave",
+          req.user.company,
         );
     }
   } catch {}
@@ -211,12 +212,14 @@ const updateLeaveStatus = asyncHandler(async (req, res) => {
           leave.employee.phone,
           leaveApprovedMsg(leave.employee, leave),
           "whatsappNotifyLeave",
+          req.user.company,
         );
       } else if (status === "rejected") {
         await sendWhatsApp(
           leave.employee.phone,
           leaveRejectedMsg(leave.employee, leave, rejectionReason),
           "whatsappNotifyLeave",
+          req.user.company,
         );
       }
     } catch {}

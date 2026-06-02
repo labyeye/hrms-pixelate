@@ -25,7 +25,17 @@ const biometricDeviceSchema = new mongoose.Schema(
       required: true,
     },
     name: { type: String, required: true, trim: true },
+    // Long-lived secret used by device for all API calls
     deviceToken: { type: String, unique: true },
+    // Short code shown to admin — hardware device/agent calls /register once with this
+    activationCode: { type: String, unique: true, sparse: true },
+    activated: { type: Boolean, default: false },
+    activatedAt: { type: Date },
+    deviceMeta: {
+      model: { type: String, default: "" },
+      mac: { type: String, default: "" },
+      ip: { type: String, default: "" },
+    },
     nfcCards: [nfcCardSchema],
     isActive: { type: Boolean, default: true },
     lastSeenAt: { type: Date },
@@ -36,6 +46,10 @@ const biometricDeviceSchema = new mongoose.Schema(
 biometricDeviceSchema.pre("save", function (next) {
   if (!this.deviceToken) {
     this.deviceToken = crypto.randomBytes(32).toString("hex");
+  }
+  if (!this.activationCode) {
+    // 8-char uppercase alphanumeric — easy to type into a device web panel
+    this.activationCode = crypto.randomBytes(4).toString("hex").toUpperCase();
   }
   next();
 });

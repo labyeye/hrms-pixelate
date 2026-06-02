@@ -47,7 +47,11 @@ export function Toaster() {
                 <p
                   className={cn(
                     "text-xs font-medium mt-0.5",
-                    isDestructive ? "text-red-700" : isSuccess ? "text-green-700" : "text-gray-600",
+                    isDestructive
+                      ? "text-red-700"
+                      : isSuccess
+                        ? "text-green-700"
+                        : "text-gray-600",
                   )}
                 >
                   {t.description}

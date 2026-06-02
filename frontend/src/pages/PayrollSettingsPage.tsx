@@ -76,7 +76,9 @@ export default function PayrollSettingsPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [empLoading, setEmpLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
+    null,
+  );
   const [config, setConfig] = useState<PayrollConfig>(EMPTY_CONFIG);
   const [configLoading, setConfigLoading] = useState(false);
   const [configSaving, setConfigSaving] = useState(false);
@@ -124,15 +126,33 @@ export default function PayrollSettingsPage() {
       try {
         const res = await payrollConfigAPI.getConfig(emp._id);
         if (res.data) {
-          const { basicSalary, hra, da, ta, medicalAllowance, otherAllowances } = res.data;
-          setConfig({ basicSalary, hra, da, ta, medicalAllowance, otherAllowances });
+          const {
+            basicSalary,
+            hra,
+            da,
+            ta,
+            medicalAllowance,
+            otherAllowances,
+          } = res.data;
+          setConfig({
+            basicSalary,
+            hra,
+            da,
+            ta,
+            medicalAllowance,
+            otherAllowances,
+          });
         } else {
           // Prefill basic from employee.salary
           setConfig({ ...EMPTY_CONFIG, basicSalary: emp.salary || 0 });
         }
       } catch (e: any) {
         setConfig({ ...EMPTY_CONFIG, basicSalary: emp.salary || 0 });
-        toast({ title: "Error loading payroll config", description: e.message, variant: "destructive" });
+        toast({
+          title: "Error loading payroll config",
+          description: e.message,
+          variant: "destructive",
+        });
       } finally {
         setConfigLoading(false);
       }
@@ -150,7 +170,11 @@ export default function PayrollSettingsPage() {
     setConfigSaving(true);
     try {
       await payrollConfigAPI.upsertConfig(selectedEmployee._id, config);
-      toast({ title: "Payroll settings saved", description: `Saved for ${selectedEmployee.firstName} ${selectedEmployee.lastName}`, variant: "success" });
+      toast({
+        title: "Payroll settings saved",
+        description: `Saved for ${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
+        variant: "success",
+      });
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {
@@ -163,7 +187,11 @@ export default function PayrollSettingsPage() {
     setRulesSaving(true);
     try {
       await payrollConfigAPI.upsertDeductionRules(rules);
-      toast({ title: "Deduction rules saved", description: "Global rules updated for all employees", variant: "success" });
+      toast({
+        title: "Deduction rules saved",
+        description: "Global rules updated for all employees",
+        variant: "success",
+      });
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {
@@ -297,7 +325,9 @@ export default function PayrollSettingsPage() {
                             {emp.employeeId}
                           </p>
                           {emp.designation && (
-                            <p className="text-xs text-gray-400">{emp.designation}</p>
+                            <p className="text-xs text-gray-400">
+                              {emp.designation}
+                            </p>
                           )}
                         </div>
                       </div>
@@ -336,11 +366,13 @@ export default function PayrollSettingsPage() {
                       </div>
                       <div>
                         <h2 className="font-black text-lg">
-                          {selectedEmployee.firstName} {selectedEmployee.lastName}
+                          {selectedEmployee.firstName}{" "}
+                          {selectedEmployee.lastName}
                         </h2>
                         <p className="text-sm font-mono text-gray-500">
                           {selectedEmployee.employeeId}
-                          {selectedEmployee.designation && ` · ${selectedEmployee.designation}`}
+                          {selectedEmployee.designation &&
+                            ` · ${selectedEmployee.designation}`}
                         </p>
                       </div>
                     </div>
@@ -350,7 +382,9 @@ export default function PayrollSettingsPage() {
                     <div className="flex items-center gap-2 mb-4 p-3 bg-yellow-50 border border-yellow-200">
                       <AlertCircle className="w-4 h-4 text-yellow-600 shrink-0" />
                       <p className="text-xs font-medium text-yellow-700">
-                        These settings override the default salary when processing payroll. Leave at 0 to use employee's base salary.
+                        These settings override the default salary when
+                        processing payroll. Leave at 0 to use employee's base
+                        salary.
                       </p>
                     </div>
 
@@ -377,7 +411,8 @@ export default function PayrollSettingsPage() {
                         </span>
                       </div>
                       <p className="text-xs text-blue-200 mt-1">
-                        PF, ESI, TDS & attendance deductions calculated at payroll processing time
+                        PF, ESI, TDS & attendance deductions calculated at
+                        payroll processing time
                       </p>
                     </div>
 
@@ -402,7 +437,7 @@ export default function PayrollSettingsPage() {
 
         {/* ── DEDUCTION RULES TAB ───────────────────────────────────────────── */}
         {tab === "deductions" && (
-          <div className="max-w-2xl">
+          <div>
             {rulesLoading ? (
               <div className="flex justify-center py-20">
                 <Loader2 className="w-6 h-6 animate-spin text-[#024BAB]" />
@@ -413,7 +448,9 @@ export default function PayrollSettingsPage() {
                   <div className="flex items-center gap-3">
                     <ShieldAlert className="w-6 h-6 text-[#024BAB]" />
                     <div>
-                      <h2 className="font-black text-lg">Global Deduction Rules</h2>
+                      <h2 className="font-black text-lg">
+                        Global Deduction Rules
+                      </h2>
                       <p className="text-sm text-gray-500 font-medium">
                         Applied to all employees during payroll processing
                       </p>
@@ -507,7 +544,9 @@ export default function PayrollSettingsPage() {
                           onChange={(e) =>
                             setRules((p) => ({
                               ...p,
-                              lateDeductionType: e.target.value as "fixed" | "percent",
+                              lateDeductionType: e.target.value as
+                                | "fixed"
+                                | "percent",
                             }))
                           }
                           className="w-full border-2 border-black px-3 py-2 text-sm bg-white focus:outline-none"
@@ -597,7 +636,9 @@ export default function PayrollSettingsPage() {
                           onChange={(e) =>
                             setRules((p) => ({
                               ...p,
-                              absentDeductionType: e.target.value as "fixed" | "percent",
+                              absentDeductionType: e.target.value as
+                                | "fixed"
+                                | "percent",
                             }))
                           }
                           className="w-full border-2 border-black px-3 py-2 text-sm bg-white focus:outline-none"

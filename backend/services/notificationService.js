@@ -196,7 +196,9 @@ async function sendSubscriptionConfirmationWhatsApp(opts) {
 async function sendPaymentConfirmations(opts) {
   await Promise.allSettled([
     sendSubscriptionConfirmationEmail(opts),
-    opts.toPhone ? sendSubscriptionConfirmationWhatsApp(opts) : Promise.resolve(),
+    opts.toPhone
+      ? sendSubscriptionConfirmationWhatsApp(opts)
+      : Promise.resolve(),
   ]);
 }
 

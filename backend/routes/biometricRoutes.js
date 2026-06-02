@@ -13,12 +13,14 @@ const {
   regenerateDeviceToken,
   assignNfcCard,
   removeNfcCard,
+  registerDevice,
   getDeviceInfo,
   recordBiometric,
   getLogs,
 } = require("../controllers/biometricController");
 
-// Public device endpoints (authenticated via device token in body)
+// Public device endpoints (no user auth — device token / activation code used instead)
+router.post("/register", registerDevice);
 router.get("/device/:token", getDeviceInfo);
 router.post("/record", recordBiometric);
 

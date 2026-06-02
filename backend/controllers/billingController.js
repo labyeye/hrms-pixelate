@@ -17,14 +17,17 @@ const getPlans = asyncHandler(async (req, res) => {
 const getSubscription = asyncHandler(async (req, res) => {
   const company = await Company.findOne({ createdBy: req.user._id });
   if (!company) {
-    return res.status(404).json({ success: false, message: "Company not found" });
+    return res
+      .status(404)
+      .json({ success: false, message: "Company not found" });
   }
-  const subscription = await Subscription.findOne({ company: company._id }).populate(
-    "company",
-    "name email",
-  );
+  const subscription = await Subscription.findOne({
+    company: company._id,
+  }).populate("company", "name email");
   if (!subscription) {
-    return res.status(404).json({ success: false, message: "No active subscription found" });
+    return res
+      .status(404)
+      .json({ success: false, message: "No active subscription found" });
   }
   res.json({ success: true, data: subscription });
 });
@@ -33,7 +36,9 @@ const getSubscription = asyncHandler(async (req, res) => {
 const getInvoices = asyncHandler(async (req, res) => {
   const company = await Company.findOne({ createdBy: req.user._id });
   if (!company) {
-    return res.status(404).json({ success: false, message: "Company not found" });
+    return res
+      .status(404)
+      .json({ success: false, message: "Company not found" });
   }
   const invoices = await Invoice.find({ company: company._id })
     .sort({ createdAt: -1 })
@@ -47,7 +52,9 @@ const createOrder = asyncHandler(async (req, res) => {
 
   if (!planId || !["starter", "professional", "enterprise"].includes(planId)) {
     res.status(400);
-    throw new Error("Invalid plan. Choose starter, professional, or enterprise");
+    throw new Error(
+      "Invalid plan. Choose starter, professional, or enterprise",
+    );
   }
   if (!["monthly", "yearly"].includes(billingCycle)) {
     res.status(400);
@@ -154,7 +161,10 @@ const verifyPayment = asyncHandler(async (req, res) => {
     throw new Error("Company not found");
   }
 
-  const plan = await Plan.findOne({ planType: subscription.plan, active: true });
+  const plan = await Plan.findOne({
+    planType: subscription.plan,
+    active: true,
+  });
   const amountPaid =
     subscription.billingCycle === "yearly"
       ? subscription.yearlyPrice
@@ -206,10 +216,9 @@ const verifyPayment = asyncHandler(async (req, res) => {
 
   // Send email + WhatsApp confirmation (non-blocking)
   const user = await User.findById(company.createdBy);
-  const dashboardUrl =
-    process.env.FRONTEND_URL
-      ? `${process.env.FRONTEND_URL}/`
-      : "https://hrms.pixelatenest.com/";
+  const dashboardUrl = process.env.FRONTEND_URL
+    ? `${process.env.FRONTEND_URL}/`
+    : "https://hrms.pixelatenest.com/";
 
   sendPaymentConfirmations({
     toEmail: user?.email || company.email,

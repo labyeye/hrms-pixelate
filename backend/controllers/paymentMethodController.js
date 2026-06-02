@@ -104,13 +104,11 @@ const addPaymentMethod = asyncHandler(async (req, res) => {
 
   const paymentMethod = await PaymentMethod.create(paymentMethodData);
 
-  res
-    .status(201)
-    .json({
-      success: true,
-      data: paymentMethod,
-      message: "Payment method added successfully",
-    });
+  res.status(201).json({
+    success: true,
+    data: paymentMethod,
+    message: "Payment method added successfully",
+  });
 });
 
 // Update payment method
@@ -183,12 +181,10 @@ const deletePaymentMethod = asyncHandler(async (req, res) => {
     isActive: true,
   });
   if (activeCount === 1 && paymentMethod.isActive) {
-    return res
-      .status(400)
-      .json({
-        success: false,
-        message: "Cannot delete the only active payment method",
-      });
+    return res.status(400).json({
+      success: false,
+      message: "Cannot delete the only active payment method",
+    });
   }
 
   await PaymentMethod.findByIdAndDelete(id);

@@ -8,13 +8,13 @@
 
 ## Executive Summary
 
-| Severity  | Count | Status |
-|-----------|-------|--------|
-| CRITICAL  | 8     | ❌ Not fixed |
-| HIGH      | 7     | ❌/⚠️ |
-| MEDIUM    | 7     | ⚠️ Partial |
-| LOW       | 4     | ⚠️ |
-| **Total** | **26**| |
+| Severity  | Count  | Status       |
+| --------- | ------ | ------------ |
+| CRITICAL  | 8      | ❌ Not fixed |
+| HIGH      | 7      | ❌/⚠️        |
+| MEDIUM    | 7      | ⚠️ Partial   |
+| LOW       | 4      | ⚠️           |
+| **Total** | **26** |              |
 
 Several critical vulnerabilities exist. The most dangerous are: a globally shared Settings document that stores plaintext Twilio credentials, missing role authorization on leave and settings endpoints, no audit logging, and no account lockout/2FA. These must be addressed before this system handles real employee or payroll data.
 
@@ -35,17 +35,19 @@ let setting = await Setting.findOne(); // ← No company filter at ALL
 ```
 
 ```js
-// settingController.js — updateSettings  
+// settingController.js — updateSettings
 setting = await Setting.findOneAndUpdate({}, req.body, { ... }); // ← Same
 ```
 
 The `Setting` model stores one document for the **entire database**, shared across every company. Any authenticated user can read/write the settings of every other company on the platform.
 
 The `Setting` model also stores:
+
 - `bankAccountNumber`, `bankIFSC`, `bankName`, `bankBranch`, `bankAccountName` — full bank credentials
 - `twilioAuthToken`, `twilioAccountSid` — **plaintext third-party API credentials**
 
 **What to do:**
+
 1. Add `company: { type: ObjectId, ref: "Company", required: true }` to Setting schema
 2. Scope all queries: `Setting.findOne({ company: req.user.company })`
 3. Store Twilio credentials encrypted or in environment variables, not in the database
@@ -62,13 +64,16 @@ The `Setting` model also stores:
 ```
 
 The User model defines role as `"super_admin"`, not `"admin"`. No user ever has role `"admin"`. The result:
+
 - A `super_admin` calling PUT `/api/settings` gets **403 Forbidden** — cannot manage their own settings
 - An `hr_manager` **can** update settings, including the bank account and Twilio auth token fields
 
 **What to do:**
+
 ```js
 .put(authorize("super_admin"), updateSettings);
 ```
+
 Also add a field whitelist in the controller to prevent mass-assignment.
 
 ---
@@ -86,6 +91,7 @@ export const setToken = (t: string) => localStorage.setItem("hrms_token", t);
 `localStorage` is readable by any JavaScript on the page. If a single XSS vector exists (e.g., an unsanitized employee name rendered as HTML), the attacker can exfiltrate the token.
 
 **What to do:**
+
 - Move to `httpOnly; Secure; SameSite=Strict` cookies set by the backend
 - Remove all `localStorage` token handling from the frontend
 - The backend sets/clears the cookie on login/logout
@@ -98,14 +104,16 @@ export const setToken = (t: string) => localStorage.setItem("hrms_token", t);
 **Risk:** Any employee can approve/reject/delete any other employee's leave
 
 ```js
-router.route("/:id")
-  .put(protect, updateLeaveStatus)   // ← No authorize()
-  .delete(protect, deleteLeave);     // ← No authorize()
+router
+  .route("/:id")
+  .put(protect, updateLeaveStatus) // ← No authorize()
+  .delete(protect, deleteLeave); // ← No authorize()
 ```
 
 Any authenticated user (even `role: "employee"`) can hit PUT `/api/leaves/:id` and approve their own leave request.
 
 **What to do:**
+
 ```js
 .put(protect, authorize("super_admin", "hr_manager", "department_head"), updateLeaveStatus)
 .delete(protect, authorize("super_admin", "hr_manager"), deleteLeave)
@@ -121,6 +129,7 @@ Any authenticated user (even `role: "employee"`) can hit PUT `/api/leaves/:id` a
 There is no `/auth/forgot-password` or `/auth/reset-password` endpoint. There is no token generation, email delivery, or self-service recovery flow.
 
 **What to do:**
+
 1. `POST /auth/forgot-password` — generate a signed, single-use token (expires in 15 min), send via email
 2. `POST /auth/reset-password/:token` — validate token, hash new password, invalidate token
 3. Store reset token hash (not plaintext) in User model with expiry
@@ -135,6 +144,7 @@ There is no `/auth/forgot-password` or `/auth/reset-password` endpoint. There is
 The login endpoint has only a per-IP rate limit (50 req / 15 min). An attacker can target one account from multiple IPs, or target many accounts from one IP within the limit.
 
 **What to do:**
+
 - Track `failedLoginAttempts` and `lockUntil` fields on the User model
 - After 5 consecutive failures: lock account for 15 minutes
 - Reset counter on successful login
@@ -153,8 +163,12 @@ employeePayrollConfigSchema.index({ employee: 1 }, { unique: true }); // ← No 
 If an employee ObjectId appears in two companies (possible if employee is transferred between companies, or via ID collision), only ONE payroll config can ever exist for that ObjectId — the upsert from Company B would silently overwrite Company A's config.
 
 **What to do:**
+
 ```js
-employeePayrollConfigSchema.index({ employee: 1, company: 1 }, { unique: true });
+employeePayrollConfigSchema.index(
+  { employee: 1, company: 1 },
+  { unique: true },
+);
 ```
 
 ---
@@ -165,6 +179,7 @@ employeePayrollConfigSchema.index({ employee: 1, company: 1 }, { unique: true })
 **Risk:** Zero forensics capability, compliance failure (GDPR, SOC2, labor law)
 
 No audit trail exists for:
+
 - Login/logout events and IP addresses
 - Role changes
 - Payroll processing and modifications
@@ -173,9 +188,21 @@ No audit trail exists for:
 - Subscription/payment events
 
 **What to do:** Create an `AuditLog` model:
+
 ```js
-{ userId, companyId, action, resource, resourceId, before, after, ipAddress, timestamp }
+{
+  (userId,
+    companyId,
+    action,
+    resource,
+    resourceId,
+    before,
+    after,
+    ipAddress,
+    timestamp);
+}
 ```
+
 Log all write operations on sensitive resources via middleware.
 
 ---
@@ -186,17 +213,18 @@ Log all write operations on sensitive resources via middleware.
 
 ### H-1 · Content Security Policy (CSP) Disabled With No Replacement
 
-**File:** `backend/server.js:15-16`  
+**File:** `backend/server.js:15-16`
 
 ```js
 helmet({
   contentSecurityPolicy: false, // "handled by frontend" — but it isn't
-})
+});
 ```
 
 No CSP is set on the frontend either. This leaves the app fully exposed to inline script injection. XSS payloads execute unrestricted.
 
 **Fix:** Define and enforce a strict CSP:
+
 ```js
 helmet({
   contentSecurityPolicy: {
@@ -208,14 +236,14 @@ helmet({
       connectSrc: ["'self'", "https://api.razorpay.com"],
     },
   },
-})
+});
 ```
 
 ---
 
 ### H-2 · API Rate Limit Is Excessively Permissive
 
-**File:** `backend/server.js:48`  
+**File:** `backend/server.js:48`
 
 ```js
 const apiRateLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 5000 });
@@ -229,7 +257,7 @@ const apiRateLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 5000 });
 
 ### H-3 · JWT Expires in 30 Days — Too Long
 
-**File:** `backend/utils/generateToken.js:4`  
+**File:** `backend/utils/generateToken.js:4`
 
 ```js
 jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "30d" });
@@ -243,7 +271,7 @@ A stolen token is valid for 30 days. Combined with localStorage storage (C-3), a
 
 ### H-4 · Settings Controller Accepts Unrestricted `req.body` (Mass Assignment)
 
-**File:** `backend/controllers/settingController.js:18-24`  
+**File:** `backend/controllers/settingController.js:18-24`
 
 ```js
 setting = await Setting.findOneAndUpdate({}, req.body, { new: true });
@@ -252,17 +280,36 @@ setting = await Setting.findOneAndUpdate({}, req.body, { new: true });
 `req.body` is passed directly. An attacker (or any `hr_manager`) can inject arbitrary fields, including `twilioAuthToken`, `bankAccountNumber`, or any other schema field.
 
 **Fix:**
+
 ```js
-const { companyName, companyGST, companyAddress, companyPhone, companyEmail, logoUrl } = req.body;
-const updates = { companyName, companyGST, companyAddress, companyPhone, companyEmail, logoUrl };
-setting = await Setting.findOneAndUpdate({ company: req.user.company }, updates, { new: true });
+const {
+  companyName,
+  companyGST,
+  companyAddress,
+  companyPhone,
+  companyEmail,
+  logoUrl,
+} = req.body;
+const updates = {
+  companyName,
+  companyGST,
+  companyAddress,
+  companyPhone,
+  companyEmail,
+  logoUrl,
+};
+setting = await Setting.findOneAndUpdate(
+  { company: req.user.company },
+  updates,
+  { new: true },
+);
 ```
 
 ---
 
 ### H-5 · No CSRF Protection
 
-**File:** Not implemented  
+**File:** Not implemented
 
 State-changing requests (POST, PUT, DELETE) are authenticated only by Bearer token. If the token is moved to a cookie (fix for C-3), CSRF becomes a direct risk without anti-CSRF tokens.
 
@@ -272,7 +319,7 @@ State-changing requests (POST, PUT, DELETE) are authenticated only by Bearer tok
 
 ### H-6 · Biometric Device Token Sent in URL Path
 
-**File:** `backend/routes/biometricRoutes.js`, `frontend/src/services/api.ts`  
+**File:** `backend/routes/biometricRoutes.js`, `frontend/src/services/api.ts`
 
 Device authentication tokens are embedded in the URL (e.g., `/device/:token`). URLs are logged in server logs, browser history, CDN/proxy access logs, and Referer headers — leaking the token.
 
@@ -282,7 +329,7 @@ Device authentication tokens are embedded in the URL (e.g., `/device/:token`). U
 
 ### H-7 · Settings Model Stores Twilio Credentials in Plaintext in Database
 
-**File:** `backend/models/Setting.js:55-60`  
+**File:** `backend/models/Setting.js:55-60`
 
 ```js
 twilioAccountSid: { type: String, default: "" },
@@ -301,7 +348,7 @@ Twilio auth tokens in the database are a direct credential compromise if MongoDB
 
 ### M-1 · AuthContext Silently Ignores Non-401 Errors on Session Restore
 
-**File:** `frontend/src/contexts/AuthContext.tsx:77-83`  
+**File:** `frontend/src/contexts/AuthContext.tsx:77-83`
 
 ```ts
 catch (err: any) {
@@ -317,6 +364,7 @@ catch (err: any) {
 A 500 server error during the `getMe` call causes the user to appear unauthenticated (bounced to `/login`) but their token is not cleared. On the next page load it tries again. This can leave stale/invalid tokens in storage indefinitely.
 
 **Fix:** Clear the token for any non-recoverable error:
+
 ```ts
 catch (err: any) {
   removeToken();
@@ -328,7 +376,7 @@ catch (err: any) {
 
 ### M-2 · No Email Verification on Registration
 
-**File:** `backend/controllers/authController.js` (register)  
+**File:** `backend/controllers/authController.js` (register)
 
 Users register with any email address without verification. Anyone can register with someone else's email and receive communication or use an unverified account.
 
@@ -338,7 +386,7 @@ Users register with any email address without verification. Anyone can register 
 
 ### M-3 · Avatar Stored as Raw Base64 in Database (Up to 2 MB)
 
-**File:** `backend/controllers/authController.js:190-197`  
+**File:** `backend/controllers/authController.js:190-197`
 
 ```js
 if (avatar && avatar.length > 2_000_000) { throw ... }
@@ -353,7 +401,7 @@ Storing 2 MB blobs in MongoDB balloons document size, degrades query performance
 
 ### M-4 · No Input Validation on Company Registration
 
-**File:** `backend/controllers/companyController.js`  
+**File:** `backend/controllers/companyController.js`
 
 `registerCompany` does not validate input fields (name length, email format, phone format, GST/PAN patterns) unlike `authController` which uses a validation schema. Malformed or excessively long data is accepted.
 
@@ -363,7 +411,7 @@ Storing 2 MB blobs in MongoDB balloons document size, degrades query performance
 
 ### M-5 · payrollController Allows Future Month Processing
 
-**File:** `backend/controllers/payrollController.js`  
+**File:** `backend/controllers/payrollController.js`
 
 The month/year validation permits any year from 2000–2100 and any valid month, including future months. Processing payroll for a future month with incomplete attendance data produces incorrect results.
 
@@ -373,7 +421,7 @@ The month/year validation permits any year from 2000–2100 and any valid month,
 
 ### M-6 · Error Handler Leaks Stack Traces in Development
 
-**File:** `backend/middleware/errorHandler.js`  
+**File:** `backend/middleware/errorHandler.js`
 
 ```js
 ...(process.env.NODE_ENV === "development" && { stack: err.stack }),
@@ -387,7 +435,7 @@ If `NODE_ENV` is accidentally not set in production, stack traces are exposed in
 
 ### M-7 · Subscription Trial Never Expires — Indefinite Free Use
 
-**File:** `backend/controllers/companyController.js` (createCompanyForUser)  
+**File:** `backend/controllers/companyController.js` (createCompanyForUser)
 
 When a company is created, a subscription with `status: "active"` is created without any expiry check mechanism. Companies on trial can use the full system indefinitely without paying.
 
@@ -401,9 +449,10 @@ When a company is created, a subscription with `status: "active"` is created wit
 
 ### L-1 · Missing HTTP Security Headers
 
-**File:** `backend/server.js`  
+**File:** `backend/server.js`
 
 Helmet is used but CSP is disabled (see H-1). Additionally, these headers should be explicitly configured:
+
 - `Referrer-Policy: strict-origin-when-cross-origin`
 - `Permissions-Policy: camera=(), microphone=(), geolocation=()`
 - `X-Frame-Options: DENY` (verify it's set by Helmet default)
@@ -412,7 +461,7 @@ Helmet is used but CSP is disabled (see H-1). Additionally, these headers should
 
 ### L-2 · Production Logging Uses Morgan "dev" Format
 
-**File:** `backend/server.js:35`  
+**File:** `backend/server.js:35`
 
 ```js
 app.use(morgan("dev"));
@@ -426,11 +475,12 @@ app.use(morgan("dev"));
 
 ### L-3 · JWT Secret Has No Minimum Entropy Validation
 
-**File:** `backend/middleware/auth.js`  
+**File:** `backend/middleware/auth.js`
 
 `process.env.JWT_SECRET` is used without validating its length or entropy. A weak secret (e.g., `"secret"` or `"123456"`) renders all JWTs forgeable.
 
 **Fix:** Add startup check:
+
 ```js
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
   throw new Error("JWT_SECRET must be at least 32 characters");
@@ -441,11 +491,12 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
 
 ### L-4 · MongoDB Connection String Not Validated at Startup
 
-**File:** `backend/config/db.js`  
+**File:** `backend/config/db.js`
 
 If `MONGO_URI` is missing, the app starts and then crashes with an obscure Mongoose error on the first request rather than failing fast at startup.
 
 **Fix:**
+
 ```js
 if (!process.env.MONGO_URI) process.exit(1); // before mongoose.connect()
 ```
@@ -456,18 +507,18 @@ if (!process.env.MONGO_URI) process.exit(1); // before mongoose.connect()
 
 These security controls are working and should be maintained:
 
-| Control | Location | Notes |
-|---------|----------|-------|
-| Razorpay signature verification | `billingController.js:152-167` | HMAC-SHA256 correctly validated |
-| Password hashing | `Company.js`, `User.js` | bcrypt with salt rounds |
-| Sensitive field stripping | `authController.js:125-136` | `.select("-password")` used consistently |
-| Mongoose `duplicate key` error masking | `errorHandler.js` | Field names not leaked to client |
-| Multi-tenant company scoping | Most controllers | `req.user.company` filter in all queries |
-| Input validation on auth routes | `authController.js` | validateBody schema with min/max |
-| Auth rate limiting | `server.js:39-46` | 50 req / 15 min on `/api/auth` |
-| Helmet base headers | `server.js:14-18` | HSTS, XSS protection enabled |
-| JWT token validation | `middleware/auth.js` | `JsonWebTokenError` caught and neutralized |
-| Payment method masking | `paymentMethodController.js` | Only last 4 digits stored |
+| Control                                | Location                       | Notes                                      |
+| -------------------------------------- | ------------------------------ | ------------------------------------------ |
+| Razorpay signature verification        | `billingController.js:152-167` | HMAC-SHA256 correctly validated            |
+| Password hashing                       | `Company.js`, `User.js`        | bcrypt with salt rounds                    |
+| Sensitive field stripping              | `authController.js:125-136`    | `.select("-password")` used consistently   |
+| Mongoose `duplicate key` error masking | `errorHandler.js`              | Field names not leaked to client           |
+| Multi-tenant company scoping           | Most controllers               | `req.user.company` filter in all queries   |
+| Input validation on auth routes        | `authController.js`            | validateBody schema with min/max           |
+| Auth rate limiting                     | `server.js:39-46`              | 50 req / 15 min on `/api/auth`             |
+| Helmet base headers                    | `server.js:14-18`              | HSTS, XSS protection enabled               |
+| JWT token validation                   | `middleware/auth.js`           | `JsonWebTokenError` caught and neutralized |
+| Payment method masking                 | `paymentMethodController.js`   | Only last 4 digits stored                  |
 
 ---
 
@@ -499,4 +550,4 @@ These security controls are working and should be maintained:
 
 ---
 
-*This report covers findings as of 2026-05-31. Re-audit recommended after remediation.*
+_This report covers findings as of 2026-05-31. Re-audit recommended after remediation._
