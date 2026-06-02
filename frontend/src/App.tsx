@@ -27,7 +27,7 @@ import PayrollSettingsPage from "./pages/PayrollSettingsPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import PaymentFailedPage from "./pages/PaymentFailedPage";
 import NotFound from "./pages/NotFound";
-
+import nesthrlogo from "../assets/nesthr.png";
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
 });
@@ -36,9 +36,7 @@ function LoadingScreen() {
   return (
     <div className="min-h-screen bg-[#F0F6FF] flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 bg-[#024BAB] border-2 border-black flex items-center justify-center nb-shadow animate-bounce">
-          <Users2 className="w-6 h-6 text-white" />
-        </div>
+        <img src={nesthrlogo} alt="NestHR" className="h-16 w-auto" />
         <p className="text-sm font-medium text-muted-foreground">
           Loading NestHR...
         </p>
