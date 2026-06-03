@@ -15,6 +15,10 @@ import {
   PieChart,
   Pie,
   Cell,
+  LineChart,
+  Line,
+  Area,
+  AreaChart,
 } from "recharts";
 import {
   Users,
@@ -25,10 +29,13 @@ import {
   Building2,
   ArrowUpRight,
   TrendingUp,
-  Users2,
   CheckCircle2,
   AlertTriangle,
   ChevronRight,
+  Bell,
+  UserCheck,
+  UserX,
+  Coffee,
 } from "lucide-react";
 import nesthrlogo from "../../assets/nesthr.png";
 function KpiCard({
@@ -133,7 +140,85 @@ export default function DashboardPage() {
     );
   }
 
-  const { stats, recentHires, pendingLeaveList, deptHeadcounts } = data;
+  const {
+    stats,
+    recentHires,
+    pendingLeaveList,
+    deptHeadcounts,
+    attTrend = [],
+    payTrend = [],
+  } = data;
+
+  const MONTH_LABELS = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+
+  const attChartData = attTrend.map((t: any) => ({
+    label: MONTH_LABELS[t.month - 1],
+    count: t.count,
+  }));
+
+  const payChartData = payTrend.map((t: any) => ({
+    label: MONTH_LABELS[t.month - 1],
+    total: Math.round(t.total / 1000),
+  }));
+
+  const todayDonut = [
+    { name: "Present", value: stats.todayPresent || 0, color: "#00C48C" },
+    { name: "Late", value: stats.todayLate || 0, color: "#FA731C" },
+    { name: "Absent", value: stats.todayAbsent || 0, color: "#EF4444" },
+    { name: "On Leave", value: stats.todayOnLeave || 0, color: "#024BAB" },
+  ].filter((d) => d.value > 0);
+
+  const sysNotifications = [
+    ...(stats.pendingLeaves > 0
+      ? [
+          {
+            icon: CalendarDays,
+            color: "#FA731C",
+            msg: `${stats.pendingLeaves} leave request${stats.pendingLeaves > 1 ? "s" : ""} pending approval`,
+            time: "Now",
+          },
+        ]
+      : []),
+    ...(stats.newHires > 0
+      ? [
+          {
+            icon: Users,
+            color: "#00C48C",
+            msg: `${stats.newHires} new hire${stats.newHires > 1 ? "s" : ""} joined this month`,
+            time: "This month",
+          },
+        ]
+      : []),
+    ...(stats.openPositions > 0
+      ? [
+          {
+            icon: Briefcase,
+            color: "#024BAB",
+            msg: `${stats.openPositions} open position${stats.openPositions > 1 ? "s" : ""} need attention`,
+            time: "Active",
+          },
+        ]
+      : []),
+    {
+      icon: CheckCircle2,
+      color: "#00C48C",
+      msg: `Attendance rate: ${stats.attendanceRate}% today`,
+      time: "Today",
+    },
+  ];
 
   const greetingHour = new Date().getHours();
   const greeting =
@@ -254,10 +339,213 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Charts row */}
+      {/* Today's attendance breakdown + trend charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+        {/* Today's Attendance Donut */}
+        <div className="nb-card bg-white p-5">
+          <h3 className="font-display font-bold text-base text-black mb-1">
+            Today's Attendance
+          </h3>
+          <p className="text-xs text-muted-foreground mb-3">Live breakdown</p>
+          {todayDonut.length > 0 ? (
+            <div className="flex items-center gap-4">
+              <ResponsiveContainer width={110} height={110}>
+                <PieChart>
+                  <Pie
+                    data={todayDonut}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={32}
+                    outerRadius={50}
+                    paddingAngle={3}
+                    dataKey="value"
+                    stroke="#0A0A0A"
+                    strokeWidth={2}
+                  >
+                    {todayDonut.map((d, i) => (
+                      <Cell key={i} fill={d.color} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="space-y-1.5 flex-1">
+                {[
+                  {
+                    label: "Present",
+                    value: stats.todayPresent || 0,
+                    icon: UserCheck,
+                    color: "#00C48C",
+                  },
+                  {
+                    label: "Late",
+                    value: stats.todayLate || 0,
+                    icon: Clock,
+                    color: "#FA731C",
+                  },
+                  {
+                    label: "Absent",
+                    value: stats.todayAbsent || 0,
+                    icon: UserX,
+                    color: "#EF4444",
+                  },
+                  {
+                    label: "On Leave",
+                    value: stats.todayOnLeave || 0,
+                    icon: Coffee,
+                    color: "#024BAB",
+                  },
+                ].map(({ label, value, icon: Icon, color }) => (
+                  <div
+                    key={label}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className="w-2 h-2 border border-black"
+                        style={{ background: color }}
+                      />
+                      <span className="text-xs font-bold text-black">
+                        {label}
+                      </span>
+                    </div>
+                    <span className="text-xs font-black text-black">
+                      {value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-28 text-muted-foreground">
+              <Clock className="w-8 h-8 mb-2 opacity-30" />
+              <p className="text-xs font-bold">No attendance data today</p>
+            </div>
+          )}
+        </div>
+
+        {/* 6-month Attendance Trend */}
+        <div className="nb-card bg-white p-5">
+          <h3 className="font-display font-bold text-base text-black mb-1">
+            Attendance Trend
+          </h3>
+          <p className="text-xs text-muted-foreground mb-3">
+            Present days — last 6 months
+          </p>
+          {attChartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={120}>
+              <AreaChart
+                data={attChartData}
+                margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="attGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#024BAB" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#024BAB" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="#E5E7EB"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 10, fontWeight: 700 }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 10 }}
+                  tickLine={false}
+                  axisLine={false}
+                  width={24}
+                />
+                <Tooltip
+                  content={<NbTooltip />}
+                  cursor={{ fill: "#024BAB11" }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="count"
+                  name="Present"
+                  stroke="#024BAB"
+                  strokeWidth={2}
+                  fill="url(#attGrad)"
+                  dot={{ fill: "#024BAB", strokeWidth: 2, r: 3 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-28 text-muted-foreground text-xs font-bold">
+              No trend data yet
+            </div>
+          )}
+        </div>
+
+        {/* 6-month Payroll Trend */}
+        <div className="nb-card bg-white p-5">
+          <h3 className="font-display font-bold text-base text-black mb-1">
+            Payroll Trend
+          </h3>
+          <p className="text-xs text-muted-foreground mb-3">
+            Net payout (₹K) — last 6 months
+          </p>
+          {payChartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={120}>
+              <AreaChart
+                data={payChartData}
+                margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="payGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#00C48C" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#00C48C" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="#E5E7EB"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 10, fontWeight: 700 }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 10 }}
+                  tickLine={false}
+                  axisLine={false}
+                  width={24}
+                />
+                <Tooltip
+                  content={<NbTooltip />}
+                  cursor={{ fill: "#00C48C11" }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="total"
+                  name="₹K"
+                  stroke="#00C48C"
+                  strokeWidth={2}
+                  fill="url(#payGrad)"
+                  dot={{ fill: "#00C48C", strokeWidth: 2, r: 3 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-28 text-muted-foreground text-xs font-bold">
+              No trend data yet
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Dept chart + Notifications row */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-4">
         {/* Department headcount */}
-        <div className="lg:col-span-2 nb-card bg-white p-5">
+        <div className="lg:col-span-3 nb-card bg-white p-5">
           <h3 className="font-display font-bold text-base text-black mb-1">
             Headcount by Dept
           </h3>
@@ -266,17 +554,32 @@ export default function DashboardPage() {
           </p>
           {deptHeadcounts?.length > 0 ? (
             <>
-              <ResponsiveContainer width="100%" height={180}>
-                <PieChart>
-                  <Pie
-                    data={deptHeadcounts}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={40}
-                    outerRadius={65}
-                    paddingAngle={4}
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={deptHeadcounts} barCategoryGap="35%">
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="#E5E7EB"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 10, fontWeight: 700 }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 10 }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={24}
+                  />
+                  <Tooltip
+                    content={<NbTooltip />}
+                    cursor={{ fill: "#024BAB11" }}
+                  />
+                  <Bar
                     dataKey="count"
-                    nameKey="name"
+                    name="Employees"
                     stroke="#0A0A0A"
                     strokeWidth={2}
                   >
@@ -286,9 +589,8 @@ export default function DashboardPage() {
                         fill={DEPT_COLORS[i % DEPT_COLORS.length]}
                       />
                     ))}
-                  </Pie>
-                  <Tooltip formatter={(v: number, n: string) => [v, n]} />
-                </PieChart>
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
               <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
                 {deptHeadcounts.map((d: any, i: number) => (
@@ -314,62 +616,46 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Attendance chart placeholder */}
-        <div className="lg:col-span-3 nb-card bg-white p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-display font-bold text-base text-black">
-                Attendance Overview
-              </h3>
-              <p className="text-xs text-muted-foreground">Weekly breakdown</p>
-            </div>
+        {/* Notifications panel */}
+        <div className="lg:col-span-2 nb-card bg-white p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Bell className="w-4 h-4 text-black" />
+            <h3 className="font-display font-bold text-base text-black">
+              Notifications
+            </h3>
           </div>
-          <ResponsiveContainer width="100%" height={210}>
-            <BarChart
-              data={[
-                { day: "Mon", present: stats.todayPresent || 0, absent: 5 },
-                { day: "Tue", present: stats.todayPresent || 0, absent: 3 },
-                { day: "Wed", present: stats.todayPresent || 0, absent: 4 },
-                { day: "Thu", present: stats.todayPresent || 0, absent: 2 },
-                { day: "Fri", present: stats.todayPresent || 0, absent: 6 },
-              ]}
-              barGap={4}
-              barCategoryGap="30%"
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="#E5E7EB"
-                vertical={false}
-              />
-              <XAxis
-                dataKey="day"
-                tick={{ fontSize: 11, fontWeight: 700 }}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 11, fontWeight: 700 }}
-                tickLine={false}
-                axisLine={false}
-                width={28}
-              />
-              <Tooltip content={<NbTooltip />} cursor={{ fill: "#024BAB22" }} />
-              <Bar
-                dataKey="present"
-                name="Present"
-                fill="#024BAB"
-                stroke="#0A0A0A"
-                strokeWidth={2}
-              />
-              <Bar
-                dataKey="absent"
-                name="Absent"
-                fill="#FA731C"
-                stroke="#0A0A0A"
-                strokeWidth={2}
-              />
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="space-y-3">
+            {sysNotifications.map((n, i) => {
+              const Icon = n.icon;
+              return (
+                <div
+                  key={i}
+                  className="flex items-start gap-3 border-b border-black/5 pb-3 last:border-0 last:pb-0"
+                >
+                  <div
+                    className="w-7 h-7 border-2 border-black flex items-center justify-center shrink-0"
+                    style={{ background: n.color }}
+                  >
+                    <Icon className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-black leading-snug">
+                      {n.msg}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {n.time}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+            {sysNotifications.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-24 text-muted-foreground">
+                <CheckCircle2 className="w-6 h-6 mb-1.5 opacity-30" />
+                <p className="text-xs font-bold">All caught up!</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

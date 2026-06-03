@@ -171,6 +171,12 @@ const allGroups: NavGroup[] = [
         roles: ["super_admin", "hr_manager", "hr_executive"],
       },
       {
+        title: "Manage",
+        href: "/manage",
+        icon: SlidersHorizontal,
+        roles: ["super_admin", "hr_manager"],
+      },
+      {
         title: "Billing",
         href: "/billing",
         icon: CreditCard,

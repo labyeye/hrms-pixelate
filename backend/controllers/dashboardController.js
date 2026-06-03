@@ -90,6 +90,55 @@ const getStats = asyncHandler(async (req, res) => {
       { $limit: 6 },
     ]).catch(() => []);
 
+    // Attendance trend: last 6 months present count
+    const attTrend = await Promise.all(
+      Array.from({ length: 6 }, (_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+        const start = new Date(d.getFullYear(), d.getMonth(), 1);
+        const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+        return Attendance.countDocuments({
+          date: { $gte: start, $lte: end },
+          status: { $in: ["present", "late"] },
+        }).then((count) => ({
+          month: d.getMonth() + 1,
+          year: d.getFullYear(),
+          count,
+        }));
+      }),
+    );
+
+    // Payroll trend: last 6 months net salary totals
+    const payTrend = await Promise.all(
+      Array.from({ length: 6 }, (_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+        return Payroll.aggregate([
+          {
+            $match: {
+              company: req.user.company,
+              month: d.getMonth() + 1,
+              year: d.getFullYear(),
+            },
+          },
+          { $group: { _id: null, total: { $sum: "$netSalary" } } },
+        ]).then((r) => ({
+          month: d.getMonth() + 1,
+          year: d.getFullYear(),
+          total: r[0]?.total || 0,
+        }));
+      }),
+    );
+
+    // Today's attendance breakdown
+    const [todayLate, todayAbsent, todayOnLeave] = await Promise.all([
+      Attendance.countDocuments({ date: today, status: "late" }).catch(() => 0),
+      Attendance.countDocuments({ date: today, status: "absent" }).catch(
+        () => 0,
+      ),
+      Attendance.countDocuments({ date: today, status: "on_leave" }).catch(
+        () => 0,
+      ),
+    ]);
+
     res.json({
       success: true,
       data: {
@@ -99,6 +148,9 @@ const getStats = asyncHandler(async (req, res) => {
           newHires,
           pendingLeaves,
           todayPresent,
+          todayLate,
+          todayAbsent,
+          todayOnLeave,
           attendanceRate,
           openPositions,
           departments,
@@ -107,6 +159,8 @@ const getStats = asyncHandler(async (req, res) => {
         recentHires,
         pendingLeaveList,
         deptHeadcounts,
+        attTrend,
+        payTrend,
       },
     });
   } catch (error) {

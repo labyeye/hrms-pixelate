@@ -91,6 +91,11 @@ export const payrollAPI = {
   update: (id: string, body: object) =>
     request(`/payroll/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   markPaid: (id: string) => request(`/payroll/${id}/paid`, { method: "PUT" }),
+  bulkMarkPaid: (month: number, year: number) =>
+    request("/payroll/bulk-paid", {
+      method: "POST",
+      body: JSON.stringify({ month, year }),
+    }),
 };
 
 export const recruitmentAPI = {
@@ -300,4 +305,70 @@ export const companyAPI = {
       method: "PUT",
       body: JSON.stringify(body),
     }),
+};
+
+export const loanAPI = {
+  getAll: (params?: Record<string, string>) => {
+    const q = params ? "?" + new URLSearchParams(params).toString() : "";
+    return request(`/loans${q}`);
+  },
+  create: (body: object) =>
+    request("/loans", { method: "POST", body: JSON.stringify(body) }),
+  update: (id: string, body: object) =>
+    request(`/loans/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  delete: (id: string) => request(`/loans/${id}`, { method: "DELETE" }),
+};
+
+export const branchAPI = {
+  getAll: () => request("/branches"),
+  create: (body: object) =>
+    request("/branches", { method: "POST", body: JSON.stringify(body) }),
+  update: (id: string, body: object) =>
+    request(`/branches/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  delete: (id: string) => request(`/branches/${id}`, { method: "DELETE" }),
+};
+
+export const shiftAPI = {
+  getAll: () => request("/shifts"),
+  create: (body: object) =>
+    request("/shifts", { method: "POST", body: JSON.stringify(body) }),
+  update: (id: string, body: object) =>
+    request(`/shifts/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  delete: (id: string) => request(`/shifts/${id}`, { method: "DELETE" }),
+};
+
+export const salaryHeadAPI = {
+  getAll: () => request("/salary-heads"),
+  create: (body: object) =>
+    request("/salary-heads", { method: "POST", body: JSON.stringify(body) }),
+  update: (id: string, body: object) =>
+    request(`/salary-heads/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  delete: (id: string) => request(`/salary-heads/${id}`, { method: "DELETE" }),
+};
+
+export const designationAPI = {
+  getAll: () => request("/designations"),
+  create: (body: object) =>
+    request("/designations", { method: "POST", body: JSON.stringify(body) }),
+  update: (id: string, body: object) =>
+    request(`/designations/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  delete: (id: string) => request(`/designations/${id}`, { method: "DELETE" }),
+};
+
+export const offerLetterAPI = {
+  getAll: () => request("/offer-letters"),
+  create: (body: object) =>
+    request("/offer-letters", { method: "POST", body: JSON.stringify(body) }),
+  update: (id: string, body: object) =>
+    request(`/offer-letters/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  delete: (id: string) => request(`/offer-letters/${id}`, { method: "DELETE" }),
 };

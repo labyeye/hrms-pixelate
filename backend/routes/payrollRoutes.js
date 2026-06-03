@@ -4,6 +4,7 @@ const {
   processPayroll,
   updatePayroll,
   markPaid,
+  bulkMarkPaid,
 } = require("../controllers/payrollController");
 const { protect, authorize } = require("../middleware/auth");
 const router = express.Router();
@@ -31,6 +32,12 @@ router.put(
   protect,
   authorize("super_admin", "hr_manager"),
   markPaid,
+);
+router.post(
+  "/bulk-paid",
+  protect,
+  authorize("super_admin", "hr_manager"),
+  bulkMarkPaid,
 );
 
 module.exports = router;

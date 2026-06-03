@@ -235,4 +235,24 @@ const markPaid = asyncHandler(async (req, res) => {
   res.json({ success: true, data: payroll });
 });
 
-module.exports = { getPayrolls, processPayroll, updatePayroll, markPaid };
+const bulkMarkPaid = asyncHandler(async (req, res) => {
+  const { month, year } = req.body;
+  const m = parseInt(month),
+    y = parseInt(year);
+  const result = await Payroll.updateMany(
+    { company: req.user.company, month: m, year: y, status: "processed" },
+    { $set: { status: "paid", paidAt: new Date() } },
+  );
+  res.json({
+    success: true,
+    message: `${result.modifiedCount} payrolls marked as paid`,
+  });
+});
+
+module.exports = {
+  getPayrolls,
+  processPayroll,
+  updatePayroll,
+  markPaid,
+  bulkMarkPaid,
+};

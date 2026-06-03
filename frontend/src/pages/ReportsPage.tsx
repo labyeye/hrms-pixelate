@@ -1,5 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import * as XLSX from "xlsx";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 import {
   employeeAPI,
   attendanceAPI,
@@ -322,6 +335,13 @@ function exportCSV(rows: string[][], filename: string) {
   URL.revokeObjectURL(a.href);
 }
 
+function exportXLSX(rows: string[][], filename: string) {
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Report");
+  XLSX.writeFile(wb, filename.replace(".csv", ".xlsx"));
+}
+
 function printSection(id: string, title: string) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -542,7 +562,18 @@ function PayReportGen({ departments }: { departments: any[] }) {
             }
             className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
           >
-            <Download className="w-4 h-4" /> Export CSV
+            <Download className="w-4 h-4" /> CSV
+          </button>
+          <button
+            onClick={() =>
+              exportXLSX(
+                [headers, ...rows],
+                `pay_report_${MONTHS[+month - 1]}_${year}.xlsx`,
+              )
+            }
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#00C48C] text-white nb-shadow"
+          >
+            <Download className="w-4 h-4" /> Excel
           </button>
         </div>
       </div>
@@ -2228,11 +2259,558 @@ const CATEGORY_META: Record<
   employee: { label: "Employee", color: "#FA731C", count: 0 },
 };
 
+const CHART_COLORS = [
+  "#024BAB",
+  "#FA731C",
+  "#00C48C",
+  "#A855F7",
+  "#EF4444",
+  "#FFD60A",
+];
+
+function AnalyticsTab({ departments }: { departments: any[] }) {
+  const now = new Date();
+  const [attTab, setAttTab] = useState("headcount");
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [payrolls, setPayrolls] = useState<any[]>([]);
+  const [attendance, setAttendance] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      employeeAPI.getAll({ limit: "500", status: "active" }),
+      payrollAPI.getAll({
+        month: String(now.getMonth() + 1),
+        year: String(now.getFullYear()),
+        limit: "500",
+      }),
+      attendanceAPI.getAll({
+        month: String(now.getMonth() + 1),
+        year: String(now.getFullYear()),
+        limit: "500",
+      }),
+    ])
+      .then(([e, p, a]) => {
+        if (e.success) setEmployees(e.data);
+        if (p.success) setPayrolls(p.data);
+        if (a.success) setAttendance(a.data);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const deptData = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        name: string;
+        count: number;
+        male: number;
+        female: number;
+        salary: number;
+      }
+    >();
+    employees.forEach((e) => {
+      const name = e.department?.name || "No Dept";
+      if (!map.has(name))
+        map.set(name, { name, count: 0, male: 0, female: 0, salary: 0 });
+      const d = map.get(name)!;
+      d.count++;
+      d.salary += e.salary || 0;
+      if (e.gender === "male") d.male++;
+      else if (e.gender === "female") d.female++;
+    });
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  }, [employees]);
+
+  const attSummary = useMemo(
+    () => ({
+      present: attendance.filter((a) => a.status === "present").length,
+      late: attendance.filter((a) => a.status === "late").length,
+      absent: attendance.filter((a) => a.status === "absent").length,
+      leave: attendance.filter((a) => a.status === "on_leave").length,
+    }),
+    [attendance],
+  );
+
+  const payrollSummary = useMemo(
+    () => ({
+      gross: payrolls.reduce((s, p) => s + (p.grossSalary || 0), 0),
+      net: payrolls.reduce((s, p) => s + (p.netSalary || 0), 0),
+      ded: payrolls.reduce((s, p) => s + (p.totalDeductions || 0), 0),
+      pf: payrolls.reduce((s, p) => s + (p.pf || 0), 0),
+      esi: payrolls.reduce((s, p) => s + (p.esi || 0), 0),
+      tds: payrolls.reduce((s, p) => s + (p.tds || 0), 0),
+    }),
+    [payrolls],
+  );
+
+  const TABS = [
+    { id: "headcount", label: "Headcount" },
+    { id: "attendance", label: "Attendance" },
+    { id: "salary", label: "Salary" },
+    { id: "compliance", label: "PF / ESI" },
+  ];
+
+  if (loading)
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="w-6 h-6 animate-spin text-[#024BAB]" />
+      </div>
+    );
+
+  return (
+    <div className="space-y-5">
+      {/* Sub-tabs */}
+      <div className="flex gap-0 border-2 border-black nb-shadow w-fit">
+        {TABS.map(({ id, label }) => (
+          <button
+            key={id}
+            onClick={() => setAttTab(id)}
+            className={cn(
+              "px-4 py-2 text-sm font-black border-r-2 border-black last:border-r-0 transition-all",
+              attTab === id
+                ? "bg-[#024BAB] text-white"
+                : "bg-white text-black hover:bg-gray-50",
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {attTab === "headcount" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              {
+                label: "Total Active",
+                value: employees.length,
+                color: "#024BAB",
+              },
+              {
+                label: "Male",
+                value: employees.filter((e) => e.gender === "male").length,
+                color: "#00C48C",
+              },
+              {
+                label: "Female",
+                value: employees.filter((e) => e.gender === "female").length,
+                color: "#FA731C",
+              },
+              {
+                label: "Departments",
+                value: deptData.length,
+                color: "#A855F7",
+              },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="nb-card bg-white p-4">
+                <p className="text-2xl font-black" style={{ color }}>
+                  {value}
+                </p>
+                <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mt-0.5">
+                  {label}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="nb-card bg-white p-5">
+              <h3 className="font-black text-sm text-black mb-3">
+                Dept Headcount
+              </h3>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={deptData} barCategoryGap="35%">
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="#E5E7EB"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 10, fontWeight: 700 }}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 10 }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={24}
+                  />
+                  <Tooltip />
+                  <Bar
+                    dataKey="count"
+                    name="Employees"
+                    stroke="#0A0A0A"
+                    strokeWidth={1}
+                  >
+                    {deptData.map((_, i) => (
+                      <Cell
+                        key={i}
+                        fill={CHART_COLORS[i % CHART_COLORS.length]}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="nb-card bg-white p-5">
+              <h3 className="font-black text-sm text-black mb-3">
+                Dept Breakdown Table
+              </h3>
+              <div className="overflow-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b-2 border-black">
+                      {["Dept", "Total", "Male", "Female", "Avg Salary"].map(
+                        (h) => (
+                          <th
+                            key={h}
+                            className="px-3 py-2 text-left font-black uppercase tracking-wider text-muted-foreground"
+                          >
+                            {h}
+                          </th>
+                        ),
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {deptData.map((d, i) => (
+                      <tr
+                        key={d.name}
+                        className={cn(
+                          "border-b border-black/10",
+                          i % 2 !== 0 && "bg-[#F8FAFF]",
+                        )}
+                      >
+                        <td className="px-3 py-2 font-bold text-black">
+                          {d.name}
+                        </td>
+                        <td className="px-3 py-2">{d.count}</td>
+                        <td className="px-3 py-2">{d.male}</td>
+                        <td className="px-3 py-2">{d.female}</td>
+                        <td className="px-3 py-2">
+                          {d.count > 0
+                            ? formatCurrency(Math.round(d.salary / d.count))
+                            : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {attTab === "attendance" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { label: "Present", value: attSummary.present, color: "#00C48C" },
+              { label: "Late", value: attSummary.late, color: "#FA731C" },
+              { label: "Absent", value: attSummary.absent, color: "#EF4444" },
+              { label: "On Leave", value: attSummary.leave, color: "#024BAB" },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="nb-card bg-white p-4">
+                <p className="text-2xl font-black" style={{ color }}>
+                  {value}
+                </p>
+                <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mt-0.5">
+                  {label}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="nb-card bg-white p-5">
+            <h3 className="font-black text-sm text-black mb-3">
+              Attendance Distribution
+            </h3>
+            <div className="flex items-center gap-6">
+              <ResponsiveContainer width={160} height={160}>
+                <PieChart>
+                  <Pie
+                    data={[
+                      {
+                        name: "Present",
+                        value: attSummary.present,
+                        color: "#00C48C",
+                      },
+                      {
+                        name: "Late",
+                        value: attSummary.late,
+                        color: "#FA731C",
+                      },
+                      {
+                        name: "Absent",
+                        value: attSummary.absent,
+                        color: "#EF4444",
+                      },
+                      {
+                        name: "On Leave",
+                        value: attSummary.leave,
+                        color: "#024BAB",
+                      },
+                    ].filter((d) => d.value > 0)}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={45}
+                    outerRadius={70}
+                    paddingAngle={3}
+                    dataKey="value"
+                    stroke="#0A0A0A"
+                    strokeWidth={2}
+                  >
+                    {[
+                      attSummary.present,
+                      attSummary.late,
+                      attSummary.absent,
+                      attSummary.leave,
+                    ].map((_, i) => (
+                      <Cell
+                        key={i}
+                        fill={["#00C48C", "#FA731C", "#EF4444", "#024BAB"][i]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="space-y-2">
+                {[
+                  {
+                    label: "Present",
+                    value: attSummary.present,
+                    color: "#00C48C",
+                  },
+                  { label: "Late", value: attSummary.late, color: "#FA731C" },
+                  {
+                    label: "Absent",
+                    value: attSummary.absent,
+                    color: "#EF4444",
+                  },
+                  {
+                    label: "On Leave",
+                    value: attSummary.leave,
+                    color: "#024BAB",
+                  },
+                ].map(({ label, value, color }) => (
+                  <div
+                    key={label}
+                    className="flex items-center justify-between gap-6"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="w-2.5 h-2.5 border border-black"
+                        style={{ background: color }}
+                      />
+                      <span className="text-xs font-bold text-black">
+                        {label}
+                      </span>
+                    </div>
+                    <span className="text-xs font-black text-black">
+                      {value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {attTab === "salary" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {[
+              {
+                label: "Total Gross",
+                value: formatCurrency(payrollSummary.gross),
+                color: "#024BAB",
+              },
+              {
+                label: "Total Net",
+                value: formatCurrency(payrollSummary.net),
+                color: "#00C48C",
+              },
+              {
+                label: "Total Deductions",
+                value: formatCurrency(payrollSummary.ded),
+                color: "#EF4444",
+              },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="nb-card bg-white p-4">
+                <p className="text-xl font-black" style={{ color }}>
+                  {value}
+                </p>
+                <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mt-0.5">
+                  {label}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="nb-card bg-white p-5">
+            <h3 className="font-black text-sm text-black mb-3">
+              Dept-wise Payroll
+            </h3>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart
+                data={deptData.map((d) => ({ name: d.name, salary: d.salary }))}
+                barCategoryGap="35%"
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="#E5E7EB"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 10, fontWeight: 700 }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 10 }}
+                  tickLine={false}
+                  axisLine={false}
+                  width={50}
+                  tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`}
+                />
+                <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                <Bar
+                  dataKey="salary"
+                  name="Total Salary"
+                  fill="#024BAB"
+                  stroke="#0A0A0A"
+                  strokeWidth={1}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+
+      {attTab === "compliance" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {[
+              {
+                label: "PF Contribution",
+                value: formatCurrency(payrollSummary.pf * 2),
+                color: "#024BAB",
+                sub: "Employee + Employer",
+              },
+              {
+                label: "ESI Contribution",
+                value: formatCurrency(payrollSummary.esi),
+                color: "#00C48C",
+                sub: "Employee share",
+              },
+              {
+                label: "TDS Collected",
+                value: formatCurrency(payrollSummary.tds),
+                color: "#FA731C",
+                sub: "This month",
+              },
+            ].map(({ label, value, color, sub }) => (
+              <div key={label} className="nb-card bg-white p-4">
+                <p className="text-xl font-black" style={{ color }}>
+                  {value}
+                </p>
+                <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mt-0.5">
+                  {label}
+                </p>
+                <p className="text-[10px] text-muted-foreground">{sub}</p>
+              </div>
+            ))}
+          </div>
+          {payrolls.length > 0 ? (
+            <div className="nb-card bg-white overflow-hidden">
+              <div className="overflow-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b-2 border-black bg-[#024BAB]/5">
+                      {[
+                        "Employee",
+                        "Gross",
+                        "PF (Emp)",
+                        "PF (Employer)",
+                        "ESI",
+                        "TDS",
+                        "Status",
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          className="px-4 py-3 text-left font-black uppercase tracking-wider"
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payrolls.map((p, i) => (
+                      <tr
+                        key={p._id}
+                        className={cn(
+                          "border-b border-black/10",
+                          i % 2 !== 0 && "bg-[#F8FAFF]",
+                        )}
+                      >
+                        <td className="px-4 py-2.5 font-bold text-black">
+                          {p.employee
+                            ? `${p.employee.firstName} ${p.employee.lastName}`
+                            : "—"}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          {formatCurrency(p.grossSalary || 0)}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          {formatCurrency(p.pf || 0)}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          {formatCurrency(p.pf || 0)}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          {formatCurrency(p.esi || 0)}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          {formatCurrency(p.tds || 0)}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <span
+                            className={cn(
+                              "nb-badge text-[10px]",
+                              p.status === "paid"
+                                ? "bg-[#00C48C] text-white border-black"
+                                : "bg-[#FA731C] text-white border-black",
+                            )}
+                          >
+                            {p.status?.toUpperCase()}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <EmptyState msg="No payroll data for this month" />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ReportsPage() {
   const [departments, setDepartments] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState<Category | "all">("all");
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [pageMode, setPageMode] = useState<"catalog" | "analytics">("catalog");
 
   useEffect(() => {
     departmentAPI
@@ -2271,188 +2849,228 @@ export default function ReportsPage() {
   return (
     <AppLayout title="Reports">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-display font-bold text-black">Reports</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Generate, filter, and export HR reports
-        </p>
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-3xl font-display font-bold text-black">
+            Reports
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Generate, filter, and export HR reports
+          </p>
+        </div>
+        <div className="flex gap-0 border-2 border-black nb-shadow shrink-0">
+          <button
+            onClick={() => setPageMode("catalog")}
+            className={cn(
+              "px-4 py-2 text-sm font-black border-r-2 border-black transition-all",
+              pageMode === "catalog"
+                ? "bg-black text-white"
+                : "bg-white text-black hover:bg-gray-50",
+            )}
+          >
+            All Reports
+          </button>
+          <button
+            onClick={() => setPageMode("analytics")}
+            className={cn(
+              "px-4 py-2 text-sm font-black transition-all",
+              pageMode === "analytics"
+                ? "bg-black text-white"
+                : "bg-white text-black hover:bg-gray-50",
+            )}
+          >
+            Analytics
+          </button>
+        </div>
       </div>
 
-      {/* Active Report Viewer */}
-      {activeId && activeReport && ActiveComponent && (
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <button
-              onClick={() => setActiveId(null)}
-              className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white nb-shadow hover:bg-gray-50"
-            >
-              <ArrowLeft className="w-4 h-4" /> All Reports
-            </button>
-            <div className="flex items-center gap-2">
-              <CategoryTag cat={activeReport.category} />
-              <h2 className="text-xl font-black text-black">
-                {activeReport.name}
-              </h2>
+      {/* Analytics view */}
+      {pageMode === "analytics" && <AnalyticsTab departments={departments} />}
+
+      {/* Catalog view */}
+      {pageMode === "catalog" && (
+        <>
+          {/* Active Report Viewer */}
+          {activeId && activeReport && ActiveComponent && (
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-4">
+                <button
+                  onClick={() => setActiveId(null)}
+                  className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white nb-shadow hover:bg-gray-50"
+                >
+                  <ArrowLeft className="w-4 h-4" /> All Reports
+                </button>
+                <div className="flex items-center gap-2">
+                  <CategoryTag cat={activeReport.category} />
+                  <h2 className="text-xl font-black text-black">
+                    {activeReport.name}
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setActiveId(null)}
+                  className="ml-auto border-2 border-black p-1.5 bg-white nb-shadow hover:bg-gray-50"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="nb-card bg-white p-5">
+                <ActiveComponent departments={departments} />
+              </div>
             </div>
-            <button
-              onClick={() => setActiveId(null)}
-              className="ml-auto border-2 border-black p-1.5 bg-white nb-shadow hover:bg-gray-50"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="nb-card bg-white p-5">
-            <ActiveComponent departments={departments} />
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* Search + Filter bar */}
-      <div className="flex flex-wrap gap-3 mb-6">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search reports..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full border-2 border-black pl-9 pr-4 py-2.5 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
-          />
-        </div>
-        <div className="flex gap-1 border-2 border-black nb-shadow">
-          {(
-            [
-              ["all", "All"],
-              ["payroll", "PayRoll"],
-              ["attendance", "Attendance"],
-              ["employee", "Employee"],
-            ] as [Category | "all", string][]
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              onClick={() => setFilterCat(id)}
-              className={cn(
-                "px-4 py-2 text-sm font-black border-r-2 border-black last:border-r-0 transition-all",
-                filterCat === id
-                  ? "bg-black text-white"
-                  : "bg-white text-black hover:bg-gray-50",
-              )}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Count pills */}
-      <div className="flex gap-3 mb-6">
-        {(Object.entries(catCounts) as [Category, number][]).map(
-          ([cat, count]) => (
-            <div
-              key={cat}
-              className="flex items-center gap-2 border-2 border-black px-3 py-1.5 bg-white nb-shadow-sm"
-            >
-              <span
-                className="w-2.5 h-2.5 rounded-none"
-                style={{ backgroundColor: CATEGORY_META[cat].color }}
+          {/* Search + Filter bar */}
+          <div className="flex flex-wrap gap-3 mb-6">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search reports..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full border-2 border-black pl-9 pr-4 py-2.5 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
               />
-              <span className="text-xs font-black text-black uppercase tracking-wider">
-                {CATEGORY_META[cat].label}
-              </span>
-              <span className="text-xs font-bold text-muted-foreground">
-                {count} reports
-              </span>
             </div>
-          ),
-        )}
-      </div>
+            <div className="flex gap-1 border-2 border-black nb-shadow">
+              {(
+                [
+                  ["all", "All"],
+                  ["payroll", "PayRoll"],
+                  ["attendance", "Attendance"],
+                  ["employee", "Employee"],
+                ] as [Category | "all", string][]
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  onClick={() => setFilterCat(id)}
+                  className={cn(
+                    "px-4 py-2 text-sm font-black border-r-2 border-black last:border-r-0 transition-all",
+                    filterCat === id
+                      ? "bg-black text-white"
+                      : "bg-white text-black hover:bg-gray-50",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-      {/* Report catalog grouped by category */}
-      {(["payroll", "attendance", "employee"] as Category[]).map((cat) => {
-        const catReports = grouped[cat];
-        if (catReports.length === 0) return null;
-        return (
-          <div key={cat} className="mb-8">
-            <div className="flex items-center gap-3 mb-4">
-              <div
-                className="h-5 w-1 border border-black"
-                style={{ backgroundColor: CATEGORY_META[cat].color }}
-              />
-              <h2 className="text-base font-black text-black uppercase tracking-wider">
-                {CATEGORY_META[cat].label} ({catReports.length})
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-              {catReports.map((report) => {
-                const Icon = report.icon;
-                const isActive = activeId === report.id;
-                return (
+          {/* Count pills */}
+          <div className="flex gap-3 mb-6">
+            {(Object.entries(catCounts) as [Category, number][]).map(
+              ([cat, count]) => (
+                <div
+                  key={cat}
+                  className="flex items-center gap-2 border-2 border-black px-3 py-1.5 bg-white nb-shadow-sm"
+                >
+                  <span
+                    className="w-2.5 h-2.5 rounded-none"
+                    style={{ backgroundColor: CATEGORY_META[cat].color }}
+                  />
+                  <span className="text-xs font-black text-black uppercase tracking-wider">
+                    {CATEGORY_META[cat].label}
+                  </span>
+                  <span className="text-xs font-bold text-muted-foreground">
+                    {count} reports
+                  </span>
+                </div>
+              ),
+            )}
+          </div>
+
+          {/* Report catalog grouped by category */}
+          {(["payroll", "attendance", "employee"] as Category[]).map((cat) => {
+            const catReports = grouped[cat];
+            if (catReports.length === 0) return null;
+            return (
+              <div key={cat} className="mb-8">
+                <div className="flex items-center gap-3 mb-4">
                   <div
-                    key={report.id}
-                    className={cn(
-                      "nb-card bg-white p-4 flex flex-col gap-3 transition-all",
-                      isActive && "border-[#024BAB] bg-[#F0F6FF]",
-                    )}
-                  >
-                    <div className="flex items-start gap-3">
+                    className="h-5 w-1 border border-black"
+                    style={{ backgroundColor: CATEGORY_META[cat].color }}
+                  />
+                  <h2 className="text-base font-black text-black uppercase tracking-wider">
+                    {CATEGORY_META[cat].label} ({catReports.length})
+                  </h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {catReports.map((report) => {
+                    const Icon = report.icon;
+                    const isActive = activeId === report.id;
+                    return (
                       <div
+                        key={report.id}
                         className={cn(
-                          "w-10 h-10 border-2 border-black flex items-center justify-center flex-shrink-0",
-                          report.available ? "bg-[#024BAB]" : "bg-gray-200",
+                          "nb-card bg-white p-4 flex flex-col gap-3 transition-all",
+                          isActive && "border-[#024BAB] bg-[#F0F6FF]",
                         )}
                       >
-                        <Icon
-                          className={cn(
-                            "w-5 h-5",
-                            report.available ? "text-white" : "text-gray-400",
-                          )}
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <CategoryTag cat={report.category} />
-                          {!report.available && (
-                            <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider border border-black bg-gray-100 text-gray-500">
-                              Coming Soon
-                            </span>
-                          )}
+                        <div className="flex items-start gap-3">
+                          <div
+                            className={cn(
+                              "w-10 h-10 border-2 border-black flex items-center justify-center flex-shrink-0",
+                              report.available ? "bg-[#024BAB]" : "bg-gray-200",
+                            )}
+                          >
+                            <Icon
+                              className={cn(
+                                "w-5 h-5",
+                                report.available
+                                  ? "text-white"
+                                  : "text-gray-400",
+                              )}
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <CategoryTag cat={report.category} />
+                              {!report.available && (
+                                <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider border border-black bg-gray-100 text-gray-500">
+                                  Coming Soon
+                                </span>
+                              )}
+                            </div>
+                            <p className="font-black text-black text-sm leading-tight">
+                              {report.name}
+                            </p>
+                          </div>
                         </div>
-                        <p className="font-black text-black text-sm leading-tight">
-                          {report.name}
+                        <p className="text-xs text-muted-foreground leading-relaxed flex-1">
+                          {report.desc}
                         </p>
+                        <button
+                          onClick={() =>
+                            setActiveId(isActive ? null : report.id)
+                          }
+                          disabled={!report.available}
+                          className={cn(
+                            "w-full py-2 text-sm font-black border-2 border-black transition-all",
+                            isActive
+                              ? "bg-black text-white"
+                              : report.available
+                                ? "bg-white text-black hover:bg-[#024BAB] hover:text-white nb-shadow-sm"
+                                : "bg-gray-100 text-gray-400 cursor-not-allowed",
+                          )}
+                        >
+                          {isActive
+                            ? "Close Report"
+                            : report.available
+                              ? "Generate"
+                              : "Unavailable"}
+                        </button>
                       </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed flex-1">
-                      {report.desc}
-                    </p>
-                    <button
-                      onClick={() => setActiveId(isActive ? null : report.id)}
-                      disabled={!report.available}
-                      className={cn(
-                        "w-full py-2 text-sm font-black border-2 border-black transition-all",
-                        isActive
-                          ? "bg-black text-white"
-                          : report.available
-                            ? "bg-white text-black hover:bg-[#024BAB] hover:text-white nb-shadow-sm"
-                            : "bg-gray-100 text-gray-400 cursor-not-allowed",
-                      )}
-                    >
-                      {isActive
-                        ? "Close Report"
-                        : report.available
-                          ? "Generate"
-                          : "Unavailable"}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
 
-      {filtered.length === 0 && (
-        <EmptyState msg={`No reports found matching "${search}"`} />
+          {filtered.length === 0 && (
+            <EmptyState msg={`No reports found matching "${search}"`} />
+          )}
+        </>
       )}
     </AppLayout>
   );

@@ -10,6 +10,7 @@ import {
   X,
   Users,
   AlertCircle,
+  Printer,
 } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -172,12 +173,60 @@ export default function PayrollPage() {
             ))}
           </select>
         </div>
-        <button
-          onClick={() => setProcessModal(true)}
-          className="nb-btn bg-[#FA731C] text-white px-4 py-2 text-sm flex items-center gap-1.5"
-        >
-          <Play className="w-4 h-4" /> Process Payroll
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={async () => {
+              if (
+                !confirm(
+                  `Mark all processed payrolls as PAID for ${MONTHS[month - 1]} ${year}?`,
+                )
+              )
+                return;
+              try {
+                await payrollAPI.bulkMarkPaid(month, year);
+                load();
+              } catch (err: any) {
+                alert(err.message);
+              }
+            }}
+            disabled={
+              payrolls.filter((p) => p.status === "processed").length === 0
+            }
+            className="nb-btn bg-[#00C48C] text-white px-4 py-2 text-sm flex items-center gap-1.5 disabled:opacity-40"
+          >
+            <CheckCircle className="w-4 h-4" /> Bulk Mark Paid
+          </button>
+          <button
+            onClick={() => {
+              if (payrolls.length === 0) {
+                alert("No payroll records to print.");
+                return;
+              }
+              const win = window.open("", "_blank");
+              if (!win) return;
+              const rows = payrolls
+                .map(
+                  (p) =>
+                    `<tr><td>${(p.employee as any)?.firstName} ${(p.employee as any)?.lastName}</td><td>${(p.employee as any)?.designation}</td><td>₹${p.basicSalary.toLocaleString()}</td><td>₹${p.grossSalary.toLocaleString()}</td><td>-₹${p.totalDeductions.toLocaleString()}</td><td>₹${p.netSalary.toLocaleString()}</td><td>${p.status}</td></tr>`,
+                )
+                .join("");
+              win.document.write(
+                `<html><head><title>Salary Slips ${MONTHS[month - 1]} ${year}</title><style>body{font-family:sans-serif;font-size:12px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:6px 10px}th{background:#f0f6ff}</style></head><body><h2>Payroll — ${MONTHS[month - 1]} ${year}</h2><table><thead><tr><th>Employee</th><th>Designation</th><th>Basic</th><th>Gross</th><th>Deductions</th><th>Net Pay</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></body></html>`,
+              );
+              win.document.close();
+              win.print();
+            }}
+            className="nb-btn bg-white text-black px-4 py-2 text-sm flex items-center gap-1.5 border-2 border-black"
+          >
+            <Printer className="w-4 h-4" /> Bulk Slips
+          </button>
+          <button
+            onClick={() => setProcessModal(true)}
+            className="nb-btn bg-[#FA731C] text-white px-4 py-2 text-sm flex items-center gap-1.5"
+          >
+            <Play className="w-4 h-4" /> Run Payroll
+          </button>
+        </div>
       </div>
 
       {/* Summary */}
@@ -249,6 +298,7 @@ export default function PayrollPage() {
                   "Employee",
                   "Basic",
                   "Gross",
+                  "OT Hrs",
                   "Deductions",
                   "Net Salary",
                   "Days",
@@ -294,6 +344,9 @@ export default function PayrollPage() {
                   </td>
                   <td className="px-4 py-3 text-xs font-medium text-black">
                     {formatCurrency(p.grossSalary)}
+                  </td>
+                  <td className="px-4 py-3 text-xs font-medium text-[#FA731C]">
+                    {p.overtimeHours > 0 ? `${p.overtimeHours}h` : "—"}
                   </td>
                   <td className="px-4 py-3 text-xs font-medium text-red-600">
                     -{formatCurrency(p.totalDeductions)}

@@ -26,6 +26,7 @@ import NfcManagerPage from "./pages/NfcManagerPage";
 import PayrollSettingsPage from "./pages/PayrollSettingsPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import PaymentFailedPage from "./pages/PaymentFailedPage";
+import ManagePage from "./pages/ManagePage";
 import NotFound from "./pages/NotFound";
 import nesthrlogo from "../assets/nesthr.png";
 const queryClient = new QueryClient({
@@ -241,6 +242,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <PayrollSettingsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/manage"
+        element={
+          <ProtectedRoute>
+            <ManagePage />
           </ProtectedRoute>
         }
       />

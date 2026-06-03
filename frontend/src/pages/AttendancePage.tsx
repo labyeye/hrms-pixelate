@@ -58,6 +58,7 @@ export default function AttendancePage() {
     status: "present",
     checkIn: "",
     checkOut: "",
+    overtime: "",
     notes: "",
   });
   const [saving, setSaving] = useState(false);
@@ -87,7 +88,10 @@ export default function AttendancePage() {
     e.preventDefault();
     setSaving(true);
     try {
-      await attendanceAPI.mark(markForm);
+      await attendanceAPI.mark({
+        ...markForm,
+        overtime: markForm.overtime ? parseFloat(markForm.overtime) : 0,
+      });
       setMarkModal(false);
       load();
     } catch (err: any) {
@@ -210,6 +214,7 @@ export default function AttendancePage() {
                   "Check In",
                   "Check Out",
                   "Hours",
+                  "OT Hrs",
                   "Status",
                 ].map((h) => (
                   <th
@@ -264,6 +269,15 @@ export default function AttendancePage() {
                     </td>
                     <td className="px-4 py-3 text-black text-xs">
                       {rec.workHours ? `${rec.workHours.toFixed(1)}h` : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-xs">
+                      {(rec as any).overtime > 0 ? (
+                        <span className="font-bold text-[#FA731C]">
+                          {(rec as any).overtime.toFixed(1)}h
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -377,6 +391,22 @@ export default function AttendancePage() {
                     className="nb-input w-full px-3 py-2 text-sm"
                   />
                 </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-black mb-1">
+                  Overtime Hours (optional)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  placeholder="e.g. 1.5"
+                  value={markForm.overtime}
+                  onChange={(e) =>
+                    setMarkForm({ ...markForm, overtime: e.target.value })
+                  }
+                  className="nb-input w-full px-3 py-2 text-sm"
+                />
               </div>
               <div className="flex gap-3">
                 <button

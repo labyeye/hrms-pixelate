@@ -1049,7 +1049,43 @@ export default function BiometricPage() {
         {/* ── LOGS TAB ──────────────────────────────────────────────────────── */}
         {tab === "logs" && (
           <div>
-            {/* Filters */}
+            {/* Sync Log Table */}
+            <div className="nb-card bg-white mb-6">
+              <div className="flex items-center justify-between p-4 border-b-2 border-black">
+                <h3 className="font-black text-sm text-black uppercase tracking-wider">Device Sync Log</h3>
+              </div>
+              <div className="overflow-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b-2 border-black bg-[#024BAB]/5">
+                      {["Device", "Location", "Last Sync", "Status"].map((h) => (
+                        <th key={h} className="px-4 py-3 text-left text-xs font-black text-black uppercase tracking-wider">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {devices.length === 0 ? (
+                      <tr><td colSpan={4} className="px-4 py-6 text-center text-sm text-muted-foreground">No devices configured</td></tr>
+                    ) : devices.map((dev, i) => (
+                      <tr key={dev._id} className={cn("border-b border-black/10", i % 2 !== 0 && "bg-[#F8FAFF]")}>
+                        <td className="px-4 py-3 font-bold text-black">{dev.name}</td>
+                        <td className="px-4 py-3 text-sm text-muted-foreground">{dev.location?.name || "—"}</td>
+                        <td className="px-4 py-3 text-sm text-black">
+                          {dev.lastSeenAt ? new Date(dev.lastSeenAt).toLocaleString("en-IN") : "Never"}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={cn("px-2 py-0.5 text-xs font-bold border border-black", dev.isActive ? "bg-[#00C48C] text-white" : "bg-[#EF4444] text-white")}>
+                            {dev.isActive ? "Online" : "Offline"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Punch Log Filters */}
             <div className="flex flex-wrap gap-3 mb-6">
               <select
                 value={logFilter.locationId}

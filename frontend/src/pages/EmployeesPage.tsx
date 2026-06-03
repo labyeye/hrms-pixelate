@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { employeeAPI, departmentAPI } from "@/services/api";
+import { employeeAPI, departmentAPI, loanAPI } from "@/services/api";
 import { Employee, Department } from "@/types/hrms";
 import { cn, formatDate } from "@/lib/utils";
 import {
@@ -15,7 +15,12 @@ import {
   Upload,
   CheckCircle,
   AlertCircle,
+  DollarSign,
+  CreditCard,
+  Clock,
+  Banknote,
 } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "nb-tag-blue",
@@ -76,6 +81,15 @@ export default function EmployeesPage() {
   const [saving, setSaving] = useState(false);
   const [viewEmp, setViewEmp] = useState<Employee | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [loanModal, setLoanModal] = useState(false);
+  const [loanForm, setLoanForm] = useState({
+    employee: "",
+    type: "loan",
+    amount: "",
+    monthlyEmi: "",
+    reason: "",
+  });
+  const [savingLoan, setSavingLoan] = useState(false);
   const [actionModal, setActionModal] = useState<{
     show: boolean;
     type: "success" | "error";
@@ -309,6 +323,7 @@ export default function EmployeesPage() {
                   "Designation",
                   "Type",
                   "Join Date",
+                  "Loan Balance",
                   "Status",
                   "Actions",
                 ].map((h) => (
@@ -361,6 +376,15 @@ export default function EmployeesPage() {
                   </td>
                   <td className="px-4 py-3 text-black text-xs">
                     {formatDate(emp.joinDate)}
+                  </td>
+                  <td className="px-4 py-3 text-xs">
+                    {(emp as any).loanBalance > 0 ? (
+                      <span className="font-bold text-[#EF4444]">
+                        ₹{(emp as any).loanBalance.toLocaleString()}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <span
@@ -634,20 +658,29 @@ export default function EmployeesPage() {
         </div>
       )}
 
-      {/* View Modal */}
+      {/* View Panel (side sheet) */}
       {viewEmp && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="nb-card bg-white w-full max-w-md">
-            <div className="flex items-center justify-between p-5 border-b-2 border-black">
-              <h3 className="font-display font-bold text-lg">
+        <div className="fixed inset-0 z-50 flex">
+          <div
+            className="flex-1 bg-black/40"
+            onClick={() => setViewEmp(null)}
+          />
+          <div className="w-full max-w-sm bg-white border-l-2 border-black flex flex-col overflow-y-auto nb-shadow-lg">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b-2 border-black bg-[#024BAB]">
+              <h3 className="font-display font-bold text-lg text-white">
                 Employee Profile
               </h3>
-              <button onClick={() => setViewEmp(null)}>
+              <button
+                onClick={() => setViewEmp(null)}
+                className="text-white hover:text-white/70"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-5 space-y-3">
-              <div className="flex items-center gap-3 mb-4">
+            {/* Avatar + name */}
+            <div className="p-5 border-b-2 border-black">
+              <div className="flex items-center gap-3 mb-3">
                 {viewEmp.avatar ? (
                   <img
                     src={viewEmp.avatar}
@@ -660,11 +693,14 @@ export default function EmployeesPage() {
                   </div>
                 )}
                 <div>
-                  <p className="font-bold text-black text-lg">
+                  <p className="font-black text-black text-base">
                     {viewEmp.firstName} {viewEmp.lastName}
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {viewEmp.designation}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {viewEmp.employeeId} · {(viewEmp.department as any)?.name}
                   </p>
                   <span
                     className={cn(
@@ -676,37 +712,212 @@ export default function EmployeesPage() {
                   </span>
                 </div>
               </div>
+            </div>
+            {/* Salary + loan balance */}
+            <div className="grid grid-cols-2 gap-0 border-b-2 border-black">
+              <div className="p-4 border-r-2 border-black">
+                <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-1">
+                  Salary (p.a.)
+                </p>
+                <p className="text-lg font-black text-black">
+                  {formatCurrency(viewEmp.salary || 0)}
+                </p>
+              </div>
+              <div className="p-4">
+                <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-1">
+                  Loan Balance
+                </p>
+                <p
+                  className={cn(
+                    "text-lg font-black",
+                    (viewEmp as any).loanBalance > 0
+                      ? "text-[#EF4444]"
+                      : "text-black",
+                  )}
+                >
+                  {(viewEmp as any).loanBalance > 0
+                    ? formatCurrency((viewEmp as any).loanBalance)
+                    : "₹0"}
+                </p>
+              </div>
+            </div>
+            {/* Details */}
+            <div className="p-5 space-y-2.5 border-b-2 border-black flex-1">
               {[
-                ["Employee ID", viewEmp.employeeId],
                 ["Email", viewEmp.email],
                 ["Phone", viewEmp.phone || "—"],
-                ["Department", (viewEmp.department as any)?.name || "—"],
-                ["Type", viewEmp.employmentType?.replace("_", " ")],
                 ["Join Date", formatDate(viewEmp.joinDate)],
                 ["Gender", viewEmp.gender || "—"],
+                ["Type", viewEmp.employmentType?.replace("_", " ")],
+                ["Bank Account", (viewEmp as any).bankAccount || "—"],
+                ["IFSC", viewEmp.ifscCode || "—"],
+                ["PAN", viewEmp.panNumber || "—"],
+                ["UAN/PF No.", (viewEmp as any).uanNumber || "—"],
               ].map(([label, value]) => (
                 <div
                   key={label}
-                  className="flex justify-between border-b border-black/10 pb-2"
+                  className="flex justify-between border-b border-black/10 pb-1.5"
                 >
-                  <span className="text-xs font-bold text-muted-foreground uppercase">
+                  <span className="text-[10px] font-black text-muted-foreground uppercase">
                     {label}
                   </span>
-                  <span className="text-sm font-semibold text-black capitalize">
+                  <span className="text-xs font-bold text-black capitalize">
                     {value}
                   </span>
                 </div>
               ))}
+            </div>
+            {/* Quick actions */}
+            <div className="p-4 space-y-2">
+              <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-2">
+                Quick Actions
+              </p>
               <button
                 onClick={() => {
                   setViewEmp(null);
                   openEdit(viewEmp);
                 }}
-                className="nb-btn bg-[#024BAB] text-white w-full py-2.5 text-sm font-bold mt-3"
+                className="w-full flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow-sm hover:bg-[#01368A]"
               >
-                <Edit className="w-4 h-4 inline mr-1" /> Edit Employee
+                <Edit className="w-4 h-4" /> Edit Employee
+              </button>
+              <button
+                onClick={() => {
+                  setLoanForm({
+                    employee: viewEmp._id,
+                    type: "loan",
+                    amount: "",
+                    monthlyEmi: "",
+                    reason: "",
+                  });
+                  setLoanModal(true);
+                  setViewEmp(null);
+                }}
+                className="w-full flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#FA731C] text-white nb-shadow-sm hover:bg-[#e0650f]"
+              >
+                <Banknote className="w-4 h-4" /> Loan / Advance Entry
+              </button>
+              <button
+                onClick={() => {
+                  setViewEmp(null);
+                }}
+                className="w-full flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white text-black nb-shadow-sm hover:bg-gray-50"
+              >
+                <Clock className="w-4 h-4" /> View Attendance
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loan Entry Modal */}
+      {loanModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="nb-card bg-white w-full max-w-md">
+            <div className="flex items-center justify-between p-5 border-b-2 border-black">
+              <h3 className="font-display font-bold text-lg flex items-center gap-2">
+                <Banknote className="w-5 h-5" /> Loan / Advance Entry
+              </h3>
+              <button onClick={() => setLoanModal(false)}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setSavingLoan(true);
+                try {
+                  await loanAPI.create({
+                    ...loanForm,
+                    amount: parseFloat(loanForm.amount),
+                    monthlyEmi: parseFloat(loanForm.monthlyEmi || "0"),
+                  });
+                  setLoanModal(false);
+                  load();
+                } catch (err: any) {
+                  alert(err.message);
+                }
+                setSavingLoan(false);
+              }}
+              className="p-5 space-y-4"
+            >
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-black mb-1">
+                  Type
+                </label>
+                <select
+                  value={loanForm.type}
+                  onChange={(e) =>
+                    setLoanForm({ ...loanForm, type: e.target.value })
+                  }
+                  className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none"
+                >
+                  <option value="loan">Loan</option>
+                  <option value="advance">Salary Advance</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-black mb-1">
+                  Amount (₹)
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  value={loanForm.amount}
+                  onChange={(e) =>
+                    setLoanForm({ ...loanForm, amount: e.target.value })
+                  }
+                  className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
+                  placeholder="e.g. 10000"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-black mb-1">
+                  Monthly EMI (₹)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={loanForm.monthlyEmi}
+                  onChange={(e) =>
+                    setLoanForm({ ...loanForm, monthlyEmi: e.target.value })
+                  }
+                  className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
+                  placeholder="e.g. 1000"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-black mb-1">
+                  Reason
+                </label>
+                <input
+                  type="text"
+                  value={loanForm.reason}
+                  onChange={(e) =>
+                    setLoanForm({ ...loanForm, reason: e.target.value })
+                  }
+                  className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
+                  placeholder="Medical, home, personal..."
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={savingLoan}
+                  className="flex-1 bg-[#FA731C] text-white border-2 border-black py-2.5 text-sm font-bold nb-shadow disabled:opacity-50"
+                >
+                  {savingLoan ? "Saving..." : "Create Loan Entry"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLoanModal(false)}
+                  className="flex-1 border-2 border-black py-2.5 text-sm font-bold bg-white nb-shadow"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
