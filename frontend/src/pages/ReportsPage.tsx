@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
   employeeAPI,
@@ -9,18 +9,25 @@ import {
 } from "@/services/api";
 import { cn, formatDate, formatCurrency } from "@/lib/utils";
 import {
-  Users,
-  Clock,
-  DollarSign,
   Download,
   Printer,
-  Filter,
-  TrendingUp,
-  TrendingDown,
-  AlertCircle,
-  Loader2,
   ChevronDown,
-  CalendarDays,
+  Loader2,
+  AlertCircle,
+  ArrowLeft,
+  Search,
+  FileText,
+  BarChart2,
+  Users,
+  Calendar,
+  DollarSign,
+  Clock,
+  TrendingUp,
+  Shield,
+  CreditCard,
+  BookOpen,
+  Building2,
+  X,
 } from "lucide-react";
 
 const MONTHS = [
@@ -37,42 +44,297 @@ const MONTHS = [
   "Nov",
   "Dec",
 ];
+const YEARS = [2023, 2024, 2025, 2026];
 
-type Tab = "attendance" | "employee" | "payroll" | "leave";
+// ─── REPORT CATALOG DEFINITION ───────────────────────────────────────────────
 
-// ─── helpers ────────────────────────────────────────────────────────────────
+type Category = "payroll" | "attendance" | "employee";
 
-function StatCard({
-  label,
-  value,
-  sub,
-  color,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-  color: string;
-}) {
-  return (
-    <div className="nb-card bg-white p-4">
-      <div
-        className={cn(
-          "w-8 h-8 border-2 border-black flex items-center justify-center mb-2 text-white text-xs font-bold",
-          color,
-        )}
-      >
-        {label[0]}
-      </div>
-      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-        {label}
-      </p>
-      <p className="text-2xl font-bold text-black mt-1">{value}</p>
-      {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
-    </div>
-  );
+interface ReportDef {
+  id: string;
+  name: string;
+  desc: string;
+  category: Category;
+  icon: typeof FileText;
+  available: boolean;
 }
 
-function Select({
+const REPORTS: ReportDef[] = [
+  // PAYROLL
+  {
+    id: "pay-report",
+    name: "Pay Report",
+    desc: "Employee datewise present, absent and half day status with attendance summary and payment details.",
+    category: "payroll",
+    icon: DollarSign,
+    available: true,
+  },
+  {
+    id: "salary-register",
+    name: "Salary Register",
+    desc: "Full salary register with all components — basic, HRA, allowances, deductions and net pay.",
+    category: "payroll",
+    icon: BookOpen,
+    available: true,
+  },
+  {
+    id: "net-salary",
+    name: "Net Salary Report",
+    desc: "Employee net salary report showing take-home pay after all deductions.",
+    category: "payroll",
+    icon: TrendingUp,
+    available: true,
+  },
+  {
+    id: "salary-slip",
+    name: "Salary Slip",
+    desc: "Individual salary slip showing earnings, deductions and net pay. Printable per employee.",
+    category: "payroll",
+    icon: FileText,
+    available: true,
+  },
+  {
+    id: "pf-register",
+    name: "PF Register",
+    desc: "Provident Fund register showing employee and employer PF contributions.",
+    category: "payroll",
+    icon: Shield,
+    available: true,
+  },
+  {
+    id: "esic-register",
+    name: "ESIC Register Report",
+    desc: "ESIC register showing employee-wise ESIC contributions.",
+    category: "payroll",
+    icon: Shield,
+    available: true,
+  },
+  {
+    id: "bank-upload",
+    name: "Bank Upload Report",
+    desc: "Bank transfer file for salary disbursement. Account numbers and net pay for bulk upload.",
+    category: "payroll",
+    icon: CreditCard,
+    available: true,
+  },
+  {
+    id: "absent-leave-summary",
+    name: "Absent/Leave Summary Report",
+    desc: "Total leave of employee — unpaid leave and paid leave summary.",
+    category: "payroll",
+    icon: Calendar,
+    available: true,
+  },
+  {
+    id: "late-coming-summary",
+    name: "Late Coming Summary Report",
+    desc: "Summary of late arrivals per employee for the selected period.",
+    category: "payroll",
+    icon: Clock,
+    available: true,
+  },
+  {
+    id: "designation-summary",
+    name: "Designation Summary Report",
+    desc: "Monthly summary of employee counts and payroll grouped by designation.",
+    category: "payroll",
+    icon: Building2,
+    available: true,
+  },
+  {
+    id: "pt-register",
+    name: "PT Register Report",
+    desc: "Professional Tax register for all employees.",
+    category: "payroll",
+    icon: Shield,
+    available: false,
+  },
+  {
+    id: "lwf-register",
+    name: "LWF Register Report",
+    desc: "Labour Welfare Fund register showing employee LWF contributions.",
+    category: "payroll",
+    icon: Shield,
+    available: false,
+  },
+  {
+    id: "loan-report",
+    name: "Loan Report",
+    desc: "Loan details — Previous Loan Balance, New Loan Taken, Loan Cleared, Loan Balance.",
+    category: "payroll",
+    icon: BookOpen,
+    available: false,
+  },
+  {
+    id: "bonus-report",
+    name: "Bonus Report",
+    desc: "Yearly/Monthly bonus report calculated according to custom formula.",
+    category: "payroll",
+    icon: TrendingUp,
+    available: false,
+  },
+  {
+    id: "overtime-summary",
+    name: "Overtime Summary Report",
+    desc: "Summary of overtime hours and amounts for all employees in the period.",
+    category: "payroll",
+    icon: Clock,
+    available: false,
+  },
+  {
+    id: "compliance-report",
+    name: "Compliance Report",
+    desc: "Employee compliance summary — PF, ESI, PT, TDS compliance details.",
+    category: "payroll",
+    icon: Shield,
+    available: false,
+  },
+  {
+    id: "early-going-summary",
+    name: "Early Going Summary Report",
+    desc: "Summary of early departures per employee for the selected period.",
+    category: "payroll",
+    icon: Clock,
+    available: false,
+  },
+  {
+    id: "excess-break-summary",
+    name: "Excess Break Summary Report",
+    desc: "Summary of employees who exceeded allowed break time in the period.",
+    category: "payroll",
+    icon: Clock,
+    available: false,
+  },
+  {
+    id: "pf-challan",
+    name: "PF Challan ECR Report",
+    desc: "PF Electronic Challan cum Return (ECR) file for PF authority submission.",
+    category: "payroll",
+    icon: FileText,
+    available: false,
+  },
+  {
+    id: "esic-challan",
+    name: "ESIC Challan Report",
+    desc: "ESIC challan report for submission to ESIC authority.",
+    category: "payroll",
+    icon: FileText,
+    available: false,
+  },
+  // ATTENDANCE
+  {
+    id: "attendance-report",
+    name: "Employee Attendance Report",
+    desc: "Employee datewise present, absent and half day status with attendance summary.",
+    category: "attendance",
+    icon: BarChart2,
+    available: true,
+  },
+  {
+    id: "attendance-inout",
+    name: "Attendance In/Out Report",
+    desc: "Attendance in and out times for each employee for each date in the selected period.",
+    category: "attendance",
+    icon: Clock,
+    available: true,
+  },
+  {
+    id: "attendance-summary",
+    name: "Attendance Summary",
+    desc: "Attendance summary with datewise present, absent and half day status for all employees.",
+    category: "attendance",
+    icon: BarChart2,
+    available: true,
+  },
+  {
+    id: "leave-report",
+    name: "Leave Report",
+    desc: "Employee datewise leave report showing leave types and days for the period.",
+    category: "attendance",
+    icon: Calendar,
+    available: true,
+  },
+  {
+    id: "miss-punch",
+    name: "Miss Punch Report",
+    desc: "Employees with missing punch-in or punch-out entries for each date.",
+    category: "attendance",
+    icon: AlertCircle,
+    available: true,
+  },
+  {
+    id: "attendance-inout-vertical",
+    name: "Attendance In Out Vertical Report",
+    desc: "Vertical format attendance in/out — one date per row showing all employees.",
+    category: "attendance",
+    icon: BarChart2,
+    available: false,
+  },
+  {
+    id: "locationwise",
+    name: "Locationwise Report",
+    desc: "Attendance report grouped by location/branch showing all employees presence data.",
+    category: "attendance",
+    icon: Building2,
+    available: false,
+  },
+  {
+    id: "punch-log",
+    name: "Punch Log Detail Report",
+    desc: "Detail of each punch — all in/out punches from biometric device for the period.",
+    category: "attendance",
+    icon: FileText,
+    available: false,
+  },
+  {
+    id: "attendance-history",
+    name: "Attendance History",
+    desc: "History of all attendance changes. Shows original and modified attendance records.",
+    category: "attendance",
+    icon: BookOpen,
+    available: false,
+  },
+  // EMPLOYEE
+  {
+    id: "employee-directory",
+    name: "Employee Directory",
+    desc: "Full employee list with all details including contact, department, designation, salary.",
+    category: "employee",
+    icon: Users,
+    available: true,
+  },
+];
+
+// ─── UTILITIES ────────────────────────────────────────────────────────────────
+
+function exportCSV(rows: string[][], filename: string) {
+  const csv = rows
+    .map((r) =>
+      r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(","),
+    )
+    .join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = Object.assign(document.createElement("a"), {
+    href: URL.createObjectURL(blob),
+    download: filename,
+  });
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function printSection(id: string, title: string) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const win = window.open("", "_blank");
+  if (!win) return;
+  win.document.write(
+    `<html><head><title>${title}</title><style>body{font-family:sans-serif;font-size:12px;margin:20px}h2{font-size:16px;margin-bottom:12px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:6px 10px;text-align:left}th{background:#f0f6ff;font-weight:bold}tr:nth-child(even){background:#f9f9f9}</style></head><body><h2>${title}</h2>${el.innerHTML}</body></html>`,
+  );
+  win.document.close();
+  win.print();
+}
+
+function NbSelect({
   value,
   onChange,
   children,
@@ -97,1058 +359,1880 @@ function Select({
   );
 }
 
-function PrintButton({ onClick }: { onClick: () => void }) {
+function CategoryTag({ cat }: { cat: Category }) {
+  const styles: Record<Category, string> = {
+    payroll: "bg-[#024BAB] text-white",
+    attendance: "bg-[#00C48C] text-white",
+    employee: "bg-[#FA731C] text-white",
+  };
+  const labels: Record<Category, string> = {
+    payroll: "PayRoll",
+    attendance: "Attendance",
+    employee: "Employee",
+  };
   return (
-    <button
-      onClick={onClick}
-      className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white hover:bg-[#F8FAFF] nb-shadow transition-all"
+    <span
+      className={cn(
+        "px-2 py-0.5 text-[10px] font-black uppercase tracking-wider border border-black",
+        styles[cat],
+      )}
     >
-      <Printer className="w-4 h-4" /> Print
-    </button>
+      {labels[cat]}
+    </span>
   );
 }
 
-function ExportCSVButton({ onClick }: { onClick: () => void }) {
+function EmptyState({ msg }: { msg: string }) {
   return (
-    <button
-      onClick={onClick}
-      className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white hover:bg-[#0239a0] nb-shadow transition-all"
-    >
-      <Download className="w-4 h-4" /> Export CSV
-    </button>
+    <div className="nb-card bg-white p-12 flex flex-col items-center gap-3">
+      <AlertCircle className="w-10 h-10 text-black/20" />
+      <p className="font-bold text-black">{msg}</p>
+    </div>
   );
 }
 
-function exportCSV(rows: string[][], filename: string) {
-  const csv = rows
-    .map((r) =>
-      r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(","),
-    )
-    .join("\n");
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+function LoadingState() {
+  return (
+    <div className="flex justify-center py-16">
+      <Loader2 className="w-6 h-6 animate-spin text-[#024BAB]" />
+    </div>
+  );
 }
 
-function printSection(id: string, title: string) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const win = window.open("", "_blank");
-  if (!win) return;
-  win.document.write(`
-    <html><head><title>${title}</title>
-    <style>
-      body { font-family: sans-serif; font-size: 12px; margin: 20px; }
-      h2 { font-size: 16px; margin-bottom: 12px; }
-      table { border-collapse: collapse; width: 100%; }
-      th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; }
-      th { background: #f0f6ff; font-weight: bold; }
-      tr:nth-child(even) { background: #f9f9f9; }
-      .badge { display: inline-block; padding: 1px 6px; border-radius: 2px; font-size: 11px; font-weight: bold; }
-    </style></head><body>
-    <h2>${title}</h2>
-    ${el.innerHTML}
+function ReportTable({
+  id,
+  headers,
+  rows,
+}: {
+  id: string;
+  headers: string[];
+  rows: string[][];
+}) {
+  return (
+    <div className="nb-card bg-white overflow-hidden">
+      <div id={id} className="overflow-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b-2 border-black bg-[#024BAB]/5">
+              {headers.map((h) => (
+                <th
+                  key={h}
+                  className="px-4 py-3 text-left text-xs font-black text-black uppercase tracking-wider whitespace-nowrap"
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => (
+              <tr
+                key={i}
+                className={cn(
+                  "border-b border-black/10",
+                  i % 2 !== 0 && "bg-[#F8FAFF]",
+                )}
+              >
+                {row.map((cell, j) => (
+                  <td
+                    key={j}
+                    className="px-4 py-2.5 text-sm text-black whitespace-nowrap"
+                  >
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── REPORT GENERATORS ────────────────────────────────────────────────────────
+
+function PayReportGen({ departments }: { departments: any[] }) {
+  const now = new Date();
+  const [month, setMonth] = useState(String(now.getMonth() + 1));
+  const [year, setYear] = useState(String(now.getFullYear()));
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    load();
+  }, [month, year]);
+  async function load() {
+    setLoading(true);
+    try {
+      const r = await payrollAPI.getAll({ month, year, limit: "500" });
+      if (r.success) setData(r.data);
+    } catch {}
+    setLoading(false);
+  }
+
+  const headers = [
+    "Employee",
+    "Emp ID",
+    "Department",
+    "Basic",
+    "HRA",
+    "DA",
+    "TA",
+    "Medical",
+    "Gross",
+    "PF",
+    "ESI",
+    "TDS",
+    "Net Pay",
+    "Status",
+  ];
+  const rows = data.map((p) => [
+    p.employee ? `${p.employee.firstName} ${p.employee.lastName}` : "—",
+    p.employee?.employeeId || "—",
+    p.employee?.department?.name || "—",
+    formatCurrency(p.basicSalary || 0),
+    formatCurrency(p.hra || 0),
+    formatCurrency(p.da || 0),
+    formatCurrency(p.ta || 0),
+    formatCurrency(p.medicalAllowance || 0),
+    formatCurrency(p.grossSalary || 0),
+    formatCurrency(p.pf || 0),
+    formatCurrency(p.esi || 0),
+    formatCurrency(p.tds || 0),
+    formatCurrency(p.netSalary || 0),
+    p.status?.toUpperCase() || "—",
+  ]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <NbSelect value={month} onChange={setMonth} className="w-32">
+          {MONTHS.map((m, i) => (
+            <option key={m} value={String(i + 1)}>
+              {m}
+            </option>
+          ))}
+        </NbSelect>
+        <NbSelect value={year} onChange={setYear} className="w-28">
+          {YEARS.map((y) => (
+            <option key={y} value={String(y)}>
+              {y}
+            </option>
+          ))}
+        </NbSelect>
+        <div className="ml-auto flex gap-2">
+          <button
+            onClick={() =>
+              printSection(
+                "pay-tbl",
+                `Pay Report — ${MONTHS[+month - 1]} ${year}`,
+              )
+            }
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white hover:bg-gray-50 nb-shadow"
+          >
+            <Printer className="w-4 h-4" /> Print
+          </button>
+          <button
+            onClick={() =>
+              exportCSV(
+                [headers, ...rows],
+                `pay_report_${MONTHS[+month - 1]}_${year}.csv`,
+              )
+            }
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+        </div>
+      </div>
+      {loading ? (
+        <LoadingState />
+      ) : data.length === 0 ? (
+        <EmptyState msg="No payroll records for this period" />
+      ) : (
+        <ReportTable id="pay-tbl" headers={headers} rows={rows} />
+      )}
+    </div>
+  );
+}
+
+function SalaryRegisterGen({ departments }: { departments: any[] }) {
+  const now = new Date();
+  const [month, setMonth] = useState(String(now.getMonth() + 1));
+  const [year, setYear] = useState(String(now.getFullYear()));
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    load();
+  }, [month, year]);
+  async function load() {
+    setLoading(true);
+    try {
+      const r = await payrollAPI.getAll({ month, year, limit: "500" });
+      if (r.success) setData(r.data);
+    } catch {}
+    setLoading(false);
+  }
+
+  const headers = [
+    "Emp ID",
+    "Name",
+    "Dept",
+    "Basic",
+    "HRA",
+    "DA",
+    "TA",
+    "Medical",
+    "Other Allow.",
+    "Gross",
+    "PF Emp.",
+    "ESI Emp.",
+    "TDS",
+    "Prof Tax",
+    "Total Ded.",
+    "Net Pay",
+  ];
+  const rows = data.map((p) => [
+    p.employee?.employeeId || "—",
+    p.employee ? `${p.employee.firstName} ${p.employee.lastName}` : "—",
+    p.employee?.department?.name || "—",
+    formatCurrency(p.basicSalary || 0),
+    formatCurrency(p.hra || 0),
+    formatCurrency(p.da || 0),
+    formatCurrency(p.ta || 0),
+    formatCurrency(p.medicalAllowance || 0),
+    formatCurrency(0),
+    formatCurrency(p.grossSalary || 0),
+    formatCurrency(p.pf || 0),
+    formatCurrency(p.esi || 0),
+    formatCurrency(p.tds || 0),
+    formatCurrency(0),
+    formatCurrency(p.totalDeductions || 0),
+    formatCurrency(p.netSalary || 0),
+  ]);
+
+  const totalGross = data.reduce((s, p) => s + (p.grossSalary || 0), 0);
+  const totalNet = data.reduce((s, p) => s + (p.netSalary || 0), 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <NbSelect value={month} onChange={setMonth} className="w-32">
+          {MONTHS.map((m, i) => (
+            <option key={m} value={String(i + 1)}>
+              {m}
+            </option>
+          ))}
+        </NbSelect>
+        <NbSelect value={year} onChange={setYear} className="w-28">
+          {YEARS.map((y) => (
+            <option key={y} value={String(y)}>
+              {y}
+            </option>
+          ))}
+        </NbSelect>
+        <div className="ml-auto flex gap-2">
+          <button
+            onClick={() =>
+              printSection(
+                "sal-reg-tbl",
+                `Salary Register — ${MONTHS[+month - 1]} ${year}`,
+              )
+            }
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white nb-shadow"
+          >
+            <Printer className="w-4 h-4" /> Print
+          </button>
+          <button
+            onClick={() =>
+              exportCSV(
+                [headers, ...rows],
+                `salary_register_${MONTHS[+month - 1]}_${year}.csv`,
+              )
+            }
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+        </div>
+      </div>
+      {data.length > 0 && (
+        <div className="flex gap-4">
+          <div className="nb-card bg-[#024BAB] text-white p-4 flex-1">
+            <p className="text-xs font-black uppercase tracking-wider opacity-80">
+              Total Gross
+            </p>
+            <p className="text-2xl font-black mt-1">
+              {formatCurrency(totalGross)}
+            </p>
+          </div>
+          <div className="nb-card bg-[#00C48C] text-white p-4 flex-1">
+            <p className="text-xs font-black uppercase tracking-wider opacity-80">
+              Total Net Pay
+            </p>
+            <p className="text-2xl font-black mt-1">
+              {formatCurrency(totalNet)}
+            </p>
+          </div>
+          <div className="nb-card bg-[#EF4444] text-white p-4 flex-1">
+            <p className="text-xs font-black uppercase tracking-wider opacity-80">
+              Total Deductions
+            </p>
+            <p className="text-2xl font-black mt-1">
+              {formatCurrency(totalGross - totalNet)}
+            </p>
+          </div>
+        </div>
+      )}
+      {loading ? (
+        <LoadingState />
+      ) : data.length === 0 ? (
+        <EmptyState msg="No payroll records for this period" />
+      ) : (
+        <ReportTable id="sal-reg-tbl" headers={headers} rows={rows} />
+      )}
+    </div>
+  );
+}
+
+function NetSalaryGen({ departments }: { departments: any[] }) {
+  const now = new Date();
+  const [month, setMonth] = useState(String(now.getMonth() + 1));
+  const [year, setYear] = useState(String(now.getFullYear()));
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    load();
+  }, [month, year]);
+  async function load() {
+    setLoading(true);
+    try {
+      const r = await payrollAPI.getAll({ month, year, limit: "500" });
+      if (r.success) setData(r.data);
+    } catch {}
+    setLoading(false);
+  }
+
+  const headers = [
+    "Emp ID",
+    "Employee Name",
+    "Department",
+    "Designation",
+    "Gross Salary",
+    "Total Deductions",
+    "Net Pay",
+    "Payment Status",
+  ];
+  const rows = data.map((p) => [
+    p.employee?.employeeId || "—",
+    p.employee ? `${p.employee.firstName} ${p.employee.lastName}` : "—",
+    p.employee?.department?.name || "—",
+    p.employee?.designation || "—",
+    formatCurrency(p.grossSalary || 0),
+    formatCurrency(p.totalDeductions || 0),
+    formatCurrency(p.netSalary || 0),
+    p.status?.toUpperCase() || "—",
+  ]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <NbSelect value={month} onChange={setMonth} className="w-32">
+          {MONTHS.map((m, i) => (
+            <option key={m} value={String(i + 1)}>
+              {m}
+            </option>
+          ))}
+        </NbSelect>
+        <NbSelect value={year} onChange={setYear} className="w-28">
+          {YEARS.map((y) => (
+            <option key={y} value={String(y)}>
+              {y}
+            </option>
+          ))}
+        </NbSelect>
+        <div className="ml-auto flex gap-2">
+          <button
+            onClick={() =>
+              exportCSV(
+                [headers, ...rows],
+                `net_salary_${MONTHS[+month - 1]}_${year}.csv`,
+              )
+            }
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+        </div>
+      </div>
+      {loading ? (
+        <LoadingState />
+      ) : data.length === 0 ? (
+        <EmptyState msg="No payroll records for this period" />
+      ) : (
+        <ReportTable id="net-sal-tbl" headers={headers} rows={rows} />
+      )}
+    </div>
+  );
+}
+
+function SalarySlipGen({ departments }: { departments: any[] }) {
+  const now = new Date();
+  const [month, setMonth] = useState(String(now.getMonth() + 1));
+  const [year, setYear] = useState(String(now.getFullYear()));
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState<any>(null);
+
+  useEffect(() => {
+    load();
+    setSelected(null);
+  }, [month, year]);
+  async function load() {
+    setLoading(true);
+    try {
+      const r = await payrollAPI.getAll({ month, year, limit: "500" });
+      if (r.success) setData(r.data);
+    } catch {}
+    setLoading(false);
+  }
+
+  function printSlip() {
+    if (!selected) return;
+    const p = selected;
+    const emp = p.employee || {};
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document
+      .write(`<html><head><title>Salary Slip</title><style>body{font-family:sans-serif;font-size:12px;margin:20px;max-width:700px}h2{font-size:18px;border-bottom:2px solid black;padding-bottom:8px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}.row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee}.label{color:#555}.amount{font-weight:bold}.total{font-weight:bold;font-size:14px;background:#f0f6ff;padding:8px}.section{margin-top:16px;font-weight:bold;font-size:13px;border-bottom:1px solid black;margin-bottom:8px}</style></head><body>
+    <h2>Salary Slip — ${MONTHS[+month - 1]} ${year}</h2>
+    <div class="grid">
+      <div><b>Employee:</b> ${emp.firstName} ${emp.lastName}</div>
+      <div><b>Emp ID:</b> ${emp.employeeId || "—"}</div>
+      <div><b>Department:</b> ${emp.department?.name || "—"}</div>
+      <div><b>Designation:</b> ${emp.designation || "—"}</div>
+    </div>
+    <div class="section">Earnings</div>
+    <div class="row"><span class="label">Basic Salary</span><span class="amount">₹${(p.basicSalary || 0).toLocaleString()}</span></div>
+    <div class="row"><span class="label">HRA</span><span class="amount">₹${(p.hra || 0).toLocaleString()}</span></div>
+    <div class="row"><span class="label">DA</span><span class="amount">₹${(p.da || 0).toLocaleString()}</span></div>
+    <div class="row"><span class="label">TA</span><span class="amount">₹${(p.ta || 0).toLocaleString()}</span></div>
+    <div class="row"><span class="label">Medical Allowance</span><span class="amount">₹${(p.medicalAllowance || 0).toLocaleString()}</span></div>
+    <div class="row total"><span>Gross Salary</span><span>₹${(p.grossSalary || 0).toLocaleString()}</span></div>
+    <div class="section">Deductions</div>
+    <div class="row"><span class="label">Provident Fund</span><span class="amount">₹${(p.pf || 0).toLocaleString()}</span></div>
+    <div class="row"><span class="label">ESI</span><span class="amount">₹${(p.esi || 0).toLocaleString()}</span></div>
+    <div class="row"><span class="label">TDS</span><span class="amount">₹${(p.tds || 0).toLocaleString()}</span></div>
+    <div class="row total"><span>Total Deductions</span><span>₹${(p.totalDeductions || 0).toLocaleString()}</span></div>
+    <div class="row total" style="background:#e8f5e9"><span>NET PAY</span><span>₹${(p.netSalary || 0).toLocaleString()}</span></div>
     </body></html>`);
-  win.document.close();
-  win.print();
+    win.document.close();
+    win.print();
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <NbSelect value={month} onChange={setMonth} className="w-32">
+          {MONTHS.map((m, i) => (
+            <option key={m} value={String(i + 1)}>
+              {m}
+            </option>
+          ))}
+        </NbSelect>
+        <NbSelect value={year} onChange={setYear} className="w-28">
+          {YEARS.map((y) => (
+            <option key={y} value={String(y)}>
+              {y}
+            </option>
+          ))}
+        </NbSelect>
+        {selected && (
+          <button
+            onClick={printSlip}
+            className="ml-auto flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white nb-shadow"
+          >
+            <Printer className="w-4 h-4" /> Print Slip
+          </button>
+        )}
+      </div>
+      {loading ? (
+        <LoadingState />
+      ) : data.length === 0 ? (
+        <EmptyState msg="No payroll records for this period" />
+      ) : (
+        <div className="space-y-3">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+            Select an employee to view salary slip
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {data.map((p) => (
+              <button
+                key={p._id}
+                onClick={() => setSelected(selected?._id === p._id ? null : p)}
+                className={cn(
+                  "nb-card p-4 text-left transition-all hover:-translate-y-0.5",
+                  selected?._id === p._id
+                    ? "bg-[#024BAB] text-white"
+                    : "bg-white",
+                )}
+              >
+                <p
+                  className={cn(
+                    "font-black text-sm",
+                    selected?._id === p._id ? "text-white" : "text-black",
+                  )}
+                >
+                  {p.employee
+                    ? `${p.employee.firstName} ${p.employee.lastName}`
+                    : "—"}
+                </p>
+                <p
+                  className={cn(
+                    "text-xs mt-0.5",
+                    selected?._id === p._id
+                      ? "text-white/70"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  {p.employee?.department?.name} · {p.employee?.designation}
+                </p>
+                <p
+                  className={cn(
+                    "text-sm font-black mt-2",
+                    selected?._id === p._id ? "text-white" : "text-[#00C48C]",
+                  )}
+                >
+                  Net: {formatCurrency(p.netSalary || 0)}
+                </p>
+              </button>
+            ))}
+          </div>
+          {selected && (
+            <div className="nb-card bg-white p-6 space-y-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-xl font-black text-black">
+                    {selected.employee?.firstName} {selected.employee?.lastName}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {selected.employee?.employeeId} ·{" "}
+                    {selected.employee?.department?.name} ·{" "}
+                    {selected.employee?.designation}
+                  </p>
+                </div>
+                <span className="px-3 py-1 border-2 border-black bg-[#024BAB] text-white text-xs font-black">
+                  {MONTHS[+month - 1]} {year}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-2">
+                    Earnings
+                  </p>
+                  {[
+                    ["Basic Salary", selected.basicSalary],
+                    ["HRA", selected.hra],
+                    ["DA", selected.da],
+                    ["TA", selected.ta],
+                    ["Medical Allow.", selected.medicalAllowance],
+                  ].map(([l, v]) => (
+                    <div
+                      key={String(l)}
+                      className="flex justify-between py-1.5 border-b border-black/10 text-sm"
+                    >
+                      <span className="text-muted-foreground">{l}</span>
+                      <span className="font-bold text-black">
+                        {formatCurrency(Number(v) || 0)}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between py-2 mt-1 bg-[#024BAB]/5 px-2 text-sm font-black">
+                    <span>Gross Salary</span>
+                    <span>{formatCurrency(selected.grossSalary || 0)}</span>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-2">
+                    Deductions
+                  </p>
+                  {[
+                    ["Provident Fund", selected.pf],
+                    ["ESI", selected.esi],
+                    ["TDS", selected.tds],
+                  ].map(([l, v]) => (
+                    <div
+                      key={String(l)}
+                      className="flex justify-between py-1.5 border-b border-black/10 text-sm"
+                    >
+                      <span className="text-muted-foreground">{l}</span>
+                      <span className="font-bold text-[#EF4444]">
+                        -{formatCurrency(Number(v) || 0)}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between py-2 mt-1 bg-red-50 px-2 text-sm font-black">
+                    <span>Total Deductions</span>
+                    <span className="text-[#EF4444]">
+                      -{formatCurrency(selected.totalDeductions || 0)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="border-2 border-black bg-[#00C48C] p-4 flex justify-between items-center">
+                <span className="text-white font-black text-lg uppercase tracking-wide">
+                  Net Pay
+                </span>
+                <span className="text-white font-black text-2xl">
+                  {formatCurrency(selected.netSalary || 0)}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
-// ─── ATTENDANCE REPORT ───────────────────────────────────────────────────────
+function PFRegisterGen({ departments }: { departments: any[] }) {
+  const now = new Date();
+  const [month, setMonth] = useState(String(now.getMonth() + 1));
+  const [year, setYear] = useState(String(now.getFullYear()));
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-function AttendanceReport({ departments }: { departments: any[] }) {
+  useEffect(() => {
+    load();
+  }, [month, year]);
+  async function load() {
+    setLoading(true);
+    try {
+      const r = await payrollAPI.getAll({ month, year, limit: "500" });
+      if (r.success) setData(r.data.filter((p: any) => (p.pf || 0) > 0));
+    } catch {}
+    setLoading(false);
+  }
+
+  const headers = [
+    "Emp ID",
+    "Employee Name",
+    "Department",
+    "UAN / PF No.",
+    "Basic Salary",
+    "PF (Employee 12%)",
+    "PF (Employer 12%)",
+    "Total PF",
+  ];
+  const rows = data.map((p) => [
+    p.employee?.employeeId || "—",
+    p.employee ? `${p.employee.firstName} ${p.employee.lastName}` : "—",
+    p.employee?.department?.name || "—",
+    p.employee?.pfNumber || "—",
+    formatCurrency(p.basicSalary || 0),
+    formatCurrency(p.pf || 0),
+    formatCurrency(p.pf || 0),
+    formatCurrency((p.pf || 0) * 2),
+  ]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <NbSelect value={month} onChange={setMonth} className="w-32">
+          {MONTHS.map((m, i) => (
+            <option key={m} value={String(i + 1)}>
+              {m}
+            </option>
+          ))}
+        </NbSelect>
+        <NbSelect value={year} onChange={setYear} className="w-28">
+          {YEARS.map((y) => (
+            <option key={y} value={String(y)}>
+              {y}
+            </option>
+          ))}
+        </NbSelect>
+        <div className="ml-auto flex gap-2">
+          <button
+            onClick={() =>
+              exportCSV(
+                [headers, ...rows],
+                `pf_register_${MONTHS[+month - 1]}_${year}.csv`,
+              )
+            }
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+        </div>
+      </div>
+      {loading ? (
+        <LoadingState />
+      ) : data.length === 0 ? (
+        <EmptyState msg="No PF records for this period" />
+      ) : (
+        <ReportTable id="pf-tbl" headers={headers} rows={rows} />
+      )}
+    </div>
+  );
+}
+
+function ESICRegisterGen({ departments }: { departments: any[] }) {
+  const now = new Date();
+  const [month, setMonth] = useState(String(now.getMonth() + 1));
+  const [year, setYear] = useState(String(now.getFullYear()));
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    load();
+  }, [month, year]);
+  async function load() {
+    setLoading(true);
+    try {
+      const r = await payrollAPI.getAll({ month, year, limit: "500" });
+      if (r.success) setData(r.data.filter((p: any) => (p.esi || 0) > 0));
+    } catch {}
+    setLoading(false);
+  }
+
+  const headers = [
+    "Emp ID",
+    "Employee Name",
+    "Department",
+    "ESIC No.",
+    "Gross Salary",
+    "ESI (Employee 0.75%)",
+    "ESI (Employer 3.25%)",
+    "Total ESI",
+  ];
+  const rows = data.map((p) => [
+    p.employee?.employeeId || "—",
+    p.employee ? `${p.employee.firstName} ${p.employee.lastName}` : "—",
+    p.employee?.department?.name || "—",
+    p.employee?.esicNumber || "—",
+    formatCurrency(p.grossSalary || 0),
+    formatCurrency(p.esi || 0),
+    formatCurrency(Math.round((p.esi || 0) * (3.25 / 0.75))),
+    formatCurrency(p.esi || 0 + Math.round((p.esi || 0) * (3.25 / 0.75))),
+  ]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <NbSelect value={month} onChange={setMonth} className="w-32">
+          {MONTHS.map((m, i) => (
+            <option key={m} value={String(i + 1)}>
+              {m}
+            </option>
+          ))}
+        </NbSelect>
+        <NbSelect value={year} onChange={setYear} className="w-28">
+          {YEARS.map((y) => (
+            <option key={y} value={String(y)}>
+              {y}
+            </option>
+          ))}
+        </NbSelect>
+        <div className="ml-auto flex gap-2">
+          <button
+            onClick={() =>
+              exportCSV(
+                [headers, ...rows],
+                `esic_register_${MONTHS[+month - 1]}_${year}.csv`,
+              )
+            }
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+        </div>
+      </div>
+      {loading ? (
+        <LoadingState />
+      ) : data.length === 0 ? (
+        <EmptyState msg="No ESIC records for this period" />
+      ) : (
+        <ReportTable id="esic-tbl" headers={headers} rows={rows} />
+      )}
+    </div>
+  );
+}
+
+function BankUploadGen({ departments }: { departments: any[] }) {
+  const now = new Date();
+  const [month, setMonth] = useState(String(now.getMonth() + 1));
+  const [year, setYear] = useState(String(now.getFullYear()));
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    load();
+  }, [month, year]);
+  async function load() {
+    setLoading(true);
+    try {
+      const r = await payrollAPI.getAll({ month, year, limit: "500" });
+      if (r.success) setData(r.data);
+    } catch {}
+    setLoading(false);
+  }
+
+  const headers = [
+    "Emp ID",
+    "Employee Name",
+    "Bank Name",
+    "Account Number",
+    "IFSC Code",
+    "Net Pay",
+    "Payment Mode",
+  ];
+  const rows = data.map((p) => [
+    p.employee?.employeeId || "—",
+    p.employee ? `${p.employee.firstName} ${p.employee.lastName}` : "—",
+    p.employee?.bankName || "—",
+    p.employee?.bankAccount || "—",
+    p.employee?.ifsc || "—",
+    formatCurrency(p.netSalary || 0),
+    "NEFT",
+  ]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <NbSelect value={month} onChange={setMonth} className="w-32">
+          {MONTHS.map((m, i) => (
+            <option key={m} value={String(i + 1)}>
+              {m}
+            </option>
+          ))}
+        </NbSelect>
+        <NbSelect value={year} onChange={setYear} className="w-28">
+          {YEARS.map((y) => (
+            <option key={y} value={String(y)}>
+              {y}
+            </option>
+          ))}
+        </NbSelect>
+        <div className="ml-auto flex gap-2">
+          <button
+            onClick={() =>
+              exportCSV(
+                [headers, ...rows],
+                `bank_upload_${MONTHS[+month - 1]}_${year}.csv`,
+              )
+            }
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+        </div>
+      </div>
+      {loading ? (
+        <LoadingState />
+      ) : data.length === 0 ? (
+        <EmptyState msg="No payroll records for this period" />
+      ) : (
+        <ReportTable id="bank-tbl" headers={headers} rows={rows} />
+      )}
+    </div>
+  );
+}
+
+function AbsentLeaveSummaryGen({ departments }: { departments: any[] }) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
   const [dept, setDept] = useState("all");
-  const [records, setRecords] = useState<any[]>([]);
+  const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     load();
   }, [month, year, dept]);
-
   async function load() {
     setLoading(true);
     try {
       const params: Record<string, string> = { month, year, limit: "500" };
       if (dept !== "all") params.department = dept;
       const r = await attendanceAPI.getAll(params);
-      if (r.success) setRecords(r.data);
+      if (r.success) setData(r.data);
     } catch {}
     setLoading(false);
   }
 
-  const present = records.filter((r) => r.status === "present").length;
-  const late = records.filter((r) => r.status === "late").length;
-  const absent = records.filter((r) => r.status === "absent").length;
-  const onLeave = records.filter((r) => r.status === "on_leave").length;
-  const pct = records.length
-    ? (((present + late) / records.length) * 100).toFixed(1)
-    : "0.0";
+  const empMap = new Map<string, any>();
+  data.forEach((rec) => {
+    if (!rec.employee) return;
+    const id = rec.employee._id;
+    if (!empMap.has(id))
+      empMap.set(id, {
+        emp: rec.employee,
+        present: 0,
+        late: 0,
+        absent: 0,
+        leave: 0,
+        halfDay: 0,
+        total: 0,
+      });
+    const e = empMap.get(id);
+    e.total++;
+    if (rec.status === "present") e.present++;
+    else if (rec.status === "late") e.late++;
+    else if (rec.status === "absent") e.absent++;
+    else if (rec.status === "on_leave") e.leave++;
+    else if (rec.status === "half_day") e.halfDay++;
+  });
 
-  const statusColor: Record<string, string> = {
-    present: "bg-[#00C48C] text-white",
-    late: "bg-[#FA731C] text-white",
-    absent: "bg-[#EF4444] text-white",
-    on_leave: "bg-[#024BAB] text-white",
-    half_day: "bg-yellow-400 text-black",
-    holiday: "bg-purple-400 text-white",
-    weekend: "bg-gray-300 text-black",
-  };
-
-  function doExport() {
-    const header = [
-      "Date",
-      "Employee",
-      "Employee ID",
-      "Department",
-      "Status",
-      "Check In",
-      "Check Out",
-      "Work Hours",
-    ];
-    const rows = records.map((r) => [
-      formatDate(r.date),
-      r.employee ? `${r.employee.firstName} ${r.employee.lastName}` : "—",
-      r.employee?.employeeId || "—",
-      r.employee?.department?.name || "—",
-      r.status,
-      r.checkIn
-        ? new Date(r.checkIn).toLocaleTimeString("en-IN", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-        : "",
-      r.checkOut
-        ? new Date(r.checkOut).toLocaleTimeString("en-IN", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-        : "",
-      r.workHours ? String(r.workHours) : "",
-    ]);
-    exportCSV(
-      [header, ...rows],
-      `attendance_${MONTHS[Number(month) - 1]}_${year}.csv`,
-    );
-  }
+  const summaryRows = Array.from(empMap.values());
+  const headers = [
+    "Emp ID",
+    "Employee Name",
+    "Department",
+    "Total Days",
+    "Present",
+    "Late",
+    "Absent",
+    "On Leave",
+    "Half Day",
+    "Attendance %",
+  ];
+  const rows = summaryRows.map(
+    ({ emp, present, late, absent, leave, halfDay, total }) => [
+      emp.employeeId || "—",
+      `${emp.firstName} ${emp.lastName}`,
+      emp.department?.name || "—",
+      String(total),
+      String(present),
+      String(late),
+      String(absent),
+      String(leave),
+      String(halfDay),
+      total > 0 ? `${(((present + late) / total) * 100).toFixed(1)}%` : "0%",
+    ],
+  );
 
   return (
-    <div>
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-5">
-        <Select value={month} onChange={setMonth} className="w-32">
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <NbSelect value={month} onChange={setMonth} className="w-32">
           {MONTHS.map((m, i) => (
             <option key={m} value={String(i + 1)}>
               {m}
             </option>
           ))}
-        </Select>
-        <Select value={year} onChange={setYear} className="w-28">
-          {[2023, 2024, 2025, 2026].map((y) => (
+        </NbSelect>
+        <NbSelect value={year} onChange={setYear} className="w-28">
+          {YEARS.map((y) => (
             <option key={y} value={String(y)}>
               {y}
             </option>
           ))}
-        </Select>
-        <Select value={dept} onChange={setDept} className="w-48">
+        </NbSelect>
+        <NbSelect value={dept} onChange={setDept} className="w-48">
           <option value="all">All Departments</option>
           {departments.map((d) => (
             <option key={d._id} value={d._id}>
               {d.name}
             </option>
           ))}
-        </Select>
+        </NbSelect>
         <div className="ml-auto flex gap-2">
-          <PrintButton
+          <button
             onClick={() =>
-              printSection(
-                "att-table",
-                `Attendance Report — ${MONTHS[Number(month) - 1]} ${year}`,
+              exportCSV(
+                [headers, ...rows],
+                `absent_leave_summary_${MONTHS[+month - 1]}_${year}.csv`,
               )
             }
-          />
-          <ExportCSVButton onClick={doExport} />
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
         </div>
       </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
-        <StatCard
-          label="Total Records"
-          value={records.length}
-          color="bg-[#024BAB]"
-        />
-        <StatCard label="Present" value={present} color="bg-[#00C48C]" />
-        <StatCard label="Late" value={late} color="bg-[#FA731C]" />
-        <StatCard label="Absent" value={absent} color="bg-[#EF4444]" />
-        <StatCard
-          label="Attendance %"
-          value={`${pct}%`}
-          color="bg-[#024BAB]"
-          sub={`${onLeave} on leave`}
-        />
-      </div>
-
-      {/* Table */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-[#024BAB]" />
-        </div>
-      ) : records.length === 0 ? (
-        <div className="nb-card bg-white p-10 flex flex-col items-center">
-          <AlertCircle className="w-10 h-10 text-muted-foreground/30 mb-2" />
-          <p className="font-bold text-black">
-            No attendance records for this period
-          </p>
-        </div>
+        <LoadingState />
+      ) : rows.length === 0 ? (
+        <EmptyState msg="No attendance records for this period" />
       ) : (
-        <div className="nb-card bg-white overflow-hidden">
-          <div id="att-table" className="overflow-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b-2 border-black bg-[#024BAB]/5">
-                  {[
-                    "Date",
-                    "Employee",
-                    "Emp ID",
-                    "Department",
-                    "Status",
-                    "Check In",
-                    "Check Out",
-                    "Hours",
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap"
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {records.map((rec, i) => (
-                  <tr
-                    key={rec._id}
-                    className={cn(
-                      "border-b border-black/10",
-                      i % 2 !== 0 && "bg-[#F8FAFF]",
-                    )}
-                  >
-                    <td className="px-4 py-2.5 font-medium text-black whitespace-nowrap">
-                      {formatDate(rec.date)}
-                    </td>
-                    <td className="px-4 py-2.5 text-black whitespace-nowrap">
-                      {rec.employee
-                        ? `${rec.employee.firstName} ${rec.employee.lastName}`
-                        : "—"}
-                    </td>
-                    <td className="px-4 py-2.5 text-muted-foreground text-xs">
-                      {rec.employee?.employeeId || "—"}
-                    </td>
-                    <td className="px-4 py-2.5 text-muted-foreground text-xs whitespace-nowrap">
-                      {rec.employee?.department?.name || "—"}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <span
-                        className={cn(
-                          "px-2 py-0.5 text-xs font-bold border border-black",
-                          statusColor[rec.status] || "bg-gray-200 text-black",
-                        )}
-                      >
-                        {rec.status?.toUpperCase().replace("_", " ")}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-black whitespace-nowrap">
-                      {rec.checkIn
-                        ? new Date(rec.checkIn).toLocaleTimeString("en-IN", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                        : "—"}
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-black whitespace-nowrap">
-                      {rec.checkOut
-                        ? new Date(rec.checkOut).toLocaleTimeString("en-IN", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                        : "—"}
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-black">
-                      {rec.workHours ? `${rec.workHours}h` : "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <ReportTable id="al-summary-tbl" headers={headers} rows={rows} />
       )}
     </div>
   );
 }
 
-// ─── EMPLOYEE REPORT ─────────────────────────────────────────────────────────
-
-function EmployeeReport({ departments }: { departments: any[] }) {
-  const [dept, setDept] = useState("all");
-  const [status, setStatus] = useState("all");
-  const [type, setType] = useState("all");
-  const [employees, setEmployees] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    load();
-  }, [dept, status, type]);
-
-  async function load() {
-    setLoading(true);
-    try {
-      const params: Record<string, string> = { limit: "500" };
-      if (dept !== "all") params.department = dept;
-      if (status !== "all") params.status = status;
-      if (type !== "all") params.type = type;
-      const r = await employeeAPI.getAll(params);
-      if (r.success) setEmployees(r.data);
-    } catch {}
-    setLoading(false);
-  }
-
-  const active = employees.filter((e) => e.status === "active").length;
-  const inactive = employees.filter((e) => e.status === "inactive").length;
-  const onLeave = employees.filter((e) => e.status === "on_leave").length;
-  const avgSalary = employees.length
-    ? Math.round(
-        employees.reduce((s, e) => s + (e.salary || 0), 0) / employees.length,
-      )
-    : 0;
-
-  const statusColor: Record<string, string> = {
-    active: "bg-[#00C48C] text-white",
-    inactive: "bg-[#EF4444] text-white",
-    on_leave: "bg-[#FA731C] text-white",
-    terminated: "bg-gray-400 text-white",
-  };
-
-  function doExport() {
-    const header = [
-      "Emp ID",
-      "Name",
-      "Email",
-      "Phone",
-      "Department",
-      "Designation",
-      "Type",
-      "Status",
-      "Join Date",
-      "Salary",
-    ];
-    const rows = employees.map((e) => [
-      e.employeeId,
-      `${e.firstName} ${e.lastName}`,
-      e.email,
-      e.phone || "",
-      e.department?.name || "",
-      e.designation,
-      e.employmentType?.replace(/_/g, " "),
-      e.status,
-      formatDate(e.joinDate),
-      String(e.salary || 0),
-    ]);
-    exportCSV([header, ...rows], `employees_report.csv`);
-  }
-
-  return (
-    <div>
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-5">
-        <Select value={dept} onChange={setDept} className="w-48">
-          <option value="all">All Departments</option>
-          {departments.map((d) => (
-            <option key={d._id} value={d._id}>
-              {d.name}
-            </option>
-          ))}
-        </Select>
-        <Select value={status} onChange={setStatus} className="w-36">
-          <option value="all">All Statuses</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-          <option value="on_leave">On Leave</option>
-          <option value="terminated">Terminated</option>
-        </Select>
-        <Select value={type} onChange={setType} className="w-36">
-          <option value="all">All Types</option>
-          <option value="full_time">Full Time</option>
-          <option value="part_time">Part Time</option>
-          <option value="contract">Contract</option>
-          <option value="intern">Intern</option>
-        </Select>
-        <div className="ml-auto flex gap-2">
-          <PrintButton
-            onClick={() => printSection("emp-table", "Employee Report")}
-          />
-          <ExportCSVButton onClick={doExport} />
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-        <StatCard
-          label="Total Employees"
-          value={employees.length}
-          color="bg-[#024BAB]"
-        />
-        <StatCard label="Active" value={active} color="bg-[#00C48C]" />
-        <StatCard
-          label="Inactive / On Leave"
-          value={inactive + onLeave}
-          color="bg-[#FA731C]"
-        />
-        <StatCard
-          label="Avg. Salary"
-          value={formatCurrency(avgSalary)}
-          color="bg-[#024BAB]"
-          sub="per annum"
-        />
-      </div>
-
-      {/* Table */}
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-[#024BAB]" />
-        </div>
-      ) : employees.length === 0 ? (
-        <div className="nb-card bg-white p-10 flex flex-col items-center">
-          <AlertCircle className="w-10 h-10 text-muted-foreground/30 mb-2" />
-          <p className="font-bold text-black">No employees match the filters</p>
-        </div>
-      ) : (
-        <div className="nb-card bg-white overflow-hidden">
-          <div id="emp-table" className="overflow-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b-2 border-black bg-[#024BAB]/5">
-                  {[
-                    "Emp ID",
-                    "Name",
-                    "Department",
-                    "Designation",
-                    "Type",
-                    "Join Date",
-                    "Salary (p.a.)",
-                    "Status",
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap"
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {employees.map((emp, i) => (
-                  <tr
-                    key={emp._id}
-                    className={cn(
-                      "border-b border-black/10",
-                      i % 2 !== 0 && "bg-[#F8FAFF]",
-                    )}
-                  >
-                    <td className="px-4 py-2.5 text-xs text-muted-foreground font-mono">
-                      {emp.employeeId}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <div className="font-bold text-black whitespace-nowrap">
-                        {emp.firstName} {emp.lastName}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {emp.email}
-                      </div>
-                    </td>
-                    <td className="px-4 py-2.5 text-black whitespace-nowrap">
-                      {emp.department?.name || "—"}
-                    </td>
-                    <td className="px-4 py-2.5 text-black whitespace-nowrap">
-                      {emp.designation}
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-black capitalize">
-                      {emp.employmentType?.replace(/_/g, " ")}
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-black whitespace-nowrap">
-                      {formatDate(emp.joinDate)}
-                    </td>
-                    <td className="px-4 py-2.5 font-bold text-black whitespace-nowrap">
-                      {formatCurrency(emp.salary || 0)}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <span
-                        className={cn(
-                          "px-2 py-0.5 text-xs font-bold border border-black",
-                          statusColor[emp.status] || "bg-gray-200 text-black",
-                        )}
-                      >
-                        {emp.status?.toUpperCase().replace("_", " ")}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── PAYROLL REPORT ──────────────────────────────────────────────────────────
-
-function PayrollReport({ departments }: { departments: any[] }) {
+function LateComingGen({ departments }: { departments: any[] }) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
-  const [status, setStatus] = useState("all");
-  const [payrolls, setPayrolls] = useState<any[]>([]);
+  const [dept, setDept] = useState("all");
+  const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     load();
-  }, [month, year, status]);
-
+  }, [month, year, dept]);
   async function load() {
     setLoading(true);
     try {
       const params: Record<string, string> = { month, year, limit: "500" };
-      if (status !== "all") params.status = status;
-      const r = await payrollAPI.getAll(params);
-      if (r.success) setPayrolls(r.data);
+      if (dept !== "all") params.department = dept;
+      const r = await attendanceAPI.getAll(params);
+      if (r.success)
+        setData(r.data.filter((rec: any) => rec.status === "late"));
     } catch {}
     setLoading(false);
   }
 
-  const totalGross = payrolls.reduce((s, p) => s + (p.grossSalary || 0), 0);
-  const totalNet = payrolls.reduce((s, p) => s + (p.netSalary || 0), 0);
-  const totalDed = payrolls.reduce((s, p) => s + (p.totalDeductions || 0), 0);
-  const totalPF = payrolls.reduce((s, p) => s + (p.pf || 0), 0);
-  const totalTDS = payrolls.reduce((s, p) => s + (p.tds || 0), 0);
-  const paid = payrolls.filter((p) => p.status === "paid").length;
-
-  const statusColor: Record<string, string> = {
-    paid: "bg-[#00C48C] text-white",
-    processed: "bg-[#024BAB] text-white",
-    draft: "bg-gray-300 text-black",
-  };
-
-  function doExport() {
-    const header = [
-      "Month",
-      "Year",
-      "Emp ID",
-      "Name",
-      "Department",
-      "Basic",
-      "HRA",
-      "DA",
-      "TA",
-      "Medical",
-      "Gross",
-      "PF",
-      "ESI",
-      "TDS",
-      "Total Ded.",
-      "Net Pay",
-      "Status",
+  const headers = [
+    "Date",
+    "Emp ID",
+    "Employee Name",
+    "Department",
+    "Check In Time",
+    "Expected Time",
+    "Late By",
+  ];
+  const rows = data.map((rec) => {
+    const checkIn = rec.checkIn ? new Date(rec.checkIn) : null;
+    const expectedHr = 9;
+    const lateMinutes = checkIn
+      ? Math.max(
+          0,
+          (checkIn.getHours() - expectedHr) * 60 + checkIn.getMinutes(),
+        )
+      : 0;
+    return [
+      formatDate(rec.date),
+      rec.employee?.employeeId || "—",
+      rec.employee ? `${rec.employee.firstName} ${rec.employee.lastName}` : "—",
+      rec.employee?.department?.name || "—",
+      checkIn
+        ? checkIn.toLocaleTimeString("en-IN", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "—",
+      "09:00 AM",
+      lateMinutes > 0 ? `${lateMinutes} min` : "—",
     ];
-    const rows = payrolls.map((p) => [
-      MONTHS[(p.month || 1) - 1],
-      String(p.year),
-      p.employee?.employeeId || "",
-      p.employee ? `${p.employee.firstName} ${p.employee.lastName}` : "",
-      p.employee?.department?.name || "",
-      String(p.basicSalary || 0),
-      String(p.hra || 0),
-      String(p.da || 0),
-      String(p.ta || 0),
-      String(p.medicalAllowance || 0),
-      String(p.grossSalary || 0),
-      String(p.pf || 0),
-      String(p.esi || 0),
-      String(p.tds || 0),
-      String(p.totalDeductions || 0),
-      String(p.netSalary || 0),
-      p.status,
-    ]);
-    exportCSV(
-      [header, ...rows],
-      `payroll_${MONTHS[Number(month) - 1]}_${year}.csv`,
-    );
-  }
+  });
 
   return (
-    <div>
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-5">
-        <Select value={month} onChange={setMonth} className="w-32">
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <NbSelect value={month} onChange={setMonth} className="w-32">
           {MONTHS.map((m, i) => (
             <option key={m} value={String(i + 1)}>
               {m}
             </option>
           ))}
-        </Select>
-        <Select value={year} onChange={setYear} className="w-28">
-          {[2023, 2024, 2025, 2026].map((y) => (
+        </NbSelect>
+        <NbSelect value={year} onChange={setYear} className="w-28">
+          {YEARS.map((y) => (
             <option key={y} value={String(y)}>
               {y}
             </option>
           ))}
-        </Select>
-        <Select value={status} onChange={setStatus} className="w-36">
-          <option value="all">All Statuses</option>
-          <option value="draft">Draft</option>
-          <option value="processed">Processed</option>
-          <option value="paid">Paid</option>
-        </Select>
+        </NbSelect>
+        <NbSelect value={dept} onChange={setDept} className="w-48">
+          <option value="all">All Departments</option>
+          {departments.map((d) => (
+            <option key={d._id} value={d._id}>
+              {d.name}
+            </option>
+          ))}
+        </NbSelect>
         <div className="ml-auto flex gap-2">
-          <PrintButton
+          <button
             onClick={() =>
-              printSection(
-                "pay-table",
-                `Payroll Report — ${MONTHS[Number(month) - 1]} ${year}`,
+              exportCSV(
+                [headers, ...rows],
+                `late_coming_${MONTHS[+month - 1]}_${year}.csv`,
               )
             }
-          />
-          <ExportCSVButton onClick={doExport} />
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
         </div>
       </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
-        <StatCard
-          label="Records"
-          value={payrolls.length}
-          color="bg-[#024BAB]"
-          sub={`${paid} paid`}
-        />
-        <StatCard
-          label="Total Gross"
-          value={formatCurrency(totalGross)}
-          color="bg-[#024BAB]"
-        />
-        <StatCard
-          label="Total Ded."
-          value={formatCurrency(totalDed)}
-          color="bg-[#EF4444]"
-        />
-        <StatCard
-          label="Net Payout"
-          value={formatCurrency(totalNet)}
-          color="bg-[#00C48C]"
-        />
-        <StatCard
-          label="Total PF"
-          value={formatCurrency(totalPF)}
-          color="bg-[#FA731C]"
-        />
-        <StatCard
-          label="Total TDS"
-          value={formatCurrency(totalTDS)}
-          color="bg-[#FA731C]"
-        />
-      </div>
-
-      {/* Table */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-[#024BAB]" />
-        </div>
-      ) : payrolls.length === 0 ? (
-        <div className="nb-card bg-white p-10 flex flex-col items-center">
-          <AlertCircle className="w-10 h-10 text-muted-foreground/30 mb-2" />
-          <p className="font-bold text-black">
-            No payroll records for this period
-          </p>
-        </div>
+        <LoadingState />
+      ) : rows.length === 0 ? (
+        <EmptyState msg="No late arrivals for this period" />
       ) : (
-        <div className="nb-card bg-white overflow-hidden">
-          <div id="pay-table" className="overflow-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b-2 border-black bg-[#024BAB]/5">
-                  {[
-                    "Employee",
-                    "Emp ID",
-                    "Department",
-                    "Basic",
-                    "HRA",
-                    "DA",
-                    "Gross",
-                    "PF",
-                    "TDS",
-                    "Net Pay",
-                    "Status",
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap"
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {payrolls.map((p, i) => (
-                  <tr
-                    key={p._id}
-                    className={cn(
-                      "border-b border-black/10",
-                      i % 2 !== 0 && "bg-[#F8FAFF]",
-                    )}
-                  >
-                    <td className="px-4 py-2.5 font-bold text-black whitespace-nowrap">
-                      {p.employee
-                        ? `${p.employee.firstName} ${p.employee.lastName}`
-                        : "—"}
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-muted-foreground font-mono">
-                      {p.employee?.employeeId || "—"}
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-black whitespace-nowrap">
-                      {p.employee?.department?.name || "—"}
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-black">
-                      {formatCurrency(p.basicSalary || 0)}
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-black">
-                      {formatCurrency(p.hra || 0)}
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-black">
-                      {formatCurrency(p.da || 0)}
-                    </td>
-                    <td className="px-4 py-2.5 font-bold text-black whitespace-nowrap">
-                      {formatCurrency(p.grossSalary || 0)}
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-[#EF4444]">
-                      -{formatCurrency(p.pf || 0)}
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-[#EF4444]">
-                      -{formatCurrency(p.tds || 0)}
-                    </td>
-                    <td className="px-4 py-2.5 font-bold text-[#00C48C] whitespace-nowrap">
-                      {formatCurrency(p.netSalary || 0)}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <span
-                        className={cn(
-                          "px-2 py-0.5 text-xs font-bold border border-black",
-                          statusColor[p.status] || "bg-gray-200 text-black",
-                        )}
-                      >
-                        {p.status?.toUpperCase()}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="border-t-2 border-black bg-[#024BAB]/5 font-bold">
-                  <td
-                    colSpan={6}
-                    className="px-4 py-3 text-sm font-bold text-black"
-                  >
-                    TOTAL ({payrolls.length} records)
-                  </td>
-                  <td className="px-4 py-3 text-sm font-bold text-black whitespace-nowrap">
-                    {formatCurrency(totalGross)}
-                  </td>
-                  <td className="px-4 py-3 text-sm font-bold text-[#EF4444] whitespace-nowrap">
-                    -{formatCurrency(totalPF)}
-                  </td>
-                  <td className="px-4 py-3 text-sm font-bold text-[#EF4444] whitespace-nowrap">
-                    -{formatCurrency(totalTDS)}
-                  </td>
-                  <td className="px-4 py-3 text-sm font-bold text-[#00C48C] whitespace-nowrap">
-                    {formatCurrency(totalNet)}
-                  </td>
-                  <td />
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </div>
+        <ReportTable id="late-tbl" headers={headers} rows={rows} />
       )}
     </div>
   );
 }
 
-// ─── LEAVE REPORT ────────────────────────────────────────────────────────────
-
-function LeaveReport({ departments }: { departments: any[] }) {
-  const now = new Date();
-  const [year, setYear] = useState(String(now.getFullYear()));
-  const [leaveType, setLeaveType] = useState("all");
-  const [status, setStatus] = useState("all");
-  const [dept, setDept] = useState("all");
-  const [leaves, setLeaves] = useState<any[]>([]);
+function DesignationSummaryGen({ departments }: { departments: any[] }) {
+  const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     load();
-  }, [year, leaveType, status, dept]);
+  }, []);
+  async function load() {
+    setLoading(true);
+    try {
+      const r = await employeeAPI.getAll({ limit: "500", status: "active" });
+      if (r.success) setData(r.data);
+    } catch {}
+    setLoading(false);
+  }
 
+  const desigMap = new Map<
+    string,
+    { count: number; totalSalary: number; dept: string }
+  >();
+  data.forEach((emp) => {
+    const key = emp.designation || "Unknown";
+    if (!desigMap.has(key))
+      desigMap.set(key, {
+        count: 0,
+        totalSalary: 0,
+        dept: emp.department?.name || "—",
+      });
+    const e = desigMap.get(key)!;
+    e.count++;
+    e.totalSalary += emp.salary || 0;
+  });
+
+  const headers = [
+    "Designation",
+    "Department",
+    "Employee Count",
+    "Total Payroll (p.a.)",
+    "Avg. Salary (p.a.)",
+  ];
+  const rows = Array.from(desigMap.entries()).map(
+    ([desig, { count, totalSalary, dept }]) => [
+      desig,
+      dept,
+      String(count),
+      formatCurrency(totalSalary),
+      formatCurrency(count > 0 ? totalSalary / count : 0),
+    ],
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <button
+          onClick={() =>
+            exportCSV([headers, ...rows], `designation_summary.csv`)
+          }
+          className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+        >
+          <Download className="w-4 h-4" /> Export CSV
+        </button>
+      </div>
+      {loading ? (
+        <LoadingState />
+      ) : rows.length === 0 ? (
+        <EmptyState msg="No active employees found" />
+      ) : (
+        <ReportTable id="desig-tbl" headers={headers} rows={rows} />
+      )}
+    </div>
+  );
+}
+
+function AttendanceReportGen({ departments }: { departments: any[] }) {
+  const now = new Date();
+  const [month, setMonth] = useState(String(now.getMonth() + 1));
+  const [year, setYear] = useState(String(now.getFullYear()));
+  const [dept, setDept] = useState("all");
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    load();
+  }, [month, year, dept]);
+  async function load() {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { month, year, limit: "500" };
+      if (dept !== "all") params.department = dept;
+      const r = await attendanceAPI.getAll(params);
+      if (r.success) setData(r.data);
+    } catch {}
+    setLoading(false);
+  }
+
+  const headers = [
+    "Date",
+    "Employee",
+    "Emp ID",
+    "Department",
+    "Status",
+    "Check In",
+    "Check Out",
+    "Work Hours",
+  ];
+  const rows = data.map((rec) => [
+    formatDate(rec.date),
+    rec.employee ? `${rec.employee.firstName} ${rec.employee.lastName}` : "—",
+    rec.employee?.employeeId || "—",
+    rec.employee?.department?.name || "—",
+    rec.status?.toUpperCase().replace("_", " ") || "—",
+    rec.checkIn
+      ? new Date(rec.checkIn).toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "—",
+    rec.checkOut
+      ? new Date(rec.checkOut).toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "—",
+    rec.workHours ? `${rec.workHours}h` : "—",
+  ]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <NbSelect value={month} onChange={setMonth} className="w-32">
+          {MONTHS.map((m, i) => (
+            <option key={m} value={String(i + 1)}>
+              {m}
+            </option>
+          ))}
+        </NbSelect>
+        <NbSelect value={year} onChange={setYear} className="w-28">
+          {YEARS.map((y) => (
+            <option key={y} value={String(y)}>
+              {y}
+            </option>
+          ))}
+        </NbSelect>
+        <NbSelect value={dept} onChange={setDept} className="w-48">
+          <option value="all">All Departments</option>
+          {departments.map((d) => (
+            <option key={d._id} value={d._id}>
+              {d.name}
+            </option>
+          ))}
+        </NbSelect>
+        <div className="ml-auto flex gap-2">
+          <button
+            onClick={() =>
+              printSection(
+                "att-rpt-tbl",
+                `Employee Attendance Report — ${MONTHS[+month - 1]} ${year}`,
+              )
+            }
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white nb-shadow"
+          >
+            <Printer className="w-4 h-4" /> Print
+          </button>
+          <button
+            onClick={() =>
+              exportCSV(
+                [headers, ...rows],
+                `attendance_${MONTHS[+month - 1]}_${year}.csv`,
+              )
+            }
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+        </div>
+      </div>
+      {loading ? (
+        <LoadingState />
+      ) : data.length === 0 ? (
+        <EmptyState msg="No attendance records for this period" />
+      ) : (
+        <ReportTable id="att-rpt-tbl" headers={headers} rows={rows} />
+      )}
+    </div>
+  );
+}
+
+function AttendanceInOutGen({ departments }: { departments: any[] }) {
+  const now = new Date();
+  const [month, setMonth] = useState(String(now.getMonth() + 1));
+  const [year, setYear] = useState(String(now.getFullYear()));
+  const [dept, setDept] = useState("all");
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    load();
+  }, [month, year, dept]);
+  async function load() {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { month, year, limit: "500" };
+      if (dept !== "all") params.department = dept;
+      const r = await attendanceAPI.getAll(params);
+      if (r.success) setData(r.data.filter((rec: any) => rec.checkIn));
+    } catch {}
+    setLoading(false);
+  }
+
+  const headers = [
+    "Date",
+    "Employee",
+    "Emp ID",
+    "Department",
+    "In Time",
+    "Out Time",
+    "Total Hours",
+    "Status",
+  ];
+  const rows = data.map((rec) => [
+    formatDate(rec.date),
+    rec.employee ? `${rec.employee.firstName} ${rec.employee.lastName}` : "—",
+    rec.employee?.employeeId || "—",
+    rec.employee?.department?.name || "—",
+    rec.checkIn
+      ? new Date(rec.checkIn).toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "—",
+    rec.checkOut
+      ? new Date(rec.checkOut).toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "Missing",
+    rec.workHours ? `${rec.workHours}h` : "—",
+    rec.status?.toUpperCase().replace("_", " ") || "—",
+  ]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <NbSelect value={month} onChange={setMonth} className="w-32">
+          {MONTHS.map((m, i) => (
+            <option key={m} value={String(i + 1)}>
+              {m}
+            </option>
+          ))}
+        </NbSelect>
+        <NbSelect value={year} onChange={setYear} className="w-28">
+          {YEARS.map((y) => (
+            <option key={y} value={String(y)}>
+              {y}
+            </option>
+          ))}
+        </NbSelect>
+        <NbSelect value={dept} onChange={setDept} className="w-48">
+          <option value="all">All Departments</option>
+          {departments.map((d) => (
+            <option key={d._id} value={d._id}>
+              {d.name}
+            </option>
+          ))}
+        </NbSelect>
+        <div className="ml-auto flex gap-2">
+          <button
+            onClick={() =>
+              exportCSV(
+                [headers, ...rows],
+                `attendance_inout_${MONTHS[+month - 1]}_${year}.csv`,
+              )
+            }
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+        </div>
+      </div>
+      {loading ? (
+        <LoadingState />
+      ) : data.length === 0 ? (
+        <EmptyState msg="No punch records for this period" />
+      ) : (
+        <ReportTable id="inout-tbl" headers={headers} rows={rows} />
+      )}
+    </div>
+  );
+}
+
+function AttendanceSummaryGen({ departments }: { departments: any[] }) {
+  const now = new Date();
+  const [month, setMonth] = useState(String(now.getMonth() + 1));
+  const [year, setYear] = useState(String(now.getFullYear()));
+  const [dept, setDept] = useState("all");
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    load();
+  }, [month, year, dept]);
+  async function load() {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { month, year, limit: "500" };
+      if (dept !== "all") params.department = dept;
+      const r = await attendanceAPI.getAll(params);
+      if (r.success) setData(r.data);
+    } catch {}
+    setLoading(false);
+  }
+
+  const empMap = new Map<string, any>();
+  data.forEach((rec) => {
+    if (!rec.employee) return;
+    const id = rec.employee._id;
+    if (!empMap.has(id))
+      empMap.set(id, {
+        emp: rec.employee,
+        present: 0,
+        late: 0,
+        absent: 0,
+        leave: 0,
+        halfDay: 0,
+        total: 0,
+      });
+    const e = empMap.get(id);
+    e.total++;
+    if (rec.status === "present") e.present++;
+    else if (rec.status === "late") e.late++;
+    else if (rec.status === "absent") e.absent++;
+    else if (rec.status === "on_leave") e.leave++;
+    else if (rec.status === "half_day") e.halfDay++;
+  });
+
+  const headers = [
+    "Emp ID",
+    "Employee",
+    "Department",
+    "Present",
+    "Late",
+    "Absent",
+    "On Leave",
+    "Half Day",
+    "Total",
+    "Attendance %",
+  ];
+  const rows = Array.from(empMap.values()).map(
+    ({ emp, present, late, absent, leave, halfDay, total }) => [
+      emp.employeeId || "—",
+      `${emp.firstName} ${emp.lastName}`,
+      emp.department?.name || "—",
+      String(present),
+      String(late),
+      String(absent),
+      String(leave),
+      String(halfDay),
+      String(total),
+      total > 0 ? `${(((present + late) / total) * 100).toFixed(1)}%` : "0%",
+    ],
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <NbSelect value={month} onChange={setMonth} className="w-32">
+          {MONTHS.map((m, i) => (
+            <option key={m} value={String(i + 1)}>
+              {m}
+            </option>
+          ))}
+        </NbSelect>
+        <NbSelect value={year} onChange={setYear} className="w-28">
+          {YEARS.map((y) => (
+            <option key={y} value={String(y)}>
+              {y}
+            </option>
+          ))}
+        </NbSelect>
+        <NbSelect value={dept} onChange={setDept} className="w-48">
+          <option value="all">All Departments</option>
+          {departments.map((d) => (
+            <option key={d._id} value={d._id}>
+              {d.name}
+            </option>
+          ))}
+        </NbSelect>
+        <div className="ml-auto flex gap-2">
+          <button
+            onClick={() =>
+              exportCSV(
+                [headers, ...rows],
+                `attendance_summary_${MONTHS[+month - 1]}_${year}.csv`,
+              )
+            }
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+        </div>
+      </div>
+      {loading ? (
+        <LoadingState />
+      ) : rows.length === 0 ? (
+        <EmptyState msg="No attendance records for this period" />
+      ) : (
+        <ReportTable id="att-sum-tbl" headers={headers} rows={rows} />
+      )}
+    </div>
+  );
+}
+
+function LeaveReportGen({ departments }: { departments: any[] }) {
+  const now = new Date();
+  const [year, setYear] = useState(String(now.getFullYear()));
+  const [leaveType, setLeaveType] = useState("all");
+  const [status, setStatus] = useState("all");
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    load();
+  }, [year, leaveType, status]);
   async function load() {
     setLoading(true);
     try {
       const params: Record<string, string> = { limit: "500", year };
       if (leaveType !== "all") params.leaveType = leaveType;
       if (status !== "all") params.status = status;
-      if (dept !== "all") params.department = dept;
       const r = await leaveAPI.getAll(params);
-      if (r.success) setLeaves(r.data);
+      if (r.success) setData(r.data);
     } catch {}
     setLoading(false);
   }
 
-  const approved = leaves.filter((l) => l.status === "approved").length;
-  const pending = leaves.filter((l) => l.status === "pending").length;
-  const rejected = leaves.filter((l) => l.status === "rejected").length;
-  const totalDays = leaves
-    .filter((l) => l.status === "approved")
-    .reduce((s, l) => s + (l.days || 0), 0);
-
-  const statusColor: Record<string, string> = {
-    approved: "bg-[#00C48C] text-white",
-    pending: "bg-[#FA731C] text-white",
-    rejected: "bg-[#EF4444] text-white",
-    cancelled: "bg-gray-300 text-black",
-  };
-
-  const typeColor: Record<string, string> = {
-    casual: "bg-blue-100 text-blue-800",
-    sick: "bg-red-100 text-red-800",
-    earned: "bg-green-100 text-green-800",
-    maternity: "bg-pink-100 text-pink-800",
-    paternity: "bg-indigo-100 text-indigo-800",
-    unpaid: "bg-gray-100 text-gray-800",
-    compensatory: "bg-yellow-100 text-yellow-800",
-  };
-
-  function doExport() {
-    const header = [
-      "Emp ID",
-      "Name",
-      "Department",
-      "Leave Type",
-      "Start Date",
-      "End Date",
-      "Days",
-      "Reason",
-      "Status",
-      "Applied On",
-    ];
-    const rows = leaves.map((l) => [
-      l.employee?.employeeId || "",
-      l.employee ? `${l.employee.firstName} ${l.employee.lastName}` : "",
-      l.employee?.department?.name || "",
-      l.leaveType,
-      formatDate(l.startDate),
-      formatDate(l.endDate),
-      String(l.days),
-      l.reason,
-      l.status,
-      formatDate(l.createdAt),
-    ]);
-    exportCSV([header, ...rows], `leave_report_${year}.csv`);
-  }
+  const headers = [
+    "Emp ID",
+    "Employee",
+    "Department",
+    "Leave Type",
+    "From",
+    "To",
+    "Days",
+    "Reason",
+    "Status",
+  ];
+  const rows = data.map((l) => [
+    l.employee?.employeeId || "—",
+    l.employee ? `${l.employee.firstName} ${l.employee.lastName}` : "—",
+    l.employee?.department?.name || "—",
+    l.leaveType?.charAt(0).toUpperCase() + l.leaveType?.slice(1) || "—",
+    formatDate(l.startDate),
+    formatDate(l.endDate),
+    String(l.days || 0),
+    l.reason || "—",
+    l.status?.toUpperCase() || "—",
+  ]);
 
   return (
-    <div>
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-5">
-        <Select value={year} onChange={setYear} className="w-28">
-          {[2023, 2024, 2025, 2026].map((y) => (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <NbSelect value={year} onChange={setYear} className="w-28">
+          {YEARS.map((y) => (
             <option key={y} value={String(y)}>
               {y}
             </option>
           ))}
-        </Select>
-        <Select value={leaveType} onChange={setLeaveType} className="w-40">
-          <option value="all">All Leave Types</option>
-          <option value="casual">Casual</option>
-          <option value="sick">Sick</option>
-          <option value="earned">Earned</option>
-          <option value="maternity">Maternity</option>
-          <option value="paternity">Paternity</option>
-          <option value="unpaid">Unpaid</option>
-          <option value="compensatory">Compensatory</option>
-        </Select>
-        <Select value={status} onChange={setStatus} className="w-36">
+        </NbSelect>
+        <NbSelect value={leaveType} onChange={setLeaveType} className="w-40">
+          <option value="all">All Types</option>
+          {[
+            "casual",
+            "sick",
+            "earned",
+            "maternity",
+            "paternity",
+            "unpaid",
+            "compensatory",
+          ].map((t) => (
+            <option key={t} value={t}>
+              {t.charAt(0).toUpperCase() + t.slice(1)}
+            </option>
+          ))}
+        </NbSelect>
+        <NbSelect value={status} onChange={setStatus} className="w-36">
           <option value="all">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-          <option value="cancelled">Cancelled</option>
-        </Select>
-        <Select value={dept} onChange={setDept} className="w-48">
+          {["pending", "approved", "rejected", "cancelled"].map((s) => (
+            <option key={s} value={s}>
+              {s.charAt(0).toUpperCase() + s.slice(1)}
+            </option>
+          ))}
+        </NbSelect>
+        <div className="ml-auto flex gap-2">
+          <button
+            onClick={() =>
+              exportCSV([headers, ...rows], `leave_report_${year}.csv`)
+            }
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+        </div>
+      </div>
+      {loading ? (
+        <LoadingState />
+      ) : data.length === 0 ? (
+        <EmptyState msg="No leave records for this period" />
+      ) : (
+        <ReportTable id="leave-rpt-tbl" headers={headers} rows={rows} />
+      )}
+    </div>
+  );
+}
+
+function MissPunchGen({ departments }: { departments: any[] }) {
+  const now = new Date();
+  const [month, setMonth] = useState(String(now.getMonth() + 1));
+  const [year, setYear] = useState(String(now.getFullYear()));
+  const [dept, setDept] = useState("all");
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    load();
+  }, [month, year, dept]);
+  async function load() {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { month, year, limit: "500" };
+      if (dept !== "all") params.department = dept;
+      const r = await attendanceAPI.getAll(params);
+      if (r.success)
+        setData(r.data.filter((rec: any) => rec.checkIn && !rec.checkOut));
+    } catch {}
+    setLoading(false);
+  }
+
+  const headers = [
+    "Date",
+    "Emp ID",
+    "Employee",
+    "Department",
+    "Check In",
+    "Check Out",
+    "Remark",
+  ];
+  const rows = data.map((rec) => [
+    formatDate(rec.date),
+    rec.employee?.employeeId || "—",
+    rec.employee ? `${rec.employee.firstName} ${rec.employee.lastName}` : "—",
+    rec.employee?.department?.name || "—",
+    rec.checkIn
+      ? new Date(rec.checkIn).toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "—",
+    "MISSING",
+    "Punch-out not recorded",
+  ]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <NbSelect value={month} onChange={setMonth} className="w-32">
+          {MONTHS.map((m, i) => (
+            <option key={m} value={String(i + 1)}>
+              {m}
+            </option>
+          ))}
+        </NbSelect>
+        <NbSelect value={year} onChange={setYear} className="w-28">
+          {YEARS.map((y) => (
+            <option key={y} value={String(y)}>
+              {y}
+            </option>
+          ))}
+        </NbSelect>
+        <NbSelect value={dept} onChange={setDept} className="w-48">
           <option value="all">All Departments</option>
           {departments.map((d) => (
             <option key={d._id} value={d._id}>
               {d.name}
             </option>
           ))}
-        </Select>
+        </NbSelect>
         <div className="ml-auto flex gap-2">
-          <PrintButton
+          <button
             onClick={() =>
-              printSection("leave-table", `Leave Report — ${year}`)
+              exportCSV(
+                [headers, ...rows],
+                `miss_punch_${MONTHS[+month - 1]}_${year}.csv`,
+              )
             }
-          />
-          <ExportCSVButton onClick={doExport} />
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
         </div>
       </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-        <StatCard
-          label="Total Applications"
-          value={leaves.length}
-          color="bg-[#024BAB]"
-        />
-        <StatCard
-          label="Approved"
-          value={approved}
-          color="bg-[#00C48C]"
-          sub={`${totalDays} days taken`}
-        />
-        <StatCard label="Pending" value={pending} color="bg-[#FA731C]" />
-        <StatCard label="Rejected" value={rejected} color="bg-[#EF4444]" />
-      </div>
-
-      {/* Table */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-[#024BAB]" />
-        </div>
-      ) : leaves.length === 0 ? (
-        <div className="nb-card bg-white p-10 flex flex-col items-center">
-          <AlertCircle className="w-10 h-10 text-muted-foreground/30 mb-2" />
-          <p className="font-bold text-black">
-            No leave records match the filters
-          </p>
-        </div>
+        <LoadingState />
+      ) : rows.length === 0 ? (
+        <EmptyState msg="No missing punch records for this period" />
       ) : (
-        <div className="nb-card bg-white overflow-hidden">
-          <div id="leave-table" className="overflow-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b-2 border-black bg-[#024BAB]/5">
-                  {[
-                    "Employee",
-                    "Emp ID",
-                    "Department",
-                    "Leave Type",
-                    "From",
-                    "To",
-                    "Days",
-                    "Reason",
-                    "Status",
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap"
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {leaves.map((l, i) => (
-                  <tr
-                    key={l._id}
-                    className={cn(
-                      "border-b border-black/10",
-                      i % 2 !== 0 && "bg-[#F8FAFF]",
-                    )}
-                  >
-                    <td className="px-4 py-2.5">
-                      <div className="font-bold text-black whitespace-nowrap">
-                        {l.employee
-                          ? `${l.employee.firstName} ${l.employee.lastName}`
-                          : "—"}
-                      </div>
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-muted-foreground font-mono">
-                      {l.employee?.employeeId || "—"}
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-black whitespace-nowrap">
-                      {l.employee?.department?.name || "—"}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <span
-                        className={cn(
-                          "px-2 py-0.5 text-xs font-bold border border-black/10",
-                          typeColor[l.leaveType] || "bg-gray-100 text-gray-800",
-                        )}
-                      >
-                        {l.leaveType?.charAt(0).toUpperCase() +
-                          l.leaveType?.slice(1)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-black whitespace-nowrap">
-                      {formatDate(l.startDate)}
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-black whitespace-nowrap">
-                      {formatDate(l.endDate)}
-                    </td>
-                    <td className="px-4 py-2.5 text-xs font-bold text-black text-center">
-                      {l.days}
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-muted-foreground max-w-[160px] truncate">
-                      {l.reason}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <span
-                        className={cn(
-                          "px-2 py-0.5 text-xs font-bold border border-black",
-                          statusColor[l.status] || "bg-gray-200 text-black",
-                        )}
-                      >
-                        {l.status?.toUpperCase()}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <ReportTable id="miss-punch-tbl" headers={headers} rows={rows} />
       )}
     </div>
   );
 }
 
-// ─── MAIN PAGE ───────────────────────────────────────────────────────────────
+function EmployeeDirectoryGen({ departments }: { departments: any[] }) {
+  const [dept, setDept] = useState("all");
+  const [status, setStatus] = useState("all");
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-const TABS: { id: Tab; label: string; icon: typeof Users }[] = [
-  { id: "attendance", label: "Attendance Report", icon: Clock },
-  { id: "employee", label: "Employee Report", icon: Users },
-  { id: "payroll", label: "Payroll Report", icon: DollarSign },
-  { id: "leave", label: "Leave Report", icon: CalendarDays },
-];
+  useEffect(() => {
+    load();
+  }, [dept, status]);
+  async function load() {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { limit: "500" };
+      if (dept !== "all") params.department = dept;
+      if (status !== "all") params.status = status;
+      const r = await employeeAPI.getAll(params);
+      if (r.success) setData(r.data);
+    } catch {}
+    setLoading(false);
+  }
+
+  const headers = [
+    "Emp ID",
+    "Name",
+    "Email",
+    "Phone",
+    "Department",
+    "Designation",
+    "Type",
+    "Join Date",
+    "Salary (p.a.)",
+    "Status",
+  ];
+  const rows = data.map((e) => [
+    e.employeeId || "—",
+    `${e.firstName} ${e.lastName}`,
+    e.email || "—",
+    e.phone || "—",
+    e.department?.name || "—",
+    e.designation || "—",
+    e.employmentType?.replace(/_/g, " ") || "—",
+    formatDate(e.joinDate),
+    formatCurrency(e.salary || 0),
+    e.status?.toUpperCase() || "—",
+  ]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <NbSelect value={dept} onChange={setDept} className="w-48">
+          <option value="all">All Departments</option>
+          {departments.map((d) => (
+            <option key={d._id} value={d._id}>
+              {d.name}
+            </option>
+          ))}
+        </NbSelect>
+        <NbSelect value={status} onChange={setStatus} className="w-36">
+          <option value="all">All Statuses</option>
+          {["active", "inactive", "on_leave", "terminated"].map((s) => (
+            <option key={s} value={s}>
+              {s.replace("_", " ").charAt(0).toUpperCase() +
+                s.replace("_", " ").slice(1)}
+            </option>
+          ))}
+        </NbSelect>
+        <div className="ml-auto flex gap-2">
+          <button
+            onClick={() => printSection("emp-dir-tbl", "Employee Directory")}
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white nb-shadow"
+          >
+            <Printer className="w-4 h-4" /> Print
+          </button>
+          <button
+            onClick={() =>
+              exportCSV([headers, ...rows], `employee_directory.csv`)
+            }
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+        </div>
+      </div>
+      {loading ? (
+        <LoadingState />
+      ) : data.length === 0 ? (
+        <EmptyState msg="No employees match the filters" />
+      ) : (
+        <ReportTable id="emp-dir-tbl" headers={headers} rows={rows} />
+      )}
+    </div>
+  );
+}
+
+function ComingSoonGen() {
+  return (
+    <div className="nb-card bg-white p-12 flex flex-col items-center gap-4">
+      <div className="w-16 h-16 border-2 border-black bg-[#024BAB]/10 flex items-center justify-center">
+        <FileText className="w-8 h-8 text-[#024BAB]" />
+      </div>
+      <div className="text-center">
+        <p className="font-black text-black text-lg">Coming Soon</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          This report requires additional data configuration.
+          <br />
+          It will be available in a future update.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+const REPORT_COMPONENT: Record<
+  string,
+  React.ComponentType<{ departments: any[] }>
+> = {
+  "pay-report": PayReportGen,
+  "salary-register": SalaryRegisterGen,
+  "net-salary": NetSalaryGen,
+  "salary-slip": SalarySlipGen,
+  "pf-register": PFRegisterGen,
+  "esic-register": ESICRegisterGen,
+  "bank-upload": BankUploadGen,
+  "absent-leave-summary": AbsentLeaveSummaryGen,
+  "late-coming-summary": LateComingGen,
+  "designation-summary": DesignationSummaryGen,
+  "attendance-report": AttendanceReportGen,
+  "attendance-inout": AttendanceInOutGen,
+  "attendance-summary": AttendanceSummaryGen,
+  "leave-report": LeaveReportGen,
+  "miss-punch": MissPunchGen,
+  "employee-directory": EmployeeDirectoryGen,
+};
+
+// ─── MAIN PAGE ────────────────────────────────────────────────────────────────
+
+const CATEGORY_META: Record<
+  Category,
+  { label: string; color: string; count: number }
+> = {
+  payroll: { label: "PayRoll", color: "#024BAB", count: 0 },
+  attendance: { label: "Attendance", color: "#00C48C", count: 0 },
+  employee: { label: "Employee", color: "#FA731C", count: 0 },
+};
 
 export default function ReportsPage() {
-  const [activeTab, setActiveTab] = useState<Tab>("attendance");
   const [departments, setDepartments] = useState<any[]>([]);
+  const [search, setSearch] = useState("");
+  const [filterCat, setFilterCat] = useState<Category | "all">("all");
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   useEffect(() => {
     departmentAPI
@@ -1156,6 +2240,33 @@ export default function ReportsPage() {
       .then((r) => r.success && setDepartments(r.data))
       .catch(() => {});
   }, []);
+
+  const filtered = REPORTS.filter((r) => {
+    const matchCat = filterCat === "all" || r.category === filterCat;
+    const matchSearch =
+      r.name.toLowerCase().includes(search.toLowerCase()) ||
+      r.desc.toLowerCase().includes(search.toLowerCase());
+    return matchCat && matchSearch;
+  });
+
+  const grouped: Record<Category, ReportDef[]> = {
+    payroll: [],
+    attendance: [],
+    employee: [],
+  };
+  filtered.forEach((r) => grouped[r.category].push(r));
+
+  const activeReport = REPORTS.find((r) => r.id === activeId);
+  const ActiveComponent = activeId
+    ? REPORT_COMPONENT[activeId] || ComingSoonGen
+    : null;
+
+  const catCounts: Record<Category, number> = {
+    payroll: 0,
+    attendance: 0,
+    employee: 0,
+  };
+  REPORTS.forEach((r) => catCounts[r.category]++);
 
   return (
     <AppLayout title="Reports">
@@ -1167,33 +2278,182 @@ export default function ReportsPage() {
         </p>
       </div>
 
-      {/* Tab Bar */}
-      <div className="flex gap-0 mb-6 border-2 border-black w-fit nb-shadow">
-        {TABS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            className={cn(
-              "flex items-center gap-2 px-5 py-3 text-sm font-bold transition-all border-r-2 border-black last:border-r-0",
-              activeTab === id
-                ? "bg-[#024BAB] text-white"
-                : "bg-white text-black hover:bg-[#F0F6FF]",
-            )}
-          >
-            <Icon className="w-4 h-4" />
-            <span className="hidden sm:inline">{label}</span>
-            <span className="sm:hidden">{label.split(" ")[0]}</span>
-          </button>
-        ))}
+      {/* Active Report Viewer */}
+      {activeId && activeReport && ActiveComponent && (
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <button
+              onClick={() => setActiveId(null)}
+              className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white nb-shadow hover:bg-gray-50"
+            >
+              <ArrowLeft className="w-4 h-4" /> All Reports
+            </button>
+            <div className="flex items-center gap-2">
+              <CategoryTag cat={activeReport.category} />
+              <h2 className="text-xl font-black text-black">
+                {activeReport.name}
+              </h2>
+            </div>
+            <button
+              onClick={() => setActiveId(null)}
+              className="ml-auto border-2 border-black p-1.5 bg-white nb-shadow hover:bg-gray-50"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="nb-card bg-white p-5">
+            <ActiveComponent departments={departments} />
+          </div>
+        </div>
+      )}
+
+      {/* Search + Filter bar */}
+      <div className="flex flex-wrap gap-3 mb-6">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search reports..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full border-2 border-black pl-9 pr-4 py-2.5 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
+          />
+        </div>
+        <div className="flex gap-1 border-2 border-black nb-shadow">
+          {(
+            [
+              ["all", "All"],
+              ["payroll", "PayRoll"],
+              ["attendance", "Attendance"],
+              ["employee", "Employee"],
+            ] as [Category | "all", string][]
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              onClick={() => setFilterCat(id)}
+              className={cn(
+                "px-4 py-2 text-sm font-black border-r-2 border-black last:border-r-0 transition-all",
+                filterCat === id
+                  ? "bg-black text-white"
+                  : "bg-white text-black hover:bg-gray-50",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Tab Content */}
-      {activeTab === "attendance" && (
-        <AttendanceReport departments={departments} />
+      {/* Count pills */}
+      <div className="flex gap-3 mb-6">
+        {(Object.entries(catCounts) as [Category, number][]).map(
+          ([cat, count]) => (
+            <div
+              key={cat}
+              className="flex items-center gap-2 border-2 border-black px-3 py-1.5 bg-white nb-shadow-sm"
+            >
+              <span
+                className="w-2.5 h-2.5 rounded-none"
+                style={{ backgroundColor: CATEGORY_META[cat].color }}
+              />
+              <span className="text-xs font-black text-black uppercase tracking-wider">
+                {CATEGORY_META[cat].label}
+              </span>
+              <span className="text-xs font-bold text-muted-foreground">
+                {count} reports
+              </span>
+            </div>
+          ),
+        )}
+      </div>
+
+      {/* Report catalog grouped by category */}
+      {(["payroll", "attendance", "employee"] as Category[]).map((cat) => {
+        const catReports = grouped[cat];
+        if (catReports.length === 0) return null;
+        return (
+          <div key={cat} className="mb-8">
+            <div className="flex items-center gap-3 mb-4">
+              <div
+                className="h-5 w-1 border border-black"
+                style={{ backgroundColor: CATEGORY_META[cat].color }}
+              />
+              <h2 className="text-base font-black text-black uppercase tracking-wider">
+                {CATEGORY_META[cat].label} ({catReports.length})
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+              {catReports.map((report) => {
+                const Icon = report.icon;
+                const isActive = activeId === report.id;
+                return (
+                  <div
+                    key={report.id}
+                    className={cn(
+                      "nb-card bg-white p-4 flex flex-col gap-3 transition-all",
+                      isActive && "border-[#024BAB] bg-[#F0F6FF]",
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={cn(
+                          "w-10 h-10 border-2 border-black flex items-center justify-center flex-shrink-0",
+                          report.available ? "bg-[#024BAB]" : "bg-gray-200",
+                        )}
+                      >
+                        <Icon
+                          className={cn(
+                            "w-5 h-5",
+                            report.available ? "text-white" : "text-gray-400",
+                          )}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <CategoryTag cat={report.category} />
+                          {!report.available && (
+                            <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider border border-black bg-gray-100 text-gray-500">
+                              Coming Soon
+                            </span>
+                          )}
+                        </div>
+                        <p className="font-black text-black text-sm leading-tight">
+                          {report.name}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed flex-1">
+                      {report.desc}
+                    </p>
+                    <button
+                      onClick={() => setActiveId(isActive ? null : report.id)}
+                      disabled={!report.available}
+                      className={cn(
+                        "w-full py-2 text-sm font-black border-2 border-black transition-all",
+                        isActive
+                          ? "bg-black text-white"
+                          : report.available
+                            ? "bg-white text-black hover:bg-[#024BAB] hover:text-white nb-shadow-sm"
+                            : "bg-gray-100 text-gray-400 cursor-not-allowed",
+                      )}
+                    >
+                      {isActive
+                        ? "Close Report"
+                        : report.available
+                          ? "Generate"
+                          : "Unavailable"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+
+      {filtered.length === 0 && (
+        <EmptyState msg={`No reports found matching "${search}"`} />
       )}
-      {activeTab === "employee" && <EmployeeReport departments={departments} />}
-      {activeTab === "payroll" && <PayrollReport departments={departments} />}
-      {activeTab === "leave" && <LeaveReport departments={departments} />}
     </AppLayout>
   );
 }
