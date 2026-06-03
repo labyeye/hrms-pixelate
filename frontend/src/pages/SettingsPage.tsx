@@ -198,6 +198,70 @@ const INITIAL_PERMISSIONS: ResourcePermissions[] = [
   },
 ];
 
+function InputField({
+  label,
+  name,
+  value,
+  placeholder = "",
+  type = "text",
+  onChange,
+}: {
+  label: string;
+  name: string;
+  value: string;
+  placeholder?: string;
+  type?: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <label className="block text-xs font-bold text-black uppercase tracking-wider">
+        {label}
+      </label>
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className="w-full px-3 py-2 border-2 border-black nb-shadow text-sm focus:outline-none focus:ring-2 focus:ring-[#024BAB] focus:ring-offset-0 bg-white"
+      />
+    </div>
+  );
+}
+
+function TextAreaField({
+  label,
+  name,
+  value,
+  placeholder = "",
+  rows = 3,
+  onChange,
+}: {
+  label: string;
+  name: string;
+  value: string;
+  placeholder?: string;
+  rows?: number;
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <label className="block text-xs font-bold text-black uppercase tracking-wider">
+        {label}
+      </label>
+      <textarea
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        rows={rows}
+        className="w-full px-3 py-2 border-2 border-black nb-shadow text-sm focus:outline-none focus:ring-2 focus:ring-[#024BAB] focus:ring-offset-0 bg-white resize-none"
+      />
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -357,50 +421,6 @@ export default function SettingsPage() {
     );
   }
 
-  const InputField = ({
-    label,
-    name,
-    value,
-    placeholder = "",
-    type = "text",
-  }: any) => (
-    <div className="space-y-2">
-      <label className="block text-xs font-bold text-black uppercase tracking-wider">
-        {label}
-      </label>
-      <input
-        type={type}
-        name={name}
-        value={value}
-        onChange={handleChange}
-        placeholder={placeholder}
-        className="w-full px-3 py-2 border-2 border-black nb-shadow text-sm focus:outline-none focus:ring-2 focus:ring-[#024BAB] focus:ring-offset-0 bg-white"
-      />
-    </div>
-  );
-
-  const TextAreaField = ({
-    label,
-    name,
-    value,
-    placeholder = "",
-    rows = 3,
-  }: any) => (
-    <div className="space-y-2">
-      <label className="block text-xs font-bold text-black uppercase tracking-wider">
-        {label}
-      </label>
-      <textarea
-        name={name}
-        value={value}
-        onChange={handleChange}
-        placeholder={placeholder}
-        rows={rows}
-        className="w-full px-3 py-2 border-2 border-black nb-shadow text-sm focus:outline-none focus:ring-2 focus:ring-[#024BAB] focus:ring-offset-0 bg-white resize-none"
-      />
-    </div>
-  );
-
   return (
     <AppLayout title="Settings">
       <div className="max-w-5xl mx-auto space-y-6">
@@ -455,28 +475,33 @@ export default function SettingsPage() {
                     label="Company Name"
                     name="companyName"
                     value={settings?.companyName || ""}
+                    onChange={handleChange}
                   />
                   <InputField
                     label="Company Email"
                     name="companyEmail"
                     value={settings?.companyEmail || ""}
                     type="email"
+                    onChange={handleChange}
                   />
                   <InputField
                     label="Company Phone"
                     name="companyPhone"
                     value={settings?.companyPhone || ""}
+                    onChange={handleChange}
                   />
                   <InputField
                     label="GST Number"
                     name="companyGST"
                     value={settings?.companyGST || ""}
+                    onChange={handleChange}
                   />
                   <InputField
                     label="Website"
                     name="companyWebsite"
                     value={settings?.companyWebsite || ""}
                     type="url"
+                    onChange={handleChange}
                   />
                 </div>
 
@@ -561,6 +586,7 @@ export default function SettingsPage() {
                   value={settings?.companyAddress || ""}
                   placeholder="Enter full company address"
                   rows={3}
+                  onChange={handleChange}
                 />
               </div>
             )}
@@ -573,26 +599,31 @@ export default function SettingsPage() {
                     label="Bank Name"
                     name="bankName"
                     value={settings?.bankName || ""}
+                    onChange={handleChange}
                   />
                   <InputField
                     label="Bank Branch"
                     name="bankBranch"
                     value={settings?.bankBranch || ""}
+                    onChange={handleChange}
                   />
                   <InputField
                     label="Account Holder Name"
                     name="bankAccountName"
                     value={settings?.bankAccountName || ""}
+                    onChange={handleChange}
                   />
                   <InputField
                     label="Account Number"
                     name="bankAccountNumber"
                     value={settings?.bankAccountNumber || ""}
+                    onChange={handleChange}
                   />
                   <InputField
                     label="IFSC Code"
                     name="bankIFSC"
                     value={settings?.bankIFSC || ""}
+                    onChange={handleChange}
                   />
                 </div>
               </div>
@@ -648,6 +679,7 @@ export default function SettingsPage() {
                         value={settings?.metaAccessToken || ""}
                         placeholder="EAAxxxxxxxxxxxxxxxxxxxxxxxx"
                         type="password"
+                        onChange={handleChange}
                       />
                     </div>
                     <InputField
@@ -655,12 +687,14 @@ export default function SettingsPage() {
                       name="metaPhoneNumberId"
                       value={settings?.metaPhoneNumberId || ""}
                       placeholder="1234567890123456"
+                      onChange={handleChange}
                     />
                     <InputField
                       label="WhatsApp Business Account ID"
                       name="metaWabaId"
                       value={settings?.metaWabaId || ""}
                       placeholder="9876543210987654"
+                      onChange={handleChange}
                     />
                   </div>
                   <div className="p-3 bg-blue-50 border-2 border-[#024BAB]/30 text-xs text-gray-600 space-y-1">
@@ -930,6 +964,7 @@ export default function SettingsPage() {
                     label="Quotation Title"
                     name="quotationTitle"
                     value={settings?.quotationTitle || ""}
+                    onChange={handleChange}
                   />
                   <TextAreaField
                     label="Quotation Footer"
@@ -937,6 +972,7 @@ export default function SettingsPage() {
                     value={settings?.quotationFooter || ""}
                     placeholder="Footer text for quotations"
                     rows={2}
+                    onChange={handleChange}
                   />
                 </div>
 
