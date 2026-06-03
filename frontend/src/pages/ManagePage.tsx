@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
-  branchAPI,
   shiftAPI,
   salaryHeadAPI,
   designationAPI,
@@ -10,7 +9,6 @@ import {
 } from "@/services/api";
 import { cn } from "@/lib/utils";
 import {
-  Building2,
   Clock,
   DollarSign,
   Briefcase,
@@ -89,89 +87,6 @@ function NbTable({ headers, rows }: { headers: string[]; rows: React.ReactNode[]
   );
 }
 
-// ─── BRANCHES ────────────────────────────────────────────────────────────────
-
-function BranchesSection({ onBack }: { onBack: () => void }) {
-  const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [modal, setModal] = useState(false);
-  const [editing, setEditing] = useState<any>(null);
-  const [form, setForm] = useState({ name: "", location: "", manager: "", phone: "", email: "", status: "active" });
-
-  const load = () => { setLoading(true); branchAPI.getAll().then((r: any) => { if (r.success) setData(r.data); }).finally(() => setLoading(false)); };
-  useEffect(() => { load(); }, []);
-
-  const openAdd = () => { setEditing(null); setForm({ name: "", location: "", manager: "", phone: "", email: "", status: "active" }); setModal(true); };
-  const openEdit = (b: any) => { setEditing(b); setForm({ name: b.name, location: b.location, manager: b.manager, phone: b.phone || "", email: b.email || "", status: b.status }); setModal(true); };
-
-  const save = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      if (editing) await branchAPI.update(editing._id, form);
-      else await branchAPI.create(form);
-      setModal(false); load();
-    } catch (err: any) { alert(err.message); }
-  };
-
-  const del = async (id: string) => {
-    if (!confirm("Delete this branch?")) return;
-    await branchAPI.delete(id); load();
-  };
-
-  return (
-    <div>
-      <SubHeader title="Branches" icon={Building2} onBack={onBack} onAdd={openAdd} addLabel="Add Branch" />
-      {loading ? <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-[#024BAB]" /></div> : (
-        <NbTable
-          headers={["#", "Branch Name", "Location", "Manager", "Employees", "Phone", "Status", "Action"]}
-          rows={data.map((b, i) => [
-            i + 1,
-            <span className="font-bold">{b.name}</span>,
-            b.location || "—",
-            b.manager || "—",
-            <span className="px-2 py-0.5 border-2 border-black bg-[#024BAB] text-white text-xs font-bold">{b.employeeCount || 0}</span>,
-            b.phone || "—",
-            <span className={cn("px-2 py-0.5 text-xs font-bold border border-black", b.status === "active" ? "bg-[#00C48C] text-white" : "bg-gray-200 text-black")}>{b.status}</span>,
-            <div className="flex gap-1">
-              <button onClick={() => openEdit(b)} className="p-1.5 border-2 border-transparent hover:border-black hover:bg-blue-50 transition-colors"><Edit className="w-3.5 h-3.5 text-[#024BAB]" /></button>
-              <button onClick={() => del(b._id)} className="p-1.5 border-2 border-transparent hover:border-black hover:bg-red-50 transition-colors"><Trash2 className="w-3.5 h-3.5 text-red-500" /></button>
-            </div>,
-          ])}
-        />
-      )}
-      {modal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="nb-card bg-white w-full max-w-md">
-            <div className="flex items-center justify-between p-5 border-b-2 border-black">
-              <h3 className="font-black text-lg">{editing ? "Edit Branch" : "Add Branch"}</h3>
-              <button onClick={() => setModal(false)}><X className="w-5 h-5" /></button>
-            </div>
-            <form onSubmit={save} className="p-5 space-y-3">
-              <NbInput label="Branch Name" value={form.name} onChange={(v) => setForm({ ...form, name: v })} required />
-              <NbInput label="Location (City, State)" value={form.location} onChange={(v) => setForm({ ...form, location: v })} />
-              <NbInput label="Manager Name" value={form.manager} onChange={(v) => setForm({ ...form, manager: v })} />
-              <div className="grid grid-cols-2 gap-3">
-                <NbInput label="Phone" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
-                <NbInput label="Email" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
-              </div>
-              <div className="space-y-1.5">
-                <label className="block text-xs font-black text-black uppercase tracking-wider">Status</label>
-                <NbSelect value={form.status} onChange={(v) => setForm({ ...form, status: v })}>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </NbSelect>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <button type="submit" className="flex-1 bg-[#024BAB] text-white border-2 border-black py-2.5 text-sm font-bold nb-shadow">{editing ? "Save Changes" : "Create Branch"}</button>
-                <button type="button" onClick={() => setModal(false)} className="flex-1 border-2 border-black py-2.5 text-sm font-bold bg-white nb-shadow">Cancel</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ─── SHIFTS ──────────────────────────────────────────────────────────────────
 
@@ -555,7 +470,6 @@ function RolesSection({ onBack }: { onBack: () => void }) {
 // ─── MANAGE TILE GRID ─────────────────────────────────────────────────────────
 
 const MANAGE_ITEMS = [
-  { id: "branches", label: "Branches", sub: "Office locations", icon: Building2, bg: "bg-[#024BAB]" },
   { id: "shifts", label: "Shift Timings", sub: "Work schedule config", icon: Clock, bg: "bg-[#FA731C]" },
   { id: "salaryhead", label: "Salary Head", sub: "Pay components", icon: DollarSign, bg: "bg-[#00C48C]" },
   { id: "designations", label: "Designations", sub: "Roles & grades", icon: Briefcase, bg: "bg-purple-500" },
@@ -566,7 +480,6 @@ const MANAGE_ITEMS = [
 export default function ManagePage() {
   const [sub, setSub] = useState<string | null>(null);
 
-  if (sub === "branches") return <AppLayout title="Manage — Branches"><BranchesSection onBack={() => setSub(null)} /></AppLayout>;
   if (sub === "shifts") return <AppLayout title="Manage — Shifts"><ShiftsSection onBack={() => setSub(null)} /></AppLayout>;
   if (sub === "salaryhead") return <AppLayout title="Manage — Salary Head"><SalaryHeadsSection onBack={() => setSub(null)} /></AppLayout>;
   if (sub === "designations") return <AppLayout title="Manage — Designations"><DesignationsSection onBack={() => setSub(null)} /></AppLayout>;

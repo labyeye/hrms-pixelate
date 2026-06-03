@@ -427,61 +427,74 @@ export default function SettingsPage() {
     );
   }
 
+  const SETTING_TABS = [
+    { group: "Company", items: [
+      { id: "general", label: "General Info", icon: Building2 },
+      { id: "bank", label: "Bank Details", icon: Landmark },
+      { id: "quotation", label: "Quotation", icon: FileText },
+    ]},
+    { group: "Integrations", items: [
+      { id: "whatsapp", label: "WhatsApp", icon: MessageCircle },
+    ]},
+    { group: "HR Config", items: [
+      { id: "salary_mode", label: "Salary Mode", icon: CheckCircle },
+      { id: "punch", label: "Punch Settings", icon: AlertCircle },
+      { id: "ess", label: "Employee App", icon: Users },
+    ]},
+    { group: "System", items: [
+      { id: "system", label: "System", icon: Settings2 },
+      { id: "preferences", label: "Preferences", icon: LayoutDashboard },
+      { id: "permissions", label: "Permissions", icon: ShieldCheck },
+    ]},
+  ];
+
   return (
     <AppLayout title="Settings">
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-display font-bold text-black">
-              Settings
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Manage company information and quotation settings
-            </p>
-          </div>
+        <div className="mb-6">
+          <h1 className="text-3xl font-display font-bold text-black">Settings</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage company, HR and system configuration
+          </p>
         </div>
 
-        {/* Tabs Navigation */}
-        <div className="nb-card bg-white border-2 border-black">
-          <div className="flex border-b-2 border-black flex-wrap">
-            {[
-              { id: "general", label: "General Info", icon: Building2 },
-              { id: "bank", label: "Bank Details", icon: Landmark },
-              { id: "quotation", label: "Quotation", icon: FileText },
-              { id: "whatsapp", label: "WhatsApp", icon: MessageCircle },
-              { id: "salary_mode", label: "Salary Mode", icon: CheckCircle },
-              { id: "punch", label: "Punch Settings", icon: AlertCircle },
-              { id: "ess", label: "Employee App", icon: Users },
-              { id: "system", label: "System", icon: Settings2 },
-              {
-                id: "preferences",
-                label: "Preferences",
-                icon: LayoutDashboard,
-              },
-              { id: "permissions", label: "Permissions", icon: ShieldCheck },
-            ].map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    "flex-1 px-4 py-3 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors border-r-2 border-black last:border-r-0",
-                    activeTab === tab.id
-                      ? "bg-[#024BAB] text-white"
-                      : "bg-white text-black hover:bg-gray-50",
-                  )}
-                >
-                  <Icon className="w-4 h-4" />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
+        {/* Sidebar + Content layout */}
+        <div className="flex gap-0 border-2 border-black nb-shadow bg-white">
 
-          {/* Content */}
-          <div className="p-6">
+          {/* Left Sidebar */}
+          <aside className="w-56 shrink-0 border-r-2 border-black bg-white flex flex-col">
+            {SETTING_TABS.map((group) => (
+              <div key={group.group} className="border-b-2 border-black last:border-b-0">
+                <p className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground bg-gray-50 border-b border-black/10">
+                  {group.group}
+                </p>
+                {group.items.map((tab) => {
+                  const Icon = tab.icon;
+                  const active = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-left transition-all border-b border-black/10 last:border-b-0",
+                        active
+                          ? "bg-[#024BAB] text-white"
+                          : "text-black hover:bg-[#F0F6FF]",
+                      )}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </aside>
+
+          {/* Content area */}
+          <div className="flex-1 min-w-0 flex flex-col">
+            <div className="p-6 flex-1">
             {/* General Info Tab */}
             {activeTab === "general" && (
               <div className="space-y-4">
@@ -1507,36 +1520,36 @@ export default function SettingsPage() {
                 </div>
               </div>
             )}
-          </div>
-        </div>
+            </div>
 
-        {/* Save Button */}
-        <div className="flex justify-end">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className={cn(
-              "nb-card px-6 py-3 text-sm font-bold text-white border-2 border-black nb-shadow",
-              "flex items-center gap-2 transition-all",
-              saving
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-[#024BAB] hover:bg-[#01368A] active:scale-95",
-            )}
-          >
-            {saving ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                Save Changes
-              </>
-            )}
-          </button>
-        </div>
-      </div>
+            {/* Save Button — bottom of right column */}
+            <div className="border-t-2 border-black p-4 flex justify-end bg-gray-50/50">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className={cn(
+                  "px-6 py-2.5 text-sm font-bold text-white border-2 border-black nb-shadow flex items-center gap-2 transition-all",
+                  saving
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-[#024BAB] hover:bg-[#01368A] active:scale-95",
+                )}
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Save Changes
+                  </>
+                )}
+              </button>
+            </div>
+          </div>{/* end right column */}
+        </div>{/* end sidebar+content flex */}
+      </div>{/* end max-w-6xl */}
 
       {/* Success/Error Animation Modal */}
       {actionModal.show && (
