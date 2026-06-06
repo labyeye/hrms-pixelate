@@ -108,8 +108,11 @@ export function AppSidebar({ mobileOpen, onClose }: AppSidebarProps) {
           )}
         >
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-7 h-7 bg-[#024BAB] border-2 border-black flex items-center justify-center text-xs font-bold text-white shrink-0">
-              {user.name?.[0]?.toUpperCase() ?? "U"}
+            <div className="w-7 h-7 border-2 border-black shrink-0 overflow-hidden bg-[#024BAB] flex items-center justify-center text-xs font-bold text-white">
+              {user.avatar
+                ? <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                : (user.name?.[0]?.toUpperCase() ?? "U")
+              }
             </div>
             <div className="min-w-0">
               <p className="text-xs font-bold text-black truncate">
