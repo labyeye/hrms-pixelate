@@ -41,6 +41,7 @@ const biometricDeviceSchema = new mongoose.Schema(
     nfcCards: [nfcCardSchema],
     isActive: { type: Boolean, default: true },
     lastSeenAt: { type: Date },
+    attlogStamp: { type: Number, default: 0 }, // last ATTLOG Stamp ACK'd — device only sends newer records
   },
   { timestamps: true },
 );

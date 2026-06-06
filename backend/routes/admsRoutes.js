@@ -114,18 +114,20 @@ router.get(["/cdata", "/cdata.aspx"], async (req, res) => {
   const { SN } = req.query;
   res.set("Content-Type", "text/plain");
 
-  // Register SN on device record on first contact
+  let attlogStamp = "None";
   if (SN) {
-    BiometricDevice.findOneAndUpdate(
+    const device = await BiometricDevice.findOneAndUpdate(
       { serialNumber: SN },
       { lastSeenAt: new Date() },
-    ).catch(() => {});
+      { new: true },
+    ).catch(() => null);
+    if (device?.attlogStamp) attlogStamp = device.attlogStamp;
   }
 
   res.send(
     [
       `GET OPTION FROM: ${SN || "DEVICE"}`,
-      `ATTLOGStamp=None`,
+      `ATTLOGStamp=${attlogStamp}`,
       `OPERLOGStamp=9999`,
       `ATTPHOTOStamp=None`,
       `ErrorDelay=30`,
@@ -152,22 +154,26 @@ router.post(["/cdata", "/cdata.aspx"], express.text({ type: "*/*" }), async (req
   if (table !== "ATTLOG") return res.send("OK");
 
   const body = req.body;
-  console.log(`[ADMS] ATTLOG from ${SN} | body type: ${typeof body} | length: ${body?.length ?? "N/A"} | body: ${JSON.stringify(body)}`);
   if (!body || typeof body !== "string") return res.send("OK");
+
+  // Stamp from query string — device sends its current record count
+  const stamp = parseInt(req.query.Stamp || "0", 10) || 0;
 
   try {
     const device = await resolveDevice(SN);
-    console.log(`[ADMS] device lookup for SN=${SN}:`, device ? `found (company=${device.company})` : "NOT FOUND");
     const companyId = device?.company || null;
 
     const logs = parseAttLog(body);
-    console.log(`[ADMS] parsed ${logs.length} logs:`, JSON.stringify(logs));
-    const results = await Promise.allSettled(logs.map((log) => processLog(log, companyId)));
-    results.forEach((r, i) => {
-      if (r.status === "rejected") console.error(`[ADMS] processLog[${i}] failed:`, r.reason?.message);
-    });
+    await Promise.allSettled(logs.map((log) => processLog(log, companyId)));
 
-    res.send("OK");
+    // Save stamp so heartbeat returns ATTLOGStamp=N — device won't re-send old records
+    if (device && stamp > (device.attlogStamp || 0)) {
+      device.attlogStamp = stamp;
+      device.lastSeenAt = new Date();
+      await device.save();
+    }
+
+    res.send(`OK: ${stamp}`);
   } catch (err) {
     console.error("[ADMS] cdata POST error:", err.message);
     res.send("OK"); // always ACK — device retries on error response
