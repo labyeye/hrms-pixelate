@@ -39,6 +39,10 @@ app.use(
 app.use(morgan("dev"));
 app.use(express.json());
 
+// ADMS device push — mounted before rate-limiters, no /api prefix
+// ESSL MB-20 hits: GET/POST /iclock/cdata, GET /iclock/getrequest
+app.use("/iclock", require("./routes/admsRoutes"));
+
 // Strict rate limit for auth endpoints only
 const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,

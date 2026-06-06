@@ -27,12 +27,10 @@ const createDesignation = asyncHandler(async (req, res) => {
     "department",
     "name",
   );
-  res
-    .status(201)
-    .json({
-      success: true,
-      data: { ...populated.toObject(), employeeCount: 0 },
-    });
+  res.status(201).json({
+    success: true,
+    data: { ...populated.toObject(), employeeCount: 0 },
+  });
 });
 
 const updateDesignation = asyncHandler(async (req, res) => {

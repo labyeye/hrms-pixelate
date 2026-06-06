@@ -24,10 +24,17 @@ import {
   Monitor,
   Terminal,
   CheckCircle2,
+  Radio,
+  Upload,
+  UserCheck,
+  Scan,
+  Hash,
+  AlertTriangle,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Tab = "locations" | "devices" | "logs";
+type Tab = "locations" | "devices" | "logs" | "adms";
 
 interface Location {
   _id: string;
@@ -365,11 +372,148 @@ export default function BiometricPage() {
   const devicePageUrl = (token: string) =>
     `${window.location.origin}/device/${token}`;
 
+  // ── ADMS state ────────────────────────────────────────────────────────────
+  const [admsDevice, setAdmsDevice] = useState<Device | null>(null);
+  const [admsSerial, setAdmsSerial] = useState("");
+  const [serialSaving, setSerialSaving] = useState(false);
+  const [admsEmployees, setAdmsEmployees] = useState<any[]>([]);
+  const [admsEmpLoading, setAdmsEmpLoading] = useState(false);
+  const [syncingAll, setSyncingAll] = useState(false);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [commands, setCommands] = useState<any[]>([]);
+  const [cmdLoading, setCmdLoading] = useState(false);
+
+  // USB RFID enrollment state
+  const [rfidModalEmp, setRfidModalEmp] = useState<any | null>(null);
+  const [rfidBuffer, setRfidBuffer] = useState("");
+  const [rfidSaving, setRfidSaving] = useState(false);
+  const rfidInputRef = useRef<HTMLInputElement>(null);
+
+  // biometricUserId edit state
+  const [editBioId, setEditBioId] = useState<{ empId: string; val: string } | null>(null);
+
+  const fetchAdmsEmployees = useCallback(async () => {
+    setAdmsEmpLoading(true);
+    try {
+      const { employeeAPI } = await import("@/services/api");
+      const res = await employeeAPI.getAll();
+      setAdmsEmployees(res.data || []);
+    } catch {}
+    setAdmsEmpLoading(false);
+  }, []);
+
+  const fetchCommands = useCallback(async (deviceId: string) => {
+    setCmdLoading(true);
+    try {
+      const res = await biometricAPI.getDeviceCommands(deviceId);
+      setCommands(res.data || []);
+    } catch {}
+    setCmdLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (tab === "adms") {
+      fetchDevices();
+      fetchAdmsEmployees();
+    }
+  }, [tab, fetchDevices, fetchAdmsEmployees]);
+
+  useEffect(() => {
+    if (admsDevice) {
+      setAdmsSerial(admsDevice.deviceMeta?.mac || (admsDevice as any).serialNumber || "");
+      fetchCommands(admsDevice._id);
+    }
+  }, [admsDevice, fetchCommands]);
+
+  const handleSaveSerial = async () => {
+    if (!admsDevice || !admsSerial.trim() || serialSaving) return;
+    setSerialSaving(true);
+    try {
+      const res = await biometricAPI.setDeviceSerial(admsDevice._id, admsSerial.trim().toUpperCase());
+      setAdmsDevice(res.data);
+      toast({ title: "Serial number saved", description: `Device linked to SN: ${admsSerial.toUpperCase()}` });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+    setSerialSaving(false);
+  };
+
+  const handleSyncEmployee = async (emp: any, rfidCard?: string) => {
+    if (!admsDevice) return;
+    setSyncingId(emp._id);
+    try {
+      await biometricAPI.syncEmployeeToDevice(admsDevice._id, emp._id, rfidCard);
+      toast({ title: "Queued", description: `${emp.firstName} will sync on next device poll` });
+      fetchCommands(admsDevice._id);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+    setSyncingId(null);
+  };
+
+  const handleSyncAll = async () => {
+    if (!admsDevice || syncingAll) return;
+    setSyncingAll(true);
+    try {
+      const res = await biometricAPI.syncAllToDevice(admsDevice._id);
+      toast({ title: "Bulk sync queued", description: res.message });
+      fetchCommands(admsDevice._id);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+    setSyncingAll(false);
+  };
+
+  const handleSaveBioId = async (emp: any) => {
+    if (!editBioId) return;
+    try {
+      const { employeeAPI } = await import("@/services/api");
+      await employeeAPI.update(emp._id, { biometricUserId: editBioId.val });
+      setAdmsEmployees((prev) =>
+        prev.map((e) => (e._id === emp._id ? { ...e, biometricUserId: editBioId.val } : e))
+      );
+      setEditBioId(null);
+      toast({ title: "Biometric ID saved" });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  };
+
+  // USB RFID: focused invisible input captures the reader's keyboard output
+  const openRfidModal = (emp: any) => {
+    setRfidModalEmp(emp);
+    setRfidBuffer("");
+    setTimeout(() => rfidInputRef.current?.focus(), 100);
+  };
+
+  const handleRfidKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && rfidBuffer.trim()) {
+      handleSaveRfid(rfidBuffer.trim());
+    }
+  };
+
+  const handleSaveRfid = async (card: string) => {
+    if (!rfidModalEmp || rfidSaving) return;
+    setRfidSaving(true);
+    try {
+      await biometricAPI.saveRfidCard(rfidModalEmp._id, card);
+      setAdmsEmployees((prev) =>
+        prev.map((e) => (e._id === rfidModalEmp._id ? { ...e, rfidCard: card } : e))
+      );
+      toast({ title: "RFID card saved", description: `Card ${card} linked to ${rfidModalEmp.firstName}` });
+      setRfidModalEmp(null);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+    setRfidSaving(false);
+  };
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   const TABS: { id: Tab; label: string; icon: any }[] = [
     { id: "locations", label: "Locations", icon: MapPin },
     { id: "devices", label: "Devices", icon: Cpu },
+    { id: "adms", label: "ADMS / ESSL Sync", icon: Radio },
     { id: "logs", label: "Activity Logs", icon: Activity },
   ];
 
@@ -397,7 +541,7 @@ export default function BiometricPage() {
                 tab === t.id
                   ? "bg-[#024BAB] text-white"
                   : "bg-white text-black hover:bg-gray-50",
-                t.id !== "logs" && "border-r-2 border-black",
+                t.id !== "logs" ? "border-r-2 border-black" : "",
               )}
             >
               <t.icon className="w-4 h-4" />
@@ -1052,34 +1196,71 @@ export default function BiometricPage() {
             {/* Sync Log Table */}
             <div className="nb-card bg-white mb-6">
               <div className="flex items-center justify-between p-4 border-b-2 border-black">
-                <h3 className="font-black text-sm text-black uppercase tracking-wider">Device Sync Log</h3>
+                <h3 className="font-black text-sm text-black uppercase tracking-wider">
+                  Device Sync Log
+                </h3>
               </div>
               <div className="overflow-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b-2 border-black bg-[#024BAB]/5">
-                      {["Device", "Location", "Last Sync", "Status"].map((h) => (
-                        <th key={h} className="px-4 py-3 text-left text-xs font-black text-black uppercase tracking-wider">{h}</th>
-                      ))}
+                      {["Device", "Location", "Last Sync", "Status"].map(
+                        (h) => (
+                          <th
+                            key={h}
+                            className="px-4 py-3 text-left text-xs font-black text-black uppercase tracking-wider"
+                          >
+                            {h}
+                          </th>
+                        ),
+                      )}
                     </tr>
                   </thead>
                   <tbody>
                     {devices.length === 0 ? (
-                      <tr><td colSpan={4} className="px-4 py-6 text-center text-sm text-muted-foreground">No devices configured</td></tr>
-                    ) : devices.map((dev, i) => (
-                      <tr key={dev._id} className={cn("border-b border-black/10", i % 2 !== 0 && "bg-[#F8FAFF]")}>
-                        <td className="px-4 py-3 font-bold text-black">{dev.name}</td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">{dev.location?.name || "—"}</td>
-                        <td className="px-4 py-3 text-sm text-black">
-                          {dev.lastSeenAt ? new Date(dev.lastSeenAt).toLocaleString("en-IN") : "Never"}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={cn("px-2 py-0.5 text-xs font-bold border border-black", dev.isActive ? "bg-[#00C48C] text-white" : "bg-[#EF4444] text-white")}>
-                            {dev.isActive ? "Online" : "Offline"}
-                          </span>
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="px-4 py-6 text-center text-sm text-muted-foreground"
+                        >
+                          No devices configured
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      devices.map((dev, i) => (
+                        <tr
+                          key={dev._id}
+                          className={cn(
+                            "border-b border-black/10",
+                            i % 2 !== 0 && "bg-[#F8FAFF]",
+                          )}
+                        >
+                          <td className="px-4 py-3 font-bold text-black">
+                            {dev.name}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-muted-foreground">
+                            {dev.location?.name || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-black">
+                            {dev.lastSeenAt
+                              ? new Date(dev.lastSeenAt).toLocaleString("en-IN")
+                              : "Never"}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={cn(
+                                "px-2 py-0.5 text-xs font-bold border border-black",
+                                dev.isActive
+                                  ? "bg-[#00C48C] text-white"
+                                  : "bg-[#EF4444] text-white",
+                              )}
+                            >
+                              {dev.isActive ? "Online" : "Offline"}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1229,6 +1410,357 @@ export default function BiometricPage() {
             )}
           </div>
         )}
+        {/* ── ADMS / ESSL SYNC TAB ─────────────────────────────────────────── */}
+        {tab === "adms" && (
+          <div className="space-y-6">
+
+            {/* Step 1 — Select device */}
+            <div className="nb-card p-5">
+              <h2 className="font-display font-black text-base mb-4 flex items-center gap-2">
+                <span className="w-6 h-6 bg-black text-white text-xs font-black flex items-center justify-center">1</span>
+                Select Device (ESSL MB-20 / ZKTeco)
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {devices.map((d) => (
+                  <button
+                    key={d._id}
+                    onClick={() => setAdmsDevice(d)}
+                    className={cn(
+                      "text-left p-4 border-2 transition-all",
+                      admsDevice?._id === d._id
+                        ? "border-[#024BAB] bg-blue-50"
+                        : "border-black hover:bg-gray-50"
+                    )}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Cpu className="w-4 h-4" />
+                      <span className="font-black text-sm">{d.name}</span>
+                      {(d as any).serialNumber && (
+                        <span className="ml-auto text-[10px] font-mono bg-green-100 text-green-800 px-1.5 py-0.5 border border-green-300">
+                          SN: {(d as any).serialNumber}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500">{d.location?.name}</p>
+                    <p className="text-[10px] font-mono text-gray-400 mt-1">
+                      {d.lastSeenAt
+                        ? `Last seen: ${new Date(d.lastSeenAt).toLocaleString()}`
+                        : "Never connected via ADMS"}
+                    </p>
+                  </button>
+                ))}
+                {devices.length === 0 && (
+                  <p className="text-sm text-gray-500 col-span-3">
+                    No devices found — create one in the Devices tab first.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {admsDevice && (
+              <>
+                {/* Step 2 — Register serial number */}
+                <div className="nb-card p-5">
+                  <h2 className="font-display font-black text-base mb-1 flex items-center gap-2">
+                    <span className="w-6 h-6 bg-black text-white text-xs font-black flex items-center justify-center">2</span>
+                    Register ADMS Serial Number
+                  </h2>
+                  <p className="text-xs text-gray-500 mb-4">
+                    Find the SN on the device: <strong>Menu → System Info → Device SN</strong>.
+                    This links attendance pushes from this device to <strong>{admsDevice.name}</strong>.
+                  </p>
+                  <div className="flex gap-3 items-end max-w-md">
+                    <div className="flex-1">
+                      <label className="block text-xs font-black uppercase mb-1">Serial Number (SN)</label>
+                      <input
+                        value={admsSerial}
+                        onChange={(e) => setAdmsSerial(e.target.value.toUpperCase())}
+                        placeholder="e.g. AB1C2D3E4F"
+                        className="w-full border-2 border-black px-3 py-2 font-mono text-sm focus:outline-none focus:border-[#024BAB]"
+                      />
+                    </div>
+                    <button
+                      onClick={handleSaveSerial}
+                      disabled={serialSaving || !admsSerial.trim()}
+                      className="nb-btn bg-[#024BAB] text-white px-4 py-2 font-black text-sm disabled:opacity-40 flex items-center gap-2"
+                    >
+                      {serialSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                      Save
+                    </button>
+                  </div>
+                  {(admsDevice as any).serialNumber && (
+                    <p className="text-xs text-green-700 font-bold mt-2 flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Currently registered: {(admsDevice as any).serialNumber}
+                    </p>
+                  )}
+                </div>
+
+                {/* Step 3 — Assign Biometric User IDs + RFID + Sync */}
+                <div className="nb-card">
+                  <div className="px-5 py-4 border-b-2 border-black flex items-center justify-between">
+                    <div>
+                      <h2 className="font-display font-black text-base flex items-center gap-2">
+                        <span className="w-6 h-6 bg-black text-white text-xs font-black flex items-center justify-center">3</span>
+                        Employees — Assign IDs & Sync to Device
+                      </h2>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Set each employee's device user ID (number from device user list), optionally assign RFID, then sync.
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleSyncAll}
+                      disabled={syncingAll || !(admsDevice as any).serialNumber}
+                      className="nb-btn bg-[#024BAB] text-white px-4 py-2 font-black text-xs disabled:opacity-40 flex items-center gap-2 shrink-0"
+                    >
+                      {syncingAll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                      Sync All
+                    </button>
+                  </div>
+
+                  {admsEmpLoading ? (
+                    <div className="p-8 text-center">
+                      <Loader2 className="w-6 h-6 animate-spin mx-auto text-gray-400" />
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b-2 border-black bg-gray-50">
+                            <th className="text-left px-4 py-3 font-black text-xs uppercase">Employee</th>
+                            <th className="text-left px-4 py-3 font-black text-xs uppercase">Device User ID</th>
+                            <th className="text-left px-4 py-3 font-black text-xs uppercase">RFID Card</th>
+                            <th className="text-right px-4 py-3 font-black text-xs uppercase">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-black/10">
+                          {admsEmployees.filter((e) => e.status !== "terminated").map((emp) => (
+                            <tr key={emp._id} className="hover:bg-gray-50">
+                              <td className="px-4 py-3">
+                                <p className="font-bold">{emp.firstName} {emp.lastName}</p>
+                                <p className="text-xs text-gray-500 font-mono">{emp.employeeId}</p>
+                              </td>
+
+                              {/* Biometric User ID cell — inline edit */}
+                              <td className="px-4 py-3">
+                                {editBioId?.empId === emp._id ? (
+                                  <div className="flex items-center gap-1.5">
+                                    <input
+                                      value={editBioId.val}
+                                      onChange={(e) => setEditBioId({ empId: emp._id, val: e.target.value })}
+                                      onKeyDown={(e) => e.key === "Enter" && handleSaveBioId(emp)}
+                                      autoFocus
+                                      className="w-20 border-2 border-[#024BAB] px-2 py-1 font-mono text-xs focus:outline-none"
+                                    />
+                                    <button onClick={() => handleSaveBioId(emp)} className="text-green-600 hover:text-green-800">
+                                      <Check className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={() => setEditBioId(null)} className="text-gray-400 hover:text-gray-700">
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => setEditBioId({ empId: emp._id, val: emp.biometricUserId || "" })}
+                                    className={cn(
+                                      "flex items-center gap-1.5 font-mono text-xs px-2 py-1 border",
+                                      emp.biometricUserId
+                                        ? "border-green-300 bg-green-50 text-green-800"
+                                        : "border-dashed border-gray-300 text-gray-400 hover:border-gray-500"
+                                    )}
+                                  >
+                                    <Hash className="w-3 h-3" />
+                                    {emp.biometricUserId || "Set ID"}
+                                  </button>
+                                )}
+                              </td>
+
+                              {/* RFID card cell */}
+                              <td className="px-4 py-3">
+                                <button
+                                  onClick={() => openRfidModal(emp)}
+                                  className={cn(
+                                    "flex items-center gap-1.5 font-mono text-xs px-2 py-1 border",
+                                    emp.rfidCard
+                                      ? "border-blue-300 bg-blue-50 text-blue-800"
+                                      : "border-dashed border-gray-300 text-gray-400 hover:border-gray-500"
+                                  )}
+                                >
+                                  <CreditCard className="w-3 h-3" />
+                                  {emp.rfidCard || "Assign RFID"}
+                                </button>
+                              </td>
+
+                              {/* Actions */}
+                              <td className="px-4 py-3 text-right">
+                                {emp.biometricUserId ? (
+                                  <button
+                                    onClick={() => handleSyncEmployee(emp)}
+                                    disabled={syncingId === emp._id || !(admsDevice as any).serialNumber}
+                                    className="nb-btn bg-[#024BAB] text-white px-3 py-1.5 text-xs font-black disabled:opacity-40 flex items-center gap-1.5 ml-auto"
+                                  >
+                                    {syncingId === emp._id
+                                      ? <Loader2 className="w-3 h-3 animate-spin" />
+                                      : <UserCheck className="w-3 h-3" />}
+                                    Sync
+                                  </button>
+                                ) : (
+                                  <span className="text-xs text-gray-400 flex items-center gap-1 justify-end">
+                                    <AlertTriangle className="w-3 h-3" /> Set ID first
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Command queue status */}
+                <div className="nb-card">
+                  <div className="px-5 py-4 border-b-2 border-black flex items-center justify-between">
+                    <h2 className="font-display font-black text-base flex items-center gap-2">
+                      <Terminal className="w-4 h-4" /> Command Queue
+                    </h2>
+                    <button
+                      onClick={() => fetchCommands(admsDevice._id)}
+                      className="nb-btn bg-white border-2 border-black px-3 py-1.5 text-xs font-black flex items-center gap-1.5"
+                    >
+                      <RefreshCw className="w-3 h-3" /> Refresh
+                    </button>
+                  </div>
+                  {cmdLoading ? (
+                    <div className="p-6 text-center"><Loader2 className="w-5 h-5 animate-spin mx-auto text-gray-400" /></div>
+                  ) : commands.length === 0 ? (
+                    <p className="p-6 text-sm text-gray-400 text-center">No commands yet — sync an employee to create one.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="border-b-2 border-black bg-gray-50">
+                            <th className="text-left px-4 py-2 font-black uppercase">ID</th>
+                            <th className="text-left px-4 py-2 font-black uppercase">Type</th>
+                            <th className="text-left px-4 py-2 font-black uppercase">Employee</th>
+                            <th className="text-left px-4 py-2 font-black uppercase">Status</th>
+                            <th className="text-left px-4 py-2 font-black uppercase">Created</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-black/10">
+                          {commands.map((cmd) => (
+                            <tr key={cmd._id} className="hover:bg-gray-50">
+                              <td className="px-4 py-2 font-mono">{cmd.cmdId}</td>
+                              <td className="px-4 py-2 font-bold">{cmd.type}</td>
+                              <td className="px-4 py-2">
+                                {cmd.employee
+                                  ? `${cmd.employee.firstName} ${cmd.employee.lastName}`
+                                  : "—"}
+                              </td>
+                              <td className="px-4 py-2">
+                                <span className={cn(
+                                  "px-2 py-0.5 border font-black text-[10px] uppercase",
+                                  cmd.status === "done"    && "bg-green-100 border-green-400 text-green-800",
+                                  cmd.status === "pending" && "bg-yellow-100 border-yellow-400 text-yellow-800",
+                                  cmd.status === "sent"    && "bg-blue-100 border-blue-400 text-blue-800",
+                                  cmd.status === "failed"  && "bg-red-100 border-red-400 text-red-800",
+                                )}>
+                                  {cmd.status}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2 font-mono text-gray-400">
+                                {new Date(cmd.createdAt).toLocaleString()}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── USB RFID ENROLLMENT MODAL ─────────────────────────────────────── */}
+        {rfidModalEmp && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div className="nb-card w-full max-w-md bg-white">
+              <div className="px-6 py-4 border-b-2 border-black flex items-center justify-between">
+                <h2 className="font-display font-black text-base flex items-center gap-2">
+                  <Scan className="w-4 h-4" /> Scan RFID Card
+                </h2>
+                <button onClick={() => setRfidModalEmp(null)} className="hover:opacity-70">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="bg-blue-50 border-2 border-blue-300 p-4">
+                  <p className="font-black text-sm text-blue-800">Employee: {rfidModalEmp.firstName} {rfidModalEmp.lastName}</p>
+                  <p className="text-xs text-blue-600 mt-0.5">{rfidModalEmp.employeeId}</p>
+                </div>
+
+                {/* Option A: USB HID reader — captures as keyboard input */}
+                <div>
+                  <p className="text-xs font-black uppercase mb-2 text-gray-600">Option A — USB RFID Reader</p>
+                  <p className="text-xs text-gray-500 mb-3">
+                    Plug in your USB RFID reader. Click the field below, then swipe / tap the card — the reader types the card number automatically.
+                  </p>
+                  <div className="relative">
+                    <input
+                      ref={rfidInputRef}
+                      value={rfidBuffer}
+                      onChange={(e) => setRfidBuffer(e.target.value)}
+                      onKeyDown={handleRfidKeyDown}
+                      placeholder="Click here, then scan card..."
+                      className="w-full border-2 border-black px-3 py-3 font-mono text-sm focus:outline-none focus:border-[#024BAB] pr-20"
+                      autoFocus
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-medium">
+                      Press Enter to save
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 text-gray-300">
+                  <div className="flex-1 border-t border-gray-200" />
+                  <span className="text-xs font-bold">OR</span>
+                  <div className="flex-1 border-t border-gray-200" />
+                </div>
+
+                {/* Option B: manual entry */}
+                <div>
+                  <p className="text-xs font-black uppercase mb-2 text-gray-600">Option B — Manual Entry</p>
+                  <input
+                    value={rfidBuffer}
+                    onChange={(e) => setRfidBuffer(e.target.value)}
+                    placeholder="Type card number manually..."
+                    className="w-full border-2 border-black px-3 py-2 font-mono text-sm focus:outline-none focus:border-[#024BAB]"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => handleSaveRfid(rfidBuffer)}
+                    disabled={!rfidBuffer.trim() || rfidSaving}
+                    className="flex-1 nb-btn bg-[#024BAB] text-white py-2.5 font-black text-sm disabled:opacity-40 flex items-center justify-center gap-2"
+                  >
+                    {rfidSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                    Save RFID Card
+                  </button>
+                  <button
+                    onClick={() => setRfidModalEmp(null)}
+                    className="nb-btn bg-white border-2 border-black px-5 py-2.5 font-black text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </AppLayout>
   );

@@ -274,6 +274,37 @@ export const biometricAPI = {
     const q = params ? "?" + new URLSearchParams(params).toString() : "";
     return request(`/biometric/logs${q}`);
   },
+
+  // ADMS device management
+  setDeviceSerial: (id: string, serialNumber: string) =>
+    request(`/biometric/devices/${id}/serial`, {
+      method: "PUT",
+      body: JSON.stringify({ serialNumber }),
+    }),
+  syncEmployeeToDevice: (
+    deviceId: string,
+    employeeId: string,
+    rfidCard?: string,
+  ) =>
+    request(`/biometric/devices/${deviceId}/sync-employee`, {
+      method: "POST",
+      body: JSON.stringify({ employeeId, rfidCard }),
+    }),
+  syncAllToDevice: (deviceId: string) =>
+    request(`/biometric/devices/${deviceId}/sync-all`, { method: "POST" }),
+  removeEmployeeFromDevice: (deviceId: string, employeeId: string) =>
+    request(`/biometric/devices/${deviceId}/sync-employee/${employeeId}`, {
+      method: "DELETE",
+    }),
+  getDeviceCommands: (deviceId: string) =>
+    request(`/biometric/devices/${deviceId}/commands`),
+
+  // RFID card via USB reader
+  saveRfidCard: (employeeId: string, rfidCard: string) =>
+    request(`/biometric/employees/${employeeId}/rfid`, {
+      method: "POST",
+      body: JSON.stringify({ rfidCard }),
+    }),
 };
 
 export const payrollConfigAPI = {

@@ -47,6 +47,8 @@ const employeeSchema = new mongoose.Schema(
     loanBalance: { type: Number, default: 0 },
     advanceBalance: { type: Number, default: 0 },
     otRate: { type: Number, default: 0 },
+    biometricUserId: { type: String, default: "" }, // ESSL/ZKTeco device user ID (numeric, e.g. "1")
+    rfidCard: { type: String, default: "" }, // RFID card number (scanned via device or USB reader)
   },
   { timestamps: true },
 );

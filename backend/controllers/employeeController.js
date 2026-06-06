@@ -194,6 +194,7 @@ const updateEmployee = [
       "avatar",
       "status",
       "exitDate",
+      "biometricUserId",
     ];
 
     for (const key of allowed) {

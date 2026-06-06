@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const BiometricLocation = require("../models/BiometricLocation");
 const BiometricDevice = require("../models/BiometricDevice");
+const BiometricCommand = require("../models/BiometricCommand");
 const BiometricLog = require("../models/BiometricLog");
 const Attendance = require("../models/Attendance");
 const Employee = require("../models/Employee");
@@ -10,6 +11,24 @@ const {
   checkInMsg,
   checkOutMsg,
 } = require("../services/whatsappService");
+
+// ─── ADMS Command helpers ─────────────────────────────────────────────────────
+
+// Build the raw ADMS userinfo command string for an employee
+function buildSetUserCmd(employee) {
+  const uid = employee.biometricUserId;
+  const name = `${employee.firstName} ${employee.lastName}`.slice(0, 24);
+  const card = employee.rfidCard || "";
+  // Fields are tab-separated; trailing tab required
+  return `DATA UPDATE USERINFO PIN=${uid}\tName=${name}\tPri=0\tPasswd=\tCard=${card}\tGrp=1\tTZ=1111111111111\tVerify=0\t`;
+}
+
+async function nextCmdId(deviceId) {
+  const last = await BiometricCommand.findOne({ device: deviceId })
+    .sort({ cmdId: -1 })
+    .select("cmdId");
+  return (last?.cmdId || 0) + 1;
+}
 
 // ─── Locations ────────────────────────────────────────────────────────────────
 
@@ -472,6 +491,248 @@ const getLogs = asyncHandler(async (req, res) => {
   });
 });
 
+// ─── Device serial number registration ───────────────────────────────────────
+
+// PUT /api/biometric/devices/:id/serial  { serialNumber: "AB12345678" }
+// Called once by admin after adding the device record — links the ADMS SN to DB
+const setDeviceSerial = asyncHandler(async (req, res) => {
+  const { serialNumber } = req.body;
+  if (!serialNumber) {
+    res.status(400);
+    throw new Error("serialNumber is required");
+  }
+  const device = await BiometricDevice.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!device) {
+    res.status(404);
+    throw new Error("Device not found");
+  }
+  // Ensure no other device in ANY company uses this SN
+  const conflict = await BiometricDevice.findOne({
+    serialNumber,
+    _id: { $ne: device._id },
+  });
+  if (conflict) {
+    res.status(400);
+    throw new Error("Serial number already registered to another device");
+  }
+  device.serialNumber = serialNumber.trim().toUpperCase();
+  await device.save();
+  res.json({ success: true, data: device });
+});
+
+// ─── Sync employee → device via ADMS command queue ───────────────────────────
+
+// POST /api/biometric/devices/:id/sync-employee
+// Body: { employeeId, rfidCard }  (rfidCard optional — scanned via USB reader)
+const syncEmployeeToDevice = asyncHandler(async (req, res) => {
+  const { employeeId, rfidCard } = req.body;
+  if (!employeeId) {
+    res.status(400);
+    throw new Error("employeeId is required");
+  }
+
+  const device = await BiometricDevice.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!device) {
+    res.status(404);
+    throw new Error("Device not found");
+  }
+  if (!device.serialNumber) {
+    res.status(400);
+    throw new Error("Device has no serial number set — register it first");
+  }
+
+  const employee = await Employee.findOne({
+    _id: employeeId,
+    company: req.user.company,
+  });
+  if (!employee) {
+    res.status(404);
+    throw new Error("Employee not found");
+  }
+  if (!employee.biometricUserId) {
+    res.status(400);
+    throw new Error("Employee has no Biometric User ID — set it first");
+  }
+
+  // Persist RFID on employee if provided
+  if (rfidCard !== undefined) {
+    employee.rfidCard = rfidCard.trim();
+    await employee.save();
+  }
+
+  // Cancel any existing pending SET_USER command for this employee on this device
+  await BiometricCommand.deleteMany({
+    device: device._id,
+    employee: employee._id,
+    type: "SET_USER",
+    status: "pending",
+  });
+
+  const cmdId = await nextCmdId(device._id);
+  const cmd = await BiometricCommand.create({
+    device: device._id,
+    company: device.company,
+    cmdId,
+    command: buildSetUserCmd(employee),
+    type: "SET_USER",
+    employee: employee._id,
+  });
+
+  res.json({
+    success: true,
+    message: "Command queued — device will receive it on next poll",
+    data: { cmdId: cmd.cmdId, employee: employee.biometricUserId },
+  });
+});
+
+// POST /api/biometric/devices/:id/sync-all
+// Queues SET_USER commands for every active employee with a biometricUserId
+const syncAllToDevice = asyncHandler(async (req, res) => {
+  const device = await BiometricDevice.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!device) {
+    res.status(404);
+    throw new Error("Device not found");
+  }
+  if (!device.serialNumber) {
+    res.status(400);
+    throw new Error("Device has no serial number set");
+  }
+
+  const employees = await Employee.find({
+    company: req.user.company,
+    biometricUserId: { $exists: true, $ne: "" },
+    status: { $ne: "terminated" },
+  });
+
+  // Cancel all pending SET_USER for this device
+  await BiometricCommand.deleteMany({
+    device: device._id,
+    type: "SET_USER",
+    status: "pending",
+  });
+
+  let baseId = await nextCmdId(device._id);
+  const cmds = employees.map((emp, i) => ({
+    device: device._id,
+    company: device.company,
+    cmdId: baseId + i,
+    command: buildSetUserCmd(emp),
+    type: "SET_USER",
+    employee: emp._id,
+  }));
+
+  if (cmds.length) await BiometricCommand.insertMany(cmds);
+
+  res.json({
+    success: true,
+    message: `${cmds.length} employee(s) queued for sync`,
+    data: { queued: cmds.length },
+  });
+});
+
+// DELETE /api/biometric/devices/:id/sync-employee/:employeeId
+// Queues a DELETE USER command
+const removeEmployeeFromDevice = asyncHandler(async (req, res) => {
+  const device = await BiometricDevice.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!device) {
+    res.status(404);
+    throw new Error("Device not found");
+  }
+
+  const employee = await Employee.findOne({
+    _id: req.params.employeeId,
+    company: req.user.company,
+  });
+  if (!employee || !employee.biometricUserId) {
+    res.status(404);
+    throw new Error("Employee not found or has no biometric ID");
+  }
+
+  const cmdId = await nextCmdId(device._id);
+  await BiometricCommand.create({
+    device: device._id,
+    company: device.company,
+    cmdId,
+    command: `DATA DELETE USERINFO PIN=${employee.biometricUserId}`,
+    type: "DELETE_USER",
+    employee: employee._id,
+  });
+
+  res.json({ success: true, message: "Delete command queued" });
+});
+
+// GET /api/biometric/devices/:id/commands — list recent commands + status
+const getDeviceCommands = asyncHandler(async (req, res) => {
+  const device = await BiometricDevice.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!device) {
+    res.status(404);
+    throw new Error("Device not found");
+  }
+
+  const cmds = await BiometricCommand.find({ device: device._id })
+    .populate("employee", "firstName lastName employeeId biometricUserId")
+    .sort({ createdAt: -1 })
+    .limit(50);
+
+  res.json({ success: true, data: cmds });
+});
+
+// POST /api/biometric/employees/:id/rfid  { rfidCard: "scanned-value" }
+// Saves RFID card scanned via USB reader (no device needed)
+const saveRfidCard = asyncHandler(async (req, res) => {
+  const { rfidCard } = req.body;
+  if (!rfidCard) {
+    res.status(400);
+    throw new Error("rfidCard is required");
+  }
+
+  const employee = await Employee.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!employee) {
+    res.status(404);
+    throw new Error("Employee not found");
+  }
+
+  // Ensure unique within company
+  const conflict = await Employee.findOne({
+    company: req.user.company,
+    rfidCard: rfidCard.trim(),
+    _id: { $ne: employee._id },
+  });
+  if (conflict) {
+    res.status(400);
+    throw new Error(
+      `RFID card already assigned to ${conflict.firstName} ${conflict.lastName} (${conflict.employeeId})`,
+    );
+  }
+
+  employee.rfidCard = rfidCard.trim();
+  await employee.save();
+
+  res.json({
+    success: true,
+    message: "RFID card saved",
+    data: { rfidCard: employee.rfidCard },
+  });
+});
+
 module.exports = {
   getLocations,
   createLocation,
@@ -488,4 +749,10 @@ module.exports = {
   getDeviceInfo,
   recordBiometric,
   getLogs,
+  setDeviceSerial,
+  syncEmployeeToDevice,
+  syncAllToDevice,
+  removeEmployeeFromDevice,
+  getDeviceCommands,
+  saveRfidCard,
 };

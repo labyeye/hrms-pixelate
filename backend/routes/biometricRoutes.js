@@ -17,6 +17,12 @@ const {
   getDeviceInfo,
   recordBiometric,
   getLogs,
+  setDeviceSerial,
+  syncEmployeeToDevice,
+  syncAllToDevice,
+  removeEmployeeFromDevice,
+  getDeviceCommands,
+  saveRfidCard,
 } = require("../controllers/biometricController");
 
 // Public device endpoints (no user auth — device token / activation code used instead)
@@ -74,5 +80,35 @@ router.delete(
 );
 
 router.get("/logs", getLogs);
+
+// ── ADMS device management (serial, sync, commands) ──────────────────────────
+router.put(
+  "/devices/:id/serial",
+  authorize("super_admin", "hr_manager"),
+  setDeviceSerial,
+);
+router.post(
+  "/devices/:id/sync-employee",
+  authorize("super_admin", "hr_manager"),
+  syncEmployeeToDevice,
+);
+router.post(
+  "/devices/:id/sync-all",
+  authorize("super_admin", "hr_manager"),
+  syncAllToDevice,
+);
+router.delete(
+  "/devices/:id/sync-employee/:employeeId",
+  authorize("super_admin", "hr_manager"),
+  removeEmployeeFromDevice,
+);
+router.get("/devices/:id/commands", getDeviceCommands);
+
+// ── RFID card assignment (USB reader or manual) ───────────────────────────────
+router.post(
+  "/employees/:id/rfid",
+  authorize("super_admin", "hr_manager"),
+  saveRfidCard,
+);
 
 module.exports = router;

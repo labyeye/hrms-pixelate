@@ -25,6 +25,8 @@ const biometricDeviceSchema = new mongoose.Schema(
       required: true,
     },
     name: { type: String, required: true, trim: true },
+    // Serial number the ESSL/ZKTeco device sends in ADMS requests (SN= query param)
+    serialNumber: { type: String, default: "", index: true },
     // Long-lived secret used by device for all API calls
     deviceToken: { type: String, unique: true },
     // Short code shown to admin — hardware device/agent calls /register once with this

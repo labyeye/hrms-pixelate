@@ -428,24 +428,34 @@ export default function SettingsPage() {
   }
 
   const SETTING_TABS = [
-    { group: "Company", items: [
-      { id: "general", label: "General Info", icon: Building2 },
-      { id: "bank", label: "Bank Details", icon: Landmark },
-      { id: "quotation", label: "Quotation", icon: FileText },
-    ]},
-    { group: "Integrations", items: [
-      { id: "whatsapp", label: "WhatsApp", icon: MessageCircle },
-    ]},
-    { group: "HR Config", items: [
-      { id: "salary_mode", label: "Salary Mode", icon: CheckCircle },
-      { id: "punch", label: "Punch Settings", icon: AlertCircle },
-      { id: "ess", label: "Employee App", icon: Users },
-    ]},
-    { group: "System", items: [
-      { id: "system", label: "System", icon: Settings2 },
-      { id: "preferences", label: "Preferences", icon: LayoutDashboard },
-      { id: "permissions", label: "Permissions", icon: ShieldCheck },
-    ]},
+    {
+      group: "Company",
+      items: [
+        { id: "general", label: "General Info", icon: Building2 },
+        { id: "bank", label: "Bank Details", icon: Landmark },
+        { id: "quotation", label: "Quotation", icon: FileText },
+      ],
+    },
+    {
+      group: "Integrations",
+      items: [{ id: "whatsapp", label: "WhatsApp", icon: MessageCircle }],
+    },
+    {
+      group: "HR Config",
+      items: [
+        { id: "salary_mode", label: "Salary Mode", icon: CheckCircle },
+        { id: "punch", label: "Punch Settings", icon: AlertCircle },
+        { id: "ess", label: "Employee App", icon: Users },
+      ],
+    },
+    {
+      group: "System",
+      items: [
+        { id: "system", label: "System", icon: Settings2 },
+        { id: "preferences", label: "Preferences", icon: LayoutDashboard },
+        { id: "permissions", label: "Permissions", icon: ShieldCheck },
+      ],
+    },
   ];
 
   return (
@@ -453,7 +463,9 @@ export default function SettingsPage() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-display font-bold text-black">Settings</h1>
+          <h1 className="text-3xl font-display font-bold text-black">
+            Settings
+          </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Manage company, HR and system configuration
           </p>
@@ -461,11 +473,13 @@ export default function SettingsPage() {
 
         {/* Sidebar + Content layout */}
         <div className="flex gap-0 border-2 border-black nb-shadow bg-white">
-
           {/* Left Sidebar */}
           <aside className="w-56 shrink-0 border-r-2 border-black bg-white flex flex-col">
             {SETTING_TABS.map((group) => (
-              <div key={group.group} className="border-b-2 border-black last:border-b-0">
+              <div
+                key={group.group}
+                className="border-b-2 border-black last:border-b-0"
+              >
                 <p className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground bg-gray-50 border-b border-black/10">
                   {group.group}
                 </p>
@@ -495,78 +509,99 @@ export default function SettingsPage() {
           {/* Content area */}
           <div className="flex-1 min-w-0 flex flex-col">
             <div className="p-6 flex-1">
-            {/* General Info Tab */}
-            {activeTab === "general" && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InputField
-                    label="Company Name"
-                    name="companyName"
-                    value={settings?.companyName || ""}
-                    onChange={handleChange}
-                  />
-                  <InputField
-                    label="Company Email"
-                    name="companyEmail"
-                    value={settings?.companyEmail || ""}
-                    type="email"
-                    onChange={handleChange}
-                  />
-                  <InputField
-                    label="Company Phone"
-                    name="companyPhone"
-                    value={settings?.companyPhone || ""}
-                    onChange={handleChange}
-                  />
-                  <InputField
-                    label="GST Number"
-                    name="companyGST"
-                    value={settings?.companyGST || ""}
-                    onChange={handleChange}
-                  />
-                  <InputField
-                    label="Website"
-                    name="companyWebsite"
-                    value={settings?.companyWebsite || ""}
-                    type="url"
-                    onChange={handleChange}
-                  />
-                </div>
+              {/* General Info Tab */}
+              {activeTab === "general" && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <InputField
+                      label="Company Name"
+                      name="companyName"
+                      value={settings?.companyName || ""}
+                      onChange={handleChange}
+                    />
+                    <InputField
+                      label="Company Email"
+                      name="companyEmail"
+                      value={settings?.companyEmail || ""}
+                      type="email"
+                      onChange={handleChange}
+                    />
+                    <InputField
+                      label="Company Phone"
+                      name="companyPhone"
+                      value={settings?.companyPhone || ""}
+                      onChange={handleChange}
+                    />
+                    <InputField
+                      label="GST Number"
+                      name="companyGST"
+                      value={settings?.companyGST || ""}
+                      onChange={handleChange}
+                    />
+                    <InputField
+                      label="Website"
+                      name="companyWebsite"
+                      value={settings?.companyWebsite || ""}
+                      type="url"
+                      onChange={handleChange}
+                    />
+                  </div>
 
-                {/* Logo Upload */}
-                <div className="border-t-2 border-black pt-4 mt-4">
-                  <label className="block text-xs font-bold text-black uppercase tracking-wider mb-3">
-                    Company Logo
-                  </label>
-                  <div className="flex gap-4">
-                    {/* Upload Input */}
-                    <div className="flex-1">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoUpload}
-                        className="hidden"
-                        id="logo-upload"
-                      />
-                      <label
-                        htmlFor="logo-upload"
-                        className="block w-full px-4 py-3 border-2 border-dashed border-black hover:bg-[#024BAB]/5 transition-colors cursor-pointer text-center"
-                      >
-                        <div className="text-xs font-bold text-black">
-                          Click to upload logo
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          PNG, JPG, GIF up to 5MB
-                        </div>
-                      </label>
-                    </div>
+                  {/* Logo Upload */}
+                  <div className="border-t-2 border-black pt-4 mt-4">
+                    <label className="block text-xs font-bold text-black uppercase tracking-wider mb-3">
+                      Company Logo
+                    </label>
+                    <div className="flex gap-4">
+                      {/* Upload Input */}
+                      <div className="flex-1">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoUpload}
+                          className="hidden"
+                          id="logo-upload"
+                        />
+                        <label
+                          htmlFor="logo-upload"
+                          className="block w-full px-4 py-3 border-2 border-dashed border-black hover:bg-[#024BAB]/5 transition-colors cursor-pointer text-center"
+                        >
+                          <div className="text-xs font-bold text-black">
+                            Click to upload logo
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            PNG, JPG, GIF up to 5MB
+                          </div>
+                        </label>
+                      </div>
 
-                    {/* Logo Preview */}
-                    {(logoPreview || settings?.logoUrl) &&
-                      !logoPreview?.startsWith("data:") && (
+                      {/* Logo Preview */}
+                      {(logoPreview || settings?.logoUrl) &&
+                        !logoPreview?.startsWith("data:") && (
+                          <div className="flex items-center gap-2">
+                            <img
+                              src={logoPreview || settings?.logoUrl}
+                              alt="Logo preview"
+                              className="w-24 h-24 object-contain border-2 border-black nb-shadow-sm bg-white p-2"
+                            />
+                            <button
+                              onClick={() => {
+                                setLogoPreview(null);
+                                setSettings((prev: any) => ({
+                                  ...prev,
+                                  logoUrl: "",
+                                }));
+                              }}
+                              className="px-2 py-1 bg-[#EF4444] text-white text-xs font-bold border-2 border-black hover:bg-[#DC2626] nb-shadow-sm"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
+                      {logoPreview?.startsWith("data:") && (
                         <div className="flex items-center gap-2">
                           <img
-                            src={logoPreview || settings?.logoUrl}
+                            src={logoPreview}
                             alt="Logo preview"
                             className="w-24 h-24 object-contain border-2 border-black nb-shadow-sm bg-white p-2"
                           />
@@ -584,911 +619,675 @@ export default function SettingsPage() {
                           </button>
                         </div>
                       )}
-                    {logoPreview?.startsWith("data:") && (
-                      <div className="flex items-center gap-2">
-                        <img
-                          src={logoPreview}
-                          alt="Logo preview"
-                          className="w-24 h-24 object-contain border-2 border-black nb-shadow-sm bg-white p-2"
-                        />
-                        <button
-                          onClick={() => {
-                            setLogoPreview(null);
-                            setSettings((prev: any) => ({
-                              ...prev,
-                              logoUrl: "",
-                            }));
-                          }}
-                          className="px-2 py-1 bg-[#EF4444] text-white text-xs font-bold border-2 border-black hover:bg-[#DC2626] nb-shadow-sm"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <TextAreaField
-                  label="Company Address"
-                  name="companyAddress"
-                  value={settings?.companyAddress || ""}
-                  placeholder="Enter full company address"
-                  rows={3}
-                  onChange={handleChange}
-                />
-              </div>
-            )}
-
-            {/* Bank Details Tab */}
-            {activeTab === "bank" && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InputField
-                    label="Bank Name"
-                    name="bankName"
-                    value={settings?.bankName || ""}
-                    onChange={handleChange}
-                  />
-                  <InputField
-                    label="Bank Branch"
-                    name="bankBranch"
-                    value={settings?.bankBranch || ""}
-                    onChange={handleChange}
-                  />
-                  <InputField
-                    label="Account Holder Name"
-                    name="bankAccountName"
-                    value={settings?.bankAccountName || ""}
-                    onChange={handleChange}
-                  />
-                  <InputField
-                    label="Account Number"
-                    name="bankAccountNumber"
-                    value={settings?.bankAccountNumber || ""}
-                    onChange={handleChange}
-                  />
-                  <InputField
-                    label="IFSC Code"
-                    name="bankIFSC"
-                    value={settings?.bankIFSC || ""}
-                    onChange={handleChange}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* WhatsApp Tab */}
-            {activeTab === "whatsapp" && (
-              <div className="space-y-6">
-                {/* Enable toggle */}
-                <div className="flex items-center justify-between p-4 border-2 border-black bg-green-50">
-                  <div>
-                    <p className="font-black text-sm text-black">
-                      Enable WhatsApp Notifications
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      Send automated WhatsApp messages via Meta Business API for
-                      leave, payroll and attendance events
-                    </p>
-                  </div>
-                  <button
-                    onClick={() =>
-                      setSettings((p: any) => ({
-                        ...p,
-                        whatsappEnabled: !p?.whatsappEnabled,
-                      }))
-                    }
-                    className={cn(
-                      "w-12 h-6 border-2 border-black relative transition-colors",
-                      settings?.whatsappEnabled
-                        ? "bg-green-500"
-                        : "bg-gray-300",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "absolute top-0.5 w-4 h-4 bg-white border border-black transition-all",
-                        settings?.whatsappEnabled ? "left-6" : "left-0.5",
-                      )}
-                    />
-                  </button>
-                </div>
-
-                {/* Meta WhatsApp Credentials */}
-                <div className="space-y-4">
-                  <h3 className="text-xs font-black uppercase tracking-wider text-gray-500">
-                    Meta WhatsApp Business API Credentials
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="md:col-span-2">
-                      <InputField
-                        label="System User Access Token"
-                        name="metaAccessToken"
-                        value={settings?.metaAccessToken || ""}
-                        placeholder="EAAxxxxxxxxxxxxxxxxxxxxxxxx"
-                        type="password"
-                        onChange={handleChange}
-                      />
                     </div>
-                    <InputField
-                      label="WhatsApp Phone Number ID"
-                      name="metaPhoneNumberId"
-                      value={settings?.metaPhoneNumberId || ""}
-                      placeholder="1234567890123456"
-                      onChange={handleChange}
-                    />
-                    <InputField
-                      label="WhatsApp Business Account ID"
-                      name="metaWabaId"
-                      value={settings?.metaWabaId || ""}
-                      placeholder="9876543210987654"
-                      onChange={handleChange}
-                    />
                   </div>
-                  <div className="p-3 bg-blue-50 border-2 border-[#024BAB]/30 text-xs text-gray-600 space-y-1">
-                    <p className="font-black text-[#024BAB]">
-                      How to set up Meta WhatsApp Business API
-                    </p>
-                    <p>
-                      1. Go to <strong>developers.facebook.com</strong> → My
-                      Apps → Create App → Business
-                    </p>
-                    <p>
-                      2. Add the <strong>WhatsApp</strong> product to your app
-                    </p>
-                    <p>
-                      3. Under WhatsApp → Getting Started, copy your{" "}
-                      <strong>Phone Number ID</strong> and{" "}
-                      <strong>WhatsApp Business Account ID</strong>
-                    </p>
-                    <p>
-                      4. Create a <strong>System User</strong> in Meta Business
-                      Manager and generate a permanent token with{" "}
-                      <code className="bg-white px-1 border">
-                        whatsapp_business_messaging
-                      </code>{" "}
-                      permission
-                    </p>
-                    <p>
-                      5. Employee phone numbers must include country code
-                      without + (e.g. 919876543210)
-                    </p>
-                  </div>
-                </div>
 
-                {/* Notification toggles */}
-                <div className="border-t-2 border-black pt-4 space-y-3">
-                  <h3 className="text-xs font-black uppercase tracking-wider text-gray-500">
-                    Notification Events
-                  </h3>
-                  {[
-                    {
-                      key: "whatsappNotifyLeave",
-                      label: "Leave Approved / Rejected",
-                      desc: "Notify employee when HR approves or rejects their leave request",
-                    },
-                    {
-                      key: "whatsappNotifyPayroll",
-                      label: "Salary Credited",
-                      desc: "Notify employee when their payroll is marked as paid",
-                    },
-                    {
-                      key: "whatsappNotifyCheckIn",
-                      label: "Biometric Check-In / Check-Out",
-                      desc: "Notify employee when attendance is recorded via biometric device",
-                    },
-                  ].map(({ key, label, desc }) => (
-                    <div
-                      key={key}
-                      className="flex items-center justify-between p-3 border-2 border-gray-200 bg-white"
-                    >
-                      <div>
-                        <p className="font-bold text-sm text-black">{label}</p>
-                        <p className="text-xs text-gray-500">{desc}</p>
-                      </div>
-                      <button
-                        onClick={() =>
-                          setSettings((p: any) => ({ ...p, [key]: !p?.[key] }))
-                        }
-                        className={cn(
-                          "w-10 h-5 border-2 border-black relative transition-colors shrink-0",
-                          settings?.[key] !== false
-                            ? "bg-[#024BAB]"
-                            : "bg-gray-300",
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            "absolute top-0.5 w-3 h-3 bg-white border border-black transition-all",
-                            settings?.[key] !== false ? "left-5" : "left-0.5",
-                          )}
-                        />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Permissions Tab */}
-            {activeTab === "permissions" && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-9 h-9 bg-[#024BAB] border-2 border-black flex items-center justify-center shrink-0 nb-shadow-sm">
-                    <ShieldCheck className="w-4 h-4 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-display font-bold text-black">
-                      Role Permissions
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Configure what each role can do per resource
-                    </p>
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table
-                    className="w-full border-2 border-black"
-                    style={{ minWidth: 700 }}
-                  >
-                    <thead>
-                      <tr className="bg-[#024BAB]">
-                        <th className="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider border-r-2 border-black w-32">
-                          Resource
-                        </th>
-                        {HRMS_ROLES.map((role) => (
-                          <th
-                            key={role.id}
-                            className="px-2 py-3 text-center text-xs font-bold text-white uppercase tracking-wider border-r-2 border-black last:border-r-0"
-                            colSpan={4}
-                          >
-                            {role.label}
-                          </th>
-                        ))}
-                      </tr>
-                      <tr className="bg-[#024BAB]/10 border-b-2 border-black">
-                        <th className="px-4 py-2 text-left text-[10px] font-bold text-black uppercase tracking-wider border-r-2 border-black" />
-                        {HRMS_ROLES.map((role) =>
-                          ["C", "R", "U", "D"].map((op) => (
-                            <th
-                              key={`${role.id}-${op}`}
-                              className="px-1 py-2 text-center text-[10px] font-bold text-black uppercase tracking-wider border-r border-black/20 last:border-r-2 last:border-black"
-                            >
-                              {op}
-                            </th>
-                          )),
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {permissions.map((res, resIdx) => (
-                        <tr
-                          key={res.resource}
-                          className={cn(
-                            "border-b-2 border-black last:border-b-0 transition-colors",
-                            resIdx % 2 === 0 ? "bg-white" : "bg-[#024BAB]/5",
-                          )}
-                        >
-                          <td className="px-4 py-3 text-xs font-bold text-black border-r-2 border-black whitespace-nowrap">
-                            {res.resource}
-                          </td>
-                          {HRMS_ROLES.map((role) =>
-                            (
-                              ["create", "read", "update", "delete"] as (
-                                | "create"
-                                | "read"
-                                | "update"
-                                | "delete"
-                              )[]
-                            ).map((op) => {
-                              const checked = res.permissions[role.id][op];
-                              const isSuperAdmin = role.id === "super_admin";
-                              return (
-                                <td
-                                  key={`${role.id}-${op}`}
-                                  className="px-1 py-3 text-center border-r border-black/20 last:border-r-2 last:border-black"
-                                >
-                                  <button
-                                    onClick={() => {
-                                      if (isSuperAdmin) return;
-                                      setPermissions((prev) =>
-                                        prev.map((r, i) =>
-                                          i !== resIdx
-                                            ? r
-                                            : {
-                                                ...r,
-                                                permissions: {
-                                                  ...r.permissions,
-                                                  [role.id]: {
-                                                    ...r.permissions[role.id],
-                                                    [op]: !r.permissions[
-                                                      role.id
-                                                    ][op],
-                                                  },
-                                                },
-                                              },
-                                        ),
-                                      );
-                                    }}
-                                    disabled={isSuperAdmin}
-                                    className={cn(
-                                      "w-5 h-5 border-2 border-black flex items-center justify-center mx-auto transition-colors",
-                                      checked
-                                        ? "bg-[#024BAB]"
-                                        : "bg-white hover:bg-[#024BAB]/10",
-                                      isSuperAdmin &&
-                                        "opacity-60 cursor-not-allowed",
-                                    )}
-                                    title={
-                                      isSuperAdmin
-                                        ? "Super Admin always has full access"
-                                        : `Toggle ${op} for ${role.label}`
-                                    }
-                                  >
-                                    {checked && (
-                                      <svg
-                                        className="w-3 h-3 text-white"
-                                        viewBox="0 0 12 12"
-                                        fill="none"
-                                      >
-                                        <path
-                                          d="M2 6l3 3 5-5"
-                                          stroke="currentColor"
-                                          strokeWidth="2"
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                        />
-                                      </svg>
-                                    )}
-                                  </button>
-                                </td>
-                              );
-                            }),
-                          )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="flex items-start gap-2 p-3 border-2 border-black bg-[#FA731C]/10">
-                  <span className="text-[10px] font-bold text-[#FA731C] uppercase tracking-wider shrink-0 mt-0.5">
-                    Note
-                  </span>
-                  <p className="text-xs text-black">
-                    C = Create, R = Read, U = Update, D = Delete. Super Admin
-                    always has full access. Changes here configure the role
-                    model for your HR team.
-                  </p>
-                </div>
-
-                <div className="flex justify-end pt-2">
-                  <button
-                    onClick={() =>
-                      setActionModal({
-                        show: true,
-                        type: "success",
-                        title: "Permissions Saved",
-                        message: "Role permissions have been updated.",
-                      })
-                    }
-                    className={cn(
-                      "nb-card px-6 py-3 text-sm font-bold text-white border-2 border-black nb-shadow flex items-center gap-2 bg-[#024BAB] hover:bg-[#01368A] active:scale-95",
-                    )}
-                  >
-                    <Save className="w-4 h-4" />
-                    Save Permissions
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Quotation Tab */}
-            {activeTab === "quotation" && (
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <InputField
-                    label="Quotation Title"
-                    name="quotationTitle"
-                    value={settings?.quotationTitle || ""}
-                    onChange={handleChange}
-                  />
                   <TextAreaField
-                    label="Quotation Footer"
-                    name="quotationFooter"
-                    value={settings?.quotationFooter || ""}
-                    placeholder="Footer text for quotations"
-                    rows={2}
+                    label="Company Address"
+                    name="companyAddress"
+                    value={settings?.companyAddress || ""}
+                    placeholder="Enter full company address"
+                    rows={3}
                     onChange={handleChange}
                   />
                 </div>
+              )}
 
-                {/* Terms & Conditions */}
-                <div className="border-t-2 border-black pt-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-bold text-black uppercase tracking-wider">
-                      Terms & Conditions
-                    </h3>
+              {/* Bank Details Tab */}
+              {activeTab === "bank" && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <InputField
+                      label="Bank Name"
+                      name="bankName"
+                      value={settings?.bankName || ""}
+                      onChange={handleChange}
+                    />
+                    <InputField
+                      label="Bank Branch"
+                      name="bankBranch"
+                      value={settings?.bankBranch || ""}
+                      onChange={handleChange}
+                    />
+                    <InputField
+                      label="Account Holder Name"
+                      name="bankAccountName"
+                      value={settings?.bankAccountName || ""}
+                      onChange={handleChange}
+                    />
+                    <InputField
+                      label="Account Number"
+                      name="bankAccountNumber"
+                      value={settings?.bankAccountNumber || ""}
+                      onChange={handleChange}
+                    />
+                    <InputField
+                      label="IFSC Code"
+                      name="bankIFSC"
+                      value={settings?.bankIFSC || ""}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* WhatsApp Tab */}
+              {activeTab === "whatsapp" && (
+                <div className="space-y-6">
+                  {/* Enable toggle */}
+                  <div className="flex items-center justify-between p-4 border-2 border-black bg-green-50">
+                    <div>
+                      <p className="font-black text-sm text-black">
+                        Enable WhatsApp Notifications
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Send automated WhatsApp messages via Meta Business API
+                        for leave, payroll and attendance events
+                      </p>
+                    </div>
                     <button
-                      onClick={addTerm}
-                      className="nb-card px-3 py-1.5 text-xs font-bold text-white bg-[#00C48C] border-2 border-black hover:bg-[#00B87C] transition-colors flex items-center gap-1 nb-shadow-sm"
+                      onClick={() =>
+                        setSettings((p: any) => ({
+                          ...p,
+                          whatsappEnabled: !p?.whatsappEnabled,
+                        }))
+                      }
+                      className={cn(
+                        "w-12 h-6 border-2 border-black relative transition-colors",
+                        settings?.whatsappEnabled
+                          ? "bg-green-500"
+                          : "bg-gray-300",
+                      )}
                     >
-                      <Plus className="w-3 h-3" />
-                      Add Term
+                      <span
+                        className={cn(
+                          "absolute top-0.5 w-4 h-4 bg-white border border-black transition-all",
+                          settings?.whatsappEnabled ? "left-6" : "left-0.5",
+                        )}
+                      />
                     </button>
                   </div>
 
-                  <div className="space-y-3">
-                    {(settings?.quotationTerms || []).map(
-                      (term: string, index: number) => (
-                        <div key={index} className="flex gap-2">
-                          <textarea
-                            value={term}
-                            onChange={(e) =>
-                              handleTermsChange(index, e.target.value)
-                            }
-                            placeholder={`Term ${index + 1}`}
-                            rows={2}
-                            className="flex-1 px-3 py-2 border-2 border-black nb-shadow text-sm focus:outline-none focus:ring-2 focus:ring-[#024BAB] focus:ring-offset-0 bg-white resize-none"
-                          />
-                          <button
-                            onClick={() => removeTerm(index)}
-                            className="nb-card px-3 py-2 text-white bg-[#EF4444] border-2 border-black hover:bg-[#DC2626] transition-colors flex items-center gap-1 nb-shadow-sm self-start"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ),
-                    )}
-                  </div>
-
-                  {(!settings?.quotationTerms ||
-                    settings.quotationTerms.length === 0) && (
-                    <div className="text-center py-6 border-2 border-dashed border-gray-300">
-                      <p className="text-xs text-muted-foreground">
-                        No terms added. Click "Add Term" to get started.
+                  {/* Meta WhatsApp Credentials */}
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-gray-500">
+                      Meta WhatsApp Business API Credentials
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <InputField
+                          label="System User Access Token"
+                          name="metaAccessToken"
+                          value={settings?.metaAccessToken || ""}
+                          placeholder="EAAxxxxxxxxxxxxxxxxxxxxxxxx"
+                          type="password"
+                          onChange={handleChange}
+                        />
+                      </div>
+                      <InputField
+                        label="WhatsApp Phone Number ID"
+                        name="metaPhoneNumberId"
+                        value={settings?.metaPhoneNumberId || ""}
+                        placeholder="1234567890123456"
+                        onChange={handleChange}
+                      />
+                      <InputField
+                        label="WhatsApp Business Account ID"
+                        name="metaWabaId"
+                        value={settings?.metaWabaId || ""}
+                        placeholder="9876543210987654"
+                        onChange={handleChange}
+                      />
+                    </div>
+                    <div className="p-3 bg-blue-50 border-2 border-[#024BAB]/30 text-xs text-gray-600 space-y-1">
+                      <p className="font-black text-[#024BAB]">
+                        How to set up Meta WhatsApp Business API
+                      </p>
+                      <p>
+                        1. Go to <strong>developers.facebook.com</strong> → My
+                        Apps → Create App → Business
+                      </p>
+                      <p>
+                        2. Add the <strong>WhatsApp</strong> product to your app
+                      </p>
+                      <p>
+                        3. Under WhatsApp → Getting Started, copy your{" "}
+                        <strong>Phone Number ID</strong> and{" "}
+                        <strong>WhatsApp Business Account ID</strong>
+                      </p>
+                      <p>
+                        4. Create a <strong>System User</strong> in Meta
+                        Business Manager and generate a permanent token with{" "}
+                        <code className="bg-white px-1 border">
+                          whatsapp_business_messaging
+                        </code>{" "}
+                        permission
+                      </p>
+                      <p>
+                        5. Employee phone numbers must include country code
+                        without + (e.g. 919876543210)
                       </p>
                     </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Salary Mode Tab */}
-            {activeTab === "salary_mode" && (
-              <div className="space-y-5">
-                <p className="text-xs text-muted-foreground">
-                  Configure how and when salaries are calculated and paid.
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="block text-xs font-black text-black uppercase tracking-wider">
-                      Salary Mode
-                    </label>
-                    <select
-                      value={settings?.salaryMode || "monthly"}
-                      onChange={(e) =>
-                        setSettings((p: any) => ({
-                          ...p,
-                          salaryMode: e.target.value,
-                        }))
-                      }
-                      className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
-                    >
-                      <option value="monthly">Monthly</option>
-                      <option value="15day">15-Day Cycle</option>
-                      <option value="weekly">Weekly</option>
-                    </select>
                   </div>
-                  <div className="space-y-2">
-                    <label className="block text-xs font-black text-black uppercase tracking-wider">
-                      Salary Pay Day
-                    </label>
-                    <select
-                      value={settings?.salaryPayDay || "31"}
-                      onChange={(e) =>
-                        setSettings((p: any) => ({
-                          ...p,
-                          salaryPayDay: e.target.value,
-                        }))
-                      }
-                      className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
+
+                  {/* Notification toggles */}
+                  <div className="border-t-2 border-black pt-4 space-y-3">
+                    <h3 className="text-xs font-black uppercase tracking-wider text-gray-500">
+                      Notification Events
+                    </h3>
+                    {[
+                      {
+                        key: "whatsappNotifyLeave",
+                        label: "Leave Approved / Rejected",
+                        desc: "Notify employee when HR approves or rejects their leave request",
+                      },
+                      {
+                        key: "whatsappNotifyPayroll",
+                        label: "Salary Credited",
+                        desc: "Notify employee when their payroll is marked as paid",
+                      },
+                      {
+                        key: "whatsappNotifyCheckIn",
+                        label: "Biometric Check-In / Check-Out",
+                        desc: "Notify employee when attendance is recorded via biometric device",
+                      },
+                    ].map(({ key, label, desc }) => (
+                      <div
+                        key={key}
+                        className="flex items-center justify-between p-3 border-2 border-gray-200 bg-white"
+                      >
+                        <div>
+                          <p className="font-bold text-sm text-black">
+                            {label}
+                          </p>
+                          <p className="text-xs text-gray-500">{desc}</p>
+                        </div>
+                        <button
+                          onClick={() =>
+                            setSettings((p: any) => ({
+                              ...p,
+                              [key]: !p?.[key],
+                            }))
+                          }
+                          className={cn(
+                            "w-10 h-5 border-2 border-black relative transition-colors shrink-0",
+                            settings?.[key] !== false
+                              ? "bg-[#024BAB]"
+                              : "bg-gray-300",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "absolute top-0.5 w-3 h-3 bg-white border border-black transition-all",
+                              settings?.[key] !== false ? "left-5" : "left-0.5",
+                            )}
+                          />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Permissions Tab */}
+              {activeTab === "permissions" && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-9 h-9 bg-[#024BAB] border-2 border-black flex items-center justify-center shrink-0 nb-shadow-sm">
+                      <ShieldCheck className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="font-display font-bold text-black">
+                        Role Permissions
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Configure what each role can do per resource
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table
+                      className="w-full border-2 border-black"
+                      style={{ minWidth: 700 }}
                     >
-                      {["1", "5", "7", "10", "15", "20", "25", "28", "31"].map(
-                        (d) => (
+                      <thead>
+                        <tr className="bg-[#024BAB]">
+                          <th className="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider border-r-2 border-black w-32">
+                            Resource
+                          </th>
+                          {HRMS_ROLES.map((role) => (
+                            <th
+                              key={role.id}
+                              className="px-2 py-3 text-center text-xs font-bold text-white uppercase tracking-wider border-r-2 border-black last:border-r-0"
+                              colSpan={4}
+                            >
+                              {role.label}
+                            </th>
+                          ))}
+                        </tr>
+                        <tr className="bg-[#024BAB]/10 border-b-2 border-black">
+                          <th className="px-4 py-2 text-left text-[10px] font-bold text-black uppercase tracking-wider border-r-2 border-black" />
+                          {HRMS_ROLES.map((role) =>
+                            ["C", "R", "U", "D"].map((op) => (
+                              <th
+                                key={`${role.id}-${op}`}
+                                className="px-1 py-2 text-center text-[10px] font-bold text-black uppercase tracking-wider border-r border-black/20 last:border-r-2 last:border-black"
+                              >
+                                {op}
+                              </th>
+                            )),
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {permissions.map((res, resIdx) => (
+                          <tr
+                            key={res.resource}
+                            className={cn(
+                              "border-b-2 border-black last:border-b-0 transition-colors",
+                              resIdx % 2 === 0 ? "bg-white" : "bg-[#024BAB]/5",
+                            )}
+                          >
+                            <td className="px-4 py-3 text-xs font-bold text-black border-r-2 border-black whitespace-nowrap">
+                              {res.resource}
+                            </td>
+                            {HRMS_ROLES.map((role) =>
+                              (
+                                ["create", "read", "update", "delete"] as (
+                                  | "create"
+                                  | "read"
+                                  | "update"
+                                  | "delete"
+                                )[]
+                              ).map((op) => {
+                                const checked = res.permissions[role.id][op];
+                                const isSuperAdmin = role.id === "super_admin";
+                                return (
+                                  <td
+                                    key={`${role.id}-${op}`}
+                                    className="px-1 py-3 text-center border-r border-black/20 last:border-r-2 last:border-black"
+                                  >
+                                    <button
+                                      onClick={() => {
+                                        if (isSuperAdmin) return;
+                                        setPermissions((prev) =>
+                                          prev.map((r, i) =>
+                                            i !== resIdx
+                                              ? r
+                                              : {
+                                                  ...r,
+                                                  permissions: {
+                                                    ...r.permissions,
+                                                    [role.id]: {
+                                                      ...r.permissions[role.id],
+                                                      [op]: !r.permissions[
+                                                        role.id
+                                                      ][op],
+                                                    },
+                                                  },
+                                                },
+                                          ),
+                                        );
+                                      }}
+                                      disabled={isSuperAdmin}
+                                      className={cn(
+                                        "w-5 h-5 border-2 border-black flex items-center justify-center mx-auto transition-colors",
+                                        checked
+                                          ? "bg-[#024BAB]"
+                                          : "bg-white hover:bg-[#024BAB]/10",
+                                        isSuperAdmin &&
+                                          "opacity-60 cursor-not-allowed",
+                                      )}
+                                      title={
+                                        isSuperAdmin
+                                          ? "Super Admin always has full access"
+                                          : `Toggle ${op} for ${role.label}`
+                                      }
+                                    >
+                                      {checked && (
+                                        <svg
+                                          className="w-3 h-3 text-white"
+                                          viewBox="0 0 12 12"
+                                          fill="none"
+                                        >
+                                          <path
+                                            d="M2 6l3 3 5-5"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                          />
+                                        </svg>
+                                      )}
+                                    </button>
+                                  </td>
+                                );
+                              }),
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="flex items-start gap-2 p-3 border-2 border-black bg-[#FA731C]/10">
+                    <span className="text-[10px] font-bold text-[#FA731C] uppercase tracking-wider shrink-0 mt-0.5">
+                      Note
+                    </span>
+                    <p className="text-xs text-black">
+                      C = Create, R = Read, U = Update, D = Delete. Super Admin
+                      always has full access. Changes here configure the role
+                      model for your HR team.
+                    </p>
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <button
+                      onClick={() =>
+                        setActionModal({
+                          show: true,
+                          type: "success",
+                          title: "Permissions Saved",
+                          message: "Role permissions have been updated.",
+                        })
+                      }
+                      className={cn(
+                        "nb-card px-6 py-3 text-sm font-bold text-white border-2 border-black nb-shadow flex items-center gap-2 bg-[#024BAB] hover:bg-[#01368A] active:scale-95",
+                      )}
+                    >
+                      <Save className="w-4 h-4" />
+                      Save Permissions
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Quotation Tab */}
+              {activeTab === "quotation" && (
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <InputField
+                      label="Quotation Title"
+                      name="quotationTitle"
+                      value={settings?.quotationTitle || ""}
+                      onChange={handleChange}
+                    />
+                    <TextAreaField
+                      label="Quotation Footer"
+                      name="quotationFooter"
+                      value={settings?.quotationFooter || ""}
+                      placeholder="Footer text for quotations"
+                      rows={2}
+                      onChange={handleChange}
+                    />
+                  </div>
+
+                  {/* Terms & Conditions */}
+                  <div className="border-t-2 border-black pt-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-bold text-black uppercase tracking-wider">
+                        Terms & Conditions
+                      </h3>
+                      <button
+                        onClick={addTerm}
+                        className="nb-card px-3 py-1.5 text-xs font-bold text-white bg-[#00C48C] border-2 border-black hover:bg-[#00B87C] transition-colors flex items-center gap-1 nb-shadow-sm"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Add Term
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {(settings?.quotationTerms || []).map(
+                        (term: string, index: number) => (
+                          <div key={index} className="flex gap-2">
+                            <textarea
+                              value={term}
+                              onChange={(e) =>
+                                handleTermsChange(index, e.target.value)
+                              }
+                              placeholder={`Term ${index + 1}`}
+                              rows={2}
+                              className="flex-1 px-3 py-2 border-2 border-black nb-shadow text-sm focus:outline-none focus:ring-2 focus:ring-[#024BAB] focus:ring-offset-0 bg-white resize-none"
+                            />
+                            <button
+                              onClick={() => removeTerm(index)}
+                              className="nb-card px-3 py-2 text-white bg-[#EF4444] border-2 border-black hover:bg-[#DC2626] transition-colors flex items-center gap-1 nb-shadow-sm self-start"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ),
+                      )}
+                    </div>
+
+                    {(!settings?.quotationTerms ||
+                      settings.quotationTerms.length === 0) && (
+                      <div className="text-center py-6 border-2 border-dashed border-gray-300">
+                        <p className="text-xs text-muted-foreground">
+                          No terms added. Click "Add Term" to get started.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Salary Mode Tab */}
+              {activeTab === "salary_mode" && (
+                <div className="space-y-5">
+                  <p className="text-xs text-muted-foreground">
+                    Configure how and when salaries are calculated and paid.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="block text-xs font-black text-black uppercase tracking-wider">
+                        Salary Mode
+                      </label>
+                      <select
+                        value={settings?.salaryMode || "monthly"}
+                        onChange={(e) =>
+                          setSettings((p: any) => ({
+                            ...p,
+                            salaryMode: e.target.value,
+                          }))
+                        }
+                        className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
+                      >
+                        <option value="monthly">Monthly</option>
+                        <option value="15day">15-Day Cycle</option>
+                        <option value="weekly">Weekly</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-xs font-black text-black uppercase tracking-wider">
+                        Salary Pay Day
+                      </label>
+                      <select
+                        value={settings?.salaryPayDay || "31"}
+                        onChange={(e) =>
+                          setSettings((p: any) => ({
+                            ...p,
+                            salaryPayDay: e.target.value,
+                          }))
+                        }
+                        className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
+                      >
+                        {[
+                          "1",
+                          "5",
+                          "7",
+                          "10",
+                          "15",
+                          "20",
+                          "25",
+                          "28",
+                          "31",
+                        ].map((d) => (
                           <option key={d} value={d}>
                             {d === "31"
                               ? "Last day of month"
                               : `${d}th of month`}
                           </option>
-                        ),
-                      )}
-                    </select>
-                  </div>
-                </div>
-                <div className="border-t-2 border-black/10 pt-4 space-y-3">
-                  <p className="text-xs font-black uppercase tracking-wider text-black">
-                    Overtime
-                  </p>
-                  {[
-                    {
-                      key: "otEnabled",
-                      label: "Enable OT Calculation",
-                      sub: "Automatically calculate overtime based on shift hours",
-                    },
-                  ].map(({ key, label, sub }) => (
-                    <div
-                      key={key}
-                      className="flex items-center justify-between p-3 border-2 border-black/10 hover:border-black transition-colors"
-                    >
-                      <div>
-                        <p className="text-sm font-bold text-black">{label}</p>
-                        <p className="text-xs text-muted-foreground">{sub}</p>
-                      </div>
-                      <button
-                        onClick={() =>
-                          setSettings((p: any) => ({ ...p, [key]: !p?.[key] }))
-                        }
-                        className={cn(
-                          "w-12 h-6 border-2 border-black transition-colors relative",
-                          settings?.[key] ? "bg-[#024BAB]" : "bg-gray-200",
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            "absolute top-0.5 w-4 h-4 bg-white border border-black transition-all",
-                            settings?.[key] ? "left-6" : "left-0.5",
-                          )}
-                        />
-                      </button>
+                        ))}
+                      </select>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Punch Settings Tab */}
-            {activeTab === "punch" && (
-              <div className="space-y-5">
-                <p className="text-xs text-muted-foreground">
-                  Control how single and duplicate punches are handled.
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="block text-xs font-black text-black uppercase tracking-wider">
-                      Single Punch Action
-                    </label>
-                    <select
-                      value={settings?.singlePunchAction || "half_day"}
-                      onChange={(e) =>
-                        setSettings((p: any) => ({
-                          ...p,
-                          singlePunchAction: e.target.value,
-                        }))
-                      }
-                      className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
-                    >
-                      <option value="half_day">Mark as Half Day</option>
-                      <option value="present">Mark as Present</option>
-                      <option value="absent">Mark as Absent</option>
-                    </select>
                   </div>
-                  <div className="space-y-2">
-                    <label className="block text-xs font-black text-black uppercase tracking-wider">
-                      Double Punch Interval (minutes)
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="60"
-                      value={settings?.doublePunchInterval || 5}
-                      onChange={(e) =>
-                        setSettings((p: any) => ({
-                          ...p,
-                          doublePunchInterval: +e.target.value,
-                        }))
-                      }
-                      className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Minimum gap between two punches to avoid duplicates.
+                  <div className="border-t-2 border-black/10 pt-4 space-y-3">
+                    <p className="text-xs font-black uppercase tracking-wider text-black">
+                      Overtime
                     </p>
+                    {[
+                      {
+                        key: "otEnabled",
+                        label: "Enable OT Calculation",
+                        sub: "Automatically calculate overtime based on shift hours",
+                      },
+                    ].map(({ key, label, sub }) => (
+                      <div
+                        key={key}
+                        className="flex items-center justify-between p-3 border-2 border-black/10 hover:border-black transition-colors"
+                      >
+                        <div>
+                          <p className="text-sm font-bold text-black">
+                            {label}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{sub}</p>
+                        </div>
+                        <button
+                          onClick={() =>
+                            setSettings((p: any) => ({
+                              ...p,
+                              [key]: !p?.[key],
+                            }))
+                          }
+                          className={cn(
+                            "w-12 h-6 border-2 border-black transition-colors relative",
+                            settings?.[key] ? "bg-[#024BAB]" : "bg-gray-200",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "absolute top-0.5 w-4 h-4 bg-white border border-black transition-all",
+                              settings?.[key] ? "left-6" : "left-0.5",
+                            )}
+                          />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Employee App (ESS) Tab */}
-            {activeTab === "ess" && (
-              <div className="space-y-4">
-                <p className="text-xs text-muted-foreground">
-                  Control what employees can access in the self-service portal.
-                </p>
-                {[
-                  {
-                    key: "essEnabled",
-                    label: "Enable Employee Login",
-                    sub: "Allow employees to log into the portal",
-                  },
-                  {
-                    key: "essAllowPunch",
-                    label: "Allow Self-Service Punch",
-                    sub: "Employees can mark attendance from mobile",
-                  },
-                  {
-                    key: "essAllowSalarySlip",
-                    label: "View Salary Slip",
-                    sub: "Employees can download their salary slips",
-                  },
-                  {
-                    key: "essAllowAttendance",
-                    label: "View Attendance",
-                    sub: "Employees can check their attendance records",
-                  },
-                  {
-                    key: "essAllowPayHistory",
-                    label: "View Pay History",
-                    sub: "Employees can see past salary payments",
-                  },
-                  {
-                    key: "essAllowLeave",
-                    label: "Apply for Leave",
-                    sub: "Employees can submit leave requests",
-                  },
-                  {
-                    key: "essAllowHoliday",
-                    label: "View Holiday List",
-                    sub: "Employees can see the holiday calendar",
-                  },
-                  {
-                    key: "essAllowMissPunch",
-                    label: "Report Miss Punch",
-                    sub: "Employees can flag missing punch entries",
-                  },
-                  {
-                    key: "essAllowWorkReport",
-                    label: "Submit Work Report",
-                    sub: "Employees can post daily work reports",
-                  },
-                  {
-                    key: "essAllowAdvance",
-                    label: "Request Advance / Payment",
-                    sub: "Employees can raise advance salary requests",
-                  },
-                ].map(({ key, label, sub }) => (
-                  <div
-                    key={key}
-                    className="flex items-center justify-between p-3 border-2 border-black/10 hover:border-black transition-colors"
-                  >
-                    <div>
-                      <p className="text-sm font-bold text-black">{label}</p>
-                      <p className="text-xs text-muted-foreground">{sub}</p>
-                    </div>
-                    <button
-                      onClick={() =>
-                        setSettings((p: any) => ({ ...p, [key]: !p?.[key] }))
-                      }
-                      className={cn(
-                        "w-12 h-6 border-2 border-black transition-colors relative shrink-0",
-                        settings?.[key] ? "bg-[#024BAB]" : "bg-gray-200",
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "absolute top-0.5 w-4 h-4 bg-white border border-black transition-all",
-                          settings?.[key] ? "left-6" : "left-0.5",
-                        )}
-                      />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* System Tab */}
-            {activeTab === "system" && (
-              <div className="space-y-4">
-                <p className="text-xs text-muted-foreground">
-                  System automation and notification configuration.
-                </p>
-                {[
-                  {
-                    key: "autoSalary",
-                    label: "Auto Salary Processing",
-                    sub: "Automatically process salaries on pay day",
-                  },
-                  {
-                    key: "bioSync",
-                    label: "Biometric Auto-Sync",
-                    sub: "Automatically sync biometric device logs",
-                  },
-                  {
-                    key: "smsEnabled",
-                    label: "SMS Notifications",
-                    sub: "Send SMS alerts for attendance and payroll events",
-                  },
-                  {
-                    key: "emailNotif",
-                    label: "Email Notifications",
-                    sub: "Send email alerts to employees and admins",
-                  },
-                  {
-                    key: "otEnabled",
-                    label: "Overtime Calculation",
-                    sub: "Enable automatic OT calculation in payroll",
-                  },
-                ].map(({ key, label, sub }) => (
-                  <div
-                    key={key}
-                    className="flex items-center justify-between p-3 border-2 border-black/10 hover:border-black transition-colors"
-                  >
-                    <div>
-                      <p className="text-sm font-bold text-black">{label}</p>
-                      <p className="text-xs text-muted-foreground">{sub}</p>
-                    </div>
-                    <button
-                      onClick={() =>
-                        setSettings((p: any) => ({ ...p, [key]: !p?.[key] }))
-                      }
-                      className={cn(
-                        "w-12 h-6 border-2 border-black transition-colors relative shrink-0",
-                        settings?.[key] ? "bg-[#024BAB]" : "bg-gray-200",
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "absolute top-0.5 w-4 h-4 bg-white border border-black transition-all",
-                          settings?.[key] ? "left-6" : "left-0.5",
-                        )}
-                      />
-                    </button>
-                  </div>
-                ))}
-                {/* API Key */}
-                <div className="border-t-2 border-black/10 pt-4">
-                  <p className="text-xs font-black uppercase tracking-wider text-black mb-3">
-                    API Key
+              {/* Punch Settings Tab */}
+              {activeTab === "punch" && (
+                <div className="space-y-5">
+                  <p className="text-xs text-muted-foreground">
+                    Control how single and duplicate punches are handled.
                   </p>
-                  <div className="flex items-center gap-2 border-2 border-black p-3 bg-gray-50">
-                    <code className="flex-1 text-xs font-mono text-black truncate">
-                      HRMS-
-                      {(settings?.company || "XXXX")
-                        .toString()
-                        .slice(-6)
-                        .toUpperCase()}
-                      -KEY
-                    </code>
-                    <button
-                      onClick={() =>
-                        navigator.clipboard.writeText(
-                          `HRMS-${(settings?.company || "XXXX").toString().slice(-6).toUpperCase()}-KEY`,
-                        )
-                      }
-                      className="flex items-center gap-1.5 border-2 border-black px-2 py-1 text-xs font-bold bg-white hover:bg-gray-100 nb-shadow-sm"
-                    >
-                      <Copy className="w-3 h-3" /> Copy
-                    </button>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1.5">
-                    Use this key for third-party integrations.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Preferences Tab */}
-            {activeTab === "preferences" && (
-              <div className="space-y-5">
-                <p className="text-xs text-muted-foreground">
-                  UI display, regional, and code format preferences.
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[
-                    {
-                      key: "dashboardType",
-                      label: "Dashboard Type",
-                      options: ["Normal", "Advanced", "Compact"],
-                    },
-                    {
-                      key: "timeFormat",
-                      label: "Time Format",
-                      options: ["12", "24"],
-                    },
-                    {
-                      key: "currency",
-                      label: "Currency",
-                      options: ["INR", "USD", "EUR", "GBP", "AED"],
-                    },
-                    {
-                      key: "state",
-                      label: "State (for PT slab)",
-                      options: [
-                        "Maharashtra",
-                        "Karnataka",
-                        "Delhi",
-                        "Tamil Nadu",
-                        "West Bengal",
-                        "Gujarat",
-                        "Telangana",
-                        "Andhra Pradesh",
-                        "Kerala",
-                        "Rajasthan",
-                      ],
-                    },
-                  ].map(({ key, label, options }) => (
-                    <div key={key} className="space-y-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
                       <label className="block text-xs font-black text-black uppercase tracking-wider">
-                        {label}
+                        Single Punch Action
                       </label>
                       <select
-                        value={settings?.[key] || options[0]}
+                        value={settings?.singlePunchAction || "half_day"}
                         onChange={(e) =>
                           setSettings((p: any) => ({
                             ...p,
-                            [key]: e.target.value,
+                            singlePunchAction: e.target.value,
                           }))
                         }
                         className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
                       >
-                        {options.map((o) => (
-                          <option key={o} value={o}>
-                            {key === "timeFormat"
-                              ? o === "12"
-                                ? "12 Hour (AM/PM)"
-                                : "24 Hour"
-                              : o}
-                          </option>
-                        ))}
+                        <option value="half_day">Mark as Half Day</option>
+                        <option value="present">Mark as Present</option>
+                        <option value="absent">Mark as Absent</option>
                       </select>
                     </div>
-                  ))}
-                  <div className="space-y-2">
-                    <label className="block text-xs font-black text-black uppercase tracking-wider">
-                      Employee Code Prefix
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. EMP, HR, 1"
-                      value={settings?.empCodePrefix || ""}
-                      onChange={(e) =>
-                        setSettings((p: any) => ({
-                          ...p,
-                          empCodePrefix: e.target.value,
-                        }))
-                      }
-                      className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-xs font-black text-black uppercase tracking-wider">
-                      Employee Code Suffix
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 2026, IND"
-                      value={settings?.empCodeSuffix || ""}
-                      onChange={(e) =>
-                        setSettings((p: any) => ({
-                          ...p,
-                          empCodeSuffix: e.target.value,
-                        }))
-                      }
-                      className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
-                    />
+                    <div className="space-y-2">
+                      <label className="block text-xs font-black text-black uppercase tracking-wider">
+                        Double Punch Interval (minutes)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="60"
+                        value={settings?.doublePunchInterval || 5}
+                        onChange={(e) =>
+                          setSettings((p: any) => ({
+                            ...p,
+                            doublePunchInterval: +e.target.value,
+                          }))
+                        }
+                        className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Minimum gap between two punches to avoid duplicates.
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div className="border-t-2 border-black/10 pt-4 space-y-3">
+              )}
+
+              {/* Employee App (ESS) Tab */}
+              {activeTab === "ess" && (
+                <div className="space-y-4">
+                  <p className="text-xs text-muted-foreground">
+                    Control what employees can access in the self-service
+                    portal.
+                  </p>
                   {[
                     {
-                      key: "showCTC",
-                      label: "Show CTC to Employees",
-                      sub: "Display cost-to-company figure in employee portal",
+                      key: "essEnabled",
+                      label: "Enable Employee Login",
+                      sub: "Allow employees to log into the portal",
                     },
                     {
-                      key: "branchwise",
-                      label: "Branch-wise Reporting",
-                      sub: "Filter all reports by branch/location",
+                      key: "essAllowPunch",
+                      label: "Allow Self-Service Punch",
+                      sub: "Employees can mark attendance from mobile",
+                    },
+                    {
+                      key: "essAllowSalarySlip",
+                      label: "View Salary Slip",
+                      sub: "Employees can download their salary slips",
+                    },
+                    {
+                      key: "essAllowAttendance",
+                      label: "View Attendance",
+                      sub: "Employees can check their attendance records",
+                    },
+                    {
+                      key: "essAllowPayHistory",
+                      label: "View Pay History",
+                      sub: "Employees can see past salary payments",
+                    },
+                    {
+                      key: "essAllowLeave",
+                      label: "Apply for Leave",
+                      sub: "Employees can submit leave requests",
+                    },
+                    {
+                      key: "essAllowHoliday",
+                      label: "View Holiday List",
+                      sub: "Employees can see the holiday calendar",
+                    },
+                    {
+                      key: "essAllowMissPunch",
+                      label: "Report Miss Punch",
+                      sub: "Employees can flag missing punch entries",
+                    },
+                    {
+                      key: "essAllowWorkReport",
+                      label: "Submit Work Report",
+                      sub: "Employees can post daily work reports",
+                    },
+                    {
+                      key: "essAllowAdvance",
+                      label: "Request Advance / Payment",
+                      sub: "Employees can raise advance salary requests",
                     },
                   ].map(({ key, label, sub }) => (
                     <div
@@ -1518,8 +1317,247 @@ export default function SettingsPage() {
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+
+              {/* System Tab */}
+              {activeTab === "system" && (
+                <div className="space-y-4">
+                  <p className="text-xs text-muted-foreground">
+                    System automation and notification configuration.
+                  </p>
+                  {[
+                    {
+                      key: "autoSalary",
+                      label: "Auto Salary Processing",
+                      sub: "Automatically process salaries on pay day",
+                    },
+                    {
+                      key: "bioSync",
+                      label: "Biometric Auto-Sync",
+                      sub: "Automatically sync biometric device logs",
+                    },
+                    {
+                      key: "smsEnabled",
+                      label: "SMS Notifications",
+                      sub: "Send SMS alerts for attendance and payroll events",
+                    },
+                    {
+                      key: "emailNotif",
+                      label: "Email Notifications",
+                      sub: "Send email alerts to employees and admins",
+                    },
+                    {
+                      key: "otEnabled",
+                      label: "Overtime Calculation",
+                      sub: "Enable automatic OT calculation in payroll",
+                    },
+                  ].map(({ key, label, sub }) => (
+                    <div
+                      key={key}
+                      className="flex items-center justify-between p-3 border-2 border-black/10 hover:border-black transition-colors"
+                    >
+                      <div>
+                        <p className="text-sm font-bold text-black">{label}</p>
+                        <p className="text-xs text-muted-foreground">{sub}</p>
+                      </div>
+                      <button
+                        onClick={() =>
+                          setSettings((p: any) => ({ ...p, [key]: !p?.[key] }))
+                        }
+                        className={cn(
+                          "w-12 h-6 border-2 border-black transition-colors relative shrink-0",
+                          settings?.[key] ? "bg-[#024BAB]" : "bg-gray-200",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "absolute top-0.5 w-4 h-4 bg-white border border-black transition-all",
+                            settings?.[key] ? "left-6" : "left-0.5",
+                          )}
+                        />
+                      </button>
+                    </div>
+                  ))}
+                  {/* API Key */}
+                  <div className="border-t-2 border-black/10 pt-4">
+                    <p className="text-xs font-black uppercase tracking-wider text-black mb-3">
+                      API Key
+                    </p>
+                    <div className="flex items-center gap-2 border-2 border-black p-3 bg-gray-50">
+                      <code className="flex-1 text-xs font-mono text-black truncate">
+                        HRMS-
+                        {(settings?.company || "XXXX")
+                          .toString()
+                          .slice(-6)
+                          .toUpperCase()}
+                        -KEY
+                      </code>
+                      <button
+                        onClick={() =>
+                          navigator.clipboard.writeText(
+                            `HRMS-${(settings?.company || "XXXX").toString().slice(-6).toUpperCase()}-KEY`,
+                          )
+                        }
+                        className="flex items-center gap-1.5 border-2 border-black px-2 py-1 text-xs font-bold bg-white hover:bg-gray-100 nb-shadow-sm"
+                      >
+                        <Copy className="w-3 h-3" /> Copy
+                      </button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1.5">
+                      Use this key for third-party integrations.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Preferences Tab */}
+              {activeTab === "preferences" && (
+                <div className="space-y-5">
+                  <p className="text-xs text-muted-foreground">
+                    UI display, regional, and code format preferences.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      {
+                        key: "dashboardType",
+                        label: "Dashboard Type",
+                        options: ["Normal", "Advanced", "Compact"],
+                      },
+                      {
+                        key: "timeFormat",
+                        label: "Time Format",
+                        options: ["12", "24"],
+                      },
+                      {
+                        key: "currency",
+                        label: "Currency",
+                        options: ["INR", "USD", "EUR", "GBP", "AED"],
+                      },
+                      {
+                        key: "state",
+                        label: "State (for PT slab)",
+                        options: [
+                          "Maharashtra",
+                          "Karnataka",
+                          "Delhi",
+                          "Tamil Nadu",
+                          "West Bengal",
+                          "Gujarat",
+                          "Telangana",
+                          "Andhra Pradesh",
+                          "Kerala",
+                          "Rajasthan",
+                        ],
+                      },
+                    ].map(({ key, label, options }) => (
+                      <div key={key} className="space-y-2">
+                        <label className="block text-xs font-black text-black uppercase tracking-wider">
+                          {label}
+                        </label>
+                        <select
+                          value={settings?.[key] || options[0]}
+                          onChange={(e) =>
+                            setSettings((p: any) => ({
+                              ...p,
+                              [key]: e.target.value,
+                            }))
+                          }
+                          className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
+                        >
+                          {options.map((o) => (
+                            <option key={o} value={o}>
+                              {key === "timeFormat"
+                                ? o === "12"
+                                  ? "12 Hour (AM/PM)"
+                                  : "24 Hour"
+                                : o}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
+                    <div className="space-y-2">
+                      <label className="block text-xs font-black text-black uppercase tracking-wider">
+                        Employee Code Prefix
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. EMP, HR, 1"
+                        value={settings?.empCodePrefix || ""}
+                        onChange={(e) =>
+                          setSettings((p: any) => ({
+                            ...p,
+                            empCodePrefix: e.target.value,
+                          }))
+                        }
+                        className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="block text-xs font-black text-black uppercase tracking-wider">
+                        Employee Code Suffix
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 2026, IND"
+                        value={settings?.empCodeSuffix || ""}
+                        onChange={(e) =>
+                          setSettings((p: any) => ({
+                            ...p,
+                            empCodeSuffix: e.target.value,
+                          }))
+                        }
+                        className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
+                      />
+                    </div>
+                  </div>
+                  <div className="border-t-2 border-black/10 pt-4 space-y-3">
+                    {[
+                      {
+                        key: "showCTC",
+                        label: "Show CTC to Employees",
+                        sub: "Display cost-to-company figure in employee portal",
+                      },
+                      {
+                        key: "branchwise",
+                        label: "Branch-wise Reporting",
+                        sub: "Filter all reports by branch/location",
+                      },
+                    ].map(({ key, label, sub }) => (
+                      <div
+                        key={key}
+                        className="flex items-center justify-between p-3 border-2 border-black/10 hover:border-black transition-colors"
+                      >
+                        <div>
+                          <p className="text-sm font-bold text-black">
+                            {label}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{sub}</p>
+                        </div>
+                        <button
+                          onClick={() =>
+                            setSettings((p: any) => ({
+                              ...p,
+                              [key]: !p?.[key],
+                            }))
+                          }
+                          className={cn(
+                            "w-12 h-6 border-2 border-black transition-colors relative shrink-0",
+                            settings?.[key] ? "bg-[#024BAB]" : "bg-gray-200",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "absolute top-0.5 w-4 h-4 bg-white border border-black transition-all",
+                              settings?.[key] ? "left-6" : "left-0.5",
+                            )}
+                          />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Save Button — bottom of right column */}
@@ -1547,9 +1585,12 @@ export default function SettingsPage() {
                 )}
               </button>
             </div>
-          </div>{/* end right column */}
-        </div>{/* end sidebar+content flex */}
-      </div>{/* end max-w-6xl */}
+          </div>
+          {/* end right column */}
+        </div>
+        {/* end sidebar+content flex */}
+      </div>
+      {/* end max-w-6xl */}
 
       {/* Success/Error Animation Modal */}
       {actionModal.show && (
