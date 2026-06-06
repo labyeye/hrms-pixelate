@@ -200,6 +200,7 @@ async function seedDemoData() {
 
     // Create Departments
     const deptHR = await Department.create({
+      company: company._id,
       name: "Human Resources",
       code: "HR",
       description: "Human Resources and Talent Management",
@@ -208,6 +209,7 @@ async function seedDemoData() {
       status: "active",
     });
     const deptIT = await Department.create({
+      company: company._id,
       name: "Information Technology",
       code: "IT",
       description: "Software Development and IT Infrastructure",
@@ -216,6 +218,7 @@ async function seedDemoData() {
       status: "active",
     });
     const deptSales = await Department.create({
+      company: company._id,
       name: "Sales & Marketing",
       code: "SM",
       description: "Sales and Business Development",
@@ -224,6 +227,7 @@ async function seedDemoData() {
       status: "active",
     });
     const deptOps = await Department.create({
+      company: company._id,
       name: "Operations",
       code: "OPS",
       description: "Operations and Administration",
@@ -426,6 +430,7 @@ async function seedDemoData() {
 
       const employee = await Employee.create({
         user: empUserId,
+        company: company._id,
         employeeId,
         ...rest,
         status: "active",
