@@ -109,22 +109,23 @@ export function FaceEnrollModal({ employee, onClose, onSaved }: Props) {
             </div>
           )}
 
-          {/* Camera view */}
-          {(step === "capture" || (step === "saving" && !capturedDescriptor)) && (
-            <div className="relative bg-black aspect-video overflow-hidden border-2 border-black">
-              <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-              <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
-              {/* Face detection indicator */}
-              <div className={cn(
-                "absolute top-3 right-3 px-2 py-1 text-[10px] font-black uppercase border",
-                liveDetection
-                  ? "bg-green-500 border-green-700 text-white"
-                  : "bg-red-500 border-red-700 text-white"
-              )}>
-                {liveDetection ? "Face detected" : "No face"}
-              </div>
+          {/* Camera view — always mounted so videoRef is available before step changes to "capture" */}
+          <div className={cn(
+            "relative bg-black aspect-video overflow-hidden border-2 border-black",
+            step !== "capture" && !(step === "saving" && !capturedDescriptor) && "hidden"
+          )}>
+            <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+            <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
+            {/* Face detection indicator */}
+            <div className={cn(
+              "absolute top-3 right-3 px-2 py-1 text-[10px] font-black uppercase border",
+              liveDetection
+                ? "bg-green-500 border-green-700 text-white"
+                : "bg-red-500 border-red-700 text-white"
+            )}>
+              {liveDetection ? "Face detected" : "No face"}
             </div>
-          )}
+          </div>
 
           {/* Preview after capture */}
           {capturedDescriptor && step !== "saving" && step !== "done" && (
