@@ -55,23 +55,31 @@ function parseAttLog(raw) {
     .filter((r) => r.userId && r.datetime);
 }
 
-// Upsert attendance for the day — keeps earliest checkIn and latest checkOut
+// Upsert attendance for the day.
+// Strategy: first punch of the day = checkIn, any later punch = checkOut.
+// We intentionally ignore punchState because most ZKTeco MB-series devices
+// send ALL punches as punchState=0 regardless of check-in vs check-out.
 async function processLog({ userId, datetime, punchState }, companyId) {
   const employee = await Employee.findOne({
     biometricUserId: userId,
     ...(companyId ? { company: companyId } : {}),
     status: { $ne: "terminated" },
   });
-  if (!employee) return;
+  if (!employee) {
+    console.log(`[ADMS] No employee found for biometricUserId=${userId} company=${companyId}`);
+    return;
+  }
 
   const punchTime = new Date(datetime.replace(" ", "T"));
-  if (isNaN(punchTime.getTime())) return;
+  if (isNaN(punchTime.getTime())) {
+    console.log(`[ADMS] Invalid datetime for userId=${userId}: "${datetime}"`);
+    return;
+  }
 
   const dayStart = new Date(punchTime);
   dayStart.setHours(0, 0, 0, 0);
 
-  const isIn = punchState === 0 || punchState === 4;
-  const isOut = punchState === 1 || punchState === 5;
+  console.log(`[ADMS] Punch: emp=${employee.firstName} ${employee.lastName} uid=${userId} time=${punchTime.toISOString()} punchState=${punchState}`);
 
   const existing = await Attendance.findOne({
     employee: employee._id,
@@ -79,20 +87,30 @@ async function processLog({ userId, datetime, punchState }, companyId) {
   });
 
   if (!existing) {
-    const doc = { employee: employee._id, date: dayStart, status: "present" };
-    if (isIn) doc.checkIn = punchTime;
-    if (isOut) doc.checkOut = punchTime;
-    await Attendance.create(doc);
+    // First punch of the day → always check-in
+    await Attendance.create({
+      employee: employee._id,
+      date: dayStart,
+      status: "present",
+      checkIn: punchTime,
+    });
+    console.log(`[ADMS] Created attendance checkIn=${punchTime.toISOString()} for ${employee.firstName}`);
     return;
   }
 
   const upd = {};
-  if (isIn && (!existing.checkIn || punchTime < existing.checkIn))
-    upd.checkIn = punchTime;
-  if (isOut && (!existing.checkOut || punchTime > existing.checkOut))
-    upd.checkOut = punchTime;
 
-  if (upd.checkIn || upd.checkOut) {
+  if (!existing.checkIn || punchTime < existing.checkIn) {
+    // Earlier punch → move check-in back
+    upd.checkIn = punchTime;
+  } else if (punchTime > existing.checkIn) {
+    // Later punch → update check-out (keep the latest)
+    if (!existing.checkOut || punchTime > existing.checkOut) {
+      upd.checkOut = punchTime;
+    }
+  }
+
+  if (Object.keys(upd).length) {
     const ci = upd.checkIn || existing.checkIn;
     const co = upd.checkOut || existing.checkOut;
     if (ci && co && co > ci) {
@@ -100,6 +118,7 @@ async function processLog({ userId, datetime, punchState }, companyId) {
     }
     upd.status = "present";
     await Attendance.updateOne({ _id: existing._id }, { $set: upd });
+    console.log(`[ADMS] Updated attendance for ${employee.firstName}: checkIn=${ci?.toISOString()} checkOut=${co?.toISOString()}`);
   }
 }
 
@@ -166,7 +185,10 @@ router.post(
       const device = await resolveDevice(SN);
       const companyId = device?.company || null;
 
+      console.log(`[ADMS] ATTLOG from SN=${SN} stamp=${stamp}`);
+      console.log(`[ADMS] Raw body:\n${body}`);
       const logs = parseAttLog(body);
+      console.log(`[ADMS] Parsed logs:`, JSON.stringify(logs));
       await Promise.allSettled(logs.map((log) => processLog(log, companyId)));
 
       // Save stamp so heartbeat returns ATTLOGStamp=N — device won't re-send old records
