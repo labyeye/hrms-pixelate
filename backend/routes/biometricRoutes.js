@@ -27,12 +27,16 @@ const {
   getFaceDescriptors,
   faceAttendance,
   triggerFingerprintEnroll,
+  getDeviceEmployees,
+  enrollFaceFromDevice,
 } = require("../controllers/biometricController");
 
 // Public device endpoints (no user auth — device token / activation code used instead)
 router.post("/register", registerDevice);
 router.get("/device/:token", getDeviceInfo);
 router.post("/record", recordBiometric);
+router.get("/device/:token/employees", getDeviceEmployees);
+router.post("/device-face-enroll", enrollFaceFromDevice);
 
 // Admin endpoints
 router.use(protect);

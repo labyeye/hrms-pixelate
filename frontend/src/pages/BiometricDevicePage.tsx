@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { biometricAPI } from "@/services/api";
+import { useFaceRecognition } from "@/hooks/useFaceRecognition";
 import {
   CreditCard,
   Camera,
@@ -15,10 +16,13 @@ import {
   LogOut,
   Zap,
   RefreshCw,
+  UserPlus,
+  Check,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Mode = "nfc" | "face" | "pin";
+type Mode = "nfc" | "face" | "pin" | "enroll";
 type ScanState = "idle" | "scanning" | "success" | "error";
 
 interface DeviceInfo {
@@ -65,10 +69,31 @@ export default function BiometricDevicePage() {
   const [nfcReading, setNfcReading] = useState(false);
   const [manualUid, setManualUid] = useState("");
 
-  // Face state
+  // Face attendance state
   const videoRef = useRef<HTMLVideoElement>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [faceEmployeeId, setFaceEmployeeId] = useState("");
+
+  // Face enrollment (enroll mode) state
+  const {
+    videoRef: enrollVideoRef,
+    canvasRef: enrollCanvasRef,
+    loadState: enrollLoadState,
+    cameraActive: enrollCameraActive,
+    liveDetection: enrollLiveDetection,
+    startCamera: enrollStartCamera,
+    stopCamera: enrollStopCamera,
+    captureFaceDescriptor,
+    startLiveDetection: enrollStartLiveDetection,
+  } = useFaceRecognition();
+  const [enrollEmployees, setEnrollEmployees] = useState<Array<{
+    _id: string; firstName: string; lastName: string; employeeId: string; hasFace: boolean;
+  }>>([]);
+  const [enrollEmpLoading, setEnrollEmpLoading] = useState(false);
+  const [enrollSelectedEmp, setEnrollSelectedEmp] = useState("");
+  const [enrollStep, setEnrollStep] = useState<"select" | "capture" | "preview" | "saving" | "done">("select");
+  const [enrollDescriptor, setEnrollDescriptor] = useState<number[] | null>(null);
+  const [enrollError, setEnrollError] = useState("");
 
   // PIN state
   const [pinEmployeeId, setPinEmployeeId] = useState("");
@@ -206,6 +231,85 @@ export default function BiometricDevicePage() {
     if (mode !== "face") stopCamera();
   }, [mode]);
 
+  const fetchEnrollEmployees = useCallback(async () => {
+    if (!token) return;
+    setEnrollEmpLoading(true);
+    try {
+      const res = await biometricAPI.getDeviceEmployees(token);
+      setEnrollEmployees(res.data || []);
+    } catch {
+      setEnrollEmployees([]);
+    }
+    setEnrollEmpLoading(false);
+  }, [token]);
+
+  useEffect(() => {
+    if (mode === "enroll") {
+      fetchEnrollEmployees();
+      setEnrollStep("select");
+      setEnrollSelectedEmp("");
+      setEnrollDescriptor(null);
+      setEnrollError("");
+    } else {
+      enrollStopCamera();
+    }
+  }, [mode]);
+
+  useEffect(() => {
+    if (enrollCameraActive && enrollLoadState === "ready") {
+      enrollStartLiveDetection();
+    }
+  }, [enrollCameraActive, enrollLoadState, enrollStartLiveDetection]);
+
+  const handleEnrollStartCamera = async () => {
+    setEnrollError("");
+    try {
+      await enrollStartCamera();
+      setEnrollStep("capture");
+    } catch (e: any) {
+      setEnrollError(e.message);
+    }
+  };
+
+  const handleEnrollCapture = async () => {
+    setEnrollError("");
+    try {
+      const descriptor = await captureFaceDescriptor();
+      setEnrollDescriptor(descriptor);
+      enrollStopCamera();
+      setEnrollStep("preview");
+    } catch (e: any) {
+      setEnrollError(e.message);
+    }
+  };
+
+  const handleEnrollSave = async () => {
+    if (!enrollDescriptor || !enrollSelectedEmp || !token) return;
+    setEnrollStep("saving");
+    setEnrollError("");
+    try {
+      await biometricAPI.enrollFaceFromDevice(token, enrollSelectedEmp, enrollDescriptor);
+      setEnrollStep("done");
+      fetchEnrollEmployees();
+    } catch (e: any) {
+      setEnrollError(e.message);
+      setEnrollStep("preview");
+    }
+  };
+
+  const handleEnrollRetry = async () => {
+    setEnrollDescriptor(null);
+    setEnrollError("");
+    await handleEnrollStartCamera();
+  };
+
+  const handleEnrollReset = () => {
+    setEnrollStep("select");
+    setEnrollSelectedEmp("");
+    setEnrollDescriptor(null);
+    setEnrollError("");
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0A0F1E] flex items-center justify-center">
@@ -302,6 +406,7 @@ export default function BiometricDevicePage() {
             { id: "nfc" as Mode, icon: CreditCard, label: "NFC Card" },
             { id: "face" as Mode, icon: Camera, label: "Face" },
             { id: "pin" as Mode, icon: Hash, label: "PIN" },
+            { id: "enroll" as Mode, icon: UserPlus, label: "Enroll" },
           ].map((m) => (
             <button
               key={m.id}
@@ -514,6 +619,160 @@ export default function BiometricDevicePage() {
                       Record Attendance
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* Enroll Mode */}
+              {mode === "enroll" && (
+                <div className="text-center">
+                  <p className="text-white/60 text-sm font-black uppercase mb-4">
+                    Register Face for Employee
+                  </p>
+
+                  {/* Error */}
+                  {enrollError && (
+                    <div className="flex items-start gap-2 bg-red-950/50 border border-red-400 p-3 mb-4 text-left">
+                      <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                      <p className="text-red-300 text-sm font-medium">{enrollError}</p>
+                    </div>
+                  )}
+
+                  {/* Step: select employee */}
+                  {enrollStep === "select" && (
+                    <>
+                      {enrollEmpLoading ? (
+                        <div className="flex items-center justify-center gap-2 py-8">
+                          <Loader2 className="w-6 h-6 animate-spin text-white/40" />
+                          <span className="text-white/40 text-sm">Loading employees…</span>
+                        </div>
+                      ) : (
+                        <>
+                          <select
+                            value={enrollSelectedEmp}
+                            onChange={(e) => setEnrollSelectedEmp(e.target.value)}
+                            className="w-full bg-white/10 border-2 border-white/20 text-white px-3 py-3 text-sm font-medium focus:outline-none focus:border-[#024BAB] mb-4"
+                          >
+                            <option value="" className="bg-[#0A0F1E]">Select employee…</option>
+                            {enrollEmployees.map((emp) => (
+                              <option key={emp._id} value={emp._id} className="bg-[#0A0F1E]">
+                                {emp.firstName} {emp.lastName} ({emp.employeeId}){emp.hasFace ? " ✓" : ""}
+                              </option>
+                            ))}
+                          </select>
+                          {enrollSelectedEmp && (
+                            <div className="mb-3 text-xs text-white/40">
+                              {enrollEmployees.find(e => e._id === enrollSelectedEmp)?.hasFace
+                                ? "⚠ Already enrolled — will replace existing face"
+                                : "No face registered yet"}
+                            </div>
+                          )}
+                          <button
+                            onClick={handleEnrollStartCamera}
+                            disabled={!enrollSelectedEmp || enrollLoadState === "loading"}
+                            className="w-full bg-[#024BAB] border-2 border-white/20 text-white font-black uppercase py-3 disabled:opacity-40 flex items-center justify-center gap-2"
+                          >
+                            {enrollLoadState === "loading" ? (
+                              <><Loader2 className="w-4 h-4 animate-spin" /> Loading models…</>
+                            ) : (
+                              <><Camera className="w-4 h-4" /> Open Camera</>
+                            )}
+                          </button>
+                        </>
+                      )}
+                    </>
+                  )}
+
+                  {/* Step: capture */}
+                  {enrollStep === "capture" && (
+                    <>
+                      <div className="relative w-full aspect-video border-2 border-white/20 bg-black mb-4 overflow-hidden">
+                        <video
+                          ref={enrollVideoRef}
+                          className="w-full h-full object-cover"
+                          autoPlay
+                          muted
+                          playsInline
+                        />
+                        <canvas
+                          ref={enrollCanvasRef}
+                          className="absolute inset-0 w-full h-full"
+                        />
+                        <div className={cn(
+                          "absolute top-3 right-3 px-2 py-1 text-[10px] font-black uppercase border",
+                          enrollLiveDetection
+                            ? "bg-green-500 border-green-700 text-white"
+                            : "bg-red-500 border-red-700 text-white"
+                        )}>
+                          {enrollLiveDetection ? "Face detected" : "No face"}
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleEnrollCapture}
+                        disabled={!enrollLiveDetection}
+                        className="w-full bg-[#024BAB] border-2 border-white/20 text-white font-black uppercase py-3 disabled:opacity-40 mb-2 flex items-center justify-center gap-2"
+                      >
+                        <Camera className="w-4 h-4" />
+                        {enrollLiveDetection ? "Capture Face" : "Position face in camera…"}
+                      </button>
+                      <button
+                        onClick={handleEnrollReset}
+                        className="w-full bg-white/10 border-2 border-white/20 text-white font-black uppercase py-2 text-sm"
+                      >
+                        Back
+                      </button>
+                    </>
+                  )}
+
+                  {/* Step: preview / confirm */}
+                  {enrollStep === "preview" && (
+                    <>
+                      <div className="bg-green-950/50 border-2 border-green-400 p-6 mb-4 text-center">
+                        <Check className="w-10 h-10 text-green-400 mx-auto mb-2" />
+                        <p className="font-black text-green-300">Face captured!</p>
+                        <p className="text-xs text-green-500 mt-1">128-dimensional descriptor ready</p>
+                      </div>
+                      <button
+                        onClick={handleEnrollSave}
+                        className="w-full bg-green-600 border-2 border-white/20 text-white font-black uppercase py-3 mb-2 flex items-center justify-center gap-2"
+                      >
+                        <Check className="w-4 h-4" /> Save Enrollment
+                      </button>
+                      <button
+                        onClick={handleEnrollRetry}
+                        className="w-full bg-white/10 border-2 border-white/20 text-white font-black uppercase py-2 text-sm"
+                      >
+                        Retry Capture
+                      </button>
+                    </>
+                  )}
+
+                  {/* Step: saving */}
+                  {enrollStep === "saving" && (
+                    <div className="flex items-center justify-center gap-2 py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-[#024BAB]" />
+                      <span className="text-white font-black">Saving…</span>
+                    </div>
+                  )}
+
+                  {/* Step: done */}
+                  {enrollStep === "done" && (
+                    <>
+                      <div className="bg-green-950/50 border-2 border-green-400 p-6 mb-4 text-center">
+                        <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-2" />
+                        <p className="font-black text-white text-lg">Enrollment complete!</p>
+                        <p className="text-sm text-green-400 mt-1">
+                          {enrollEmployees.find(e => e._id === enrollSelectedEmp)?.firstName} can now
+                          use face attendance.
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleEnrollReset}
+                        className="w-full bg-[#024BAB] border-2 border-white/20 text-white font-black uppercase py-3"
+                      >
+                        Enroll Another
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
 

@@ -895,6 +895,71 @@ const faceAttendance = asyncHandler(async (req, res) => {
   });
 });
 
+// ─── Device-based face enrollment (no user auth — device token) ──────────────
+
+// GET /api/biometric/device/:token/employees
+// Returns all active company employees so the kiosk can show a selection list
+const getDeviceEmployees = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const device = await BiometricDevice.findOne({ deviceToken: token, isActive: true });
+  if (!device) {
+    res.status(403);
+    throw new Error("Invalid device token");
+  }
+
+  const employees = await Employee.find({
+    company: device.company,
+    status: { $ne: "terminated" },
+  }).select("_id firstName lastName employeeId faceDescriptor").sort({ firstName: 1 });
+
+  res.json({
+    success: true,
+    data: employees.map((e) => ({
+      _id: e._id,
+      firstName: e.firstName,
+      lastName: e.lastName,
+      employeeId: e.employeeId,
+      hasFace: Array.isArray(e.faceDescriptor) && e.faceDescriptor.length === 128,
+    })),
+  });
+});
+
+// POST /api/biometric/device-face-enroll
+// { deviceToken, employeeId, descriptor }
+const enrollFaceFromDevice = asyncHandler(async (req, res) => {
+  const { deviceToken, employeeId, descriptor } = req.body;
+
+  const device = await BiometricDevice.findOne({ deviceToken, isActive: true });
+  if (!device) {
+    res.status(403);
+    throw new Error("Invalid device token");
+  }
+
+  if (!Array.isArray(descriptor) || descriptor.length !== 128) {
+    res.status(400);
+    throw new Error("descriptor must be an array of 128 numbers");
+  }
+
+  const employee = await Employee.findOne({
+    _id: employeeId,
+    company: device.company,
+    status: { $ne: "terminated" },
+  });
+  if (!employee) {
+    res.status(404);
+    throw new Error("Employee not found");
+  }
+
+  employee.faceDescriptor = descriptor;
+  await employee.save();
+
+  res.json({
+    success: true,
+    message: `Face enrolled for ${employee.firstName} ${employee.lastName}`,
+    data: { employeeId: employee._id, name: `${employee.firstName} ${employee.lastName}` },
+  });
+});
+
 // ─── Fingerprint enrollment trigger (via ADMS command queue) ─────────────────
 
 // POST /api/biometric/devices/:id/enroll-fingerprint
@@ -974,4 +1039,6 @@ module.exports = {
   getFaceDescriptors,
   faceAttendance,
   triggerFingerprintEnroll,
+  getDeviceEmployees,
+  enrollFaceFromDevice,
 };
