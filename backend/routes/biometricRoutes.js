@@ -29,6 +29,7 @@ const {
   triggerFingerprintEnroll,
   getDeviceEmployees,
   enrollFaceFromDevice,
+  triggerFaceEnroll,
 } = require("../controllers/biometricController");
 
 // Public device endpoints (no user auth — device token / activation code used instead)
@@ -133,6 +134,13 @@ router.post(
   "/devices/:id/enroll-fingerprint",
   authorize("super_admin", "hr_manager"),
   triggerFingerprintEnroll,
+);
+
+// ── Face enrollment trigger (ADMS — physical eSSL device) ────────────────────
+router.post(
+  "/devices/:id/enroll-face-device",
+  authorize("super_admin", "hr_manager"),
+  triggerFaceEnroll,
 );
 
 module.exports = router;

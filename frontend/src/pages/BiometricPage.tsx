@@ -491,6 +491,17 @@ export default function BiometricPage() {
     setSyncingAll(false);
   };
 
+  const handleTriggerFaceEnroll = async (emp: any) => {
+    if (!admsDevice) return;
+    try {
+      const res = await biometricAPI.enrollFaceOnDevice(admsDevice._id, emp._id);
+      toast({ title: "Face enrollment queued", description: res.message });
+      fetchCommands(admsDevice._id);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  };
+
   const handleSaveBioId = async (emp: any) => {
     if (!editBioId) return;
     try {
@@ -1706,6 +1717,18 @@ export default function BiometricPage() {
                                         className="nb-btn px-2 py-1.5 text-[10px] font-black flex items-center gap-1 bg-white border-2 border-black hover:bg-gray-50"
                                       >
                                         <Fingerprint className="w-3 h-3" /> FP
+                                        Enroll
+                                      </button>
+                                    )}
+
+                                    {/* Face enroll trigger on physical ADMS device */}
+                                    {emp.biometricUserId && admsDevice && (
+                                      <button
+                                        onClick={() => handleTriggerFaceEnroll(emp)}
+                                        title="Trigger face enrollment on eSSL/ZKTeco device"
+                                        className="nb-btn px-2 py-1.5 text-[10px] font-black flex items-center gap-1 bg-green-50 border-2 border-green-600 text-green-800 hover:bg-green-100"
+                                      >
+                                        <Scan className="w-3 h-3" /> Face
                                         Enroll
                                       </button>
                                     )}

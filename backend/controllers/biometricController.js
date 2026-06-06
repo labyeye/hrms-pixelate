@@ -895,6 +895,59 @@ const faceAttendance = asyncHandler(async (req, res) => {
   });
 });
 
+// ─── Face enrollment trigger via ADMS command (physical eSSL/ZKTeco device) ──
+
+// POST /api/biometric/devices/:id/enroll-face
+// Queues ENROLL_FACE command so the device enters face-capture mode for the employee
+const triggerFaceEnroll = asyncHandler(async (req, res) => {
+  const { employeeId } = req.body;
+  if (!employeeId) {
+    res.status(400);
+    throw new Error("employeeId is required");
+  }
+
+  const device = await BiometricDevice.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!device) {
+    res.status(404);
+    throw new Error("Device not found");
+  }
+  if (!device.serialNumber) {
+    res.status(400);
+    throw new Error("Device serial number not registered — pair the ADMS device first");
+  }
+
+  const employee = await Employee.findOne({
+    _id: employeeId,
+    company: req.user.company,
+  });
+  if (!employee || !employee.biometricUserId) {
+    res.status(400);
+    throw new Error("Employee not found or has no biometric user ID");
+  }
+
+  const cmdId = await nextCmdId(device._id);
+
+  // eSSL / ZKTeco ADMS face enrollment command.
+  // Device enters face-capture mode for the given PIN and shows "Enroll Face" on screen.
+  await BiometricCommand.create({
+    device: device._id,
+    company: device.company,
+    cmdId,
+    command: `ENROLL_FACE PIN=${employee.biometricUserId}\tOverWrite=1`,
+    type: "SET_USER",
+    employee: employee._id,
+  });
+
+  res.json({
+    success: true,
+    message: `Face enrollment queued for ${employee.firstName} ${employee.lastName}. Ask them to stand in front of the device.`,
+    data: { cmdId },
+  });
+});
+
 // ─── Device-based face enrollment (no user auth — device token) ──────────────
 
 // GET /api/biometric/device/:token/employees
@@ -1041,4 +1094,5 @@ module.exports = {
   triggerFingerprintEnroll,
   getDeviceEmployees,
   enrollFaceFromDevice,
+  triggerFaceEnroll,
 };

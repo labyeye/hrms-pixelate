@@ -326,6 +326,13 @@ export const biometricAPI = {
       body: JSON.stringify({ employeeId, fingerIndex }),
     }),
 
+  // Face enrollment trigger on physical eSSL/ZKTeco device (ADMS command)
+  enrollFaceOnDevice: (deviceId: string, employeeId: string) =>
+    request(`/biometric/devices/${deviceId}/enroll-face-device`, {
+      method: "POST",
+      body: JSON.stringify({ employeeId }),
+    }),
+
   // Device-based face enrollment (no user auth — uses device token)
   getDeviceEmployees: (token: string) =>
     request(`/biometric/device/${token}/employees`),
