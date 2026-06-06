@@ -70,14 +70,18 @@ async function processLog({ userId, datetime, punchState }, companyId) {
     return;
   }
 
-  const punchTime = new Date(datetime.replace(" ", "T"));
+  // Device sends local IST time without timezone info (e.g. "2026-06-07 00:41:05").
+  // Append +05:30 so the stored UTC value is correct and the browser can display IST.
+  const punchTime = new Date(datetime.replace(" ", "T") + "+05:30");
   if (isNaN(punchTime.getTime())) {
     console.log(`[ADMS] Invalid datetime for userId=${userId}: "${datetime}"`);
     return;
   }
 
-  const dayStart = new Date(punchTime);
-  dayStart.setHours(0, 0, 0, 0);
+  // dayStart: store as UTC midnight of the IST date string reported by the device.
+  // Using the date portion directly avoids UTC/IST boundary issues with the month filter.
+  const datePart = datetime.split(" ")[0]; // "YYYY-MM-DD"
+  const dayStart = new Date(datePart + "T00:00:00.000Z");
 
   console.log(`[ADMS] Punch: emp=${employee.firstName} ${employee.lastName} uid=${userId} time=${punchTime.toISOString()} punchState=${punchState}`);
 
