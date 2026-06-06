@@ -27,6 +27,11 @@ const attendanceSchema = new mongoose.Schema(
     overtime: { type: Number, default: 0 },
     notes: { type: String },
     markedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    verifyMode: {
+      type: String,
+      enum: ["fingerprint", "card", "face", "password", "manual"],
+      default: "manual",
+    },
   },
   { timestamps: true },
 );

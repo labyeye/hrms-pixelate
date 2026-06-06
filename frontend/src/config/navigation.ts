@@ -124,12 +124,6 @@ const allGroups: NavGroup[] = [
         icon: Fingerprint,
         roles: ["super_admin", "hr_manager"],
       },
-      {
-        title: "NFC Manager",
-        href: "/nfc-manager",
-        icon: Nfc,
-        roles: ["super_admin", "hr_manager"],
-      },
     ],
   },
   {

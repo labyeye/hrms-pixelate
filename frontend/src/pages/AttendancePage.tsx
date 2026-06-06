@@ -9,7 +9,20 @@ import {
   XCircle,
   AlertCircle,
   Calendar,
+  Fingerprint,
+  CreditCard,
+  Scan,
+  KeyRound,
+  MousePointerClick,
 } from "lucide-react";
+
+const VERIFY_MODE_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
+  fingerprint: { label: "Finger",   icon: Fingerprint,      color: "text-blue-600 bg-blue-50"   },
+  card:        { label: "Card",     icon: CreditCard,       color: "text-purple-600 bg-purple-50" },
+  face:        { label: "Face",     icon: Scan,             color: "text-green-600 bg-green-50"  },
+  password:    { label: "Password", icon: KeyRound,         color: "text-orange-600 bg-orange-50" },
+  manual:      { label: "Manual",   icon: MousePointerClick, color: "text-gray-500 bg-gray-100"  },
+};
 
 const STATUS_COLORS: Record<string, string> = {
   present: "nb-tag-blue",
@@ -215,6 +228,7 @@ export default function AttendancePage() {
                   "Check Out",
                   "Hours",
                   "OT Hrs",
+                  "Via",
                   "Status",
                 ].map((h) => (
                   <th
@@ -278,6 +292,19 @@ export default function AttendancePage() {
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {(() => {
+                        const mode = (rec as any).verifyMode || "manual";
+                        const cfg = VERIFY_MODE_CONFIG[mode] || VERIFY_MODE_CONFIG.manual;
+                        const ModeIcon = cfg.icon;
+                        return (
+                          <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border", cfg.color)}>
+                            <ModeIcon className="w-3 h-3" />
+                            {cfg.label}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3">
                       <span

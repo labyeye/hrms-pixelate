@@ -59,7 +59,15 @@ function parseAttLog(raw) {
 // Strategy: first punch of the day = checkIn, any later punch = checkOut.
 // We intentionally ignore punchState because most ZKTeco MB-series devices
 // send ALL punches as punchState=0 regardless of check-in vs check-out.
-async function processLog({ userId, datetime, punchState }, companyId) {
+function mapVerifyMode(verifyType) {
+  if (verifyType === 1) return "fingerprint";
+  if (verifyType === 4 || verifyType === 6) return "card";
+  if (verifyType === 7 || verifyType === 15) return "face";
+  if (verifyType === 0 || verifyType === 3) return "password";
+  return "fingerprint"; // default for unknown types from device
+}
+
+async function processLog({ userId, datetime, punchState, verifyType }, companyId) {
   const employee = await Employee.findOne({
     biometricUserId: userId,
     ...(companyId ? { company: companyId } : {}),
@@ -90,6 +98,8 @@ async function processLog({ userId, datetime, punchState }, companyId) {
     date: dayStart,
   });
 
+  const verifyMode = mapVerifyMode(verifyType);
+
   if (!existing) {
     // First punch of the day → always check-in
     await Attendance.create({
@@ -97,18 +107,18 @@ async function processLog({ userId, datetime, punchState }, companyId) {
       date: dayStart,
       status: "present",
       checkIn: punchTime,
+      verifyMode,
     });
-    console.log(`[ADMS] Created attendance checkIn=${punchTime.toISOString()} for ${employee.firstName}`);
+    console.log(`[ADMS] Created attendance checkIn=${punchTime.toISOString()} verifyMode=${verifyMode} for ${employee.firstName}`);
     return;
   }
 
   const upd = {};
 
   if (!existing.checkIn || punchTime < existing.checkIn) {
-    // Earlier punch → move check-in back
     upd.checkIn = punchTime;
+    upd.verifyMode = verifyMode;
   } else if (punchTime > existing.checkIn) {
-    // Later punch → update check-out (keep the latest)
     if (!existing.checkOut || punchTime > existing.checkOut) {
       upd.checkOut = punchTime;
     }
