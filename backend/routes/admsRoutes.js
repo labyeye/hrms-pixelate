@@ -109,8 +109,8 @@ async function resolveDevice(sn) {
   return BiometricDevice.findOne({ serialNumber: sn, isActive: true });
 }
 
-// ── GET /iclock/cdata — heartbeat ─────────────────────────────────────────────
-router.get("/cdata", async (req, res) => {
+// ── GET /iclock/cdata(.aspx) — heartbeat ──────────────────────────────────────
+router.get(["/cdata", "/cdata.aspx"], async (req, res) => {
   const { SN } = req.query;
   res.set("Content-Type", "text/plain");
 
@@ -144,8 +144,8 @@ router.get("/cdata", async (req, res) => {
   );
 });
 
-// ── POST /iclock/cdata — device pushes attendance logs ────────────────────────
-router.post("/cdata", express.text({ type: "*/*" }), async (req, res) => {
+// ── POST /iclock/cdata(.aspx) — device pushes attendance logs ─────────────────
+router.post(["/cdata", "/cdata.aspx"], express.text({ type: "*/*" }), async (req, res) => {
   const { SN, table } = req.query;
   res.set("Content-Type", "text/plain");
 
@@ -168,8 +168,8 @@ router.post("/cdata", express.text({ type: "*/*" }), async (req, res) => {
   }
 });
 
-// ── GET /iclock/getrequest — device polls for pending commands ────────────────
-router.get("/getrequest", async (req, res) => {
+// ── GET /iclock/getrequest(.aspx) — device polls for pending commands ─────────
+router.get(["/getrequest", "/getrequest.aspx"], async (req, res) => {
   const { SN } = req.query;
   res.set("Content-Type", "text/plain");
 
@@ -194,8 +194,8 @@ router.get("/getrequest", async (req, res) => {
   }
 });
 
-// ── POST /iclock/devicecmd — device reports command result ────────────────────
-router.post("/devicecmd", express.text({ type: "*/*" }), async (req, res) => {
+// ── POST /iclock/devicecmd(.aspx) — device reports command result ─────────────
+router.post(["/devicecmd", "/devicecmd.aspx"], express.text({ type: "*/*" }), async (req, res) => {
   const { SN, ID } = req.query;
   res.set("Content-Type", "text/plain");
 
