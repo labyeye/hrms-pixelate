@@ -152,14 +152,20 @@ router.post(["/cdata", "/cdata.aspx"], express.text({ type: "*/*" }), async (req
   if (table !== "ATTLOG") return res.send("OK");
 
   const body = req.body;
+  console.log(`[ADMS] ATTLOG from ${SN} | body type: ${typeof body} | length: ${body?.length ?? "N/A"} | body: ${JSON.stringify(body)}`);
   if (!body || typeof body !== "string") return res.send("OK");
 
   try {
     const device = await resolveDevice(SN);
+    console.log(`[ADMS] device lookup for SN=${SN}:`, device ? `found (company=${device.company})` : "NOT FOUND");
     const companyId = device?.company || null;
 
     const logs = parseAttLog(body);
-    await Promise.allSettled(logs.map((log) => processLog(log, companyId)));
+    console.log(`[ADMS] parsed ${logs.length} logs:`, JSON.stringify(logs));
+    const results = await Promise.allSettled(logs.map((log) => processLog(log, companyId)));
+    results.forEach((r, i) => {
+      if (r.status === "rejected") console.error(`[ADMS] processLog[${i}] failed:`, r.reason?.message);
+    });
 
     res.send("OK");
   } catch (err) {
