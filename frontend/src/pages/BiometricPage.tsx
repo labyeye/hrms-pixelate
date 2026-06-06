@@ -38,7 +38,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Tab = "locations" | "devices" | "logs" | "adms";
+type Tab = "locations_devices" | "logs" | "adms";
 
 interface Location {
   _id: string;
@@ -94,7 +94,7 @@ export default function BiometricPage() {
   const { toast } = useToast();
   const toastRef = useRef(toast);
   toastRef.current = toast;
-  const [tab, setTab] = useState<Tab>("locations");
+  const [tab, setTab] = useState<Tab>("locations_devices");
 
   // Locations state
   const [locations, setLocations] = useState<Location[]>([]);
@@ -191,7 +191,7 @@ export default function BiometricPage() {
     fetchLocations();
   }, [fetchLocations]);
   useEffect(() => {
-    if (tab === "devices") {
+    if (tab === "locations_devices") {
       fetchDevices();
       fetchEmployees();
     }
@@ -555,65 +555,66 @@ export default function BiometricPage() {
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  const TABS: { id: Tab; label: string; icon: any }[] = [
-    { id: "locations", label: "Locations", icon: MapPin },
-    { id: "devices", label: "Devices", icon: Cpu },
-    { id: "adms", label: "ADMS / ESSL Sync", icon: Radio },
-    { id: "logs", label: "Activity Logs", icon: Activity },
+  const SIDEBAR_ITEMS: { id: Tab; label: string; sub: string; icon: any }[] = [
+    { id: "locations_devices", label: "Locations & Devices", sub: "Manage sites and terminals", icon: MapPin },
+    { id: "adms", label: "ADMS / ESSL Sync", sub: "Hardware device sync", icon: Radio },
+    { id: "logs", label: "Activity Logs", sub: "Punch history", icon: Activity },
   ];
 
   return (
     <AppLayout title="Biometric System">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="font-display font-black text-3xl text-black">
-            Biometric System
-          </h1>
-          <p className="text-gray-600 font-medium mt-1">
-            Manage locations, devices, NFC cards and attendance logs
-          </p>
-        </div>
+        <div className="flex gap-6">
+          {/* Sidebar */}
+          <div className="w-56 shrink-0">
+            <div className="border-2 border-black bg-white overflow-hidden sticky top-4">
+              <div className="px-4 py-3 bg-[#024BAB] border-b-2 border-black">
+                <p className="text-xs font-black uppercase tracking-wider text-white">Biometric System</p>
+              </div>
+              {SIDEBAR_ITEMS.map((item, idx) => (
+                <button
+                  key={item.id}
+                  onClick={() => setTab(item.id)}
+                  className={cn(
+                    "w-full flex items-start gap-3 px-4 py-3.5 text-left transition-all",
+                    idx < SIDEBAR_ITEMS.length - 1 && "border-b-2 border-black",
+                    tab === item.id
+                      ? "bg-[#024BAB]/10 border-l-4 border-l-[#024BAB]"
+                      : "bg-white hover:bg-gray-50 border-l-4 border-l-transparent",
+                  )}
+                >
+                  <item.icon className={cn("w-4 h-4 mt-0.5 shrink-0", tab === item.id ? "text-[#024BAB]" : "text-gray-400")} />
+                  <div>
+                    <p className={cn("text-sm font-black", tab === item.id ? "text-[#024BAB]" : "text-black")}>{item.label}</p>
+                    <p className="text-[10px] text-gray-400 font-medium mt-0.5">{item.sub}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
 
-        {/* Tabs */}
-        <div className="flex gap-0 mb-8 border-2 border-black w-fit overflow-hidden nb-shadow-sm">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={cn(
-                "flex items-center gap-2 px-5 py-3 text-sm font-black uppercase transition-all",
-                tab === t.id
-                  ? "bg-[#024BAB] text-white"
-                  : "bg-white text-black hover:bg-gray-50",
-                t.id !== "logs" ? "border-r-2 border-black" : "",
-              )}
-            >
-              <t.icon className="w-4 h-4" />
-              {t.label}
-            </button>
-          ))}
-        </div>
+          {/* Main content */}
+          <div className="flex-1 min-w-0">
 
-        {/* ── LOCATIONS TAB ─────────────────────────────────────────────────── */}
-        {tab === "locations" && (
+        {/* ── LOCATIONS & DEVICES TAB ───────────────────────────────────────── */}
+        {tab === "locations_devices" && (
           <div>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="font-black text-lg">Biometric Locations</h2>
+              <h2 className="font-black text-lg flex items-center gap-2"><MapPin className="w-5 h-5 text-[#024BAB]" /> Locations</h2>
               <button
                 onClick={() => {
                   setShowLocForm(true);
                   setEditingLoc(null);
                   setLocForm({ name: "", address: "", description: "" });
                 }}
-                className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-black text-sm uppercase nb-shadow-sm hover:nb-shadow transition-all"
+                className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-black text-sm uppercase hover: transition-all"
               >
                 <Plus className="w-4 h-4" /> Add Location
               </button>
             </div>
 
             {showLocForm && (
-              <div className="bg-white border-2 border-black p-6 mb-6 nb-shadow">
+              <div className="bg-white border-2 border-black p-6 mb-6">
                 <h3 className="font-black mb-4">
                   {editingLoc ? "Edit Location" : "New Location"}
                 </h3>
@@ -665,7 +666,7 @@ export default function BiometricPage() {
                   <button
                     onClick={handleSaveLocation}
                     disabled={locSaving}
-                    className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-black text-sm uppercase nb-shadow-sm disabled:opacity-60"
+                    className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-black text-sm uppercase disabled:opacity-60"
                   >
                     {locSaving ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -703,7 +704,7 @@ export default function BiometricPage() {
                 {locations.map((loc) => (
                   <div
                     key={loc._id}
-                    className="bg-white border-2 border-black p-5 nb-shadow-sm"
+                    className="bg-white border-2 border-black p-5"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-2">
@@ -764,26 +765,24 @@ export default function BiometricPage() {
                 ))}
               </div>
             )}
-          </div>
-        )}
 
-        {/* ── DEVICES TAB ───────────────────────────────────────────────────── */}
-        {tab === "devices" && (
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            {/* ── DEVICES SECTION (inline in locations_devices tab) ─────────── */}
+            <div className="mt-8 border-t-2 border-black pt-8">
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
             {/* Device list */}
             <div className="lg:col-span-2">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-black text-lg">Devices</h2>
+                <h2 className="font-black text-lg flex items-center gap-2"><Cpu className="w-5 h-5 text-[#024BAB]" /> Devices</h2>
                 <button
                   onClick={() => setShowDevForm((p) => !p)}
-                  className="flex items-center gap-1.5 bg-[#024BAB] text-white border-2 border-black px-3 py-1.5 font-black text-xs uppercase nb-shadow-sm"
+                  className="flex items-center gap-1.5 bg-[#024BAB] text-white border-2 border-black px-3 py-1.5 font-black text-xs uppercase"
                 >
                   <Plus className="w-3.5 h-3.5" /> Add
                 </button>
               </div>
 
               {showDevForm && (
-                <div className="bg-white border-2 border-black p-4 mb-4 nb-shadow-sm">
+                <div className="bg-white border-2 border-black p-4 mb-4">
                   <div className="space-y-3">
                     <div>
                       <label className="block text-xs font-black uppercase mb-1">
@@ -857,8 +856,8 @@ export default function BiometricPage() {
                       className={cn(
                         "w-full text-left p-4 border-2 transition-all",
                         selectedDevice?._id === dev._id
-                          ? "border-[#024BAB] bg-blue-50 nb-shadow"
-                          : "border-black bg-white hover:nb-shadow-sm",
+                          ? "border-[#024BAB] bg-blue-50 border-2"
+                          : "border-black bg-white hover:border-2",
                       )}
                     >
                       <div className="flex items-center justify-between">
@@ -908,7 +907,7 @@ export default function BiometricPage() {
                   </div>
                 </div>
               ) : (
-                <div className="bg-white border-2 border-black nb-shadow">
+                <div className="bg-white border-2 border-black">
                   {/* Device header */}
                   <div className="p-5 border-b-2 border-black">
                     <div className="flex items-start justify-between">
@@ -1233,13 +1232,15 @@ export default function BiometricPage() {
               )}
             </div>
           </div>
+        </div>
+      </div>
         )}
 
         {/* ── LOGS TAB ──────────────────────────────────────────────────────── */}
         {tab === "logs" && (
           <div>
             {/* Sync Log Table */}
-            <div className="nb-card bg-white mb-6">
+            <div className="border-2 bg-white mb-6">
               <div className="flex items-center justify-between p-4 border-b-2 border-black">
                 <h3 className="font-black text-sm text-black uppercase tracking-wider">
                   Device Sync Log
@@ -1337,7 +1338,7 @@ export default function BiometricPage() {
               />
               <button
                 onClick={fetchLogs}
-                className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-black text-sm uppercase nb-shadow-sm"
+                className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-black text-sm uppercase"
               >
                 <RefreshCw className="w-4 h-4" /> Refresh
               </button>
@@ -1355,7 +1356,7 @@ export default function BiometricPage() {
                 </p>
               </div>
             ) : (
-              <div className="bg-white border-2 border-black overflow-hidden nb-shadow">
+              <div className="bg-white border-2 border-black overflow-hidden">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b-2 border-black bg-[#024BAB] text-white">
@@ -1459,7 +1460,7 @@ export default function BiometricPage() {
         {tab === "adms" && (
           <div className="space-y-6">
             {/* Step 1 — Select device */}
-            <div className="nb-card p-5">
+            <div className="border-2 p-5">
               <h2 className="font-display font-black text-base mb-4 flex items-center gap-2">
                 <span className="w-6 h-6 bg-black text-white text-xs font-black flex items-center justify-center">
                   1
@@ -1506,7 +1507,7 @@ export default function BiometricPage() {
             {admsDevice && (
               <>
                 {/* Step 2 — Register serial number */}
-                <div className="nb-card p-5">
+                <div className="border-2 p-5">
                   <h2 className="font-display font-black text-base mb-1 flex items-center gap-2">
                     <span className="w-6 h-6 bg-black text-white text-xs font-black flex items-center justify-center">
                       2
@@ -1536,7 +1537,7 @@ export default function BiometricPage() {
                     <button
                       onClick={handleSaveSerial}
                       disabled={serialSaving || !admsSerial.trim()}
-                      className="nb-btn bg-[#024BAB] text-white px-4 py-2 font-black text-sm disabled:opacity-40 flex items-center gap-2"
+                      className="border-2 bg-[#024BAB] text-white px-4 py-2 font-black text-sm disabled:opacity-40 flex items-center gap-2"
                     >
                       {serialSaving ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -1555,7 +1556,7 @@ export default function BiometricPage() {
                 </div>
 
                 {/* Step 3 — Assign Biometric User IDs + RFID + Sync */}
-                <div className="nb-card">
+                <div className="border-2">
                   <div className="px-5 py-4 border-b-2 border-black flex items-center justify-between">
                     <div>
                       <h2 className="font-display font-black text-base flex items-center gap-2">
@@ -1572,7 +1573,7 @@ export default function BiometricPage() {
                     <button
                       onClick={handleSyncAll}
                       disabled={syncingAll || !(admsDevice as any).serialNumber}
-                      className="nb-btn bg-[#024BAB] text-white px-4 py-2 font-black text-xs disabled:opacity-40 flex items-center gap-2 shrink-0"
+                      className="border-2 bg-[#024BAB] text-white px-4 py-2 font-black text-xs disabled:opacity-40 flex items-center gap-2 shrink-0"
                     >
                       {syncingAll ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1697,7 +1698,7 @@ export default function BiometricPage() {
                                       onClick={() => setFaceEnrollEmp(emp)}
                                       title="Enroll face via PC webcam"
                                       className={cn(
-                                        "nb-btn px-2 py-1.5 text-[10px] font-black flex items-center gap-1 border-2",
+                                        " px-2 py-1.5 text-[10px] font-black flex items-center gap-1 border-2",
                                         emp.faceDescriptor?.length === 128
                                           ? "bg-purple-100 border-purple-400 text-purple-800"
                                           : "bg-white border-black hover:bg-gray-50",
@@ -1714,7 +1715,7 @@ export default function BiometricPage() {
                                       <button
                                         onClick={() => setFpEnrollEmp(emp)}
                                         title="Trigger fingerprint enrollment on device"
-                                        className="nb-btn px-2 py-1.5 text-[10px] font-black flex items-center gap-1 bg-white border-2 border-black hover:bg-gray-50"
+                                        className=" px-2 py-1.5 text-[10px] font-black flex items-center gap-1 bg-white border-2 border-black hover:bg-gray-50"
                                       >
                                         <Fingerprint className="w-3 h-3" /> FP
                                         Enroll
@@ -1726,7 +1727,7 @@ export default function BiometricPage() {
                                       <button
                                         onClick={() => handleTriggerFaceEnroll(emp)}
                                         title="Trigger face enrollment on eSSL/ZKTeco device"
-                                        className="nb-btn px-2 py-1.5 text-[10px] font-black flex items-center gap-1 bg-green-50 border-2 border-green-600 text-green-800 hover:bg-green-100"
+                                        className=" px-2 py-1.5 text-[10px] font-black flex items-center gap-1 bg-green-50 border-2 border-green-600 text-green-800 hover:bg-green-100"
                                       >
                                         <Scan className="w-3 h-3" /> Face
                                         Enroll
@@ -1741,7 +1742,7 @@ export default function BiometricPage() {
                                           syncingId === emp._id ||
                                           !(admsDevice as any).serialNumber
                                         }
-                                        className="nb-btn bg-[#024BAB] text-white px-2 py-1.5 text-[10px] font-black disabled:opacity-40 flex items-center gap-1"
+                                        className="border-2 bg-[#024BAB] text-white px-2 py-1.5 text-[10px] font-black disabled:opacity-40 flex items-center gap-1"
                                       >
                                         {syncingId === emp._id ? (
                                           <Loader2 className="w-3 h-3 animate-spin" />
@@ -1767,14 +1768,14 @@ export default function BiometricPage() {
                 </div>
 
                 {/* Command queue status */}
-                <div className="nb-card">
+                <div className="border-2">
                   <div className="px-5 py-4 border-b-2 border-black flex items-center justify-between">
                     <h2 className="font-display font-black text-base flex items-center gap-2">
                       <Terminal className="w-4 h-4" /> Command Queue
                     </h2>
                     <button
                       onClick={() => fetchCommands(admsDevice._id)}
-                      className="nb-btn bg-white border-2 border-black px-3 py-1.5 text-xs font-black flex items-center gap-1.5"
+                      className=" bg-white border-2 border-black px-3 py-1.5 text-xs font-black flex items-center gap-1.5"
                     >
                       <RefreshCw className="w-3 h-3" /> Refresh
                     </button>
@@ -1885,7 +1886,7 @@ export default function BiometricPage() {
         {/* ── USB RFID ENROLLMENT MODAL ─────────────────────────────────────── */}
         {rfidModalEmp && (
           <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-            <div className="nb-card w-full max-w-md bg-white">
+            <div className="border-2 w-full max-w-md bg-white">
               <div className="px-6 py-4 border-b-2 border-black flex items-center justify-between">
                 <h2 className="font-display font-black text-base flex items-center gap-2">
                   <Scan className="w-4 h-4" /> Scan RFID Card
@@ -1956,7 +1957,7 @@ export default function BiometricPage() {
                   <button
                     onClick={() => handleSaveRfid(rfidBuffer)}
                     disabled={!rfidBuffer.trim() || rfidSaving}
-                    className="flex-1 nb-btn bg-[#024BAB] text-white py-2.5 font-black text-sm disabled:opacity-40 flex items-center justify-center gap-2"
+                    className="flex-1 border-2 bg-[#024BAB] text-white py-2.5 font-black text-sm disabled:opacity-40 flex items-center justify-center gap-2"
                   >
                     {rfidSaving ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -1967,7 +1968,7 @@ export default function BiometricPage() {
                   </button>
                   <button
                     onClick={() => setRfidModalEmp(null)}
-                    className="nb-btn bg-white border-2 border-black px-5 py-2.5 font-black text-sm"
+                    className=" bg-white border-2 border-black px-5 py-2.5 font-black text-sm"
                   >
                     Cancel
                   </button>
@@ -1976,6 +1977,8 @@ export default function BiometricPage() {
             </div>
           </div>
         )}
+          </div>{/* end main content */}
+        </div>{/* end flex sidebar+content */}
       </div>
     </AppLayout>
   );

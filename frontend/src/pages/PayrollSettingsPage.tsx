@@ -3,7 +3,7 @@ import { payrollConfigAPI, employeeAPI } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
-  DollarSign,
+  IndianRupee,
   User,
   Search,
   Loader2,
@@ -257,7 +257,7 @@ export default function PayrollSettingsPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-0 mb-8 border-2 border-black w-fit overflow-hidden nb-shadow-sm">
+        <div className="flex gap-0 mb-8 border-2 border-black w-fit overflow-hidden">
           {(
             [
               { id: "employee", label: "Employee Payroll", icon: User },
@@ -309,8 +309,8 @@ export default function PayrollSettingsPage() {
                       className={cn(
                         "w-full text-left p-4 border-2 transition-all",
                         selectedEmployee?._id === emp._id
-                          ? "border-[#024BAB] bg-blue-50 nb-shadow"
-                          : "border-black bg-white hover:nb-shadow-sm",
+                          ? "border-[#024BAB] bg-blue-50 border-2"
+                          : "border-black bg-white hover:border-2",
                       )}
                     >
                       <div className="flex items-center gap-3">
@@ -347,7 +347,7 @@ export default function PayrollSettingsPage() {
               {!selectedEmployee ? (
                 <div className="h-full flex items-center justify-center border-2 border-dashed border-gray-300 bg-white py-24">
                   <div className="text-center">
-                    <DollarSign className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <IndianRupee className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-400 font-medium">
                       Select an employee to set their payroll
                     </p>
@@ -358,7 +358,7 @@ export default function PayrollSettingsPage() {
                   <Loader2 className="w-6 h-6 animate-spin text-[#024BAB]" />
                 </div>
               ) : (
-                <div className="bg-white border-2 border-black nb-shadow">
+                <div className="bg-white border-2 border-black">
                   <div className="p-5 border-b-2 border-black bg-[#F0F6FF]">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-[#024BAB] border-2 border-black flex items-center justify-center">
@@ -419,7 +419,7 @@ export default function PayrollSettingsPage() {
                     <button
                       onClick={handleSaveConfig}
                       disabled={configSaving}
-                      className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-5 py-2.5 font-black text-sm uppercase nb-shadow-sm disabled:opacity-60"
+                      className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-5 py-2.5 font-black text-sm uppercase disabled:opacity-60"
                     >
                       {configSaving ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -443,7 +443,7 @@ export default function PayrollSettingsPage() {
                 <Loader2 className="w-6 h-6 animate-spin text-[#024BAB]" />
               </div>
             ) : (
-              <div className="bg-white border-2 border-black nb-shadow">
+              <div className="bg-white border-2 border-black">
                 <div className="p-5 border-b-2 border-black bg-[#F0F6FF]">
                   <div className="flex items-center gap-3">
                     <ShieldAlert className="w-6 h-6 text-[#024BAB]" />
@@ -675,7 +675,7 @@ export default function PayrollSettingsPage() {
                   <button
                     onClick={handleSaveRules}
                     disabled={rulesSaving}
-                    className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-5 py-2.5 font-black text-sm uppercase nb-shadow-sm disabled:opacity-60"
+                    className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-5 py-2.5 font-black text-sm uppercase disabled:opacity-60"
                   >
                     {rulesSaving ? (
                       <Loader2 className="w-4 h-4 animate-spin" />

@@ -31,7 +31,7 @@ export default function LoginPage() {
       <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#FA731C] opacity-5 translate-y-1/2 -translate-x-1/2" />
 
       {/* Card */}
-      <div className="w-full max-w-md border-2 border-black bg-white nb-shadow-lg relative z-10">
+      <div className="w-full max-w-md border-2 border-black bg-white relative z-10">
         {/* Top accent bar */}
         <div className="h-2 bg-[#024BAB] border-b-2 border-black" />
 
@@ -77,7 +77,7 @@ export default function LoginPage() {
                   setError("");
                 }}
                 placeholder="you@company.com"
-                className="w-full px-3 py-2.5 border-2 border-black text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB] focus:ring-offset-0 nb-shadow-sm"
+                className="w-full px-3 py-2.5 border-2 border-black text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB] focus:ring-offset-0"
                 required
                 autoComplete="email"
                 autoFocus
@@ -89,7 +89,7 @@ export default function LoginPage() {
               <label className="block text-xs font-black text-black uppercase tracking-wider mb-1.5">
                 Password
               </label>
-              <div className="flex border-2 border-black nb-shadow-sm">
+              <div className="flex border-2 border-black">
                 <input
                   type={showPw ? "text" : "password"}
                   value={password}
@@ -120,7 +120,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#024BAB] text-white py-3 text-sm font-black border-2 border-black nb-shadow hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#0a0a0a] transition-all mt-2 flex items-center justify-center gap-2"
+              className="w-full bg-[#024BAB] text-white py-3 text-sm font-black border-2 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#0a0a0a] transition-all mt-2 flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
@@ -155,7 +155,7 @@ export default function LoginPage() {
         {["Attendance", "Payroll", "Leave", "Reports"].map((s) => (
           <span
             key={s}
-            className="border-2 border-black bg-white text-black px-3 py-1 text-xs font-black nb-shadow-sm"
+            className="border-2 border-black bg-white text-black px-3 py-1 text-xs font-black"
           >
             {s}
           </span>

@@ -10,7 +10,7 @@ import {
 import { cn } from "@/lib/utils";
 import {
   Clock,
-  DollarSign,
+  IndianRupee,
   Briefcase,
   FileText,
   ShieldCheck,
@@ -101,7 +101,7 @@ function SubHeader({
       <div className="flex items-center gap-3">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white nb-shadow hover:bg-gray-50"
+          className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white hover:bg-gray-50"
         >
           <ArrowLeft className="w-4 h-4" /> Manage
         </button>
@@ -115,7 +115,7 @@ function SubHeader({
       {onAdd && (
         <button
           onClick={onAdd}
-          className="flex items-center gap-2 border-2 border-black px-4 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+          className="flex items-center gap-2 border-2 border-black px-4 py-2 text-sm font-bold bg-[#024BAB] text-white"
         >
           <Plus className="w-4 h-4" /> {addLabel}
         </button>
@@ -132,7 +132,7 @@ function NbTable({
   rows: React.ReactNode[][];
 }) {
   return (
-    <div className="nb-card bg-white overflow-auto">
+    <div className="border-2 bg-white overflow-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b-2 border-black bg-[#024BAB]/5">
@@ -288,10 +288,10 @@ function ShiftsSection({ onBack }: { onBack: () => void }) {
             `${s.otAfterHours}h`,
             <span
               className={cn(
-                "px-2 py-0.5 text-xs font-bold border border-black",
+                "px-2 py-0.5 text-xs font-bold border-2",
                 s.status === "active"
-                  ? "bg-[#00C48C] text-white"
-                  : "bg-gray-200 text-black",
+                  ? "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]"
+                  : "bg-gray-100 text-gray-500 border-gray-300",
               )}
             >
               {s.status}
@@ -319,7 +319,7 @@ function ShiftsSection({ onBack }: { onBack: () => void }) {
       )}
       {modal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="nb-card bg-white w-full max-w-md">
+          <div className="border-2 bg-white w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
               <h3 className="font-black text-lg">
                 {editing ? "Edit Shift" : "Add Shift"}
@@ -384,14 +384,14 @@ function ShiftsSection({ onBack }: { onBack: () => void }) {
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
-                  className="flex-1 bg-[#024BAB] text-white border-2 border-black py-2.5 text-sm font-bold nb-shadow"
+                  className="flex-1 bg-[#024BAB] text-white border-2 border-black py-2.5 text-sm font-bold"
                 >
                   {editing ? "Save" : "Create Shift"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setModal(false)}
-                  className="flex-1 border-2 border-black py-2.5 text-sm font-bold bg-white nb-shadow"
+                  className="flex-1 border-2 border-black py-2.5 text-sm font-bold bg-white"
                 >
                   Cancel
                 </button>
@@ -472,9 +472,9 @@ function SalaryHeadsSection({ onBack }: { onBack: () => void }) {
   };
 
   const TYPE_COLORS: Record<string, string> = {
-    Earning: "bg-[#00C48C] text-white",
-    Deduction: "bg-[#EF4444] text-white",
-    Variable: "bg-[#FA731C] text-white",
+    Earning:   "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]",
+    Deduction: "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]",
+    Variable:  "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C]",
   };
   const CALC_LABELS: Record<string, string> = {
     fixed: "Fixed Amount",
@@ -488,7 +488,7 @@ function SalaryHeadsSection({ onBack }: { onBack: () => void }) {
     <div>
       <SubHeader
         title="Salary Head / Components"
-        icon={DollarSign}
+        icon={IndianRupee}
         onBack={onBack}
         onAdd={openAdd}
         addLabel="Add Component"
@@ -514,8 +514,8 @@ function SalaryHeadsSection({ onBack }: { onBack: () => void }) {
             <span className="font-bold">{h.name}</span>,
             <span
               className={cn(
-                "px-2 py-0.5 text-xs font-bold border border-black",
-                TYPE_COLORS[h.type] || "bg-gray-200 text-black",
+                "px-2 py-0.5 text-xs font-bold border-2",
+                TYPE_COLORS[h.type] || "bg-gray-100 text-gray-500 border-gray-300",
               )}
             >
               {h.type}
@@ -529,10 +529,10 @@ function SalaryHeadsSection({ onBack }: { onBack: () => void }) {
             ),
             <span
               className={cn(
-                "px-2 py-0.5 text-xs font-bold border border-black",
+                "px-2 py-0.5 text-xs font-bold border-2",
                 h.status === "active"
-                  ? "bg-[#024BAB] text-white"
-                  : "bg-gray-200 text-black",
+                  ? "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB]"
+                  : "bg-gray-100 text-gray-500 border-gray-300",
               )}
             >
               {h.status}
@@ -560,7 +560,7 @@ function SalaryHeadsSection({ onBack }: { onBack: () => void }) {
       )}
       {modal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="nb-card bg-white w-full max-w-md">
+          <div className="border-2 bg-white w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
               <h3 className="font-black text-lg">
                 {editing ? "Edit Component" : "Add Component"}
@@ -636,14 +636,14 @@ function SalaryHeadsSection({ onBack }: { onBack: () => void }) {
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
-                  className="flex-1 bg-[#024BAB] text-white border-2 border-black py-2.5 text-sm font-bold nb-shadow"
+                  className="flex-1 bg-[#024BAB] text-white border-2 border-black py-2.5 text-sm font-bold"
                 >
                   {editing ? "Save" : "Add Component"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setModal(false)}
-                  className="flex-1 border-2 border-black py-2.5 text-sm font-bold bg-white nb-shadow"
+                  className="flex-1 border-2 border-black py-2.5 text-sm font-bold bg-white"
                 >
                   Cancel
                 </button>
@@ -729,10 +729,10 @@ function DesignationsSection({ onBack }: { onBack: () => void }) {
   };
 
   const GRADE_COLORS: Record<string, string> = {
-    L1: "bg-gray-200 text-black",
-    L2: "bg-[#024BAB] text-white",
-    L3: "bg-[#00C48C] text-white",
-    L4: "bg-[#FA731C] text-white",
+    L1: "bg-gray-100 text-gray-500 border-gray-300",
+    L2: "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB]",
+    L3: "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]",
+    L4: "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C]",
   };
 
   return (
@@ -766,8 +766,8 @@ function DesignationsSection({ onBack }: { onBack: () => void }) {
             d.department?.name || "—",
             <span
               className={cn(
-                "px-2 py-0.5 text-xs font-bold border border-black",
-                GRADE_COLORS[d.grade] || "bg-gray-200 text-black",
+                "px-2 py-0.5 text-xs font-bold border-2",
+                GRADE_COLORS[d.grade] || "bg-gray-100 text-gray-500 border-gray-300",
               )}
             >
               {d.grade}
@@ -798,7 +798,7 @@ function DesignationsSection({ onBack }: { onBack: () => void }) {
       )}
       {modal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="nb-card bg-white w-full max-w-md">
+          <div className="border-2 bg-white w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
               <h3 className="font-black text-lg">
                 {editing ? "Edit Designation" : "Add Designation"}
@@ -865,14 +865,14 @@ function DesignationsSection({ onBack }: { onBack: () => void }) {
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
-                  className="flex-1 bg-[#024BAB] text-white border-2 border-black py-2.5 text-sm font-bold nb-shadow"
+                  className="flex-1 bg-[#024BAB] text-white border-2 border-black py-2.5 text-sm font-bold"
                 >
                   {editing ? "Save" : "Create"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setModal(false)}
-                  className="flex-1 border-2 border-black py-2.5 text-sm font-bold bg-white nb-shadow"
+                  className="flex-1 border-2 border-black py-2.5 text-sm font-bold bg-white"
                 >
                   Cancel
                 </button>
@@ -982,7 +982,7 @@ function OfferLettersSection({ onBack }: { onBack: () => void }) {
       {/* Edit modal */}
       {modal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="nb-card bg-white w-full max-w-2xl max-h-[90vh] flex flex-col">
+          <div className="border-2 bg-white w-full max-w-2xl max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
               <h3 className="font-black text-lg">
                 {editing ? "Edit Template" : "Add Template"}
@@ -1030,14 +1030,14 @@ function OfferLettersSection({ onBack }: { onBack: () => void }) {
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
-                  className="flex-1 bg-[#024BAB] text-white border-2 border-black py-2.5 text-sm font-bold nb-shadow"
+                  className="flex-1 bg-[#024BAB] text-white border-2 border-black py-2.5 text-sm font-bold"
                 >
                   {editing ? "Save" : "Create Template"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setModal(false)}
-                  className="flex-1 border-2 border-black py-2.5 text-sm font-bold bg-white nb-shadow"
+                  className="flex-1 border-2 border-black py-2.5 text-sm font-bold bg-white"
                 >
                   Cancel
                 </button>
@@ -1049,7 +1049,7 @@ function OfferLettersSection({ onBack }: { onBack: () => void }) {
       {/* Preview modal */}
       {preview && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="nb-card bg-white w-full max-w-xl max-h-[90vh] flex flex-col">
+          <div className="border-2 bg-white w-full max-w-xl max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
               <h3 className="font-black text-lg">{preview.name}</h3>
               <button onClick={() => setPreview(null)}>
@@ -1124,11 +1124,11 @@ function RolesSection({ onBack }: { onBack: () => void }) {
     },
   ];
   const LEVEL_COLOR: Record<string, string> = {
-    Full: "bg-[#00C48C] text-white",
-    Partial: "bg-[#FA731C] text-white",
-    Read: "bg-[#024BAB] text-white",
-    Self: "bg-purple-400 text-white",
-    None: "bg-gray-200 text-black",
+    Full:    "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]",
+    Partial: "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C]",
+    Read:    "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB]",
+    Self:    "bg-[#A855F7]/10 text-[#A855F7] border-[#A855F7]",
+    None:    "bg-gray-100 text-gray-500 border-gray-300",
   };
 
   return (
@@ -1166,8 +1166,8 @@ function RolesSection({ onBack }: { onBack: () => void }) {
           ].map((v) => (
             <span
               className={cn(
-                "px-2 py-0.5 text-[10px] font-bold border border-black",
-                LEVEL_COLOR[v] || "bg-gray-200 text-black",
+                "px-2 py-0.5 text-[10px] font-bold border-2",
+                LEVEL_COLOR[v] || "bg-gray-100 text-gray-500 border-gray-300",
               )}
             >
               {v}
@@ -1193,7 +1193,7 @@ const MANAGE_ITEMS = [
     id: "salaryhead",
     label: "Salary Head",
     sub: "Pay components",
-    icon: DollarSign,
+    icon: IndianRupee,
     bg: "bg-[#00C48C]",
   },
   {
@@ -1266,7 +1266,7 @@ export default function ManagePage() {
           <button
             key={id}
             onClick={() => setSub(id)}
-            className="nb-card bg-white p-5 text-left nb-card-hover flex flex-col gap-3 hover:border-[#024BAB] transition-colors"
+            className="border-2 bg-white p-5 text-left flex flex-col gap-3 hover:border-[#024BAB] transition-colors"
           >
             <div
               className={cn(

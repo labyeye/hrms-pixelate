@@ -103,7 +103,7 @@ export function FaceEnrollModal({ employee, onClose, onSaved }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-      <div className="nb-card w-full max-w-lg bg-white">
+      <div className="border-2 w-full max-w-lg bg-white">
         {/* Header */}
         <div className="px-6 py-4 border-b-2 border-black flex items-center justify-between">
           <div>
@@ -242,7 +242,7 @@ export function FaceEnrollModal({ employee, onClose, onSaved }: Props) {
               <button
                 onClick={handleStartCamera}
                 disabled={loadState === "loading"}
-                className="flex-1 nb-btn bg-[#024BAB] text-white py-2.5 font-black text-sm disabled:opacity-40 flex items-center justify-center gap-2"
+                className="flex-1 border-2 bg-[#024BAB] text-white py-2.5 font-black text-sm disabled:opacity-40 flex items-center justify-center gap-2"
               >
                 {loadState === "loading" ? (
                   <>
@@ -260,7 +260,7 @@ export function FaceEnrollModal({ employee, onClose, onSaved }: Props) {
               <button
                 onClick={handleCapture}
                 disabled={!liveDetection}
-                className="flex-1 nb-btn bg-[#024BAB] text-white py-2.5 font-black text-sm disabled:opacity-40 flex items-center justify-center gap-2"
+                className="flex-1 border-2 bg-[#024BAB] text-white py-2.5 font-black text-sm disabled:opacity-40 flex items-center justify-center gap-2"
               >
                 <Camera className="w-4 h-4" />
                 {liveDetection ? "Capture Face" : "Position face in camera…"}
@@ -271,13 +271,13 @@ export function FaceEnrollModal({ employee, onClose, onSaved }: Props) {
               <>
                 <button
                   onClick={handleSave}
-                  className="flex-1 nb-btn bg-green-600 text-white py-2.5 font-black text-sm flex items-center justify-center gap-2"
+                  className="flex-1 border-2 bg-green-600 text-white py-2.5 font-black text-sm flex items-center justify-center gap-2"
                 >
                   <Check className="w-4 h-4" /> Save Enrollment
                 </button>
                 <button
                   onClick={handleRetry}
-                  className="nb-btn bg-white border-2 border-black px-4 py-2.5 font-black text-sm flex items-center gap-1.5"
+                  className=" bg-white border-2 border-black px-4 py-2.5 font-black text-sm flex items-center gap-1.5"
                 >
                   <RefreshCw className="w-4 h-4" /> Retry
                 </button>
@@ -297,7 +297,7 @@ export function FaceEnrollModal({ employee, onClose, onSaved }: Props) {
                   stopCamera();
                   onClose();
                 }}
-                className="flex-1 nb-btn bg-[#024BAB] text-white py-2.5 font-black text-sm"
+                className="flex-1 border-2 bg-[#024BAB] text-white py-2.5 font-black text-sm"
               >
                 Close
               </button>
@@ -309,7 +309,7 @@ export function FaceEnrollModal({ employee, onClose, onSaved }: Props) {
                   stopCamera();
                   onClose();
                 }}
-                className="nb-btn bg-white border-2 border-black px-4 py-2.5 font-black text-sm"
+                className=" bg-white border-2 border-black px-4 py-2.5 font-black text-sm"
               >
                 Cancel
               </button>

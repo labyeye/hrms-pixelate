@@ -285,7 +285,7 @@ export default function EmployeeCredentialsPage() {
       </div>
 
       {/* Search */}
-      <div className="flex items-center gap-2 border-2 border-black bg-white px-3 py-2 mb-5 nb-shadow-sm">
+      <div className="flex items-center gap-2 border-2 border-black bg-white px-3 py-2 mb-5">
         <Search className="w-4 h-4 shrink-0" />
         <input
           type="text"
@@ -297,7 +297,7 @@ export default function EmployeeCredentialsPage() {
       </div>
 
       {/* Company Info Card */}
-      <div className="nb-card bg-white p-4 mb-5 border-2 border-[#024BAB] bg-[#024BAB]/5">
+      <div className=" bg-white p-4 mb-5 border-2 border-[#024BAB] bg-[#024BAB]/5">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-[#024BAB] border-2 border-black flex items-center justify-center">
             <Building2 className="w-4 h-4 text-white" />
@@ -315,7 +315,7 @@ export default function EmployeeCredentialsPage() {
 
       {/* Manager/Admin Credentials Card */}
       {managerCredentials && (
-        <div className="nb-card bg-white p-4 mb-5 border-2 border-[#00C48C] bg-[#00C48C]/5">
+        <div className=" bg-white p-4 mb-5 border-2 border-[#00C48C] bg-[#00C48C]/5">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-bold text-muted-foreground uppercase mb-1">
@@ -331,13 +331,13 @@ export default function EmployeeCredentialsPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => setShowEditManagerForm(true)}
-                className="px-3 py-1.5 text-xs font-bold border-2 border-[#00C48C] hover:bg-[#00C48C] hover:text-white transition-colors nb-shadow-sm"
+                className="px-3 py-1.5 text-xs font-bold border-2 border-[#00C48C] hover:bg-[#00C48C] hover:text-white transition-colors"
               >
                 ✏️ Edit Account
               </button>
               <button
                 onClick={() => setShowCreateForm(true)}
-                className="px-3 py-1.5 bg-[#00C48C] text-white text-xs font-bold border-2 border-[#00C48C] hover:bg-[#00B87C] transition-colors nb-shadow-sm"
+                className="px-3 py-1.5 bg-[#00C48C] text-white text-xs font-bold border-2 border-[#00C48C] hover:bg-[#00B87C] transition-colors"
               >
                 ➕ Create New
               </button>
@@ -352,12 +352,12 @@ export default function EmployeeCredentialsPage() {
           <div className="w-8 h-8 bg-[#024BAB] border-2 border-black animate-bounce" />
         </div>
       ) : employees.length === 0 ? (
-        <div className="nb-card bg-white p-12 flex flex-col items-center justify-center">
+        <div className="border-2 bg-white p-12 flex flex-col items-center justify-center">
           <Lock className="w-12 h-12 text-muted-foreground/30 mb-3" />
           <p className="font-bold text-black">No employees found</p>
         </div>
       ) : (
-        <div className="nb-card bg-white overflow-auto">
+        <div className="border-2 bg-white overflow-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b-2 border-black bg-[#024BAB]/5">
@@ -423,7 +423,7 @@ export default function EmployeeCredentialsPage() {
                         setNewPassword("");
                         setShowModal(true);
                       }}
-                      className="flex items-center gap-1 text-xs font-bold border-2 border-black px-3 py-1.5 hover:bg-[#024BAB] hover:text-white transition-colors nb-shadow-sm"
+                      className="flex items-center gap-1 text-xs font-bold border-2 border-black px-3 py-1.5 hover:bg-[#024BAB] hover:text-white transition-colors"
                     >
                       <RefreshCw className="w-3 h-3" /> Reset Password
                     </button>
@@ -438,7 +438,7 @@ export default function EmployeeCredentialsPage() {
       {/* Reset Password Modal */}
       {showModal && selectedEmp && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="nb-card bg-white w-full max-w-md">
+          <div className="border-2 bg-white w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
               <h3 className="font-display font-bold text-lg">Reset Password</h3>
               <button
@@ -518,7 +518,7 @@ export default function EmployeeCredentialsPage() {
                 <button
                   onClick={handleResetPassword}
                   disabled={updating || !newPassword}
-                  className="nb-btn bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold flex-1 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="border-2 bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold flex-1 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {updating ? (
                     <>
@@ -538,7 +538,7 @@ export default function EmployeeCredentialsPage() {
                     setSelectedEmp(null);
                     setNewPassword("");
                   }}
-                  className="nb-btn bg-white text-black px-6 py-2.5 text-sm font-bold border-2 border-black"
+                  className=" bg-white text-black px-6 py-2.5 text-sm font-bold border-2 border-black"
                 >
                   Cancel
                 </button>
@@ -551,7 +551,7 @@ export default function EmployeeCredentialsPage() {
       {/* Create New Credential Modal */}
       {showCreateForm && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="nb-card bg-white w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="border-2 bg-white w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b-2 border-black sticky top-0 bg-white z-10">
               <h3 className="font-display font-bold text-lg">
                 Create New Credential
@@ -681,7 +681,7 @@ export default function EmployeeCredentialsPage() {
                     !createFormData.selectedEmployee ||
                     !createFormData.password
                   }
-                  className="nb-btn bg-[#00C48C] text-white px-6 py-2.5 text-sm font-bold flex-1 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="border-2 bg-[#00C48C] text-white px-6 py-2.5 text-sm font-bold flex-1 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {updating ? (
                     <>
@@ -700,7 +700,7 @@ export default function EmployeeCredentialsPage() {
                     setShowCreateForm(false);
                     setCreateFormData({ selectedEmployee: null, password: "" });
                   }}
-                  className="nb-btn bg-white text-black px-6 py-2.5 text-sm font-bold border-2 border-black"
+                  className=" bg-white text-black px-6 py-2.5 text-sm font-bold border-2 border-black"
                 >
                   Cancel
                 </button>
@@ -713,7 +713,7 @@ export default function EmployeeCredentialsPage() {
       {/* Edit Manager Account Modal */}
       {showEditManagerForm && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="nb-card bg-white w-full max-w-md">
+          <div className="border-2 bg-white w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
               <h3 className="font-display font-bold text-lg">
                 Edit Your Account
@@ -803,7 +803,7 @@ export default function EmployeeCredentialsPage() {
                 <button
                   onClick={handleEditManagerAccount}
                   disabled={updating || !managerPassword}
-                  className="nb-btn bg-[#00C48C] text-white px-6 py-2.5 text-sm font-bold flex-1 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="border-2 bg-[#00C48C] text-white px-6 py-2.5 text-sm font-bold flex-1 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {updating ? (
                     <>
@@ -822,7 +822,7 @@ export default function EmployeeCredentialsPage() {
                     setShowEditManagerForm(false);
                     setManagerPassword("");
                   }}
-                  className="nb-btn bg-white text-black px-6 py-2.5 text-sm font-bold border-2 border-black"
+                  className=" bg-white text-black px-6 py-2.5 text-sm font-bold border-2 border-black"
                 >
                   Cancel
                 </button>
@@ -835,7 +835,7 @@ export default function EmployeeCredentialsPage() {
       {/* Success/Error Animation Modal */}
       {actionModal.show && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="nb-card bg-white w-full max-w-sm p-8 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-300">
+          <div className="border-2 bg-white w-full max-w-sm p-8 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-300">
             {actionModal.type === "success" ? (
               <>
                 <div className="mb-4 animate-bounce">

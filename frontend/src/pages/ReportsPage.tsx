@@ -33,7 +33,7 @@ import {
   BarChart2,
   Users,
   Calendar,
-  DollarSign,
+  IndianRupee,
   Clock,
   TrendingUp,
   Shield,
@@ -79,7 +79,7 @@ const REPORTS: ReportDef[] = [
     name: "Pay Report",
     desc: "Employee datewise present, absent and half day status with attendance summary and payment details.",
     category: "payroll",
-    icon: DollarSign,
+    icon: IndianRupee,
     available: true,
   },
   {
@@ -404,7 +404,7 @@ function CategoryTag({ cat }: { cat: Category }) {
 
 function EmptyState({ msg }: { msg: string }) {
   return (
-    <div className="nb-card bg-white p-12 flex flex-col items-center gap-3">
+    <div className="border-2 bg-white p-12 flex flex-col items-center gap-3">
       <AlertCircle className="w-10 h-10 text-black/20" />
       <p className="font-bold text-black">{msg}</p>
     </div>
@@ -429,7 +429,7 @@ function ReportTable({
   rows: string[][];
 }) {
   return (
-    <div className="nb-card bg-white overflow-hidden">
+    <div className="border-2 bg-white overflow-hidden">
       <div id={id} className="overflow-auto">
         <table className="w-full text-sm">
           <thead>
@@ -549,7 +549,7 @@ function PayReportGen({ departments }: { departments: any[] }) {
                 `Pay Report — ${MONTHS[+month - 1]} ${year}`,
               )
             }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white hover:bg-gray-50 nb-shadow"
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white hover:bg-gray-50"
           >
             <Printer className="w-4 h-4" /> Print
           </button>
@@ -560,7 +560,7 @@ function PayReportGen({ departments }: { departments: any[] }) {
                 `pay_report_${MONTHS[+month - 1]}_${year}.csv`,
               )
             }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white"
           >
             <Download className="w-4 h-4" /> CSV
           </button>
@@ -571,7 +571,7 @@ function PayReportGen({ departments }: { departments: any[] }) {
                 `pay_report_${MONTHS[+month - 1]}_${year}.xlsx`,
               )
             }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#00C48C] text-white nb-shadow"
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#00C48C] text-white"
           >
             <Download className="w-4 h-4" /> Excel
           </button>
@@ -672,7 +672,7 @@ function SalaryRegisterGen({ departments }: { departments: any[] }) {
                 `Salary Register — ${MONTHS[+month - 1]} ${year}`,
               )
             }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white nb-shadow"
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white"
           >
             <Printer className="w-4 h-4" /> Print
           </button>
@@ -683,7 +683,7 @@ function SalaryRegisterGen({ departments }: { departments: any[] }) {
                 `salary_register_${MONTHS[+month - 1]}_${year}.csv`,
               )
             }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white"
           >
             <Download className="w-4 h-4" /> Export CSV
           </button>
@@ -691,7 +691,7 @@ function SalaryRegisterGen({ departments }: { departments: any[] }) {
       </div>
       {data.length > 0 && (
         <div className="flex gap-4">
-          <div className="nb-card bg-[#024BAB] text-white p-4 flex-1">
+          <div className="border-2 bg-[#024BAB] text-white p-4 flex-1">
             <p className="text-xs font-black uppercase tracking-wider opacity-80">
               Total Gross
             </p>
@@ -699,7 +699,7 @@ function SalaryRegisterGen({ departments }: { departments: any[] }) {
               {formatCurrency(totalGross)}
             </p>
           </div>
-          <div className="nb-card bg-[#00C48C] text-white p-4 flex-1">
+          <div className="border-2 bg-[#00C48C] text-white p-4 flex-1">
             <p className="text-xs font-black uppercase tracking-wider opacity-80">
               Total Net Pay
             </p>
@@ -707,7 +707,7 @@ function SalaryRegisterGen({ departments }: { departments: any[] }) {
               {formatCurrency(totalNet)}
             </p>
           </div>
-          <div className="nb-card bg-[#EF4444] text-white p-4 flex-1">
+          <div className="border-2 bg-[#EF4444] text-white p-4 flex-1">
             <p className="text-xs font-black uppercase tracking-wider opacity-80">
               Total Deductions
             </p>
@@ -793,7 +793,7 @@ function NetSalaryGen({ departments }: { departments: any[] }) {
                 `net_salary_${MONTHS[+month - 1]}_${year}.csv`,
               )
             }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white"
           >
             <Download className="w-4 h-4" /> Export CSV
           </button>
@@ -884,7 +884,7 @@ function SalarySlipGen({ departments }: { departments: any[] }) {
         {selected && (
           <button
             onClick={printSlip}
-            className="ml-auto flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white nb-shadow"
+            className="ml-auto flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white"
           >
             <Printer className="w-4 h-4" /> Print Slip
           </button>
@@ -905,7 +905,7 @@ function SalarySlipGen({ departments }: { departments: any[] }) {
                 key={p._id}
                 onClick={() => setSelected(selected?._id === p._id ? null : p)}
                 className={cn(
-                  "nb-card p-4 text-left transition-all hover:-translate-y-0.5",
+                  "border-2 p-4 text-left transition-all hover:-translate-y-0.5",
                   selected?._id === p._id
                     ? "bg-[#024BAB] text-white"
                     : "bg-white",
@@ -943,7 +943,7 @@ function SalarySlipGen({ departments }: { departments: any[] }) {
             ))}
           </div>
           {selected && (
-            <div className="nb-card bg-white p-6 space-y-4">
+            <div className="border-2 bg-white p-6 space-y-4">
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="text-xl font-black text-black">
@@ -1094,7 +1094,7 @@ function PFRegisterGen({ departments }: { departments: any[] }) {
                 `pf_register_${MONTHS[+month - 1]}_${year}.csv`,
               )
             }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white"
           >
             <Download className="w-4 h-4" /> Export CSV
           </button>
@@ -1176,7 +1176,7 @@ function ESICRegisterGen({ departments }: { departments: any[] }) {
                 `esic_register_${MONTHS[+month - 1]}_${year}.csv`,
               )
             }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white"
           >
             <Download className="w-4 h-4" /> Export CSV
           </button>
@@ -1256,7 +1256,7 @@ function BankUploadGen({ departments }: { departments: any[] }) {
                 `bank_upload_${MONTHS[+month - 1]}_${year}.csv`,
               )
             }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white"
           >
             <Download className="w-4 h-4" /> Export CSV
           </button>
@@ -1379,7 +1379,7 @@ function AbsentLeaveSummaryGen({ departments }: { departments: any[] }) {
                 `absent_leave_summary_${MONTHS[+month - 1]}_${year}.csv`,
               )
             }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white"
           >
             <Download className="w-4 h-4" /> Export CSV
           </button>
@@ -1486,7 +1486,7 @@ function LateComingGen({ departments }: { departments: any[] }) {
                 `late_coming_${MONTHS[+month - 1]}_${year}.csv`,
               )
             }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white"
           >
             <Download className="w-4 h-4" /> Export CSV
           </button>
@@ -1560,7 +1560,7 @@ function DesignationSummaryGen({ departments }: { departments: any[] }) {
           onClick={() =>
             exportCSV([headers, ...rows], `designation_summary.csv`)
           }
-          className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+          className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white"
         >
           <Download className="w-4 h-4" /> Export CSV
         </button>
@@ -1662,7 +1662,7 @@ function AttendanceReportGen({ departments }: { departments: any[] }) {
                 `Employee Attendance Report — ${MONTHS[+month - 1]} ${year}`,
               )
             }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white nb-shadow"
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white"
           >
             <Printer className="w-4 h-4" /> Print
           </button>
@@ -1673,7 +1673,7 @@ function AttendanceReportGen({ departments }: { departments: any[] }) {
                 `attendance_${MONTHS[+month - 1]}_${year}.csv`,
               )
             }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white"
           >
             <Download className="w-4 h-4" /> Export CSV
           </button>
@@ -1776,7 +1776,7 @@ function AttendanceInOutGen({ departments }: { departments: any[] }) {
                 `attendance_inout_${MONTHS[+month - 1]}_${year}.csv`,
               )
             }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white"
           >
             <Download className="w-4 h-4" /> Export CSV
           </button>
@@ -1898,7 +1898,7 @@ function AttendanceSummaryGen({ departments }: { departments: any[] }) {
                 `attendance_summary_${MONTHS[+month - 1]}_${year}.csv`,
               )
             }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white"
           >
             <Download className="w-4 h-4" /> Export CSV
           </button>
@@ -2000,7 +2000,7 @@ function LeaveReportGen({ departments }: { departments: any[] }) {
             onClick={() =>
               exportCSV([headers, ...rows], `leave_report_${year}.csv`)
             }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white"
           >
             <Download className="w-4 h-4" /> Export CSV
           </button>
@@ -2097,7 +2097,7 @@ function MissPunchGen({ departments }: { departments: any[] }) {
                 `miss_punch_${MONTHS[+month - 1]}_${year}.csv`,
               )
             }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white"
           >
             <Download className="w-4 h-4" /> Export CSV
           </button>
@@ -2183,7 +2183,7 @@ function EmployeeDirectoryGen({ departments }: { departments: any[] }) {
         <div className="ml-auto flex gap-2">
           <button
             onClick={() => printSection("emp-dir-tbl", "Employee Directory")}
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white nb-shadow"
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white"
           >
             <Printer className="w-4 h-4" /> Print
           </button>
@@ -2191,7 +2191,7 @@ function EmployeeDirectoryGen({ departments }: { departments: any[] }) {
             onClick={() =>
               exportCSV([headers, ...rows], `employee_directory.csv`)
             }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow"
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white"
           >
             <Download className="w-4 h-4" /> Export CSV
           </button>
@@ -2210,7 +2210,7 @@ function EmployeeDirectoryGen({ departments }: { departments: any[] }) {
 
 function ComingSoonGen() {
   return (
-    <div className="nb-card bg-white p-12 flex flex-col items-center gap-4">
+    <div className="border-2 bg-white p-12 flex flex-col items-center gap-4">
       <div className="w-16 h-16 border-2 border-black bg-[#024BAB]/10 flex items-center justify-center">
         <FileText className="w-8 h-8 text-[#024BAB]" />
       </div>
@@ -2361,7 +2361,7 @@ function AnalyticsTab({ departments }: { departments: any[] }) {
   return (
     <div className="space-y-5">
       {/* Sub-tabs */}
-      <div className="flex gap-0 border-2 border-black nb-shadow w-fit">
+      <div className="flex gap-0 border-2 border-black w-fit">
         {TABS.map(({ id, label }) => (
           <button
             key={id}
@@ -2403,7 +2403,7 @@ function AnalyticsTab({ departments }: { departments: any[] }) {
                 color: "#A855F7",
               },
             ].map(({ label, value, color }) => (
-              <div key={label} className="nb-card bg-white p-4">
+              <div key={label} className="border-2 bg-white p-4">
                 <p className="text-2xl font-black" style={{ color }}>
                   {value}
                 </p>
@@ -2414,7 +2414,7 @@ function AnalyticsTab({ departments }: { departments: any[] }) {
             ))}
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="nb-card bg-white p-5">
+            <div className="border-2 bg-white p-5">
               <h3 className="font-black text-sm text-black mb-3">
                 Dept Headcount
               </h3>
@@ -2454,7 +2454,7 @@ function AnalyticsTab({ departments }: { departments: any[] }) {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <div className="nb-card bg-white p-5">
+            <div className="border-2 bg-white p-5">
               <h3 className="font-black text-sm text-black mb-3">
                 Dept Breakdown Table
               </h3>
@@ -2513,7 +2513,7 @@ function AnalyticsTab({ departments }: { departments: any[] }) {
               { label: "Absent", value: attSummary.absent, color: "#EF4444" },
               { label: "On Leave", value: attSummary.leave, color: "#024BAB" },
             ].map(({ label, value, color }) => (
-              <div key={label} className="nb-card bg-white p-4">
+              <div key={label} className="border-2 bg-white p-4">
                 <p className="text-2xl font-black" style={{ color }}>
                   {value}
                 </p>
@@ -2523,7 +2523,7 @@ function AnalyticsTab({ departments }: { departments: any[] }) {
               </div>
             ))}
           </div>
-          <div className="nb-card bg-white p-5">
+          <div className="border-2 bg-white p-5">
             <h3 className="font-black text-sm text-black mb-3">
               Attendance Distribution
             </h3>
@@ -2640,7 +2640,7 @@ function AnalyticsTab({ departments }: { departments: any[] }) {
                 color: "#EF4444",
               },
             ].map(({ label, value, color }) => (
-              <div key={label} className="nb-card bg-white p-4">
+              <div key={label} className="border-2 bg-white p-4">
                 <p className="text-xl font-black" style={{ color }}>
                   {value}
                 </p>
@@ -2650,7 +2650,7 @@ function AnalyticsTab({ departments }: { departments: any[] }) {
               </div>
             ))}
           </div>
-          <div className="nb-card bg-white p-5">
+          <div className="border-2 bg-white p-5">
             <h3 className="font-black text-sm text-black mb-3">
               Dept-wise Payroll
             </h3>
@@ -2714,7 +2714,7 @@ function AnalyticsTab({ departments }: { departments: any[] }) {
                 sub: "This month",
               },
             ].map(({ label, value, color, sub }) => (
-              <div key={label} className="nb-card bg-white p-4">
+              <div key={label} className="border-2 bg-white p-4">
                 <p className="text-xl font-black" style={{ color }}>
                   {value}
                 </p>
@@ -2726,7 +2726,7 @@ function AnalyticsTab({ departments }: { departments: any[] }) {
             ))}
           </div>
           {payrolls.length > 0 ? (
-            <div className="nb-card bg-white overflow-hidden">
+            <div className="border-2 bg-white overflow-hidden">
               <div className="overflow-auto">
                 <table className="w-full text-xs">
                   <thead>
@@ -2781,7 +2781,7 @@ function AnalyticsTab({ departments }: { departments: any[] }) {
                         <td className="px-4 py-2.5">
                           <span
                             className={cn(
-                              "nb-badge text-[10px]",
+                              "border-2 text-[10px]",
                               p.status === "paid"
                                 ? "bg-[#00C48C] text-white border-black"
                                 : "bg-[#FA731C] text-white border-black",
@@ -2858,7 +2858,7 @@ export default function ReportsPage() {
             Generate, filter, and export HR reports
           </p>
         </div>
-        <div className="flex gap-0 border-2 border-black nb-shadow shrink-0">
+        <div className="flex gap-0 border-2 border-black shrink-0">
           <button
             onClick={() => setPageMode("catalog")}
             className={cn(
@@ -2896,7 +2896,7 @@ export default function ReportsPage() {
               <div className="flex items-center gap-3 mb-4">
                 <button
                   onClick={() => setActiveId(null)}
-                  className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white nb-shadow hover:bg-gray-50"
+                  className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white hover:bg-gray-50"
                 >
                   <ArrowLeft className="w-4 h-4" /> All Reports
                 </button>
@@ -2908,12 +2908,12 @@ export default function ReportsPage() {
                 </div>
                 <button
                   onClick={() => setActiveId(null)}
-                  className="ml-auto border-2 border-black p-1.5 bg-white nb-shadow hover:bg-gray-50"
+                  className="ml-auto border-2 border-black p-1.5 bg-white hover:bg-gray-50"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <div className="nb-card bg-white p-5">
+              <div className="border-2 bg-white p-5">
                 <ActiveComponent departments={departments} />
               </div>
             </div>
@@ -2931,7 +2931,7 @@ export default function ReportsPage() {
                 className="w-full border-2 border-black pl-9 pr-4 py-2.5 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
               />
             </div>
-            <div className="flex gap-1 border-2 border-black nb-shadow">
+            <div className="flex gap-1 border-2 border-black">
               {(
                 [
                   ["all", "All"],
@@ -2962,7 +2962,7 @@ export default function ReportsPage() {
               ([cat, count]) => (
                 <div
                   key={cat}
-                  className="flex items-center gap-2 border-2 border-black px-3 py-1.5 bg-white nb-shadow-sm"
+                  className="flex items-center gap-2 border-2 border-black px-3 py-1.5 bg-white"
                 >
                   <span
                     className="w-2.5 h-2.5 rounded-none"
@@ -3002,7 +3002,7 @@ export default function ReportsPage() {
                       <div
                         key={report.id}
                         className={cn(
-                          "nb-card bg-white p-4 flex flex-col gap-3 transition-all",
+                          "border-2 bg-white p-4 flex flex-col gap-3 transition-all",
                           isActive && "border-[#024BAB] bg-[#F0F6FF]",
                         )}
                       >
@@ -3049,7 +3049,7 @@ export default function ReportsPage() {
                             isActive
                               ? "bg-black text-white"
                               : report.available
-                                ? "bg-white text-black hover:bg-[#024BAB] hover:text-white nb-shadow-sm"
+                                ? "bg-white text-black hover:bg-[#024BAB] hover:text-white border-2"
                                 : "bg-gray-100 text-gray-400 cursor-not-allowed",
                           )}
                         >

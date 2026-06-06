@@ -31,7 +31,7 @@ export default function PaymentFailedPage() {
 
       <main className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
-          <div className="bg-white border-2 border-black nb-shadow">
+          <div className="bg-white border-2 border-black">
             {/* Red top bar */}
             <div className="bg-red-500 border-b-2 border-black p-6 text-center">
               <AlertTriangle className="w-12 h-12 text-white mx-auto mb-3" />
@@ -64,7 +64,7 @@ export default function PaymentFailedPage() {
             <div className="p-6 space-y-3">
               <button
                 onClick={() => navigate("/onboarding")}
-                className="w-full bg-[#024BAB] text-white border-2 border-black font-black uppercase text-sm px-4 py-3 flex items-center justify-center gap-2 hover:bg-[#023590] transition-all nb-shadow-blue"
+                className="w-full bg-[#024BAB] text-white border-2 border-black font-black uppercase text-sm px-4 py-3 flex items-center justify-center gap-2 hover:bg-[#023590] transition-all"
               >
                 <RotateCcw className="w-4 h-4" />
                 Try Again

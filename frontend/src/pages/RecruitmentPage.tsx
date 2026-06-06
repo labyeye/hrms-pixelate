@@ -13,17 +13,17 @@ import {
 } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
-  open: "nb-tag-blue",
-  on_hold: "nb-tag-orange",
-  closed: "nb-tag-white",
-  cancelled: "nb-tag-red",
+  open:      "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C] px-2 py-0.5",
+  on_hold:   "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
+  closed:    "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
+  cancelled: "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444] px-2 py-0.5",
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
-  low: "nb-tag-white",
-  medium: "nb-tag-blue",
-  high: "nb-tag-orange",
-  urgent: "nb-tag-red",
+  low:    "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
+  medium: "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB] px-2 py-0.5",
+  high:   "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
+  urgent: "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444] px-2 py-0.5",
 };
 
 const STAGES = [
@@ -136,7 +136,7 @@ export default function RecruitmentPage() {
         </p>
         <button
           onClick={() => setShowModal(true)}
-          className="nb-btn bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5"
+          className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5"
         >
           <Plus className="w-4 h-4" /> Post Job
         </button>
@@ -147,12 +147,12 @@ export default function RecruitmentPage() {
           <div className="w-8 h-8 bg-[#024BAB] border-2 border-black animate-bounce" />
         </div>
       ) : jobs.length === 0 ? (
-        <div className="nb-card bg-white p-12 flex flex-col items-center justify-center">
+        <div className="border-2 bg-white p-12 flex flex-col items-center justify-center">
           <Briefcase className="w-12 h-12 text-muted-foreground/30 mb-3" />
           <p className="font-bold text-black">No job postings yet</p>
           <button
             onClick={() => setShowModal(true)}
-            className="nb-btn bg-[#024BAB] text-white px-4 py-2 text-sm mt-4"
+            className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm mt-4"
           >
             Post First Job
           </button>
@@ -160,7 +160,7 @@ export default function RecruitmentPage() {
       ) : (
         <div className="space-y-3">
           {jobs.map((job) => (
-            <div key={job._id} className="nb-card bg-white overflow-hidden">
+            <div key={job._id} className="border-2 bg-white overflow-hidden">
               {/* Job header */}
               <div
                 className="p-4 flex items-start justify-between gap-3 cursor-pointer"
@@ -179,7 +179,7 @@ export default function RecruitmentPage() {
                       </h3>
                       <span
                         className={cn(
-                          "nb-badge text-[10px] capitalize",
+                          "border-2 text-[10px] capitalize",
                           STATUS_COLORS[job.status],
                         )}
                       >
@@ -187,7 +187,7 @@ export default function RecruitmentPage() {
                       </span>
                       <span
                         className={cn(
-                          "nb-badge text-[10px] capitalize",
+                          "border-2 text-[10px] capitalize",
                           PRIORITY_COLORS[job.priority],
                         )}
                       >
@@ -217,7 +217,7 @@ export default function RecruitmentPage() {
                         e.stopPropagation();
                         handleJobStatus(job._id, "closed");
                       }}
-                      className="text-xs font-bold border-2 border-black px-2 py-1 hover:bg-black hover:text-white transition-colors nb-shadow-sm"
+                      className="text-xs font-bold border-2 border-black px-2 py-1 hover:bg-black hover:text-white transition-colors"
                     >
                       Close
                     </button>
@@ -227,7 +227,7 @@ export default function RecruitmentPage() {
                       e.stopPropagation();
                       setCandidateModal({ jobId: job._id });
                     }}
-                    className="text-xs font-bold border-2 border-black bg-[#FA731C] text-white px-2 py-1 hover:bg-[#FA731C]/80 transition-colors nb-shadow-sm"
+                    className="text-xs font-bold border-2 border-black bg-[#FA731C] text-white px-2 py-1 hover:bg-[#FA731C]/80 transition-colors"
                   >
                     + Candidate
                   </button>
@@ -324,7 +324,7 @@ export default function RecruitmentPage() {
       {/* Post Job Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="nb-card bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="border-2 bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
               <h3 className="font-display font-bold text-lg">Post New Job</h3>
               <button onClick={() => setShowModal(false)}>
@@ -339,7 +339,7 @@ export default function RecruitmentPage() {
                 <input
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  className="nb-input w-full px-3 py-2 text-sm"
+                  className="border-2 w-full px-3 py-2 text-sm"
                   required
                   placeholder="e.g. Senior Developer"
                 />
@@ -354,7 +354,7 @@ export default function RecruitmentPage() {
                     onChange={(e) =>
                       setForm({ ...form, department: e.target.value })
                     }
-                    className="nb-input w-full px-3 py-2 text-sm"
+                    className="border-2 w-full px-3 py-2 text-sm"
                   >
                     <option value="">Select</option>
                     {departments.map((d) => (
@@ -375,7 +375,7 @@ export default function RecruitmentPage() {
                     onChange={(e) =>
                       setForm({ ...form, positions: e.target.value })
                     }
-                    className="nb-input w-full px-3 py-2 text-sm"
+                    className="border-2 w-full px-3 py-2 text-sm"
                   />
                 </div>
                 <div>
@@ -385,7 +385,7 @@ export default function RecruitmentPage() {
                   <select
                     value={form.type}
                     onChange={(e) => setForm({ ...form, type: e.target.value })}
-                    className="nb-input w-full px-3 py-2 text-sm"
+                    className="border-2 w-full px-3 py-2 text-sm"
                   >
                     <option value="full_time">Full Time</option>
                     <option value="part_time">Part Time</option>
@@ -402,7 +402,7 @@ export default function RecruitmentPage() {
                     onChange={(e) =>
                       setForm({ ...form, priority: e.target.value })
                     }
-                    className="nb-input w-full px-3 py-2 text-sm"
+                    className="border-2 w-full px-3 py-2 text-sm"
                   >
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
@@ -419,7 +419,7 @@ export default function RecruitmentPage() {
                     onChange={(e) =>
                       setForm({ ...form, location: e.target.value })
                     }
-                    className="nb-input w-full px-3 py-2 text-sm"
+                    className="border-2 w-full px-3 py-2 text-sm"
                     placeholder="City / Remote"
                   />
                 </div>
@@ -433,7 +433,7 @@ export default function RecruitmentPage() {
                     onChange={(e) =>
                       setForm({ ...form, closingDate: e.target.value })
                     }
-                    className="nb-input w-full px-3 py-2 text-sm"
+                    className="border-2 w-full px-3 py-2 text-sm"
                   />
                 </div>
               </div>
@@ -446,7 +446,7 @@ export default function RecruitmentPage() {
                   onChange={(e) =>
                     setForm({ ...form, description: e.target.value })
                   }
-                  className="nb-input w-full px-3 py-2 text-sm resize-none"
+                  className="border-2 w-full px-3 py-2 text-sm resize-none"
                   rows={3}
                   placeholder="Job description..."
                 />
@@ -455,14 +455,14 @@ export default function RecruitmentPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="nb-btn bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold flex-1"
+                  className="border-2 bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold flex-1"
                 >
                   {saving ? "Posting..." : "Post Job"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="nb-btn bg-white text-black px-4 py-2.5 text-sm font-bold"
+                  className="border-2 bg-white text-black px-4 py-2.5 text-sm font-bold"
                 >
                   Cancel
                 </button>
@@ -475,7 +475,7 @@ export default function RecruitmentPage() {
       {/* Add Candidate Modal */}
       {candidateModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="nb-card bg-white w-full max-w-sm">
+          <div className="border-2 bg-white w-full max-w-sm">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
               <h3 className="font-display font-bold text-lg">Add Candidate</h3>
               <button onClick={() => setCandidateModal(null)}>
@@ -504,7 +504,7 @@ export default function RecruitmentPage() {
                     onChange={(e) =>
                       setCandForm({ ...candForm, [key]: e.target.value })
                     }
-                    className="nb-input w-full px-3 py-2 text-sm"
+                    className="border-2 w-full px-3 py-2 text-sm"
                   />
                 </div>
               ))}
@@ -512,14 +512,14 @@ export default function RecruitmentPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="nb-btn bg-[#FA731C] text-white px-6 py-2.5 text-sm font-bold flex-1"
+                  className="border-2 bg-[#FA731C] text-white px-6 py-2.5 text-sm font-bold flex-1"
                 >
                   {saving ? "Adding..." : "Add Candidate"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setCandidateModal(null)}
-                  className="nb-btn bg-white text-black px-4 py-2.5 text-sm font-bold"
+                  className="border-2 bg-white text-black px-4 py-2.5 text-sm font-bold"
                 >
                   Cancel
                 </button>

@@ -114,7 +114,7 @@ export default function BillingPage() {
     return (
       <AppLayout title="Billing">
         <div className="flex items-center justify-center h-[60vh]">
-          <div className="w-10 h-10 bg-[#024BAB] border-2 border-black nb-shadow animate-bounce flex items-center justify-center">
+          <div className="w-10 h-10 bg-[#024BAB] border-2 border-black animate-bounce flex items-center justify-center">
             <Loader2 className="w-5 h-5 text-white animate-spin" />
           </div>
         </div>
@@ -126,7 +126,7 @@ export default function BillingPage() {
     <AppLayout title="Billing">
       <div className="max-w-5xl mx-auto space-y-6 sm:space-y-8 p-4 sm:p-6">
         {/* ── Current plan banner ── */}
-        <div className="nb-card p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-[#024BAB]">
+        <div className="border-2 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-[#024BAB]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white border-2 border-black flex items-center justify-center shrink-0">
               <Crown className="w-5 h-5 text-[#024BAB]" />
@@ -182,7 +182,7 @@ export default function BillingPage() {
               icon: Building2,
             },
           ].map((stat) => (
-            <div key={stat.label} className="nb-card p-4 bg-white">
+            <div key={stat.label} className="border-2 p-4 bg-white">
               <div className="flex items-center gap-2 mb-2">
                 <stat.icon className="w-4 h-4 text-[#024BAB] shrink-0" />
                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
@@ -216,7 +216,7 @@ export default function BillingPage() {
             <h2 className="font-display font-bold text-2xl text-black">
               Change Plan
             </h2>
-            <div className="flex items-center border-2 border-black nb-shadow-sm overflow-hidden self-start">
+            <div className="flex items-center border-2 border-black overflow-hidden self-start">
               <button
                 onClick={() => setBilling("monthly")}
                 className={cn(
@@ -246,7 +246,7 @@ export default function BillingPage() {
           </div>
 
           {plans.length === 0 ? (
-            <div className="nb-card p-8 text-center bg-white">
+            <div className="border-2 p-8 text-center bg-white">
               <RefreshCw className="w-8 h-8 text-[#024BAB] mx-auto mb-2 animate-spin" />
               <p className="text-sm text-muted-foreground">Loading plans…</p>
             </div>
@@ -263,7 +263,7 @@ export default function BillingPage() {
                   <div
                     key={plan.planType}
                     className={cn(
-                      "nb-card p-5 flex flex-col relative bg-white",
+                      "border-2 p-5 flex flex-col relative bg-white",
                       isCurrent && "border-[#024BAB] border-4",
                     )}
                     style={popular ? { boxShadow: `6px 6px 0px ${color}` } : {}}
@@ -316,7 +316,7 @@ export default function BillingPage() {
                       onClick={() => handleUpgrade(plan.planType)}
                       disabled={isCurrent || isUpgrading}
                       className={cn(
-                        "nb-btn w-full py-2.5 text-sm flex items-center justify-center gap-2",
+                        "border-2 w-full py-2.5 text-sm flex items-center justify-center gap-2",
                         isCurrent
                           ? "bg-[#024BAB] text-white cursor-default"
                           : "bg-black text-white hover:bg-black/80",
@@ -343,12 +343,12 @@ export default function BillingPage() {
         </div>
 
         {/* ── Payment method ── */}
-        <div className="nb-card p-4 sm:p-5 bg-white">
+        <div className="border-2 p-4 sm:p-5 bg-white">
           <h3 className="font-display font-bold text-lg text-black mb-4 flex items-center gap-2">
             <CreditCard className="w-5 h-5 text-[#024BAB]" /> Payment Method
           </h3>
           {sub?.paymentMethod ? (
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border-2 border-black nb-shadow-sm bg-[#024BAB]/5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border-2 border-black bg-[#024BAB]/5">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-7 bg-black flex items-center justify-center shrink-0">
                   <span className="text-white font-bold text-xs uppercase">
@@ -372,7 +372,7 @@ export default function BillingPage() {
                   </p>
                 </div>
               </div>
-              <button className="nb-btn bg-white text-black px-4 py-2 text-sm self-start sm:self-auto border-2 border-black">
+              <button className=" bg-white text-black px-4 py-2 text-sm self-start sm:self-auto border-2 border-black">
                 Change
               </button>
             </div>
@@ -391,7 +391,7 @@ export default function BillingPage() {
         </div>
 
         {/* ── Invoice history ── */}
-        <div className="nb-card p-4 sm:p-5 bg-white">
+        <div className="border-2 p-4 sm:p-5 bg-white">
           <h3 className="font-display font-bold text-lg text-black mb-4">
             Invoice History
           </h3>

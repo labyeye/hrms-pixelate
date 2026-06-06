@@ -12,7 +12,7 @@ import { cn, formatDate, formatCurrency } from "@/lib/utils";
 import {
   Calendar,
   Clock,
-  DollarSign,
+  IndianRupee,
   FileText,
   AlertCircle,
   Loader2,
@@ -42,7 +42,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="nb-card bg-white mb-6">
+    <div className="border-2 bg-white mb-6">
       <div className="px-5 py-3 border-b-2 border-black bg-[#024BAB]/5">
         <h3 className="font-bold text-black text-sm uppercase tracking-wider">
           {title}
@@ -137,7 +137,7 @@ export default function EmployeeDashboard() {
     return (
       <AppLayout title="My Profile">
         <div className="flex h-[80vh] items-center justify-center">
-          <div className="w-10 h-10 bg-[#024BAB] border-2 border-black nb-shadow animate-bounce flex items-center justify-center">
+          <div className="w-10 h-10 bg-[#024BAB] border-2 border-black animate-bounce flex items-center justify-center">
             <Loader2 className="w-5 h-5 text-white animate-spin" />
           </div>
         </div>
@@ -148,7 +148,7 @@ export default function EmployeeDashboard() {
   if (!employee) {
     return (
       <AppLayout title="My Profile">
-        <div className="nb-card bg-white p-12 flex flex-col items-center justify-center">
+        <div className="border-2 bg-white p-12 flex flex-col items-center justify-center">
           <AlertCircle className="w-12 h-12 text-muted-foreground/30 mb-3" />
           <p className="font-bold text-black">No employee record found</p>
           <p className="text-sm text-muted-foreground mt-1">
@@ -160,16 +160,16 @@ export default function EmployeeDashboard() {
   }
 
   const leaveStatusColor: Record<string, string> = {
-    approved: "bg-[#00C48C] text-white",
-    pending: "bg-[#FA731C] text-white",
-    rejected: "bg-[#EF4444] text-white",
-    cancelled: "bg-gray-400 text-white",
+    approved:  "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]",
+    pending:   "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C]",
+    rejected:  "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]",
+    cancelled: "bg-gray-100 text-gray-500 border-gray-300",
   };
 
   const payrollStatusColor: Record<string, string> = {
-    paid: "bg-[#00C48C] text-white",
-    processed: "bg-[#024BAB] text-white",
-    draft: "bg-gray-300 text-black",
+    paid:      "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]",
+    processed: "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB]",
+    draft:     "bg-gray-100 text-gray-500 border-gray-300",
   };
 
   const monthNames = [
@@ -190,7 +190,7 @@ export default function EmployeeDashboard() {
   return (
     <AppLayout title="My Profile">
       {/* Hero Banner */}
-      <div className="nb-card bg-[#024BAB] p-6 mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-5">
+      <div className="border-2 bg-[#024BAB] p-6 mb-6 flex flex-col sm:flex-row items-start sm:items-center gap-5">
         <div className="w-20 h-20 border-2 border-white bg-white flex items-center justify-center text-3xl font-bold text-[#024BAB] shrink-0">
           {employee.avatar ? (
             <img
@@ -330,7 +330,7 @@ export default function EmployeeDashboard() {
                   symbol: "%",
                 },
               ].map(({ label, value, color, symbol }) => (
-                <div key={label} className="nb-card bg-white p-4">
+                <div key={label} className="border-2 bg-white p-4">
                   <div
                     className={cn(
                       "w-8 h-8 border-2 border-black flex items-center justify-center text-sm font-bold text-white mb-2",
@@ -447,8 +447,8 @@ export default function EmployeeDashboard() {
                     </div>
                     <span
                       className={cn(
-                        "px-2 py-1 text-xs font-bold border-2 border-black shrink-0",
-                        leaveStatusColor[lv.status] || "bg-gray-200",
+                        "px-2 py-1 text-xs font-bold border-2 shrink-0",
+                        leaveStatusColor[lv.status] || "bg-gray-100 text-gray-500 border-gray-300",
                       )}
                     >
                       {lv.status?.toUpperCase()}
@@ -510,8 +510,8 @@ export default function EmployeeDashboard() {
                         <td className="px-4 py-2">
                           <span
                             className={cn(
-                              "px-2 py-0.5 text-xs font-bold border-2 border-black",
-                              payrollStatusColor[p.status] || "bg-gray-200",
+                              "px-2 py-0.5 text-xs font-bold border-2",
+                              payrollStatusColor[p.status] || "bg-gray-100 text-gray-500 border-gray-300",
                             )}
                           >
                             {p.status?.toUpperCase()}

@@ -292,7 +292,7 @@ export default function OnboardingPage() {
                 Your legal and contact details
               </p>
             </div>
-            <div className="bg-white border-2 border-black p-8 max-w-2xl mx-auto nb-shadow">
+            <div className="bg-white border-2 border-black p-8 max-w-2xl mx-auto">
               <CompanyDetailsForm
                 loading={companyLoading}
                 error={companyError}
@@ -315,7 +315,7 @@ export default function OnboardingPage() {
               </p>
             </div>
 
-            <div className="bg-white border-2 border-black p-8 max-w-sm mx-auto nb-shadow">
+            <div className="bg-white border-2 border-black p-8 max-w-sm mx-auto">
               <label className="block text-xs font-black uppercase tracking-wider text-black mb-3">
                 Number of employees
               </label>
@@ -385,7 +385,7 @@ export default function OnboardingPage() {
 
               <button
                 onClick={handleEmployeeContinue}
-                className="w-full bg-[#024BAB] text-white border-2 border-black font-black uppercase text-sm px-4 py-3 flex items-center justify-center gap-2 hover:bg-[#023590] transition-all nb-shadow-blue"
+                className="w-full bg-[#024BAB] text-white border-2 border-black font-black uppercase text-sm px-4 py-3 flex items-center justify-center gap-2 hover:bg-[#023590] transition-all"
               >
                 Continue
                 <ChevronRight className="w-4 h-4" />
@@ -410,7 +410,7 @@ export default function OnboardingPage() {
 
             {/* Billing toggle */}
             <div className="flex justify-center mb-8">
-              <div className="flex items-center bg-white border-2 border-black overflow-hidden nb-shadow-sm">
+              <div className="flex items-center bg-white border-2 border-black overflow-hidden">
                 <button
                   onClick={() => setBilling("monthly")}
                   className={cn(
@@ -468,11 +468,11 @@ export default function OnboardingPage() {
                     className={cn(
                       "relative p-6 border-2 transition-all text-left flex flex-col",
                       isSelected
-                        ? "border-black bg-white nb-shadow"
+                        ? "border-black bg-white border-2"
                         : "border-black bg-white",
                       isTooSmall
                         ? "opacity-40 cursor-not-allowed"
-                        : "hover:nb-shadow-sm cursor-pointer",
+                        : "hover:border-2 cursor-pointer",
                     )}
                   >
                     {isRecommended && !isTooSmall && (
@@ -532,7 +532,7 @@ export default function OnboardingPage() {
             <div className="max-w-sm mx-auto">
               <button
                 onClick={() => setStep("payment")}
-                className="w-full bg-[#024BAB] text-white border-2 border-black font-black uppercase text-sm px-4 py-3 flex items-center justify-center gap-2 hover:bg-[#023590] transition-all nb-shadow-blue"
+                className="w-full bg-[#024BAB] text-white border-2 border-black font-black uppercase text-sm px-4 py-3 flex items-center justify-center gap-2 hover:bg-[#023590] transition-all"
               >
                 Continue to Payment
                 <ChevronRight className="w-4 h-4" />
@@ -562,7 +562,7 @@ export default function OnboardingPage() {
 
             <div className="max-w-md mx-auto space-y-4">
               {/* Order summary */}
-              <div className="bg-white border-2 border-black nb-shadow">
+              <div className="bg-white border-2 border-black">
                 <div className="p-5 border-b-2 border-black bg-[#F0F6FF]">
                   <p className="font-black text-xs uppercase text-gray-500">
                     Order Summary
@@ -653,7 +653,7 @@ export default function OnboardingPage() {
               <button
                 onClick={handlePay}
                 disabled={paying}
-                className="w-full bg-[#024BAB] text-white border-2 border-black font-black uppercase text-sm px-4 py-4 flex items-center justify-center gap-2 hover:bg-[#023590] disabled:opacity-60 disabled:cursor-not-allowed transition-all nb-shadow-blue"
+                className="w-full bg-[#024BAB] text-white border-2 border-black font-black uppercase text-sm px-4 py-4 flex items-center justify-center gap-2 hover:bg-[#023590] disabled:opacity-60 disabled:cursor-not-allowed transition-all"
               >
                 {paying ? (
                   <>

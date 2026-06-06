@@ -24,7 +24,7 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-[#F0F6FF] flex items-center justify-center p-8">
       <div className="w-full max-w-sm">
         <div className="flex items-center gap-2 mb-8">
-          <div className="w-9 h-9 bg-[#024BAB] border-2 border-black flex items-center justify-center nb-shadow-sm">
+          <div className="w-9 h-9 bg-[#024BAB] border-2 border-black flex items-center justify-center">
             <Users2 className="w-4 h-4 text-white" />
           </div>
           <span className="font-display font-bold text-xl text-black">
@@ -46,7 +46,7 @@ export default function RegisterPage() {
         </p>
 
         {error && (
-          <div className="flex items-center gap-2 bg-[#EF4444]/10 border-2 border-[#EF4444] text-[#EF4444] text-sm px-3 py-2.5 mb-5 nb-shadow-sm">
+          <div className="flex items-center gap-2 bg-[#EF4444]/10 border-2 border-[#EF4444] text-[#EF4444] text-sm px-3 py-2.5 mb-5">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span className="font-medium">{error}</span>
           </div>
@@ -62,7 +62,7 @@ export default function RegisterPage() {
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="John Smith"
-              className="nb-input w-full px-3 py-2.5 text-sm"
+              className="border-2 w-full px-3 py-2.5 text-sm"
               required
               autoFocus
             />
@@ -76,7 +76,7 @@ export default function RegisterPage() {
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               placeholder="you@company.com"
-              className="nb-input w-full px-3 py-2.5 text-sm"
+              className="border-2 w-full px-3 py-2.5 text-sm"
               required
             />
           </div>
@@ -89,7 +89,7 @@ export default function RegisterPage() {
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               placeholder="Min. 6 characters"
-              className="nb-input w-full px-3 py-2.5 text-sm"
+              className="border-2 w-full px-3 py-2.5 text-sm"
               required
               minLength={6}
             />
@@ -97,7 +97,7 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="nb-btn w-full bg-[#024BAB] text-white py-3 text-sm font-bold mt-2"
+            className="border-2 w-full bg-[#024BAB] text-white py-3 text-sm font-bold mt-2"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">

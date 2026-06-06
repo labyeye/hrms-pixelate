@@ -60,7 +60,7 @@ export function FingerprintEnrollModal({ device, employee, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-      <div className="nb-card w-full max-w-md bg-white">
+      <div className="border-2 w-full max-w-md bg-white">
         <div className="px-6 py-4 border-b-2 border-black flex items-center justify-between">
           <div>
             <h2 className="font-display font-black text-base flex items-center gap-2">
@@ -160,7 +160,7 @@ export function FingerprintEnrollModal({ device, employee, onClose }: Props) {
               <button
                 onClick={handleEnroll}
                 disabled={sending || !employee.biometricUserId}
-                className="flex-1 nb-btn bg-[#024BAB] text-white py-2.5 font-black text-sm disabled:opacity-40 flex items-center justify-center gap-2"
+                className="flex-1 border-2 bg-[#024BAB] text-white py-2.5 font-black text-sm disabled:opacity-40 flex items-center justify-center gap-2"
               >
                 {sending ? (
                   <>
@@ -175,14 +175,14 @@ export function FingerprintEnrollModal({ device, employee, onClose }: Props) {
             ) : (
               <button
                 onClick={onClose}
-                className="flex-1 nb-btn bg-[#024BAB] text-white py-2.5 font-black text-sm"
+                className="flex-1 border-2 bg-[#024BAB] text-white py-2.5 font-black text-sm"
               >
                 Done
               </button>
             )}
             <button
               onClick={onClose}
-              className="nb-btn bg-white border-2 border-black px-5 py-2.5 font-black text-sm"
+              className=" bg-white border-2 border-black px-5 py-2.5 font-black text-sm"
             >
               Cancel
             </button>

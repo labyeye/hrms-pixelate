@@ -87,7 +87,7 @@ export default function PaymentSuccessPage() {
         <div className="w-full max-w-md">
           {/* Verifying */}
           {status === "verifying" && (
-            <div className="bg-white border-2 border-black nb-shadow p-10 text-center">
+            <div className="bg-white border-2 border-black p-10 text-center">
               <Loader2 className="w-12 h-12 animate-spin text-[#024BAB] mx-auto mb-4" />
               <h2 className="font-black text-xl text-black mb-2">
                 Confirming your payment
@@ -100,7 +100,7 @@ export default function PaymentSuccessPage() {
 
           {/* Success */}
           {status === "success" && details && (
-            <div className="bg-white border-2 border-black nb-shadow">
+            <div className="bg-white border-2 border-black">
               {/* Green top bar */}
               <div className="bg-green-500 border-b-2 border-black p-6 text-center">
                 <CheckCircle className="w-12 h-12 text-white mx-auto mb-3" />
@@ -168,7 +168,7 @@ export default function PaymentSuccessPage() {
               <div className="p-6">
                 <button
                   onClick={() => navigate("/", { replace: true })}
-                  className="w-full bg-[#024BAB] text-white border-2 border-black font-black uppercase text-sm px-4 py-3 flex items-center justify-center gap-2 hover:bg-[#023590] transition-all nb-shadow-blue"
+                  className="w-full bg-[#024BAB] text-white border-2 border-black font-black uppercase text-sm px-4 py-3 flex items-center justify-center gap-2 hover:bg-[#023590] transition-all"
                 >
                   Go to Dashboard
                   <ArrowRight className="w-4 h-4" />
@@ -182,7 +182,7 @@ export default function PaymentSuccessPage() {
 
           {/* Failed verification */}
           {status === "failed" && (
-            <div className="bg-white border-2 border-black nb-shadow p-8 text-center">
+            <div className="bg-white border-2 border-black p-8 text-center">
               <div className="w-12 h-12 bg-red-100 border-2 border-red-500 flex items-center justify-center mx-auto mb-4">
                 <span className="text-red-500 font-black text-xl">✕</span>
               </div>

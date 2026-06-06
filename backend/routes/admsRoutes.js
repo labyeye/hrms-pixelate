@@ -113,20 +113,26 @@ async function processLog({ userId, datetime, punchState, verifyType }, companyI
     return;
   }
 
+  // Once checkOut is recorded, the day is locked — ignore any further device pushes
+  if (existing.checkOut) {
+    console.log(`[ADMS] Attendance locked (already checked out) for ${employee.firstName} ${employee.lastName}`);
+    return;
+  }
+
   const upd = {};
 
   if (!existing.checkIn || punchTime < existing.checkIn) {
+    // Earlier punch → shift checkIn earlier
     upd.checkIn = punchTime;
     upd.verifyMode = verifyMode;
   } else if (punchTime > existing.checkIn) {
-    if (!existing.checkOut || punchTime > existing.checkOut) {
-      upd.checkOut = punchTime;
-    }
+    // Later punch → set checkOut (first time only, since we returned above if already set)
+    upd.checkOut = punchTime;
   }
 
   if (Object.keys(upd).length) {
     const ci = upd.checkIn || existing.checkIn;
-    const co = upd.checkOut || existing.checkOut;
+    const co = upd.checkOut;
     if (ci && co && co > ci) {
       upd.workHours = parseFloat(((co - ci) / 3_600_000).toFixed(2));
     }

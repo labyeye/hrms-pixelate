@@ -83,7 +83,7 @@ export function AppSidebar({ mobileOpen, onClose }: AppSidebarProps) {
                       className={cn(
                         "flex items-center gap-3 px-3 py-2.5 text-sm font-semibold transition-all duration-100 border-2",
                         active
-                          ? "bg-[#024BAB] border-black text-white nb-shadow-sm"
+                          ? "bg-[#024BAB] border-black text-white border-2"
                           : "border-transparent text-black hover:bg-[#024BAB]/10 hover:border-black",
                         collapsed && "lg:justify-center lg:px-0",
                       )}
@@ -132,7 +132,7 @@ export function AppSidebar({ mobileOpen, onClose }: AppSidebarProps) {
         {/* Collapse toggle */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="hidden lg:flex absolute -right-4 top-20 w-7 h-7 bg-[#024BAB] border-2 border-black items-center justify-center hover:bg-[#024BAB]/80 transition-colors nb-shadow-sm"
+          className="hidden lg:flex absolute -right-4 top-20 w-7 h-7 bg-[#024BAB] border-2 border-black items-center justify-center hover:bg-[#024BAB]/80 transition-colors"
         >
           {collapsed ? (
             <ChevronRight className="w-3.5 h-3.5 text-white" />

@@ -25,13 +25,13 @@ const VERIFY_MODE_CONFIG: Record<string, { label: string; icon: any; color: stri
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  present: "nb-tag-blue",
-  absent: "nb-tag-red",
-  half_day: "nb-tag-orange",
-  late: "nb-tag-yellow",
-  on_leave: "nb-tag-teal",
-  holiday: "nb-tag-purple",
-  weekend: "nb-tag-white",
+  present:  "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C] px-2 py-0.5",
+  absent:   "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444] px-2 py-0.5",
+  half_day: "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
+  late:     "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
+  on_leave: "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB] px-2 py-0.5",
+  holiday:  "bg-[#A855F7]/10 text-[#A855F7] border-[#A855F7] px-2 py-0.5",
+  weekend:  "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
 };
 
 const STATUS_ICONS: Record<string, React.ElementType> = {
@@ -128,7 +128,7 @@ export default function AttendancePage() {
           <select
             value={month}
             onChange={(e) => setMonth(Number(e.target.value))}
-            className="border-2 border-black px-3 py-2 text-sm font-semibold nb-shadow-sm outline-none bg-white"
+            className="border-2 border-black px-3 py-2 text-sm font-semibold outline-none bg-white"
           >
             {MONTHS.map((m, i) => (
               <option key={m} value={i + 1}>
@@ -139,7 +139,7 @@ export default function AttendancePage() {
           <select
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
-            className="border-2 border-black px-3 py-2 text-sm font-semibold nb-shadow-sm outline-none bg-white"
+            className="border-2 border-black px-3 py-2 text-sm font-semibold outline-none bg-white"
           >
             {[2023, 2024, 2025, 2026].map((y) => (
               <option key={y} value={y}>
@@ -150,7 +150,7 @@ export default function AttendancePage() {
         </div>
         <button
           onClick={() => setMarkModal(true)}
-          className="nb-btn bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5"
+          className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5"
         >
           <Clock className="w-4 h-4" /> Mark Attendance
         </button>
@@ -184,7 +184,7 @@ export default function AttendancePage() {
             textColor: "text-white",
           },
         ].map(({ label, value, bg, textColor }) => (
-          <div key={label} className="nb-card bg-white p-4">
+          <div key={label} className="border-2 bg-white p-4">
             <div
               className={cn(
                 "w-10 h-10 border-2 border-black flex items-center justify-center mb-2",
@@ -209,7 +209,7 @@ export default function AttendancePage() {
           <div className="w-8 h-8 bg-[#024BAB] border-2 border-black animate-bounce" />
         </div>
       ) : records.length === 0 ? (
-        <div className="nb-card bg-white p-12 flex flex-col items-center justify-center">
+        <div className="border-2 bg-white p-12 flex flex-col items-center justify-center">
           <Clock className="w-12 h-12 text-muted-foreground/30 mb-3" />
           <p className="font-bold text-black">No attendance records</p>
           <p className="text-sm text-muted-foreground mt-1">
@@ -217,7 +217,7 @@ export default function AttendancePage() {
           </p>
         </div>
       ) : (
-        <div className="nb-card bg-white overflow-auto">
+        <div className="border-2 bg-white overflow-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b-2 border-black bg-[#024BAB]/5">
@@ -309,7 +309,7 @@ export default function AttendancePage() {
                     <td className="px-4 py-3">
                       <span
                         className={cn(
-                          "nb-badge text-[10px] capitalize flex items-center gap-1 w-fit",
+                          "border-2 text-[10px] capitalize flex items-center gap-1 w-fit",
                           STATUS_COLORS[rec.status],
                         )}
                       >
@@ -328,7 +328,7 @@ export default function AttendancePage() {
       {/* Mark Attendance Modal */}
       {markModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="nb-card bg-white w-full max-w-md">
+          <div className="border-2 bg-white w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
               <h3 className="font-display font-bold text-lg">
                 Mark Attendance
@@ -347,7 +347,7 @@ export default function AttendancePage() {
                   onChange={(e) =>
                     setMarkForm({ ...markForm, employee: e.target.value })
                   }
-                  className="nb-input w-full px-3 py-2 text-sm"
+                  className="border-2 w-full px-3 py-2 text-sm"
                   required
                 >
                   <option value="">Select employee</option>
@@ -368,7 +368,7 @@ export default function AttendancePage() {
                   onChange={(e) =>
                     setMarkForm({ ...markForm, date: e.target.value })
                   }
-                  className="nb-input w-full px-3 py-2 text-sm"
+                  className="border-2 w-full px-3 py-2 text-sm"
                   required
                 />
               </div>
@@ -381,7 +381,7 @@ export default function AttendancePage() {
                   onChange={(e) =>
                     setMarkForm({ ...markForm, status: e.target.value })
                   }
-                  className="nb-input w-full px-3 py-2 text-sm"
+                  className="border-2 w-full px-3 py-2 text-sm"
                 >
                   <option value="present">Present</option>
                   <option value="absent">Absent</option>
@@ -402,7 +402,7 @@ export default function AttendancePage() {
                     onChange={(e) =>
                       setMarkForm({ ...markForm, checkIn: e.target.value })
                     }
-                    className="nb-input w-full px-3 py-2 text-sm"
+                    className="border-2 w-full px-3 py-2 text-sm"
                   />
                 </div>
                 <div>
@@ -415,7 +415,7 @@ export default function AttendancePage() {
                     onChange={(e) =>
                       setMarkForm({ ...markForm, checkOut: e.target.value })
                     }
-                    className="nb-input w-full px-3 py-2 text-sm"
+                    className="border-2 w-full px-3 py-2 text-sm"
                   />
                 </div>
               </div>
@@ -432,21 +432,21 @@ export default function AttendancePage() {
                   onChange={(e) =>
                     setMarkForm({ ...markForm, overtime: e.target.value })
                   }
-                  className="nb-input w-full px-3 py-2 text-sm"
+                  className="border-2 w-full px-3 py-2 text-sm"
                 />
               </div>
               <div className="flex gap-3">
                 <button
                   type="submit"
                   disabled={saving}
-                  className="nb-btn bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold flex-1"
+                  className="border-2 bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold flex-1"
                 >
                   {saving ? "Saving..." : "Mark Attendance"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setMarkModal(false)}
-                  className="nb-btn bg-white text-black px-4 py-2.5 text-sm font-bold"
+                  className="border-2 bg-white text-black px-4 py-2.5 text-sm font-bold"
                 >
                   Cancel
                 </button>

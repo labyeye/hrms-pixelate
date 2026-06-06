@@ -13,10 +13,10 @@ import {
 } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: "nb-tag-orange",
-  approved: "nb-tag-blue",
-  rejected: "nb-tag-red",
-  cancelled: "nb-tag-white",
+  pending:   "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
+  approved:  "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C] px-2 py-0.5",
+  rejected:  "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444] px-2 py-0.5",
+  cancelled: "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -114,7 +114,7 @@ export default function LeavePage() {
               className={cn(
                 "px-3 py-1.5 text-xs font-bold border-2 transition-colors capitalize",
                 filter === s
-                  ? "bg-[#024BAB] text-white border-black nb-shadow-sm"
+                  ? "bg-[#024BAB] text-white border-black border-2"
                   : "bg-white text-black border-black hover:bg-[#024BAB]/10",
               )}
             >
@@ -125,7 +125,7 @@ export default function LeavePage() {
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="nb-btn bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5"
+          className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5"
         >
           <Plus className="w-4 h-4" /> Apply Leave
         </button>
@@ -140,7 +140,7 @@ export default function LeavePage() {
         ].map(({ label, value, bg }) => (
           <div
             key={label}
-            className="nb-card bg-white p-4 flex items-center gap-3"
+            className="border-2 bg-white p-4 flex items-center gap-3"
           >
             <div
               className={cn(
@@ -168,12 +168,12 @@ export default function LeavePage() {
           <div className="w-8 h-8 bg-[#024BAB] border-2 border-black animate-bounce" />
         </div>
       ) : leaves.length === 0 ? (
-        <div className="nb-card bg-white p-12 flex flex-col items-center justify-center">
+        <div className="border-2 bg-white p-12 flex flex-col items-center justify-center">
           <CalendarDays className="w-12 h-12 text-muted-foreground/30 mb-3" />
           <p className="font-bold text-black">No leave requests</p>
         </div>
       ) : (
-        <div className="nb-card bg-white overflow-auto">
+        <div className="border-2 bg-white overflow-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b-2 border-black bg-[#024BAB]/5">
@@ -221,7 +221,7 @@ export default function LeavePage() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="nb-badge nb-tag-blue text-[10px]">
+                    <span className="border-2 text-[10px]">
                       {TYPE_LABELS[leave.leaveType]}
                     </span>
                   </td>
@@ -237,7 +237,7 @@ export default function LeavePage() {
                   <td className="px-4 py-3">
                     <span
                       className={cn(
-                        "nb-badge text-[10px] capitalize",
+                        "border-2 text-[10px] capitalize",
                         STATUS_COLORS[leave.status],
                       )}
                     >
@@ -274,7 +274,7 @@ export default function LeavePage() {
       {/* Apply Leave Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="nb-card bg-white w-full max-w-md">
+          <div className="border-2 bg-white w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
               <h3 className="font-display font-bold text-lg">Apply Leave</h3>
               <button onClick={() => setShowModal(false)}>
@@ -291,7 +291,7 @@ export default function LeavePage() {
                   onChange={(e) =>
                     setForm({ ...form, employee: e.target.value })
                   }
-                  className="nb-input w-full px-3 py-2 text-sm"
+                  className="border-2 w-full px-3 py-2 text-sm"
                   required
                 >
                   <option value="">Select employee</option>
@@ -311,7 +311,7 @@ export default function LeavePage() {
                   onChange={(e) =>
                     setForm({ ...form, leaveType: e.target.value })
                   }
-                  className="nb-input w-full px-3 py-2 text-sm"
+                  className="border-2 w-full px-3 py-2 text-sm"
                 >
                   {Object.entries(TYPE_LABELS).map(([v, l]) => (
                     <option key={v} value={v}>
@@ -331,7 +331,7 @@ export default function LeavePage() {
                     onChange={(e) =>
                       setForm({ ...form, startDate: e.target.value })
                     }
-                    className="nb-input w-full px-3 py-2 text-sm"
+                    className="border-2 w-full px-3 py-2 text-sm"
                     required
                   />
                 </div>
@@ -345,7 +345,7 @@ export default function LeavePage() {
                     onChange={(e) =>
                       setForm({ ...form, endDate: e.target.value })
                     }
-                    className="nb-input w-full px-3 py-2 text-sm"
+                    className="border-2 w-full px-3 py-2 text-sm"
                     required
                   />
                 </div>
@@ -360,7 +360,7 @@ export default function LeavePage() {
                   step="0.5"
                   value={form.days}
                   onChange={(e) => setForm({ ...form, days: e.target.value })}
-                  className="nb-input w-full px-3 py-2 text-sm"
+                  className="border-2 w-full px-3 py-2 text-sm"
                   required
                 />
               </div>
@@ -371,7 +371,7 @@ export default function LeavePage() {
                 <textarea
                   value={form.reason}
                   onChange={(e) => setForm({ ...form, reason: e.target.value })}
-                  className="nb-input w-full px-3 py-2 text-sm resize-none"
+                  className="border-2 w-full px-3 py-2 text-sm resize-none"
                   rows={3}
                   required
                   placeholder="Reason for leave..."
@@ -381,14 +381,14 @@ export default function LeavePage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="nb-btn bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold flex-1"
+                  className="border-2 bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold flex-1"
                 >
                   {saving ? "Submitting..." : "Apply Leave"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="nb-btn bg-white text-black px-4 py-2.5 text-sm font-bold"
+                  className="border-2 bg-white text-black px-4 py-2.5 text-sm font-bold"
                 >
                   Cancel
                 </button>

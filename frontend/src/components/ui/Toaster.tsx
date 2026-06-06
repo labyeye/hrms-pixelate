@@ -17,7 +17,7 @@ export function Toaster() {
           <div
             key={t.id}
             className={cn(
-              "flex items-start gap-3 p-4 border-2 border-black bg-white nb-shadow animate-in slide-in-from-bottom-2 duration-200",
+              "flex items-start gap-3 p-4 border-2 border-black bg-white animate-in slide-in-from-bottom-2 duration-200",
               isDestructive && "border-red-500 bg-red-50",
               isSuccess && "border-green-500 bg-green-50",
             )}

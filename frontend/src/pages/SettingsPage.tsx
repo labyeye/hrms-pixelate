@@ -230,7 +230,7 @@ function InputField({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="w-full px-3 py-2 border-2 border-black nb-shadow text-sm focus:outline-none focus:ring-2 focus:ring-[#024BAB] focus:ring-offset-0 bg-white"
+        className="w-full px-3 py-2 border-2 border-black text-sm focus:outline-none focus:ring-2 focus:ring-[#024BAB] focus:ring-offset-0 bg-white"
       />
     </div>
   );
@@ -262,7 +262,7 @@ function TextAreaField({
         onChange={onChange}
         placeholder={placeholder}
         rows={rows}
-        className="w-full px-3 py-2 border-2 border-black nb-shadow text-sm focus:outline-none focus:ring-2 focus:ring-[#024BAB] focus:ring-offset-0 bg-white resize-none"
+        className="w-full px-3 py-2 border-2 border-black text-sm focus:outline-none focus:ring-2 focus:ring-[#024BAB] focus:ring-offset-0 bg-white resize-none"
       />
     </div>
   );
@@ -419,7 +419,7 @@ export default function SettingsPage() {
     return (
       <AppLayout title="Settings">
         <div className="flex h-[80vh] items-center justify-center">
-          <div className="w-10 h-10 bg-[#024BAB] border-2 border-black nb-shadow animate-bounce flex items-center justify-center">
+          <div className="w-10 h-10 bg-[#024BAB] border-2 border-black animate-bounce flex items-center justify-center">
             <Loader2 className="w-5 h-5 text-white animate-spin" />
           </div>
         </div>
@@ -472,7 +472,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Sidebar + Content layout */}
-        <div className="flex gap-0 border-2 border-black nb-shadow bg-white">
+        <div className="flex gap-0 border-2 border-black bg-white">
           {/* Left Sidebar */}
           <aside className="w-56 shrink-0 border-r-2 border-black bg-white flex flex-col">
             {SETTING_TABS.map((group) => (
@@ -582,7 +582,7 @@ export default function SettingsPage() {
                             <img
                               src={logoPreview || settings?.logoUrl}
                               alt="Logo preview"
-                              className="w-24 h-24 object-contain border-2 border-black nb-shadow-sm bg-white p-2"
+                              className="w-24 h-24 object-contain border-2 border-black bg-white p-2"
                             />
                             <button
                               onClick={() => {
@@ -592,7 +592,7 @@ export default function SettingsPage() {
                                   logoUrl: "",
                                 }));
                               }}
-                              className="px-2 py-1 bg-[#EF4444] text-white text-xs font-bold border-2 border-black hover:bg-[#DC2626] nb-shadow-sm"
+                              className="px-2 py-1 bg-[#EF4444] text-white text-xs font-bold border-2 border-black hover:bg-[#DC2626]"
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
@@ -603,7 +603,7 @@ export default function SettingsPage() {
                           <img
                             src={logoPreview}
                             alt="Logo preview"
-                            className="w-24 h-24 object-contain border-2 border-black nb-shadow-sm bg-white p-2"
+                            className="w-24 h-24 object-contain border-2 border-black bg-white p-2"
                           />
                           <button
                             onClick={() => {
@@ -613,7 +613,7 @@ export default function SettingsPage() {
                                 logoUrl: "",
                               }));
                             }}
-                            className="px-2 py-1 bg-[#EF4444] text-white text-xs font-bold border-2 border-black hover:bg-[#DC2626] nb-shadow-sm"
+                            className="px-2 py-1 bg-[#EF4444] text-white text-xs font-bold border-2 border-black hover:bg-[#DC2626]"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -833,7 +833,7 @@ export default function SettingsPage() {
               {activeTab === "permissions" && (
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 mb-2">
-                    <div className="w-9 h-9 bg-[#024BAB] border-2 border-black flex items-center justify-center shrink-0 nb-shadow-sm">
+                    <div className="w-9 h-9 bg-[#024BAB] border-2 border-black flex items-center justify-center shrink-0">
                       <ShieldCheck className="w-4 h-4 text-white" />
                     </div>
                     <div>
@@ -993,7 +993,7 @@ export default function SettingsPage() {
                         })
                       }
                       className={cn(
-                        "nb-card px-6 py-3 text-sm font-bold text-white border-2 border-black nb-shadow flex items-center gap-2 bg-[#024BAB] hover:bg-[#01368A] active:scale-95",
+                        " px-6 py-3 text-sm font-bold text-white border-2 border-black flex items-center gap-2 bg-[#024BAB] hover:bg-[#01368A] active:scale-95",
                       )}
                     >
                       <Save className="w-4 h-4" />
@@ -1031,7 +1031,7 @@ export default function SettingsPage() {
                       </h3>
                       <button
                         onClick={addTerm}
-                        className="nb-card px-3 py-1.5 text-xs font-bold text-white bg-[#00C48C] border-2 border-black hover:bg-[#00B87C] transition-colors flex items-center gap-1 nb-shadow-sm"
+                        className=" px-3 py-1.5 text-xs font-bold text-white bg-[#00C48C] border-2 border-black hover:bg-[#00B87C] transition-colors flex items-center gap-1"
                       >
                         <Plus className="w-3 h-3" />
                         Add Term
@@ -1049,11 +1049,11 @@ export default function SettingsPage() {
                               }
                               placeholder={`Term ${index + 1}`}
                               rows={2}
-                              className="flex-1 px-3 py-2 border-2 border-black nb-shadow text-sm focus:outline-none focus:ring-2 focus:ring-[#024BAB] focus:ring-offset-0 bg-white resize-none"
+                              className="flex-1 px-3 py-2 border-2 border-black text-sm focus:outline-none focus:ring-2 focus:ring-[#024BAB] focus:ring-offset-0 bg-white resize-none"
                             />
                             <button
                               onClick={() => removeTerm(index)}
-                              className="nb-card px-3 py-2 text-white bg-[#EF4444] border-2 border-black hover:bg-[#DC2626] transition-colors flex items-center gap-1 nb-shadow-sm self-start"
+                              className=" px-3 py-2 text-white bg-[#EF4444] border-2 border-black hover:bg-[#DC2626] transition-colors flex items-center gap-1 self-start"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1398,7 +1398,7 @@ export default function SettingsPage() {
                             `HRMS-${(settings?.company || "XXXX").toString().slice(-6).toUpperCase()}-KEY`,
                           )
                         }
-                        className="flex items-center gap-1.5 border-2 border-black px-2 py-1 text-xs font-bold bg-white hover:bg-gray-100 nb-shadow-sm"
+                        className="flex items-center gap-1.5 border-2 border-black px-2 py-1 text-xs font-bold bg-white hover:bg-gray-100"
                       >
                         <Copy className="w-3 h-3" /> Copy
                       </button>
@@ -1566,7 +1566,7 @@ export default function SettingsPage() {
                 onClick={handleSave}
                 disabled={saving}
                 className={cn(
-                  "px-6 py-2.5 text-sm font-bold text-white border-2 border-black nb-shadow flex items-center gap-2 transition-all",
+                  "px-6 py-2.5 text-sm font-bold text-white border-2 border-black flex items-center gap-2 transition-all",
                   saving
                     ? "bg-gray-400 cursor-not-allowed"
                     : "bg-[#024BAB] hover:bg-[#01368A] active:scale-95",
@@ -1595,7 +1595,7 @@ export default function SettingsPage() {
       {/* Success/Error Animation Modal */}
       {actionModal.show && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="nb-card bg-white w-full max-w-sm p-8 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-300">
+          <div className="border-2 bg-white w-full max-w-sm p-8 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-300">
             {actionModal.type === "success" ? (
               <>
                 <div className="mb-4 animate-bounce">

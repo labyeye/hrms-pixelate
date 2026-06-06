@@ -219,8 +219,8 @@ export default function NfcManagerPage() {
                       className={cn(
                         "w-full text-left p-4 border-2 transition-all",
                         selectedEmployee?._id === emp._id
-                          ? "border-[#024BAB] bg-blue-50 nb-shadow"
-                          : "border-black bg-white hover:nb-shadow-sm",
+                          ? "border-[#024BAB] bg-blue-50 border-2"
+                          : "border-black bg-white hover:border-2",
                       )}
                     >
                       <div className="flex items-center justify-between">
@@ -279,7 +279,7 @@ export default function NfcManagerPage() {
                   </div>
                 </div>
               ) : (
-                <div className="bg-white border-2 border-black nb-shadow">
+                <div className="bg-white border-2 border-black">
                   {/* Employee header */}
                   <div className="p-5 border-b-2 border-black bg-[#F0F6FF]">
                     <div className="flex items-start justify-between">
@@ -307,7 +307,7 @@ export default function NfcManagerPage() {
                           setShowAssignForm((p) => !p);
                           setAssignForm({ uid: "", deviceId: "", label: "" });
                         }}
-                        className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-black text-xs uppercase nb-shadow-sm hover:nb-shadow transition-all"
+                        className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-black text-xs uppercase hover: transition-all"
                       >
                         <Plus className="w-4 h-4" /> Assign Card
                       </button>

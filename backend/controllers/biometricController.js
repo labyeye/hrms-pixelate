@@ -354,7 +354,6 @@ const recordBiometric = asyncHandler(async (req, res) => {
     throw new Error("Invalid method");
   }
 
-  // Auto-determine check_in / check_out if not provided
   const now = new Date();
   const today = new Date(now);
   today.setHours(0, 0, 0, 0);
@@ -362,13 +361,52 @@ const recordBiometric = asyncHandler(async (req, res) => {
   // Check if today is a company holiday
   const holiday = await isHolidayDate(device.company, today);
 
+  // Find the last biometric log for this employee today
+  const lastTodayLog = await BiometricLog.findOne({
+    employee: employee._id,
+    timestamp: { $gte: today },
+  }).sort({ timestamp: -1 });
+
+  // Once checked out for the day, lock — no further DB updates regardless of punches
+  if (lastTodayLog?.type === "check_out") {
+    return res.json({
+      success: true,
+      locked: true,
+      data: {
+        employee: {
+          name: `${employee.firstName} ${employee.lastName}`,
+          employeeId: employee.employeeId,
+        },
+        type: "check_out",
+        message: "Already checked out for today",
+        checkedOutAt: lastTodayLog.timestamp,
+        location: device.location.name,
+      },
+    });
+  }
+
+  // Determine log type: toggle from last punch, or use explicitly provided type
   let logType = type;
   if (!logType) {
-    const existingLog = await BiometricLog.findOne({
-      employee: employee._id,
-      timestamp: { $gte: today },
-    }).sort({ timestamp: -1 });
-    logType = existingLog?.type === "check_in" ? "check_out" : "check_in";
+    logType = lastTodayLog?.type === "check_in" ? "check_out" : "check_in";
+  }
+
+  // Duplicate check-in guard: if already checked in and another check_in arrives, ignore
+  if (logType === "check_in" && lastTodayLog?.type === "check_in") {
+    return res.json({
+      success: true,
+      locked: true,
+      data: {
+        employee: {
+          name: `${employee.firstName} ${employee.lastName}`,
+          employeeId: employee.employeeId,
+        },
+        type: "check_in",
+        message: "Already checked in, awaiting check-out",
+        checkedInAt: lastTodayLog.timestamp,
+        location: device.location.name,
+      },
+    });
   }
 
   // Update attendance — mark as holiday if applicable
@@ -831,11 +869,46 @@ const faceAttendance = asyncHandler(async (req, res) => {
   const today = new Date(now);
   today.setHours(0, 0, 0, 0);
 
-  const existingLog = await BiometricLog.findOne({
+  const lastTodayLogFace = await BiometricLog.findOne({
     employee: bestMatch._id,
     timestamp: { $gte: today },
   }).sort({ timestamp: -1 });
-  const logType = existingLog?.type === "check_in" ? "check_out" : "check_in";
+
+  // Lock after checkout — no further updates for the day
+  if (lastTodayLogFace?.type === "check_out") {
+    return res.json({
+      success: true,
+      locked: true,
+      data: {
+        employee: {
+          name: `${bestMatch.firstName} ${bestMatch.lastName}`,
+          employeeId: bestMatch.employeeId,
+        },
+        type: "check_out",
+        message: "Already checked out for today",
+        checkedOutAt: lastTodayLogFace.timestamp,
+      },
+    });
+  }
+
+  const logType = lastTodayLogFace?.type === "check_in" ? "check_out" : "check_in";
+
+  // Duplicate check-in guard
+  if (logType === "check_in" && lastTodayLogFace?.type === "check_in") {
+    return res.json({
+      success: true,
+      locked: true,
+      data: {
+        employee: {
+          name: `${bestMatch.firstName} ${bestMatch.lastName}`,
+          employeeId: bestMatch.employeeId,
+        },
+        type: "check_in",
+        message: "Already checked in, awaiting check-out",
+        checkedInAt: lastTodayLogFace.timestamp,
+      },
+    });
+  }
 
   const attendanceUpdate = {
     employee: bestMatch._id,

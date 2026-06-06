@@ -6,9 +6,9 @@ import { cn } from "@/lib/utils";
 import { Plus, TrendingUp, Star, X } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: "nb-tag-white",
-  in_review: "nb-tag-orange",
-  completed: "nb-tag-blue",
+  draft:     "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
+  in_review: "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
+  completed: "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C] px-2 py-0.5",
 };
 
 function StarRating({ value }: { value: number }) {
@@ -96,7 +96,7 @@ export default function PerformancePage() {
         </p>
         <button
           onClick={() => setShowModal(true)}
-          className="nb-btn bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5"
+          className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5"
         >
           <Plus className="w-4 h-4" /> New Review
         </button>
@@ -126,7 +126,7 @@ export default function PerformancePage() {
         ].map(({ label, count, bg, textBg }) => (
           <div
             key={label}
-            className="nb-card bg-white p-4 flex items-center gap-3"
+            className="border-2 bg-white p-4 flex items-center gap-3"
           >
             <div
               className={cn(
@@ -158,18 +158,18 @@ export default function PerformancePage() {
           <div className="w-8 h-8 bg-[#024BAB] border-2 border-black animate-bounce" />
         </div>
       ) : reviews.length === 0 ? (
-        <div className="nb-card bg-white p-12 flex flex-col items-center justify-center">
+        <div className="border-2 bg-white p-12 flex flex-col items-center justify-center">
           <TrendingUp className="w-12 h-12 text-muted-foreground/30 mb-3" />
           <p className="font-bold text-black">No performance reviews yet</p>
           <button
             onClick={() => setShowModal(true)}
-            className="nb-btn bg-[#024BAB] text-white px-4 py-2 text-sm mt-4"
+            className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm mt-4"
           >
             Create First Review
           </button>
         </div>
       ) : (
-        <div className="nb-card bg-white overflow-auto">
+        <div className="border-2 bg-white overflow-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b-2 border-black bg-[#024BAB]/5">
@@ -235,7 +235,7 @@ export default function PerformancePage() {
                   <td className="px-4 py-3">
                     <span
                       className={cn(
-                        "nb-badge text-[10px] capitalize",
+                        "border-2 text-[10px] capitalize",
                         STATUS_COLORS[rev.status],
                       )}
                     >
@@ -247,7 +247,7 @@ export default function PerformancePage() {
                       {rev.status === "draft" && (
                         <button
                           onClick={() => handleStatus(rev._id, "in_review")}
-                          className="text-xs font-bold border-2 border-black px-2 py-1 hover:bg-[#FA731C] hover:text-white transition-colors nb-shadow-sm"
+                          className="text-xs font-bold border-2 border-black px-2 py-1 hover:bg-[#FA731C] hover:text-white transition-colors"
                         >
                           Start Review
                         </button>
@@ -255,7 +255,7 @@ export default function PerformancePage() {
                       {rev.status === "in_review" && (
                         <button
                           onClick={() => handleStatus(rev._id, "completed")}
-                          className="text-xs font-bold border-2 border-black px-2 py-1 hover:bg-[#024BAB] hover:text-white transition-colors nb-shadow-sm"
+                          className="text-xs font-bold border-2 border-black px-2 py-1 hover:bg-[#024BAB] hover:text-white transition-colors"
                         >
                           Complete
                         </button>
@@ -271,7 +271,7 @@ export default function PerformancePage() {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="nb-card bg-white w-full max-w-md">
+          <div className="border-2 bg-white w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
               <h3 className="font-display font-bold text-lg">
                 New Performance Review
@@ -290,7 +290,7 @@ export default function PerformancePage() {
                   onChange={(e) =>
                     setForm({ ...form, employee: e.target.value })
                   }
-                  className="nb-input w-full px-3 py-2 text-sm"
+                  className="border-2 w-full px-3 py-2 text-sm"
                   required
                 >
                   <option value="">Select employee</option>
@@ -311,7 +311,7 @@ export default function PerformancePage() {
                     onChange={(e) =>
                       setForm({ ...form, reviewPeriod: e.target.value })
                     }
-                    className="nb-input w-full px-3 py-2 text-sm"
+                    className="border-2 w-full px-3 py-2 text-sm"
                     placeholder="e.g. Q1 2026"
                     required
                   />
@@ -324,7 +324,7 @@ export default function PerformancePage() {
                     type="number"
                     value={form.year}
                     onChange={(e) => setForm({ ...form, year: e.target.value })}
-                    className="nb-input w-full px-3 py-2 text-sm"
+                    className="border-2 w-full px-3 py-2 text-sm"
                     required
                   />
                 </div>
@@ -337,7 +337,7 @@ export default function PerformancePage() {
                     onChange={(e) =>
                       setForm({ ...form, reviewType: e.target.value })
                     }
-                    className="nb-input w-full px-3 py-2 text-sm"
+                    className="border-2 w-full px-3 py-2 text-sm"
                   >
                     <option value="annual">Annual</option>
                     <option value="half_yearly">Half Yearly</option>
@@ -357,7 +357,7 @@ export default function PerformancePage() {
                     onChange={(e) =>
                       setForm({ ...form, overallRating: e.target.value })
                     }
-                    className="nb-input w-full px-3 py-2 text-sm"
+                    className="border-2 w-full px-3 py-2 text-sm"
                     placeholder="Optional"
                   />
                 </div>
@@ -371,7 +371,7 @@ export default function PerformancePage() {
                   onChange={(e) =>
                     setForm({ ...form, strengths: e.target.value })
                   }
-                  className="nb-input w-full px-3 py-2 text-sm resize-none"
+                  className="border-2 w-full px-3 py-2 text-sm resize-none"
                   rows={2}
                   placeholder="Key strengths..."
                 />
@@ -385,7 +385,7 @@ export default function PerformancePage() {
                   onChange={(e) =>
                     setForm({ ...form, areasOfImprovement: e.target.value })
                   }
-                  className="nb-input w-full px-3 py-2 text-sm resize-none"
+                  className="border-2 w-full px-3 py-2 text-sm resize-none"
                   rows={2}
                   placeholder="Areas to improve..."
                 />
@@ -394,14 +394,14 @@ export default function PerformancePage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="nb-btn bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold flex-1"
+                  className="border-2 bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold flex-1"
                 >
                   {saving ? "Creating..." : "Create Review"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="nb-btn bg-white text-black px-4 py-2.5 text-sm font-bold"
+                  className="border-2 bg-white text-black px-4 py-2.5 text-sm font-bold"
                 >
                   Cancel
                 </button>

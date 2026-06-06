@@ -106,7 +106,7 @@ export default function DepartmentsPage() {
         </p>
         <button
           onClick={openAdd}
-          className="nb-btn bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5"
+          className="border-2 border-black bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5 font-bold"
         >
           <Plus className="w-4 h-4" /> Add Department
         </button>
@@ -117,88 +117,114 @@ export default function DepartmentsPage() {
           <div className="w-8 h-8 bg-[#024BAB] border-2 border-black animate-bounce" />
         </div>
       ) : departments.length === 0 ? (
-        <div className="nb-card bg-white p-12 flex flex-col items-center justify-center">
+        <div className="border-2 border-black bg-white p-12 flex flex-col items-center justify-center">
           <Building2 className="w-12 h-12 text-muted-foreground/30 mb-3" />
           <p className="font-bold text-black">No departments yet</p>
           <button
             onClick={openAdd}
-            className="nb-btn bg-[#024BAB] text-white px-4 py-2 text-sm mt-4"
+            className="border-2 border-black bg-[#024BAB] text-white px-4 py-2 text-sm mt-4 font-bold"
           >
             Create First Department
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {departments.map((dept, i) => (
-            <div key={dept._id} className="nb-card bg-white p-5 nb-card-hover">
-              <div className="flex items-start justify-between mb-4">
-                <div
+        <div className="border-2 border-black bg-white overflow-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b-2 border-black bg-[#024BAB]/5">
+                {["", "Department", "Code", "Description", "Budget (₹)", "Headcount", "Head", "Actions"].map((h) => (
+                  <th
+                    key={h}
+                    className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider"
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {departments.map((dept, i) => (
+                <tr
+                  key={dept._id}
                   className={cn(
-                    "w-12 h-12 border-2 border-black flex items-center justify-center shrink-0",
-                    DEPT_BG_COLORS[i % DEPT_BG_COLORS.length],
+                    "border-b border-black/10 hover:bg-[#024BAB]/5 transition-colors",
+                    i % 2 !== 0 ? "bg-[#F8FAFF]" : "",
                   )}
                 >
-                  <Building2 className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => openEdit(dept)}
-                    className="p-1.5 border-2 border-transparent hover:border-black hover:bg-[#024BAB]/10 transition-colors"
-                  >
-                    <Edit className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(dept._id)}
-                    className="p-1.5 border-2 border-transparent hover:border-black hover:bg-red-50 transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5 text-red-600" />
-                  </button>
-                </div>
-              </div>
-
-              <h3 className="font-display font-bold text-lg text-black">
-                {dept.name}
-              </h3>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
-                {dept.code}
-              </p>
-              {dept.description && (
-                <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                  {dept.description}
-                </p>
-              )}
-
-              <div className="flex items-center justify-between pt-3 border-t border-black/10">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-6 h-6 bg-[#024BAB]/10 border border-black/20 flex items-center justify-center">
-                    <Users className="w-3.5 h-3.5 text-[#024BAB]" />
-                  </div>
-                  <span className="text-sm font-bold text-black">
-                    {dept.headcount || 0}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    employees
-                  </span>
-                </div>
-                {dept.head && (
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-5 h-5 bg-[#FA731C] border border-black flex items-center justify-center text-[9px] font-bold text-white">
-                      {(dept.head as any)?.name?.[0]?.toUpperCase()}
+                  <td className="px-4 py-3">
+                    <div
+                      className={cn(
+                        "w-9 h-9 border-2 border-black flex items-center justify-center shrink-0",
+                        DEPT_BG_COLORS[i % DEPT_BG_COLORS.length],
+                      )}
+                    >
+                      <Building2 className="w-4 h-4 text-white" />
                     </div>
-                    <span className="text-xs font-medium text-black truncate max-w-20">
-                      {(dept.head as any)?.name}
+                  </td>
+                  <td className="px-4 py-3">
+                    <p className="font-bold text-black">{dept.name}</p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider bg-gray-100 border border-black/10 px-2 py-0.5">
+                      {dept.code}
                     </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground max-w-48">
+                    <span className="line-clamp-1">{dept.description || "—"}</span>
+                  </td>
+                  <td className="px-4 py-3 font-bold text-black">
+                    {dept.budget
+                      ? `₹${Number(dept.budget).toLocaleString("en-IN")}`
+                      : "—"}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-6 h-6 bg-[#024BAB]/10 border border-black/20 flex items-center justify-center">
+                        <Users className="w-3.5 h-3.5 text-[#024BAB]" />
+                      </div>
+                      <span className="font-bold text-black">{dept.headcount || 0}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    {dept.head ? (
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-6 h-6 bg-[#FA731C] border border-black flex items-center justify-center text-[10px] font-bold text-white">
+                          {(dept.head as any)?.name?.[0]?.toUpperCase()}
+                        </div>
+                        <span className="text-xs font-medium text-black truncate max-w-24">
+                          {(dept.head as any)?.name}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => openEdit(dept)}
+                        className="p-1.5 border-2 border-transparent hover:border-black hover:bg-[#024BAB]/10 transition-colors"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(dept._id)}
+                        className="p-1.5 border-2 border-transparent hover:border-black hover:bg-red-50 transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5 text-red-600" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="nb-card bg-white w-full max-w-md">
+          <div className="border-2 border-black bg-white w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
               <h3 className="font-display font-bold text-lg">
                 {editDept ? "Edit Department" : "Add Department"}
@@ -215,7 +241,7 @@ export default function DepartmentsPage() {
                 <input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="nb-input w-full px-3 py-2 text-sm"
+                  className="border-2 border-black w-full px-3 py-2 text-sm"
                   required
                   placeholder="e.g. Engineering"
                 />
@@ -229,7 +255,7 @@ export default function DepartmentsPage() {
                   onChange={(e) =>
                     setForm({ ...form, code: e.target.value.toUpperCase() })
                   }
-                  className="nb-input w-full px-3 py-2 text-sm uppercase"
+                  className="border-2 border-black w-full px-3 py-2 text-sm uppercase"
                   required
                   placeholder="e.g. ENG"
                 />
@@ -243,7 +269,7 @@ export default function DepartmentsPage() {
                   onChange={(e) =>
                     setForm({ ...form, description: e.target.value })
                   }
-                  className="nb-input w-full px-3 py-2 text-sm resize-none"
+                  className="border-2 border-black w-full px-3 py-2 text-sm resize-none"
                   rows={2}
                   placeholder="Optional description"
                 />
@@ -256,7 +282,7 @@ export default function DepartmentsPage() {
                   type="number"
                   value={form.budget}
                   onChange={(e) => setForm({ ...form, budget: e.target.value })}
-                  className="nb-input w-full px-3 py-2 text-sm"
+                  className="border-2 border-black w-full px-3 py-2 text-sm"
                   placeholder="Annual budget"
                 />
               </div>
@@ -264,7 +290,7 @@ export default function DepartmentsPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="nb-btn bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold flex-1"
+                  className="border-2 border-black bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold flex-1"
                 >
                   {saving
                     ? "Saving..."
@@ -275,7 +301,7 @@ export default function DepartmentsPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="nb-btn bg-white text-black px-4 py-2.5 text-sm font-bold"
+                  className="border-2 border-black bg-white text-black px-4 py-2.5 text-sm font-bold"
                 >
                   Cancel
                 </button>

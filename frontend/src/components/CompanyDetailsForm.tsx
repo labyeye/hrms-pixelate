@@ -87,7 +87,7 @@ export default function CompanyDetailsForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
-        <div className="flex items-start gap-3 bg-white border-2 border-[#EF4444] px-4 py-3 nb-shadow-sm">
+        <div className="flex items-start gap-3 bg-white border-2 border-[#EF4444] px-4 py-3">
           <AlertCircle className="w-5 h-5 text-[#EF4444] flex-shrink-0 mt-0.5" />
           <span className="text-sm font-medium text-[#EF4444]">{error}</span>
         </div>
@@ -204,7 +204,7 @@ export default function CompanyDetailsForm({
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-[#024BAB] border-2 border-black text-white font-black uppercase text-sm px-4 py-3 hover:bg-[#023590] disabled:opacity-60 disabled:cursor-not-allowed transition-all nb-shadow-blue"
+        className="w-full bg-[#024BAB] border-2 border-black text-white font-black uppercase text-sm px-4 py-3 hover:bg-[#023590] disabled:opacity-60 disabled:cursor-not-allowed transition-all"
       >
         {loading ? (
           <span className="flex items-center justify-center gap-2">

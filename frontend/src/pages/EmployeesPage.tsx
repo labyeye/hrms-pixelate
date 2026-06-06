@@ -6,7 +6,6 @@ import { cn, formatDate } from "@/lib/utils";
 import {
   Plus,
   Search,
-  Filter,
   X,
   Users,
   Edit,
@@ -15,25 +14,23 @@ import {
   Upload,
   CheckCircle,
   AlertCircle,
-  DollarSign,
-  CreditCard,
   Clock,
   Banknote,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
 const STATUS_COLORS: Record<string, string> = {
-  active: "nb-tag-blue",
-  on_leave: "nb-tag-orange",
-  inactive: "nb-tag-white",
-  terminated: "nb-tag-red",
+  active: "border-2 bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C] px-2 py-0.5",
+  on_leave: "border-2 bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
+  inactive: "border-2 bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
+  terminated: "border-2 bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444] px-2 py-0.5",
 };
 
 const TYPE_COLORS: Record<string, string> = {
-  full_time: "nb-tag-blue",
-  part_time: "nb-tag-teal",
-  contract: "nb-tag-orange",
-  intern: "nb-tag-lime",
+  full_time: "border-2 bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB] px-2 py-0.5",
+  part_time: "border-2 bg-[#A855F7]/10 text-[#A855F7] border-[#A855F7] px-2 py-0.5",
+  contract: "border-2 bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
+  intern: "border-2 bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C] px-2 py-0.5",
 };
 
 interface EmployeeFormData {
@@ -252,7 +249,7 @@ export default function EmployeesPage() {
         </div>
         <button
           onClick={openAdd}
-          className="nb-btn bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5"
+          className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5"
         >
           <Plus className="w-4 h-4" /> Add Employee
         </button>
@@ -260,7 +257,7 @@ export default function EmployeesPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2 mb-4">
-        <div className="flex items-center gap-2 border-2 border-black bg-white px-3 py-2 nb-shadow-sm flex-1 min-w-48">
+        <div className="flex items-center gap-2 border-2 border-black bg-white px-3 py-2 flex-1 min-w-48">
           <Search className="w-4 h-4 shrink-0" />
           <input
             type="text"
@@ -273,7 +270,7 @@ export default function EmployeesPage() {
         <select
           value={filterDept}
           onChange={(e) => setFilterDept(e.target.value)}
-          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold nb-shadow-sm outline-none"
+          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none"
         >
           <option value="">All Departments</option>
           {departments.map((d) => (
@@ -285,7 +282,7 @@ export default function EmployeesPage() {
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold nb-shadow-sm outline-none"
+          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none"
         >
           <option value="">All Status</option>
           <option value="active">Active</option>
@@ -312,7 +309,7 @@ export default function EmployeesPage() {
           <div className="w-8 h-8 bg-[#024BAB] border-2 border-black animate-bounce" />
         </div>
       ) : employees.length === 0 ? (
-        <div className="nb-card bg-white p-12 flex flex-col items-center justify-center">
+        <div className="border-2 bg-white p-12 flex flex-col items-center justify-center">
           <Users className="w-12 h-12 text-muted-foreground/30 mb-3" />
           <p className="font-bold text-black">No employees found</p>
           <p className="text-sm text-muted-foreground mt-1">
@@ -320,13 +317,13 @@ export default function EmployeesPage() {
           </p>
           <button
             onClick={openAdd}
-            className="nb-btn bg-[#024BAB] text-white px-4 py-2 text-sm mt-4"
+            className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm mt-4"
           >
             <Plus className="w-4 h-4 inline mr-1" /> Add Employee
           </button>
         </div>
       ) : (
-        <div className="nb-card bg-white overflow-auto">
+        <div className="border-2 bg-white overflow-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b-2 border-black bg-[#024BAB]/5">
@@ -380,7 +377,7 @@ export default function EmployeesPage() {
                   <td className="px-4 py-3">
                     <span
                       className={cn(
-                        "nb-badge text-[10px] capitalize",
+                        "border-2 text-[10px] capitalize",
                         TYPE_COLORS[emp.employmentType],
                       )}
                     >
@@ -402,7 +399,7 @@ export default function EmployeesPage() {
                   <td className="px-4 py-3">
                     <span
                       className={cn(
-                        "nb-badge text-[10px] capitalize",
+                        "border-2 text-[10px] capitalize",
                         STATUS_COLORS[emp.status],
                       )}
                     >
@@ -441,7 +438,7 @@ export default function EmployeesPage() {
       {/* Add/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="nb-card bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="border-2 bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
               <h3 className="font-display font-bold text-lg text-black">
                 {editEmp ? "Edit Employee" : "Add Employee"}
@@ -486,7 +483,7 @@ export default function EmployeesPage() {
                       <img
                         src={avatarPreview}
                         alt="Avatar preview"
-                        className="w-20 h-20 object-cover border-2 border-black nb-shadow-sm"
+                        className="w-20 h-20 object-cover border-2 border-black"
                       />
                       <button
                         type="button"
@@ -569,7 +566,7 @@ export default function EmployeesPage() {
                       onChange={(e) =>
                         setForm({ ...form, [key]: e.target.value })
                       }
-                      className="nb-input w-full px-3 py-2 text-sm"
+                      className="border-2 w-full px-3 py-2 text-sm"
                       required={required}
                     />
                   </div>
@@ -583,7 +580,7 @@ export default function EmployeesPage() {
                     onChange={(e) =>
                       setForm({ ...form, department: e.target.value })
                     }
-                    className="nb-input w-full px-3 py-2 text-sm"
+                    className="border-2 w-full px-3 py-2 text-sm"
                   >
                     <option value="">Select department</option>
                     {departments.map((d) => (
@@ -602,7 +599,7 @@ export default function EmployeesPage() {
                     onChange={(e) =>
                       setForm({ ...form, employmentType: e.target.value })
                     }
-                    className="nb-input w-full px-3 py-2 text-sm"
+                    className="border-2 w-full px-3 py-2 text-sm"
                   >
                     <option value="full_time">Full Time</option>
                     <option value="part_time">Part Time</option>
@@ -619,7 +616,7 @@ export default function EmployeesPage() {
                     onChange={(e) =>
                       setForm({ ...form, gender: e.target.value })
                     }
-                    className="nb-input w-full px-3 py-2 text-sm"
+                    className="border-2 w-full px-3 py-2 text-sm"
                   >
                     <option value="">Select</option>
                     <option value="male">Male</option>
@@ -637,7 +634,7 @@ export default function EmployeesPage() {
                       onChange={(e) =>
                         setForm({ ...form, status: e.target.value })
                       }
-                      className="nb-input w-full px-3 py-2 text-sm"
+                      className="border-2 w-full px-3 py-2 text-sm"
                     >
                       <option value="active">Active</option>
                       <option value="on_leave">On Leave</option>
@@ -650,7 +647,7 @@ export default function EmployeesPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="nb-btn bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold flex-1"
+                  className="border-2 bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold flex-1"
                 >
                   {saving
                     ? "Saving..."
@@ -661,7 +658,7 @@ export default function EmployeesPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="nb-btn bg-white text-black px-6 py-2.5 text-sm font-bold"
+                  className="border-2 bg-white text-black px-6 py-2.5 text-sm font-bold"
                 >
                   Cancel
                 </button>
@@ -678,7 +675,7 @@ export default function EmployeesPage() {
             className="flex-1 bg-black/40"
             onClick={() => setViewEmp(null)}
           />
-          <div className="w-full max-w-sm bg-white border-l-2 border-black flex flex-col overflow-y-auto nb-shadow-lg">
+          <div className="w-full max-w-sm bg-white border-l-2 border-black flex flex-col overflow-y-auto border-2">
             {/* Header */}
             <div className="flex items-center justify-between p-5 border-b-2 border-black bg-[#024BAB]">
               <h3 className="font-display font-bold text-lg text-white">
@@ -717,7 +714,7 @@ export default function EmployeesPage() {
                   </p>
                   <span
                     className={cn(
-                      "nb-badge text-[10px] capitalize mt-1 inline-block",
+                      "border-2 text-[10px] capitalize mt-1 inline-block",
                       STATUS_COLORS[viewEmp.status],
                     )}
                   >
@@ -790,7 +787,7 @@ export default function EmployeesPage() {
                   setViewEmp(null);
                   openEdit(viewEmp);
                 }}
-                className="w-full flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white nb-shadow-sm hover:bg-[#01368A]"
+                className="w-full flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white hover:bg-[#01368A]"
               >
                 <Edit className="w-4 h-4" /> Edit Employee
               </button>
@@ -806,7 +803,7 @@ export default function EmployeesPage() {
                   setLoanModal(true);
                   setViewEmp(null);
                 }}
-                className="w-full flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#FA731C] text-white nb-shadow-sm hover:bg-[#e0650f]"
+                className="w-full flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#FA731C] text-white hover:bg-[#e0650f]"
               >
                 <Banknote className="w-4 h-4" /> Loan / Advance Entry
               </button>
@@ -814,7 +811,7 @@ export default function EmployeesPage() {
                 onClick={() => {
                   setViewEmp(null);
                 }}
-                className="w-full flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white text-black nb-shadow-sm hover:bg-gray-50"
+                className="w-full flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white text-black hover:bg-gray-50"
               >
                 <Clock className="w-4 h-4" /> View Attendance
               </button>
@@ -826,7 +823,7 @@ export default function EmployeesPage() {
       {/* Loan Entry Modal */}
       {loanModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="nb-card bg-white w-full max-w-md">
+          <div className="border-2 bg-white w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
               <h3 className="font-display font-bold text-lg flex items-center gap-2">
                 <Banknote className="w-5 h-5" /> Loan / Advance Entry
@@ -918,14 +915,14 @@ export default function EmployeesPage() {
                 <button
                   type="submit"
                   disabled={savingLoan}
-                  className="flex-1 bg-[#FA731C] text-white border-2 border-black py-2.5 text-sm font-bold nb-shadow disabled:opacity-50"
+                  className="flex-1 bg-[#FA731C] text-white border-2 border-black py-2.5 text-sm font-bold disabled:opacity-50"
                 >
                   {savingLoan ? "Saving..." : "Create Loan Entry"}
                 </button>
                 <button
                   type="button"
                   onClick={() => setLoanModal(false)}
-                  className="flex-1 border-2 border-black py-2.5 text-sm font-bold bg-white nb-shadow"
+                  className="flex-1 border-2 border-black py-2.5 text-sm font-bold bg-white"
                 >
                   Cancel
                 </button>
@@ -938,7 +935,7 @@ export default function EmployeesPage() {
       {/* Success/Error Animation Modal */}
       {actionModal.show && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="nb-card bg-white w-full max-w-sm p-8 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-300">
+          <div className="border-2 bg-white w-full max-w-sm p-8 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-300">
             {actionModal.type === "success" ? (
               <>
                 <div className="mb-4 animate-bounce">

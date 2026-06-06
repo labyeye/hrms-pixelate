@@ -24,7 +24,7 @@ import {
   Users,
   Clock,
   CalendarDays,
-  DollarSign,
+  IndianRupee,
   Briefcase,
   Building2,
   ArrowUpRight,
@@ -58,7 +58,7 @@ function KpiCard({
   to?: string;
 }) {
   const inner = (
-    <div className="nb-card p-4 flex flex-col gap-3 nb-card-hover bg-white">
+    <div className="border-2 p-4 flex flex-col gap-3 bg-white">
       <div className="flex items-start justify-between">
         <div
           className={cn(
@@ -69,7 +69,7 @@ function KpiCard({
           <Icon className={cn("w-5 h-5", iconColor)} />
         </div>
         {trend && (
-          <span className="flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 border-2 border-black nb-shadow-sm bg-[#A3E635] text-black">
+          <span className="flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 border-2 border-black bg-[#A3E635] text-black">
             <ArrowUpRight className="w-3 h-3" />
           </span>
         )}
@@ -98,7 +98,7 @@ const DEPT_COLORS = [
 const NbTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border-2 border-black nb-shadow-sm px-3 py-2 text-xs">
+    <div className="bg-white border-2 border-black px-3 py-2 text-xs">
       <p className="font-bold text-black mb-1">{label}</p>
       {payload.map((p: any) => (
         <div key={p.dataKey} className="flex items-center gap-2">
@@ -242,12 +242,12 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-2">
           <Link to="/employees">
-            <button className="nb-btn bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5">
+            <button className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5">
               <Users className="w-4 h-4" /> Employees
             </button>
           </Link>
           <Link to="/leave">
-            <button className="nb-btn bg-[#FA731C] text-white px-4 py-2 text-sm flex items-center gap-1.5">
+            <button className="border-2 bg-[#FA731C] text-white px-4 py-2 text-sm flex items-center gap-1.5">
               <CalendarDays className="w-4 h-4" /> Leave Requests
             </button>
           </Link>
@@ -256,12 +256,12 @@ export default function DashboardPage() {
 
       {/* Alerts */}
       {stats.pendingLeaves > 0 && (
-        <div className="flex flex-wrap gap-2 mb-6 p-3 border-2 border-[#FA731C] bg-[#FA731C]/5 nb-shadow-sm">
+        <div className="flex flex-wrap gap-2 mb-6 p-3 border-2 border-[#FA731C] bg-[#FA731C]/5">
           <span className="text-xs font-bold text-[#FA731C] uppercase tracking-wider flex items-center gap-1">
             <AlertTriangle className="w-3.5 h-3.5" /> Action needed
           </span>
           <Link to="/leave">
-            <span className="nb-badge nb-tag-orange flex items-center gap-1 text-[11px]">
+            <span className="border-2 flex items-center gap-1 text-[11px]">
               <CalendarDays className="w-3 h-3" /> {stats.pendingLeaves} leave
               requests pending
             </span>
@@ -309,7 +309,7 @@ export default function DashboardPage() {
           title="Monthly Payroll"
           value={formatCurrency(stats.monthlyPayroll)}
           sub="Paid this month"
-          icon={DollarSign}
+          icon={IndianRupee}
           bg="bg-[#FA731C]"
           to="/payroll"
         />
@@ -342,7 +342,7 @@ export default function DashboardPage() {
       {/* Today's attendance breakdown + trend charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
         {/* Today's Attendance Donut */}
-        <div className="nb-card bg-white p-5">
+        <div className="border-2 bg-white p-5">
           <h3 className="font-display font-bold text-base text-black mb-1">
             Today's Attendance
           </h3>
@@ -424,7 +424,7 @@ export default function DashboardPage() {
         </div>
 
         {/* 6-month Attendance Trend */}
-        <div className="nb-card bg-white p-5">
+        <div className="border-2 bg-white p-5">
           <h3 className="font-display font-bold text-base text-black mb-1">
             Attendance Trend
           </h3>
@@ -483,7 +483,7 @@ export default function DashboardPage() {
         </div>
 
         {/* 6-month Payroll Trend */}
-        <div className="nb-card bg-white p-5">
+        <div className="border-2 bg-white p-5">
           <h3 className="font-display font-bold text-base text-black mb-1">
             Payroll Trend
           </h3>
@@ -545,7 +545,7 @@ export default function DashboardPage() {
       {/* Dept chart + Notifications row */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-4">
         {/* Department headcount */}
-        <div className="lg:col-span-3 nb-card bg-white p-5">
+        <div className="lg:col-span-3 border-2 bg-white p-5">
           <h3 className="font-display font-bold text-base text-black mb-1">
             Headcount by Dept
           </h3>
@@ -617,7 +617,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Notifications panel */}
-        <div className="lg:col-span-2 nb-card bg-white p-5">
+        <div className="lg:col-span-2 border-2 bg-white p-5">
           <div className="flex items-center gap-2 mb-4">
             <Bell className="w-4 h-4 text-black" />
             <h3 className="font-display font-bold text-base text-black">
@@ -662,7 +662,7 @@ export default function DashboardPage() {
       {/* Bottom row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Recent hires */}
-        <div className="nb-card bg-white p-5">
+        <div className="border-2 bg-white p-5">
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="font-display font-bold text-base text-black">
@@ -673,7 +673,7 @@ export default function DashboardPage() {
               </p>
             </div>
             <Link to="/employees">
-              <button className="text-xs font-bold text-black border-2 border-black px-2 py-1 hover:bg-[#024BAB] hover:text-white transition-colors nb-shadow-sm">
+              <button className="text-xs font-bold text-black border-2 border-black px-2 py-1 hover:bg-[#024BAB] hover:text-white transition-colors">
                 View all →
               </button>
             </Link>
@@ -682,7 +682,7 @@ export default function DashboardPage() {
             <div className="space-y-2">
               {recentHires.slice(0, 5).map((emp: any) => (
                 <Link key={emp._id} to="/employees">
-                  <div className="flex items-center gap-3 p-2.5 border-2 border-transparent hover:border-black hover:nb-shadow-sm transition-all">
+                  <div className="flex items-center gap-3 p-2.5 border-2 border-transparent hover:border-black hover: transition-all">
                     <div className="w-8 h-8 bg-[#024BAB] border-2 border-black flex items-center justify-center text-xs font-bold text-white shrink-0">
                       {emp.firstName?.[0]?.toUpperCase()}
                     </div>
@@ -708,7 +708,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Pending leaves */}
-        <div className="nb-card bg-white p-5">
+        <div className="border-2 bg-white p-5">
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="font-display font-bold text-base text-black">
@@ -719,7 +719,7 @@ export default function DashboardPage() {
               </p>
             </div>
             <Link to="/leave">
-              <button className="text-xs font-bold text-black border-2 border-black px-2 py-1 hover:bg-[#024BAB] hover:text-white transition-colors nb-shadow-sm">
+              <button className="text-xs font-bold text-black border-2 border-black px-2 py-1 hover:bg-[#024BAB] hover:text-white transition-colors">
                 Manage →
               </button>
             </Link>
@@ -728,7 +728,7 @@ export default function DashboardPage() {
             <div className="space-y-2">
               {pendingLeaveList.slice(0, 5).map((leave: any) => (
                 <Link key={leave._id} to="/leave">
-                  <div className="flex items-center gap-3 p-2.5 border-2 border-transparent hover:border-black hover:nb-shadow-sm transition-all">
+                  <div className="flex items-center gap-3 p-2.5 border-2 border-transparent hover:border-black hover: transition-all">
                     <div className="w-8 h-8 bg-[#FA731C] border-2 border-black flex items-center justify-center text-xs font-bold text-white shrink-0">
                       {leave.employee?.firstName?.[0]?.toUpperCase()}
                     </div>
@@ -741,7 +741,7 @@ export default function DashboardPage() {
                         {leave.days > 1 ? "s" : ""}
                       </p>
                     </div>
-                    <span className="nb-badge nb-tag-orange text-[10px]">
+                    <span className="border-2 text-[10px]">
                       Pending
                     </span>
                   </div>

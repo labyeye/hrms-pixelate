@@ -4,7 +4,7 @@ import { payrollAPI } from "@/services/api";
 import { Payroll } from "@/types/hrms";
 import { cn, formatCurrency } from "@/lib/utils";
 import {
-  DollarSign,
+  IndianRupee,
   Play,
   CheckCircle,
   X,
@@ -14,9 +14,9 @@ import {
 } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: "nb-tag-white",
-  processed: "nb-tag-orange",
-  paid: "nb-tag-blue",
+  draft:     "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
+  processed: "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB] px-2 py-0.5",
+  paid:      "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C] px-2 py-0.5",
 };
 
 const MONTHS = [
@@ -153,7 +153,7 @@ export default function PayrollPage() {
           <select
             value={month}
             onChange={(e) => setMonth(Number(e.target.value))}
-            className="border-2 border-black px-3 py-2 text-sm font-semibold nb-shadow-sm outline-none bg-white"
+            className="border-2 border-black px-3 py-2 text-sm font-semibold outline-none bg-white"
           >
             {MONTHS.map((m, i) => (
               <option key={m} value={i + 1}>
@@ -164,7 +164,7 @@ export default function PayrollPage() {
           <select
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
-            className="border-2 border-black px-3 py-2 text-sm font-semibold nb-shadow-sm outline-none bg-white"
+            className="border-2 border-black px-3 py-2 text-sm font-semibold outline-none bg-white"
           >
             {[2023, 2024, 2025, 2026].map((y) => (
               <option key={y} value={y}>
@@ -192,7 +192,7 @@ export default function PayrollPage() {
             disabled={
               payrolls.filter((p) => p.status === "processed").length === 0
             }
-            className="nb-btn bg-[#00C48C] text-white px-4 py-2 text-sm flex items-center gap-1.5 disabled:opacity-40"
+            className="border-2 bg-[#00C48C] text-white px-4 py-2 text-sm flex items-center gap-1.5 disabled:opacity-40"
           >
             <CheckCircle className="w-4 h-4" /> Bulk Mark Paid
           </button>
@@ -216,13 +216,13 @@ export default function PayrollPage() {
               win.document.close();
               win.print();
             }}
-            className="nb-btn bg-white text-black px-4 py-2 text-sm flex items-center gap-1.5 border-2 border-black"
+            className=" bg-white text-black px-4 py-2 text-sm flex items-center gap-1.5 border-2 border-black"
           >
             <Printer className="w-4 h-4" /> Bulk Slips
           </button>
           <button
             onClick={() => setProcessModal(true)}
-            className="nb-btn bg-[#FA731C] text-white px-4 py-2 text-sm flex items-center gap-1.5"
+            className="border-2 bg-[#FA731C] text-white px-4 py-2 text-sm flex items-center gap-1.5"
           >
             <Play className="w-4 h-4" /> Run Payroll
           </button>
@@ -253,14 +253,14 @@ export default function PayrollPage() {
             bg: "bg-[#024BAB]",
           },
         ].map(({ label, value, bg }) => (
-          <div key={label} className="nb-card bg-white p-4">
+          <div key={label} className="border-2 bg-white p-4">
             <div
               className={cn(
                 "w-10 h-10 border-2 border-black flex items-center justify-center mb-2",
                 bg,
               )}
             >
-              <DollarSign className="w-5 h-5 text-white" />
+              <IndianRupee className="w-5 h-5 text-white" />
             </div>
             <p className="font-display font-bold text-lg text-black">{value}</p>
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
@@ -276,21 +276,21 @@ export default function PayrollPage() {
           <div className="w-8 h-8 bg-[#024BAB] border-2 border-black animate-bounce" />
         </div>
       ) : payrolls.length === 0 ? (
-        <div className="nb-card bg-white p-12 flex flex-col items-center justify-center">
-          <DollarSign className="w-12 h-12 text-muted-foreground/30 mb-3" />
+        <div className="border-2 bg-white p-12 flex flex-col items-center justify-center">
+          <IndianRupee className="w-12 h-12 text-muted-foreground/30 mb-3" />
           <p className="font-bold text-black">No payroll records</p>
           <p className="text-sm text-muted-foreground mt-1">
             Process payroll for {MONTHS[month - 1]} {year}
           </p>
           <button
             onClick={() => setProcessModal(true)}
-            className="nb-btn bg-[#FA731C] text-white px-4 py-2 text-sm mt-4"
+            className="border-2 bg-[#FA731C] text-white px-4 py-2 text-sm mt-4"
           >
             <Play className="w-4 h-4 inline mr-1" /> Process Now
           </button>
         </div>
       ) : (
-        <div className="nb-card bg-white overflow-auto">
+        <div className="border-2 bg-white overflow-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b-2 border-black bg-[#024BAB]/5">
@@ -360,7 +360,7 @@ export default function PayrollPage() {
                   <td className="px-4 py-3">
                     <span
                       className={cn(
-                        "nb-badge text-[10px] capitalize",
+                        "border-2 text-[10px] capitalize",
                         STATUS_COLORS[p.status],
                       )}
                     >
@@ -371,7 +371,7 @@ export default function PayrollPage() {
                     {p.status === "processed" && (
                       <button
                         onClick={() => handleMarkPaid(p._id)}
-                        className="flex items-center gap-1 text-xs font-bold border-2 border-black px-2 py-1 hover:bg-[#024BAB] hover:text-white transition-colors nb-shadow-sm"
+                        className="flex items-center gap-1 text-xs font-bold border-2 border-black px-2 py-1 hover:bg-[#024BAB] hover:text-white transition-colors"
                       >
                         <CheckCircle className="w-3 h-3" /> Mark Paid
                       </button>
@@ -392,7 +392,7 @@ export default function PayrollPage() {
       {/* Process Modal */}
       {processModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="nb-card bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="border-2 bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b-2 border-black sticky top-0 bg-white">
               <h3 className="font-display font-bold text-lg">
                 Process Payroll
@@ -532,7 +532,7 @@ export default function PayrollPage() {
                     processing ||
                     (processMode === "select" && selectedEmployees.size === 0)
                   }
-                  className="nb-btn bg-[#FA731C] text-white px-6 py-2.5 text-sm font-bold flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="border-2 bg-[#FA731C] text-white px-6 py-2.5 text-sm font-bold flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {processing ? "Processing..." : "Confirm & Process"}
                 </button>
@@ -542,7 +542,7 @@ export default function PayrollPage() {
                     setSelectedEmployees(new Set());
                     setProcessMode("all");
                   }}
-                  className="nb-btn bg-white text-black px-4 py-2.5 text-sm font-bold border-2 border-black"
+                  className=" bg-white text-black px-4 py-2.5 text-sm font-bold border-2 border-black"
                 >
                   Cancel
                 </button>
@@ -555,7 +555,7 @@ export default function PayrollPage() {
       {/* Success/Error Animation Modal */}
       {actionModal.show && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="nb-card bg-white w-full max-w-sm p-8 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-300">
+          <div className="border-2 bg-white w-full max-w-sm p-8 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-300">
             {actionModal.type === "success" ? (
               <>
                 <div className="mb-4 animate-bounce">
