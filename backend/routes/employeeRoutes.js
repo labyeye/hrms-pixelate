@@ -5,6 +5,7 @@ const {
   createEmployee,
   updateEmployee,
   deleteEmployee,
+  resetEmployeePassword,
 } = require("../controllers/employeeController");
 const { protect, authorize } = require("../middleware/auth");
 const router = express.Router();
@@ -26,5 +27,12 @@ router
     updateEmployee,
   )
   .delete(protect, authorize("super_admin", "hr_manager"), deleteEmployee);
+
+router.post(
+  "/:id/reset-password",
+  protect,
+  authorize("super_admin", "hr_manager", "hr_executive"),
+  resetEmployeePassword,
+);
 
 module.exports = router;

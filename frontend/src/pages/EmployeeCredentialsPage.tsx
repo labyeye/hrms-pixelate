@@ -104,10 +104,7 @@ export default function EmployeeCredentialsPage() {
 
     setUpdating(true);
     try {
-      // Call backend API to reset password
-      const res = await employeeAPI.update(selectedEmp._id, {
-        password: newPassword,
-      });
+      const res = await employeeAPI.resetPassword(selectedEmp._id, newPassword);
 
       if (res.success) {
         // Copy credentials to clipboard
@@ -170,12 +167,9 @@ export default function EmployeeCredentialsPage() {
 
     setUpdating(true);
     try {
-      // Call backend API to create new credential
-      const res = await employeeAPI.update(
+      const res = await employeeAPI.resetPassword(
         createFormData.selectedEmployee._id,
-        {
-          password: createFormData.password,
-        },
+        createFormData.password,
       );
 
       if (res.success) {

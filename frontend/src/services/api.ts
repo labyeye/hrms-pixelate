@@ -54,6 +54,11 @@ export const employeeAPI = {
   update: (id: string, body: object) =>
     request(`/employees/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   delete: (id: string) => request(`/employees/${id}`, { method: "DELETE" }),
+  resetPassword: (id: string, password: string) =>
+    request(`/employees/${id}/reset-password`, {
+      method: "POST",
+      body: JSON.stringify({ password }),
+    }),
 };
 
 export const attendanceAPI = {

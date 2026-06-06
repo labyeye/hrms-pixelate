@@ -21,12 +21,16 @@ interface DeptForm {
   code: string;
   description: string;
   budget: string;
+  shiftStartTime: string;
+  shiftEndTime: string;
 }
 const EMPTY_FORM: DeptForm = {
   name: "",
   code: "",
   description: "",
   budget: "",
+  shiftStartTime: "",
+  shiftEndTime: "",
 };
 
 export default function DepartmentsPage() {
@@ -62,6 +66,8 @@ export default function DepartmentsPage() {
       code: d.code,
       description: d.description || "",
       budget: String(d.budget || ""),
+      shiftStartTime: (d as any).shiftStartTime || "",
+      shiftEndTime:   (d as any).shiftEndTime   || "",
     });
     setShowModal(true);
   };
@@ -132,7 +138,7 @@ export default function DepartmentsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b-2 border-black bg-[#024BAB]/5">
-                {["", "Department", "Code", "Description", "Budget (₹)", "Headcount", "Head", "Actions"].map((h) => (
+                {["", "Department", "Code", "Description", "Shift Timings", "Budget (₹)", "Headcount", "Head", "Actions"].map((h) => (
                   <th
                     key={h}
                     className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider"
@@ -171,6 +177,15 @@ export default function DepartmentsPage() {
                   </td>
                   <td className="px-4 py-3 text-sm text-muted-foreground max-w-48">
                     <span className="line-clamp-1">{dept.description || "—"}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {(dept as any).shiftStartTime && (dept as any).shiftEndTime ? (
+                      <span className="text-xs font-bold text-[#024BAB] border-2 border-[#024BAB] bg-[#024BAB]/10 px-2 py-0.5">
+                        {(dept as any).shiftStartTime} – {(dept as any).shiftEndTime}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 font-bold text-black">
                     {dept.budget
@@ -285,6 +300,30 @@ export default function DepartmentsPage() {
                   className="border-2 border-black w-full px-3 py-2 text-sm"
                   placeholder="Annual budget"
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-black mb-1">
+                    Shift Start Time
+                  </label>
+                  <input
+                    type="time"
+                    value={form.shiftStartTime}
+                    onChange={(e) => setForm({ ...form, shiftStartTime: e.target.value })}
+                    className="border-2 border-black w-full px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-black mb-1">
+                    Shift End Time
+                  </label>
+                  <input
+                    type="time"
+                    value={form.shiftEndTime}
+                    onChange={(e) => setForm({ ...form, shiftEndTime: e.target.value })}
+                    className="border-2 border-black w-full px-3 py-2 text-sm"
+                  />
+                </div>
               </div>
               <div className="flex gap-3">
                 <button

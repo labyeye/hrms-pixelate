@@ -86,6 +86,7 @@ export default function EmployeesPage() {
     monthlyEmi: "",
     reason: "",
   });
+  const [salaryPeriod, setSalaryPeriod] = useState<"yearly" | "monthly" | "daily">("monthly");
   const [savingLoan, setSavingLoan] = useState(false);
   const [actionModal, setActionModal] = useState<{
     show: boolean;
@@ -357,8 +358,11 @@ export default function EmployeesPage() {
                 >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 bg-[#024BAB] border-2 border-black flex items-center justify-center text-xs font-bold text-white shrink-0">
-                        {emp.firstName?.[0]?.toUpperCase()}
+                      <div className="w-8 h-8 border-2 border-black shrink-0 overflow-hidden bg-[#024BAB] flex items-center justify-center text-xs font-bold text-white">
+                        {emp.avatar
+                          ? <img src={emp.avatar} alt={emp.firstName} className="w-full h-full object-cover" />
+                          : emp.firstName?.[0]?.toUpperCase()
+                        }
                       </div>
                       <div>
                         <p className="font-bold text-black">
@@ -539,12 +543,6 @@ export default function EmployeesPage() {
                     type: "date",
                     required: true,
                   },
-                  {
-                    label: "Salary (₹)",
-                    key: "salary",
-                    type: "number",
-                    required: false,
-                  },
                   ...(!editEmp
                     ? [
                         {
@@ -571,6 +569,57 @@ export default function EmployeesPage() {
                     />
                   </div>
                 ))}
+                {/* Salary with period toggle */}
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold text-black mb-1">Salary (₹)</label>
+                  <div className="flex gap-0">
+                    {(["monthly", "yearly", "daily"] as const).map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => setSalaryPeriod(p)}
+                        className={cn(
+                          "px-3 py-1.5 text-xs font-bold border-2 border-black -ml-[2px] first:ml-0 capitalize transition-colors",
+                          salaryPeriod === p
+                            ? "bg-[#024BAB] text-white z-10"
+                            : "bg-white text-black hover:bg-[#024BAB]/10",
+                        )}
+                      >
+                        Per {p === "daily" ? "Day" : p === "monthly" ? "Month" : "Year"}
+                      </button>
+                    ))}
+                    <input
+                      type="number"
+                      min="0"
+                      value={
+                        salaryPeriod === "monthly"
+                          ? form.salary ? Math.round(Number(form.salary) / 12) : ""
+                          : salaryPeriod === "daily"
+                          ? form.salary ? Math.round(Number(form.salary) / 365) : ""
+                          : form.salary
+                      }
+                      onChange={(e) => {
+                        const v = Number(e.target.value) || 0;
+                        const annual =
+                          salaryPeriod === "monthly"
+                            ? v * 12
+                            : salaryPeriod === "daily"
+                            ? v * 365
+                            : v;
+                        setForm({ ...form, salary: String(annual) });
+                      }}
+                      className="border-2 border-black border-l-0 flex-1 px-3 py-1.5 text-sm outline-none"
+                      placeholder={`Annual = ₹${form.salary ? Number(form.salary).toLocaleString("en-IN") : "0"}`}
+                    />
+                  </div>
+                  {form.salary && (
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Annual: ₹{Number(form.salary).toLocaleString("en-IN")} &nbsp;·&nbsp;
+                      Monthly: ₹{Math.round(Number(form.salary) / 12).toLocaleString("en-IN")} &nbsp;·&nbsp;
+                      Daily: ₹{Math.round(Number(form.salary) / 365).toLocaleString("en-IN")}
+                    </p>
+                  )}
+                </div>
                 <div>
                   <label className="block text-xs font-bold text-black mb-1">
                     Department

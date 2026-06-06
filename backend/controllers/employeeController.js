@@ -113,8 +113,11 @@ const createEmployee = [
     if (existingUser) {
       userId = existingUser._id;
     } else {
-      // Generate a random temporary password instead of hardcoding one
-      const tempPassword = crypto.randomBytes(16).toString("hex");
+      const { password: providedPassword } = req.body;
+      const tempPassword =
+        providedPassword && providedPassword.length >= 6
+          ? providedPassword
+          : crypto.randomBytes(8).toString("hex") + "A1";
       const user = await User.create({
         name: `${firstName.trim()} ${lastName.trim()}`,
         email: normalizedEmail,
@@ -231,10 +234,43 @@ const deleteEmployee = asyncHandler(async (req, res) => {
   res.json({ success: true, message: "Employee terminated" });
 });
 
+const resetEmployeePassword = asyncHandler(async (req, res) => {
+  const employee = await Employee.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!employee) {
+    res.status(404);
+    throw new Error("Employee not found");
+  }
+
+  const { password } = req.body;
+  if (!password || typeof password !== "string" || password.length < 6) {
+    res.status(400);
+    throw new Error("Password must be at least 6 characters");
+  }
+  if (password.length > 128) {
+    res.status(400);
+    throw new Error("Password too long");
+  }
+
+  const linkedUser = await User.findOne({ email: employee.email });
+  if (!linkedUser) {
+    res.status(404);
+    throw new Error("No login account found for this employee");
+  }
+
+  linkedUser.password = password;
+  await linkedUser.save();
+
+  res.json({ success: true, message: "Password updated successfully" });
+});
+
 module.exports = {
   getEmployees,
   getEmployee,
   createEmployee,
   updateEmployee,
   deleteEmployee,
+  resetEmployeePassword,
 };
