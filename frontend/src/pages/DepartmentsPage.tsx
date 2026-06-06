@@ -165,7 +165,7 @@ export default function DepartmentsPage() {
                     <p className="font-bold text-black">{dept.name}</p>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider bg-gray-100 border border-black/10 px-2 py-0.5">
+                    <span className="text-xs font-bold text-gray-600 uppercase tracking-wider bg-gray-100 border-2 border-gray-400 px-2 py-0.5">
                       {dept.code}
                     </span>
                   </td>

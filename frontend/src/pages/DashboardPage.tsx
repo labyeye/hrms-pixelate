@@ -261,7 +261,7 @@ export default function DashboardPage() {
             <AlertTriangle className="w-3.5 h-3.5" /> Action needed
           </span>
           <Link to="/leave">
-            <span className="border-2 flex items-center gap-1 text-[11px]">
+            <span className="border-2 p-1 flex items-center gap-1 text-[11px]">
               <CalendarDays className="w-3 h-3" /> {stats.pendingLeaves} leave
               requests pending
             </span>

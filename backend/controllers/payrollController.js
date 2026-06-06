@@ -138,6 +138,9 @@ const processPayroll = asyncHandler(async (req, res) => {
           absentDays *
           (dailySalary * (deductionRule.absentDeductionAmount / 100));
       }
+    } else {
+      // Default: deduct one day's pay per absent day even without a custom rule
+      absentDeduction = absentDays * dailySalary;
     }
 
     const otherDeductions = lateDeduction + absentDeduction;

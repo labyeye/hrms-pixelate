@@ -17,11 +17,11 @@ import {
 } from "lucide-react";
 
 const VERIFY_MODE_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
-  fingerprint: { label: "Finger",   icon: Fingerprint,      color: "text-blue-600 bg-blue-50"   },
-  card:        { label: "Card",     icon: CreditCard,       color: "text-purple-600 bg-purple-50" },
-  face:        { label: "Face",     icon: Scan,             color: "text-green-600 bg-green-50"  },
-  password:    { label: "Password", icon: KeyRound,         color: "text-orange-600 bg-orange-50" },
-  manual:      { label: "Manual",   icon: MousePointerClick, color: "text-gray-500 bg-gray-100"  },
+  fingerprint: { label: "Finger",   icon: Fingerprint,       color: "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB]" },
+  card:        { label: "Card",     icon: CreditCard,        color: "bg-[#A855F7]/10 text-[#A855F7] border-[#A855F7]" },
+  face:        { label: "Face",     icon: Scan,              color: "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]" },
+  password:    { label: "Password", icon: KeyRound,          color: "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C]" },
+  manual:      { label: "Manual",   icon: MousePointerClick, color: "bg-gray-100 text-gray-500 border-gray-300"       },
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -299,7 +299,7 @@ export default function AttendancePage() {
                         const cfg = VERIFY_MODE_CONFIG[mode] || VERIFY_MODE_CONFIG.manual;
                         const ModeIcon = cfg.icon;
                         return (
-                          <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border", cfg.color)}>
+                          <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold border-2", cfg.color)}>
                             <ModeIcon className="w-3 h-3" />
                             {cfg.label}
                           </span>

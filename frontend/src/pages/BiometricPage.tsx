@@ -719,13 +719,13 @@ export default function BiometricPage() {
                       <div className="flex gap-1">
                         <button
                           onClick={() => startEditLoc(loc)}
-                          className="p-1.5 border border-gray-200 hover:border-black hover:bg-gray-50 transition-all"
+                          className="p-1.5 border-2 border-gray-200 hover:border-black hover:bg-gray-50 transition-all"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDeleteLocation(loc._id)}
-                          className="p-1.5 border border-gray-200 hover:border-red-500 hover:text-red-500 hover:bg-red-50 transition-all"
+                          className="p-1.5 border-2 border-gray-200 hover:border-red-500 hover:text-red-500 hover:bg-red-50 transition-all"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -745,10 +745,10 @@ export default function BiometricPage() {
                     <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
                       <span
                         className={cn(
-                          "text-xs font-black uppercase px-2 py-0.5 border",
+                          "text-xs font-black uppercase px-2 py-0.5 border-2",
                           loc.isActive
-                            ? "bg-green-50 text-green-700 border-green-300"
-                            : "bg-gray-50 text-gray-500 border-gray-200",
+                            ? "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]"
+                            : "bg-gray-100 text-gray-500 border-gray-300",
                         )}
                       >
                         {loc.isActive ? "Active" : "Inactive"}
@@ -948,7 +948,7 @@ export default function BiometricPage() {
                     {/* Connection status */}
                     <div className="mt-3 flex items-center gap-2">
                       {selectedDevice.activated ? (
-                        <span className="flex items-center gap-1.5 text-xs font-black text-green-700 bg-green-50 border border-green-300 px-2 py-1">
+                        <span className="flex items-center gap-1.5 text-xs font-black text-[#00C48C] bg-[#00C48C]/10 border-2 border-[#00C48C] px-2 py-1">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           Connected
                           {selectedDevice.deviceMeta?.model &&
@@ -957,7 +957,7 @@ export default function BiometricPage() {
                             ` · ${selectedDevice.deviceMeta.ip}`}
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1.5 text-xs font-black text-yellow-700 bg-yellow-50 border border-yellow-300 px-2 py-1">
+                        <span className="flex items-center gap-1.5 text-xs font-black text-[#FA731C] bg-[#FA731C]/10 border-2 border-[#FA731C] px-2 py-1">
                           <Wifi className="w-3.5 h-3.5" />
                           Awaiting connection
                         </span>
@@ -998,7 +998,7 @@ export default function BiometricPage() {
                                   : selectedDevice._id,
                               )
                             }
-                            className="p-1.5 border border-gray-200 hover:border-black"
+                            className="p-1.5 border-2 border-gray-200 hover:border-black"
                             title="Show/hide URL"
                           >
                             {showTokenFor === selectedDevice._id ? (
@@ -1013,7 +1013,7 @@ export default function BiometricPage() {
                                 devicePageUrl(selectedDevice.deviceToken),
                               )
                             }
-                            className="p-1.5 border border-gray-200 hover:border-black"
+                            className="p-1.5 border-2 border-gray-200 hover:border-black"
                             title="Copy URL"
                           >
                             <Copy className="w-3.5 h-3.5" />
@@ -1022,7 +1022,7 @@ export default function BiometricPage() {
                             href={devicePageUrl(selectedDevice.deviceToken)}
                             target="_blank"
                             rel="noreferrer"
-                            className="p-1.5 border border-gray-200 hover:border-black"
+                            className="p-1.5 border-2 border-gray-200 hover:border-black"
                             title="Open terminal"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
@@ -1219,7 +1219,7 @@ export default function BiometricPage() {
                             </div>
                             <button
                               onClick={() => handleRemoveNfc(card.uid)}
-                              className="p-1.5 hover:text-red-500 hover:bg-red-50 border border-transparent hover:border-red-200 transition-all"
+                              className="p-1.5 hover:text-red-500 hover:bg-red-50 border-2 border-transparent hover:border-red-200 transition-all"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
@@ -1240,7 +1240,7 @@ export default function BiometricPage() {
         {tab === "logs" && (
           <div>
             {/* Sync Log Table */}
-            <div className="border-2 bg-white mb-6">
+            <div className="border-2 border-black bg-white mb-6">
               <div className="flex items-center justify-between p-4 border-b-2 border-black">
                 <h3 className="font-black text-sm text-black uppercase tracking-wider">
                   Device Sync Log
@@ -1295,10 +1295,10 @@ export default function BiometricPage() {
                           <td className="px-4 py-3">
                             <span
                               className={cn(
-                                "px-2 py-0.5 text-xs font-bold border border-black",
+                                "px-2 py-0.5 text-xs font-bold border-2",
                                 dev.isActive
-                                  ? "bg-[#00C48C] text-white"
-                                  : "bg-[#EF4444] text-white",
+                                  ? "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]"
+                                  : "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]",
                               )}
                             >
                               {dev.isActive ? "Online" : "Offline"}
@@ -1409,12 +1409,12 @@ export default function BiometricPage() {
                         <td className="px-4 py-3">
                           <span
                             className={cn(
-                              "text-xs font-black uppercase px-2 py-0.5 border",
+                              "text-xs font-black uppercase px-2 py-0.5 border-2",
                               log.method === "nfc"
-                                ? "bg-blue-50 text-blue-700 border-blue-300"
+                                ? "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB]"
                                 : log.method === "face"
-                                  ? "bg-purple-50 text-purple-700 border-purple-300"
-                                  : "bg-gray-50 text-gray-600 border-gray-300",
+                                  ? "bg-[#A855F7]/10 text-[#A855F7] border-[#A855F7]"
+                                  : "bg-gray-100 text-gray-500 border-gray-300",
                             )}
                           >
                             {log.method === "nfc"
@@ -1432,10 +1432,10 @@ export default function BiometricPage() {
                         <td className="px-4 py-3">
                           <span
                             className={cn(
-                              "text-xs font-black uppercase px-2 py-0.5 border flex items-center gap-1 w-fit",
+                              "text-xs font-black uppercase px-2 py-0.5 border-2 flex items-center gap-1 w-fit",
                               log.type === "check_in"
-                                ? "bg-green-50 text-green-700 border-green-300"
-                                : "bg-orange-50 text-orange-700 border-orange-300",
+                                ? "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]"
+                                : "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C]",
                             )}
                           >
                             <Clock className="w-3 h-3" />
@@ -1460,7 +1460,7 @@ export default function BiometricPage() {
         {tab === "adms" && (
           <div className="space-y-6">
             {/* Step 1 — Select device */}
-            <div className="border-2 p-5">
+            <div className="border-2 border-black p-5">
               <h2 className="font-display font-black text-base mb-4 flex items-center gap-2">
                 <span className="w-6 h-6 bg-black text-white text-xs font-black flex items-center justify-center">
                   1
@@ -1483,7 +1483,7 @@ export default function BiometricPage() {
                       <Cpu className="w-4 h-4" />
                       <span className="font-black text-sm">{d.name}</span>
                       {(d as any).serialNumber && (
-                        <span className="ml-auto text-[10px] font-mono bg-green-100 text-green-800 px-1.5 py-0.5 border border-green-300">
+                        <span className="ml-auto text-[10px] font-mono bg-[#00C48C]/10 text-[#00C48C] px-1.5 py-0.5 border-2 border-[#00C48C]">
                           SN: {(d as any).serialNumber}
                         </span>
                       )}
@@ -1507,7 +1507,7 @@ export default function BiometricPage() {
             {admsDevice && (
               <>
                 {/* Step 2 — Register serial number */}
-                <div className="border-2 p-5">
+                <div className="border-2 border-black p-5">
                   <h2 className="font-display font-black text-base mb-1 flex items-center gap-2">
                     <span className="w-6 h-6 bg-black text-white text-xs font-black flex items-center justify-center">
                       2
@@ -1556,7 +1556,7 @@ export default function BiometricPage() {
                 </div>
 
                 {/* Step 3 — Assign Biometric User IDs + RFID + Sync */}
-                <div className="border-2">
+                <div className="border-2 border-black">
                   <div className="px-5 py-4 border-b-2 border-black flex items-center justify-between">
                     <div>
                       <h2 className="font-display font-black text-base flex items-center gap-2">
@@ -1662,9 +1662,9 @@ export default function BiometricPage() {
                                         })
                                       }
                                       className={cn(
-                                        "flex items-center gap-1.5 font-mono text-xs px-2 py-1 border",
+                                        "flex items-center gap-1.5 font-mono text-xs px-2 py-1 border-2",
                                         emp.biometricUserId
-                                          ? "border-green-300 bg-green-50 text-green-800"
+                                          ? "border-[#00C48C] bg-[#00C48C]/10 text-[#00C48C]"
                                           : "border-dashed border-gray-300 text-gray-400 hover:border-gray-500",
                                       )}
                                     >
@@ -1679,9 +1679,9 @@ export default function BiometricPage() {
                                   <button
                                     onClick={() => openRfidModal(emp)}
                                     className={cn(
-                                      "flex items-center gap-1.5 font-mono text-xs px-2 py-1 border",
+                                      "flex items-center gap-1.5 font-mono text-xs px-2 py-1 border-2",
                                       emp.rfidCard
-                                        ? "border-blue-300 bg-blue-50 text-blue-800"
+                                        ? "border-[#024BAB] bg-[#024BAB]/10 text-[#024BAB]"
                                         : "border-dashed border-gray-300 text-gray-400 hover:border-gray-500",
                                     )}
                                   >
@@ -1768,7 +1768,7 @@ export default function BiometricPage() {
                 </div>
 
                 {/* Command queue status */}
-                <div className="border-2">
+                <div className="border-2 border-black">
                   <div className="px-5 py-4 border-b-2 border-black flex items-center justify-between">
                     <h2 className="font-display font-black text-base flex items-center gap-2">
                       <Terminal className="w-4 h-4" /> Command Queue
@@ -1827,15 +1827,15 @@ export default function BiometricPage() {
                               <td className="px-4 py-2">
                                 <span
                                   className={cn(
-                                    "px-2 py-0.5 border font-black text-[10px] uppercase",
+                                    "px-2 py-0.5 border-2 font-black text-[10px] uppercase",
                                     cmd.status === "done" &&
-                                      "bg-green-100 border-green-400 text-green-800",
+                                      "bg-[#00C48C]/10 border-[#00C48C] text-[#00C48C]",
                                     cmd.status === "pending" &&
-                                      "bg-yellow-100 border-yellow-400 text-yellow-800",
+                                      "bg-[#FA731C]/10 border-[#FA731C] text-[#FA731C]",
                                     cmd.status === "sent" &&
-                                      "bg-blue-100 border-blue-400 text-blue-800",
+                                      "bg-[#024BAB]/10 border-[#024BAB] text-[#024BAB]",
                                     cmd.status === "failed" &&
-                                      "bg-red-100 border-red-400 text-red-800",
+                                      "bg-[#EF4444]/10 border-[#EF4444] text-[#EF4444]",
                                   )}
                                 >
                                   {cmd.status}
@@ -1886,7 +1886,7 @@ export default function BiometricPage() {
         {/* ── USB RFID ENROLLMENT MODAL ─────────────────────────────────────── */}
         {rfidModalEmp && (
           <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-            <div className="border-2 w-full max-w-md bg-white">
+            <div className="border-2 border-black w-full max-w-md bg-white">
               <div className="px-6 py-4 border-b-2 border-black flex items-center justify-between">
                 <h2 className="font-display font-black text-base flex items-center gap-2">
                   <Scan className="w-4 h-4" /> Scan RFID Card

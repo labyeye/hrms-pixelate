@@ -19,6 +19,16 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
 };
 
+const TYPE_BADGE_COLORS: Record<string, string> = {
+  casual:       "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB]",
+  sick:         "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]",
+  earned:       "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]",
+  maternity:    "bg-[#A855F7]/10 text-[#A855F7] border-[#A855F7]",
+  paternity:    "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB]",
+  unpaid:       "bg-gray-100 text-gray-500 border-gray-300",
+  compensatory: "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C]",
+};
+
 const TYPE_LABELS: Record<string, string> = {
   casual: "Casual",
   sick: "Sick",
@@ -221,7 +231,7 @@ export default function LeavePage() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="border-2 text-[10px]">
+                    <span className={cn("border-2 text-[10px] px-2 py-0.5", TYPE_BADGE_COLORS[leave.leaveType] || "bg-gray-100 text-gray-500 border-gray-300")}>
                       {TYPE_LABELS[leave.leaveType]}
                     </span>
                   </td>
