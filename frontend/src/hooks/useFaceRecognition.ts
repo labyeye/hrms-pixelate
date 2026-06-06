@@ -29,10 +29,14 @@ export function useFaceRecognition() {
 
   const [loadState, setLoadState] = useState<LoadState>("idle");
   const [cameraActive, setCameraActive] = useState(false);
-  const [liveDetection, setLiveDetection] = useState<faceapi.FaceDetection | null>(null);
+  const [liveDetection, setLiveDetection] =
+    useState<faceapi.FaceDetection | null>(null);
 
   const loadModels = useCallback(async () => {
-    if (modelsLoaded) { setLoadState("ready"); return; }
+    if (modelsLoaded) {
+      setLoadState("ready");
+      return;
+    }
     setLoadState("loading");
     try {
       await ensureModels();
@@ -85,17 +89,22 @@ export function useFaceRecognition() {
       .withFaceLandmarks()
       .withFaceDescriptor();
 
-    if (!detection) throw new Error("No face detected — look directly at camera");
+    if (!detection)
+      throw new Error("No face detected — look directly at camera");
 
     const score = detection.detection.score;
-    if (score < 0.7) throw new Error(`Face confidence too low (${(score * 100).toFixed(0)}%) — improve lighting`);
+    if (score < 0.7)
+      throw new Error(
+        `Face confidence too low (${(score * 100).toFixed(0)}%) — improve lighting`,
+      );
 
     return Array.from(detection.descriptor);
   }, [loadState]);
 
   // Draw live face box on canvas overlay
   const startLiveDetection = useCallback(() => {
-    if (!videoRef.current || !canvasRef.current || loadState !== "ready") return;
+    if (!videoRef.current || !canvasRef.current || loadState !== "ready")
+      return;
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
@@ -103,11 +112,14 @@ export function useFaceRecognition() {
       if (!video.videoWidth) return;
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      faceapi.matchDimensions(canvas, { width: video.videoWidth, height: video.videoHeight });
+      faceapi.matchDimensions(canvas, {
+        width: video.videoWidth,
+        height: video.videoHeight,
+      });
 
-      const detection = await faceapi.detectSingleFace(
-        video, new faceapi.TinyFaceDetectorOptions()
-      ).withFaceLandmarks();
+      const detection = await faceapi
+        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks();
 
       const ctx = canvas.getContext("2d");
       ctx?.clearRect(0, 0, canvas.width, canvas.height);
@@ -128,16 +140,25 @@ export function useFaceRecognition() {
 
   // Match a captured descriptor against a list of stored descriptors
   const matchDescriptor = useCallback(
-    (captured: number[], stored: Array<{ employeeId: string; descriptor: number[] }>, threshold = 0.5) => {
+    (
+      captured: number[],
+      stored: Array<{ employeeId: string; descriptor: number[] }>,
+      threshold = 0.5,
+    ) => {
       if (!stored.length) return null;
       const labeledDescriptors = stored.map(
-        (s) => new faceapi.LabeledFaceDescriptors(s.employeeId, [new Float32Array(s.descriptor)])
+        (s) =>
+          new faceapi.LabeledFaceDescriptors(s.employeeId, [
+            new Float32Array(s.descriptor),
+          ]),
       );
       const matcher = new faceapi.FaceMatcher(labeledDescriptors, threshold);
       const match = matcher.findBestMatch(new Float32Array(captured));
-      return match.label === "unknown" ? null : { employeeId: match.label, distance: match.distance };
+      return match.label === "unknown"
+        ? null
+        : { employeeId: match.label, distance: match.distance };
     },
-    []
+    [],
   );
 
   return {

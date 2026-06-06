@@ -147,38 +147,42 @@ router.get(["/cdata", "/cdata.aspx"], async (req, res) => {
 });
 
 // ── POST /iclock/cdata(.aspx) — device pushes attendance logs ─────────────────
-router.post(["/cdata", "/cdata.aspx"], express.text({ type: "*/*" }), async (req, res) => {
-  const { SN, table } = req.query;
-  res.set("Content-Type", "text/plain");
+router.post(
+  ["/cdata", "/cdata.aspx"],
+  express.text({ type: "*/*" }),
+  async (req, res) => {
+    const { SN, table } = req.query;
+    res.set("Content-Type", "text/plain");
 
-  if (table !== "ATTLOG") return res.send("OK");
+    if (table !== "ATTLOG") return res.send("OK");
 
-  const body = req.body;
-  if (!body || typeof body !== "string") return res.send("OK");
+    const body = req.body;
+    if (!body || typeof body !== "string") return res.send("OK");
 
-  // Stamp from query string — device sends its current record count
-  const stamp = parseInt(req.query.Stamp || "0", 10) || 0;
+    // Stamp from query string — device sends its current record count
+    const stamp = parseInt(req.query.Stamp || "0", 10) || 0;
 
-  try {
-    const device = await resolveDevice(SN);
-    const companyId = device?.company || null;
+    try {
+      const device = await resolveDevice(SN);
+      const companyId = device?.company || null;
 
-    const logs = parseAttLog(body);
-    await Promise.allSettled(logs.map((log) => processLog(log, companyId)));
+      const logs = parseAttLog(body);
+      await Promise.allSettled(logs.map((log) => processLog(log, companyId)));
 
-    // Save stamp so heartbeat returns ATTLOGStamp=N — device won't re-send old records
-    if (device && stamp > (device.attlogStamp || 0)) {
-      device.attlogStamp = stamp;
-      device.lastSeenAt = new Date();
-      await device.save();
+      // Save stamp so heartbeat returns ATTLOGStamp=N — device won't re-send old records
+      if (device && stamp > (device.attlogStamp || 0)) {
+        device.attlogStamp = stamp;
+        device.lastSeenAt = new Date();
+        await device.save();
+      }
+
+      res.send(`OK: ${stamp}`);
+    } catch (err) {
+      console.error("[ADMS] cdata POST error:", err.message);
+      res.send("OK"); // always ACK — device retries on error response
     }
-
-    res.send(`OK: ${stamp}`);
-  } catch (err) {
-    console.error("[ADMS] cdata POST error:", err.message);
-    res.send("OK"); // always ACK — device retries on error response
-  }
-});
+  },
+);
 
 // ── GET /iclock/getrequest(.aspx) — device polls for pending commands ─────────
 router.get(["/getrequest", "/getrequest.aspx"], async (req, res) => {
@@ -207,36 +211,40 @@ router.get(["/getrequest", "/getrequest.aspx"], async (req, res) => {
 });
 
 // ── POST /iclock/devicecmd(.aspx) — device reports command result ─────────────
-router.post(["/devicecmd", "/devicecmd.aspx"], express.text({ type: "*/*" }), async (req, res) => {
-  const { SN, ID } = req.query;
-  res.set("Content-Type", "text/plain");
+router.post(
+  ["/devicecmd", "/devicecmd.aspx"],
+  express.text({ type: "*/*" }),
+  async (req, res) => {
+    const { SN, ID } = req.query;
+    res.set("Content-Type", "text/plain");
 
-  try {
-    if (ID) {
-      const device = await resolveDevice(SN);
-      if (device) {
-        // Parse return code from body: "Return=0&CMD=DATA UPDATE USERINFO"
-        const body = req.body || "";
-        const returnMatch = body.match(/Return=(\d+)/);
-        const returnCode = returnMatch ? returnMatch[1] : "0";
+    try {
+      if (ID) {
+        const device = await resolveDevice(SN);
+        if (device) {
+          // Parse return code from body: "Return=0&CMD=DATA UPDATE USERINFO"
+          const body = req.body || "";
+          const returnMatch = body.match(/Return=(\d+)/);
+          const returnCode = returnMatch ? returnMatch[1] : "0";
 
-        await BiometricCommand.findOneAndUpdate(
-          { device: device._id, cmdId: Number(ID) },
-          {
-            $set: {
-              status: returnCode === "0" ? "done" : "failed",
-              returnCode,
-              doneAt: new Date(),
+          await BiometricCommand.findOneAndUpdate(
+            { device: device._id, cmdId: Number(ID) },
+            {
+              $set: {
+                status: returnCode === "0" ? "done" : "failed",
+                returnCode,
+                doneAt: new Date(),
+              },
             },
-          },
-        );
+          );
+        }
       }
+    } catch (err) {
+      console.error("[ADMS] devicecmd error:", err.message);
     }
-  } catch (err) {
-    console.error("[ADMS] devicecmd error:", err.message);
-  }
 
-  res.send("OK");
-});
+    res.send("OK");
+  },
+);
 
 module.exports = router;

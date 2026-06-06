@@ -17,8 +17,13 @@ const {
 // Build the raw ADMS userinfo command string for an employee
 function buildSetUserCmd(employee) {
   const uid = employee.biometricUserId;
-  const name = `${employee.firstName} ${employee.lastName}`.slice(0, 24);
-  const card = employee.rfidCard || "";
+  // Strip control characters (tabs, newlines, etc.) that would break the protocol,
+  // then trim and fall back to biometricUserId so Name= is never blank on the device.
+  const rawName = `${employee.firstName || ""} ${employee.lastName || ""}`;
+  const name = (
+    rawName.replace(/[\x00-\x1F\x7F]/g, " ").trim() || `User-${uid}`
+  ).slice(0, 24);
+  const card = (employee.rfidCard || "").replace(/[\x00-\x1F\x7F]/g, "");
   // Fields are tab-separated; trailing tab required
   return `DATA UPDATE USERINFO PIN=${uid}\tName=${name}\tPri=0\tPasswd=\tCard=${card}\tGrp=1\tTZ=1\tVerify=0\t`;
 }
@@ -816,7 +821,9 @@ const faceAttendance = asyncHandler(async (req, res) => {
 
   if (!bestMatch || bestDist > THRESHOLD) {
     res.status(404);
-    throw new Error(`No matching employee found (best dist: ${bestDist.toFixed(3)})`);
+    throw new Error(
+      `No matching employee found (best dist: ${bestDist.toFixed(3)})`,
+    );
   }
 
   // Mark attendance for the matched employee
@@ -830,12 +837,19 @@ const faceAttendance = asyncHandler(async (req, res) => {
   }).sort({ timestamp: -1 });
   const logType = existingLog?.type === "check_in" ? "check_out" : "check_in";
 
-  const attendanceUpdate = { employee: bestMatch._id, date: today, markedBy: null };
+  const attendanceUpdate = {
+    employee: bestMatch._id,
+    date: today,
+    markedBy: null,
+  };
   if (logType === "check_in") {
     attendanceUpdate.checkIn = now;
     attendanceUpdate.status = now.getHours() >= 10 ? "late" : "present";
   } else {
-    const existing = await Attendance.findOne({ employee: bestMatch._id, date: today });
+    const existing = await Attendance.findOne({
+      employee: bestMatch._id,
+      date: today,
+    });
     if (existing?.checkIn) {
       attendanceUpdate.checkOut = now;
       attendanceUpdate.workHours = (now - existing.checkIn) / 3600000;
@@ -845,7 +859,7 @@ const faceAttendance = asyncHandler(async (req, res) => {
   const attendance = await Attendance.findOneAndUpdate(
     { employee: bestMatch._id, date: today },
     { $set: attendanceUpdate },
-    { upsert: true, new: true }
+    { upsert: true, new: true },
   );
 
   // Device lookup for log (optional — face attendance may not have a device)

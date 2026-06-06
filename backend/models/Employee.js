@@ -48,7 +48,7 @@ const employeeSchema = new mongoose.Schema(
     advanceBalance: { type: Number, default: 0 },
     otRate: { type: Number, default: 0 },
     biometricUserId: { type: String, default: "" }, // ESSL/ZKTeco device user ID (numeric, e.g. "1")
-    rfidCard: { type: String, default: "" },         // RFID card number (scanned via device or USB reader)
+    rfidCard: { type: String, default: "" }, // RFID card number (scanned via device or USB reader)
     faceDescriptor: { type: [Number], default: [] }, // 128-float face embedding (face-api.js / PC webcam)
   },
   { timestamps: true },

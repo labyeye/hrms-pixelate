@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { biometricAPI } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
-import { X, Fingerprint, Loader2, Check, AlertTriangle, Info } from "lucide-react";
+import {
+  X,
+  Fingerprint,
+  Loader2,
+  Check,
+  AlertTriangle,
+  Info,
+} from "lucide-react";
 
 const FINGER_NAMES = [
   "Right Thumb (0)",
@@ -18,7 +25,13 @@ const FINGER_NAMES = [
 
 interface Props {
   device: { _id: string; name: string; serialNumber?: string };
-  employee: { _id: string; firstName: string; lastName: string; employeeId: string; biometricUserId?: string };
+  employee: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    employeeId: string;
+    biometricUserId?: string;
+  };
   onClose: () => void;
 }
 
@@ -32,7 +45,11 @@ export function FingerprintEnrollModal({ device, employee, onClose }: Props) {
     if (sending) return;
     setSending(true);
     try {
-      const res = await biometricAPI.enrollFingerprint(device._id, employee._id, fingerIndex);
+      const res = await biometricAPI.enrollFingerprint(
+        device._id,
+        employee._id,
+        fingerIndex,
+      );
       setQueued(true);
       toast({ title: "Enrollment command sent", description: res.message });
     } catch (e: any) {
@@ -53,7 +70,9 @@ export function FingerprintEnrollModal({ device, employee, onClose }: Props) {
               {employee.firstName} {employee.lastName} · {employee.employeeId}
             </p>
           </div>
-          <button onClick={onClose} className="hover:opacity-70"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="hover:opacity-70">
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <div className="p-6 space-y-4">
@@ -62,7 +81,8 @@ export function FingerprintEnrollModal({ device, employee, onClose }: Props) {
             <div className="flex items-start gap-2 bg-red-50 border-2 border-red-300 p-3">
               <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
               <p className="text-sm font-medium text-red-800">
-                This employee has no Biometric User ID set. Set it first in the employee table above.
+                This employee has no Biometric User ID set. Set it first in the
+                employee table above.
               </p>
             </div>
           )}
@@ -70,7 +90,8 @@ export function FingerprintEnrollModal({ device, employee, onClose }: Props) {
             <div className="flex items-start gap-2 bg-yellow-50 border-2 border-yellow-300 p-3">
               <AlertTriangle className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />
               <p className="text-sm font-medium text-yellow-800">
-                Device serial number not set — command will be queued but device won't receive it.
+                Device serial number not set — command will be queued but device
+                won't receive it.
               </p>
             </div>
           )}
@@ -81,17 +102,26 @@ export function FingerprintEnrollModal({ device, employee, onClose }: Props) {
               <Info className="w-3.5 h-3.5" /> How this works
             </p>
             <ol className="text-xs text-blue-800 space-y-1 list-decimal list-inside">
-              <li>Click <strong>Send to Device</strong> — command is queued</li>
+              <li>
+                Click <strong>Send to Device</strong> — command is queued
+              </li>
               <li>Device receives it on next poll (~10 seconds)</li>
-              <li>Device screen shows: <em>"Please place finger"</em></li>
-              <li>Employee places their finger on the scanner <strong>3 times</strong></li>
+              <li>
+                Device screen shows: <em>"Please place finger"</em>
+              </li>
+              <li>
+                Employee places their finger on the scanner{" "}
+                <strong>3 times</strong>
+              </li>
               <li>Device stores the template — done!</li>
             </ol>
           </div>
 
           {/* Finger selection */}
           <div>
-            <label className="block text-xs font-black uppercase mb-2">Select Finger</label>
+            <label className="block text-xs font-black uppercase mb-2">
+              Select Finger
+            </label>
             <div className="grid grid-cols-2 gap-2">
               {FINGER_NAMES.map((name, idx) => (
                 <button
@@ -113,9 +143,13 @@ export function FingerprintEnrollModal({ device, employee, onClose }: Props) {
           {queued && (
             <div className="bg-green-50 border-2 border-green-400 p-4 text-center">
               <Check className="w-8 h-8 text-green-600 mx-auto mb-2" />
-              <p className="font-black text-green-800 text-sm">Command queued successfully!</p>
+              <p className="font-black text-green-800 text-sm">
+                Command queued successfully!
+              </p>
               <p className="text-xs text-green-600 mt-1">
-                Ask {employee.firstName} to go to the <strong>{device.name}</strong> device and place their finger when prompted.
+                Ask {employee.firstName} to go to the{" "}
+                <strong>{device.name}</strong> device and place their finger
+                when prompted.
               </p>
             </div>
           )}
@@ -128,10 +162,15 @@ export function FingerprintEnrollModal({ device, employee, onClose }: Props) {
                 disabled={sending || !employee.biometricUserId}
                 className="flex-1 nb-btn bg-[#024BAB] text-white py-2.5 font-black text-sm disabled:opacity-40 flex items-center justify-center gap-2"
               >
-                {sending
-                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</>
-                  : <><Fingerprint className="w-4 h-4" /> Send to Device</>
-                }
+                {sending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Sending…
+                  </>
+                ) : (
+                  <>
+                    <Fingerprint className="w-4 h-4" /> Send to Device
+                  </>
+                )}
               </button>
             ) : (
               <button
