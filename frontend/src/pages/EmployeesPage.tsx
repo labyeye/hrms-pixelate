@@ -131,6 +131,7 @@ export default function EmployeesPage() {
   const openAdd = () => {
     setEditEmp(null);
     setForm(EMPTY_FORM);
+    setAvatarPreview(null);
     setShowModal(true);
   };
   const openEdit = (emp: Employee) => {
@@ -214,16 +215,26 @@ export default function EmployeesPage() {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert("File size must be less than 5MB");
+    if (file.size > 10 * 1024 * 1024) {
+      alert("File size must be less than 10MB");
       return;
     }
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const base64 = event.target?.result as string;
-      setAvatarPreview(base64);
-      setForm({ ...form, avatar: base64 });
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 300;
+        const ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * ratio);
+        canvas.height = Math.round(img.height * ratio);
+        canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const compressed = canvas.toDataURL("image/jpeg", 0.82);
+        setAvatarPreview(compressed);
+        setForm((f) => ({ ...f, avatar: compressed }));
+      };
+      img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
   };

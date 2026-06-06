@@ -20,7 +20,7 @@ function buildSetUserCmd(employee) {
   const name = `${employee.firstName} ${employee.lastName}`.slice(0, 24);
   const card = employee.rfidCard || "";
   // Fields are tab-separated; trailing tab required
-  return `DATA UPDATE USERINFO PIN=${uid}\tName=${name}\tPri=0\tPasswd=\tCard=${card}\tGrp=1\tTZ=1111111111111\tVerify=0\t`;
+  return `DATA UPDATE USERINFO PIN=${uid}\tName=${name}\tPri=0\tPasswd=\tCard=${card}\tGrp=1\tTZ=1\tVerify=0\t`;
 }
 
 async function nextCmdId(deviceId) {
@@ -922,7 +922,7 @@ const triggerFingerprintEnroll = asyncHandler(async (req, res) => {
     device: device._id,
     company: device.company,
     cmdId,
-    command: `ENROLL_FP PIN=${employee.biometricUserId}&No=${fingerIndex}&OverWrite=1&Duress=0`,
+    command: `ENROLL_FP PIN=${employee.biometricUserId}\tNo=${fingerIndex}\tOverWrite=1\tDuress=0`,
     type: "SET_USER",
     employee: employee._id,
   });

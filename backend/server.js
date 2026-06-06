@@ -37,7 +37,7 @@ app.use(
   }),
 );
 app.use(morgan("dev"));
-app.use(express.json());
+app.use(express.json({ limit: "5mb" }));
 
 // ADMS device push — mounted before rate-limiters, no /api prefix
 // ESSL MB-20 hits: GET/POST /iclock/cdata, GET /iclock/getrequest
