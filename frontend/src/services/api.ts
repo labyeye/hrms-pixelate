@@ -305,6 +305,26 @@ export const biometricAPI = {
       method: "POST",
       body: JSON.stringify({ rfidCard }),
     }),
+
+  // Face recognition
+  saveFaceDescriptor: (employeeId: string, descriptor: number[]) =>
+    request(`/biometric/employees/${employeeId}/face`, {
+      method: "POST",
+      body: JSON.stringify({ descriptor }),
+    }),
+  getFaceDescriptors: () => request("/biometric/face-descriptors"),
+  faceAttendance: (descriptor: number[], deviceToken?: string) =>
+    request("/biometric/face-attendance", {
+      method: "POST",
+      body: JSON.stringify({ descriptor, deviceToken }),
+    }),
+
+  // Fingerprint enrollment trigger
+  enrollFingerprint: (deviceId: string, employeeId: string, fingerIndex = 0) =>
+    request(`/biometric/devices/${deviceId}/enroll-fingerprint`, {
+      method: "POST",
+      body: JSON.stringify({ employeeId, fingerIndex }),
+    }),
 };
 
 export const payrollConfigAPI = {

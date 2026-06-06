@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { biometricAPI } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { FaceEnrollModal } from "@/components/biometric/FaceEnrollModal";
+import { FingerprintEnrollModal } from "@/components/biometric/FingerprintEnrollModal";
 import {
   MapPin,
   Cpu,
@@ -31,6 +33,8 @@ import {
   Hash,
   AlertTriangle,
   Clock,
+  Camera,
+  Fingerprint,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -382,6 +386,11 @@ export default function BiometricPage() {
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [commands, setCommands] = useState<any[]>([]);
   const [cmdLoading, setCmdLoading] = useState(false);
+
+  // Face enrollment modal state
+  const [faceEnrollEmp, setFaceEnrollEmp] = useState<any | null>(null);
+  // Fingerprint enrollment modal state
+  const [fpEnrollEmp, setFpEnrollEmp] = useState<any | null>(null);
 
   // USB RFID enrollment state
   const [rfidModalEmp, setRfidModalEmp] = useState<any | null>(null);
@@ -1592,23 +1601,52 @@ export default function BiometricPage() {
                               </td>
 
                               {/* Actions */}
-                              <td className="px-4 py-3 text-right">
-                                {emp.biometricUserId ? (
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-1.5 justify-end flex-wrap">
+                                  {/* Face enroll */}
                                   <button
-                                    onClick={() => handleSyncEmployee(emp)}
-                                    disabled={syncingId === emp._id || !(admsDevice as any).serialNumber}
-                                    className="nb-btn bg-[#024BAB] text-white px-3 py-1.5 text-xs font-black disabled:opacity-40 flex items-center gap-1.5 ml-auto"
+                                    onClick={() => setFaceEnrollEmp(emp)}
+                                    title="Enroll face via PC webcam"
+                                    className={cn(
+                                      "nb-btn px-2 py-1.5 text-[10px] font-black flex items-center gap-1 border-2",
+                                      emp.faceDescriptor?.length === 128
+                                        ? "bg-purple-100 border-purple-400 text-purple-800"
+                                        : "bg-white border-black hover:bg-gray-50"
+                                    )}
                                   >
-                                    {syncingId === emp._id
-                                      ? <Loader2 className="w-3 h-3 animate-spin" />
-                                      : <UserCheck className="w-3 h-3" />}
-                                    Sync
+                                    <Camera className="w-3 h-3" />
+                                    {emp.faceDescriptor?.length === 128 ? "Re-enroll Face" : "Face"}
                                   </button>
-                                ) : (
-                                  <span className="text-xs text-gray-400 flex items-center gap-1 justify-end">
-                                    <AlertTriangle className="w-3 h-3" /> Set ID first
-                                  </span>
-                                )}
+
+                                  {/* Fingerprint enroll trigger */}
+                                  {emp.biometricUserId && admsDevice && (
+                                    <button
+                                      onClick={() => setFpEnrollEmp(emp)}
+                                      title="Trigger fingerprint enrollment on device"
+                                      className="nb-btn px-2 py-1.5 text-[10px] font-black flex items-center gap-1 bg-white border-2 border-black hover:bg-gray-50"
+                                    >
+                                      <Fingerprint className="w-3 h-3" /> FP Enroll
+                                    </button>
+                                  )}
+
+                                  {/* Sync to device */}
+                                  {emp.biometricUserId ? (
+                                    <button
+                                      onClick={() => handleSyncEmployee(emp)}
+                                      disabled={syncingId === emp._id || !(admsDevice as any).serialNumber}
+                                      className="nb-btn bg-[#024BAB] text-white px-2 py-1.5 text-[10px] font-black disabled:opacity-40 flex items-center gap-1"
+                                    >
+                                      {syncingId === emp._id
+                                        ? <Loader2 className="w-3 h-3 animate-spin" />
+                                        : <UserCheck className="w-3 h-3" />}
+                                      Sync
+                                    </button>
+                                  ) : (
+                                    <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                                      <AlertTriangle className="w-3 h-3" /> Set ID
+                                    </span>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           ))}
@@ -1681,6 +1719,29 @@ export default function BiometricPage() {
               </>
             )}
           </div>
+        )}
+
+        {/* ── FACE ENROLLMENT MODAL ────────────────────────────────────────── */}
+        {faceEnrollEmp && (
+          <FaceEnrollModal
+            employee={faceEnrollEmp}
+            onClose={() => setFaceEnrollEmp(null)}
+            onSaved={(empId) => {
+              setAdmsEmployees((prev) =>
+                prev.map((e) => e._id === empId ? { ...e, faceDescriptor: new Array(128).fill(0) } : e)
+              );
+              setFaceEnrollEmp(null);
+            }}
+          />
+        )}
+
+        {/* ── FINGERPRINT ENROLLMENT MODAL ─────────────────────────────────── */}
+        {fpEnrollEmp && admsDevice && (
+          <FingerprintEnrollModal
+            device={admsDevice as any}
+            employee={fpEnrollEmp}
+            onClose={() => setFpEnrollEmp(null)}
+          />
         )}
 
         {/* ── USB RFID ENROLLMENT MODAL ─────────────────────────────────────── */}

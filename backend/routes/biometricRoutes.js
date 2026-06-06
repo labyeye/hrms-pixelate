@@ -23,6 +23,10 @@ const {
   removeEmployeeFromDevice,
   getDeviceCommands,
   saveRfidCard,
+  saveFaceDescriptor,
+  getFaceDescriptors,
+  faceAttendance,
+  triggerFingerprintEnroll,
 } = require("../controllers/biometricController");
 
 // Public device endpoints (no user auth — device token / activation code used instead)
@@ -109,6 +113,22 @@ router.post(
   "/employees/:id/rfid",
   authorize("super_admin", "hr_manager"),
   saveRfidCard,
+);
+
+// ── Face recognition (PC webcam) ─────────────────────────────────────────────
+router.post(
+  "/employees/:id/face",
+  authorize("super_admin", "hr_manager"),
+  saveFaceDescriptor,
+);
+router.get("/face-descriptors", getFaceDescriptors);
+router.post("/face-attendance", faceAttendance); // no protect — called from device terminal
+
+// ── Fingerprint enrollment trigger ───────────────────────────────────────────
+router.post(
+  "/devices/:id/enroll-fingerprint",
+  authorize("super_admin", "hr_manager"),
+  triggerFingerprintEnroll,
 );
 
 module.exports = router;

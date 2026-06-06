@@ -733,6 +733,207 @@ const saveRfidCard = asyncHandler(async (req, res) => {
   });
 });
 
+// ─── Face Recognition (PC webcam) ────────────────────────────────────────────
+
+// POST /api/biometric/employees/:id/face  { descriptor: number[] }
+const saveFaceDescriptor = asyncHandler(async (req, res) => {
+  const { descriptor } = req.body;
+  if (!Array.isArray(descriptor) || descriptor.length !== 128) {
+    res.status(400);
+    throw new Error("descriptor must be an array of 128 numbers");
+  }
+
+  const employee = await Employee.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!employee) {
+    res.status(404);
+    throw new Error("Employee not found");
+  }
+
+  employee.faceDescriptor = descriptor;
+  await employee.save();
+
+  res.json({ success: true, message: "Face descriptor saved" });
+});
+
+// GET /api/biometric/face-descriptors
+// Returns all employees' face descriptors for client-side matching (no raw images)
+const getFaceDescriptors = asyncHandler(async (req, res) => {
+  const employees = await Employee.find({
+    company: req.user.company,
+    faceDescriptor: { $exists: true, $not: { $size: 0 } },
+    status: { $ne: "terminated" },
+  }).select("_id firstName lastName employeeId faceDescriptor");
+
+  const data = employees.map((e) => ({
+    employeeId: e._id,
+    name: `${e.firstName} ${e.lastName}`,
+    empCode: e.employeeId,
+    descriptor: e.faceDescriptor,
+  }));
+
+  res.json({ success: true, data });
+});
+
+// POST /api/biometric/face-attendance  { descriptor: number[], deviceToken }
+// Called from browser — matches face against all employees, marks attendance
+const faceAttendance = asyncHandler(async (req, res) => {
+  const { descriptor, deviceToken } = req.body;
+  if (!Array.isArray(descriptor) || descriptor.length !== 128) {
+    res.status(400);
+    throw new Error("Invalid face descriptor");
+  }
+
+  // Face matching happens client-side before this call —
+  // client sends the matched employee ID as confirmation
+  // But we still verify by fetching all descriptors and re-matching server-side
+  // using euclidean distance (threshold 0.5)
+  const employees = await Employee.find({
+    faceDescriptor: { $exists: true, $not: { $size: 0 } },
+    status: { $ne: "terminated" },
+  }).select("_id firstName lastName employeeId phone faceDescriptor company");
+
+  const THRESHOLD = 0.5;
+  let bestMatch = null;
+  let bestDist = Infinity;
+
+  for (const emp of employees) {
+    const stored = emp.faceDescriptor;
+    // Euclidean distance between two 128-float vectors
+    let dist = 0;
+    for (let i = 0; i < 128; i++) {
+      const d = (descriptor[i] || 0) - (stored[i] || 0);
+      dist += d * d;
+    }
+    dist = Math.sqrt(dist);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestMatch = emp;
+    }
+  }
+
+  if (!bestMatch || bestDist > THRESHOLD) {
+    res.status(404);
+    throw new Error(`No matching employee found (best dist: ${bestDist.toFixed(3)})`);
+  }
+
+  // Mark attendance for the matched employee
+  const now = new Date();
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+
+  const existingLog = await BiometricLog.findOne({
+    employee: bestMatch._id,
+    timestamp: { $gte: today },
+  }).sort({ timestamp: -1 });
+  const logType = existingLog?.type === "check_in" ? "check_out" : "check_in";
+
+  const attendanceUpdate = { employee: bestMatch._id, date: today, markedBy: null };
+  if (logType === "check_in") {
+    attendanceUpdate.checkIn = now;
+    attendanceUpdate.status = now.getHours() >= 10 ? "late" : "present";
+  } else {
+    const existing = await Attendance.findOne({ employee: bestMatch._id, date: today });
+    if (existing?.checkIn) {
+      attendanceUpdate.checkOut = now;
+      attendanceUpdate.workHours = (now - existing.checkIn) / 3600000;
+    }
+  }
+
+  const attendance = await Attendance.findOneAndUpdate(
+    { employee: bestMatch._id, date: today },
+    { $set: attendanceUpdate },
+    { upsert: true, new: true }
+  );
+
+  // Device lookup for log (optional — face attendance may not have a device)
+  let device = null;
+  if (deviceToken) {
+    device = await BiometricDevice.findOne({ deviceToken, isActive: true });
+  }
+
+  if (device) {
+    await BiometricLog.create({
+      company: bestMatch.company,
+      employee: bestMatch._id,
+      device: device._id,
+      location: device.location,
+      method: "face",
+      type: logType,
+      attendance: attendance._id,
+      timestamp: now,
+    });
+  }
+
+  res.json({
+    success: true,
+    data: {
+      employee: {
+        name: `${bestMatch.firstName} ${bestMatch.lastName}`,
+        employeeId: bestMatch.employeeId,
+      },
+      type: logType,
+      confidence: parseFloat(((1 - bestDist / THRESHOLD) * 100).toFixed(1)),
+      timestamp: now,
+    },
+  });
+});
+
+// ─── Fingerprint enrollment trigger (via ADMS command queue) ─────────────────
+
+// POST /api/biometric/devices/:id/enroll-fingerprint
+// Body: { employeeId, fingerIndex }  fingerIndex 0-9 (0=right thumb)
+const triggerFingerprintEnroll = asyncHandler(async (req, res) => {
+  const { employeeId, fingerIndex = 0 } = req.body;
+  if (!employeeId) {
+    res.status(400);
+    throw new Error("employeeId is required");
+  }
+
+  const device = await BiometricDevice.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!device) {
+    res.status(404);
+    throw new Error("Device not found");
+  }
+  if (!device.serialNumber) {
+    res.status(400);
+    throw new Error("Device serial number not registered");
+  }
+
+  const employee = await Employee.findOne({
+    _id: employeeId,
+    company: req.user.company,
+  });
+  if (!employee || !employee.biometricUserId) {
+    res.status(400);
+    throw new Error("Employee not found or has no biometric user ID");
+  }
+
+  const cmdId = await nextCmdId(device._id);
+
+  // ADMS fingerprint enrollment command:
+  // Sends device into enroll mode for the specified PIN and finger slot
+  await BiometricCommand.create({
+    device: device._id,
+    company: device.company,
+    cmdId,
+    command: `ENROLL_FP PIN=${employee.biometricUserId}&No=${fingerIndex}&OverWrite=1&Duress=0`,
+    type: "SET_USER",
+    employee: employee._id,
+  });
+
+  res.json({
+    success: true,
+    message: `Fingerprint enrollment queued for ${employee.firstName} ${employee.lastName}. Ask them to place their finger on the device when it beeps.`,
+    data: { cmdId, fingerIndex },
+  });
+});
+
 module.exports = {
   getLocations,
   createLocation,
@@ -755,4 +956,8 @@ module.exports = {
   removeEmployeeFromDevice,
   getDeviceCommands,
   saveRfidCard,
+  saveFaceDescriptor,
+  getFaceDescriptors,
+  faceAttendance,
+  triggerFingerprintEnroll,
 };
