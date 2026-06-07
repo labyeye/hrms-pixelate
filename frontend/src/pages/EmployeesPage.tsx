@@ -417,7 +417,7 @@ export default function EmployeesPage() {
                   "Employee",
                   "Department",
                   "Designation",
-                  "Type",
+                  "Est. Balance",
                   "Join Date",
                   "Loan Balance",
                   "Status",
@@ -469,15 +469,18 @@ export default function EmployeesPage() {
                     {(emp.department as any)?.name || "—"}
                   </td>
                   <td className="px-4 py-3 text-black">{emp.designation}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={cn(
-                        "border-2 text-[10px] capitalize",
-                        TYPE_COLORS[emp.employmentType],
-                      )}
-                    >
-                      {emp.employmentType.replace("_", " ")}
-                    </span>
+                  <td className="px-4 py-3 text-xs font-bold">
+                    {(() => {
+                      const sal = (emp as any).salary ?? 0;
+                      const loan = (emp as any).loanBalance ?? 0;
+                      const bal = sal - loan;
+                      if (!sal) return <span className="text-muted-foreground">—</span>;
+                      return (
+                        <span className={bal < 0 ? "text-[#EF4444]" : bal < sal * 0.3 ? "text-amber-600" : "text-[#00C48C]"}>
+                          ₹{bal.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="px-4 py-3 text-black text-xs">
                     {formatDate(emp.joinDate)}

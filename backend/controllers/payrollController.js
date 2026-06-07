@@ -156,6 +156,7 @@ const processPayroll = asyncHandler(async (req, res) => {
       halfDayCount = 0,
       leaveDays = 0;
     let earlyCheckoutDeduction = 0;
+    let attendanceOTHours = 0;
 
     for (const a of attendances) {
       if (a.status === "holiday" || a.status === "weekend") continue;
@@ -200,6 +201,8 @@ const processPayroll = asyncHandler(async (req, res) => {
         }
         // absent → not counted in presentDays (handled by proportional pay)
       }
+      // Accumulate OT hours from attendance regardless of status logic above
+      if (a.overtime && a.overtime > 0) attendanceOTHours += a.overtime;
     }
 
     // ── Weekly-off (Sunday) credit — only for 6-day workers ──────────────
@@ -286,7 +289,9 @@ const processPayroll = asyncHandler(async (req, res) => {
     let loanDeduction = 0;
     const loanUpdates = [];
 
-    const grossSalary = earnedSalary + totalAllowances + totalOT;
+    // OT from attendance records (auto-tracked) + OT from manual transactions
+    const attendanceOTPay = attendanceOTHours * (emp.otRate || 0);
+    const grossSalary = earnedSalary + totalAllowances + totalOT + attendanceOTPay;
     const preDeductions = lateDeduction + earlyCheckoutDeduction + totalPenalties;
     let salaryAfterDeductions = Math.max(0, grossSalary - preDeductions);
 
@@ -326,6 +331,7 @@ const processPayroll = asyncHandler(async (req, res) => {
       presentDays,
       leaveDays,
       weeklyOffDays: weeklyOffDaysEarned,
+      overtimeHours: attendanceOTHours + totalOTHours,
       status: "processed",
       processedBy: req.user._id,
     });
