@@ -281,7 +281,7 @@ export default function EmployeeDashboard() {
 
         {/* Profile card below banner */}
         <div className="bg-white px-6 pb-5">
-          <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-10">
+          <div className="flex flex-col sm:flex-row gap-4 -mt-10">
             {/* Avatar with upload overlay */}
             <div className="relative shrink-0 group">
               <div className="w-20 h-20 border-4 border-white bg-[#024BAB] flex items-center justify-center text-2xl font-bold text-white overflow-hidden shadow-lg">
@@ -313,7 +313,7 @@ export default function EmployeeDashboard() {
             </div>
 
             {/* Name + meta */}
-            <div className="flex-1 min-w-0 pb-1">
+            <div className="flex-1 min-w-0 pb-1 sm:pt-10">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl font-display font-bold text-black">
                   {employee.firstName} {employee.lastName}
@@ -331,7 +331,7 @@ export default function EmployeeDashboard() {
             </div>
 
             {/* Quick stats */}
-            <div className="flex flex-wrap gap-2 pb-1">
+            <div className="flex flex-wrap gap-2 pb-1 sm:pt-10 sm:self-end">
               {[
                 { label: "Monthly CTC", value: formatCurrency(Math.round((employee.salary || 0) / 12)), color: "text-[#024BAB]" },
                 { label: "Joined", value: formatDate(employee.joinDate), color: "text-black" },
