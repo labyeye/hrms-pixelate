@@ -14,10 +14,11 @@ const transactionSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["allowance", "penalty"],
+      enum: ["allowance", "penalty", "overtime"],
       required: true,
     },
     amount: { type: Number, required: true, min: 0 },
+    hours: { type: Number, default: 0 }, // only for overtime type
     date: { type: Date, required: true },
     remark: { type: String, default: "" },
     status: {

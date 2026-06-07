@@ -4,6 +4,7 @@ const Employee = require("../models/Employee");
 const Attendance = require("../models/Attendance");
 const DeductionRule = require("../models/DeductionRule");
 const Transaction = require("../models/Transaction");
+const Loan = require("../models/Loan");
 const { safePagination } = require("../middleware/validate");
 const { sendWhatsApp, payrollPaidMsg } = require("../services/whatsappService");
 
@@ -201,8 +202,44 @@ const processPayroll = asyncHandler(async (req, res) => {
       }
     }
 
+    // ── Weekly-off (Sunday) credit — only for 6-day workers ──────────────
+    // Rule: if employee attended ≥4 Mon–Sat days in a week, that Sunday is paid.
+    let weeklyOffDaysEarned = 0;
+    if (workDaysPerWeek === 6) {
+      // Collect dates where the employee was "present" (same rules as main loop)
+      const presentDates = new Set();
+      for (const a of attendances) {
+        if (a.status === "holiday" || a.status === "weekend" || a.status === "on_leave") continue;
+        const d = new Date(a.date);
+        const dow = d.getDay();
+        if (dow === 0) continue; // ignore Sundays themselves
+        let wasPresent = false;
+        if (a.checkIn) {
+          wasPresent = true; // any check-in = present (late/half_day also counted)
+        } else {
+          wasPresent = ["present", "late", "half_day"].includes(a.status);
+        }
+        if (wasPresent) presentDates.add(d.toISOString().split("T")[0]);
+      }
+
+      // Group present days into Mon-Sun weeks, count per week
+      const weekPresentCount = new Map();
+      for (const dateStr of presentDates) {
+        const d = new Date(dateStr);
+        // Get the Monday of that week as week key
+        const monday = new Date(d);
+        monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+        const key = monday.toISOString().split("T")[0];
+        weekPresentCount.set(key, (weekPresentCount.get(key) || 0) + 1);
+      }
+
+      for (const count of weekPresentCount.values()) {
+        if (count >= 4) weeklyOffDaysEarned++;
+      }
+    }
+
     // ── Proportional pay: salary × (effectiveDays / workingDays) ──────────
-    const effectivePaidDays = presentDays - halfDayCount * 0.5;
+    const effectivePaidDays = presentDays - halfDayCount * 0.5 + weeklyOffDaysEarned;
     const earnedSalary = Math.max(0, dailyRate * effectivePaidDays);
 
     // ── Late deduction ─────────────────────────────────────────────────────
@@ -226,16 +263,51 @@ const processPayroll = asyncHandler(async (req, res) => {
 
     let totalAllowances = 0;
     let totalPenalties = 0;
+    let totalOT = 0;
+    let totalOTHours = 0;
     const txIds = [];
     for (const tx of pendingTx) {
       if (tx.type === "allowance") totalAllowances += tx.amount;
       else if (tx.type === "penalty") totalPenalties += tx.amount;
+      else if (tx.type === "overtime") {
+        totalOT += tx.amount;
+        totalOTHours += tx.hours || 0;
+      }
       txIds.push(tx._id);
     }
 
-    const totalDeductions =
-      lateDeduction + earlyCheckoutDeduction + totalPenalties;
-    const grossSalary = earnedSalary + totalAllowances;
+    // ── Loan EMI deduction ────────────────────────────────────────────────
+    const activeLoans = await Loan.find({
+      employee: emp._id,
+      company: req.user.company,
+      status: "active",
+    });
+
+    let loanDeduction = 0;
+    const loanUpdates = [];
+
+    const grossSalary = earnedSalary + totalAllowances + totalOT;
+    const preDeductions = lateDeduction + earlyCheckoutDeduction + totalPenalties;
+    let salaryAfterDeductions = Math.max(0, grossSalary - preDeductions);
+
+    for (const loan of activeLoans) {
+      if (loan.remainingBalance <= 0) continue;
+      // EMI is capped at remaining balance and available net salary
+      const emi = Math.min(loan.monthlyEmi || loan.remainingBalance, loan.remainingBalance, salaryAfterDeductions);
+      if (emi <= 0) continue;
+
+      loanDeduction += emi;
+      salaryAfterDeductions -= emi;
+
+      const newBalance = Math.max(0, loan.remainingBalance - emi);
+      loanUpdates.push({
+        id: loan._id,
+        newBalance,
+        cleared: newBalance === 0,
+      });
+    }
+
+    const totalDeductions = preDeductions + loanDeduction;
     const netSalary = Math.max(0, grossSalary - totalDeductions);
 
     payrolls.push({
@@ -246,15 +318,32 @@ const processPayroll = asyncHandler(async (req, res) => {
       basicSalary: salary,
       otherAllowances: totalAllowances,
       grossSalary,
-      otherDeductions: totalDeductions,
+      loanDeduction,
+      otherDeductions: preDeductions,
       totalDeductions,
       netSalary,
       workingDays,
       presentDays,
       leaveDays,
+      weeklyOffDays: weeklyOffDaysEarned,
       status: "processed",
       processedBy: req.user._id,
     });
+
+    // Update loan balances and sync employee.loanBalance
+    for (const u of loanUpdates) {
+      await Loan.findByIdAndUpdate(u.id, {
+        remainingBalance: u.newBalance,
+        ...(u.cleared ? { status: "cleared", clearedOn: new Date() } : {}),
+      });
+    }
+    if (loanUpdates.length) {
+      const newTotalLoan = activeLoans.reduce((sum, l) => {
+        const upd = loanUpdates.find((u) => String(u.id) === String(l._id));
+        return sum + (upd ? upd.newBalance : l.remainingBalance);
+      }, 0);
+      await Employee.findByIdAndUpdate(emp._id, { loanBalance: newTotalLoan });
+    }
 
     // Mark transactions as applied
     if (txIds.length) {

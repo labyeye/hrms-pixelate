@@ -58,6 +58,7 @@ export interface Employee {
   status: "active" | "inactive" | "on_leave" | "terminated";
   salary?: number;
   workDaysPerWeek?: 5 | 6 | 7;
+  otRate?: number;
   avatar?: string;
   gender?: "male" | "female" | "other";
   dateOfBirth?: string;
@@ -111,6 +112,7 @@ export interface Payroll {
   year: number;
   basicSalary: number;
   grossSalary: number;
+  loanDeduction: number;
   otherDeductions: number;
   totalDeductions: number;
   netSalary: number;

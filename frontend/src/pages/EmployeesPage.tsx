@@ -145,10 +145,11 @@ export default function EmployeesPage() {
     reason: "",
   });
   const [savingLoan, setSavingLoan] = useState(false);
-  const [txModal, setTxModal] = useState<"allowance" | "penalty" | null>(null);
+  const [txModal, setTxModal] = useState<"allowance" | "penalty" | "overtime" | null>(null);
   const [txForm, setTxForm] = useState({
     employee: "",
     amount: "",
+    hours: "",
     date: new Date().toISOString().split("T")[0],
     remark: "",
   });
@@ -443,7 +444,7 @@ export default function EmployeesPage() {
                 >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 border-2 border-black shrink-0 overflow-hidden bg-[#024BAB] flex items-center justify-center text-xs font-bold text-white">
+                      <div className="w-8 h-8 border-[1px] border-black shrink-0 overflow-hidden bg-[#024BAB] flex items-center justify-center text-xs font-bold text-white rounded-full">
                         {emp.avatar ? (
                           <img
                             src={emp.avatar}
@@ -1513,6 +1514,7 @@ export default function EmployeesPage() {
                     setTxForm({
                       employee: viewEmp._id,
                       amount: "",
+                      hours: "",
                       date: new Date().toISOString().split("T")[0],
                       remark: "",
                     });
@@ -1527,10 +1529,26 @@ export default function EmployeesPage() {
                     setTxForm({
                       employee: viewEmp._id,
                       amount: "",
+                      hours: "",
                       date: new Date().toISOString().split("T")[0],
                       remark: "",
                     });
                     setTxModal("penalty");
+                  },
+                },
+                {
+                  icon: Clock,
+                  label: "Overtime",
+                  color: "text-[#F59E0B]",
+                  action: () => {
+                    setTxForm({
+                      employee: viewEmp._id,
+                      amount: "",
+                      hours: "",
+                      date: new Date().toISOString().split("T")[0],
+                      remark: "",
+                    });
+                    setTxModal("overtime");
                   },
                 },
                 {
@@ -1830,21 +1848,18 @@ export default function EmployeesPage() {
           </div>
         </div>
       )}
-      {/* Allowance / Penalty Modal */}
+      {/* Allowance / Penalty / Overtime Modal */}
       {txModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 border-black bg-white w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
               <h3 className="font-bold text-lg flex items-center gap-2">
                 {txModal === "allowance" ? (
-                  <>
-                    <TrendingUp className="w-5 h-5 text-[#024BAB]" /> Allowance
-                    / Bonus
-                  </>
+                  <><TrendingUp className="w-5 h-5 text-[#024BAB]" /> Allowance / Bonus</>
+                ) : txModal === "overtime" ? (
+                  <><Clock className="w-5 h-5 text-[#F59E0B]" /> Overtime</>
                 ) : (
-                  <>
-                    <AlertCircle className="w-5 h-5 text-[#EF4444]" /> Penalty
-                  </>
+                  <><AlertCircle className="w-5 h-5 text-[#EF4444]" /> Penalty</>
                 )}
               </h3>
               <button onClick={() => setTxModal(null)}>
@@ -1856,20 +1871,26 @@ export default function EmployeesPage() {
                 e.preventDefault();
                 setSavingTx(true);
                 try {
-                  await transactionAPI.create({
-                    ...txForm,
+                  const payload: Record<string, unknown> = {
+                    employee: txForm.employee,
                     type: txModal,
-                    amount: parseFloat(txForm.amount),
-                  });
+                    date: txForm.date,
+                    remark: txForm.remark,
+                  };
+                  if (txModal === "overtime") {
+                    payload.hours = parseFloat(txForm.hours);
+                  } else {
+                    payload.amount = parseFloat(txForm.amount);
+                  }
+                  await transactionAPI.create(payload);
                   setTxModal(null);
+                  const label = txModal === "allowance" ? "Allowance/Bonus" : txModal === "overtime" ? "Overtime" : "Penalty";
+                  const detail = txModal === "overtime" ? `${txForm.hours} hrs` : `₹${txForm.amount}`;
                   setActionModal({
                     show: true,
                     type: "success",
-                    title:
-                      txModal === "allowance"
-                        ? "Allowance Added"
-                        : "Penalty Added",
-                    message: `${txModal === "allowance" ? "Allowance/Bonus" : "Penalty"} of ₹${txForm.amount} saved successfully.`,
+                    title: `${label} Added`,
+                    message: `${label} of ${detail} saved successfully.`,
                   });
                 } catch (err: any) {
                   setActionModal({
@@ -1891,45 +1912,62 @@ export default function EmployeesPage() {
                   type="date"
                   required
                   value={txForm.date}
-                  onChange={(e) =>
-                    setTxForm({ ...txForm, date: e.target.value })
-                  }
+                  onChange={(e) => setTxForm({ ...txForm, date: e.target.value })}
                   className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white outline-none"
                 />
               </div>
+              {txModal === "overtime" ? (
+                <>
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-wider text-black mb-1">
+                      Overtime Hours
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="0.5"
+                      step="0.5"
+                      value={txForm.hours}
+                      onChange={(e) => setTxForm({ ...txForm, hours: e.target.value })}
+                      className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white outline-none"
+                      placeholder="e.g. 2.5"
+                    />
+                  </div>
+                  {txForm.hours && viewEmp?.otRate ? (
+                    <div className="bg-amber-50 border-2 border-amber-400 px-3 py-2 text-sm font-bold text-amber-800">
+                      OT Amount = {parseFloat(txForm.hours)} hrs × ₹{viewEmp.otRate}/hr = ₹{(parseFloat(txForm.hours) * (viewEmp.otRate ?? 0)).toFixed(2)}
+                    </div>
+                  ) : null}
+                </>
+              ) : (
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-black mb-1">
+                    Amount (₹)
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={txForm.amount}
+                    onChange={(e) => setTxForm({ ...txForm, amount: e.target.value })}
+                    className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white outline-none"
+                    placeholder="e.g. 500"
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-black uppercase tracking-wider text-black mb-1">
-                  Amount (₹)
-                </label>
-                <input
-                  type="number"
-                  required
-                  min="1"
-                  value={txForm.amount}
-                  onChange={(e) =>
-                    setTxForm({ ...txForm, amount: e.target.value })
-                  }
-                  className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white outline-none"
-                  placeholder="e.g. 500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-black mb-1">
-                  {txModal === "allowance"
-                    ? "Remark (TA, DA, Incentive, etc.)"
-                    : "Reason"}
+                  {txModal === "allowance" ? "Remark (TA, DA, Incentive, etc.)" : txModal === "overtime" ? "Remark" : "Reason"}
                 </label>
                 <input
                   type="text"
                   value={txForm.remark}
-                  onChange={(e) =>
-                    setTxForm({ ...txForm, remark: e.target.value })
-                  }
+                  onChange={(e) => setTxForm({ ...txForm, remark: e.target.value })}
                   className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white outline-none"
                   placeholder={
-                    txModal === "allowance"
-                      ? "e.g. Travel allowance, Diwali bonus"
-                      : "e.g. Late coming, misconduct"
+                    txModal === "allowance" ? "e.g. Travel allowance, Diwali bonus"
+                    : txModal === "overtime" ? "e.g. Project deadline"
+                    : "e.g. Late coming, misconduct"
                   }
                 />
               </div>
@@ -1937,13 +1975,13 @@ export default function EmployeesPage() {
                 <button
                   type="submit"
                   disabled={savingTx}
-                  className={`flex-1 text-white border-2 border-black py-2.5 text-sm font-bold disabled:opacity-50 ${txModal === "allowance" ? "bg-[#024BAB]" : "bg-[#EF4444]"}`}
+                  className={`flex-1 text-white border-2 border-black py-2.5 text-sm font-bold disabled:opacity-50 ${
+                    txModal === "allowance" ? "bg-[#024BAB]"
+                    : txModal === "overtime" ? "bg-[#F59E0B]"
+                    : "bg-[#EF4444]"
+                  }`}
                 >
-                  {savingTx
-                    ? "Saving..."
-                    : txModal === "allowance"
-                      ? "Add Allowance"
-                      : "Add Penalty"}
+                  {savingTx ? "Saving..." : txModal === "allowance" ? "Add Allowance" : txModal === "overtime" ? "Add Overtime" : "Add Penalty"}
                 </button>
                 <button
                   type="button"

@@ -315,7 +315,7 @@ export default function PayrollPage() {
                   "Employee",
                   "Basic",
                   "Gross",
-                  "OT Hrs",
+                  "Loan EMI",
                   "Deductions",
                   "Net Salary",
                   "Days",
@@ -363,7 +363,7 @@ export default function PayrollPage() {
                     {formatCurrency(p.grossSalary)}
                   </td>
                   <td className="px-4 py-3 text-xs font-medium text-[#FA731C]">
-                    {p.overtimeHours > 0 ? `${p.overtimeHours}h` : "—"}
+                    {(p as any).loanDeduction > 0 ? `-${formatCurrency((p as any).loanDeduction)}` : "—"}
                   </td>
                   <td className="px-4 py-3 text-xs font-medium text-red-600">
                     -{formatCurrency(p.totalDeductions)}
