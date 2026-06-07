@@ -53,14 +53,30 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (isLoading) return <LoadingScreen />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
-  // Check if user has company
+  // No company yet → complete onboarding (company setup)
   const hasCompany = user?.company;
   if (!hasCompany) return <Navigate to="/onboarding" replace />;
 
-  // Check if user has active subscription
-  const hasActiveSubscription = user?.subscription?.status === "active";
-  if (!hasActiveSubscription) return <Navigate to="/onboarding" replace />;
+  // No active subscription:
+  // super_admin → go to billing to purchase a plan
+  // other roles → should not happen (login is blocked on backend), but guard anyway
+  const hasActiveSubscription =
+    user?.subscription?.status === "active" ||
+    user?.subscription?.status === "pending_renewal";
+  if (!hasActiveSubscription) {
+    if (user?.role === "super_admin") return <Navigate to="/billing" replace />;
+    return <Navigate to="/login" replace />;
+  }
 
+  return <>{children}</>;
+}
+
+// Billing is accessible to authenticated super_admin even without active subscription
+function BillingRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading, user } = useAuth();
+  if (isLoading) return <LoadingScreen />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!user?.company) return <Navigate to="/onboarding" replace />;
   return <>{children}</>;
 }
 
@@ -129,9 +145,9 @@ function AppRoutes() {
       <Route
         path="/billing"
         element={
-          <ProtectedRoute>
+          <BillingRoute>
             <BillingPage />
-          </ProtectedRoute>
+          </BillingRoute>
         }
       />
       <Route

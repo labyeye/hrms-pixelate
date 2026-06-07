@@ -190,6 +190,19 @@ export default function BillingPage() {
   return (
     <AppLayout title="Billing">
       <div className="max-w-5xl mx-auto space-y-6 sm:space-y-8 p-4 sm:p-6">
+        {/* ── No subscription banner ── */}
+        {!isActive && (
+          <div className="border-2 border-[#EF4444] bg-[#EF4444]/5 p-4 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-[#EF4444] shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-[#EF4444] text-sm">No Active Subscription</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Your account is not yet activated. Choose a plan below to start using NestHR.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* ── Current plan banner ── */}
         <div className="border-2 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-[#024BAB]">
           <div className="flex items-center gap-3">

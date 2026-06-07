@@ -41,12 +41,13 @@ const register = [
       throw new Error("An account with this email already exists");
     }
 
-    // Role is NEVER accepted from client — always defaults to hr_manager for self-registration
+    // Self-registration always creates a super_admin (company owner)
+    // hr_manager and other roles are created by super_admin within their company
     const user = await User.create({
       name: name.trim(),
       email: email.toLowerCase().trim(),
       password,
-      role: "hr_manager",
+      role: "super_admin",
     });
 
     res.status(201).json({
@@ -87,7 +88,9 @@ const login = [
       throw new Error("Your account has been deactivated. Please contact HR.");
     }
 
-    if (user.company) {
+    // Non-owner roles (hr_manager, employee, etc.) cannot log in without an active subscription
+    // super_admin is allowed through — they need to access billing to purchase a plan
+    if (user.company && user.role !== "super_admin") {
       const subscription = await Subscription.findOne({
         company: user.company._id,
         status: { $in: ["active", "pending_renewal"] },
@@ -95,7 +98,7 @@ const login = [
       if (!subscription || subscription.paymentStatus !== "completed") {
         res.status(403);
         throw new Error(
-          "No active subscription. Please complete your plan purchase.",
+          "No active subscription. Please contact your administrator.",
         );
       }
     }
