@@ -52,7 +52,6 @@ export default function PayrollPage() {
     title: string;
     message: string;
   }>({ show: false, type: "success", title: "", message: "" });
-  const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -309,176 +308,129 @@ export default function PayrollPage() {
         </div>
       ) : (
         <div className="border-2 bg-white overflow-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[900px]">
             <thead>
               <tr className="border-b-2 border-black bg-[#024BAB]/5">
                 {[
-                  "Employee",
-                  "Basic",
-                  "Gross",
-                  "Loan EMI",
-                  "Deductions",
-                  "Net Salary",
-                  "Days",
-                  "Status",
-                  "Actions",
-                ].map((h) => (
-                  <th
-                    key={h}
-                    className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider"
-                  >
-                    {h}
+                  { label: "Employee", cls: "" },
+                  { label: "Salary", cls: "text-right" },
+                  { label: "OT", cls: "text-right text-[#F59E0B]" },
+                  { label: "Late", cls: "text-right text-red-500" },
+                  { label: "Penalty", cls: "text-right text-red-500" },
+                  { label: "Bonus / Allow", cls: "text-right text-[#00C48C]" },
+                  { label: "Loan / Advance", cls: "text-right text-[#FA731C]" },
+                  { label: "Net Salary", cls: "text-right" },
+                  { label: "Status", cls: "" },
+                  { label: "", cls: "" },
+                ].map(({ label, cls }) => (
+                  <th key={label} className={cn("px-4 py-3 text-xs font-bold text-black uppercase tracking-wider", cls)}>
+                    {label}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {payrolls.map((p, i) => {
-                const isExpanded = expandedRow === p._id;
-                const earnedBasic = p.earnedBasic ?? 0;
-                const allowances = p.otherAllowances ?? 0;
-                const otPay = p.otPay ?? 0;
-                const hasBreakdown = earnedBasic > 0 || allowances > 0 || otPay > 0;
-                return (
-                  <>
-                    <tr
-                      key={p._id}
-                      onClick={() => setExpandedRow(isExpanded ? null : p._id)}
-                      className={cn(
-                        "border-b border-black/10 hover:bg-[#024BAB]/5 transition-colors cursor-pointer",
-                        i % 2 === 0 ? "" : "bg-[#F8FAFF]",
-                        isExpanded && "bg-[#024BAB]/5",
-                      )}
-                    >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[10px] font-bold text-white">
-                            {(p.employee as any)?.firstName?.[0]?.toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="font-bold text-black text-xs">
-                              {(p.employee as any)?.firstName}{" "}
-                              {(p.employee as any)?.lastName}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground">
-                              {(p.employee as any)?.designation}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-xs font-medium text-black">
-                        {formatCurrency(p.basicSalary)}
-                      </td>
-                      <td className="px-4 py-3 text-xs font-medium text-black">
-                        <span className="font-bold">{formatCurrency(p.grossSalary)}</span>
-                        {hasBreakdown && (
-                          <p className="text-[10px] text-muted-foreground mt-0.5">
-                            {earnedBasic > 0 && `Base ${formatCurrency(earnedBasic)}`}
-                            {allowances > 0 && ` + Allow ${formatCurrency(allowances)}`}
-                            {otPay > 0 && ` + OT ${formatCurrency(otPay)}`}
-                          </p>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-xs font-medium text-[#FA731C]">
-                        {p.loanDeduction > 0 ? `-${formatCurrency(p.loanDeduction)}` : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-xs font-medium text-red-600">
-                        {p.totalDeductions > 0 ? `-${formatCurrency(p.totalDeductions)}` : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-xs font-bold text-black">
-                        {formatCurrency(p.netSalary)}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-black">
-                        {p.presentDays}/{p.workingDays}
-                        {(p.overtimeHours ?? 0) > 0 && (
-                          <p className="text-[10px] text-[#F59E0B] font-bold">{p.overtimeHours}h OT</p>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={cn("border-2 text-[10px] capitalize", STATUS_COLORS[p.status])}>
-                          {p.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                        {p.status === "processed" && (
-                          <button
-                            onClick={() => handleMarkPaid(p._id)}
-                            className="flex items-center gap-1 text-xs font-bold border-2 border-black px-2 py-1 hover:bg-[#024BAB] hover:text-white transition-colors"
-                          >
-                            <CheckCircle className="w-3 h-3" /> Mark Paid
-                          </button>
-                        )}
-                        {p.status === "paid" && (
-                          <span className="text-xs text-[#00C48C] font-bold flex items-center gap-1">
-                            <CheckCircle className="w-3.5 h-3.5" /> Paid
-                          </span>
-                        )}
-                      </td>
-                    </tr>
+              {payrolls.map((p, i) => (
+                <tr
+                  key={p._id}
+                  className={cn(
+                    "border-b border-black/10 hover:bg-[#024BAB]/5 transition-colors",
+                    i % 2 === 0 ? "" : "bg-[#F8FAFF]",
+                  )}
+                >
+                  {/* Employee */}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                        {(p.employee as any)?.firstName?.[0]?.toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-bold text-black text-xs">
+                          {(p.employee as any)?.firstName} {(p.employee as any)?.lastName}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {p.presentDays}/{p.workingDays} days
+                        </p>
+                      </div>
+                    </div>
+                  </td>
 
-                    {/* Expandable breakdown row */}
-                    {isExpanded && (
-                      <tr key={`${p._id}-breakdown`} className="bg-[#F0F4FF] border-b-2 border-[#024BAB]/20">
-                        <td colSpan={9} className="px-6 py-4">
-                          <p className="text-[10px] font-black uppercase tracking-wider text-[#024BAB] mb-3">Salary Breakdown</p>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                            {/* Earnings side */}
-                            <div className="col-span-2 space-y-1.5">
-                              <p className="text-[10px] font-black uppercase tracking-wider text-black/50 mb-1">Earnings</p>
-                              <div className="flex justify-between text-xs">
-                                <span className="text-muted-foreground">Base Earned ({p.presentDays} day{p.presentDays !== 1 ? "s" : ""})</span>
-                                <span className="font-bold">{formatCurrency(earnedBasic || p.grossSalary - allowances - otPay)}</span>
-                              </div>
-                              {allowances > 0 && (
-                                <div className="flex justify-between text-xs">
-                                  <span className="text-muted-foreground">Allowances / Bonus</span>
-                                  <span className="font-bold text-[#00C48C]">+{formatCurrency(allowances)}</span>
-                                </div>
-                              )}
-                              {otPay > 0 && (
-                                <div className="flex justify-between text-xs">
-                                  <span className="text-muted-foreground">Overtime Pay {(p.overtimeHours ?? 0) > 0 ? `(${p.overtimeHours}h)` : ""}</span>
-                                  <span className="font-bold text-[#F59E0B]">+{formatCurrency(otPay)}</span>
-                                </div>
-                              )}
-                              <div className="flex justify-between text-xs border-t border-black/20 pt-1.5 mt-1">
-                                <span className="font-black">Gross Salary</span>
-                                <span className="font-black text-[#024BAB]">{formatCurrency(p.grossSalary)}</span>
-                              </div>
-                            </div>
+                  {/* Base earned salary */}
+                  <td className="px-4 py-3 text-right">
+                    <p className="text-xs font-bold text-black">{formatCurrency(p.earnedBasic ?? p.basicSalary)}</p>
+                    <p className="text-[10px] text-muted-foreground">of {formatCurrency(p.basicSalary)}</p>
+                  </td>
 
-                            {/* Deductions side */}
-                            <div className="col-span-2 space-y-1.5">
-                              <p className="text-[10px] font-black uppercase tracking-wider text-black/50 mb-1">Deductions</p>
-                              {p.otherDeductions > 0 && (
-                                <div className="flex justify-between text-xs">
-                                  <span className="text-muted-foreground">Late / Penalty / Early</span>
-                                  <span className="font-bold text-red-500">-{formatCurrency(p.otherDeductions)}</span>
-                                </div>
-                              )}
-                              {p.loanDeduction > 0 && (
-                                <div className="flex justify-between text-xs">
-                                  <span className="text-muted-foreground">Loan / Advance Recovery</span>
-                                  <span className="font-bold text-[#FA731C]">-{formatCurrency(p.loanDeduction)}</span>
-                                </div>
-                              )}
-                              {p.totalDeductions === 0 && (
-                                <div className="text-xs text-muted-foreground">No deductions</div>
-                              )}
-                              <div className="flex justify-between text-xs border-t border-black/20 pt-1.5 mt-1">
-                                <span className="font-black">Net Salary</span>
-                                <span className={cn("font-black", p.netSalary === 0 ? "text-red-500" : "text-[#00C48C]")}>
-                                  {formatCurrency(p.netSalary)}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
+                  {/* OT */}
+                  <td className="px-4 py-3 text-right text-xs font-bold">
+                    {(p.otPay ?? 0) > 0 ? (
+                      <span className="text-[#F59E0B]">+{formatCurrency(p.otPay!)}</span>
+                    ) : <span className="text-muted-foreground">—</span>}
+                    {(p.overtimeHours ?? 0) > 0 && (
+                      <p className="text-[10px] text-muted-foreground">{p.overtimeHours}h</p>
                     )}
-                  </>
-                );
-              })}
+                  </td>
+
+                  {/* Late deduction */}
+                  <td className="px-4 py-3 text-right text-xs font-bold">
+                    {(p.lateDeductionAmount ?? 0) > 0 ? (
+                      <span className="text-red-500">-{formatCurrency(p.lateDeductionAmount!)}</span>
+                    ) : <span className="text-muted-foreground">—</span>}
+                  </td>
+
+                  {/* Penalty */}
+                  <td className="px-4 py-3 text-right text-xs font-bold">
+                    {(p.penaltyAmount ?? 0) > 0 ? (
+                      <span className="text-red-500">-{formatCurrency(p.penaltyAmount!)}</span>
+                    ) : <span className="text-muted-foreground">—</span>}
+                  </td>
+
+                  {/* Bonus / Allowance */}
+                  <td className="px-4 py-3 text-right text-xs font-bold">
+                    {(p.otherAllowances ?? 0) > 0 ? (
+                      <span className="text-[#00C48C]">+{formatCurrency(p.otherAllowances!)}</span>
+                    ) : <span className="text-muted-foreground">—</span>}
+                  </td>
+
+                  {/* Loan / Advance */}
+                  <td className="px-4 py-3 text-right text-xs font-bold">
+                    {p.loanDeduction > 0 ? (
+                      <span className="text-[#FA731C]">-{formatCurrency(p.loanDeduction)}</span>
+                    ) : <span className="text-muted-foreground">—</span>}
+                  </td>
+
+                  {/* Net Salary */}
+                  <td className="px-4 py-3 text-right">
+                    <span className={cn("text-sm font-black", p.netSalary === 0 ? "text-red-500" : "text-black")}>
+                      {formatCurrency(p.netSalary)}
+                    </span>
+                  </td>
+
+                  {/* Status */}
+                  <td className="px-4 py-3">
+                    <span className={cn("border-2 text-[10px] capitalize", STATUS_COLORS[p.status])}>
+                      {p.status}
+                    </span>
+                  </td>
+
+                  {/* Action */}
+                  <td className="px-4 py-3">
+                    {p.status === "processed" && (
+                      <button
+                        onClick={() => handleMarkPaid(p._id)}
+                        className="flex items-center gap-1 text-xs font-bold border-2 border-black px-2 py-1 hover:bg-[#024BAB] hover:text-white transition-colors whitespace-nowrap"
+                      >
+                        <CheckCircle className="w-3 h-3" /> Mark Paid
+                      </button>
+                    )}
+                    {p.status === "paid" && (
+                      <span className="text-xs text-[#00C48C] font-bold flex items-center gap-1">
+                        <CheckCircle className="w-3.5 h-3.5" /> Paid
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

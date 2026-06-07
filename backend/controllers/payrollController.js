@@ -327,6 +327,8 @@ const processPayroll = asyncHandler(async (req, res) => {
       otherAllowances: totalAllowances,
       otPay: attendanceOTPay + totalOT,
       grossSalary,
+      lateDeductionAmount: lateDeduction,
+      penaltyAmount: totalPenalties,
       loanDeduction,
       otherDeductions: preDeductions,
       totalDeductions,

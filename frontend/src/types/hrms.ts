@@ -114,6 +114,8 @@ export interface Payroll {
   earnedBasic?: number;
   otherAllowances?: number;
   otPay?: number;
+  lateDeductionAmount?: number;
+  penaltyAmount?: number;
   grossSalary: number;
   loanDeduction: number;
   otherDeductions: number;

@@ -189,72 +189,8 @@ export default function PayrollSettingsPage() {
                 </div>
               </div>
               <div className="p-5 space-y-6">
-                {/* Shift start */}
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Clock className="w-4 h-4 text-[#024BAB]" />
-                    <p className="text-xs font-black uppercase">
-                      Shift Start Time (Fallback)
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <NumField
-                      label="Hour (0–23)"
-                      value={rules.shiftStartHour}
-                      onChange={(v) => set({ shiftStartHour: v })}
-                      min={0}
-                      max={23}
-                    />
-                    <NumField
-                      label="Minute (0–59)"
-                      value={rules.shiftStartMinute}
-                      onChange={(v) => set({ shiftStartMinute: v })}
-                      min={0}
-                      max={59}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-400 mt-2">
-                    Shift starts at{" "}
-                    <strong>
-                      {fmt(rules.shiftStartHour, rules.shiftStartMinute)}
-                    </strong>
-                  </p>
-                </div>
-
-                {/* Shift end */}
-                <div className="border-t pt-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Clock className="w-4 h-4 text-[#024BAB]" />
-                    <p className="text-xs font-black uppercase">
-                      Shift End Time (Fallback)
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <NumField
-                      label="Hour (0–23)"
-                      value={rules.shiftEndHour}
-                      onChange={(v) => set({ shiftEndHour: v })}
-                      min={0}
-                      max={23}
-                    />
-                    <NumField
-                      label="Minute (0–59)"
-                      value={rules.shiftEndMinute}
-                      onChange={(v) => set({ shiftEndMinute: v })}
-                      min={0}
-                      max={59}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-400 mt-2">
-                    Shift ends at{" "}
-                    <strong>
-                      {fmt(rules.shiftEndHour, rules.shiftEndMinute)}
-                    </strong>
-                  </p>
-                </div>
-
                 {/* Late deduction */}
-                <div className="border-t pt-5">
+                <div>
                   <p className="text-xs font-black uppercase mb-3">
                     Late Arrival
                   </p>
