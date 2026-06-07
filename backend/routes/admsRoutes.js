@@ -67,14 +67,19 @@ function mapVerifyMode(verifyType) {
   return "fingerprint"; // default for unknown types from device
 }
 
-async function processLog({ userId, datetime, punchState, verifyType }, companyId) {
+async function processLog(
+  { userId, datetime, punchState, verifyType },
+  companyId,
+) {
   const employee = await Employee.findOne({
     biometricUserId: userId,
     ...(companyId ? { company: companyId } : {}),
     status: { $ne: "terminated" },
   });
   if (!employee) {
-    console.log(`[ADMS] No employee found for biometricUserId=${userId} company=${companyId}`);
+    console.log(
+      `[ADMS] No employee found for biometricUserId=${userId} company=${companyId}`,
+    );
     return;
   }
 
@@ -91,7 +96,9 @@ async function processLog({ userId, datetime, punchState, verifyType }, companyI
   const datePart = datetime.split(" ")[0]; // "YYYY-MM-DD"
   const dayStart = new Date(datePart + "T00:00:00.000Z");
 
-  console.log(`[ADMS] Punch: emp=${employee.firstName} ${employee.lastName} uid=${userId} time=${punchTime.toISOString()} punchState=${punchState}`);
+  console.log(
+    `[ADMS] Punch: emp=${employee.firstName} ${employee.lastName} uid=${userId} time=${punchTime.toISOString()} punchState=${punchState}`,
+  );
 
   const existing = await Attendance.findOne({
     employee: employee._id,
@@ -109,13 +116,17 @@ async function processLog({ userId, datetime, punchState, verifyType }, companyI
       checkIn: punchTime,
       verifyMode,
     });
-    console.log(`[ADMS] Created attendance checkIn=${punchTime.toISOString()} verifyMode=${verifyMode} for ${employee.firstName}`);
+    console.log(
+      `[ADMS] Created attendance checkIn=${punchTime.toISOString()} verifyMode=${verifyMode} for ${employee.firstName}`,
+    );
     return;
   }
 
   // Once checkOut is recorded, the day is locked — ignore any further device pushes
   if (existing.checkOut) {
-    console.log(`[ADMS] Attendance locked (already checked out) for ${employee.firstName} ${employee.lastName}`);
+    console.log(
+      `[ADMS] Attendance locked (already checked out) for ${employee.firstName} ${employee.lastName}`,
+    );
     return;
   }
 
@@ -138,7 +149,9 @@ async function processLog({ userId, datetime, punchState, verifyType }, companyI
     }
     upd.status = "present";
     await Attendance.updateOne({ _id: existing._id }, { $set: upd });
-    console.log(`[ADMS] Updated attendance for ${employee.firstName}: checkIn=${ci?.toISOString()} checkOut=${co?.toISOString()}`);
+    console.log(
+      `[ADMS] Updated attendance for ${employee.firstName}: checkIn=${ci?.toISOString()} checkOut=${co?.toISOString()}`,
+    );
   }
 }
 

@@ -10,19 +10,34 @@ const getAttendance = asyncHandler(async (req, res) => {
 
   // If the requesting user is an employee, scope to only their own records
   if (req.user.role === "employee") {
-    const selfEmp = await Employee.findOne({ user: req.user._id }).select("_id");
+    const selfEmp = await Employee.findOne({ user: req.user._id }).select(
+      "_id",
+    );
     if (!selfEmp) return res.json({ success: true, data: [], total: 0 });
     const filter = { employee: selfEmp._id };
     if (month && year) {
-      const m = parseInt(month), y = parseInt(year);
+      const m = parseInt(month),
+        y = parseInt(year);
       if (!isNaN(m) && !isNaN(y))
         filter.date = { $gte: new Date(y, m - 1, 1), $lte: new Date(y, m, 0) };
     }
     const total = await Attendance.countDocuments(filter);
     const records = await Attendance.find(filter)
-      .populate({ path: "employee", select: "firstName lastName employeeId department", populate: { path: "department", select: "name" } })
-      .sort({ date: -1 }).skip(skip).limit(limit);
-    return res.json({ success: true, data: records, total, page, pages: Math.ceil(total / limit) });
+      .populate({
+        path: "employee",
+        select: "firstName lastName employeeId department",
+        populate: { path: "department", select: "name" },
+      })
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(limit);
+    return res.json({
+      success: true,
+      data: records,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+    });
   }
 
   // Company-scope: only employees belonging to this company

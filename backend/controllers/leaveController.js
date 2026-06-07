@@ -27,21 +27,40 @@ const getLeaves = asyncHandler(async (req, res) => {
 
   // If the requesting user is an employee, scope to only their own leave records
   if (req.user.role === "employee") {
-    const selfEmp = await Employee.findOne({ user: req.user._id }).select("_id");
+    const selfEmp = await Employee.findOne({ user: req.user._id }).select(
+      "_id",
+    );
     if (!selfEmp) return res.json({ success: true, data: [], total: 0 });
     const filter = { company: req.user.company, employee: selfEmp._id };
     if (status && LEAVE_STATUS.includes(status)) filter.status = status;
-    if (leaveType && LEAVE_TYPES.includes(leaveType)) filter.leaveType = leaveType;
+    if (leaveType && LEAVE_TYPES.includes(leaveType))
+      filter.leaveType = leaveType;
     if (year) {
       const y = parseInt(year);
-      if (!isNaN(y)) filter.startDate = { $gte: new Date(`${y}-01-01`), $lte: new Date(`${y}-12-31`) };
+      if (!isNaN(y))
+        filter.startDate = {
+          $gte: new Date(`${y}-01-01`),
+          $lte: new Date(`${y}-12-31`),
+        };
     }
     const total = await Leave.countDocuments(filter);
     const leaves = await Leave.find(filter)
-      .populate({ path: "employee", select: "firstName lastName employeeId designation phone", populate: { path: "department", select: "name" } })
+      .populate({
+        path: "employee",
+        select: "firstName lastName employeeId designation phone",
+        populate: { path: "department", select: "name" },
+      })
       .populate("approvedBy", "name")
-      .sort({ createdAt: -1 }).skip(skip).limit(limit);
-    return res.json({ success: true, data: leaves, total, page, pages: Math.ceil(total / limit) });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+    return res.json({
+      success: true,
+      data: leaves,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+    });
   }
 
   // Company scope via employee list

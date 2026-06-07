@@ -891,7 +891,8 @@ const faceAttendance = asyncHandler(async (req, res) => {
     });
   }
 
-  const logType = lastTodayLogFace?.type === "check_in" ? "check_out" : "check_in";
+  const logType =
+    lastTodayLogFace?.type === "check_in" ? "check_out" : "check_in";
 
   // Duplicate check-in guard
   if (logType === "check_in" && lastTodayLogFace?.type === "check_in") {
@@ -989,7 +990,9 @@ const triggerFaceEnroll = asyncHandler(async (req, res) => {
   }
   if (!device.serialNumber) {
     res.status(400);
-    throw new Error("Device serial number not registered — pair the ADMS device first");
+    throw new Error(
+      "Device serial number not registered — pair the ADMS device first",
+    );
   }
 
   const employee = await Employee.findOne({
@@ -1027,7 +1030,10 @@ const triggerFaceEnroll = asyncHandler(async (req, res) => {
 // Returns all active company employees so the kiosk can show a selection list
 const getDeviceEmployees = asyncHandler(async (req, res) => {
   const { token } = req.params;
-  const device = await BiometricDevice.findOne({ deviceToken: token, isActive: true });
+  const device = await BiometricDevice.findOne({
+    deviceToken: token,
+    isActive: true,
+  });
   if (!device) {
     res.status(403);
     throw new Error("Invalid device token");
@@ -1036,7 +1042,9 @@ const getDeviceEmployees = asyncHandler(async (req, res) => {
   const employees = await Employee.find({
     company: device.company,
     status: { $ne: "terminated" },
-  }).select("_id firstName lastName employeeId faceDescriptor").sort({ firstName: 1 });
+  })
+    .select("_id firstName lastName employeeId faceDescriptor")
+    .sort({ firstName: 1 });
 
   res.json({
     success: true,
@@ -1045,7 +1053,8 @@ const getDeviceEmployees = asyncHandler(async (req, res) => {
       firstName: e.firstName,
       lastName: e.lastName,
       employeeId: e.employeeId,
-      hasFace: Array.isArray(e.faceDescriptor) && e.faceDescriptor.length === 128,
+      hasFace:
+        Array.isArray(e.faceDescriptor) && e.faceDescriptor.length === 128,
     })),
   });
 });
@@ -1082,7 +1091,10 @@ const enrollFaceFromDevice = asyncHandler(async (req, res) => {
   res.json({
     success: true,
     message: `Face enrolled for ${employee.firstName} ${employee.lastName}`,
-    data: { employeeId: employee._id, name: `${employee.firstName} ${employee.lastName}` },
+    data: {
+      employeeId: employee._id,
+      name: `${employee.firstName} ${employee.lastName}`,
+    },
   });
 });
 

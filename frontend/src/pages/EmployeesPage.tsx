@@ -50,6 +50,14 @@ interface EmployeeFormData {
   panNumber: string;
   aadharNumber: string;
   address: string;
+  dateOfBirth: string;
+  emergencyContact: string;
+  bankAccount: string;
+  accountHolderName: string;
+  ifscCode: string;
+  bankName: string;
+  uanNumber: string;
+  esicNumber: string;
 }
 
 const EMPTY_FORM: EmployeeFormData = {
@@ -69,6 +77,14 @@ const EMPTY_FORM: EmployeeFormData = {
   panNumber: "",
   aadharNumber: "",
   address: "",
+  dateOfBirth: "",
+  emergencyContact: "",
+  bankAccount: "",
+  accountHolderName: "",
+  ifscCode: "",
+  bankName: "",
+  uanNumber: "",
+  esicNumber: "",
 };
 
 export default function EmployeesPage() {
@@ -158,6 +174,14 @@ export default function EmployeesPage() {
       panNumber: (emp as any).panNumber || "",
       aadharNumber: (emp as any).aadharNumber || "",
       address: (emp as any).address || "",
+      dateOfBirth: (emp as any).dateOfBirth?.split("T")[0] || "",
+      emergencyContact: (emp as any).emergencyContact || "",
+      bankAccount: (emp as any).bankAccount || "",
+      accountHolderName: (emp as any).accountHolderName || "",
+      ifscCode: (emp as any).ifscCode || "",
+      bankName: (emp as any).bankName || "",
+      uanNumber: (emp as any).uanNumber || "",
+      esicNumber: (emp as any).esicNumber || "",
     });
     setShowModal(true);
   };
@@ -701,25 +725,22 @@ export default function EmployeesPage() {
                   </div>
                 )}
                 <div>
-                  <label className="block text-xs font-bold text-black mb-1">PAN Number</label>
+                  <label className="block text-xs font-bold text-black mb-1">Date of Birth</label>
                   <input
-                    type="text"
-                    value={form.panNumber}
-                    onChange={(e) => setForm({ ...form, panNumber: e.target.value.toUpperCase() })}
-                    className="border-2 w-full px-3 py-2 text-sm uppercase"
-                    placeholder="ABCDE1234F"
-                    maxLength={10}
+                    type="date"
+                    value={form.dateOfBirth}
+                    onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })}
+                    className="border-2 w-full px-3 py-2 text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-black mb-1">Aadhar Number</label>
+                  <label className="block text-xs font-bold text-black mb-1">Emergency Contact</label>
                   <input
                     type="text"
-                    value={form.aadharNumber}
-                    onChange={(e) => setForm({ ...form, aadharNumber: e.target.value.replace(/\D/g, "").slice(0, 12) })}
+                    value={form.emergencyContact}
+                    onChange={(e) => setForm({ ...form, emergencyContact: e.target.value })}
                     className="border-2 w-full px-3 py-2 text-sm"
-                    placeholder="12-digit Aadhar"
-                    maxLength={12}
+                    placeholder="Name — Phone"
                   />
                 </div>
                 <div className="col-span-2">
@@ -731,6 +752,104 @@ export default function EmployeesPage() {
                     rows={2}
                     placeholder="Full address"
                   />
+                </div>
+              </div>
+
+              {/* Banking Details */}
+              <div className="border-t-2 border-black pt-4">
+                <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-3">Banking Details</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-black mb-1">Account Holder Name</label>
+                    <input
+                      type="text"
+                      value={form.accountHolderName}
+                      onChange={(e) => setForm({ ...form, accountHolderName: e.target.value })}
+                      className="border-2 w-full px-3 py-2 text-sm"
+                      placeholder="As per bank records"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-black mb-1">Bank Account Number</label>
+                    <input
+                      type="text"
+                      value={form.bankAccount}
+                      onChange={(e) => setForm({ ...form, bankAccount: e.target.value.replace(/\D/g, "") })}
+                      className="border-2 w-full px-3 py-2 text-sm"
+                      placeholder="Account number"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-black mb-1">IFSC Code</label>
+                    <input
+                      type="text"
+                      value={form.ifscCode}
+                      onChange={(e) => setForm({ ...form, ifscCode: e.target.value.toUpperCase() })}
+                      className="border-2 w-full px-3 py-2 text-sm uppercase"
+                      placeholder="SBIN0001234"
+                      maxLength={11}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-black mb-1">Bank Name</label>
+                    <input
+                      type="text"
+                      value={form.bankName}
+                      onChange={(e) => setForm({ ...form, bankName: e.target.value })}
+                      className="border-2 w-full px-3 py-2 text-sm"
+                      placeholder="e.g. SBI, HDFC"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Identity & Compliance */}
+              <div className="border-t-2 border-black pt-4">
+                <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-3">Identity & Compliance</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-black mb-1">PAN Number</label>
+                    <input
+                      type="text"
+                      value={form.panNumber}
+                      onChange={(e) => setForm({ ...form, panNumber: e.target.value.toUpperCase() })}
+                      className="border-2 w-full px-3 py-2 text-sm uppercase"
+                      placeholder="ABCDE1234F"
+                      maxLength={10}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-black mb-1">Aadhar Number</label>
+                    <input
+                      type="text"
+                      value={form.aadharNumber}
+                      onChange={(e) => setForm({ ...form, aadharNumber: e.target.value.replace(/\D/g, "").slice(0, 12) })}
+                      className="border-2 w-full px-3 py-2 text-sm"
+                      placeholder="12-digit number"
+                      maxLength={12}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-black mb-1">UAN Number</label>
+                    <input
+                      type="text"
+                      value={form.uanNumber}
+                      onChange={(e) => setForm({ ...form, uanNumber: e.target.value.replace(/\D/g, "").slice(0, 12) })}
+                      className="border-2 w-full px-3 py-2 text-sm"
+                      placeholder="12-digit UAN"
+                      maxLength={12}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-black mb-1">ESIC Number</label>
+                    <input
+                      type="text"
+                      value={form.esicNumber}
+                      onChange={(e) => setForm({ ...form, esicNumber: e.target.value })}
+                      className="border-2 w-full px-3 py-2 text-sm"
+                      placeholder="ESIC number"
+                    />
+                  </div>
                 </div>
               </div>
               <div className="flex gap-3 pt-2">
@@ -849,12 +968,17 @@ export default function EmployeesPage() {
                 ["Join Date", formatDate(viewEmp.joinDate)],
                 ["Gender", viewEmp.gender || "—"],
                 ["Type", viewEmp.employmentType?.replace("_", " ")],
+                ["Date of Birth", (viewEmp as any).dateOfBirth ? formatDate((viewEmp as any).dateOfBirth) : "—"],
+                ["Emergency Contact", (viewEmp as any).emergencyContact || "—"],
                 ["Bank Account", (viewEmp as any).bankAccount || "—"],
-                ["IFSC", viewEmp.ifscCode || "—"],
-                ["PAN", viewEmp.panNumber || "—"],
+                ["Account Holder", (viewEmp as any).accountHolderName || "—"],
+                ["IFSC", (viewEmp as any).ifscCode || "—"],
+                ["Bank Name", (viewEmp as any).bankName || "—"],
+                ["PAN", (viewEmp as any).panNumber || "—"],
                 ["Aadhar", (viewEmp as any).aadharNumber || "—"],
+                ["UAN", (viewEmp as any).uanNumber || "—"],
+                ["ESIC", (viewEmp as any).esicNumber || "—"],
                 ["Address", (viewEmp as any).address || "—"],
-                ["UAN/PF No.", (viewEmp as any).uanNumber || "—"],
               ].map(([label, value]) => (
                 <div
                   key={label}

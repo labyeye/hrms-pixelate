@@ -36,13 +36,17 @@ const getStats = asyncHandler(async (req, res) => {
         company: companyId,
         joinDate: { $gte: startOfMonth },
       }).catch(() => 0),
-      Leave.countDocuments({ company: companyId, status: "pending" }).catch(() => 0),
+      Leave.countDocuments({ company: companyId, status: "pending" }).catch(
+        () => 0,
+      ),
       Attendance.countDocuments({
         employee: { $in: companyEmployeeIds },
         date: today,
         status: "present",
       }).catch(() => 0),
-      Recruitment.countDocuments({ company: companyId, status: "open" }).catch(() => 0),
+      Recruitment.countDocuments({ company: companyId, status: "open" }).catch(
+        () => 0,
+      ),
       Department.countDocuments({ company: companyId }).catch(() => 0),
       Payroll.aggregate([
         {
@@ -72,7 +76,10 @@ const getStats = asyncHandler(async (req, res) => {
       .select("firstName lastName designation department joinDate avatar")
       .catch(() => []);
 
-    const pendingLeaveList = await Leave.find({ company: companyId, status: "pending" })
+    const pendingLeaveList = await Leave.find({
+      company: companyId,
+      status: "pending",
+    })
       .populate({
         path: "employee",
         select: "firstName lastName designation",
@@ -140,9 +147,21 @@ const getStats = asyncHandler(async (req, res) => {
 
     // Today's attendance breakdown
     const [todayLate, todayAbsent, todayOnLeave] = await Promise.all([
-      Attendance.countDocuments({ employee: { $in: companyEmployeeIds }, date: today, status: "late" }).catch(() => 0),
-      Attendance.countDocuments({ employee: { $in: companyEmployeeIds }, date: today, status: "absent" }).catch(() => 0),
-      Attendance.countDocuments({ employee: { $in: companyEmployeeIds }, date: today, status: "on_leave" }).catch(() => 0),
+      Attendance.countDocuments({
+        employee: { $in: companyEmployeeIds },
+        date: today,
+        status: "late",
+      }).catch(() => 0),
+      Attendance.countDocuments({
+        employee: { $in: companyEmployeeIds },
+        date: today,
+        status: "absent",
+      }).catch(() => 0),
+      Attendance.countDocuments({
+        employee: { $in: companyEmployeeIds },
+        date: today,
+        status: "on_leave",
+      }).catch(() => 0),
     ]);
 
     res.json({

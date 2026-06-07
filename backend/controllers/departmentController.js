@@ -65,7 +65,7 @@ const createDepartment = asyncHandler(async (req, res) => {
     description: description ? String(description).slice(0, 500) : undefined,
     budget: budget ? Number(budget) : 0,
     shiftStartTime: shiftStartTime || undefined,
-    shiftEndTime:   shiftEndTime   || undefined,
+    shiftEndTime: shiftEndTime || undefined,
   });
 
   res.status(201).json({ success: true, data: dept });
@@ -81,7 +81,15 @@ const updateDepartment = asyncHandler(async (req, res) => {
     throw new Error("Department not found");
   }
 
-  const allowed = ["name", "head", "description", "budget", "status", "shiftStartTime", "shiftEndTime"];
+  const allowed = [
+    "name",
+    "head",
+    "description",
+    "budget",
+    "status",
+    "shiftStartTime",
+    "shiftEndTime",
+  ];
   for (const key of allowed) {
     if (req.body[key] !== undefined) dept[key] = req.body[key];
   }

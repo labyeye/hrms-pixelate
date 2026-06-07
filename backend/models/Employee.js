@@ -29,6 +29,7 @@ const employeeSchema = new mongoose.Schema(
     },
     salary: { type: Number, default: 0 },
     bankAccount: { type: String },
+    accountHolderName: { type: String },
     ifscCode: { type: String },
     panNumber: { type: String },
     aadharNumber: { type: String },
