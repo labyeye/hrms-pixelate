@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { employeeAPI, departmentAPI, loanAPI } from "@/services/api";
 import { Employee, Department } from "@/types/hrms";
@@ -16,6 +17,19 @@ import {
   AlertCircle,
   Clock,
   Banknote,
+  ArrowLeft,
+  ArrowRight,
+  Calendar,
+  FileText,
+  DollarSign,
+  TrendingUp,
+  UserCheck,
+  Printer,
+  Building2,
+  Phone,
+  Mail,
+  CreditCard,
+  Shield,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
@@ -39,6 +53,8 @@ const TYPE_COLORS: Record<string, string> = {
   intern:
     "border-2 bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C] px-2 py-0.5",
 };
+
+const FORM_TABS = ["Basic Info", "Attendance", "Salary", "Other Info"];
 
 interface EmployeeFormData {
   firstName: string;
@@ -65,7 +81,9 @@ interface EmployeeFormData {
   bankName: string;
   uanNumber: string;
   esicNumber: string;
+  pfNumber: string;
   workDaysPerWeek: string;
+  otRate: string;
 }
 
 const EMPTY_FORM: EmployeeFormData = {
@@ -78,7 +96,7 @@ const EMPTY_FORM: EmployeeFormData = {
   employmentType: "full_time",
   joinDate: "",
   salary: "",
-  gender: "",
+  gender: "male",
   status: "active",
   password: "hrms@123",
   avatar: "",
@@ -93,10 +111,13 @@ const EMPTY_FORM: EmployeeFormData = {
   bankName: "",
   uanNumber: "",
   esicNumber: "",
+  pfNumber: "",
   workDaysPerWeek: "6",
+  otRate: "",
 };
 
 export default function EmployeesPage() {
+  const navigate = useNavigate();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
@@ -104,6 +125,7 @@ export default function EmployeesPage() {
   const [filterDept, setFilterDept] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [formTab, setFormTab] = useState(0);
   const [editEmp, setEditEmp] = useState<Employee | null>(null);
   const [form, setForm] = useState<EmployeeFormData>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
@@ -117,9 +139,6 @@ export default function EmployeesPage() {
     monthlyEmi: "",
     reason: "",
   });
-  const [salaryPeriod, setSalaryPeriod] = useState<
-    "yearly" | "monthly" | "daily"
-  >("monthly");
   const [savingLoan, setSavingLoan] = useState(false);
   const [actionModal, setActionModal] = useState<{
     show: boolean;
@@ -149,7 +168,6 @@ export default function EmployeesPage() {
     load();
   }, [load]);
 
-  // Auto-close success modal after 2 seconds
   useEffect(() => {
     if (actionModal.show && actionModal.type === "success") {
       const timer = setTimeout(() => {
@@ -163,8 +181,10 @@ export default function EmployeesPage() {
     setEditEmp(null);
     setForm(EMPTY_FORM);
     setAvatarPreview(null);
+    setFormTab(0);
     setShowModal(true);
   };
+
   const openEdit = (emp: Employee) => {
     setEditEmp(emp);
     setAvatarPreview(emp.avatar || null);
@@ -178,7 +198,7 @@ export default function EmployeesPage() {
       employmentType: emp.employmentType,
       joinDate: emp.joinDate?.split("T")[0] || "",
       salary: String(emp.salary || ""),
-      gender: emp.gender || "",
+      gender: emp.gender || "male",
       status: emp.status,
       password: "",
       avatar: emp.avatar || "",
@@ -193,8 +213,11 @@ export default function EmployeesPage() {
       bankName: (emp as any).bankName || "",
       uanNumber: (emp as any).uanNumber || "",
       esicNumber: (emp as any).esicNumber || "",
+      pfNumber: (emp as any).pfNumber || "",
       workDaysPerWeek: String((emp as any).workDaysPerWeek || 6),
+      otRate: String((emp as any).otRate || ""),
     });
+    setFormTab(0);
     setShowModal(true);
   };
 
@@ -206,14 +229,13 @@ export default function EmployeesPage() {
         ...form,
         salary: Number(form.salary) || 0,
         workDaysPerWeek: Number(form.workDaysPerWeek) || 6,
+        otRate: Number(form.otRate) || 0,
       };
-
       if (editEmp) {
         await employeeAPI.update(editEmp._id, payload);
       } else {
         await employeeAPI.create(payload);
       }
-
       setActionModal({
         show: true,
         type: "success",
@@ -261,17 +283,14 @@ export default function EmployeesPage() {
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (!file.type.startsWith("image/")) {
       alert("Please upload a valid image file");
       return;
     }
-
     if (file.size > 10 * 1024 * 1024) {
       alert("File size must be less than 10MB");
       return;
     }
-
     const reader = new FileReader();
     reader.onload = (event) => {
       const img = new Image();
@@ -297,14 +316,12 @@ export default function EmployeesPage() {
     <AppLayout title="Employees">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">
-            {employees.length} total employees
-          </p>
-        </div>
+        <p className="text-sm font-medium text-muted-foreground">
+          {employees.length} total employees
+        </p>
         <button
           onClick={openAdd}
-          className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5"
+          className="border-2 border-black bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5 font-bold hover:bg-[#01368A] transition-colors"
         >
           <Plus className="w-4 h-4" /> Add Employee
         </button>
@@ -364,7 +381,7 @@ export default function EmployeesPage() {
           <div className="w-8 h-8 bg-[#024BAB] border-2 border-black animate-bounce" />
         </div>
       ) : employees.length === 0 ? (
-        <div className="border-2 bg-white p-12 flex flex-col items-center justify-center">
+        <div className="border-2 border-black bg-white p-12 flex flex-col items-center justify-center">
           <Users className="w-12 h-12 text-muted-foreground/30 mb-3" />
           <p className="font-bold text-black">No employees found</p>
           <p className="text-sm text-muted-foreground mt-1">
@@ -372,13 +389,13 @@ export default function EmployeesPage() {
           </p>
           <button
             onClick={openAdd}
-            className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm mt-4"
+            className="border-2 border-black bg-[#024BAB] text-white px-4 py-2 text-sm mt-4"
           >
             <Plus className="w-4 h-4 inline mr-1" /> Add Employee
           </button>
         </div>
       ) : (
-        <div className="border-2 bg-white overflow-auto">
+        <div className="border-2 border-black bg-white overflow-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b-2 border-black bg-[#024BAB]/5">
@@ -406,9 +423,10 @@ export default function EmployeesPage() {
                 <tr
                   key={emp._id}
                   className={cn(
-                    "border-b border-black/10 hover:bg-[#024BAB]/5 transition-colors",
-                    i % 2 === 0 ? "" : "bg-[#F8FAFF]",
+                    "border-b border-black/10 hover:bg-[#024BAB]/5 transition-colors cursor-pointer",
+                    i % 2 === 0 ? "" : "bg-[#F8FAFF]"
                   )}
+                  onClick={() => setViewEmp(emp)}
                 >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
@@ -441,7 +459,7 @@ export default function EmployeesPage() {
                     <span
                       className={cn(
                         "border-2 text-[10px] capitalize",
-                        TYPE_COLORS[emp.employmentType],
+                        TYPE_COLORS[emp.employmentType]
                       )}
                     >
                       {emp.employmentType.replace("_", " ")}
@@ -463,29 +481,35 @@ export default function EmployeesPage() {
                     <span
                       className={cn(
                         "border-2 text-[10px] capitalize",
-                        STATUS_COLORS[emp.status],
+                        STATUS_COLORS[emp.status]
                       )}
                     >
                       {emp.status.replace("_", " ")}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td
+                    className="px-4 py-3"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setViewEmp(emp)}
                         className="p-1.5 border-2 border-transparent hover:border-black hover:bg-[#024BAB]/10 transition-colors"
+                        title="View Profile"
                       >
                         <Eye className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => openEdit(emp)}
                         className="p-1.5 border-2 border-transparent hover:border-black hover:bg-[#024BAB]/10 transition-colors"
+                        title="Edit"
                       >
                         <Edit className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => handleDelete(emp._id)}
                         className="p-1.5 border-2 border-transparent hover:border-black hover:bg-red-50 transition-colors"
+                        title="Terminate"
                       >
                         <Trash2 className="w-3.5 h-3.5 text-red-600" />
                       </button>
@@ -498,688 +522,1124 @@ export default function EmployeesPage() {
         </div>
       )}
 
-      {/* Add/Edit Modal */}
+      {/* ── Add / Edit Modal (Tabbed) ── */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="border-2 bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-5 border-b-2 border-black">
-              <h3 className="font-display font-bold text-lg text-black">
-                {editEmp ? "Edit Employee" : "Add Employee"}
-              </h3>
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="border-2 border-black bg-white w-full max-w-3xl max-h-[95vh] flex flex-col">
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b-2 border-black bg-[#024BAB]">
+              <div className="flex items-center gap-3">
+                {avatarPreview ? (
+                  <img
+                    src={avatarPreview}
+                    alt="avatar"
+                    className="w-10 h-10 rounded-full object-cover border-2 border-white"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-white/20 border-2 border-white flex items-center justify-center text-white font-bold">
+                    {form.firstName?.[0]?.toUpperCase() || "?"}
+                  </div>
+                )}
+                <div>
+                  <h3 className="font-bold text-lg text-white">
+                    {editEmp ? "Edit Employee" : "Add Employee"}
+                  </h3>
+                  {(form.firstName || form.lastName) && (
+                    <p className="text-white/70 text-xs">
+                      {form.firstName} {form.lastName}
+                    </p>
+                  )}
+                </div>
+              </div>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-1 hover:bg-red-50 transition-colors"
+                className="text-white hover:text-white/70 p-1"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleSave} className="p-5 space-y-4">
-              {/* Avatar Upload */}
-              <div className="border-b-2 border-black pb-4">
-                <label className="block text-xs font-bold text-black uppercase tracking-wider mb-3">
-                  Profile Picture
-                </label>
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleAvatarUpload}
-                      className="hidden"
-                      id="avatar-upload"
-                    />
-                    <label
-                      htmlFor="avatar-upload"
-                      className="block px-4 py-3 border-2 border-dashed border-black hover:bg-[#024BAB]/5 transition-colors cursor-pointer text-center"
-                    >
-                      <Upload className="w-4 h-4 inline mb-1" />
-                      <div className="text-xs font-bold text-black">
-                        Click to upload photo
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        PNG, JPG up to 5MB
-                      </div>
-                    </label>
-                  </div>
-                  {avatarPreview && (
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={avatarPreview}
-                        alt="Avatar preview"
-                        className="w-20 h-20 object-cover border-2 border-black"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAvatarPreview(null);
-                          setForm({ ...form, avatar: "" });
-                        }}
-                        className="px-2 py-1 bg-[#EF4444] text-white text-xs font-bold border-2 border-black hover:bg-[#DC2626]"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
 
-              {/* Form Fields */}
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  {
-                    label: "First Name",
-                    key: "firstName",
-                    type: "text",
-                    required: true,
-                  },
-                  {
-                    label: "Last Name",
-                    key: "lastName",
-                    type: "text",
-                    required: true,
-                  },
-                  {
-                    label: "Email",
-                    key: "email",
-                    type: "email",
-                    required: true,
-                  },
-                  {
-                    label: "Phone",
-                    key: "phone",
-                    type: "tel",
-                    required: false,
-                  },
-                  {
-                    label: "Designation",
-                    key: "designation",
-                    type: "text",
-                    required: true,
-                  },
-                  {
-                    label: "Join Date",
-                    key: "joinDate",
-                    type: "date",
-                    required: true,
-                  },
-                  ...(!editEmp
-                    ? [
-                        {
-                          label: "Default Password",
-                          key: "password",
-                          type: "text",
-                          required: false,
-                        },
-                      ]
-                    : []),
-                ].map(({ label, key, type, required }) => (
-                  <div key={key}>
-                    <label className="block text-xs font-bold text-black mb-1">
-                      {label}
-                    </label>
-                    <input
-                      type={type}
-                      value={(form as any)[key]}
-                      onChange={(e) =>
-                        setForm({ ...form, [key]: e.target.value })
-                      }
-                      className="border-2 w-full px-3 py-2 text-sm"
-                      required={required}
-                    />
-                  </div>
-                ))}
-                {/* Salary with period toggle */}
-                <div className="col-span-2">
-                  <label className="block text-xs font-bold text-black mb-1">
-                    Salary (₹)
-                  </label>
-                  <div className="flex gap-0">
-                    {(["monthly", "yearly", "daily"] as const).map((p) => (
-                      <button
-                        key={p}
-                        type="button"
-                        onClick={() => setSalaryPeriod(p)}
-                        className={cn(
-                          "px-3 py-1.5 text-xs font-bold border-2 border-black -ml-[2px] first:ml-0 capitalize transition-colors",
-                          salaryPeriod === p
-                            ? "bg-[#024BAB] text-white z-10"
-                            : "bg-white text-black hover:bg-[#024BAB]/10",
-                        )}
-                      >
-                        Per{" "}
-                        {p === "daily"
-                          ? "Day"
-                          : p === "monthly"
-                            ? "Month"
-                            : "Year"}
-                      </button>
-                    ))}
-                    <input
-                      type="number"
-                      min="0"
-                      value={
-                        salaryPeriod === "monthly"
-                          ? form.salary
-                            ? Math.round(Number(form.salary) / 12)
-                            : ""
-                          : salaryPeriod === "daily"
-                            ? form.salary
-                              ? Math.round(Number(form.salary) / 365)
-                              : ""
-                            : form.salary
-                      }
-                      onChange={(e) => {
-                        const v = Number(e.target.value) || 0;
-                        const annual =
-                          salaryPeriod === "monthly"
-                            ? v * 12
-                            : salaryPeriod === "daily"
-                              ? v * 365
-                              : v;
-                        setForm({ ...form, salary: String(annual) });
-                      }}
-                      className="border-2 border-black border-l-0 flex-1 px-3 py-1.5 text-sm outline-none"
-                      placeholder={`Annual = ₹${form.salary ? Number(form.salary).toLocaleString("en-IN") : "0"}`}
-                    />
-                  </div>
-                  {form.salary && (
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      Annual: ₹{Number(form.salary).toLocaleString("en-IN")}{" "}
-                      &nbsp;·&nbsp; Monthly: ₹
-                      {Math.round(Number(form.salary) / 12).toLocaleString(
-                        "en-IN",
-                      )}{" "}
-                      &nbsp;·&nbsp; Daily: ₹
-                      {Math.round(Number(form.salary) / 365).toLocaleString(
-                        "en-IN",
-                      )}
-                    </p>
+            {/* Tab bar */}
+            <div className="flex border-b-2 border-black">
+              {FORM_TABS.map((tab, idx) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setFormTab(idx)}
+                  className={cn(
+                    "flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-colors border-r-2 border-black last:border-r-0",
+                    formTab === idx
+                      ? "bg-[#024BAB] text-white"
+                      : "bg-white text-black hover:bg-[#024BAB]/5"
                   )}
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-black mb-1">
-                    Department
-                  </label>
-                  <select
-                    value={form.department}
-                    onChange={(e) =>
-                      setForm({ ...form, department: e.target.value })
-                    }
-                    className="border-2 w-full px-3 py-2 text-sm"
+                >
+                  <span
+                    className={cn(
+                      "inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black mr-1.5",
+                      formTab === idx
+                        ? "bg-white text-[#024BAB]"
+                        : "bg-black/10 text-black"
+                    )}
                   >
-                    <option value="">Select department</option>
-                    {departments.map((d) => (
-                      <option key={d._id} value={d._id}>
-                        {d.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-black mb-1">
-                    Employment Type
-                  </label>
-                  <select
-                    value={form.employmentType}
-                    onChange={(e) =>
-                      setForm({ ...form, employmentType: e.target.value })
-                    }
-                    className="border-2 w-full px-3 py-2 text-sm"
-                  >
-                    <option value="full_time">Full Time</option>
-                    <option value="part_time">Part Time</option>
-                    <option value="contract">Contract</option>
-                    <option value="intern">Intern</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-black mb-1">
-                    Gender
-                  </label>
-                  <select
-                    value={form.gender}
-                    onChange={(e) =>
-                      setForm({ ...form, gender: e.target.value })
-                    }
-                    className="border-2 w-full px-3 py-2 text-sm"
-                  >
-                    <option value="">Select</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-                {editEmp && (
-                  <div>
-                    <label className="block text-xs font-bold text-black mb-1">
-                      Status
-                    </label>
-                    <select
-                      value={form.status}
-                      onChange={(e) =>
-                        setForm({ ...form, status: e.target.value })
-                      }
-                      className="border-2 w-full px-3 py-2 text-sm"
-                    >
-                      <option value="active">Active</option>
-                      <option value="on_leave">On Leave</option>
-                      <option value="inactive">Inactive</option>
-                    </select>
+                    {idx + 1}
+                  </span>
+                  {tab}
+                </button>
+              ))}
+            </div>
+
+            {/* Form body */}
+            <form onSubmit={handleSave} className="flex-1 overflow-y-auto flex flex-col">
+              <div className="p-6 flex-1">
+
+                {/* ── Tab 0: Basic Info ── */}
+                {formTab === 0 && (
+                  <div className="space-y-5">
+                    {/* Avatar */}
+                    <div className="flex items-start gap-4 p-4 bg-[#F8FAFF] border-2 border-black">
+                      <div className="relative shrink-0">
+                        <div className="w-20 h-20 border-2 border-black overflow-hidden bg-[#024BAB] flex items-center justify-center">
+                          {avatarPreview ? (
+                            <img
+                              src={avatarPreview}
+                              alt="Preview"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-2xl font-bold text-white">
+                              {form.firstName?.[0]?.toUpperCase() || "?"}
+                            </span>
+                          )}
+                        </div>
+                        <label
+                          htmlFor="avatar-upload"
+                          className="absolute -bottom-2 -right-2 w-7 h-7 bg-[#024BAB] border-2 border-black flex items-center justify-center cursor-pointer hover:bg-[#01368A]"
+                        >
+                          <Upload className="w-3.5 h-3.5 text-white" />
+                        </label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAvatarUpload}
+                          className="hidden"
+                          id="avatar-upload"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-black uppercase tracking-wider text-black mb-1">
+                          Profile Photo
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Click the camera icon to upload. PNG, JPG up to 10MB.
+                        </p>
+                        {avatarPreview && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAvatarPreview(null);
+                              setForm({ ...form, avatar: "" });
+                            }}
+                            className="mt-2 text-xs font-bold text-red-600 flex items-center gap-1 hover:underline"
+                          >
+                            <X className="w-3 h-3" /> Remove photo
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-black mb-1">
+                          First Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={form.firstName}
+                          onChange={(e) =>
+                            setForm({ ...form, firstName: e.target.value })
+                          }
+                          className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                          placeholder="e.g. Ravi"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-black mb-1">
+                          Last Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={form.lastName}
+                          onChange={(e) =>
+                            setForm({ ...form, lastName: e.target.value })
+                          }
+                          className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                          placeholder="e.g. Kumar"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-black mb-1">
+                          Email Address <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          value={form.email}
+                          onChange={(e) =>
+                            setForm({ ...form, email: e.target.value })
+                          }
+                          className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                          placeholder="employee@company.com"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-black mb-1">
+                          Mobile Number
+                        </label>
+                        <input
+                          type="tel"
+                          value={form.phone}
+                          onChange={(e) =>
+                            setForm({ ...form, phone: e.target.value })
+                          }
+                          className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                          placeholder="+91 XXXXX XXXXX"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-black mb-1">
+                          Designation <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={form.designation}
+                          onChange={(e) =>
+                            setForm({ ...form, designation: e.target.value })
+                          }
+                          className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                          placeholder="e.g. Senior Engineer"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-black mb-1">
+                          Joining Date <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          value={form.joinDate}
+                          onChange={(e) =>
+                            setForm({ ...form, joinDate: e.target.value })
+                          }
+                          className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Gender */}
+                    <div>
+                      <label className="block text-xs font-bold text-black mb-2">
+                        Gender
+                      </label>
+                      <div className="flex gap-3">
+                        {["male", "female", "other"].map((g) => (
+                          <button
+                            key={g}
+                            type="button"
+                            onClick={() => setForm({ ...form, gender: g })}
+                            className={cn(
+                              "flex-1 py-2.5 border-2 border-black text-sm font-bold capitalize transition-colors",
+                              form.gender === g
+                                ? "bg-[#024BAB] text-white"
+                                : "bg-white text-black hover:bg-[#024BAB]/5"
+                            )}
+                          >
+                            {g}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-black mb-1">
+                          Department
+                        </label>
+                        <select
+                          value={form.department}
+                          onChange={(e) =>
+                            setForm({ ...form, department: e.target.value })
+                          }
+                          className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 bg-white"
+                        >
+                          <option value="">Select department</option>
+                          {departments.map((d) => (
+                            <option key={d._id} value={d._id}>
+                              {d.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-black mb-1">
+                          Employment Type
+                        </label>
+                        <select
+                          value={form.employmentType}
+                          onChange={(e) =>
+                            setForm({ ...form, employmentType: e.target.value })
+                          }
+                          className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 bg-white"
+                        >
+                          <option value="full_time">Full Time</option>
+                          <option value="part_time">Part Time</option>
+                          <option value="contract">Contract</option>
+                          <option value="intern">Intern</option>
+                        </select>
+                      </div>
+                      {editEmp && (
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Status
+                          </label>
+                          <select
+                            value={form.status}
+                            onChange={(e) =>
+                              setForm({ ...form, status: e.target.value })
+                            }
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 bg-white"
+                          >
+                            <option value="active">Active</option>
+                            <option value="on_leave">On Leave</option>
+                            <option value="inactive">Inactive</option>
+                          </select>
+                        </div>
+                      )}
+                      {!editEmp && (
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Default Password
+                          </label>
+                          <input
+                            type="text"
+                            value={form.password}
+                            onChange={(e) =>
+                              setForm({ ...form, password: e.target.value })
+                            }
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="hrms@123"
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
-                <div>
-                  <label className="block text-xs font-bold text-black mb-1">
-                    Date of Birth
-                  </label>
-                  <input
-                    type="date"
-                    value={form.dateOfBirth}
-                    onChange={(e) =>
-                      setForm({ ...form, dateOfBirth: e.target.value })
-                    }
-                    className="border-2 w-full px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-black mb-1">
-                    Emergency Contact
-                  </label>
-                  <input
-                    type="text"
-                    value={form.emergencyContact}
-                    onChange={(e) =>
-                      setForm({ ...form, emergencyContact: e.target.value })
-                    }
-                    className="border-2 w-full px-3 py-2 text-sm"
-                    placeholder="Name — Phone"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-xs font-bold text-black mb-1">
-                    Address
-                  </label>
-                  <textarea
-                    value={form.address}
-                    onChange={(e) =>
-                      setForm({ ...form, address: e.target.value })
-                    }
-                    className="border-2 w-full px-3 py-2 text-sm resize-none"
-                    rows={2}
-                    placeholder="Full address"
-                  />
-                </div>
-              </div>
 
-              {/* Banking Details */}
-              <div className="border-t-2 border-black pt-4">
-                <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-3">
-                  Banking Details
-                </p>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-black mb-1">
-                      Account Holder Name
-                    </label>
-                    <input
-                      type="text"
-                      value={form.accountHolderName}
-                      onChange={(e) =>
-                        setForm({ ...form, accountHolderName: e.target.value })
-                      }
-                      className="border-2 w-full px-3 py-2 text-sm"
-                      placeholder="As per bank records"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-black mb-1">
-                      Bank Account Number
-                    </label>
-                    <input
-                      type="text"
-                      value={form.bankAccount}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          bankAccount: e.target.value.replace(/\D/g, ""),
-                        })
-                      }
-                      className="border-2 w-full px-3 py-2 text-sm"
-                      placeholder="Account number"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-black mb-1">
-                      IFSC Code
-                    </label>
-                    <input
-                      type="text"
-                      value={form.ifscCode}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          ifscCode: e.target.value.toUpperCase(),
-                        })
-                      }
-                      className="border-2 w-full px-3 py-2 text-sm uppercase"
-                      placeholder="SBIN0001234"
-                      maxLength={11}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-black mb-1">
-                      Bank Name
-                    </label>
-                    <input
-                      type="text"
-                      value={form.bankName}
-                      onChange={(e) =>
-                        setForm({ ...form, bankName: e.target.value })
-                      }
-                      className="border-2 w-full px-3 py-2 text-sm"
-                      placeholder="e.g. SBI, HDFC"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Identity & Compliance */}
-              <div className="border-t-2 border-black pt-4">
-                <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-3">
-                  Identity & Compliance
-                </p>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-black mb-1">
-                      PAN Number
-                    </label>
-                    <input
-                      type="text"
-                      value={form.panNumber}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          panNumber: e.target.value.toUpperCase(),
-                        })
-                      }
-                      className="border-2 w-full px-3 py-2 text-sm uppercase"
-                      placeholder="ABCDE1234F"
-                      maxLength={10}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-black mb-1">
-                      Aadhar Number
-                    </label>
-                    <input
-                      type="text"
-                      value={form.aadharNumber}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          aadharNumber: e.target.value
-                            .replace(/\D/g, "")
-                            .slice(0, 12),
-                        })
-                      }
-                      className="border-2 w-full px-3 py-2 text-sm"
-                      placeholder="12-digit number"
-                      maxLength={12}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-black mb-1">
-                      UAN Number
-                    </label>
-                    <input
-                      type="text"
-                      value={form.uanNumber}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          uanNumber: e.target.value
-                            .replace(/\D/g, "")
-                            .slice(0, 12),
-                        })
-                      }
-                      className="border-2 w-full px-3 py-2 text-sm"
-                      placeholder="12-digit UAN"
-                      maxLength={12}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-black mb-1">
-                      ESIC Number
-                    </label>
-                    <input
-                      type="text"
-                      value={form.esicNumber}
-                      onChange={(e) =>
-                        setForm({ ...form, esicNumber: e.target.value })
-                      }
-                      className="border-2 w-full px-3 py-2 text-sm"
-                      placeholder="ESIC number"
-                    />
-                  </div>
-                </div>
-              </div>
-              {/* Work Days Per Week */}
-              <div className="border-t-2 border-black pt-4">
-                <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-1">
-                  Work Schedule
-                </p>
-                <p className="text-xs text-gray-500 mb-3">
-                  How many days per week does this employee work? Used to
-                  calculate monthly working days for payroll.
-                </p>
-                <div className="flex gap-2">
-                  {[
-                    { val: "5", label: "5 days", sub: "Mon–Fri" },
-                    { val: "6", label: "6 days", sub: "Mon–Sat" },
-                    { val: "7", label: "7 days", sub: "Mon–Sun" },
-                  ].map(({ val, label, sub }) => (
-                    <button
-                      key={val}
-                      type="button"
-                      onClick={() => setForm({ ...form, workDaysPerWeek: val })}
-                      className={`flex-1 py-2.5 border-2 border-black text-sm font-bold transition-colors ${
-                        form.workDaysPerWeek === val
-                          ? "bg-[#024BAB] text-white"
-                          : "bg-white text-black hover:bg-gray-50"
-                      }`}
-                    >
-                      <div>{label}</div>
-                      <div className="text-xs font-normal opacity-70">
-                        {sub}
+                {/* ── Tab 1: Attendance ── */}
+                {formTab === 1 && (
+                  <div className="space-y-6">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-1">
+                        Work Schedule
+                      </p>
+                      <p className="text-xs text-gray-500 mb-4">
+                        How many days per week does this employee work? Used to
+                        calculate monthly working days for payroll.
+                      </p>
+                      <div className="flex gap-3">
+                        {[
+                          { val: "5", label: "5 Days", sub: "Mon – Fri" },
+                          { val: "6", label: "6 Days", sub: "Mon – Sat" },
+                          { val: "7", label: "7 Days", sub: "Mon – Sun" },
+                        ].map(({ val, label, sub }) => (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() =>
+                              setForm({ ...form, workDaysPerWeek: val })
+                            }
+                            className={cn(
+                              "flex-1 py-5 border-2 border-black text-sm font-bold transition-colors",
+                              form.workDaysPerWeek === val
+                                ? "bg-[#024BAB] text-white"
+                                : "bg-white text-black hover:bg-[#024BAB]/5"
+                            )}
+                          >
+                            <div className="text-xl font-black mb-1">
+                              {label}
+                            </div>
+                            <div className="text-xs font-normal opacity-70">
+                              {sub}
+                            </div>
+                          </button>
+                        ))}
                       </div>
-                    </button>
-                  ))}
-                </div>
+                    </div>
+
+                    <div className="border-t-2 border-black pt-5">
+                      <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-4">
+                        Overtime & Biometric
+                      </p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">
+                            OT Rate (₹ / Hour)
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={form.otRate}
+                            onChange={(e) =>
+                              setForm({ ...form, otRate: e.target.value })
+                            }
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="e.g. 50"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Biometric User ID
+                          </label>
+                          <input
+                            type="text"
+                            value={(form as any).biometricUserId || ""}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                ["biometricUserId" as any]: e.target.value,
+                              })
+                            }
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="Device user ID (e.g. 1, 2, 3)"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-[#F8FAFF] border-2 border-black p-4">
+                      <p className="text-xs font-bold text-black mb-1">
+                        Shift Assignment
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Shifts are managed under{" "}
+                        <strong>Manage → Shifts</strong>. Assign a shift after
+                        creation, or use the Attendance page to override
+                        individual days.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Tab 2: Salary ── */}
+                {formTab === 2 && (
+                  <div className="space-y-6">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-4">
+                        Salary Information
+                      </p>
+                      <div>
+                        <label className="block text-xs font-bold text-black mb-1">
+                          Monthly Salary (₹ / Month)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={form.salary}
+                          onChange={(e) =>
+                            setForm({ ...form, salary: e.target.value })
+                          }
+                          className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                          placeholder="e.g. 15000"
+                        />
+                        {form.salary && (
+                          <div className="mt-3 grid grid-cols-2 gap-2">
+                            {[
+                              {
+                                label: "Monthly",
+                                value: `₹${Number(form.salary).toLocaleString("en-IN")}`,
+                              },
+                              {
+                                label: "Annual",
+                                value: `₹${(Number(form.salary) * 12).toLocaleString("en-IN")}`,
+                              },
+                            ].map(({ label, value }) => (
+                              <div
+                                key={label}
+                                className="bg-[#F8FAFF] border-2 border-black p-3 text-center"
+                              >
+                                <p className="text-[10px] font-black uppercase text-muted-foreground">
+                                  {label}
+                                </p>
+                                <p className="text-sm font-black text-black mt-0.5">
+                                  {value}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="border-t-2 border-black pt-5">
+                      <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-4">
+                        Compliance Numbers
+                      </p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">
+                            PF Number
+                          </label>
+                          <input
+                            type="text"
+                            value={form.pfNumber}
+                            onChange={(e) =>
+                              setForm({ ...form, pfNumber: e.target.value })
+                            }
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="PF account number"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">
+                            UAN Number
+                          </label>
+                          <input
+                            type="text"
+                            value={form.uanNumber}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                uanNumber: e.target.value
+                                  .replace(/\D/g, "")
+                                  .slice(0, 12),
+                              })
+                            }
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="12-digit UAN"
+                            maxLength={12}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">
+                            ESIC Number
+                          </label>
+                          <input
+                            type="text"
+                            value={form.esicNumber}
+                            onChange={(e) =>
+                              setForm({ ...form, esicNumber: e.target.value })
+                            }
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="ESIC number"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Tab 3: Other Info ── */}
+                {formTab === 3 && (
+                  <div className="space-y-6">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-4">
+                        Personal Details
+                      </p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Date of Birth
+                          </label>
+                          <input
+                            type="date"
+                            value={form.dateOfBirth}
+                            onChange={(e) =>
+                              setForm({ ...form, dateOfBirth: e.target.value })
+                            }
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Emergency Contact
+                          </label>
+                          <input
+                            type="text"
+                            value={form.emergencyContact}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                emergencyContact: e.target.value,
+                              })
+                            }
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="Name — Phone"
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Address
+                          </label>
+                          <textarea
+                            value={form.address}
+                            onChange={(e) =>
+                              setForm({ ...form, address: e.target.value })
+                            }
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 resize-none"
+                            rows={2}
+                            placeholder="Full residential address"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t-2 border-black pt-5">
+                      <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-4">
+                        Identity Documents
+                      </p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">
+                            PAN Number
+                          </label>
+                          <input
+                            type="text"
+                            value={form.panNumber}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                panNumber: e.target.value.toUpperCase(),
+                              })
+                            }
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 uppercase"
+                            placeholder="ABCDE1234F"
+                            maxLength={10}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Aadhar Number
+                          </label>
+                          <input
+                            type="text"
+                            value={form.aadharNumber}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                aadharNumber: e.target.value
+                                  .replace(/\D/g, "")
+                                  .slice(0, 12),
+                              })
+                            }
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="12-digit number"
+                            maxLength={12}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-t-2 border-black pt-5">
+                      <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-4">
+                        Bank Details
+                      </p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Account Holder Name
+                          </label>
+                          <input
+                            type="text"
+                            value={form.accountHolderName}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                accountHolderName: e.target.value,
+                              })
+                            }
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="As per bank records"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Bank Account Number
+                          </label>
+                          <input
+                            type="text"
+                            value={form.bankAccount}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                bankAccount: e.target.value.replace(/\D/g, ""),
+                              })
+                            }
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="Account number"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">
+                            IFSC Code
+                          </label>
+                          <input
+                            type="text"
+                            value={form.ifscCode}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                ifscCode: e.target.value.toUpperCase(),
+                              })
+                            }
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 uppercase"
+                            placeholder="SBIN0001234"
+                            maxLength={11}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Bank Name
+                          </label>
+                          <input
+                            type="text"
+                            value={form.bankName}
+                            onChange={(e) =>
+                              setForm({ ...form, bankName: e.target.value })
+                            }
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="e.g. SBI, HDFC, ICICI"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="border-2 bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold flex-1"
-                >
-                  {saving
-                    ? "Saving..."
-                    : editEmp
-                      ? "Save Changes"
-                      : "Add Employee"}
-                </button>
+              {/* Footer nav */}
+              <div className="flex items-center justify-between px-6 py-4 border-t-2 border-black bg-[#F8FAFF]">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
-                  className="border-2 bg-white text-black px-6 py-2.5 text-sm font-bold"
+                  onClick={() => setFormTab((t) => Math.max(0, t - 1))}
+                  disabled={formTab === 0}
+                  className="flex items-center gap-2 border-2 border-black px-4 py-2 text-sm font-bold bg-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50"
                 >
-                  Cancel
+                  <ArrowLeft className="w-4 h-4" /> Previous
                 </button>
+
+                <div className="flex gap-1.5">
+                  {FORM_TABS.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setFormTab(idx)}
+                      className={cn(
+                        "h-2 rounded-full border border-black transition-all",
+                        formTab === idx ? "bg-[#024BAB] w-6" : "bg-white w-2"
+                      )}
+                    />
+                  ))}
+                </div>
+
+                {formTab < FORM_TABS.length - 1 ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormTab((t) =>
+                        Math.min(FORM_TABS.length - 1, t + 1)
+                      )
+                    }
+                    className="flex items-center gap-2 border-2 border-black bg-[#024BAB] text-white px-4 py-2 text-sm font-bold hover:bg-[#01368A]"
+                  >
+                    Next <ArrowRight className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="flex items-center gap-2 border-2 border-black bg-[#024BAB] text-white px-6 py-2 text-sm font-bold hover:bg-[#01368A] disabled:opacity-50"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    {saving
+                      ? "Saving..."
+                      : editEmp
+                      ? "Save Changes"
+                      : "Add Employee"}
+                  </button>
+                )}
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* View Panel (side sheet) */}
+      {/* ── Employee Detail (Full Page Overlay) ── */}
       {viewEmp && (
-        <div className="fixed inset-0 z-50 flex">
-          <div
-            className="flex-1 bg-black/40"
-            onClick={() => setViewEmp(null)}
-          />
-          <div className="w-full max-w-sm bg-white border-l-2 border-black flex flex-col overflow-y-auto border-2">
-            {/* Header */}
-            <div className="flex items-center justify-between p-5 border-b-2 border-black bg-[#024BAB]">
-              <h3 className="font-display font-bold text-lg text-white">
-                Employee Profile
-              </h3>
-              <button
-                onClick={() => setViewEmp(null)}
-                className="text-white hover:text-white/70"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            {/* Avatar + name */}
-            <div className="p-5 border-b-2 border-black">
-              <div className="flex items-center gap-3 mb-3">
-                {viewEmp.avatar ? (
-                  <img
-                    src={viewEmp.avatar}
-                    alt="Profile"
-                    className="w-14 h-14 object-cover border-2 border-black"
-                  />
-                ) : (
-                  <div className="w-14 h-14 bg-[#024BAB] border-2 border-black flex items-center justify-center text-xl font-bold text-white">
-                    {viewEmp.firstName?.[0]?.toUpperCase()}
-                  </div>
-                )}
-                <div>
-                  <p className="font-black text-black text-base">
-                    {viewEmp.firstName} {viewEmp.lastName}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {viewEmp.designation}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {viewEmp.employeeId} · {(viewEmp.department as any)?.name}
-                  </p>
-                  <span
-                    className={cn(
-                      "border-2 text-[10px] capitalize mt-1 inline-block",
-                      STATUS_COLORS[viewEmp.status],
-                    )}
-                  >
-                    {viewEmp.status}
-                  </span>
-                </div>
-              </div>
-            </div>
-            {/* Salary + loan balance */}
-            <div className="grid grid-cols-2 gap-0 border-b-2 border-black">
-              <div className="p-4 border-r-2 border-black">
-                <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-1">
-                  Salary (p.a.)
-                </p>
-                <p className="text-lg font-black text-black">
-                  {formatCurrency(viewEmp.salary || 0)}
-                </p>
-              </div>
-              <div className="p-4">
-                <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-1">
-                  Loan Balance
-                </p>
-                <p
-                  className={cn(
-                    "text-lg font-black",
-                    (viewEmp as any).loanBalance > 0
-                      ? "text-[#EF4444]"
-                      : "text-black",
-                  )}
-                >
-                  {(viewEmp as any).loanBalance > 0
-                    ? formatCurrency((viewEmp as any).loanBalance)
-                    : "₹0"}
-                </p>
-              </div>
-            </div>
-            {/* Details */}
-            <div className="p-5 space-y-2.5 border-b-2 border-black flex-1">
-              {[
-                ["Email", viewEmp.email],
-                ["Phone", viewEmp.phone || "—"],
-                ["Join Date", formatDate(viewEmp.joinDate)],
-                ["Gender", viewEmp.gender || "—"],
-                ["Type", viewEmp.employmentType?.replace("_", " ")],
-                [
-                  "Date of Birth",
-                  (viewEmp as any).dateOfBirth
-                    ? formatDate((viewEmp as any).dateOfBirth)
-                    : "—",
-                ],
-                ["Emergency Contact", (viewEmp as any).emergencyContact || "—"],
-                ["Bank Account", (viewEmp as any).bankAccount || "—"],
-                ["Account Holder", (viewEmp as any).accountHolderName || "—"],
-                ["IFSC", (viewEmp as any).ifscCode || "—"],
-                ["Bank Name", (viewEmp as any).bankName || "—"],
-                ["PAN", (viewEmp as any).panNumber || "—"],
-                ["Aadhar", (viewEmp as any).aadharNumber || "—"],
-                ["UAN", (viewEmp as any).uanNumber || "—"],
-                ["ESIC", (viewEmp as any).esicNumber || "—"],
-                ["Address", (viewEmp as any).address || "—"],
-              ].map(([label, value]) => (
-                <div
-                  key={label}
-                  className="flex justify-between border-b border-black/10 pb-1.5"
-                >
-                  <span className="text-[10px] font-black text-muted-foreground uppercase">
-                    {label}
-                  </span>
-                  <span className="text-xs font-bold text-black capitalize">
-                    {value}
-                  </span>
-                </div>
-              ))}
-            </div>
-            {/* Quick actions */}
-            <div className="p-4 space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-2">
-                Quick Actions
-              </p>
+        <div className="fixed inset-0 z-50 bg-white overflow-y-auto">
+          {/* Sticky top bar */}
+          <div className="sticky top-0 bg-white border-b-2 border-black flex items-center justify-between px-6 py-3 z-10">
+            <button
+              onClick={() => setViewEmp(null)}
+              className="flex items-center gap-2 text-sm font-bold text-black hover:text-[#024BAB] transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back
+            </button>
+            <h2 className="font-bold text-base">Employee Profile</h2>
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => {
                   setViewEmp(null);
                   openEdit(viewEmp);
                 }}
-                className="w-full flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white hover:bg-[#01368A]"
+                className="flex items-center gap-1.5 border-2 border-black px-3 py-1.5 text-xs font-bold bg-[#024BAB] text-white hover:bg-[#01368A]"
               >
-                <Edit className="w-4 h-4" /> Edit Employee
+                <Edit className="w-3.5 h-3.5" /> Edit
               </button>
               <button
                 onClick={() => {
-                  setLoanForm({
-                    employee: viewEmp._id,
-                    type: "loan",
-                    amount: "",
-                    monthlyEmi: "",
-                    reason: "",
-                  });
-                  setLoanModal(true);
+                  handleDelete(viewEmp._id);
                   setViewEmp(null);
                 }}
-                className="w-full flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#FA731C] text-white hover:bg-[#e0650f]"
+                className="flex items-center gap-1.5 border-2 border-black px-3 py-1.5 text-xs font-bold bg-white text-red-600 hover:bg-red-50"
               >
-                <Banknote className="w-4 h-4" /> Loan / Advance Entry
+                <Trash2 className="w-3.5 h-3.5" /> Terminate
               </button>
-              <button
-                onClick={() => {
-                  setViewEmp(null);
-                }}
-                className="w-full flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white text-black hover:bg-gray-50"
-              >
-                <Clock className="w-4 h-4" /> View Attendance
-              </button>
+            </div>
+          </div>
+
+          <div className="max-w-4xl mx-auto p-6 space-y-4">
+            {/* Profile card */}
+            <div className="border-2 border-black bg-white p-5">
+              <div className="flex items-start gap-5">
+                <div className="shrink-0">
+                  {viewEmp.avatar ? (
+                    <img
+                      src={viewEmp.avatar}
+                      alt="Profile"
+                      className="w-20 h-20 object-cover border-2 border-black"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 bg-[#024BAB] border-2 border-black flex items-center justify-center text-3xl font-bold text-white">
+                      {viewEmp.firstName?.[0]?.toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground font-bold">
+                        {viewEmp.employeeId}
+                      </p>
+                      <h1 className="text-2xl font-black text-black mt-0.5">
+                        {viewEmp.firstName} {viewEmp.lastName}
+                      </h1>
+                      <p className="text-sm font-medium text-muted-foreground mt-0.5">
+                        {viewEmp.designation}
+                      </p>
+                    </div>
+                    <span
+                      className={cn(
+                        "border-2 text-[11px] capitalize shrink-0 mt-1",
+                        STATUS_COLORS[viewEmp.status]
+                      )}
+                    >
+                      {viewEmp.status.replace("_", " ")}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2 mt-3">
+                    {viewEmp.phone && (
+                      <div className="flex items-center gap-1.5 text-xs text-black">
+                        <Phone className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <span className="font-medium">{viewEmp.phone}</span>
+                      </div>
+                    )}
+                    {viewEmp.email && (
+                      <div className="flex items-center gap-1.5 text-xs text-black col-span-2">
+                        <Mail className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <span className="font-medium truncate">
+                          {viewEmp.email}
+                        </span>
+                      </div>
+                    )}
+                    {(viewEmp.department as any)?.name && (
+                      <div className="flex items-center gap-1.5 text-xs text-black">
+                        <Building2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <span className="font-medium">
+                          {(viewEmp.department as any)?.name}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5 text-xs text-black">
+                      <Calendar className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      <span className="font-medium">
+                        Joined {formatDate(viewEmp.joinDate)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-black">
+                      <DollarSign className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      <span className="font-medium">
+                        {formatCurrency(viewEmp.salary || 0)} / month
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <span
+                        className={cn(
+                          "border-2 text-[10px] capitalize",
+                          TYPE_COLORS[viewEmp.employmentType]
+                        )}
+                      >
+                        {viewEmp.employmentType.replace("_", " ")}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Stats row */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="border-2 border-black bg-white p-4">
+                <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-2">
+                  Monthly Salary
+                </p>
+                <p className="text-2xl font-black text-[#024BAB]">
+                  ₹{(viewEmp.salary || 0).toLocaleString("en-IN")}
+                </p>
+                <span className="inline-block mt-1.5 text-[10px] font-bold bg-[#FA731C]/15 text-[#FA731C] px-2 py-0.5 border border-[#FA731C]">
+                  Pending
+                </span>
+              </div>
+              <div className="border-2 border-black bg-white p-4">
+                <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-2">
+                  Loan Balance
+                </p>
+                <p
+                  className={cn(
+                    "text-2xl font-black",
+                    (viewEmp as any).loanBalance > 0
+                      ? "text-[#EF4444]"
+                      : "text-black"
+                  )}
+                >
+                  ₹
+                  {((viewEmp as any).loanBalance || 0).toLocaleString("en-IN")}
+                </p>
+                <span className="inline-block mt-1.5 text-[10px] font-bold bg-[#FA731C]/15 text-[#FA731C] px-2 py-0.5 border border-[#FA731C]">
+                  Pending
+                </span>
+              </div>
+              <div className="border-2 border-black bg-white p-4 flex flex-col gap-2 items-stretch justify-center">
+                <button
+                  onClick={() => navigate("/reports")}
+                  className="flex items-center justify-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2.5 text-sm font-bold hover:bg-[#01368A] transition-colors"
+                >
+                  <FileText className="w-4 h-4" /> Report
+                </button>
+                <button
+                  onClick={() => navigate("/payroll")}
+                  className="flex items-center justify-center gap-2 bg-white text-black border-2 border-black px-4 py-2 text-xs font-bold hover:bg-gray-50 transition-colors"
+                >
+                  <Printer className="w-3.5 h-3.5" /> Pay Slip
+                </button>
+              </div>
+            </div>
+
+            {/* Action grid */}
+            <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+              {[
+                {
+                  icon: Calendar,
+                  label: "Edit Attendance",
+                  color: "text-[#024BAB]",
+                  action: () => navigate("/attendance"),
+                },
+                {
+                  icon: FileText,
+                  label: "Payment History",
+                  color: "text-[#A855F7]",
+                  action: () => navigate("/reports"),
+                },
+                {
+                  icon: Banknote,
+                  label: "Loan Entry",
+                  color: "text-[#FA731C]",
+                  action: () => {
+                    setLoanForm({
+                      employee: viewEmp._id,
+                      type: "loan",
+                      amount: "",
+                      monthlyEmi: "",
+                      reason: "",
+                    });
+                    setLoanModal(true);
+                    setViewEmp(null);
+                  },
+                },
+                {
+                  icon: Plus,
+                  label: "Add Advance",
+                  color: "text-[#00C48C]",
+                  action: () => {
+                    setLoanForm({
+                      employee: viewEmp._id,
+                      type: "advance",
+                      amount: "",
+                      monthlyEmi: "",
+                      reason: "",
+                    });
+                    setLoanModal(true);
+                    setViewEmp(null);
+                  },
+                },
+                {
+                  icon: TrendingUp,
+                  label: "Allowance / Bonus",
+                  color: "text-[#024BAB]",
+                  action: () => navigate("/payroll"),
+                },
+                {
+                  icon: AlertCircle,
+                  label: "Penalty",
+                  color: "text-[#EF4444]",
+                  action: () => navigate("/payroll"),
+                },
+                {
+                  icon: DollarSign,
+                  label: "Pay Salary",
+                  color: "text-[#00C48C]",
+                  action: () => navigate("/payroll"),
+                },
+                {
+                  icon: UserCheck,
+                  label: "Leave Balance",
+                  color: "text-[#FA731C]",
+                  action: () => navigate("/leave"),
+                },
+                {
+                  icon: Shield,
+                  label: "Credentials",
+                  color: "text-[#A855F7]",
+                  action: () => navigate("/employee-credentials"),
+                },
+                {
+                  icon: CreditCard,
+                  label: "Payroll Config",
+                  color: "text-[#024BAB]",
+                  action: () => navigate("/payroll-settings"),
+                },
+                {
+                  icon: Clock,
+                  label: "Attendance Log",
+                  color: "text-[#024BAB]",
+                  action: () => navigate("/attendance"),
+                },
+                {
+                  icon: Edit,
+                  label: "Edit Profile",
+                  color: "text-black",
+                  action: () => {
+                    setViewEmp(null);
+                    openEdit(viewEmp);
+                  },
+                },
+              ].map(({ icon: Icon, label, color, action }) => (
+                <button
+                  key={label}
+                  onClick={action}
+                  className="border-2 border-black bg-white p-4 flex flex-col items-center gap-2.5 hover:bg-[#024BAB]/5 transition-colors group"
+                >
+                  <Icon
+                    className={cn(
+                      "w-6 h-6 transition-transform group-hover:scale-110",
+                      color
+                    )}
+                  />
+                  <span className="text-[11px] font-bold text-black text-center leading-tight">
+                    {label}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Detail sections */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="border-2 border-black bg-white">
+                <div className="flex items-center gap-2 px-4 py-3 border-b-2 border-black bg-[#024BAB]/5">
+                  <Phone className="w-4 h-4 text-[#024BAB]" />
+                  <h3 className="text-xs font-black uppercase tracking-wider text-black">
+                    Contact Information
+                  </h3>
+                </div>
+                <div className="p-4 space-y-2">
+                  {[
+                    ["Email", viewEmp.email],
+                    ["Phone", viewEmp.phone || "—"],
+                    ["Gender", viewEmp.gender || "—"],
+                    [
+                      "Date of Birth",
+                      (viewEmp as any).dateOfBirth
+                        ? formatDate((viewEmp as any).dateOfBirth)
+                        : "—",
+                    ],
+                    [
+                      "Emergency Contact",
+                      (viewEmp as any).emergencyContact || "—",
+                    ],
+                    ["Address", (viewEmp as any).address || "—"],
+                  ].map(([label, value]) => (
+                    <div
+                      key={label}
+                      className="flex items-start justify-between gap-2 border-b border-black/10 pb-2 last:border-0 last:pb-0"
+                    >
+                      <span className="text-[10px] font-black text-muted-foreground uppercase shrink-0">
+                        {label}
+                      </span>
+                      <span className="text-xs font-bold text-black text-right capitalize">
+                        {value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-2 border-black bg-white">
+                <div className="flex items-center gap-2 px-4 py-3 border-b-2 border-black bg-[#024BAB]/5">
+                  <CreditCard className="w-4 h-4 text-[#024BAB]" />
+                  <h3 className="text-xs font-black uppercase tracking-wider text-black">
+                    Banking & Compliance
+                  </h3>
+                </div>
+                <div className="p-4 space-y-2">
+                  {[
+                    ["Bank", (viewEmp as any).bankName || "—"],
+                    ["Account No.", (viewEmp as any).bankAccount || "—"],
+                    [
+                      "Account Holder",
+                      (viewEmp as any).accountHolderName || "—",
+                    ],
+                    ["IFSC", (viewEmp as any).ifscCode || "—"],
+                    ["PAN", (viewEmp as any).panNumber || "—"],
+                    ["Aadhar", (viewEmp as any).aadharNumber || "—"],
+                    ["PF No.", (viewEmp as any).pfNumber || "—"],
+                    ["UAN", (viewEmp as any).uanNumber || "—"],
+                    ["ESIC", (viewEmp as any).esicNumber || "—"],
+                  ].map(([label, value]) => (
+                    <div
+                      key={label}
+                      className="flex items-start justify-between gap-2 border-b border-black/10 pb-2 last:border-0 last:pb-0"
+                    >
+                      <span className="text-[10px] font-black text-muted-foreground uppercase shrink-0">
+                        {label}
+                      </span>
+                      <span className="text-xs font-bold text-black text-right">
+                        {value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1188,9 +1648,9 @@ export default function EmployeesPage() {
       {/* Loan Entry Modal */}
       {loanModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="border-2 bg-white w-full max-w-md">
+          <div className="border-2 border-black bg-white w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
-              <h3 className="font-display font-bold text-lg flex items-center gap-2">
+              <h3 className="font-bold text-lg flex items-center gap-2">
                 <Banknote className="w-5 h-5" /> Loan / Advance Entry
               </h3>
               <button onClick={() => setLoanModal(false)}>
@@ -1225,7 +1685,7 @@ export default function EmployeesPage() {
                   onChange={(e) =>
                     setLoanForm({ ...loanForm, type: e.target.value })
                   }
-                  className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none"
+                  className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white outline-none"
                 >
                   <option value="loan">Loan</option>
                   <option value="advance">Salary Advance</option>
@@ -1243,7 +1703,7 @@ export default function EmployeesPage() {
                   onChange={(e) =>
                     setLoanForm({ ...loanForm, amount: e.target.value })
                   }
-                  className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
+                  className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white outline-none"
                   placeholder="e.g. 10000"
                 />
               </div>
@@ -1258,7 +1718,7 @@ export default function EmployeesPage() {
                   onChange={(e) =>
                     setLoanForm({ ...loanForm, monthlyEmi: e.target.value })
                   }
-                  className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
+                  className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white outline-none"
                   placeholder="e.g. 1000"
                 />
               </div>
@@ -1272,7 +1732,7 @@ export default function EmployeesPage() {
                   onChange={(e) =>
                     setLoanForm({ ...loanForm, reason: e.target.value })
                   }
-                  className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
+                  className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white outline-none"
                   placeholder="Medical, home, personal..."
                 />
               </div>
@@ -1297,16 +1757,16 @@ export default function EmployeesPage() {
         </div>
       )}
 
-      {/* Success/Error Animation Modal */}
+      {/* Success/Error Modal */}
       {actionModal.show && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="border-2 bg-white w-full max-w-sm p-8 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+          <div className="border-2 border-black bg-white w-full max-w-sm p-8 flex flex-col items-center justify-center text-center">
             {actionModal.type === "success" ? (
               <>
                 <div className="mb-4 animate-bounce">
                   <CheckCircle className="w-16 h-16 text-[#00C48C]" />
                 </div>
-                <h2 className="text-2xl font-display font-bold text-black mb-2">
+                <h2 className="text-2xl font-bold text-black mb-2">
                   {actionModal.title}
                 </h2>
                 <p className="text-sm text-muted-foreground mb-6">
@@ -1323,7 +1783,7 @@ export default function EmployeesPage() {
                 <div className="mb-4 animate-bounce">
                   <AlertCircle className="w-16 h-16 text-[#EF4444]" />
                 </div>
-                <h2 className="text-2xl font-display font-bold text-black mb-2">
+                <h2 className="text-2xl font-bold text-black mb-2">
                   {actionModal.title}
                 </h2>
                 <p className="text-sm text-muted-foreground mb-6">
@@ -1333,7 +1793,7 @@ export default function EmployeesPage() {
                   onClick={() =>
                     setActionModal({ ...actionModal, show: false })
                   }
-                  className="mt-4 px-6 py-2 bg-[#EF4444] text-white text-sm font-bold border-2 border-[#EF4444] hover:bg-[#EF4444]/90 transition-colors"
+                  className="mt-4 px-6 py-2 bg-[#EF4444] text-white text-sm font-bold border-2 border-black hover:bg-[#EF4444]/90"
                 >
                   Dismiss
                 </button>
