@@ -42,7 +42,9 @@ export default function PayrollPage() {
   const [processing, setProcessing] = useState(false);
   const [processModal, setProcessModal] = useState(false);
   const [processMode, setProcessMode] = useState<"all" | "select">("all");
-  const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(new Set());
+  const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(
+    new Set(),
+  );
   const [activeEmployees, setActiveEmployees] = useState<any[]>([]);
   const [actionModal, setActionModal] = useState<{
     show: boolean;
@@ -162,7 +164,10 @@ export default function PayrollPage() {
             onChange={(e) => setYear(Number(e.target.value))}
             className="border-2 border-black px-3 py-2 text-sm font-semibold outline-none bg-white"
           >
-            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map((y) => (
+            {Array.from(
+              { length: 5 },
+              (_, i) => new Date().getFullYear() - 2 + i,
+            ).map((y) => (
               <option key={y} value={y}>
                 {y}
               </option>
@@ -219,9 +224,12 @@ export default function PayrollPage() {
           <button
             onClick={() => {
               setProcessModal(true);
-              employeeAPI.getAll({ status: "active" }).then((res) => {
-                if (res.success) setActiveEmployees(res.data);
-              }).catch(() => {});
+              employeeAPI
+                .getAll({ status: "active" })
+                .then((res) => {
+                  if (res.success) setActiveEmployees(res.data);
+                })
+                .catch(() => {});
             }}
             className="border-2 bg-[#FA731C] text-white px-4 py-2 text-sm flex items-center gap-1.5"
           >
@@ -286,9 +294,12 @@ export default function PayrollPage() {
           <button
             onClick={() => {
               setProcessModal(true);
-              employeeAPI.getAll({ status: "active" }).then((res) => {
-                if (res.success) setActiveEmployees(res.data);
-              }).catch(() => {});
+              employeeAPI
+                .getAll({ status: "active" })
+                .then((res) => {
+                  if (res.success) setActiveEmployees(res.data);
+                })
+                .catch(() => {});
             }}
             className="border-2 bg-[#FA731C] text-white px-4 py-2 text-sm mt-4"
           >
@@ -403,7 +414,14 @@ export default function PayrollPage() {
               <h3 className="font-display font-bold text-lg">
                 Process Payroll
               </h3>
-              <button onClick={() => { setProcessModal(false); setSelectedEmployees(new Set()); setProcessMode("all"); setActiveEmployees([]); }}>
+              <button
+                onClick={() => {
+                  setProcessModal(false);
+                  setSelectedEmployees(new Set());
+                  setProcessMode("all");
+                  setActiveEmployees([]);
+                }}
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -434,7 +452,8 @@ export default function PayrollPage() {
                       All Employees
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Process payroll for all {activeEmployees.length} active employees
+                      Process payroll for all {activeEmployees.length} active
+                      employees
                     </p>
                   </div>
                 </label>
@@ -510,12 +529,15 @@ export default function PayrollPage() {
                       </label>
                     ))}
                     {activeEmployees.length === 0 && (
-                      <p className="text-xs text-center text-muted-foreground py-4">Loading employees...</p>
+                      <p className="text-xs text-center text-muted-foreground py-4">
+                        Loading employees...
+                      </p>
                     )}
                   </div>
 
                   <p className="text-xs text-muted-foreground mt-3">
-                    {selectedEmployees.size} of {activeEmployees.length} selected
+                    {selectedEmployees.size} of {activeEmployees.length}{" "}
+                    selected
                   </p>
                 </div>
               )}

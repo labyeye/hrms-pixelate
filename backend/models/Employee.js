@@ -49,6 +49,7 @@ const employeeSchema = new mongoose.Schema(
     loanBalance: { type: Number, default: 0 },
     advanceBalance: { type: Number, default: 0 },
     otRate: { type: Number, default: 0 },
+    workDaysPerWeek: { type: Number, enum: [5, 6, 7], default: 6 }, // 5=Mon-Fri, 6=Mon-Sat, 7=Mon-Sun
     biometricUserId: { type: String, default: "" }, // ESSL/ZKTeco device user ID (numeric, e.g. "1")
     rfidCard: { type: String, default: "" }, // RFID card number (scanned via device or USB reader)
     faceDescriptor: { type: [Number], default: [] }, // 128-float face embedding (face-api.js / PC webcam)

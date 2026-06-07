@@ -57,7 +57,10 @@ const MONTHS = [
   "Nov",
   "Dec",
 ];
-const YEARS = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i);
+const YEARS = Array.from(
+  { length: 5 },
+  (_, i) => new Date().getFullYear() - 2 + i,
+);
 
 // ─── REPORT CATALOG DEFINITION ───────────────────────────────────────────────
 
