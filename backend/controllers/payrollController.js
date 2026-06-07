@@ -118,7 +118,7 @@ const processPayroll = asyncHandler(async (req, res) => {
     // ── Working days for this employee based on their work week ────────────
     const workDaysPerWeek = emp.workDaysPerWeek ?? 6;
     const workingDays = getWorkingDays(y, m, workDaysPerWeek);
-    const salary = emp.salary ?? 0;
+    const salary = (emp.salary ?? 0) / 12; // emp.salary is annual; convert to monthly
     const dailyRate = workingDays > 0 ? salary / workingDays : 0;
 
     // ── Shift timing: use employee's assigned Shift, fall back to DeductionRule ─
@@ -223,7 +223,7 @@ const processPayroll = asyncHandler(async (req, res) => {
       month: m,
       year: y,
       basicSalary: salary,
-      grossSalary: salary,
+      grossSalary: earnedSalary,
       otherDeductions: totalDeductions,
       totalDeductions,
       netSalary,
