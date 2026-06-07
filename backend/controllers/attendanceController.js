@@ -8,6 +8,23 @@ const getAttendance = asyncHandler(async (req, res) => {
   const { page, limit, skip } = safePagination(req.query, 50, 200);
   const { month, year, employeeId, department } = req.query;
 
+  // If the requesting user is an employee, scope to only their own records
+  if (req.user.role === "employee") {
+    const selfEmp = await Employee.findOne({ user: req.user._id }).select("_id");
+    if (!selfEmp) return res.json({ success: true, data: [], total: 0 });
+    const filter = { employee: selfEmp._id };
+    if (month && year) {
+      const m = parseInt(month), y = parseInt(year);
+      if (!isNaN(m) && !isNaN(y))
+        filter.date = { $gte: new Date(y, m - 1, 1), $lte: new Date(y, m, 0) };
+    }
+    const total = await Attendance.countDocuments(filter);
+    const records = await Attendance.find(filter)
+      .populate({ path: "employee", select: "firstName lastName employeeId department", populate: { path: "department", select: "name" } })
+      .sort({ date: -1 }).skip(skip).limit(limit);
+    return res.json({ success: true, data: records, total, page, pages: Math.ceil(total / limit) });
+  }
+
   // Company-scope: only employees belonging to this company
   const companyEmployees = await Employee.find({
     company: req.user.company,

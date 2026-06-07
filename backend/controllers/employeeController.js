@@ -76,6 +76,17 @@ const getEmployee = asyncHandler(async (req, res) => {
   res.json({ success: true, data: employee });
 });
 
+const getMyEmployee = asyncHandler(async (req, res) => {
+  const employee = await Employee.findOne({ user: req.user._id })
+    .populate("department", "name code shiftStartTime shiftEndTime")
+    .populate("reportingTo", "firstName lastName designation");
+  if (!employee) {
+    res.status(404);
+    throw new Error("No employee record linked to your account");
+  }
+  res.json({ success: true, data: employee });
+});
+
 const createEmployee = [
   validateBody(createSchema),
   asyncHandler(async (req, res) => {
@@ -269,6 +280,7 @@ const resetEmployeePassword = asyncHandler(async (req, res) => {
 module.exports = {
   getEmployees,
   getEmployee,
+  getMyEmployee,
   createEmployee,
   updateEmployee,
   deleteEmployee,

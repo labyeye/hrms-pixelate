@@ -25,6 +25,25 @@ const getLeaves = asyncHandler(async (req, res) => {
   const { page, limit, skip } = safePagination(req.query);
   const { status, employeeId, leaveType, year, department } = req.query;
 
+  // If the requesting user is an employee, scope to only their own leave records
+  if (req.user.role === "employee") {
+    const selfEmp = await Employee.findOne({ user: req.user._id }).select("_id");
+    if (!selfEmp) return res.json({ success: true, data: [], total: 0 });
+    const filter = { company: req.user.company, employee: selfEmp._id };
+    if (status && LEAVE_STATUS.includes(status)) filter.status = status;
+    if (leaveType && LEAVE_TYPES.includes(leaveType)) filter.leaveType = leaveType;
+    if (year) {
+      const y = parseInt(year);
+      if (!isNaN(y)) filter.startDate = { $gte: new Date(`${y}-01-01`), $lte: new Date(`${y}-12-31`) };
+    }
+    const total = await Leave.countDocuments(filter);
+    const leaves = await Leave.find(filter)
+      .populate({ path: "employee", select: "firstName lastName employeeId designation phone", populate: { path: "department", select: "name" } })
+      .populate("approvedBy", "name")
+      .sort({ createdAt: -1 }).skip(skip).limit(limit);
+    return res.json({ success: true, data: leaves, total, page, pages: Math.ceil(total / limit) });
+  }
+
   // Company scope via employee list
   const companyEmployees = await Employee.find({
     company: req.user.company,
@@ -84,7 +103,7 @@ const getLeaves = asyncHandler(async (req, res) => {
 });
 
 const createLeave = asyncHandler(async (req, res) => {
-  const {
+  let {
     employee,
     leaveType,
     startDate,
@@ -95,14 +114,25 @@ const createLeave = asyncHandler(async (req, res) => {
     halfDayType,
   } = req.body;
 
-  // Validate employee belongs to this company
-  const emp = await Employee.findOne({
-    _id: employee,
-    company: req.user.company,
-  });
-  if (!emp) {
-    res.status(404);
-    throw new Error("Employee not found");
+  // Employees can only apply leave for themselves
+  let emp;
+  if (req.user.role === "employee") {
+    emp = await Employee.findOne({ user: req.user._id });
+    if (!emp) {
+      res.status(404);
+      throw new Error("Employee record not found for your account");
+    }
+    employee = emp._id;
+  } else {
+    // Validate employee belongs to this company
+    emp = await Employee.findOne({
+      _id: employee,
+      company: req.user.company,
+    });
+    if (!emp) {
+      res.status(404);
+      throw new Error("Employee not found");
+    }
   }
 
   // Validate required fields

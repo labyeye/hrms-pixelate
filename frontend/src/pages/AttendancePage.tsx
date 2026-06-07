@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { attendanceAPI, employeeAPI } from "@/services/api";
+import { useAuth } from "@/contexts/AuthContext";
 import { AttendanceRecord, Employee } from "@/types/hrms";
 import { cn } from "@/lib/utils";
 import {
@@ -58,6 +59,8 @@ const MONTHS = [
 ];
 
 export default function AttendancePage() {
+  const { user } = useAuth();
+  const isEmployee = user?.role === "employee";
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
@@ -79,19 +82,19 @@ export default function AttendancePage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [attRes, empRes] = await Promise.all([
-        attendanceAPI.getAll({
-          month: String(month),
-          year: String(year),
-          limit: "200",
-        }),
-        employeeAPI.getAll({ status: "active", limit: "200" }),
-      ]);
+      const attRes = await attendanceAPI.getAll({
+        month: String(month),
+        year: String(year),
+        limit: "200",
+      });
       if (attRes.success) setRecords(attRes.data);
-      if (empRes.success) setEmployees(empRes.data);
+      if (!isEmployee) {
+        const empRes = await employeeAPI.getAll({ status: "active", limit: "200" });
+        if (empRes.success) setEmployees(empRes.data);
+      }
     } catch {}
     setLoading(false);
-  }, [month, year]);
+  }, [month, year, isEmployee]);
 
   useEffect(() => {
     load();
@@ -148,12 +151,14 @@ export default function AttendancePage() {
             ))}
           </select>
         </div>
-        <button
-          onClick={() => setMarkModal(true)}
-          className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5"
-        >
-          <Clock className="w-4 h-4" /> Mark Attendance
-        </button>
+        {!isEmployee && (
+          <button
+            onClick={() => setMarkModal(true)}
+            className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5"
+          >
+            <Clock className="w-4 h-4" /> Mark Attendance
+          </button>
+        )}
       </div>
 
       {/* Summary cards */}

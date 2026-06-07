@@ -48,6 +48,7 @@ export const employeeAPI = {
     const q = params ? "?" + new URLSearchParams(params).toString() : "";
     return request(`/employees${q}`);
   },
+  getMe: () => request("/employees/me"),
   getOne: (id: string) => request(`/employees/${id}`),
   create: (body: object) =>
     request("/employees", { method: "POST", body: JSON.stringify(body) }),

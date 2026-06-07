@@ -2,6 +2,7 @@ const express = require("express");
 const {
   getEmployees,
   getEmployee,
+  getMyEmployee,
   createEmployee,
   updateEmployee,
   deleteEmployee,
@@ -9,6 +10,8 @@ const {
 } = require("../controllers/employeeController");
 const { protect, authorize } = require("../middleware/auth");
 const router = express.Router();
+
+router.get("/me", protect, getMyEmployee);
 
 router
   .route("/")

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { leaveAPI, employeeAPI } from "@/services/api";
+import { useAuth } from "@/contexts/AuthContext";
 import { LeaveRequest, Employee } from "@/types/hrms";
 import { cn, formatDate } from "@/lib/utils";
 import {
@@ -60,8 +61,12 @@ const EMPTY_FORM: LeaveForm = {
 };
 
 export default function LeavePage() {
+  const { user } = useAuth();
+  const isEmployee = user?.role === "employee";
+
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [myEmployeeId, setMyEmployeeId] = useState("");
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -71,15 +76,24 @@ export default function LeavePage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [leavesRes, empRes] = await Promise.all([
-        leaveAPI.getAll(filter ? { status: filter } : undefined),
-        employeeAPI.getAll({ status: "active", limit: "200" }),
-      ]);
-      if (leavesRes.success) setLeaves(leavesRes.data);
-      if (empRes.success) setEmployees(empRes.data);
+      if (isEmployee) {
+        const [leavesRes, meRes] = await Promise.all([
+          leaveAPI.getAll(filter ? { status: filter } : undefined),
+          employeeAPI.getMe(),
+        ]);
+        if (leavesRes.success) setLeaves(leavesRes.data);
+        if (meRes.success) setMyEmployeeId(meRes.data._id);
+      } else {
+        const [leavesRes, empRes] = await Promise.all([
+          leaveAPI.getAll(filter ? { status: filter } : undefined),
+          employeeAPI.getAll({ status: "active", limit: "200" }),
+        ]);
+        if (leavesRes.success) setLeaves(leavesRes.data);
+        if (empRes.success) setEmployees(empRes.data);
+      }
     } catch {}
     setLoading(false);
-  }, [filter]);
+  }, [filter, isEmployee]);
 
   useEffect(() => {
     load();
@@ -134,7 +148,10 @@ export default function LeavePage() {
           ))}
         </div>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => {
+            setForm(isEmployee ? { ...EMPTY_FORM, employee: myEmployeeId } : EMPTY_FORM);
+            setShowModal(true);
+          }}
           className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5"
         >
           <Plus className="w-4 h-4" /> Apply Leave
@@ -256,22 +273,31 @@ export default function LeavePage() {
                   </td>
                   <td className="px-4 py-3">
                     {leave.status === "pending" && (
-                      <div className="flex gap-1">
+                      isEmployee ? (
                         <button
-                          onClick={() => handleStatus(leave._id, "approved")}
-                          className="p-1.5 border-2 border-transparent hover:border-black hover:bg-[#024BAB]/10 transition-colors"
-                          title="Approve"
+                          onClick={() => handleStatus(leave._id, "cancelled")}
+                          className="text-xs font-bold border-2 border-black px-2 py-1 hover:bg-red-50 transition-colors"
                         >
-                          <CheckCircle className="w-3.5 h-3.5 text-[#024BAB]" />
+                          Cancel
                         </button>
-                        <button
-                          onClick={() => handleStatus(leave._id, "rejected")}
-                          className="p-1.5 border-2 border-transparent hover:border-black hover:bg-red-50 transition-colors"
-                          title="Reject"
-                        >
-                          <XCircle className="w-3.5 h-3.5 text-red-600" />
-                        </button>
-                      </div>
+                      ) : (
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => handleStatus(leave._id, "approved")}
+                            className="p-1.5 border-2 border-transparent hover:border-black hover:bg-[#024BAB]/10 transition-colors"
+                            title="Approve"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5 text-[#024BAB]" />
+                          </button>
+                          <button
+                            onClick={() => handleStatus(leave._id, "rejected")}
+                            className="p-1.5 border-2 border-transparent hover:border-black hover:bg-red-50 transition-colors"
+                            title="Reject"
+                          >
+                            <XCircle className="w-3.5 h-3.5 text-red-600" />
+                          </button>
+                        </div>
+                      )
                     )}
                   </td>
                 </tr>
@@ -292,26 +318,28 @@ export default function LeavePage() {
               </button>
             </div>
             <form onSubmit={handleCreate} className="p-5 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Employee
-                </label>
-                <select
-                  value={form.employee}
-                  onChange={(e) =>
-                    setForm({ ...form, employee: e.target.value })
-                  }
-                  className="border-2 w-full px-3 py-2 text-sm"
-                  required
-                >
-                  <option value="">Select employee</option>
-                  {employees.map((e) => (
-                    <option key={e._id} value={e._id}>
-                      {e.firstName} {e.lastName}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {!isEmployee && (
+                <div>
+                  <label className="block text-xs font-bold text-black mb-1">
+                    Employee
+                  </label>
+                  <select
+                    value={form.employee}
+                    onChange={(e) =>
+                      setForm({ ...form, employee: e.target.value })
+                    }
+                    className="border-2 w-full px-3 py-2 text-sm"
+                    required
+                  >
+                    <option value="">Select employee</option>
+                    {employees.map((e) => (
+                      <option key={e._id} value={e._id}>
+                        {e.firstName} {e.lastName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
                   Leave Type
