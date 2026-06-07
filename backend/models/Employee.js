@@ -31,6 +31,7 @@ const employeeSchema = new mongoose.Schema(
     bankAccount: { type: String },
     ifscCode: { type: String },
     panNumber: { type: String },
+    aadharNumber: { type: String },
     address: { type: String },
     emergencyContact: { type: String },
     avatar: { type: String },

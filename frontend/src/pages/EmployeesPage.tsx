@@ -47,6 +47,9 @@ interface EmployeeFormData {
   status: string;
   password: string;
   avatar?: string;
+  panNumber: string;
+  aadharNumber: string;
+  address: string;
 }
 
 const EMPTY_FORM: EmployeeFormData = {
@@ -63,6 +66,9 @@ const EMPTY_FORM: EmployeeFormData = {
   status: "active",
   password: "hrms@123",
   avatar: "",
+  panNumber: "",
+  aadharNumber: "",
+  address: "",
 };
 
 export default function EmployeesPage() {
@@ -149,6 +155,9 @@ export default function EmployeesPage() {
       status: emp.status,
       password: "",
       avatar: emp.avatar || "",
+      panNumber: (emp as any).panNumber || "",
+      aadharNumber: (emp as any).aadharNumber || "",
+      address: (emp as any).address || "",
     });
     setShowModal(true);
   };
@@ -691,6 +700,38 @@ export default function EmployeesPage() {
                     </select>
                   </div>
                 )}
+                <div>
+                  <label className="block text-xs font-bold text-black mb-1">PAN Number</label>
+                  <input
+                    type="text"
+                    value={form.panNumber}
+                    onChange={(e) => setForm({ ...form, panNumber: e.target.value.toUpperCase() })}
+                    className="border-2 w-full px-3 py-2 text-sm uppercase"
+                    placeholder="ABCDE1234F"
+                    maxLength={10}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-black mb-1">Aadhar Number</label>
+                  <input
+                    type="text"
+                    value={form.aadharNumber}
+                    onChange={(e) => setForm({ ...form, aadharNumber: e.target.value.replace(/\D/g, "").slice(0, 12) })}
+                    className="border-2 w-full px-3 py-2 text-sm"
+                    placeholder="12-digit Aadhar"
+                    maxLength={12}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold text-black mb-1">Address</label>
+                  <textarea
+                    value={form.address}
+                    onChange={(e) => setForm({ ...form, address: e.target.value })}
+                    className="border-2 w-full px-3 py-2 text-sm resize-none"
+                    rows={2}
+                    placeholder="Full address"
+                  />
+                </div>
               </div>
               <div className="flex gap-3 pt-2">
                 <button
@@ -811,6 +852,8 @@ export default function EmployeesPage() {
                 ["Bank Account", (viewEmp as any).bankAccount || "—"],
                 ["IFSC", viewEmp.ifscCode || "—"],
                 ["PAN", viewEmp.panNumber || "—"],
+                ["Aadhar", (viewEmp as any).aadharNumber || "—"],
+                ["Address", (viewEmp as any).address || "—"],
                 ["UAN/PF No.", (viewEmp as any).uanNumber || "—"],
               ].map(([label, value]) => (
                 <div
