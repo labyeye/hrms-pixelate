@@ -92,6 +92,10 @@ export const payrollAPI = {
     const q = params ? "?" + new URLSearchParams(params).toString() : "";
     return request(`/payroll${q}`);
   },
+  getMy: (params?: Record<string, string>) => {
+    const q = params ? "?" + new URLSearchParams(params).toString() : "";
+    return request(`/payroll/my${q}`);
+  },
   process: (body: object) =>
     request("/payroll/process", { method: "POST", body: JSON.stringify(body) }),
   update: (id: string, body: object) =>

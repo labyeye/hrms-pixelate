@@ -49,7 +49,9 @@ function NumField({
 }) {
   return (
     <div>
-      <label className="block text-xs font-black uppercase mb-1 text-gray-600">{label}</label>
+      <label className="block text-xs font-black uppercase mb-1 text-gray-600">
+        {label}
+      </label>
       <div className="relative">
         {suffix && (
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-bold">
@@ -114,7 +116,8 @@ export default function PayrollSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const set = (patch: Partial<DeductionRule>) => setRules((p) => ({ ...p, ...patch }));
+  const set = (patch: Partial<DeductionRule>) =>
+    setRules((p) => ({ ...p, ...patch }));
 
   const fetchRules = useCallback(async () => {
     setLoading(true);
@@ -128,14 +131,20 @@ export default function PayrollSettingsPage() {
     }
   }, [toast]);
 
-  useEffect(() => { fetchRules(); }, [fetchRules]);
+  useEffect(() => {
+    fetchRules();
+  }, [fetchRules]);
 
   const handleSave = async () => {
     if (saving) return;
     setSaving(true);
     try {
       await payrollConfigAPI.upsertDeductionRules(rules);
-      toast({ title: "Settings saved", description: "Attendance rules updated", variant: "success" });
+      toast({
+        title: "Settings saved",
+        description: "Attendance rules updated",
+        variant: "success",
+      });
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {
@@ -147,10 +156,13 @@ export default function PayrollSettingsPage() {
     <AppLayout title="Payroll Settings">
       <div className="w-full mx-auto">
         <div className="mb-6">
-          <h1 className="font-display font-black text-3xl text-black">Payroll Settings</h1>
+          <h1 className="font-display font-black text-3xl text-black">
+            Payroll Settings
+          </h1>
           <p className="text-gray-600 font-medium mt-1">
-            Configure shift timing, grace period, and attendance deduction rules.
-            Each employee's work schedule (Mon–Fri / Mon–Sat / Mon–Sun) is set individually in the Employees page.
+            Configure shift timing, grace period, and attendance deduction
+            rules. Each employee's work schedule (Mon–Fri / Mon–Sat / Mon–Sun)
+            is set individually in the Employees page.
           </p>
         </div>
 
@@ -160,34 +172,52 @@ export default function PayrollSettingsPage() {
           </div>
         ) : (
           <div className="space-y-4">
-
             <div className="bg-white border-2 border-black">
               <div className="p-4 border-b-2 border-black bg-[#F0F6FF]">
                 <div className="flex items-center gap-3">
                   <ShieldAlert className="w-5 h-5 text-[#024BAB]" />
                   <div>
-                    <h2 className="font-black text-base">Attendance Deduction Rules</h2>
+                    <h2 className="font-black text-base">
+                      Attendance Deduction Rules
+                    </h2>
                     <p className="text-xs text-gray-500">
-                      Shift timing, grace period, and late / early-checkout deductions.
-                      Per-employee shift assignments override these fallback timings.
+                      Shift timing, grace period, and late / early-checkout
+                      deductions. Per-employee shift assignments override these
+                      fallback timings.
                     </p>
                   </div>
                 </div>
               </div>
               <div className="p-5 space-y-6">
-
                 {/* Shift start */}
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <Clock className="w-4 h-4 text-[#024BAB]" />
-                    <p className="text-xs font-black uppercase">Shift Start Time (Fallback)</p>
+                    <p className="text-xs font-black uppercase">
+                      Shift Start Time (Fallback)
+                    </p>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <NumField label="Hour (0–23)" value={rules.shiftStartHour} onChange={(v) => set({ shiftStartHour: v })} min={0} max={23} />
-                    <NumField label="Minute (0–59)" value={rules.shiftStartMinute} onChange={(v) => set({ shiftStartMinute: v })} min={0} max={59} />
+                    <NumField
+                      label="Hour (0–23)"
+                      value={rules.shiftStartHour}
+                      onChange={(v) => set({ shiftStartHour: v })}
+                      min={0}
+                      max={23}
+                    />
+                    <NumField
+                      label="Minute (0–59)"
+                      value={rules.shiftStartMinute}
+                      onChange={(v) => set({ shiftStartMinute: v })}
+                      min={0}
+                      max={59}
+                    />
                   </div>
                   <p className="text-xs text-gray-400 mt-2">
-                    Shift starts at <strong>{fmt(rules.shiftStartHour, rules.shiftStartMinute)}</strong>
+                    Shift starts at{" "}
+                    <strong>
+                      {fmt(rules.shiftStartHour, rules.shiftStartMinute)}
+                    </strong>
                   </p>
                 </div>
 
@@ -195,20 +225,39 @@ export default function PayrollSettingsPage() {
                 <div className="border-t pt-5">
                   <div className="flex items-center gap-2 mb-3">
                     <Clock className="w-4 h-4 text-[#024BAB]" />
-                    <p className="text-xs font-black uppercase">Shift End Time (Fallback)</p>
+                    <p className="text-xs font-black uppercase">
+                      Shift End Time (Fallback)
+                    </p>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <NumField label="Hour (0–23)" value={rules.shiftEndHour} onChange={(v) => set({ shiftEndHour: v })} min={0} max={23} />
-                    <NumField label="Minute (0–59)" value={rules.shiftEndMinute} onChange={(v) => set({ shiftEndMinute: v })} min={0} max={59} />
+                    <NumField
+                      label="Hour (0–23)"
+                      value={rules.shiftEndHour}
+                      onChange={(v) => set({ shiftEndHour: v })}
+                      min={0}
+                      max={23}
+                    />
+                    <NumField
+                      label="Minute (0–59)"
+                      value={rules.shiftEndMinute}
+                      onChange={(v) => set({ shiftEndMinute: v })}
+                      min={0}
+                      max={59}
+                    />
                   </div>
                   <p className="text-xs text-gray-400 mt-2">
-                    Shift ends at <strong>{fmt(rules.shiftEndHour, rules.shiftEndMinute)}</strong>
+                    Shift ends at{" "}
+                    <strong>
+                      {fmt(rules.shiftEndHour, rules.shiftEndMinute)}
+                    </strong>
                   </p>
                 </div>
 
                 {/* Late deduction */}
                 <div className="border-t pt-5">
-                  <p className="text-xs font-black uppercase mb-3">Late Arrival</p>
+                  <p className="text-xs font-black uppercase mb-3">
+                    Late Arrival
+                  </p>
                   <div className="grid grid-cols-3 gap-4">
                     <NumField
                       label="Grace Period (min)"
@@ -217,10 +266,18 @@ export default function PayrollSettingsPage() {
                       hint={`On time if in by ${fmt(rules.shiftStartHour, rules.shiftStartMinute + rules.lateThresholdMinutes)}`}
                     />
                     <div>
-                      <label className="block text-xs font-black uppercase mb-1 text-gray-600">Deduction Type</label>
+                      <label className="block text-xs font-black uppercase mb-1 text-gray-600">
+                        Deduction Type
+                      </label>
                       <select
                         value={rules.lateDeductionType}
-                        onChange={(e) => set({ lateDeductionType: e.target.value as "fixed" | "percent" })}
+                        onChange={(e) =>
+                          set({
+                            lateDeductionType: e.target.value as
+                              | "fixed"
+                              | "percent",
+                          })
+                        }
                         className="w-full border-2 border-black px-3 py-2 text-sm bg-white focus:outline-none"
                       >
                         <option value="fixed">Fixed Amount (₹)</option>
@@ -228,17 +285,25 @@ export default function PayrollSettingsPage() {
                       </select>
                     </div>
                     <NumField
-                      label={rules.lateDeductionType === "fixed" ? "Amount per Late Day (₹)" : "% of Daily Salary"}
+                      label={
+                        rules.lateDeductionType === "fixed"
+                          ? "Amount per Late Day (₹)"
+                          : "% of Daily Salary"
+                      }
                       value={rules.lateDeductionAmount}
                       onChange={(v) => set({ lateDeductionAmount: v })}
-                      suffix={rules.lateDeductionType === "percent" ? "%" : undefined}
+                      suffix={
+                        rules.lateDeductionType === "percent" ? "%" : undefined
+                      }
                     />
                   </div>
                 </div>
 
                 {/* Half-day threshold */}
                 <div className="border-t pt-5">
-                  <p className="text-xs font-black uppercase mb-3">Half-Day Rule</p>
+                  <p className="text-xs font-black uppercase mb-3">
+                    Half-Day Rule
+                  </p>
                   <NumField
                     label="Late by more than (min) = Half Day (50% pay)"
                     value={rules.halfDayThresholdMinutes}
@@ -251,7 +316,9 @@ export default function PayrollSettingsPage() {
                 <div className="border-t pt-5">
                   <div className="flex items-center gap-2 mb-3">
                     <LogOut className="w-4 h-4 text-[#024BAB]" />
-                    <p className="text-xs font-black uppercase">Early Checkout</p>
+                    <p className="text-xs font-black uppercase">
+                      Early Checkout
+                    </p>
                   </div>
                   <Toggle
                     label="Enable Early Checkout Deduction"
@@ -264,7 +331,9 @@ export default function PayrollSettingsPage() {
                       <NumField
                         label="Grace Period Before Shift End (min)"
                         value={rules.earlyCheckoutThresholdMinutes}
-                        onChange={(v) => set({ earlyCheckoutThresholdMinutes: v })}
+                        onChange={(v) =>
+                          set({ earlyCheckoutThresholdMinutes: v })
+                        }
                         hint="No deduction if leaving within this many minutes of shift end"
                       />
                     </div>
@@ -278,7 +347,11 @@ export default function PayrollSettingsPage() {
               disabled={saving}
               className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-6 py-3 font-black text-sm uppercase disabled:opacity-60"
             >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
               {saving ? "Saving..." : "Save Settings"}
             </button>
           </div>

@@ -27,6 +27,8 @@ import PayrollSettingsPage from "./pages/PayrollSettingsPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import PaymentFailedPage from "./pages/PaymentFailedPage";
 import ManagePage from "./pages/ManagePage";
+import EmployeePayrollPage from "./pages/EmployeePayrollPage";
+import EmployeeReportPage from "./pages/EmployeeReportPage";
 import NotFound from "./pages/NotFound";
 import nesthrlogo from "../assets/nesthr.png";
 const queryClient = new QueryClient({
@@ -257,6 +259,22 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <ManagePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-payroll"
+        element={
+          <ProtectedRoute>
+            <EmployeePayrollPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-report"
+        element={
+          <ProtectedRoute>
+            <EmployeeReportPage />
           </ProtectedRoute>
         }
       />

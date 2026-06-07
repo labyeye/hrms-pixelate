@@ -1,6 +1,7 @@
 const express = require("express");
 const {
   getPayrolls,
+  getMyPayrolls,
   processPayroll,
   updatePayroll,
   markPaid,
@@ -9,6 +10,7 @@ const {
 const { protect, authorize } = require("../middleware/auth");
 const router = express.Router();
 
+router.get("/my", protect, getMyPayrolls);
 router.get(
   "/",
   protect,

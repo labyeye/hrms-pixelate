@@ -1,8 +1,17 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
-import { AlertCircle, Eye, EyeOff, ArrowRight } from "lucide-react";
-import nesthrlogo from "../../assets/nesthr.png";
+import {
+  AlertCircle,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  Users,
+  Clock,
+  DollarSign,
+  BarChart2,
+} from "lucide-react";
+import nesthrlogo from "../../assets/logo.png";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -24,46 +33,90 @@ export default function LoginPage() {
       setError(result.error || "Login failed. Please check your credentials.");
   };
 
+  const features = [
+    { icon: Users, label: "Employee Management" },
+    { icon: Clock, label: "Attendance Tracking" },
+    { icon: DollarSign, label: "Payroll Processing" },
+    { icon: BarChart2, label: "Reports & Analytics" },
+  ];
+
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      {/* Neubrutalism background accents */}
-      <div className="absolute top-0 right-0 w-64 h-64 bg-[#024BAB] opacity-5 -translate-y-1/2 translate-x-1/2" />
-      <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#FA731C] opacity-5 translate-y-1/2 -translate-x-1/2" />
+    <div className="min-h-screen flex">
+      {/* ── Left Panel ─────────────────────────────────────────────────────── */}
+      <div className="hidden lg:flex lg:w-1/2 bg-[#024BAB] flex-col justify-between p-10 relative overflow-hidden">
+        {/* Background decoration */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
 
-      {/* Card */}
-      <div className="w-full max-w-md border-2 border-black bg-white relative z-10">
-        {/* Top accent bar */}
-        <div className="h-2 bg-[#024BAB] border-b-2 border-black" />
+        {/* Logo */}
+        <div className="relative z-10">
+          <img
+            src={nesthrlogo}
+            alt="NestHR"
+            className="h-14 w-auto object-contain bg-white"
+          />
+        </div>
 
-        <div className="p-8 md:p-10">
-          {/* Logo */}
-          <div className="flex justify-center mb-8">
+        {/* Headline */}
+        <div className="relative z-10">
+          <h1 className="text-4xl xl:text-5xl font-display font-black text-white leading-tight mb-5">
+            Every employee.
+            <br />
+            Every payslip.
+            <br />
+            One place.
+          </h1>
+          <p className="text-white/70 text-base font-medium max-w-sm">
+            Manage your entire workforce — attendance, leaves, payroll and
+            reports — all from a single dashboard.
+          </p>
+        </div>
+
+        {/* Feature badges */}
+        <div className="relative z-10 flex flex-wrap gap-2">
+          {features.map(({ icon: Icon, label }) => (
+            <div
+              key={label}
+              className="flex items-center gap-2 bg-white/10 border border-white/20 px-4 py-2 text-white text-sm font-bold"
+            >
+              <Icon className="w-4 h-4 text-white/70" />
+              {label}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Right Panel ────────────────────────────────────────────────────── */}
+      <div className="flex-1 bg-white flex items-center justify-center p-6 sm:p-10">
+        <div className="w-full max-w-md">
+          {/* Mobile logo */}
+          <div className="lg:hidden flex justify-center mb-8">
             <img
               src={nesthrlogo}
               alt="NestHR"
-              className="h-14 w-auto object-contain"
+              className="h-12 w-auto object-contain"
             />
           </div>
 
           {/* Heading */}
-          <div className="mb-7">
-            <h1 className="text-2xl font-display font-black text-black leading-tight">
+          <div className="mb-8">
+            <h2 className="text-2xl sm:text-3xl font-display font-black text-black">
               Welcome back
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            </h2>
+            <p className="text-sm text-gray-500 mt-1 font-medium">
               Sign in to your workspace
             </p>
           </div>
 
           {/* Error */}
           {error && (
-            <div className="flex items-center gap-2 bg-[#EF4444]/10 border-2 border-[#EF4444] text-[#EF4444] text-sm px-3 py-2.5 mb-5">
+            <div className="flex items-center gap-2 bg-red-50 border-2 border-red-400 text-red-600 text-sm px-3 py-2.5 mb-5">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span className="font-medium">{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email */}
             <div>
               <label className="block text-xs font-black text-black uppercase tracking-wider mb-1.5">
@@ -77,7 +130,7 @@ export default function LoginPage() {
                   setError("");
                 }}
                 placeholder="you@company.com"
-                className="w-full px-3 py-2.5 border-2 border-black text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB] focus:ring-offset-0"
+                className="w-full px-4 py-3 border-2 border-black text-sm font-medium bg-white focus:outline-none focus:border-[#024BAB] transition-colors"
                 required
                 autoComplete="email"
                 autoFocus
@@ -89,7 +142,7 @@ export default function LoginPage() {
               <label className="block text-xs font-black text-black uppercase tracking-wider mb-1.5">
                 Password
               </label>
-              <div className="flex border-2 border-black">
+              <div className="flex border-2 border-black focus-within:border-[#024BAB] transition-colors">
                 <input
                   type={showPw ? "text" : "password"}
                   value={password}
@@ -98,7 +151,7 @@ export default function LoginPage() {
                     setError("");
                   }}
                   placeholder="Your password"
-                  className="flex-1 px-3 py-2.5 bg-white text-sm font-medium outline-none"
+                  className="flex-1 px-4 py-3 bg-white text-sm font-medium outline-none"
                   required
                   autoComplete="current-password"
                 />
@@ -120,7 +173,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#024BAB] text-white py-3 text-sm font-black border-2 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#0a0a0a] transition-all mt-2 flex items-center justify-center gap-2"
+              className="w-full bg-[#024BAB] text-white py-3.5 text-sm font-black border-2 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#0a0a0a] transition-all flex items-center justify-center gap-2 mt-2"
             >
               {loading ? (
                 <>
@@ -135,31 +188,19 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Footer links */}
-          <div className="mt-6 pt-6 border-t-2 border-black/10 text-center space-y-2">
-            <p className="text-xs text-muted-foreground">
+          {/* Footer */}
+          <div className="mt-8 pt-6 border-t-2 border-black/10 text-center">
+            <p className="text-xs text-gray-500">
               New to NestHR?{" "}
               <Link
                 to="/register"
-                className="font-black text-black underline hover:text-[#024BAB] transition-colors"
+                className="font-black text-[#024BAB] hover:underline transition-colors"
               >
                 Create an account
               </Link>
             </p>
           </div>
         </div>
-      </div>
-
-      {/* Feature chips */}
-      <div className="flex flex-wrap justify-center gap-2 mt-6 relative z-10">
-        {["Attendance", "Payroll", "Leave", "Reports"].map((s) => (
-          <span
-            key={s}
-            className="border-2 border-black bg-white text-black px-3 py-1 text-xs font-black"
-          >
-            {s}
-          </span>
-        ))}
       </div>
     </div>
   );

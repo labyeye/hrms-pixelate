@@ -17,7 +17,8 @@ import {
   Gift,
   CreditCard,
   SlidersHorizontal,
-  Nfc,
+  FileText,
+  Banknote,
 } from "lucide-react";
 
 export interface NavItem {
@@ -86,43 +87,42 @@ const allGroups: NavGroup[] = [
         title: "Attendance",
         href: "/attendance",
         icon: Clock,
-        roles: [
-          "super_admin",
-          "hr_manager",
-          "hr_executive",
-          "department_head",
-          "employee",
-        ],
+        roles: ["super_admin", "hr_manager", "hr_executive", "department_head"],
       },
       {
         title: "Leave",
         href: "/leave",
         icon: CalendarDays,
-        roles: [
-          "super_admin",
-          "hr_manager",
-          "hr_executive",
-          "department_head",
-          "employee",
-        ],
+        roles: ["super_admin", "hr_manager", "hr_executive", "department_head"],
       },
       {
         title: "Holidays",
         href: "/holidays",
         icon: Gift,
-        roles: [
-          "super_admin",
-          "hr_manager",
-          "hr_executive",
-          "department_head",
-          "employee",
-        ],
+        roles: ["super_admin", "hr_manager", "hr_executive", "department_head"],
       },
       {
         title: "Biometric",
         href: "/biometric",
         icon: Fingerprint,
         roles: ["super_admin", "hr_manager"],
+      },
+    ],
+  },
+  {
+    label: "My Workspace",
+    items: [
+      {
+        title: "My Payroll",
+        href: "/my-payroll",
+        icon: Banknote,
+        roles: ["employee"],
+      },
+      {
+        title: "My Report",
+        href: "/my-report",
+        icon: FileText,
+        roles: ["employee"],
       },
     ],
   },

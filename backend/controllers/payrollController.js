@@ -315,8 +315,26 @@ const bulkMarkPaid = asyncHandler(async (req, res) => {
   });
 });
 
+// Employee self-service: get own payroll records
+const getMyPayrolls = asyncHandler(async (req, res) => {
+  const emp = await Employee.findOne({
+    user: req.user._id,
+    company: req.user.company,
+  });
+  if (!emp) return res.json({ success: true, data: [] });
+
+  const { month, year } = req.query;
+  const filter = { employee: emp._id, company: req.user.company };
+  if (month) filter.month = parseInt(month);
+  if (year) filter.year = parseInt(year);
+
+  const payrolls = await Payroll.find(filter).sort({ year: -1, month: -1 });
+  res.json({ success: true, data: payrolls });
+});
+
 module.exports = {
   getPayrolls,
+  getMyPayrolls,
   processPayroll,
   updatePayroll,
   markPaid,

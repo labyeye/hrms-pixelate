@@ -442,11 +442,13 @@ export default function EmployeeDashboard() {
                         Math.round((employee.salary || 0) / 12),
                       ),
                       color: "text-[#024BAB]",
+                      icon: IndianRupee,
                     },
                     {
                       label: "Joined",
                       value: formatDate(employee.joinDate),
                       color: "text-black",
+                      icon: Calendar,
                     },
                     {
                       label: "Attendance",
@@ -454,18 +456,18 @@ export default function EmployeeDashboard() {
                         ? `${attendance.attendancePercentage.toFixed(0)}%`
                         : "—",
                       color: "text-[#00C48C]",
+                      icon: Clock,
                     },
-                  ].map(({ label, value, color }) => (
+                  ].map(({ label, value, color, icon: Icon }) => (
                     <div
                       key={label}
-                      className="border-2 border-black px-3 py-1.5 text-center bg-white min-w-[90px]"
+                      className="border-2 border-black px-3 py-1.5 text-center bg-white min-w-[90px] flex flex-col items-center gap-0.5"
                     >
+                      <Icon className={cn("w-3.5 h-3.5 mt-0.5", color)} />
                       <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
                         {label}
                       </p>
-                      <p className={cn("text-sm font-bold mt-0.5", color)}>
-                        {value}
-                      </p>
+                      <p className={cn("text-sm font-bold", color)}>{value}</p>
                     </div>
                   ))}
                 </div>
