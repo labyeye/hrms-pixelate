@@ -101,6 +101,7 @@ export default function AttendancePage() {
     notes: "",
   });
   const [saving, setSaving] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -143,11 +144,26 @@ export default function AttendancePage() {
   };
 
   const summary = {
+    total: records.filter((r) => !["holiday", "weekend"].includes(r.status)).length,
     present: records.filter((r) => r.status === "present").length,
     absent: records.filter((r) => r.status === "absent").length,
+    halfDay: records.filter((r) => r.status === "half_day").length,
     late: records.filter((r) => r.status === "late").length,
+    earlyLeaving: records.filter((r) => {
+      const rec = r as any;
+      return rec.earlyLeaving || (r.status === "present" && rec.earlyCheckout);
+    }).length,
     leave: records.filter((r) => r.status === "on_leave").length,
   };
+
+  const displayedRecords = activeFilter
+    ? activeFilter === "early_leaving"
+      ? records.filter((r) => {
+          const rec = r as any;
+          return rec.earlyLeaving || (r.status === "present" && rec.earlyCheckout);
+        })
+      : records.filter((r) => r.status === activeFilter)
+    : records;
 
   return (
     <AppLayout title="Attendance">
@@ -190,51 +206,34 @@ export default function AttendancePage() {
         )}
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+      {/* Summary bar */}
+      <div className="border-2 border-black bg-white mb-5 flex flex-wrap">
         {[
-          {
-            label: "Present",
-            value: summary.present,
-            bg: "bg-[#024BAB]",
-            textColor: "text-white",
-          },
-          {
-            label: "Absent",
-            value: summary.absent,
-            bg: "bg-[#EF4444]",
-            textColor: "text-white",
-          },
-          {
-            label: "Late",
-            value: summary.late,
-            bg: "bg-[#FA731C]",
-            textColor: "text-white",
-          },
-          {
-            label: "On Leave",
-            value: summary.leave,
-            bg: "bg-[#0D9488]",
-            textColor: "text-white",
-          },
-        ].map(({ label, value, bg, textColor }) => (
-          <div key={label} className="border-2 bg-white p-4">
-            <div
+          { label: "Total", value: summary.total, color: "text-[#024BAB]", filterKey: "total" },
+          { label: "Present", value: summary.present, color: "text-[#22C55E]", filterKey: "present" },
+          { label: "Absent", value: summary.absent, color: "text-[#EF4444]", filterKey: "absent" },
+          { label: "Half Day", value: summary.halfDay, color: "text-[#F59E0B]", filterKey: "half_day" },
+          { label: "Late Commers", value: summary.late, color: "text-[#A855F7]", filterKey: "late" },
+          { label: "Early Leaving", value: summary.earlyLeaving, color: "text-[#3B82F6]", filterKey: "early_leaving" },
+          { label: "On Leave", value: summary.leave, color: "text-[#EAB308]", filterKey: "on_leave" },
+        ].map(({ label, value, color, filterKey }, idx, arr) => {
+          const isActive = activeFilter === filterKey;
+          return (
+            <button
+              key={label}
+              onClick={() => setActiveFilter(isActive || filterKey === "total" ? null : filterKey)}
               className={cn(
-                "w-10 h-10 border-2 border-black flex items-center justify-center mb-2",
-                bg,
+                "flex flex-col gap-1 px-6 py-4 flex-1 min-w-[100px] text-left transition-colors",
+                idx === 0 ? "bg-[#F3F4FF]" : "",
+                idx !== arr.length - 1 && "border-r border-black/10",
+                isActive && "ring-2 ring-inset ring-black",
               )}
             >
-              <Clock className={cn("w-5 h-5", textColor)} />
-            </div>
-            <p className="font-display font-bold text-2xl text-black">
-              {value}
-            </p>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              {label}
-            </p>
-          </div>
-        ))}
+              <p className="text-xs text-muted-foreground font-medium">{label}</p>
+              <p className={cn("text-3xl font-bold", color)}>{value}</p>
+            </button>
+          );
+        })}
       </div>
 
       {/* Table */}
@@ -242,7 +241,7 @@ export default function AttendancePage() {
         <div className="flex items-center justify-center h-48">
           <div className="w-8 h-8 bg-[#024BAB] border-2 border-black animate-bounce" />
         </div>
-      ) : records.length === 0 ? (
+      ) : displayedRecords.length === 0 ? (
         <div className="border-2 bg-white p-12 flex flex-col items-center justify-center">
           <Clock className="w-12 h-12 text-muted-foreground/30 mb-3" />
           <p className="font-bold text-black">No attendance records</p>
@@ -275,7 +274,7 @@ export default function AttendancePage() {
               </tr>
             </thead>
             <tbody>
-              {records.map((rec, i) => {
+              {displayedRecords.map((rec, i) => {
                 const Icon = STATUS_ICONS[rec.status] || Clock;
                 return (
                   <tr

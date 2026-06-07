@@ -173,19 +173,26 @@ export const billingAPI = {
     request<{ success: boolean; data: any }>("/billing/subscription"),
   getInvoices: () =>
     request<{ success: boolean; data: any }>("/billing/invoices"),
-  createOrder: (plan: string, billingCycle: "monthly" | "yearly") =>
+  createOrder: (plan: string, billingCycle: "monthly" | "yearly", gateway: "razorpay" | "hdfc" = "razorpay") =>
     request<{ success: boolean; data: any }>("/billing/create-order", {
       method: "POST",
-      body: JSON.stringify({ plan, billingCycle }),
+      body: JSON.stringify({ plan, billingCycle, gateway }),
     }),
-  verifyPayment: (payload: { orderId: string; trackingId?: string | null }) =>
-    request<{ success: boolean; message: string; data: any }>(
-      "/billing/verify-payment",
-      {
-        method: "POST",
-        body: JSON.stringify(payload),
-      },
-    ),
+  verifyRazorpay: (payload: { razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string }) =>
+    request<{ success: boolean; message: string; data: any }>("/billing/verify-razorpay", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  verifyHdfc: (payload: { orderId: string; trackingId?: string | null }) =>
+    request<{ success: boolean; message: string; data: any }>("/billing/verify-hdfc", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  verifyPayment: (payload: { orderId?: string; trackingId?: string | null; razorpayOrderId?: string; razorpayPaymentId?: string; razorpaySignature?: string }) =>
+    request<{ success: boolean; message: string; data: any }>("/billing/verify-payment", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
   // Payment Methods
   getPaymentMethods: () =>
     request<{ success: boolean; data: any }>("/payment-methods"),

@@ -36,6 +36,8 @@ const subscriptionSchema = new mongoose.Schema(
     hdfcOrderId: { type: String, index: true },
     hdfcTrackingId: { type: String },
     hdfcBankRefNo: { type: String },
+    razorpayOrderId: { type: String, index: true },
+    razorpayPaymentId: { type: String },
   },
   { timestamps: true },
 );
