@@ -289,8 +289,10 @@ const processPayroll = asyncHandler(async (req, res) => {
     let loanDeduction = 0;
     const loanUpdates = [];
 
-    // OT from attendance records (auto-tracked) + OT from manual transactions
-    const attendanceOTPay = attendanceOTHours * (emp.otRate || 0);
+    // OT hourly rate = dailyRate ÷ shiftHours (derived, not stored on employee)
+    const shiftHours = shiftTotalMins > 0 ? shiftTotalMins / 60 : 8;
+    const otHourlyRate = dailyRate / shiftHours;
+    const attendanceOTPay = attendanceOTHours * otHourlyRate;
     const grossSalary = earnedSalary + totalAllowances + totalOT + attendanceOTPay;
     const preDeductions = lateDeduction + earlyCheckoutDeduction + totalPenalties;
     let salaryAfterDeductions = Math.max(0, grossSalary - preDeductions);
@@ -321,7 +323,9 @@ const processPayroll = asyncHandler(async (req, res) => {
       month: m,
       year: y,
       basicSalary: salary,
+      earnedBasic: earnedSalary,
       otherAllowances: totalAllowances,
+      otPay: attendanceOTPay + totalOT,
       grossSalary,
       loanDeduction,
       otherDeductions: preDeductions,

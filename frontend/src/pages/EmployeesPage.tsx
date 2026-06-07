@@ -1936,9 +1936,9 @@ export default function EmployeesPage() {
                       placeholder="e.g. 2.5"
                     />
                   </div>
-                  {txForm.hours && viewEmp?.otRate ? (
+                  {txForm.hours && parseFloat(txForm.hours) > 0 ? (
                     <div className="bg-amber-50 border-2 border-amber-400 px-3 py-2 text-sm font-bold text-amber-800">
-                      OT Amount = {parseFloat(txForm.hours)} hrs × ₹{viewEmp.otRate}/hr = ₹{(parseFloat(txForm.hours) * (viewEmp.otRate ?? 0)).toFixed(2)}
+                      OT amount auto-calculated on payroll run: dailyRate ÷ shiftHours × {parseFloat(txForm.hours)}h
                     </div>
                   ) : null}
                 </>

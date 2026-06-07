@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const Transaction = require("../models/Transaction");
 const Employee = require("../models/Employee");
+const DeductionRule = require("../models/DeductionRule");
 
 const getTransactions = asyncHandler(async (req, res) => {
   const { employee, type } = req.query;
@@ -29,10 +30,40 @@ const createTransaction = asyncHandler(async (req, res) => {
       throw new Error("hours is required for overtime");
     }
     finalHours = Number(hours);
-    // Auto-calculate from employee's otRate if amount not provided
+    // Auto-calculate OT: dailyRate ÷ shiftHours × OT hours
     if (!finalAmount) {
-      const emp = await Employee.findById(employee);
-      finalAmount = finalHours * (emp?.otRate || 0);
+      const emp = await Employee.findById(employee).populate("shift");
+      const rule = await DeductionRule.findOne({ company: emp?.company });
+
+      // Shift hours from employee's assigned shift or deduction rule defaults
+      let shiftStartH, shiftStartM, shiftEndH, shiftEndM;
+      if (emp?.shift?.startTime) {
+        const [sh, sm] = emp.shift.startTime.split(":").map(Number);
+        shiftStartH = sh; shiftStartM = sm;
+      } else { shiftStartH = rule?.shiftStartHour ?? 9; shiftStartM = rule?.shiftStartMinute ?? 0; }
+      if (emp?.shift?.endTime) {
+        const [eh, em] = emp.shift.endTime.split(":").map(Number);
+        shiftEndH = eh; shiftEndM = em;
+      } else { shiftEndH = rule?.shiftEndHour ?? 18; shiftEndM = rule?.shiftEndMinute ?? 0; }
+
+      const shiftTotalMins = (shiftEndH * 60 + shiftEndM) - (shiftStartH * 60 + shiftStartM);
+      const shiftHours = shiftTotalMins > 0 ? shiftTotalMins / 60 : 8;
+
+      // Use same working-days logic as payroll (6-day default)
+      const workDaysPerWeek = emp?.workDaysPerWeek ?? 6;
+      const now = new Date();
+      const y = now.getFullYear(), m = now.getMonth() + 1;
+      let workingDays = 0;
+      const daysInMonth = new Date(y, m, 0).getDate();
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dow = new Date(y, m - 1, d).getDay();
+        if (workDaysPerWeek >= 7) workingDays++;
+        else if (workDaysPerWeek >= 6 && dow >= 1 && dow <= 6) workingDays++;
+        else if (dow >= 1 && dow <= 5) workingDays++;
+      }
+      const dailyRate = (emp?.salary ?? 0) / (workingDays || 26);
+      const otHourlyRate = dailyRate / shiftHours;
+      finalAmount = finalHours * otHourlyRate;
     }
   } else {
     if (!finalAmount) {

@@ -111,6 +111,9 @@ export interface Payroll {
   month: number;
   year: number;
   basicSalary: number;
+  earnedBasic?: number;
+  otherAllowances?: number;
+  otPay?: number;
   grossSalary: number;
   loanDeduction: number;
   otherDeductions: number;
@@ -119,6 +122,8 @@ export interface Payroll {
   workingDays: number;
   presentDays: number;
   leaveDays: number;
+  overtimeHours?: number;
+  weeklyOffDays?: number;
   status: "draft" | "processed" | "paid";
   paidAt?: string;
   remarks?: string;
