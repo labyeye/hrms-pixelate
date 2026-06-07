@@ -17,22 +17,45 @@ import {
   MousePointerClick,
 } from "lucide-react";
 
-const VERIFY_MODE_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
-  fingerprint: { label: "Finger",   icon: Fingerprint,       color: "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB]" },
-  card:        { label: "Card",     icon: CreditCard,        color: "bg-[#A855F7]/10 text-[#A855F7] border-[#A855F7]" },
-  face:        { label: "Face",     icon: Scan,              color: "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]" },
-  password:    { label: "Password", icon: KeyRound,          color: "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C]" },
-  manual:      { label: "Manual",   icon: MousePointerClick, color: "bg-gray-100 text-gray-500 border-gray-300"       },
+const VERIFY_MODE_CONFIG: Record<
+  string,
+  { label: string; icon: any; color: string }
+> = {
+  fingerprint: {
+    label: "Finger",
+    icon: Fingerprint,
+    color: "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB]",
+  },
+  card: {
+    label: "Card",
+    icon: CreditCard,
+    color: "bg-[#A855F7]/10 text-[#A855F7] border-[#A855F7]",
+  },
+  face: {
+    label: "Face",
+    icon: Scan,
+    color: "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]",
+  },
+  password: {
+    label: "Password",
+    icon: KeyRound,
+    color: "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C]",
+  },
+  manual: {
+    label: "Manual",
+    icon: MousePointerClick,
+    color: "bg-gray-100 text-gray-500 border-gray-300",
+  },
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  present:  "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C] px-2 py-0.5",
-  absent:   "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444] px-2 py-0.5",
+  present: "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C] px-2 py-0.5",
+  absent: "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444] px-2 py-0.5",
   half_day: "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
-  late:     "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
+  late: "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
   on_leave: "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB] px-2 py-0.5",
-  holiday:  "bg-[#A855F7]/10 text-[#A855F7] border-[#A855F7] px-2 py-0.5",
-  weekend:  "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
+  holiday: "bg-[#A855F7]/10 text-[#A855F7] border-[#A855F7] px-2 py-0.5",
+  weekend: "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
 };
 
 const STATUS_ICONS: Record<string, React.ElementType> = {
@@ -89,7 +112,10 @@ export default function AttendancePage() {
       });
       if (attRes.success) setRecords(attRes.data);
       if (!isEmployee) {
-        const empRes = await employeeAPI.getAll({ status: "active", limit: "200" });
+        const empRes = await employeeAPI.getAll({
+          status: "active",
+          limit: "200",
+        });
         if (empRes.success) setEmployees(empRes.data);
       }
     } catch {}
@@ -301,10 +327,16 @@ export default function AttendancePage() {
                     <td className="px-4 py-3">
                       {(() => {
                         const mode = (rec as any).verifyMode || "manual";
-                        const cfg = VERIFY_MODE_CONFIG[mode] || VERIFY_MODE_CONFIG.manual;
+                        const cfg =
+                          VERIFY_MODE_CONFIG[mode] || VERIFY_MODE_CONFIG.manual;
                         const ModeIcon = cfg.icon;
                         return (
-                          <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold border-2", cfg.color)}>
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold border-2",
+                              cfg.color,
+                            )}
+                          >
                             <ModeIcon className="w-3 h-3" />
                             {cfg.label}
                           </span>

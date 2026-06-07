@@ -86,13 +86,23 @@ export default function BiometricDevicePage() {
     captureFaceDescriptor,
     startLiveDetection: enrollStartLiveDetection,
   } = useFaceRecognition();
-  const [enrollEmployees, setEnrollEmployees] = useState<Array<{
-    _id: string; firstName: string; lastName: string; employeeId: string; hasFace: boolean;
-  }>>([]);
+  const [enrollEmployees, setEnrollEmployees] = useState<
+    Array<{
+      _id: string;
+      firstName: string;
+      lastName: string;
+      employeeId: string;
+      hasFace: boolean;
+    }>
+  >([]);
   const [enrollEmpLoading, setEnrollEmpLoading] = useState(false);
   const [enrollSelectedEmp, setEnrollSelectedEmp] = useState("");
-  const [enrollStep, setEnrollStep] = useState<"select" | "capture" | "preview" | "saving" | "done">("select");
-  const [enrollDescriptor, setEnrollDescriptor] = useState<number[] | null>(null);
+  const [enrollStep, setEnrollStep] = useState<
+    "select" | "capture" | "preview" | "saving" | "done"
+  >("select");
+  const [enrollDescriptor, setEnrollDescriptor] = useState<number[] | null>(
+    null,
+  );
   const [enrollError, setEnrollError] = useState("");
 
   // PIN state
@@ -288,7 +298,11 @@ export default function BiometricDevicePage() {
     setEnrollStep("saving");
     setEnrollError("");
     try {
-      await biometricAPI.enrollFaceFromDevice(token, enrollSelectedEmp, enrollDescriptor);
+      await biometricAPI.enrollFaceFromDevice(
+        token,
+        enrollSelectedEmp,
+        enrollDescriptor,
+      );
       setEnrollStep("done");
       fetchEnrollEmployees();
     } catch (e: any) {
@@ -633,7 +647,9 @@ export default function BiometricDevicePage() {
                   {enrollError && (
                     <div className="flex items-start gap-2 bg-red-950/50 border border-red-400 p-3 mb-4 text-left">
                       <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                      <p className="text-red-300 text-sm font-medium">{enrollError}</p>
+                      <p className="text-red-300 text-sm font-medium">
+                        {enrollError}
+                      </p>
                     </div>
                   )}
 
@@ -643,38 +659,59 @@ export default function BiometricDevicePage() {
                       {enrollEmpLoading ? (
                         <div className="flex items-center justify-center gap-2 py-8">
                           <Loader2 className="w-6 h-6 animate-spin text-white/40" />
-                          <span className="text-white/40 text-sm">Loading employees…</span>
+                          <span className="text-white/40 text-sm">
+                            Loading employees…
+                          </span>
                         </div>
                       ) : (
                         <>
                           <select
                             value={enrollSelectedEmp}
-                            onChange={(e) => setEnrollSelectedEmp(e.target.value)}
+                            onChange={(e) =>
+                              setEnrollSelectedEmp(e.target.value)
+                            }
                             className="w-full bg-white/10 border-2 border-white/20 text-white px-3 py-3 text-sm font-medium focus:outline-none focus:border-[#024BAB] mb-4"
                           >
-                            <option value="" className="bg-[#0A0F1E]">Select employee…</option>
+                            <option value="" className="bg-[#0A0F1E]">
+                              Select employee…
+                            </option>
                             {enrollEmployees.map((emp) => (
-                              <option key={emp._id} value={emp._id} className="bg-[#0A0F1E]">
-                                {emp.firstName} {emp.lastName} ({emp.employeeId}){emp.hasFace ? " ✓" : ""}
+                              <option
+                                key={emp._id}
+                                value={emp._id}
+                                className="bg-[#0A0F1E]"
+                              >
+                                {emp.firstName} {emp.lastName} ({emp.employeeId}
+                                ){emp.hasFace ? " ✓" : ""}
                               </option>
                             ))}
                           </select>
                           {enrollSelectedEmp && (
                             <div className="mb-3 text-xs text-white/40">
-                              {enrollEmployees.find(e => e._id === enrollSelectedEmp)?.hasFace
+                              {enrollEmployees.find(
+                                (e) => e._id === enrollSelectedEmp,
+                              )?.hasFace
                                 ? "⚠ Already enrolled — will replace existing face"
                                 : "No face registered yet"}
                             </div>
                           )}
                           <button
                             onClick={handleEnrollStartCamera}
-                            disabled={!enrollSelectedEmp || enrollLoadState === "loading"}
+                            disabled={
+                              !enrollSelectedEmp ||
+                              enrollLoadState === "loading"
+                            }
                             className="w-full bg-[#024BAB] border-2 border-white/20 text-white font-black uppercase py-3 disabled:opacity-40 flex items-center justify-center gap-2"
                           >
                             {enrollLoadState === "loading" ? (
-                              <><Loader2 className="w-4 h-4 animate-spin" /> Loading models…</>
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />{" "}
+                                Loading models…
+                              </>
                             ) : (
-                              <><Camera className="w-4 h-4" /> Open Camera</>
+                              <>
+                                <Camera className="w-4 h-4" /> Open Camera
+                              </>
                             )}
                           </button>
                         </>
@@ -697,12 +734,14 @@ export default function BiometricDevicePage() {
                           ref={enrollCanvasRef}
                           className="absolute inset-0 w-full h-full"
                         />
-                        <div className={cn(
-                          "absolute top-3 right-3 px-2 py-1 text-[10px] font-black uppercase border",
-                          enrollLiveDetection
-                            ? "bg-green-500 border-green-700 text-white"
-                            : "bg-red-500 border-red-700 text-white"
-                        )}>
+                        <div
+                          className={cn(
+                            "absolute top-3 right-3 px-2 py-1 text-[10px] font-black uppercase border",
+                            enrollLiveDetection
+                              ? "bg-green-500 border-green-700 text-white"
+                              : "bg-red-500 border-red-700 text-white",
+                          )}
+                        >
                           {enrollLiveDetection ? "Face detected" : "No face"}
                         </div>
                       </div>
@@ -712,7 +751,9 @@ export default function BiometricDevicePage() {
                         className="w-full bg-[#024BAB] border-2 border-white/20 text-white font-black uppercase py-3 disabled:opacity-40 mb-2 flex items-center justify-center gap-2"
                       >
                         <Camera className="w-4 h-4" />
-                        {enrollLiveDetection ? "Capture Face" : "Position face in camera…"}
+                        {enrollLiveDetection
+                          ? "Capture Face"
+                          : "Position face in camera…"}
                       </button>
                       <button
                         onClick={handleEnrollReset}
@@ -728,8 +769,12 @@ export default function BiometricDevicePage() {
                     <>
                       <div className="bg-green-950/50 border-2 border-green-400 p-6 mb-4 text-center">
                         <Check className="w-10 h-10 text-green-400 mx-auto mb-2" />
-                        <p className="font-black text-green-300">Face captured!</p>
-                        <p className="text-xs text-green-500 mt-1">128-dimensional descriptor ready</p>
+                        <p className="font-black text-green-300">
+                          Face captured!
+                        </p>
+                        <p className="text-xs text-green-500 mt-1">
+                          128-dimensional descriptor ready
+                        </p>
                       </div>
                       <button
                         onClick={handleEnrollSave}
@@ -759,10 +804,16 @@ export default function BiometricDevicePage() {
                     <>
                       <div className="bg-green-950/50 border-2 border-green-400 p-6 mb-4 text-center">
                         <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-2" />
-                        <p className="font-black text-white text-lg">Enrollment complete!</p>
+                        <p className="font-black text-white text-lg">
+                          Enrollment complete!
+                        </p>
                         <p className="text-sm text-green-400 mt-1">
-                          {enrollEmployees.find(e => e._id === enrollSelectedEmp)?.firstName} can now
-                          use face attendance.
+                          {
+                            enrollEmployees.find(
+                              (e) => e._id === enrollSelectedEmp,
+                            )?.firstName
+                          }{" "}
+                          can now use face attendance.
                         </p>
                       </div>
                       <button

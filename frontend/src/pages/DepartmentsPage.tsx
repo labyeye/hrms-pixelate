@@ -67,7 +67,7 @@ export default function DepartmentsPage() {
       description: d.description || "",
       budget: String(d.budget || ""),
       shiftStartTime: (d as any).shiftStartTime || "",
-      shiftEndTime:   (d as any).shiftEndTime   || "",
+      shiftEndTime: (d as any).shiftEndTime || "",
     });
     setShowModal(true);
   };
@@ -138,7 +138,17 @@ export default function DepartmentsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b-2 border-black bg-[#024BAB]/5">
-                {["", "Department", "Code", "Description", "Shift Timings", "Budget (₹)", "Headcount", "Head", "Actions"].map((h) => (
+                {[
+                  "",
+                  "Department",
+                  "Code",
+                  "Description",
+                  "Shift Timings",
+                  "Budget (₹)",
+                  "Headcount",
+                  "Head",
+                  "Actions",
+                ].map((h) => (
                   <th
                     key={h}
                     className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider"
@@ -176,12 +186,16 @@ export default function DepartmentsPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-sm text-muted-foreground max-w-48">
-                    <span className="line-clamp-1">{dept.description || "—"}</span>
+                    <span className="line-clamp-1">
+                      {dept.description || "—"}
+                    </span>
                   </td>
                   <td className="px-4 py-3">
-                    {(dept as any).shiftStartTime && (dept as any).shiftEndTime ? (
+                    {(dept as any).shiftStartTime &&
+                    (dept as any).shiftEndTime ? (
                       <span className="text-xs font-bold text-[#024BAB] border-2 border-[#024BAB] bg-[#024BAB]/10 px-2 py-0.5">
-                        {(dept as any).shiftStartTime} – {(dept as any).shiftEndTime}
+                        {(dept as any).shiftStartTime} –{" "}
+                        {(dept as any).shiftEndTime}
                       </span>
                     ) : (
                       <span className="text-muted-foreground text-xs">—</span>
@@ -197,7 +211,9 @@ export default function DepartmentsPage() {
                       <div className="w-6 h-6 bg-[#024BAB]/10 border border-black/20 flex items-center justify-center">
                         <Users className="w-3.5 h-3.5 text-[#024BAB]" />
                       </div>
-                      <span className="font-bold text-black">{dept.headcount || 0}</span>
+                      <span className="font-bold text-black">
+                        {dept.headcount || 0}
+                      </span>
                     </div>
                   </td>
                   <td className="px-4 py-3">
@@ -309,7 +325,9 @@ export default function DepartmentsPage() {
                   <input
                     type="time"
                     value={form.shiftStartTime}
-                    onChange={(e) => setForm({ ...form, shiftStartTime: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, shiftStartTime: e.target.value })
+                    }
                     className="border-2 border-black w-full px-3 py-2 text-sm"
                   />
                 </div>
@@ -320,7 +338,9 @@ export default function DepartmentsPage() {
                   <input
                     type="time"
                     value={form.shiftEndTime}
-                    onChange={(e) => setForm({ ...form, shiftEndTime: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, shiftEndTime: e.target.value })
+                    }
                     className="border-2 border-black w-full px-3 py-2 text-sm"
                   />
                 </div>

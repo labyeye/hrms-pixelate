@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { Plus, TrendingUp, Star, X } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
-  draft:     "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
+  draft: "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
   in_review: "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
   completed: "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C] px-2 py-0.5",
 };

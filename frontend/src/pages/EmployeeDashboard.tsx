@@ -48,13 +48,25 @@ interface AttendanceStats {
   attendancePercentage: number;
 }
 
-function InfoRow({ label, value, icon: Icon }: { label: string; value?: string | null; icon?: any }) {
+function InfoRow({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value?: string | null;
+  icon?: any;
+}) {
   return (
     <div className="flex items-start gap-3 py-2.5 border-b border-black/8 last:border-0">
       {Icon && <Icon className="w-3.5 h-3.5 text-gray-400 mt-0.5 shrink-0" />}
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-0.5">{label}</p>
-        <p className="text-sm font-semibold text-black truncate">{value || "—"}</p>
+        <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-0.5">
+          {label}
+        </p>
+        <p className="text-sm font-semibold text-black truncate">
+          {value || "—"}
+        </p>
       </div>
     </div>
   );
@@ -71,28 +83,41 @@ const TABS: { id: Tab; label: string; icon: any }[] = [
 ];
 
 const leaveStatusColor: Record<string, string> = {
-  approved:  "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]",
-  pending:   "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C]",
-  rejected:  "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]",
+  approved: "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]",
+  pending: "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C]",
+  rejected: "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]",
   cancelled: "bg-gray-100 text-gray-500 border-gray-300",
 };
 
 const payrollStatusColor: Record<string, string> = {
-  paid:      "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]",
+  paid: "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]",
   processed: "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB]",
-  draft:     "bg-gray-100 text-gray-500 border-gray-300",
+  draft: "bg-gray-100 text-gray-500 border-gray-300",
 };
 
 const attendanceStatusColor: Record<string, string> = {
-  present:  "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]",
-  absent:   "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]",
-  late:     "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C]",
+  present: "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]",
+  absent: "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]",
+  late: "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C]",
   on_leave: "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB]",
-  holiday:  "bg-[#A855F7]/10 text-[#A855F7] border-[#A855F7]",
-  weekend:  "bg-gray-100 text-gray-500 border-gray-300",
+  holiday: "bg-[#A855F7]/10 text-[#A855F7] border-[#A855F7]",
+  weekend: "bg-gray-100 text-gray-500 border-gray-300",
 };
 
-const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 
 // ── Component ───────────────────────────────────────────────────────────────
 
@@ -100,23 +125,27 @@ export default function EmployeeDashboard() {
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
 
-  const [employee, setEmployee]               = useState<any>(null);
-  const [attendance, setAttendance]           = useState<AttendanceStats | null>(null);
+  const [employee, setEmployee] = useState<any>(null);
+  const [attendance, setAttendance] = useState<AttendanceStats | null>(null);
   const [recentAttendance, setRecentAttendance] = useState<any[]>([]);
-  const [leaves, setLeaves]                   = useState<any[]>([]);
-  const [payrolls, setPayrolls]               = useState<any[]>([]);
-  const [performance, setPerformance]         = useState<any[]>([]);
-  const [loading, setLoading]                 = useState(true);
-  const [tab, setTab]                         = useState<Tab>("overview");
+  const [leaves, setLeaves] = useState<any[]>([]);
+  const [payrolls, setPayrolls] = useState<any[]>([]);
+  const [performance, setPerformance] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<Tab>("overview");
 
   // Settings state
-  const [editName, setEditName]     = useState("");
-  const [editPhone, setEditPhone]   = useState("");
-  const [saving, setSaving]         = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [saving, setSaving] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
-  const [pwForm, setPwForm]         = useState({ current: "", next: "", confirm: "" });
-  const [showPw, setShowPw]         = useState({ current: false, next: false, confirm: false });
-  const [pwSaving, setPwSaving]     = useState(false);
+  const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
+  const [showPw, setShowPw] = useState({
+    current: false,
+    next: false,
+    confirm: false,
+  });
+  const [pwSaving, setPwSaving] = useState(false);
 
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -132,19 +161,40 @@ export default function EmployeeDashboard() {
         setEditPhone(user.phone || "");
 
         await Promise.allSettled([
-          attendanceAPI.getAll({ employeeId: emp._id, limit: "60" }).then((r) => {
-            if (r.success) {
-              const records: any[] = r.data;
-              setRecentAttendance(records.slice(0, 14));
-              const present = records.filter((x) => ["present","late"].includes(x.status)).length;
-              const absent  = records.filter((x) => x.status === "absent").length;
-              const total   = records.length;
-              setAttendance({ presentDays: present, absentDays: absent, totalDays: total, attendancePercentage: total ? (present / total) * 100 : 0 });
-            }
-          }).catch(() => {}),
-          leaveAPI.getAll({ employeeId: emp._id }).then((r) => r.success && setLeaves(r.data)).catch(() => {}),
-          payrollAPI.getAll({ employeeId: emp._id, limit: "6" }).then((r) => r.success && setPayrolls(r.data)).catch(() => {}),
-          performanceAPI.getAll({ employeeId: emp._id }).then((r) => r.success && setPerformance(r.data)).catch(() => {}),
+          attendanceAPI
+            .getAll({ employeeId: emp._id, limit: "60" })
+            .then((r) => {
+              if (r.success) {
+                const records: any[] = r.data;
+                setRecentAttendance(records.slice(0, 14));
+                const present = records.filter((x) =>
+                  ["present", "late"].includes(x.status),
+                ).length;
+                const absent = records.filter(
+                  (x) => x.status === "absent",
+                ).length;
+                const total = records.length;
+                setAttendance({
+                  presentDays: present,
+                  absentDays: absent,
+                  totalDays: total,
+                  attendancePercentage: total ? (present / total) * 100 : 0,
+                });
+              }
+            })
+            .catch(() => {}),
+          leaveAPI
+            .getAll({ employeeId: emp._id })
+            .then((r) => r.success && setLeaves(r.data))
+            .catch(() => {}),
+          payrollAPI
+            .getAll({ employeeId: emp._id, limit: "6" })
+            .then((r) => r.success && setPayrolls(r.data))
+            .catch(() => {}),
+          performanceAPI
+            .getAll({ employeeId: emp._id })
+            .then((r) => r.success && setPerformance(r.data))
+            .catch(() => {}),
         ]);
       }
     } catch (err) {
@@ -154,14 +204,20 @@ export default function EmployeeDashboard() {
     }
   }, [user?.email, user?.name, user?.phone]);
 
-  useEffect(() => { loadEmployeeData(); }, [loadEmployeeData]);
+  useEffect(() => {
+    loadEmployeeData();
+  }, [loadEmployeeData]);
 
   // ── Photo upload ──────────────────────────────────────────────────────────
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 3 * 1024 * 1024) {
-      toast({ title: "File too large", description: "Please choose an image under 3 MB", variant: "destructive" });
+      toast({
+        title: "File too large",
+        description: "Please choose an image under 3 MB",
+        variant: "destructive",
+      });
       return;
     }
     setPhotoUploading(true);
@@ -177,20 +233,31 @@ export default function EmployeeDashboard() {
       if (base64.length > 500_000) {
         const img = new Image();
         img.src = base64;
-        await new Promise<void>((r) => { img.onload = () => r(); });
+        await new Promise<void>((r) => {
+          img.onload = () => r();
+        });
         const canvas = document.createElement("canvas");
         const MAX = 400;
         const scale = Math.min(MAX / img.width, MAX / img.height, 1);
-        canvas.width  = img.width  * scale;
+        canvas.width = img.width * scale;
         canvas.height = img.height * scale;
-        canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas
+          .getContext("2d")!
+          .drawImage(img, 0, 0, canvas.width, canvas.height);
         finalBase64 = canvas.toDataURL("image/jpeg", 0.8);
       }
       await authAPI.updateProfile({ avatar: finalBase64 });
       updateUser({ avatar: finalBase64 });
-      toast({ title: "Photo updated", description: "Your profile photo has been saved." });
+      toast({
+        title: "Photo updated",
+        description: "Your profile photo has been saved.",
+      });
     } catch (err: any) {
-      toast({ title: "Upload failed", description: err.message || "Could not save photo", variant: "destructive" });
+      toast({
+        title: "Upload failed",
+        description: err.message || "Could not save photo",
+        variant: "destructive",
+      });
     } finally {
       setPhotoUploading(false);
       if (photoInputRef.current) photoInputRef.current.value = "";
@@ -204,7 +271,11 @@ export default function EmployeeDashboard() {
       updateUser({ avatar: "" });
       toast({ title: "Photo removed" });
     } catch (err: any) {
-      toast({ title: "Failed", description: err.message, variant: "destructive" });
+      toast({
+        title: "Failed",
+        description: err.message,
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -214,11 +285,21 @@ export default function EmployeeDashboard() {
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
-      const res = await authAPI.updateProfile({ name: editName.trim(), phone: editPhone.trim() }) as any;
-      updateUser({ name: res.data?.name || editName.trim(), phone: res.data?.phone || editPhone.trim() });
+      const res = (await authAPI.updateProfile({
+        name: editName.trim(),
+        phone: editPhone.trim(),
+      })) as any;
+      updateUser({
+        name: res.data?.name || editName.trim(),
+        phone: res.data?.phone || editPhone.trim(),
+      });
       toast({ title: "Profile saved", description: "Name and phone updated." });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message || "Failed to save profile", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: err.message || "Failed to save profile",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -228,15 +309,26 @@ export default function EmployeeDashboard() {
   const handleChangePassword = async () => {
     if (!pwForm.current || !pwForm.next) return;
     if (pwForm.next !== pwForm.confirm) {
-      toast({ title: "Passwords don't match", variant: "destructive" }); return;
+      toast({ title: "Passwords don't match", variant: "destructive" });
+      return;
     }
     setPwSaving(true);
     try {
-      await authAPI.updateProfile({ currentPassword: pwForm.current, password: pwForm.next });
+      await authAPI.updateProfile({
+        currentPassword: pwForm.current,
+        password: pwForm.next,
+      });
       setPwForm({ current: "", next: "", confirm: "" });
-      toast({ title: "Password changed", description: "Your new password is active." });
+      toast({
+        title: "Password changed",
+        description: "Your new password is active.",
+      });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message || "Failed to change password", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: err.message || "Failed to change password",
+        variant: "destructive",
+      });
     } finally {
       setPwSaving(false);
     }
@@ -261,7 +353,9 @@ export default function EmployeeDashboard() {
         <div className="border-2 border-black bg-white p-12 flex flex-col items-center justify-center">
           <AlertCircle className="w-12 h-12 text-muted-foreground/30 mb-3" />
           <p className="font-bold text-black">No employee record found</p>
-          <p className="text-sm text-muted-foreground mt-1">Contact your HR manager to link your account</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Contact your HR manager to link your account
+          </p>
         </div>
       </AppLayout>
     );
@@ -275,8 +369,14 @@ export default function EmployeeDashboard() {
       <div className="border-2 border-black mb-6 overflow-hidden">
         {/* Blue banner */}
         <div className="bg-[#024BAB] h-28 relative">
-          <div className="absolute inset-0 opacity-10"
-            style={{ backgroundImage: "repeating-linear-gradient(45deg,#fff 0,#fff 1px,transparent 0,transparent 50%)", backgroundSize: "12px 12px" }} />
+          <div
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(45deg,#fff 0,#fff 1px,transparent 0,transparent 50%)",
+              backgroundSize: "12px 12px",
+            }}
+          />
         </div>
 
         {/* Profile card below banner */}
@@ -286,7 +386,11 @@ export default function EmployeeDashboard() {
             <div className="relative shrink-0 group">
               <div className="w-32 h-32 border-4 border-white bg-[#024BAB] flex items-center justify-center text-2xl font-bold text-white overflow-hidden shadow-lg">
                 {avatarSrc ? (
-                  <img src={avatarSrc} alt="avatar" className="w-full h-full object-cover" />
+                  <img
+                    src={avatarSrc}
+                    alt="avatar"
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <span>{employee.firstName?.[0]?.toUpperCase()}</span>
                 )}
@@ -298,10 +402,11 @@ export default function EmployeeDashboard() {
                 className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                 title="Change photo"
               >
-                {photoUploading
-                  ? <Loader2 className="w-5 h-5 text-white animate-spin" />
-                  : <Camera className="w-5 h-5 text-white" />
-                }
+                {photoUploading ? (
+                  <Loader2 className="w-5 h-5 text-white animate-spin" />
+                ) : (
+                  <Camera className="w-5 h-5 text-white" />
+                )}
               </button>
               <input
                 ref={photoInputRef}
@@ -319,20 +424,48 @@ export default function EmployeeDashboard() {
                 <h1 className="text-xl font-display font-bold text-black">
                   {employee.firstName} {employee.lastName}
                 </h1>
-                <span className={cn("text-[10px] font-black uppercase border-2 px-2 py-0.5",
-                  employee.status === "active" ? "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]" : "bg-gray-100 text-gray-500 border-gray-300"
-                )}>
+                <span
+                  className={cn(
+                    "text-[10px] font-black uppercase border-2 px-2 py-0.5",
+                    employee.status === "active"
+                      ? "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]"
+                      : "bg-gray-100 text-gray-500 border-gray-300",
+                  )}
+                >
                   {employee.status}
                 </span>
                 <div className="ml-auto flex flex-wrap gap-2">
                   {[
-                    { label: "Monthly CTC", value: formatCurrency(Math.round((employee.salary || 0) / 12)), color: "text-[#024BAB]" },
-                    { label: "Joined", value: formatDate(employee.joinDate), color: "text-black" },
-                    { label: "Attendance", value: attendance ? `${attendance.attendancePercentage.toFixed(0)}%` : "—", color: "text-[#00C48C]" },
+                    {
+                      label: "Monthly CTC",
+                      value: formatCurrency(
+                        Math.round((employee.salary || 0) / 12),
+                      ),
+                      color: "text-[#024BAB]",
+                    },
+                    {
+                      label: "Joined",
+                      value: formatDate(employee.joinDate),
+                      color: "text-black",
+                    },
+                    {
+                      label: "Attendance",
+                      value: attendance
+                        ? `${attendance.attendancePercentage.toFixed(0)}%`
+                        : "—",
+                      color: "text-[#00C48C]",
+                    },
                   ].map(({ label, value, color }) => (
-                    <div key={label} className="border-2 border-black px-3 py-1.5 text-center bg-white min-w-[90px]">
-                      <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">{label}</p>
-                      <p className={cn("text-sm font-bold mt-0.5", color)}>{value}</p>
+                    <div
+                      key={label}
+                      className="border-2 border-black px-3 py-1.5 text-center bg-white min-w-[90px]"
+                    >
+                      <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                        {label}
+                      </p>
+                      <p className={cn("text-sm font-bold mt-0.5", color)}>
+                        {value}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -340,7 +473,9 @@ export default function EmployeeDashboard() {
               <p className="text-sm text-muted-foreground font-medium mt-1">
                 {employee.designation} · {employee.department?.name || "—"}
               </p>
-              <p className="text-xs font-mono text-gray-400 mt-0.5">{employee.employeeId}</p>
+              <p className="text-xs font-mono text-gray-400 mt-0.5">
+                {employee.employeeId}
+              </p>
             </div>
           </div>
         </div>
@@ -373,31 +508,78 @@ export default function EmployeeDashboard() {
             <div className="border-2 border-black bg-white overflow-hidden">
               <div className="px-4 py-3 bg-[#024BAB] flex items-center gap-2">
                 <User className="w-4 h-4 text-white" />
-                <p className="text-xs font-black uppercase tracking-wider text-white">Personal Information</p>
+                <p className="text-xs font-black uppercase tracking-wider text-white">
+                  Personal Information
+                </p>
               </div>
               <div className="p-4 space-y-0.5">
-                <InfoRow label="Full Name" value={`${employee.firstName} ${employee.lastName}`} icon={User} />
+                <InfoRow
+                  label="Full Name"
+                  value={`${employee.firstName} ${employee.lastName}`}
+                  icon={User}
+                />
                 <InfoRow label="Email" value={employee.email} icon={Mail} />
                 <InfoRow label="Phone" value={employee.phone} icon={Phone} />
-                <InfoRow label="Gender" value={employee.gender ? employee.gender.charAt(0).toUpperCase() + employee.gender.slice(1) : null} />
-                <InfoRow label="Date of Birth" value={employee.dateOfBirth ? formatDate(employee.dateOfBirth) : null} icon={Calendar} />
-                <InfoRow label="Emergency Contact" value={employee.emergencyContact} icon={Phone} />
+                <InfoRow
+                  label="Gender"
+                  value={
+                    employee.gender
+                      ? employee.gender.charAt(0).toUpperCase() +
+                        employee.gender.slice(1)
+                      : null
+                  }
+                />
+                <InfoRow
+                  label="Date of Birth"
+                  value={
+                    employee.dateOfBirth
+                      ? formatDate(employee.dateOfBirth)
+                      : null
+                  }
+                  icon={Calendar}
+                />
+                <InfoRow
+                  label="Emergency Contact"
+                  value={employee.emergencyContact}
+                  icon={Phone}
+                />
               </div>
             </div>
 
             <div className="border-2 border-black bg-white overflow-hidden">
               <div className="px-4 py-3 bg-[#024BAB] flex items-center gap-2">
                 <Briefcase className="w-4 h-4 text-white" />
-                <p className="text-xs font-black uppercase tracking-wider text-white">Work Information</p>
+                <p className="text-xs font-black uppercase tracking-wider text-white">
+                  Work Information
+                </p>
               </div>
               <div className="p-4 space-y-0.5">
                 <InfoRow label="Employee ID" value={employee.employeeId} />
-                <InfoRow label="Department" value={employee.department?.name} icon={MapPin} />
-                <InfoRow label="Designation" value={employee.designation} icon={Briefcase} />
-                <InfoRow label="Employment Type" value={employee.employmentType?.replace(/_/g, " ")} />
-                <InfoRow label="Join Date" value={formatDate(employee.joinDate)} icon={Calendar} />
+                <InfoRow
+                  label="Department"
+                  value={employee.department?.name}
+                  icon={MapPin}
+                />
+                <InfoRow
+                  label="Designation"
+                  value={employee.designation}
+                  icon={Briefcase}
+                />
+                <InfoRow
+                  label="Employment Type"
+                  value={employee.employmentType?.replace(/_/g, " ")}
+                />
+                <InfoRow
+                  label="Join Date"
+                  value={formatDate(employee.joinDate)}
+                  icon={Calendar}
+                />
                 {employee.reportingTo && (
-                  <InfoRow label="Reports To" value={`${employee.reportingTo.firstName} ${employee.reportingTo.lastName}`} icon={User} />
+                  <InfoRow
+                    label="Reports To"
+                    value={`${employee.reportingTo.firstName} ${employee.reportingTo.lastName}`}
+                    icon={User}
+                  />
                 )}
               </div>
             </div>
@@ -405,13 +587,27 @@ export default function EmployeeDashboard() {
             <div className="border-2 border-black bg-white overflow-hidden">
               <div className="px-4 py-3 bg-[#024BAB] flex items-center gap-2">
                 <Shield className="w-4 h-4 text-white" />
-                <p className="text-xs font-black uppercase tracking-wider text-white">Address & Documents</p>
+                <p className="text-xs font-black uppercase tracking-wider text-white">
+                  Address & Documents
+                </p>
               </div>
               <div className="p-4 space-y-0.5">
-                <InfoRow label="Address" value={employee.address} icon={MapPin} />
+                <InfoRow
+                  label="Address"
+                  value={employee.address}
+                  icon={MapPin}
+                />
                 <InfoRow label="PAN Number" value={employee.panNumber} />
-                {employee.bankAccount && <InfoRow label="Bank Account" value={`****${employee.bankAccount.slice(-4)}`} icon={CreditCard} />}
-                {employee.ifscCode && <InfoRow label="IFSC Code" value={employee.ifscCode} />}
+                {employee.bankAccount && (
+                  <InfoRow
+                    label="Bank Account"
+                    value={`****${employee.bankAccount.slice(-4)}`}
+                    icon={CreditCard}
+                  />
+                )}
+                {employee.ifscCode && (
+                  <InfoRow label="IFSC Code" value={employee.ifscCode} />
+                )}
               </div>
             </div>
           </div>
@@ -422,14 +618,36 @@ export default function EmployeeDashboard() {
             {attendance && (
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { label: "Present Days", value: attendance.presentDays, color: "bg-[#00C48C]", text: "text-[#00C48C]" },
-                  { label: "Absent Days",  value: attendance.absentDays,  color: "bg-[#EF4444]", text: "text-[#EF4444]" },
-                  { label: "Attendance %", value: `${attendance.attendancePercentage.toFixed(1)}%`, color: "bg-[#024BAB]", text: "text-[#024BAB]" },
+                  {
+                    label: "Present Days",
+                    value: attendance.presentDays,
+                    color: "bg-[#00C48C]",
+                    text: "text-[#00C48C]",
+                  },
+                  {
+                    label: "Absent Days",
+                    value: attendance.absentDays,
+                    color: "bg-[#EF4444]",
+                    text: "text-[#EF4444]",
+                  },
+                  {
+                    label: "Attendance %",
+                    value: `${attendance.attendancePercentage.toFixed(1)}%`,
+                    color: "bg-[#024BAB]",
+                    text: "text-[#024BAB]",
+                  },
                 ].map(({ label, value, color, text }) => (
-                  <div key={label} className="border-2 border-black bg-white p-4">
+                  <div
+                    key={label}
+                    className="border-2 border-black bg-white p-4"
+                  >
                     <div className={cn("w-2 h-8 mb-3", color)} />
-                    <p className="text-xs font-black uppercase text-muted-foreground">{label}</p>
-                    <p className={cn("text-2xl font-bold mt-1", text)}>{value}</p>
+                    <p className="text-xs font-black uppercase text-muted-foreground">
+                      {label}
+                    </p>
+                    <p className={cn("text-2xl font-bold mt-1", text)}>
+                      {value}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -440,31 +658,68 @@ export default function EmployeeDashboard() {
               <div className="border-2 border-black bg-white overflow-hidden">
                 <div className="px-4 py-3 bg-[#024BAB]/5 border-b-2 border-black flex items-center gap-2">
                   <Clock className="w-4 h-4 text-[#024BAB]" />
-                  <p className="text-xs font-black uppercase tracking-wider text-black">Recent Attendance</p>
+                  <p className="text-xs font-black uppercase tracking-wider text-black">
+                    Recent Attendance
+                  </p>
                 </div>
                 <div className="overflow-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b-2 border-black bg-[#024BAB]/5">
-                        {["Date", "Status", "Check In", "Check Out", "Hours"].map((h) => (
-                          <th key={h} className="px-4 py-2 text-left text-[10px] font-black uppercase tracking-wider text-black">{h}</th>
+                        {[
+                          "Date",
+                          "Status",
+                          "Check In",
+                          "Check Out",
+                          "Hours",
+                        ].map((h) => (
+                          <th
+                            key={h}
+                            className="px-4 py-2 text-left text-[10px] font-black uppercase tracking-wider text-black"
+                          >
+                            {h}
+                          </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {recentAttendance.map((rec, i) => (
-                        <tr key={rec._id} className={cn("border-b border-black/10", i % 2 !== 0 && "bg-[#F8FAFF]")}>
-                          <td className="px-4 py-2.5 font-medium text-black text-xs">{formatDate(rec.date)}</td>
+                        <tr
+                          key={rec._id}
+                          className={cn(
+                            "border-b border-black/10",
+                            i % 2 !== 0 && "bg-[#F8FAFF]",
+                          )}
+                        >
+                          <td className="px-4 py-2.5 font-medium text-black text-xs">
+                            {formatDate(rec.date)}
+                          </td>
                           <td className="px-4 py-2.5">
-                            <span className={cn("px-2 py-0.5 text-[10px] font-black uppercase border-2", attendanceStatusColor[rec.status] || "bg-gray-100 text-gray-500 border-gray-300")}>
+                            <span
+                              className={cn(
+                                "px-2 py-0.5 text-[10px] font-black uppercase border-2",
+                                attendanceStatusColor[rec.status] ||
+                                  "bg-gray-100 text-gray-500 border-gray-300",
+                              )}
+                            >
                               {rec.status?.replace("_", " ")}
                             </span>
                           </td>
                           <td className="px-4 py-2.5 text-xs text-black">
-                            {rec.checkIn ? new Date(rec.checkIn).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "—"}
+                            {rec.checkIn
+                              ? new Date(rec.checkIn).toLocaleTimeString(
+                                  "en-IN",
+                                  { hour: "2-digit", minute: "2-digit" },
+                                )
+                              : "—"}
                           </td>
                           <td className="px-4 py-2.5 text-xs text-black">
-                            {rec.checkOut ? new Date(rec.checkOut).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "—"}
+                            {rec.checkOut
+                              ? new Date(rec.checkOut).toLocaleTimeString(
+                                  "en-IN",
+                                  { hour: "2-digit", minute: "2-digit" },
+                                )
+                              : "—"}
                           </td>
                           <td className="px-4 py-2.5 text-xs font-medium text-black">
                             {rec.workHours ? `${rec.workHours}h` : "—"}
@@ -483,20 +738,39 @@ export default function EmployeeDashboard() {
                 <div className="px-4 py-3 bg-[#024BAB]/5 border-b-2 border-black flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-[#024BAB]" />
-                    <p className="text-xs font-black uppercase tracking-wider text-black">Recent Leaves</p>
+                    <p className="text-xs font-black uppercase tracking-wider text-black">
+                      Recent Leaves
+                    </p>
                   </div>
-                  <button onClick={() => setTab("leaves")} className="text-[10px] font-black text-[#024BAB] flex items-center gap-1">
+                  <button
+                    onClick={() => setTab("leaves")}
+                    className="text-[10px] font-black text-[#024BAB] flex items-center gap-1"
+                  >
                     View All <ChevronRight className="w-3 h-3" />
                   </button>
                 </div>
                 <div className="divide-y divide-black/10">
                   {leaves.slice(0, 3).map((lv) => (
-                    <div key={lv._id} className="flex items-center justify-between px-4 py-3">
+                    <div
+                      key={lv._id}
+                      className="flex items-center justify-between px-4 py-3"
+                    >
                       <div>
-                        <p className="text-sm font-bold text-black capitalize">{lv.leaveType?.replace("_", " ")} Leave</p>
-                        <p className="text-xs text-muted-foreground">{formatDate(lv.startDate)} → {formatDate(lv.endDate)} · {lv.days}d</p>
+                        <p className="text-sm font-bold text-black capitalize">
+                          {lv.leaveType?.replace("_", " ")} Leave
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDate(lv.startDate)} → {formatDate(lv.endDate)}{" "}
+                          · {lv.days}d
+                        </p>
                       </div>
-                      <span className={cn("px-2 py-0.5 text-[10px] font-black uppercase border-2", leaveStatusColor[lv.status] || "bg-gray-100 text-gray-500 border-gray-300")}>
+                      <span
+                        className={cn(
+                          "px-2 py-0.5 text-[10px] font-black uppercase border-2",
+                          leaveStatusColor[lv.status] ||
+                            "bg-gray-100 text-gray-500 border-gray-300",
+                        )}
+                      >
                         {lv.status}
                       </span>
                     </div>
@@ -510,24 +784,44 @@ export default function EmployeeDashboard() {
               <div className="border-2 border-black bg-white overflow-hidden">
                 <div className="px-4 py-3 bg-[#024BAB]/5 border-b-2 border-black flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-[#024BAB]" />
-                  <p className="text-xs font-black uppercase tracking-wider text-black">Performance Reviews</p>
+                  <p className="text-xs font-black uppercase tracking-wider text-black">
+                    Performance Reviews
+                  </p>
                 </div>
                 <div className="divide-y divide-black/10">
                   {performance.slice(0, 2).map((rev) => (
                     <div key={rev._id} className="px-4 py-4">
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          <p className="font-bold text-black text-sm">{rev.reviewPeriod}</p>
-                          <p className="text-xs text-muted-foreground capitalize">{rev.reviewType?.replace("_"," ")} Review</p>
+                          <p className="font-bold text-black text-sm">
+                            {rev.reviewPeriod}
+                          </p>
+                          <p className="text-xs text-muted-foreground capitalize">
+                            {rev.reviewType?.replace("_", " ")} Review
+                          </p>
                         </div>
                         <div className="flex items-center gap-0.5">
                           {Array.from({ length: 5 }).map((_, i) => (
-                            <Star key={i} className={cn("w-4 h-4", i < Math.round(rev.overallRating) ? "text-[#FA731C] fill-[#FA731C]" : "text-gray-200")} />
+                            <Star
+                              key={i}
+                              className={cn(
+                                "w-4 h-4",
+                                i < Math.round(rev.overallRating)
+                                  ? "text-[#FA731C] fill-[#FA731C]"
+                                  : "text-gray-200",
+                              )}
+                            />
                           ))}
-                          <span className="text-xs text-muted-foreground ml-1">{rev.overallRating}/5</span>
+                          <span className="text-xs text-muted-foreground ml-1">
+                            {rev.overallRating}/5
+                          </span>
                         </div>
                       </div>
-                      {rev.reviewerComments && <p className="text-xs text-muted-foreground italic">"{rev.reviewerComments}"</p>}
+                      {rev.reviewerComments && (
+                        <p className="text-xs text-muted-foreground italic">
+                          "{rev.reviewerComments}"
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -543,14 +837,36 @@ export default function EmployeeDashboard() {
           {attendance && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: "Present Days", value: attendance.presentDays, color: "bg-[#00C48C]", text: "text-[#00C48C]" },
-                { label: "Absent Days",  value: attendance.absentDays,  color: "bg-[#EF4444]", text: "text-[#EF4444]" },
-                { label: "Total Days",   value: attendance.totalDays,   color: "bg-[#024BAB]", text: "text-[#024BAB]" },
-                { label: "Attendance %", value: `${attendance.attendancePercentage.toFixed(1)}%`, color: "bg-[#FA731C]", text: "text-[#FA731C]" },
+                {
+                  label: "Present Days",
+                  value: attendance.presentDays,
+                  color: "bg-[#00C48C]",
+                  text: "text-[#00C48C]",
+                },
+                {
+                  label: "Absent Days",
+                  value: attendance.absentDays,
+                  color: "bg-[#EF4444]",
+                  text: "text-[#EF4444]",
+                },
+                {
+                  label: "Total Days",
+                  value: attendance.totalDays,
+                  color: "bg-[#024BAB]",
+                  text: "text-[#024BAB]",
+                },
+                {
+                  label: "Attendance %",
+                  value: `${attendance.attendancePercentage.toFixed(1)}%`,
+                  color: "bg-[#FA731C]",
+                  text: "text-[#FA731C]",
+                },
               ].map(({ label, value, color, text }) => (
                 <div key={label} className="border-2 border-black bg-white p-4">
                   <div className={cn("w-2 h-6 mb-3", color)} />
-                  <p className="text-xs font-black uppercase text-muted-foreground">{label}</p>
+                  <p className="text-xs font-black uppercase text-muted-foreground">
+                    {label}
+                  </p>
                   <p className={cn("text-2xl font-bold mt-1", text)}>{value}</p>
                 </div>
               ))}
@@ -558,37 +874,81 @@ export default function EmployeeDashboard() {
           )}
           <div className="border-2 border-black bg-white overflow-hidden">
             <div className="px-4 py-3 bg-[#024BAB]/5 border-b-2 border-black">
-              <p className="text-xs font-black uppercase tracking-wider text-black">Attendance Records</p>
+              <p className="text-xs font-black uppercase tracking-wider text-black">
+                Attendance Records
+              </p>
             </div>
             {recentAttendance.length === 0 ? (
-              <div className="p-10 text-center text-muted-foreground">No attendance records found</div>
+              <div className="p-10 text-center text-muted-foreground">
+                No attendance records found
+              </div>
             ) : (
               <div className="overflow-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b-2 border-black bg-[#024BAB]/5">
-                      {["Date", "Status", "Check In", "Check Out", "Hours", "Method"].map((h) => (
-                        <th key={h} className="px-4 py-2 text-left text-[10px] font-black uppercase tracking-wider">{h}</th>
+                      {[
+                        "Date",
+                        "Status",
+                        "Check In",
+                        "Check Out",
+                        "Hours",
+                        "Method",
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          className="px-4 py-2 text-left text-[10px] font-black uppercase tracking-wider"
+                        >
+                          {h}
+                        </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {recentAttendance.map((rec, i) => (
-                      <tr key={rec._id} className={cn("border-b border-black/10", i % 2 !== 0 && "bg-[#F8FAFF]")}>
-                        <td className="px-4 py-3 font-medium text-black text-xs">{formatDate(rec.date)}</td>
+                      <tr
+                        key={rec._id}
+                        className={cn(
+                          "border-b border-black/10",
+                          i % 2 !== 0 && "bg-[#F8FAFF]",
+                        )}
+                      >
+                        <td className="px-4 py-3 font-medium text-black text-xs">
+                          {formatDate(rec.date)}
+                        </td>
                         <td className="px-4 py-3">
-                          <span className={cn("px-2 py-0.5 text-[10px] font-black uppercase border-2", attendanceStatusColor[rec.status] || "bg-gray-100 text-gray-500 border-gray-300")}>
-                            {rec.status?.replace("_"," ")}
+                          <span
+                            className={cn(
+                              "px-2 py-0.5 text-[10px] font-black uppercase border-2",
+                              attendanceStatusColor[rec.status] ||
+                                "bg-gray-100 text-gray-500 border-gray-300",
+                            )}
+                          >
+                            {rec.status?.replace("_", " ")}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-xs text-black">
-                          {rec.checkIn ? new Date(rec.checkIn).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "—"}
+                          {rec.checkIn
+                            ? new Date(rec.checkIn).toLocaleTimeString(
+                                "en-IN",
+                                { hour: "2-digit", minute: "2-digit" },
+                              )
+                            : "—"}
                         </td>
                         <td className="px-4 py-3 text-xs text-black">
-                          {rec.checkOut ? new Date(rec.checkOut).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "—"}
+                          {rec.checkOut
+                            ? new Date(rec.checkOut).toLocaleTimeString(
+                                "en-IN",
+                                { hour: "2-digit", minute: "2-digit" },
+                              )
+                            : "—"}
                         </td>
-                        <td className="px-4 py-3 text-xs font-medium">{rec.workHours ? `${rec.workHours}h` : "—"}</td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground capitalize">{rec.verifyMode || "—"}</td>
+                        <td className="px-4 py-3 text-xs font-medium">
+                          {rec.workHours ? `${rec.workHours}h` : "—"}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground capitalize">
+                          {rec.verifyMode || "—"}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -603,23 +963,45 @@ export default function EmployeeDashboard() {
       {tab === "leaves" && (
         <div className="border-2 border-black bg-white overflow-hidden">
           <div className="px-4 py-3 bg-[#024BAB]/5 border-b-2 border-black">
-            <p className="text-xs font-black uppercase tracking-wider text-black">Leave Records ({leaves.length})</p>
+            <p className="text-xs font-black uppercase tracking-wider text-black">
+              Leave Records ({leaves.length})
+            </p>
           </div>
           {leaves.length === 0 ? (
-            <div className="p-10 text-center text-muted-foreground">No leave records found</div>
+            <div className="p-10 text-center text-muted-foreground">
+              No leave records found
+            </div>
           ) : (
             <div className="divide-y divide-black/10">
               {leaves.map((lv) => (
-                <div key={lv._id} className="flex items-start justify-between px-4 py-4">
+                <div
+                  key={lv._id}
+                  className="flex items-start justify-between px-4 py-4"
+                >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <p className="text-sm font-bold text-black capitalize">{lv.leaveType?.replace("_"," ")} Leave</p>
-                      <span className={cn("px-2 py-0.5 text-[10px] font-black uppercase border-2", leaveStatusColor[lv.status] || "bg-gray-100 text-gray-500 border-gray-300")}>
+                      <p className="text-sm font-bold text-black capitalize">
+                        {lv.leaveType?.replace("_", " ")} Leave
+                      </p>
+                      <span
+                        className={cn(
+                          "px-2 py-0.5 text-[10px] font-black uppercase border-2",
+                          leaveStatusColor[lv.status] ||
+                            "bg-gray-100 text-gray-500 border-gray-300",
+                        )}
+                      >
                         {lv.status}
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground">{formatDate(lv.startDate)} → {formatDate(lv.endDate)} · {lv.days} day{lv.days > 1 ? "s" : ""}</p>
-                    {lv.reason && <p className="text-xs text-muted-foreground mt-0.5 italic">"{lv.reason}"</p>}
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(lv.startDate)} → {formatDate(lv.endDate)} ·{" "}
+                      {lv.days} day{lv.days > 1 ? "s" : ""}
+                    </p>
+                    {lv.reason && (
+                      <p className="text-xs text-muted-foreground mt-0.5 italic">
+                        "{lv.reason}"
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -632,31 +1014,72 @@ export default function EmployeeDashboard() {
       {tab === "payroll" && (
         <div className="border-2 border-black bg-white overflow-hidden">
           <div className="px-4 py-3 bg-[#024BAB]/5 border-b-2 border-black">
-            <p className="text-xs font-black uppercase tracking-wider text-black">Payroll History</p>
+            <p className="text-xs font-black uppercase tracking-wider text-black">
+              Payroll History
+            </p>
           </div>
           {payrolls.length === 0 ? (
-            <div className="p-10 text-center text-muted-foreground">No payroll records found</div>
+            <div className="p-10 text-center text-muted-foreground">
+              No payroll records found
+            </div>
           ) : (
             <div className="overflow-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b-2 border-black bg-[#024BAB]/5">
-                    {["Month", "Basic", "Gross", "Deductions", "Net Pay", "Days", "Status"].map((h) => (
-                      <th key={h} className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-wider">{h}</th>
+                    {[
+                      "Month",
+                      "Basic",
+                      "Gross",
+                      "Deductions",
+                      "Net Pay",
+                      "Days",
+                      "Status",
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-wider"
+                      >
+                        {h}
+                      </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {payrolls.map((p, i) => (
-                    <tr key={p._id} className={cn("border-b border-black/10", i % 2 !== 0 && "bg-[#F8FAFF]")}>
-                      <td className="px-4 py-3 font-bold text-black">{MONTHS[(p.month || 1) - 1]} {p.year}</td>
-                      <td className="px-4 py-3 text-xs text-black">{formatCurrency(p.basicSalary)}</td>
-                      <td className="px-4 py-3 text-xs text-black">{formatCurrency(p.grossSalary)}</td>
-                      <td className="px-4 py-3 text-xs text-[#EF4444]">-{formatCurrency(p.totalDeductions)}</td>
-                      <td className="px-4 py-3 text-xs font-bold text-[#00C48C]">{formatCurrency(p.netSalary)}</td>
-                      <td className="px-4 py-3 text-xs text-black">{p.presentDays}/{p.workingDays}</td>
+                    <tr
+                      key={p._id}
+                      className={cn(
+                        "border-b border-black/10",
+                        i % 2 !== 0 && "bg-[#F8FAFF]",
+                      )}
+                    >
+                      <td className="px-4 py-3 font-bold text-black">
+                        {MONTHS[(p.month || 1) - 1]} {p.year}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-black">
+                        {formatCurrency(p.basicSalary)}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-black">
+                        {formatCurrency(p.grossSalary)}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-[#EF4444]">
+                        -{formatCurrency(p.totalDeductions)}
+                      </td>
+                      <td className="px-4 py-3 text-xs font-bold text-[#00C48C]">
+                        {formatCurrency(p.netSalary)}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-black">
+                        {p.presentDays}/{p.workingDays}
+                      </td>
                       <td className="px-4 py-3">
-                        <span className={cn("px-2 py-0.5 text-[10px] font-black uppercase border-2", payrollStatusColor[p.status] || "bg-gray-100 text-gray-500 border-gray-300")}>
+                        <span
+                          className={cn(
+                            "px-2 py-0.5 text-[10px] font-black uppercase border-2",
+                            payrollStatusColor[p.status] ||
+                              "bg-gray-100 text-gray-500 border-gray-300",
+                          )}
+                        >
                           {p.status}
                         </span>
                       </td>
@@ -676,24 +1099,38 @@ export default function EmployeeDashboard() {
           <div className="border-2 border-black bg-white overflow-hidden">
             <div className="px-4 py-3 bg-[#024BAB] border-b-2 border-black flex items-center gap-2">
               <Camera className="w-4 h-4 text-white" />
-              <p className="text-xs font-black uppercase tracking-wider text-white">Profile Photo</p>
+              <p className="text-xs font-black uppercase tracking-wider text-white">
+                Profile Photo
+              </p>
             </div>
             <div className="p-5 flex flex-col items-center gap-4">
               <div className="w-28 h-28 border-2 border-black bg-[#024BAB] flex items-center justify-center text-3xl font-bold text-white overflow-hidden">
                 {avatarSrc ? (
-                  <img src={avatarSrc} alt="avatar" className="w-full h-full object-cover" />
+                  <img
+                    src={avatarSrc}
+                    alt="avatar"
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <span>{employee.firstName?.[0]?.toUpperCase()}</span>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground text-center">JPG, PNG or WEBP · Max 3 MB<br />Will appear in the header and your profile</p>
+              <p className="text-xs text-muted-foreground text-center">
+                JPG, PNG or WEBP · Max 3 MB
+                <br />
+                Will appear in the header and your profile
+              </p>
               <div className="flex gap-3 w-full">
                 <button
                   onClick={() => photoInputRef.current?.click()}
                   disabled={photoUploading}
                   className="flex-1 flex items-center justify-center gap-2 bg-[#024BAB] text-white border-2 border-black py-2.5 font-black text-xs uppercase disabled:opacity-50"
                 >
-                  {photoUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  {photoUploading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Upload className="w-4 h-4" />
+                  )}
                   {photoUploading ? "Uploading..." : "Upload Photo"}
                 </button>
                 {avatarSrc && (
@@ -706,7 +1143,13 @@ export default function EmployeeDashboard() {
                   </button>
                 )}
               </div>
-              <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoChange}
+              />
             </div>
           </div>
 
@@ -714,11 +1157,15 @@ export default function EmployeeDashboard() {
           <div className="border-2 border-black bg-white overflow-hidden">
             <div className="px-4 py-3 bg-[#024BAB] border-b-2 border-black flex items-center gap-2">
               <Edit2 className="w-4 h-4 text-white" />
-              <p className="text-xs font-black uppercase tracking-wider text-white">Edit Profile</p>
+              <p className="text-xs font-black uppercase tracking-wider text-white">
+                Edit Profile
+              </p>
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-xs font-black uppercase mb-1.5">Display Name</label>
+                <label className="block text-xs font-black uppercase mb-1.5">
+                  Display Name
+                </label>
                 <input
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
@@ -727,7 +1174,9 @@ export default function EmployeeDashboard() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-black uppercase mb-1.5">Phone Number</label>
+                <label className="block text-xs font-black uppercase mb-1.5">
+                  Phone Number
+                </label>
                 <input
                   value={editPhone}
                   onChange={(e) => setEditPhone(e.target.value)}
@@ -736,20 +1185,28 @@ export default function EmployeeDashboard() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-black uppercase mb-1.5">Email</label>
+                <label className="block text-xs font-black uppercase mb-1.5">
+                  Email
+                </label>
                 <input
                   value={user?.email || ""}
                   disabled
                   className="w-full border-2 border-black/30 px-3 py-2.5 text-sm font-medium bg-gray-50 text-gray-400 cursor-not-allowed"
                 />
-                <p className="text-[10px] text-muted-foreground mt-1">Email cannot be changed. Contact HR.</p>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Email cannot be changed. Contact HR.
+                </p>
               </div>
               <button
                 onClick={handleSaveProfile}
                 disabled={saving}
                 className="w-full flex items-center justify-center gap-2 bg-[#024BAB] text-white border-2 border-black py-2.5 font-black text-xs uppercase disabled:opacity-50"
               >
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                {saving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
                 {saving ? "Saving..." : "Save Changes"}
               </button>
             </div>
@@ -759,42 +1216,71 @@ export default function EmployeeDashboard() {
           <div className="border-2 border-black bg-white overflow-hidden lg:col-span-2">
             <div className="px-4 py-3 bg-[#024BAB] border-b-2 border-black flex items-center gap-2">
               <Lock className="w-4 h-4 text-white" />
-              <p className="text-xs font-black uppercase tracking-wider text-white">Change Password</p>
+              <p className="text-xs font-black uppercase tracking-wider text-white">
+                Change Password
+              </p>
             </div>
             <div className="p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
                 { key: "current", label: "Current Password" },
-                { key: "next",    label: "New Password" },
+                { key: "next", label: "New Password" },
                 { key: "confirm", label: "Confirm New Password" },
               ].map(({ key, label }) => (
                 <div key={key}>
-                  <label className="block text-xs font-black uppercase mb-1.5">{label}</label>
+                  <label className="block text-xs font-black uppercase mb-1.5">
+                    {label}
+                  </label>
                   <div className="relative">
                     <input
-                      type={showPw[key as keyof typeof showPw] ? "text" : "password"}
+                      type={
+                        showPw[key as keyof typeof showPw] ? "text" : "password"
+                      }
                       value={pwForm[key as keyof typeof pwForm]}
-                      onChange={(e) => setPwForm((p) => ({ ...p, [key]: e.target.value }))}
+                      onChange={(e) =>
+                        setPwForm((p) => ({ ...p, [key]: e.target.value }))
+                      }
                       className="w-full border-2 border-black px-3 py-2.5 pr-9 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
                       placeholder="••••••••"
                     />
                     <button
                       type="button"
-                      onClick={() => setShowPw((p) => ({ ...p, [key]: !p[key as keyof typeof p] }))}
+                      onClick={() =>
+                        setShowPw((p) => ({
+                          ...p,
+                          [key]: !p[key as keyof typeof p],
+                        }))
+                      }
                       className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black"
                     >
-                      {showPw[key as keyof typeof showPw] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showPw[key as keyof typeof showPw] ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
                 </div>
               ))}
               <div className="sm:col-span-3">
-                <p className="text-[10px] text-muted-foreground mb-3">Must be at least 8 characters with uppercase, lowercase, and a number.</p>
+                <p className="text-[10px] text-muted-foreground mb-3">
+                  Must be at least 8 characters with uppercase, lowercase, and a
+                  number.
+                </p>
                 <button
                   onClick={handleChangePassword}
-                  disabled={pwSaving || !pwForm.current || !pwForm.next || !pwForm.confirm}
+                  disabled={
+                    pwSaving ||
+                    !pwForm.current ||
+                    !pwForm.next ||
+                    !pwForm.confirm
+                  }
                   className="flex items-center gap-2 bg-[#FA731C] text-white border-2 border-black px-6 py-2.5 font-black text-xs uppercase disabled:opacity-50"
                 >
-                  {pwSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+                  {pwSaving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Lock className="w-4 h-4" />
+                  )}
                   {pwSaving ? "Changing..." : "Change Password"}
                 </button>
               </div>

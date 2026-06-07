@@ -472,9 +472,9 @@ function SalaryHeadsSection({ onBack }: { onBack: () => void }) {
   };
 
   const TYPE_COLORS: Record<string, string> = {
-    Earning:   "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]",
+    Earning: "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]",
     Deduction: "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]",
-    Variable:  "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C]",
+    Variable: "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C]",
   };
   const CALC_LABELS: Record<string, string> = {
     fixed: "Fixed Amount",
@@ -515,7 +515,8 @@ function SalaryHeadsSection({ onBack }: { onBack: () => void }) {
             <span
               className={cn(
                 "px-2 py-0.5 text-xs font-bold border-2",
-                TYPE_COLORS[h.type] || "bg-gray-100 text-gray-500 border-gray-300",
+                TYPE_COLORS[h.type] ||
+                  "bg-gray-100 text-gray-500 border-gray-300",
               )}
             >
               {h.type}
@@ -767,7 +768,8 @@ function DesignationsSection({ onBack }: { onBack: () => void }) {
             <span
               className={cn(
                 "px-2 py-0.5 text-xs font-bold border-2",
-                GRADE_COLORS[d.grade] || "bg-gray-100 text-gray-500 border-gray-300",
+                GRADE_COLORS[d.grade] ||
+                  "bg-gray-100 text-gray-500 border-gray-300",
               )}
             >
               {d.grade}
@@ -1124,11 +1126,11 @@ function RolesSection({ onBack }: { onBack: () => void }) {
     },
   ];
   const LEVEL_COLOR: Record<string, string> = {
-    Full:    "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]",
+    Full: "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]",
     Partial: "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C]",
-    Read:    "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB]",
-    Self:    "bg-[#A855F7]/10 text-[#A855F7] border-[#A855F7]",
-    None:    "bg-gray-100 text-gray-500 border-gray-300",
+    Read: "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB]",
+    Self: "bg-[#A855F7]/10 text-[#A855F7] border-[#A855F7]",
+    None: "bg-gray-100 text-gray-500 border-gray-300",
   };
 
   return (

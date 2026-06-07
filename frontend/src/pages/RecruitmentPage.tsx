@@ -13,16 +13,16 @@ import {
 } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
-  open:      "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C] px-2 py-0.5",
-  on_hold:   "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
-  closed:    "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
+  open: "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C] px-2 py-0.5",
+  on_hold: "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
+  closed: "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
   cancelled: "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444] px-2 py-0.5",
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
-  low:    "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
+  low: "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
   medium: "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB] px-2 py-0.5",
-  high:   "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
+  high: "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
   urgent: "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444] px-2 py-0.5",
 };
 

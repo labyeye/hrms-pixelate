@@ -14,19 +14,19 @@ import {
 } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
-  pending:   "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
-  approved:  "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C] px-2 py-0.5",
-  rejected:  "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444] px-2 py-0.5",
+  pending: "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
+  approved: "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C] px-2 py-0.5",
+  rejected: "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444] px-2 py-0.5",
   cancelled: "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
 };
 
 const TYPE_BADGE_COLORS: Record<string, string> = {
-  casual:       "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB]",
-  sick:         "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]",
-  earned:       "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]",
-  maternity:    "bg-[#A855F7]/10 text-[#A855F7] border-[#A855F7]",
-  paternity:    "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB]",
-  unpaid:       "bg-gray-100 text-gray-500 border-gray-300",
+  casual: "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB]",
+  sick: "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]",
+  earned: "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]",
+  maternity: "bg-[#A855F7]/10 text-[#A855F7] border-[#A855F7]",
+  paternity: "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB]",
+  unpaid: "bg-gray-100 text-gray-500 border-gray-300",
   compensatory: "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C]",
 };
 
@@ -149,7 +149,11 @@ export default function LeavePage() {
         </div>
         <button
           onClick={() => {
-            setForm(isEmployee ? { ...EMPTY_FORM, employee: myEmployeeId } : EMPTY_FORM);
+            setForm(
+              isEmployee
+                ? { ...EMPTY_FORM, employee: myEmployeeId }
+                : EMPTY_FORM,
+            );
             setShowModal(true);
           }}
           className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5"
@@ -248,7 +252,13 @@ export default function LeavePage() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={cn("border-2 text-[10px] px-2 py-0.5", TYPE_BADGE_COLORS[leave.leaveType] || "bg-gray-100 text-gray-500 border-gray-300")}>
+                    <span
+                      className={cn(
+                        "border-2 text-[10px] px-2 py-0.5",
+                        TYPE_BADGE_COLORS[leave.leaveType] ||
+                          "bg-gray-100 text-gray-500 border-gray-300",
+                      )}
+                    >
                       {TYPE_LABELS[leave.leaveType]}
                     </span>
                   </td>
@@ -272,8 +282,8 @@ export default function LeavePage() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    {leave.status === "pending" && (
-                      isEmployee ? (
+                    {leave.status === "pending" &&
+                      (isEmployee ? (
                         <button
                           onClick={() => handleStatus(leave._id, "cancelled")}
                           className="text-xs font-bold border-2 border-black px-2 py-1 hover:bg-red-50 transition-colors"
@@ -297,8 +307,7 @@ export default function LeavePage() {
                             <XCircle className="w-3.5 h-3.5 text-red-600" />
                           </button>
                         </div>
-                      )
-                    )}
+                      ))}
                   </td>
                 </tr>
               ))}

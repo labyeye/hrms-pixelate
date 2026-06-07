@@ -20,17 +20,24 @@ import {
 import { formatCurrency } from "@/lib/utils";
 
 const STATUS_COLORS: Record<string, string> = {
-  active: "border-2 bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C] px-2 py-0.5",
-  on_leave: "border-2 bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
+  active:
+    "border-2 bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C] px-2 py-0.5",
+  on_leave:
+    "border-2 bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
   inactive: "border-2 bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
-  terminated: "border-2 bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444] px-2 py-0.5",
+  terminated:
+    "border-2 bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444] px-2 py-0.5",
 };
 
 const TYPE_COLORS: Record<string, string> = {
-  full_time: "border-2 bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB] px-2 py-0.5",
-  part_time: "border-2 bg-[#A855F7]/10 text-[#A855F7] border-[#A855F7] px-2 py-0.5",
-  contract: "border-2 bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
-  intern: "border-2 bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C] px-2 py-0.5",
+  full_time:
+    "border-2 bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB] px-2 py-0.5",
+  part_time:
+    "border-2 bg-[#A855F7]/10 text-[#A855F7] border-[#A855F7] px-2 py-0.5",
+  contract:
+    "border-2 bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
+  intern:
+    "border-2 bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C] px-2 py-0.5",
 };
 
 interface EmployeeFormData {
@@ -108,7 +115,9 @@ export default function EmployeesPage() {
     monthlyEmi: "",
     reason: "",
   });
-  const [salaryPeriod, setSalaryPeriod] = useState<"yearly" | "monthly" | "daily">("monthly");
+  const [salaryPeriod, setSalaryPeriod] = useState<
+    "yearly" | "monthly" | "daily"
+  >("monthly");
   const [savingLoan, setSavingLoan] = useState(false);
   const [actionModal, setActionModal] = useState<{
     show: boolean;
@@ -392,10 +401,15 @@ export default function EmployeesPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 border-2 border-black shrink-0 overflow-hidden bg-[#024BAB] flex items-center justify-center text-xs font-bold text-white">
-                        {emp.avatar
-                          ? <img src={emp.avatar} alt={emp.firstName} className="w-full h-full object-cover" />
-                          : emp.firstName?.[0]?.toUpperCase()
-                        }
+                        {emp.avatar ? (
+                          <img
+                            src={emp.avatar}
+                            alt={emp.firstName}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          emp.firstName?.[0]?.toUpperCase()
+                        )}
                       </div>
                       <div>
                         <p className="font-bold text-black">
@@ -604,7 +618,9 @@ export default function EmployeesPage() {
                 ))}
                 {/* Salary with period toggle */}
                 <div className="col-span-2">
-                  <label className="block text-xs font-bold text-black mb-1">Salary (₹)</label>
+                  <label className="block text-xs font-bold text-black mb-1">
+                    Salary (₹)
+                  </label>
                   <div className="flex gap-0">
                     {(["monthly", "yearly", "daily"] as const).map((p) => (
                       <button
@@ -618,7 +634,12 @@ export default function EmployeesPage() {
                             : "bg-white text-black hover:bg-[#024BAB]/10",
                         )}
                       >
-                        Per {p === "daily" ? "Day" : p === "monthly" ? "Month" : "Year"}
+                        Per{" "}
+                        {p === "daily"
+                          ? "Day"
+                          : p === "monthly"
+                            ? "Month"
+                            : "Year"}
                       </button>
                     ))}
                     <input
@@ -626,10 +647,14 @@ export default function EmployeesPage() {
                       min="0"
                       value={
                         salaryPeriod === "monthly"
-                          ? form.salary ? Math.round(Number(form.salary) / 12) : ""
+                          ? form.salary
+                            ? Math.round(Number(form.salary) / 12)
+                            : ""
                           : salaryPeriod === "daily"
-                          ? form.salary ? Math.round(Number(form.salary) / 365) : ""
-                          : form.salary
+                            ? form.salary
+                              ? Math.round(Number(form.salary) / 365)
+                              : ""
+                            : form.salary
                       }
                       onChange={(e) => {
                         const v = Number(e.target.value) || 0;
@@ -637,8 +662,8 @@ export default function EmployeesPage() {
                           salaryPeriod === "monthly"
                             ? v * 12
                             : salaryPeriod === "daily"
-                            ? v * 365
-                            : v;
+                              ? v * 365
+                              : v;
                         setForm({ ...form, salary: String(annual) });
                       }}
                       className="border-2 border-black border-l-0 flex-1 px-3 py-1.5 text-sm outline-none"
@@ -647,9 +672,15 @@ export default function EmployeesPage() {
                   </div>
                   {form.salary && (
                     <p className="text-[10px] text-muted-foreground mt-1">
-                      Annual: ₹{Number(form.salary).toLocaleString("en-IN")} &nbsp;·&nbsp;
-                      Monthly: ₹{Math.round(Number(form.salary) / 12).toLocaleString("en-IN")} &nbsp;·&nbsp;
-                      Daily: ₹{Math.round(Number(form.salary) / 365).toLocaleString("en-IN")}
+                      Annual: ₹{Number(form.salary).toLocaleString("en-IN")}{" "}
+                      &nbsp;·&nbsp; Monthly: ₹
+                      {Math.round(Number(form.salary) / 12).toLocaleString(
+                        "en-IN",
+                      )}{" "}
+                      &nbsp;·&nbsp; Daily: ₹
+                      {Math.round(Number(form.salary) / 365).toLocaleString(
+                        "en-IN",
+                      )}
                     </p>
                   )}
                 </div>
@@ -725,29 +756,41 @@ export default function EmployeesPage() {
                   </div>
                 )}
                 <div>
-                  <label className="block text-xs font-bold text-black mb-1">Date of Birth</label>
+                  <label className="block text-xs font-bold text-black mb-1">
+                    Date of Birth
+                  </label>
                   <input
                     type="date"
                     value={form.dateOfBirth}
-                    onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, dateOfBirth: e.target.value })
+                    }
                     className="border-2 w-full px-3 py-2 text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-black mb-1">Emergency Contact</label>
+                  <label className="block text-xs font-bold text-black mb-1">
+                    Emergency Contact
+                  </label>
                   <input
                     type="text"
                     value={form.emergencyContact}
-                    onChange={(e) => setForm({ ...form, emergencyContact: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, emergencyContact: e.target.value })
+                    }
                     className="border-2 w-full px-3 py-2 text-sm"
                     placeholder="Name — Phone"
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs font-bold text-black mb-1">Address</label>
+                  <label className="block text-xs font-bold text-black mb-1">
+                    Address
+                  </label>
                   <textarea
                     value={form.address}
-                    onChange={(e) => setForm({ ...form, address: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, address: e.target.value })
+                    }
                     className="border-2 w-full px-3 py-2 text-sm resize-none"
                     rows={2}
                     placeholder="Full address"
@@ -757,45 +800,69 @@ export default function EmployeesPage() {
 
               {/* Banking Details */}
               <div className="border-t-2 border-black pt-4">
-                <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-3">Banking Details</p>
+                <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-3">
+                  Banking Details
+                </p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-black mb-1">Account Holder Name</label>
+                    <label className="block text-xs font-bold text-black mb-1">
+                      Account Holder Name
+                    </label>
                     <input
                       type="text"
                       value={form.accountHolderName}
-                      onChange={(e) => setForm({ ...form, accountHolderName: e.target.value })}
+                      onChange={(e) =>
+                        setForm({ ...form, accountHolderName: e.target.value })
+                      }
                       className="border-2 w-full px-3 py-2 text-sm"
                       placeholder="As per bank records"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-black mb-1">Bank Account Number</label>
+                    <label className="block text-xs font-bold text-black mb-1">
+                      Bank Account Number
+                    </label>
                     <input
                       type="text"
                       value={form.bankAccount}
-                      onChange={(e) => setForm({ ...form, bankAccount: e.target.value.replace(/\D/g, "") })}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          bankAccount: e.target.value.replace(/\D/g, ""),
+                        })
+                      }
                       className="border-2 w-full px-3 py-2 text-sm"
                       placeholder="Account number"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-black mb-1">IFSC Code</label>
+                    <label className="block text-xs font-bold text-black mb-1">
+                      IFSC Code
+                    </label>
                     <input
                       type="text"
                       value={form.ifscCode}
-                      onChange={(e) => setForm({ ...form, ifscCode: e.target.value.toUpperCase() })}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          ifscCode: e.target.value.toUpperCase(),
+                        })
+                      }
                       className="border-2 w-full px-3 py-2 text-sm uppercase"
                       placeholder="SBIN0001234"
                       maxLength={11}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-black mb-1">Bank Name</label>
+                    <label className="block text-xs font-bold text-black mb-1">
+                      Bank Name
+                    </label>
                     <input
                       type="text"
                       value={form.bankName}
-                      onChange={(e) => setForm({ ...form, bankName: e.target.value })}
+                      onChange={(e) =>
+                        setForm({ ...form, bankName: e.target.value })
+                      }
                       className="border-2 w-full px-3 py-2 text-sm"
                       placeholder="e.g. SBI, HDFC"
                     />
@@ -805,47 +872,78 @@ export default function EmployeesPage() {
 
               {/* Identity & Compliance */}
               <div className="border-t-2 border-black pt-4">
-                <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-3">Identity & Compliance</p>
+                <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-3">
+                  Identity & Compliance
+                </p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-black mb-1">PAN Number</label>
+                    <label className="block text-xs font-bold text-black mb-1">
+                      PAN Number
+                    </label>
                     <input
                       type="text"
                       value={form.panNumber}
-                      onChange={(e) => setForm({ ...form, panNumber: e.target.value.toUpperCase() })}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          panNumber: e.target.value.toUpperCase(),
+                        })
+                      }
                       className="border-2 w-full px-3 py-2 text-sm uppercase"
                       placeholder="ABCDE1234F"
                       maxLength={10}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-black mb-1">Aadhar Number</label>
+                    <label className="block text-xs font-bold text-black mb-1">
+                      Aadhar Number
+                    </label>
                     <input
                       type="text"
                       value={form.aadharNumber}
-                      onChange={(e) => setForm({ ...form, aadharNumber: e.target.value.replace(/\D/g, "").slice(0, 12) })}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          aadharNumber: e.target.value
+                            .replace(/\D/g, "")
+                            .slice(0, 12),
+                        })
+                      }
                       className="border-2 w-full px-3 py-2 text-sm"
                       placeholder="12-digit number"
                       maxLength={12}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-black mb-1">UAN Number</label>
+                    <label className="block text-xs font-bold text-black mb-1">
+                      UAN Number
+                    </label>
                     <input
                       type="text"
                       value={form.uanNumber}
-                      onChange={(e) => setForm({ ...form, uanNumber: e.target.value.replace(/\D/g, "").slice(0, 12) })}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          uanNumber: e.target.value
+                            .replace(/\D/g, "")
+                            .slice(0, 12),
+                        })
+                      }
                       className="border-2 w-full px-3 py-2 text-sm"
                       placeholder="12-digit UAN"
                       maxLength={12}
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-black mb-1">ESIC Number</label>
+                    <label className="block text-xs font-bold text-black mb-1">
+                      ESIC Number
+                    </label>
                     <input
                       type="text"
                       value={form.esicNumber}
-                      onChange={(e) => setForm({ ...form, esicNumber: e.target.value })}
+                      onChange={(e) =>
+                        setForm({ ...form, esicNumber: e.target.value })
+                      }
                       className="border-2 w-full px-3 py-2 text-sm"
                       placeholder="ESIC number"
                     />
@@ -968,7 +1066,12 @@ export default function EmployeesPage() {
                 ["Join Date", formatDate(viewEmp.joinDate)],
                 ["Gender", viewEmp.gender || "—"],
                 ["Type", viewEmp.employmentType?.replace("_", " ")],
-                ["Date of Birth", (viewEmp as any).dateOfBirth ? formatDate((viewEmp as any).dateOfBirth) : "—"],
+                [
+                  "Date of Birth",
+                  (viewEmp as any).dateOfBirth
+                    ? formatDate((viewEmp as any).dateOfBirth)
+                    : "—",
+                ],
                 ["Emergency Contact", (viewEmp as any).emergencyContact || "—"],
                 ["Bank Account", (viewEmp as any).bankAccount || "—"],
                 ["Account Holder", (viewEmp as any).accountHolderName || "—"],

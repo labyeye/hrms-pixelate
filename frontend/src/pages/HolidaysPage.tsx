@@ -57,8 +57,18 @@ const TYPE_META = {
 };
 
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -69,7 +79,9 @@ function TypeBadge({ type }: { type: Holiday["type"] }) {
     <span
       className={cn(
         "inline-flex items-center gap-1 px-2 py-0.5 text-xs font-black uppercase border",
-        m.bg, m.border, m.text,
+        m.bg,
+        m.border,
+        m.text,
       )}
     >
       <span className={cn("w-1.5 h-1.5 rounded-full", m.dot)} />
@@ -110,7 +122,9 @@ export default function HolidaysPage() {
     }
   }, [year]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
 
   const resetForm = () => {
     setForm({ name: "", date: "", type: "national", description: "" });
@@ -173,9 +187,15 @@ export default function HolidaysPage() {
     grouped[m].push(h);
   });
 
-  const totalNational = holidays.filter((h) => h.type === "national" && h.isActive).length;
-  const totalOptional = holidays.filter((h) => h.type === "optional" && h.isActive).length;
-  const totalRestricted = holidays.filter((h) => h.type === "restricted" && h.isActive).length;
+  const totalNational = holidays.filter(
+    (h) => h.type === "national" && h.isActive,
+  ).length;
+  const totalOptional = holidays.filter(
+    (h) => h.type === "optional" && h.isActive,
+  ).length;
+  const totalRestricted = holidays.filter(
+    (h) => h.type === "restricted" && h.isActive,
+  ).length;
 
   return (
     <AppLayout title="Holidays">
@@ -183,14 +203,20 @@ export default function HolidaysPage() {
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h1 className="font-display font-black text-3xl text-black">Company Holidays</h1>
+            <h1 className="font-display font-black text-3xl text-black">
+              Company Holidays
+            </h1>
             <p className="text-gray-600 font-medium mt-1">
-              Declare holidays — attendance is automatically blocked on these dates
+              Declare holidays — attendance is automatically blocked on these
+              dates
             </p>
           </div>
           {canManage && (
             <button
-              onClick={() => { resetForm(); setShowForm(true); }}
+              onClick={() => {
+                resetForm();
+                setShowForm(true);
+              }}
               className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-black text-sm uppercase"
             >
               <Plus className="w-4 h-4" /> Add Holiday
@@ -204,26 +230,45 @@ export default function HolidaysPage() {
             <button
               onClick={() => setYear((y) => y - 1)}
               className="px-3 py-2 font-black text-lg hover:bg-gray-50 border-r-2 border-black"
-            >‹</button>
+            >
+              ‹
+            </button>
             <span className="px-4 py-2 font-black text-base">{year}</span>
             <button
               onClick={() => setYear((y) => y + 1)}
               className="px-3 py-2 font-black text-lg hover:bg-gray-50 border-l-2 border-black"
-            >›</button>
+            >
+              ›
+            </button>
           </div>
           <div className="flex gap-3">
             {(["national", "optional", "restricted"] as const).map((t) => {
               const m = TYPE_META[t];
-              const count = t === "national" ? totalNational : t === "optional" ? totalOptional : totalRestricted;
+              const count =
+                t === "national"
+                  ? totalNational
+                  : t === "optional"
+                    ? totalOptional
+                    : totalRestricted;
               return (
-                <div key={t} className={cn("flex items-center gap-2 px-3 py-1.5 border-2 text-sm font-black", m.bg, m.border, m.text)}>
+                <div
+                  key={t}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 border-2 text-sm font-black",
+                    m.bg,
+                    m.border,
+                    m.text,
+                  )}
+                >
                   <span className={cn("w-2 h-2 rounded-full", m.dot)} />
                   {m.label}: {count}
                 </div>
               );
             })}
           </div>
-          <span className="ml-auto text-sm font-bold text-gray-500">{holidays.length} total holidays</span>
+          <span className="ml-auto text-sm font-bold text-gray-500">
+            {holidays.length} total holidays
+          </span>
         </div>
 
         {/* Add / Edit Form */}
@@ -234,40 +279,65 @@ export default function HolidaysPage() {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-black uppercase mb-1">Holiday Name *</label>
+                <label className="block text-xs font-black uppercase mb-1">
+                  Holiday Name *
+                </label>
                 <input
                   value={form.name}
-                  onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, name: e.target.value }))
+                  }
                   placeholder="e.g. Republic Day"
                   className="w-full border-2 border-black px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-black uppercase mb-1">Date *</label>
+                <label className="block text-xs font-black uppercase mb-1">
+                  Date *
+                </label>
                 <input
                   type="date"
                   value={form.date}
-                  onChange={(e) => setForm((p) => ({ ...p, date: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, date: e.target.value }))
+                  }
                   className="w-full border-2 border-black px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
                 />
               </div>
               <div>
-                <label className="block text-xs font-black uppercase mb-1">Type *</label>
+                <label className="block text-xs font-black uppercase mb-1">
+                  Type *
+                </label>
                 <select
                   value={form.type}
-                  onChange={(e) => setForm((p) => ({ ...p, type: e.target.value as Holiday["type"] }))}
+                  onChange={(e) =>
+                    setForm((p) => ({
+                      ...p,
+                      type: e.target.value as Holiday["type"],
+                    }))
+                  }
                   className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none"
                 >
-                  <option value="national">National — applies to everyone</option>
-                  <option value="optional">Optional — employee can choose</option>
-                  <option value="restricted">Restricted — limited to specific employees</option>
+                  <option value="national">
+                    National — applies to everyone
+                  </option>
+                  <option value="optional">
+                    Optional — employee can choose
+                  </option>
+                  <option value="restricted">
+                    Restricted — limited to specific employees
+                  </option>
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-black uppercase mb-1">Description (optional)</label>
+                <label className="block text-xs font-black uppercase mb-1">
+                  Description (optional)
+                </label>
                 <input
                   value={form.description}
-                  onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, description: e.target.value }))
+                  }
                   placeholder="Additional notes"
                   className="w-full border-2 border-black px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
                 />
@@ -279,7 +349,11 @@ export default function HolidaysPage() {
                 disabled={saving}
                 className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-black text-sm uppercase disabled:opacity-60"
               >
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                {saving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4" />
+                )}
                 {saving ? "Saving..." : "Save"}
               </button>
               <button
@@ -300,9 +374,13 @@ export default function HolidaysPage() {
         ) : holidays.length === 0 ? (
           <div className="text-center py-16 bg-white border-2 border-black">
             <CalendarDays className="w-14 h-14 text-gray-200 mx-auto mb-3" />
-            <p className="font-black text-gray-400 text-lg">No holidays for {year}</p>
+            <p className="font-black text-gray-400 text-lg">
+              No holidays for {year}
+            </p>
             {canManage && (
-              <p className="text-sm text-gray-400 mt-1">Click "Add Holiday" to declare company holidays.</p>
+              <p className="text-sm text-gray-400 mt-1">
+                Click "Add Holiday" to declare company holidays.
+              </p>
             )}
           </div>
         ) : (
@@ -310,8 +388,19 @@ export default function HolidaysPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b-2 border-black bg-[#024BAB]">
-                  {["Date", "Day", "Holiday", "Type", "Description", "Status", ...(canManage ? ["Actions"] : [])].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-black text-white uppercase tracking-wider">
+                  {[
+                    "Date",
+                    "Day",
+                    "Holiday",
+                    "Type",
+                    "Description",
+                    "Status",
+                    ...(canManage ? ["Actions"] : []),
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="px-4 py-3 text-left text-xs font-black text-white uppercase tracking-wider"
+                    >
                       {h}
                     </th>
                   ))}
@@ -323,13 +412,17 @@ export default function HolidaysPage() {
                   .map((m) => (
                     <>
                       {/* Month separator row */}
-                      <tr key={`month-${m}`} className="border-b border-black/10">
+                      <tr
+                        key={`month-${m}`}
+                        className="border-b border-black/10"
+                      >
                         <td
                           colSpan={canManage ? 7 : 6}
                           className="px-4 py-2 bg-[#024BAB]/5 border-t-2 border-[#024BAB]/20"
                         >
                           <span className="text-xs font-black uppercase tracking-widest text-[#024BAB]">
-                            {MONTHS[m]} · {grouped[m].length} holiday{grouped[m].length > 1 ? "s" : ""}
+                            {MONTHS[m]} · {grouped[m].length} holiday
+                            {grouped[m].length > 1 ? "s" : ""}
                           </span>
                         </td>
                       </tr>
@@ -348,33 +441,57 @@ export default function HolidaysPage() {
                             )}
                           >
                             <td className="px-4 py-3">
-                              <div className={cn("w-11 h-11 border-2 border-black flex flex-col items-center justify-center", m2.bg)}>
-                                <span className="text-[9px] font-black uppercase text-gray-500">{dayName}</span>
-                                <span className={cn("text-lg font-black leading-none", m2.text)}>{dayNum}</span>
+                              <div
+                                className={cn(
+                                  "w-11 h-11 border-2 border-black flex flex-col items-center justify-center",
+                                  m2.bg,
+                                )}
+                              >
+                                <span className="text-[9px] font-black uppercase text-gray-500">
+                                  {dayName}
+                                </span>
+                                <span
+                                  className={cn(
+                                    "text-lg font-black leading-none",
+                                    m2.text,
+                                  )}
+                                >
+                                  {dayNum}
+                                </span>
                               </div>
                             </td>
                             <td className="px-4 py-3">
-                              <span className="text-xs font-bold text-gray-500 uppercase">{dayName}</span>
+                              <span className="text-xs font-bold text-gray-500 uppercase">
+                                {dayName}
+                              </span>
                               {isWeekend && (
-                                <span className="ml-1.5 text-[10px] font-bold text-gray-400 border border-gray-200 px-1 py-0.5">WE</span>
+                                <span className="ml-1.5 text-[10px] font-bold text-gray-400 border border-gray-200 px-1 py-0.5">
+                                  WE
+                                </span>
                               )}
                             </td>
                             <td className="px-4 py-3">
-                              <span className="font-black text-black">{h.name}</span>
+                              <span className="font-black text-black">
+                                {h.name}
+                              </span>
                             </td>
                             <td className="px-4 py-3">
                               <TypeBadge type={h.type} />
                             </td>
                             <td className="px-4 py-3 text-xs text-gray-500 max-w-40">
-                              <span className="line-clamp-1">{h.description || "—"}</span>
+                              <span className="line-clamp-1">
+                                {h.description || "—"}
+                              </span>
                             </td>
                             <td className="px-4 py-3">
-                              <span className={cn(
-                                "text-xs font-black uppercase px-2 py-0.5 border",
-                                h.isActive
-                                  ? "bg-green-50 text-green-700 border-green-300"
-                                  : "bg-gray-50 text-gray-400 border-gray-200",
-                              )}>
+                              <span
+                                className={cn(
+                                  "text-xs font-black uppercase px-2 py-0.5 border",
+                                  h.isActive
+                                    ? "bg-green-50 text-green-700 border-green-300"
+                                    : "bg-gray-50 text-gray-400 border-gray-200",
+                                )}
+                              >
                                 {h.isActive ? "Active" : "Inactive"}
                               </span>
                             </td>
@@ -408,11 +525,22 @@ export default function HolidaysPage() {
 
         {/* Legend */}
         <div className="mt-6 p-4 bg-blue-50 border-2 border-[#024BAB]/20">
-          <p className="text-xs font-black uppercase text-[#024BAB] mb-2">How holidays affect attendance</p>
+          <p className="text-xs font-black uppercase text-[#024BAB] mb-2">
+            How holidays affect attendance
+          </p>
           <ul className="text-xs text-gray-600 space-y-1 font-medium">
-            <li>🔴 <strong>National:</strong> Attendance automatically blocked. Check-in is recorded but status is set to "holiday".</li>
-            <li>🟠 <strong>Optional:</strong> Employee can choose whether to work. Attendance recorded normally if they check in.</li>
-            <li>🟡 <strong>Restricted:</strong> Only applicable to employees with leave balance. HR manages individually.</li>
+            <li>
+              🔴 <strong>National:</strong> Attendance automatically blocked.
+              Check-in is recorded but status is set to "holiday".
+            </li>
+            <li>
+              🟠 <strong>Optional:</strong> Employee can choose whether to work.
+              Attendance recorded normally if they check in.
+            </li>
+            <li>
+              🟡 <strong>Restricted:</strong> Only applicable to employees with
+              leave balance. HR manages individually.
+            </li>
           </ul>
         </div>
       </div>

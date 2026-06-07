@@ -741,9 +741,7 @@ export default function DashboardPage() {
                         {leave.days > 1 ? "s" : ""}
                       </p>
                     </div>
-                    <span className="border-2 text-[10px]">
-                      Pending
-                    </span>
+                    <span className="border-2 text-[10px]">Pending</span>
                   </div>
                 </Link>
               ))}

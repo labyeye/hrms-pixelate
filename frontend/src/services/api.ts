@@ -342,7 +342,11 @@ export const biometricAPI = {
   // Device-based face enrollment (no user auth — uses device token)
   getDeviceEmployees: (token: string) =>
     request(`/biometric/device/${token}/employees`),
-  enrollFaceFromDevice: (deviceToken: string, employeeId: string, descriptor: number[]) =>
+  enrollFaceFromDevice: (
+    deviceToken: string,
+    employeeId: string,
+    descriptor: number[],
+  ) =>
     request("/biometric/device-face-enroll", {
       method: "POST",
       body: JSON.stringify({ deviceToken, employeeId, descriptor }),
