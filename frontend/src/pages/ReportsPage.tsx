@@ -57,7 +57,7 @@ const MONTHS = [
   "Nov",
   "Dec",
 ];
-const YEARS = [2023, 2024, 2025, 2026];
+const YEARS = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i);
 
 // ─── REPORT CATALOG DEFINITION ───────────────────────────────────────────────
 

@@ -54,6 +54,24 @@ const getPayrolls = asyncHandler(async (req, res) => {
   });
 });
 
+// Returns actual working days in a month based on company's work week setting
+function getWorkingDays(year, month, workWeek) {
+  let count = 0;
+  const end = new Date(year, month, 0).getDate(); // last day of month
+  for (let d = 1; d <= end; d++) {
+    const dow = new Date(year, month - 1, d).getDay(); // 0=Sun, 6=Sat
+    if (workWeek === "mon_fri" && dow >= 1 && dow <= 5) count++;
+    else if (workWeek !== "mon_fri" && dow >= 1 && dow <= 6) count++; // mon_sat default
+  }
+  return count || 1; // never return 0
+}
+
+// Parse "HH:MM" string into { hour, minute }
+function parseTime(timeStr) {
+  const [h, m] = (timeStr || "00:00").split(":").map(Number);
+  return { hour: h || 0, minute: m || 0 };
+}
+
 const processPayroll = asyncHandler(async (req, res) => {
   const { month, year, employeeIds } = req.body;
   const m = parseInt(month),
@@ -67,144 +85,155 @@ const processPayroll = asyncHandler(async (req, res) => {
   if (Array.isArray(employeeIds) && employeeIds.length > 0) {
     empFilter._id = { $in: employeeIds };
   }
-  const employees = await Employee.find(empFilter);
+  // Populate shift so we can use per-employee shift timing
+  const employees = await Employee.find(empFilter).populate("shift");
 
-  const deductionRule = await DeductionRule.findOne({
-    company: req.user.company,
-  });
+  const deductionRule = await DeductionRule.findOne({ company: req.user.company });
 
-  // Date range for the requested month
+  // Actual working days in the month based on company work week
+  const workWeek = deductionRule?.workWeek ?? "mon_sat";
+  const workingDays = getWorkingDays(y, m, workWeek);
+
   const startDate = new Date(y, m - 1, 1);
   const endDate = new Date(y, m, 0);
-  const totalDaysInMonth = endDate.getDate();
 
   const payrolls = [];
 
   for (const emp of employees) {
-    const existing = await Payroll.findOne({
-      employee: emp._id,
-      month: m,
-      year: y,
-    });
+    const existing = await Payroll.findOne({ employee: emp._id, month: m, year: y });
     if (existing) continue;
 
-    // Use per-employee config if set, fall back to employee.salary
-    const config = await EmployeePayrollConfig.findOne({
-      employee: emp._id,
-      company: req.user.company,
-    });
-
-    const basic = config?.basicSalary ?? emp.salary ?? 0;
-    const hra = config?.hra ?? basic * 0.4;
-    const da = config?.da ?? basic * 0.1;
-    const ta = config?.ta ?? 1500;
-    const medicalAllowance = config?.medicalAllowance ?? 0;
-    const otherAllowances = config?.otherAllowances ?? 0;
-    const gross = basic + hra + da + ta + medicalAllowance + otherAllowances;
-
-    // Attendance for this month
+    // Fetch attendance for this employee this month
     const attendances = await Attendance.find({
       employee: emp._id,
       date: { $gte: startDate, $lte: endDate },
     });
 
-    // Shift timing & thresholds from deduction rule (with safe defaults)
-    const shiftH = deductionRule?.shiftStartHour ?? 9;
-    const shiftM = deductionRule?.shiftStartMinute ?? 0;
-    const graceMins = deductionRule?.lateThresholdMinutes ?? 15;
-    const halfDayMins = deductionRule?.halfDayThresholdMinutes ?? 120;
+    // Skip employees with zero attendance records — nothing to process
+    if (attendances.length === 0) continue;
 
-    let presentDays = 0;
-    let lateDays = 0;
-    let halfDayCount = 0;
-    let absentDays = 0;
-    let leaveDays = 0;
+    // ── Salary components ──────────────────────────────────────────────────
+    const config = await EmployeePayrollConfig.findOne({
+      employee: emp._id,
+      company: req.user.company,
+    });
+
+    const defaultHraPct = deductionRule?.defaultHraPct ?? 40;
+    const defaultDaPct  = deductionRule?.defaultDaPct  ?? 10;
+    const defaultTa     = deductionRule?.defaultTa     ?? 1500;
+
+    const basic          = config?.basicSalary ?? emp.salary ?? 0;
+    const hra            = config?.hra ?? (basic * defaultHraPct) / 100;
+    const da             = config?.da  ?? (basic * defaultDaPct)  / 100;
+    const ta             = config?.ta  ?? defaultTa;
+    const medicalAllowance = config?.medicalAllowance ?? 0;
+    const otherAllowances  = config?.otherAllowances  ?? 0;
+    const gross = basic + hra + da + ta + medicalAllowance + otherAllowances;
+
+    const dailySalary = gross / workingDays;
+
+    // ── Per-employee shift timing (falls back to global DeductionRule) ─────
+    const empShift = emp.shift; // populated Shift doc or null
+    let shiftH, shiftM, shiftEndH, shiftEndM;
+
+    if (empShift?.startTime) {
+      const s = parseTime(empShift.startTime);
+      shiftH = s.hour; shiftM = s.minute;
+    } else {
+      shiftH = deductionRule?.shiftStartHour ?? 9;
+      shiftM = deductionRule?.shiftStartMinute ?? 0;
+    }
+
+    if (empShift?.endTime) {
+      const e = parseTime(empShift.endTime);
+      shiftEndH = e.hour; shiftEndM = e.minute;
+    } else {
+      shiftEndH = deductionRule?.shiftEndHour ?? 18;
+      shiftEndM = deductionRule?.shiftEndMinute ?? 0;
+    }
+
+    const graceMins      = deductionRule?.lateThresholdMinutes ?? 15;
+    const halfDayMins    = deductionRule?.halfDayThresholdMinutes ?? 120;
+    const earlyThreshold = deductionRule?.earlyCheckoutThresholdMinutes ?? 15;
+    const earlyEnabled   = deductionRule?.earlyCheckoutDeductionEnabled ?? false;
+
+    // Total shift length in minutes (for proportional early checkout deduction)
+    const shiftTotalMins = (shiftEndH * 60 + shiftEndM) - (shiftH * 60 + shiftM);
+
+    let presentDays = 0, lateDays = 0, halfDayCount = 0;
+    let absentDays = 0, leaveDays = 0;
+    let earlyCheckoutDeduction = 0;
 
     for (const a of attendances) {
-      // Skip non-working days — no deduction, no present credit
       if (a.status === "holiday" || a.status === "weekend") continue;
-
-      if (a.status === "on_leave") {
-        leaveDays++;
-        continue;
-      }
+      if (a.status === "on_leave") { leaveDays++; continue; }
 
       if (a.checkIn) {
-        // Re-derive lateness from actual check-in time vs shift start + grace period
-        const dateObj = new Date(a.date);
+        const dateObj   = new Date(a.date);
         const shiftStart = new Date(dateObj);
         shiftStart.setHours(shiftH, shiftM, 0, 0);
 
         const minutesLate = (new Date(a.checkIn) - shiftStart) / 60000;
-
-        presentDays++; // employee came in — counts as present regardless of lateness
+        presentDays++;
 
         if (minutesLate <= graceMins) {
-          // On time (within grace period) — no attendance deduction
+          // On time — no late deduction
         } else if (minutesLate <= halfDayMins) {
-          // Late but not severe enough for half day
           lateDays++;
         } else {
-          // Arrived so late it counts as a half day
           halfDayCount++;
+        }
+
+        // Early checkout check
+        if (earlyEnabled && a.checkOut && shiftTotalMins > 0) {
+          const shiftEnd = new Date(dateObj);
+          shiftEnd.setHours(shiftEndH, shiftEndM, 0, 0);
+          const minutesEarly = (shiftEnd - new Date(a.checkOut)) / 60000;
+          if (minutesEarly > earlyThreshold) {
+            // Proportional deduction: (minutes short / total shift minutes) * daily salary
+            earlyCheckoutDeduction += (minutesEarly / shiftTotalMins) * dailySalary;
+          }
         }
       } else {
-        // No check-in recorded — trust the manually set status
-        if (a.status === "absent") {
-          absentDays++;
-        } else if (a.status === "present") {
-          presentDays++;
-        } else if (a.status === "late") {
-          presentDays++;
-          lateDays++;
-        } else if (a.status === "half_day") {
-          presentDays++;
-          halfDayCount++;
-        }
+        // No checkIn — trust manually set status
+        if (a.status === "absent")   { absentDays++; }
+        else if (a.status === "present") { presentDays++; }
+        else if (a.status === "late")    { presentDays++; lateDays++; }
+        else if (a.status === "half_day"){ presentDays++; halfDayCount++; }
       }
     }
 
-    // Daily salary basis = gross spread over calendar days of the month
-    const dailySalary = totalDaysInMonth > 0 ? gross / totalDaysInMonth : 0;
-
-    // Standard statutory deductions
-    const pf = basic * 0.12;
-    const esi = gross * 0.0175;
-    const tds = gross > 50000 ? gross * 0.1 : 0;
-
-    // Attendance-based deductions calculated from shift timing and thresholds
-    let lateDeduction = 0;
-    let halfDayDeduction = 0;
-    let absentDeduction = 0;
+    // ── Attendance-based deductions ────────────────────────────────────────
+    let lateDeduction = 0, halfDayDeduction = 0, absentDeduction = 0;
 
     if (deductionRule) {
-      // Late deduction
-      if (deductionRule.lateDeductionType === "fixed") {
-        lateDeduction = lateDays * deductionRule.lateDeductionAmount;
-      } else {
-        lateDeduction =
-          lateDays * (dailySalary * (deductionRule.lateDeductionAmount / 100));
-      }
+      lateDeduction = deductionRule.lateDeductionType === "fixed"
+        ? lateDays * deductionRule.lateDeductionAmount
+        : lateDays * dailySalary * (deductionRule.lateDeductionAmount / 100);
 
-      // Half-day deduction — always a percentage of daily salary
-      halfDayDeduction =
-        halfDayCount *
-        (dailySalary * ((deductionRule.halfDayDeductionPercent ?? 50) / 100));
+      halfDayDeduction = halfDayCount * dailySalary * ((deductionRule.halfDayDeductionPercent ?? 50) / 100);
 
-      // Absent deduction
-      if (deductionRule.absentDeductionType === "fixed") {
-        absentDeduction = absentDays * deductionRule.absentDeductionAmount;
-      } else {
-        absentDeduction =
-          absentDays *
-          (dailySalary * (deductionRule.absentDeductionAmount / 100));
-      }
+      absentDeduction = deductionRule.absentDeductionType === "fixed"
+        ? absentDays * deductionRule.absentDeductionAmount
+        : absentDays * dailySalary * (deductionRule.absentDeductionAmount / 100);
     } else {
-      // No rules configured — deduct one full day's pay per absent day
       absentDeduction = absentDays * dailySalary;
     }
 
-    const otherDeductions = lateDeduction + halfDayDeduction + absentDeduction;
+    // ── Statutory deductions (each toggleable) ─────────────────────────────
+    const pfRate        = (deductionRule?.pfRate ?? 12) / 100;
+    const esiRate       = (deductionRule?.esiRate ?? 1.75) / 100;
+    const esiGrossLimit = deductionRule?.esiGrossLimit ?? 21000;
+    const tdsRate       = (deductionRule?.tdsRate ?? 10) / 100;
+    const tdsTaxThresh  = deductionRule?.tdsTaxableThreshold ?? 50000;
+
+    const pf  = (deductionRule?.enablePf  ?? true)  ? basic * pfRate : 0;
+    const esi = (deductionRule?.enableEsi ?? true)   && (esiGrossLimit === 0 || gross <= esiGrossLimit)
+                  ? gross * esiRate : 0;
+    const tds = (deductionRule?.enableTds ?? false)  && (tdsTaxThresh === 0 || gross > tdsTaxThresh)
+                  ? gross * tdsRate : 0;
+
+    const otherDeductions = lateDeduction + halfDayDeduction + absentDeduction + earlyCheckoutDeduction;
     const totalDed = pf + esi + tds + otherDeductions;
 
     payrolls.push({
@@ -225,7 +254,7 @@ const processPayroll = asyncHandler(async (req, res) => {
       otherDeductions,
       totalDeductions: totalDed,
       netSalary: Math.max(0, gross - totalDed),
-      workingDays: totalDaysInMonth,
+      workingDays,
       presentDays,
       leaveDays,
       status: "processed",

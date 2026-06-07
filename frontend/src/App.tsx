@@ -62,6 +62,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Redirects employees to My Profile; admins/HR to Dashboard
+function RootRedirect() {
+  const { user } = useAuth();
+  if (user?.role === "employee") return <Navigate to="/my-profile" replace />;
+  return <DashboardPage />;
+}
+
 function AppRoutes() {
   const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
@@ -113,7 +120,7 @@ function AppRoutes() {
         path="/"
         element={
           <ProtectedRoute>
-            <DashboardPage />
+            <RootRedirect />
           </ProtectedRoute>
         }
       />

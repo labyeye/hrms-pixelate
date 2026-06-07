@@ -162,7 +162,7 @@ export default function PayrollPage() {
             onChange={(e) => setYear(Number(e.target.value))}
             className="border-2 border-black px-3 py-2 text-sm font-semibold outline-none bg-white"
           >
-            {[2023, 2024, 2025, 2026].map((y) => (
+            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map((y) => (
               <option key={y} value={y}>
                 {y}
               </option>

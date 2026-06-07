@@ -112,16 +112,22 @@ export interface Payroll {
   hra: number;
   da: number;
   ta: number;
+  medicalAllowance: number;
+  otherAllowances: number;
   grossSalary: number;
   pf: number;
   esi: number;
   tds: number;
+  otherDeductions: number;
   totalDeductions: number;
   netSalary: number;
   workingDays: number;
   presentDays: number;
+  leaveDays: number;
+  overtimeHours: number;
   status: "draft" | "processed" | "paid";
   paidAt?: string;
+  remarks?: string;
 }
 
 export interface Job {
