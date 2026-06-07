@@ -284,7 +284,7 @@ export default function EmployeeDashboard() {
           <div className="flex flex-col sm:flex-row gap-4 -mt-10">
             {/* Avatar with upload overlay */}
             <div className="relative shrink-0 group">
-              <div className="w-20 h-20 border-4 border-white bg-[#024BAB] flex items-center justify-center text-2xl font-bold text-white overflow-hidden shadow-lg">
+              <div className="w-32 h-32 border-4 border-white bg-[#024BAB] flex items-center justify-center text-2xl font-bold text-white overflow-hidden shadow-lg">
                 {avatarSrc ? (
                   <img src={avatarSrc} alt="avatar" className="w-full h-full object-cover" />
                 ) : (
@@ -312,8 +312,9 @@ export default function EmployeeDashboard() {
               />
             </div>
 
-            {/* Name + meta */}
-            <div className="flex-1 min-w-0 pb-1 sm:pt-10">
+            {/* Name + meta + stats in one section */}
+            <div className="flex-1 min-w-0 pb-2 mt-12">
+              {/* Single row: name badge + stats */}
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl font-display font-bold text-black">
                   {employee.firstName} {employee.lastName}
@@ -323,25 +324,23 @@ export default function EmployeeDashboard() {
                 )}>
                   {employee.status}
                 </span>
+                <div className="ml-auto flex flex-wrap gap-2">
+                  {[
+                    { label: "Monthly CTC", value: formatCurrency(Math.round((employee.salary || 0) / 12)), color: "text-[#024BAB]" },
+                    { label: "Joined", value: formatDate(employee.joinDate), color: "text-black" },
+                    { label: "Attendance", value: attendance ? `${attendance.attendancePercentage.toFixed(0)}%` : "—", color: "text-[#00C48C]" },
+                  ].map(({ label, value, color }) => (
+                    <div key={label} className="border-2 border-black px-3 py-1.5 text-center bg-white min-w-[90px]">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">{label}</p>
+                      <p className={cn("text-sm font-bold mt-0.5", color)}>{value}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground font-medium mt-0.5">
+              <p className="text-sm text-muted-foreground font-medium mt-1">
                 {employee.designation} · {employee.department?.name || "—"}
               </p>
               <p className="text-xs font-mono text-gray-400 mt-0.5">{employee.employeeId}</p>
-            </div>
-
-            {/* Quick stats */}
-            <div className="flex flex-wrap gap-2 pb-1 sm:pt-10 sm:self-end">
-              {[
-                { label: "Monthly CTC", value: formatCurrency(Math.round((employee.salary || 0) / 12)), color: "text-[#024BAB]" },
-                { label: "Joined", value: formatDate(employee.joinDate), color: "text-black" },
-                { label: "Attendance", value: attendance ? `${attendance.attendancePercentage.toFixed(0)}%` : "—", color: "text-[#00C48C]" },
-              ].map(({ label, value, color }) => (
-                <div key={label} className="border-2 border-black px-3 py-1.5 text-center bg-white min-w-[90px]">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">{label}</p>
-                  <p className={cn("text-sm font-bold mt-0.5", color)}>{value}</p>
-                </div>
-              ))}
             </div>
           </div>
         </div>
