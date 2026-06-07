@@ -1,7 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { employeeAPI, departmentAPI, loanAPI } from "@/services/api";
+import {
+  employeeAPI,
+  departmentAPI,
+  loanAPI,
+  transactionAPI,
+} from "@/services/api";
 import { Employee, Department } from "@/types/hrms";
 import { cn, formatDate } from "@/lib/utils";
 import {
@@ -140,6 +145,14 @@ export default function EmployeesPage() {
     reason: "",
   });
   const [savingLoan, setSavingLoan] = useState(false);
+  const [txModal, setTxModal] = useState<"allowance" | "penalty" | null>(null);
+  const [txForm, setTxForm] = useState({
+    employee: "",
+    amount: "",
+    date: new Date().toISOString().split("T")[0],
+    remark: "",
+  });
+  const [savingTx, setSavingTx] = useState(false);
   const [actionModal, setActionModal] = useState<{
     show: boolean;
     type: "success" | "error";
@@ -424,7 +437,7 @@ export default function EmployeesPage() {
                   key={emp._id}
                   className={cn(
                     "border-b border-black/10 hover:bg-[#024BAB]/5 transition-colors cursor-pointer",
-                    i % 2 === 0 ? "" : "bg-[#F8FAFF]"
+                    i % 2 === 0 ? "" : "bg-[#F8FAFF]",
                   )}
                   onClick={() => setViewEmp(emp)}
                 >
@@ -459,7 +472,7 @@ export default function EmployeesPage() {
                     <span
                       className={cn(
                         "border-2 text-[10px] capitalize",
-                        TYPE_COLORS[emp.employmentType]
+                        TYPE_COLORS[emp.employmentType],
                       )}
                     >
                       {emp.employmentType.replace("_", " ")}
@@ -481,7 +494,7 @@ export default function EmployeesPage() {
                     <span
                       className={cn(
                         "border-2 text-[10px] capitalize",
-                        STATUS_COLORS[emp.status]
+                        STATUS_COLORS[emp.status],
                       )}
                     >
                       {emp.status.replace("_", " ")}
@@ -570,7 +583,7 @@ export default function EmployeesPage() {
                     "flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-colors border-r-2 border-black last:border-r-0",
                     formTab === idx
                       ? "bg-[#024BAB] text-white"
-                      : "bg-white text-black hover:bg-[#024BAB]/5"
+                      : "bg-white text-black hover:bg-[#024BAB]/5",
                   )}
                 >
                   <span
@@ -578,7 +591,7 @@ export default function EmployeesPage() {
                       "inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black mr-1.5",
                       formTab === idx
                         ? "bg-white text-[#024BAB]"
-                        : "bg-black/10 text-black"
+                        : "bg-black/10 text-black",
                     )}
                   >
                     {idx + 1}
@@ -589,9 +602,11 @@ export default function EmployeesPage() {
             </div>
 
             {/* Form body */}
-            <form onSubmit={handleSave} className="flex-1 overflow-y-auto flex flex-col">
+            <form
+              onSubmit={handleSave}
+              className="flex-1 overflow-y-auto flex flex-col"
+            >
               <div className="p-6 flex-1">
-
                 {/* ── Tab 0: Basic Info ── */}
                 {formTab === 0 && (
                   <div className="space-y-5">
@@ -753,7 +768,7 @@ export default function EmployeesPage() {
                               "flex-1 py-2.5 border-2 border-black text-sm font-bold capitalize transition-colors",
                               form.gender === g
                                 ? "bg-[#024BAB] text-white"
-                                : "bg-white text-black hover:bg-[#024BAB]/5"
+                                : "bg-white text-black hover:bg-[#024BAB]/5",
                             )}
                           >
                             {g}
@@ -864,7 +879,7 @@ export default function EmployeesPage() {
                               "flex-1 py-5 border-2 border-black text-sm font-bold transition-colors",
                               form.workDaysPerWeek === val
                                 ? "bg-[#024BAB] text-white"
-                                : "bg-white text-black hover:bg-[#024BAB]/5"
+                                : "bg-white text-black hover:bg-[#024BAB]/5",
                             )}
                           >
                             <div className="text-xl font-black mb-1">
@@ -1237,7 +1252,7 @@ export default function EmployeesPage() {
                       onClick={() => setFormTab(idx)}
                       className={cn(
                         "h-2 rounded-full border border-black transition-all",
-                        formTab === idx ? "bg-[#024BAB] w-6" : "bg-white w-2"
+                        formTab === idx ? "bg-[#024BAB] w-6" : "bg-white w-2",
                       )}
                     />
                   ))}
@@ -1247,9 +1262,7 @@ export default function EmployeesPage() {
                   <button
                     type="button"
                     onClick={() =>
-                      setFormTab((t) =>
-                        Math.min(FORM_TABS.length - 1, t + 1)
-                      )
+                      setFormTab((t) => Math.min(FORM_TABS.length - 1, t + 1))
                     }
                     className="flex items-center gap-2 border-2 border-black bg-[#024BAB] text-white px-4 py-2 text-sm font-bold hover:bg-[#01368A]"
                   >
@@ -1265,8 +1278,8 @@ export default function EmployeesPage() {
                     {saving
                       ? "Saving..."
                       : editEmp
-                      ? "Save Changes"
-                      : "Add Employee"}
+                        ? "Save Changes"
+                        : "Add Employee"}
                   </button>
                 )}
               </div>
@@ -1342,7 +1355,7 @@ export default function EmployeesPage() {
                     <span
                       className={cn(
                         "border-2 text-[11px] capitalize shrink-0 mt-1",
-                        STATUS_COLORS[viewEmp.status]
+                        STATUS_COLORS[viewEmp.status],
                       )}
                     >
                       {viewEmp.status.replace("_", " ")}
@@ -1387,7 +1400,7 @@ export default function EmployeesPage() {
                       <span
                         className={cn(
                           "border-2 text-[10px] capitalize",
-                          TYPE_COLORS[viewEmp.employmentType]
+                          TYPE_COLORS[viewEmp.employmentType],
                         )}
                       >
                         {viewEmp.employmentType.replace("_", " ")}
@@ -1420,11 +1433,10 @@ export default function EmployeesPage() {
                     "text-2xl font-black",
                     (viewEmp as any).loanBalance > 0
                       ? "text-[#EF4444]"
-                      : "text-black"
+                      : "text-black",
                   )}
                 >
-                  ₹
-                  {((viewEmp as any).loanBalance || 0).toLocaleString("en-IN")}
+                  ₹{((viewEmp as any).loanBalance || 0).toLocaleString("en-IN")}
                 </p>
                 <span className="inline-block mt-1.5 text-[10px] font-bold bg-[#FA731C]/15 text-[#FA731C] px-2 py-0.5 border border-[#FA731C]">
                   Pending
@@ -1497,13 +1509,29 @@ export default function EmployeesPage() {
                   icon: TrendingUp,
                   label: "Allowance / Bonus",
                   color: "text-[#024BAB]",
-                  action: () => navigate("/payroll"),
+                  action: () => {
+                    setTxForm({
+                      employee: viewEmp._id,
+                      amount: "",
+                      date: new Date().toISOString().split("T")[0],
+                      remark: "",
+                    });
+                    setTxModal("allowance");
+                  },
                 },
                 {
                   icon: AlertCircle,
                   label: "Penalty",
                   color: "text-[#EF4444]",
-                  action: () => navigate("/payroll"),
+                  action: () => {
+                    setTxForm({
+                      employee: viewEmp._id,
+                      amount: "",
+                      date: new Date().toISOString().split("T")[0],
+                      remark: "",
+                    });
+                    setTxModal("penalty");
+                  },
                 },
                 {
                   icon: DollarSign,
@@ -1553,7 +1581,7 @@ export default function EmployeesPage() {
                   <Icon
                     className={cn(
                       "w-6 h-6 transition-transform group-hover:scale-110",
-                      color
+                      color,
                     )}
                   />
                   <span className="text-[11px] font-bold text-black text-center leading-tight">
@@ -1799,6 +1827,133 @@ export default function EmployeesPage() {
                 </button>
               </>
             )}
+          </div>
+        </div>
+      )}
+      {/* Allowance / Penalty Modal */}
+      {txModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="border-2 border-black bg-white w-full max-w-md">
+            <div className="flex items-center justify-between p-5 border-b-2 border-black">
+              <h3 className="font-bold text-lg flex items-center gap-2">
+                {txModal === "allowance" ? (
+                  <>
+                    <TrendingUp className="w-5 h-5 text-[#024BAB]" /> Allowance
+                    / Bonus
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="w-5 h-5 text-[#EF4444]" /> Penalty
+                  </>
+                )}
+              </h3>
+              <button onClick={() => setTxModal(null)}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setSavingTx(true);
+                try {
+                  await transactionAPI.create({
+                    ...txForm,
+                    type: txModal,
+                    amount: parseFloat(txForm.amount),
+                  });
+                  setTxModal(null);
+                  setActionModal({
+                    show: true,
+                    type: "success",
+                    title:
+                      txModal === "allowance"
+                        ? "Allowance Added"
+                        : "Penalty Added",
+                    message: `${txModal === "allowance" ? "Allowance/Bonus" : "Penalty"} of ₹${txForm.amount} saved successfully.`,
+                  });
+                } catch (err: any) {
+                  setActionModal({
+                    show: true,
+                    type: "error",
+                    title: "Error",
+                    message: err.message || "Failed to save",
+                  });
+                }
+                setSavingTx(false);
+              }}
+              className="p-5 space-y-4"
+            >
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-black mb-1">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={txForm.date}
+                  onChange={(e) =>
+                    setTxForm({ ...txForm, date: e.target.value })
+                  }
+                  className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-black mb-1">
+                  Amount (₹)
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  value={txForm.amount}
+                  onChange={(e) =>
+                    setTxForm({ ...txForm, amount: e.target.value })
+                  }
+                  className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white outline-none"
+                  placeholder="e.g. 500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-black mb-1">
+                  {txModal === "allowance"
+                    ? "Remark (TA, DA, Incentive, etc.)"
+                    : "Reason"}
+                </label>
+                <input
+                  type="text"
+                  value={txForm.remark}
+                  onChange={(e) =>
+                    setTxForm({ ...txForm, remark: e.target.value })
+                  }
+                  className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white outline-none"
+                  placeholder={
+                    txModal === "allowance"
+                      ? "e.g. Travel allowance, Diwali bonus"
+                      : "e.g. Late coming, misconduct"
+                  }
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={savingTx}
+                  className={`flex-1 text-white border-2 border-black py-2.5 text-sm font-bold disabled:opacity-50 ${txModal === "allowance" ? "bg-[#024BAB]" : "bg-[#EF4444]"}`}
+                >
+                  {savingTx
+                    ? "Saving..."
+                    : txModal === "allowance"
+                      ? "Add Allowance"
+                      : "Add Penalty"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTxModal(null)}
+                  className="flex-1 border-2 border-black py-2.5 text-sm font-bold bg-white"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

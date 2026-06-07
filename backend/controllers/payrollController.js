@@ -3,6 +3,7 @@ const Payroll = require("../models/Payroll");
 const Employee = require("../models/Employee");
 const Attendance = require("../models/Attendance");
 const DeductionRule = require("../models/DeductionRule");
+const Transaction = require("../models/Transaction");
 const { safePagination } = require("../middleware/validate");
 const { sendWhatsApp, payrollPaidMsg } = require("../services/whatsappService");
 
@@ -201,11 +202,10 @@ const processPayroll = asyncHandler(async (req, res) => {
     }
 
     // ── Proportional pay: salary × (effectiveDays / workingDays) ──────────
-    // Half-day = 0.5 of a day; late days do NOT reduce paid days (separate deduction)
     const effectivePaidDays = presentDays - halfDayCount * 0.5;
     const earnedSalary = Math.max(0, dailyRate * effectivePaidDays);
 
-    // ── Late deduction (only fixed or % of daily rate) ─────────────────────
+    // ── Late deduction ─────────────────────────────────────────────────────
     let lateDeduction = 0;
     if (deductionRule && lateDays > 0) {
       lateDeduction =
@@ -214,8 +214,29 @@ const processPayroll = asyncHandler(async (req, res) => {
           : lateDays * dailyRate * (deductionRule.lateDeductionAmount / 100);
     }
 
-    const totalDeductions = lateDeduction + earlyCheckoutDeduction;
-    const netSalary = Math.max(0, earnedSalary - totalDeductions);
+    // ── Allowances & Penalties for this employee in this month ────────────
+    const txMonthStart = new Date(y, m - 1, 1);
+    const txMonthEnd = new Date(y, m, 0, 23, 59, 59);
+    const pendingTx = await Transaction.find({
+      employee: emp._id,
+      company: req.user.company,
+      status: "pending",
+      date: { $gte: txMonthStart, $lte: txMonthEnd },
+    });
+
+    let totalAllowances = 0;
+    let totalPenalties = 0;
+    const txIds = [];
+    for (const tx of pendingTx) {
+      if (tx.type === "allowance") totalAllowances += tx.amount;
+      else if (tx.type === "penalty") totalPenalties += tx.amount;
+      txIds.push(tx._id);
+    }
+
+    const totalDeductions =
+      lateDeduction + earlyCheckoutDeduction + totalPenalties;
+    const grossSalary = earnedSalary + totalAllowances;
+    const netSalary = Math.max(0, grossSalary - totalDeductions);
 
     payrolls.push({
       company: req.user.company,
@@ -223,7 +244,8 @@ const processPayroll = asyncHandler(async (req, res) => {
       month: m,
       year: y,
       basicSalary: salary,
-      grossSalary: earnedSalary,
+      otherAllowances: totalAllowances,
+      grossSalary,
       otherDeductions: totalDeductions,
       totalDeductions,
       netSalary,
@@ -233,6 +255,14 @@ const processPayroll = asyncHandler(async (req, res) => {
       status: "processed",
       processedBy: req.user._id,
     });
+
+    // Mark transactions as applied
+    if (txIds.length) {
+      await Transaction.updateMany(
+        { _id: { $in: txIds } },
+        { status: "applied" },
+      );
+    }
   }
 
   if (payrolls.length) await Payroll.insertMany(payrolls);

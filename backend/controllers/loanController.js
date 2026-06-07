@@ -1,11 +1,13 @@
 const asyncHandler = require("express-async-handler");
+const mongoose = require("mongoose");
 const Loan = require("../models/Loan");
 const Employee = require("../models/Employee");
 
 // Recalculates and writes loanBalance on the Employee doc from active Loan records
 async function syncLoanBalance(employeeId) {
+  const empObjId = new mongoose.Types.ObjectId(String(employeeId));
   const result = await Loan.aggregate([
-    { $match: { employee: employeeId, status: "active" } },
+    { $match: { employee: empObjId, status: "active" } },
     { $group: { _id: null, total: { $sum: "$remainingBalance" } } },
   ]);
   const total = result[0]?.total ?? 0;

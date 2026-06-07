@@ -453,3 +453,13 @@ export const offerLetterAPI = {
     }),
   delete: (id: string) => request(`/offer-letters/${id}`, { method: "DELETE" }),
 };
+
+export const transactionAPI = {
+  getAll: (params?: Record<string, string>) => {
+    const q = params ? "?" + new URLSearchParams(params).toString() : "";
+    return request(`/transactions${q}`);
+  },
+  create: (body: object) =>
+    request("/transactions", { method: "POST", body: JSON.stringify(body) }),
+  delete: (id: string) => request(`/transactions/${id}`, { method: "DELETE" }),
+};
