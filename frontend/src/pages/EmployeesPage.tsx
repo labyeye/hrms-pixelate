@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { employeeAPI, departmentAPI, loanAPI } from "@/services/api";
+import { employeeAPI, departmentAPI, loanAPI, payrollConfigAPI } from "@/services/api";
 import { Employee, Department } from "@/types/hrms";
 import { cn, formatDate } from "@/lib/utils";
 import {
@@ -65,6 +65,12 @@ interface EmployeeFormData {
   bankName: string;
   uanNumber: string;
   esicNumber: string;
+  basicSalary: string;
+  hra: string;
+  da: string;
+  ta: string;
+  medicalAllowance: string;
+  otherAllowances: string;
 }
 
 const EMPTY_FORM: EmployeeFormData = {
@@ -92,6 +98,12 @@ const EMPTY_FORM: EmployeeFormData = {
   bankName: "",
   uanNumber: "",
   esicNumber: "",
+  basicSalary: "",
+  hra: "",
+  da: "",
+  ta: "",
+  medicalAllowance: "",
+  otherAllowances: "",
 };
 
 export default function EmployeesPage() {
@@ -191,17 +203,56 @@ export default function EmployeesPage() {
       bankName: (emp as any).bankName || "",
       uanNumber: (emp as any).uanNumber || "",
       esicNumber: (emp as any).esicNumber || "",
+      basicSalary: "",
+      hra: "",
+      da: "",
+      ta: "",
+      medicalAllowance: "",
+      otherAllowances: "",
     });
     setShowModal(true);
+    // Load existing payroll config for this employee
+    payrollConfigAPI.getConfig(emp._id).then((res) => {
+      if (res.data) {
+        setForm((prev) => ({
+          ...prev,
+          basicSalary: String(res.data.basicSalary || ""),
+          hra: String(res.data.hra || ""),
+          da: String(res.data.da || ""),
+          ta: String(res.data.ta || ""),
+          medicalAllowance: String(res.data.medicalAllowance || ""),
+          otherAllowances: String(res.data.otherAllowances || ""),
+        }));
+      }
+    }).catch(() => {});
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
-      const payload = { ...form, salary: Number(form.salary) || 0 };
-      if (editEmp) await employeeAPI.update(editEmp._id, payload);
-      else await employeeAPI.create(payload);
+      const { basicSalary, hra, da, ta, medicalAllowance, otherAllowances, ...empFields } = form;
+      const payload = { ...empFields, salary: Number(form.salary) || 0 };
+
+      let empId: string;
+      if (editEmp) {
+        await employeeAPI.update(editEmp._id, payload);
+        empId = editEmp._id;
+      } else {
+        const res = await employeeAPI.create(payload);
+        empId = res.data._id;
+      }
+
+      // Save payroll breakdown config
+      await payrollConfigAPI.upsertConfig(empId, {
+        basicSalary: Number(basicSalary) || 0,
+        hra: Number(hra) || 0,
+        da: Number(da) || 0,
+        ta: Number(ta) || 0,
+        medicalAllowance: Number(medicalAllowance) || 0,
+        otherAllowances: Number(otherAllowances) || 0,
+      });
+
       setActionModal({
         show: true,
         type: "success",
@@ -950,6 +1001,51 @@ export default function EmployeesPage() {
                   </div>
                 </div>
               </div>
+              {/* Payroll Breakdown */}
+              <div className="border-t-2 border-black pt-4">
+                <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-1">
+                  Payroll Breakdown
+                </p>
+                <p className="text-xs text-gray-500 mb-3">
+                  Set salary components. Overrides base salary when processing payroll. Leave 0 to use base salary.
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  {([
+                    { label: "Basic Salary", key: "basicSalary" },
+                    { label: "HRA", key: "hra" },
+                    { label: "DA (Dearness Allowance)", key: "da" },
+                    { label: "TA (Transport Allowance)", key: "ta" },
+                    { label: "Medical Allowance", key: "medicalAllowance" },
+                    { label: "Other Allowances", key: "otherAllowances" },
+                  ] as const).map(({ label, key }) => (
+                    <div key={key}>
+                      <label className="block text-xs font-bold text-black mb-1">{label}</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">₹</span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={form[key]}
+                          onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                          className="border-2 w-full pl-7 pr-3 py-2 text-sm"
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {(() => {
+                  const gross = ["basicSalary", "hra", "da", "ta", "medicalAllowance", "otherAllowances"]
+                    .reduce((s, k) => s + (Number((form as any)[k]) || 0), 0);
+                  return gross > 0 ? (
+                    <div className="mt-3 p-3 bg-[#024BAB] text-white border-2 border-black flex justify-between items-center">
+                      <span className="text-xs font-black uppercase">Gross Salary</span>
+                      <span className="text-sm font-black">₹{gross.toLocaleString("en-IN")}</span>
+                    </div>
+                  ) : null;
+                })()}
+              </div>
+
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"

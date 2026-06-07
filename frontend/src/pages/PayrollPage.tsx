@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { payrollAPI } from "@/services/api";
+import { payrollAPI, employeeAPI } from "@/services/api";
 import { Payroll } from "@/types/hrms";
 import { cn, formatCurrency } from "@/lib/utils";
 import {
@@ -8,7 +8,6 @@ import {
   Play,
   CheckCircle,
   X,
-  Users,
   AlertCircle,
   Printer,
 } from "lucide-react";
@@ -43,9 +42,8 @@ export default function PayrollPage() {
   const [processing, setProcessing] = useState(false);
   const [processModal, setProcessModal] = useState(false);
   const [processMode, setProcessMode] = useState<"all" | "select">("all");
-  const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(
-    new Set(),
-  );
+  const [selectedEmployees, setSelectedEmployees] = useState<Set<string>>(new Set());
+  const [activeEmployees, setActiveEmployees] = useState<any[]>([]);
   const [actionModal, setActionModal] = useState<{
     show: boolean;
     type: "success" | "error";
@@ -74,7 +72,7 @@ export default function PayrollPage() {
   useEffect(() => {
     if (actionModal.show && actionModal.type === "success") {
       const timer = setTimeout(() => {
-        setActionModal({ ...actionModal, show: false });
+        setActionModal((prev) => ({ ...prev, show: false }));
       }, 2000);
       return () => clearTimeout(timer);
     }
@@ -124,12 +122,10 @@ export default function PayrollPage() {
   };
 
   const toggleAllEmployees = () => {
-    if (selectedEmployees.size === payrolls.length) {
+    if (selectedEmployees.size === activeEmployees.length) {
       setSelectedEmployees(new Set());
     } else {
-      setSelectedEmployees(
-        new Set(payrolls.map((p) => (p.employee as any)._id)),
-      );
+      setSelectedEmployees(new Set(activeEmployees.map((e) => e._id)));
     }
   };
 
@@ -216,12 +212,17 @@ export default function PayrollPage() {
               win.document.close();
               win.print();
             }}
-            className=" bg-white text-black px-4 py-2 text-sm flex items-center gap-1.5 border-2 border-black"
+            className="bg-white text-black px-4 py-2 text-sm flex items-center gap-1.5 border-2 border-black"
           >
             <Printer className="w-4 h-4" /> Bulk Slips
           </button>
           <button
-            onClick={() => setProcessModal(true)}
+            onClick={() => {
+              setProcessModal(true);
+              employeeAPI.getAll({ status: "active" }).then((res) => {
+                if (res.success) setActiveEmployees(res.data);
+              }).catch(() => {});
+            }}
             className="border-2 bg-[#FA731C] text-white px-4 py-2 text-sm flex items-center gap-1.5"
           >
             <Play className="w-4 h-4" /> Run Payroll
@@ -283,7 +284,12 @@ export default function PayrollPage() {
             Process payroll for {MONTHS[month - 1]} {year}
           </p>
           <button
-            onClick={() => setProcessModal(true)}
+            onClick={() => {
+              setProcessModal(true);
+              employeeAPI.getAll({ status: "active" }).then((res) => {
+                if (res.success) setActiveEmployees(res.data);
+              }).catch(() => {});
+            }}
             className="border-2 bg-[#FA731C] text-white px-4 py-2 text-sm mt-4"
           >
             <Play className="w-4 h-4 inline mr-1" /> Process Now
@@ -397,7 +403,7 @@ export default function PayrollPage() {
               <h3 className="font-display font-bold text-lg">
                 Process Payroll
               </h3>
-              <button onClick={() => setProcessModal(false)}>
+              <button onClick={() => { setProcessModal(false); setSelectedEmployees(new Set()); setProcessMode("all"); setActiveEmployees([]); }}>
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -428,7 +434,7 @@ export default function PayrollPage() {
                       All Employees
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Process payroll for all {payrolls.length} active employees
+                      Process payroll for all {activeEmployees.length} active employees
                     </p>
                   </div>
                 </label>
@@ -467,51 +473,49 @@ export default function PayrollPage() {
                       onClick={toggleAllEmployees}
                       className="text-xs font-bold text-[#024BAB] hover:underline"
                     >
-                      {selectedEmployees.size === payrolls.length
+                      {selectedEmployees.size === activeEmployees.length
                         ? "Deselect All"
                         : "Select All"}
                     </button>
                   </div>
 
                   <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {payrolls.map((p) => (
+                    {activeEmployees.map((emp) => (
                       <label
-                        key={(p.employee as any)?._id}
+                        key={emp._id}
                         className="flex items-center gap-2 p-2 hover:bg-white/50 cursor-pointer"
                       >
                         <input
                           type="checkbox"
-                          checked={selectedEmployees.has(
-                            (p.employee as any)?._id,
-                          )}
-                          onChange={() =>
-                            toggleEmployeeSelection((p.employee as any)?._id)
-                          }
+                          checked={selectedEmployees.has(emp._id)}
+                          onChange={() => toggleEmployeeSelection(emp._id)}
                           className="w-4 h-4 cursor-pointer"
                         />
                         <div className="flex items-center gap-2 flex-1">
                           <div className="w-6 h-6 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[9px] font-bold text-white">
-                            {(p.employee as any)?.firstName?.[0]?.toUpperCase()}
+                            {emp.firstName?.[0]?.toUpperCase()}
                           </div>
                           <div>
                             <p className="text-xs font-bold text-black">
-                              {(p.employee as any)?.firstName}{" "}
-                              {(p.employee as any)?.lastName}
+                              {emp.firstName} {emp.lastName}
                             </p>
                             <p className="text-[10px] text-muted-foreground">
-                              {(p.employee as any)?.designation}
+                              {emp.designation}
                             </p>
                           </div>
                         </div>
                         <p className="text-xs font-medium text-black">
-                          {formatCurrency((p.employee as any)?.salary || 0)}
+                          {formatCurrency(emp.salary || 0)}
                         </p>
                       </label>
                     ))}
+                    {activeEmployees.length === 0 && (
+                      <p className="text-xs text-center text-muted-foreground py-4">Loading employees...</p>
+                    )}
                   </div>
 
                   <p className="text-xs text-muted-foreground mt-3">
-                    {selectedEmployees.size} of {payrolls.length} selected
+                    {selectedEmployees.size} of {activeEmployees.length} selected
                   </p>
                 </div>
               )}
@@ -541,8 +545,9 @@ export default function PayrollPage() {
                     setProcessModal(false);
                     setSelectedEmployees(new Set());
                     setProcessMode("all");
+                    setActiveEmployees([]);
                   }}
-                  className=" bg-white text-black px-4 py-2.5 text-sm font-bold border-2 border-black"
+                  className="bg-white text-black px-4 py-2.5 text-sm font-bold border-2 border-black"
                 >
                   Cancel
                 </button>
