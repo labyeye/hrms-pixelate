@@ -3,8 +3,6 @@ const EmployeePayrollConfig = require("../models/EmployeePayrollConfig");
 const DeductionRule = require("../models/DeductionRule");
 const Employee = require("../models/Employee");
 
-// ── Employee Payroll Configs ────────────────────────────────────────────────
-
 const getAllConfigs = asyncHandler(async (req, res) => {
   const configs = await EmployeePayrollConfig.find({
     company: req.user.company,
@@ -64,8 +62,6 @@ const upsertConfig = asyncHandler(async (req, res) => {
 
   res.json({ success: true, data: config });
 });
-
-// ── Deduction Rules (company-wide) ─────────────────────────────────────────
 
 const getDeductionRules = asyncHandler(async (req, res) => {
   const rule = await DeductionRule.findOne({ company: req.user.company });

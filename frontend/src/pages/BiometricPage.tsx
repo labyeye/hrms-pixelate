@@ -96,7 +96,6 @@ export default function BiometricPage() {
   toastRef.current = toast;
   const [tab, setTab] = useState<Tab>("locations_devices");
 
-  // Locations state
   const [locations, setLocations] = useState<Location[]>([]);
   const [locLoading, setLocLoading] = useState(false);
   const [locForm, setLocForm] = useState({
@@ -108,7 +107,6 @@ export default function BiometricPage() {
   const [showLocForm, setShowLocForm] = useState(false);
   const [locSaving, setLocSaving] = useState(false);
 
-  // Devices state
   const [devices, setDevices] = useState<Device[]>([]);
   const [devLoading, setDevLoading] = useState(false);
   const [showDevForm, setShowDevForm] = useState(false);
@@ -123,7 +121,6 @@ export default function BiometricPage() {
   const [employees, setEmployees] = useState<any[]>([]);
   const [showTokenFor, setShowTokenFor] = useState<string | null>(null);
 
-  // Logs state
   const [logs, setLogs] = useState<BiometricLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const [logFilter, setLogFilter] = useState({ locationId: "", date: "" });
@@ -200,8 +197,6 @@ export default function BiometricPage() {
     if (tab === "logs") fetchLogs();
   }, [tab, fetchLogs]);
 
-  // ── Location actions ──────────────────────────────────────────────────────
-
   const handleSaveLocation = async () => {
     if (!locForm.name.trim() || locSaving) return;
     setLocSaving(true);
@@ -250,8 +245,6 @@ export default function BiometricPage() {
     });
     setShowLocForm(true);
   };
-
-  // ── Device actions ────────────────────────────────────────────────────────
 
   const handleCreateDevice = async () => {
     if (!devForm.name.trim() || !devForm.location || devSaving) return;
@@ -376,7 +369,6 @@ export default function BiometricPage() {
   const devicePageUrl = (token: string) =>
     `${window.location.origin}/device/${token}`;
 
-  // ── ADMS state ────────────────────────────────────────────────────────────
   const [admsDevice, setAdmsDevice] = useState<Device | null>(null);
   const [admsSerial, setAdmsSerial] = useState("");
   const [serialSaving, setSerialSaving] = useState(false);
@@ -387,18 +379,15 @@ export default function BiometricPage() {
   const [commands, setCommands] = useState<any[]>([]);
   const [cmdLoading, setCmdLoading] = useState(false);
 
-  // Face enrollment modal state
   const [faceEnrollEmp, setFaceEnrollEmp] = useState<any | null>(null);
-  // Fingerprint enrollment modal state
+
   const [fpEnrollEmp, setFpEnrollEmp] = useState<any | null>(null);
 
-  // USB RFID enrollment state
   const [rfidModalEmp, setRfidModalEmp] = useState<any | null>(null);
   const [rfidBuffer, setRfidBuffer] = useState("");
   const [rfidSaving, setRfidSaving] = useState(false);
   const rfidInputRef = useRef<HTMLInputElement>(null);
 
-  // biometricUserId edit state
   const [editBioId, setEditBioId] = useState<{
     empId: string;
     val: string;
@@ -522,7 +511,6 @@ export default function BiometricPage() {
     }
   };
 
-  // USB RFID: focused invisible input captures the reader's keyboard output
   const openRfidModal = (emp: any) => {
     setRfidModalEmp(emp);
     setRfidBuffer("");
@@ -556,8 +544,6 @@ export default function BiometricPage() {
     setRfidSaving(false);
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
   const SIDEBAR_ITEMS: { id: Tab; label: string; sub: string; icon: any }[] = [
     {
       id: "locations_devices",
@@ -583,7 +569,7 @@ export default function BiometricPage() {
     <AppLayout title="Biometric System">
       <div className="max-w-6xl mx-auto">
         <div className="flex gap-6">
-          {/* Sidebar */}
+          {}
           <div className="w-56 shrink-0">
             <div className="border-2 border-black bg-white overflow-hidden sticky top-4">
               <div className="px-4 py-3 bg-[#024BAB] border-b-2 border-black">
@@ -627,9 +613,9 @@ export default function BiometricPage() {
             </div>
           </div>
 
-          {/* Main content */}
+          {}
           <div className="flex-1 min-w-0">
-            {/* ── LOCATIONS & DEVICES TAB ───────────────────────────────────────── */}
+            {}
             {tab === "locations_devices" && (
               <div>
                 <div className="flex items-center justify-between mb-6">
@@ -804,10 +790,10 @@ export default function BiometricPage() {
                   </div>
                 )}
 
-                {/* ── DEVICES SECTION (inline in locations_devices tab) ─────────── */}
+                {}
                 <div className="mt-8 border-t-2 border-black pt-8">
                   <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                    {/* Device list */}
+                    {}
                     <div className="lg:col-span-2">
                       <div className="flex items-center justify-between mb-4">
                         <h2 className="font-black text-lg flex items-center gap-2">
@@ -943,7 +929,7 @@ export default function BiometricPage() {
                       )}
                     </div>
 
-                    {/* Device detail */}
+                    {}
                     <div className="lg:col-span-3">
                       {!selectedDevice ? (
                         <div className="h-full flex items-center justify-center border-2 border-dashed border-gray-300 bg-white py-20">
@@ -956,7 +942,7 @@ export default function BiometricPage() {
                         </div>
                       ) : (
                         <div className="bg-white border-2 border-black">
-                          {/* Device header */}
+                          {}
                           <div className="p-5 border-b-2 border-black">
                             <div className="flex items-start justify-between">
                               <div>
@@ -999,7 +985,7 @@ export default function BiometricPage() {
                               </div>
                             </div>
 
-                            {/* Connection status */}
+                            {}
                             <div className="mt-3 flex items-center gap-2">
                               {selectedDevice.activated ? (
                                 <span className="flex items-center gap-1.5 text-xs font-black text-[#00C48C] bg-[#00C48C]/10 border-2 border-[#00C48C] px-2 py-1">
@@ -1026,9 +1012,9 @@ export default function BiometricPage() {
                               )}
                             </div>
 
-                            {/* Setup panel — two approaches */}
+                            {}
                             <div className="mt-4 space-y-3">
-                              {/* Option A: Browser / tablet terminal */}
+                              {}
                               <div className="p-3 bg-blue-50 border-2 border-[#024BAB]/20">
                                 <div className="flex items-center gap-2 mb-2">
                                   <Monitor className="w-4 h-4 text-[#024BAB]" />
@@ -1092,7 +1078,7 @@ export default function BiometricPage() {
                                 </div>
                               </div>
 
-                              {/* Option B: Hardware device / local agent */}
+                              {}
                               <div className="p-3 bg-gray-50 border-2 border-gray-200">
                                 <div className="flex items-center gap-2 mb-2">
                                   <Terminal className="w-4 h-4 text-gray-600" />
@@ -1170,7 +1156,7 @@ export default function BiometricPage() {
                             </div>
                           </div>
 
-                          {/* NFC Cards */}
+                          {}
                           <div className="p-5">
                             <div className="flex items-center justify-between mb-4">
                               <h4 className="font-black flex items-center gap-2">
@@ -1303,10 +1289,10 @@ export default function BiometricPage() {
               </div>
             )}
 
-            {/* ── LOGS TAB ──────────────────────────────────────────────────────── */}
+            {}
             {tab === "logs" && (
               <div>
-                {/* Sync Log Table */}
+                {}
                 <div className="border-2 border-black bg-white mb-6">
                   <div className="flex items-center justify-between p-4 border-b-2 border-black">
                     <h3 className="font-black text-sm text-black uppercase tracking-wider">
@@ -1381,7 +1367,7 @@ export default function BiometricPage() {
                   </div>
                 </div>
 
-                {/* Punch Log Filters */}
+                {}
                 <div className="flex flex-wrap gap-3 mb-6">
                   <select
                     value={logFilter.locationId}
@@ -1532,10 +1518,10 @@ export default function BiometricPage() {
                 )}
               </div>
             )}
-            {/* ── ADMS / ESSL SYNC TAB ─────────────────────────────────────────── */}
+            {}
             {tab === "adms" && (
               <div className="space-y-6">
-                {/* Step 1 — Select device */}
+                {}
                 <div className="border-2 border-black p-5">
                   <h2 className="font-display font-black text-base mb-4 flex items-center gap-2">
                     <span className="w-6 h-6 bg-black text-white text-xs font-black flex items-center justify-center">
@@ -1584,7 +1570,7 @@ export default function BiometricPage() {
 
                 {admsDevice && (
                   <>
-                    {/* Step 2 — Register serial number */}
+                    {}
                     <div className="border-2 border-black p-5">
                       <h2 className="font-display font-black text-base mb-1 flex items-center gap-2">
                         <span className="w-6 h-6 bg-black text-white text-xs font-black flex items-center justify-center">
@@ -1634,7 +1620,7 @@ export default function BiometricPage() {
                       )}
                     </div>
 
-                    {/* Step 3 — Assign Biometric User IDs + RFID + Sync */}
+                    {}
                     <div className="border-2 border-black">
                       <div className="px-5 py-4 border-b-2 border-black flex items-center justify-between">
                         <div>

@@ -4,7 +4,7 @@ import {
   Users,
   Clock,
   CalendarDays,
-  DollarSign,
+  IndianRupee,
   Briefcase,
   TrendingUp,
   Building2,
@@ -132,7 +132,7 @@ const allGroups: NavGroup[] = [
       {
         title: "Payroll",
         href: "/payroll",
-        icon: DollarSign,
+        icon: IndianRupee,
         roles: ["super_admin", "hr_manager"],
       },
       {

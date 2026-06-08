@@ -9,8 +9,6 @@ const {
   validateMongoId,
 } = require("../middleware/validate");
 
-// ── Validation schemas ────────────────────────────────────────────────────────
-
 const createSchema = {
   firstName: { required: true, type: "string", minLength: 1, maxLength: 80 },
   lastName: { required: true, type: "string", minLength: 1, maxLength: 80 },
@@ -24,8 +22,6 @@ const updateSchema = {
   lastName: { type: "string", minLength: 1, maxLength: 80 },
   designation: { type: "string", minLength: 1, maxLength: 100 },
 };
-
-// ── Controllers ───────────────────────────────────────────────────────────────
 
 const getEmployees = asyncHandler(async (req, res) => {
   const { page, limit, skip } = safePagination(req.query);
@@ -118,7 +114,6 @@ const createEmployee = [
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Validate optional numeric fields
     if (salary !== undefined && (isNaN(Number(salary)) || Number(salary) < 0)) {
       res.status(400);
       throw new Error("Invalid salary value");
@@ -144,7 +139,6 @@ const createEmployee = [
       userId = user._id;
     }
 
-    // Company-scoped employee ID generation
     const lastEmp = await Employee.findOne({ company: req.user.company }).sort({
       createdAt: -1,
     });
@@ -198,7 +192,6 @@ const updateEmployee = [
       throw new Error("Employee not found");
     }
 
-    // Whitelist updatable fields — never allow user/company/employeeId changes
     const allowed = [
       "firstName",
       "lastName",

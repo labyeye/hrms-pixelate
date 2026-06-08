@@ -10,18 +10,15 @@ const seedSubscriptions = async () => {
   try {
     console.log("🔄 Starting subscription seed...");
 
-    // Clear existing subscriptions
     await Subscription.deleteMany({});
     console.log("✅ Cleared existing subscriptions");
 
-    // Get all companies
     const companies = await Company.find({});
     console.log(`📦 Found ${companies.length} companies`);
 
     const subscriptions = [];
 
     for (const company of companies) {
-      // Create active subscriptions for each company
       const subscription = await Subscription.create({
         company: company._id,
         plan: "professional",
@@ -40,7 +37,6 @@ const seedSubscriptions = async () => {
         notes: `Subscription created for ${company.name}`,
       });
 
-      // Update company status to active and link subscription
       await Company.findByIdAndUpdate(company._id, {
         status: "active",
         subscription: subscription._id,

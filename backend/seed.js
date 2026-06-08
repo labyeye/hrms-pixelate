@@ -23,7 +23,6 @@ async function seed() {
   await mongoose.connect(process.env.MONGO_URI);
   console.log("Connected to MongoDB");
 
-  // ── 1. Clear all collections ────────────────────────────────────────────────
   console.log("Clearing all collections...");
   await Promise.all([
     Company.deleteMany({}),
@@ -45,7 +44,6 @@ async function seed() {
   ]);
   console.log("All collections cleared.");
 
-  // ── Seed Plans ────────────────────────────────────────────────────────────────
   await Plan.insertMany([
     {
       name: "Starter",
@@ -101,7 +99,6 @@ async function seed() {
     },
   ]);
 
-  // ── 2. Create Super Admin user (no company yet, needed to create company) ───
   const superAdminUser = await User.create({
     name: "Alex Johnson",
     email: "admin@technest.com",
@@ -111,7 +108,6 @@ async function seed() {
     status: "active",
   });
 
-  // ── 3. Create Company ────────────────────────────────────────────────────────
   const hashedCompanyPass = await bcrypt.hash("Company@123", 10);
   const company = await Company.create({
     name: "TechNest Solutions",
@@ -129,7 +125,6 @@ async function seed() {
     createdBy: superAdminUser._id,
   });
 
-  // ── 4. Create Subscription ───────────────────────────────────────────────────
   const now = new Date();
   const renewal = new Date(now);
   renewal.setFullYear(renewal.getFullYear() + 1);
@@ -152,11 +147,9 @@ async function seed() {
     notes: "Seeded test subscription",
   });
 
-  // Link subscription to company
   company.subscription = subscription._id;
   await company.save();
 
-  // Seed 3 invoice records
   for (let m = 2; m >= 0; m--) {
     const iDate = new Date(now.getFullYear(), now.getMonth() - m, 1);
     await Invoice.create({
@@ -173,11 +166,9 @@ async function seed() {
     });
   }
 
-  // Link company & subscription to super admin
   superAdminUser.company = company._id;
   await superAdminUser.save();
 
-  // ── 5. Create Departments ────────────────────────────────────────────────────
   const deptEngineering = await Department.create({
     company: company._id,
     name: "Engineering",
@@ -207,7 +198,6 @@ async function seed() {
     budget: 1800000,
   });
 
-  // ── 6. Create HR Manager ─────────────────────────────────────────────────────
   const hrManagerUser = await User.create({
     name: "Priya Sharma",
     email: "priya.sharma@technest.com",
@@ -239,7 +229,6 @@ async function seed() {
   hrManagerUser.employeeId = hrManagerEmp.employeeId;
   await hrManagerUser.save();
 
-  // ── 7. Create HR Executive ───────────────────────────────────────────────────
   const hrExecUser = await User.create({
     name: "Rahul Verma",
     email: "rahul.verma@technest.com",
@@ -271,7 +260,6 @@ async function seed() {
   hrExecUser.employeeId = hrExecEmp.employeeId;
   await hrExecUser.save();
 
-  // ── 8. Create Regular Employees ──────────────────────────────────────────────
   const empData = [
     {
       name: "Ananya Reddy",
@@ -382,12 +370,10 @@ async function seed() {
     createdEmployees.push(emp);
   }
 
-  // Update subscription employee count
-  const totalEmployees = 2 + empData.length; // hrManager + hrExec + employees
+  const totalEmployees = 2 + empData.length;
   subscription.currentEmployeeCount = totalEmployees;
   await subscription.save();
 
-  // Update department headcounts
   await Department.findByIdAndUpdate(deptHR._id, {
     headcount: 2,
     head: hrManagerUser._id,
@@ -396,7 +382,6 @@ async function seed() {
   await Department.findByIdAndUpdate(deptFinance._id, { headcount: 1 });
   await Department.findByIdAndUpdate(deptMarketing._id, { headcount: 2 });
 
-  // ── 9. Create Attendance Records (last 30 days) ──────────────────────────────
   const allEmployees = [hrManagerEmp, hrExecEmp, ...createdEmployees];
   const statuses = [
     "present",
@@ -412,7 +397,7 @@ async function seed() {
     date.setDate(date.getDate() - dayOffset);
     date.setHours(0, 0, 0, 0);
     const dow = date.getDay();
-    if (dow === 0 || dow === 6) continue; // skip weekends
+    if (dow === 0 || dow === 6) continue;
 
     for (const emp of allEmployees) {
       const status = statuses[Math.floor(Math.random() * statuses.length)];
@@ -440,7 +425,6 @@ async function seed() {
     }
   }
 
-  // ── 10. Create Leave Records ─────────────────────────────────────────────────
   const leaveTypes = ["casual", "sick", "earned"];
   const leaveStatuses = ["approved", "approved", "pending", "rejected"];
 
@@ -478,7 +462,6 @@ async function seed() {
     });
   }
 
-  // ── 11. Create Payroll Records (last 3 months) ───────────────────────────────
   const today = new Date();
   for (let m = 0; m < 3; m++) {
     const payMonth =
@@ -524,7 +507,6 @@ async function seed() {
     }
   }
 
-  // ── 12. Seed 2025 & 2026 Holidays ───────────────────────────────────────────
   const y = 2026;
   const nationalHolidays = [
     { name: "New Year's Day", date: `${y}-01-01`, type: "national" },
@@ -560,7 +542,6 @@ async function seed() {
     await Holiday.create({ company: company._id, ...h });
   }
 
-  // ── Done ─────────────────────────────────────────────────────────────────────
   console.log("\n✅  Seed complete!\n");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   console.log("  COMPANY:      TechNest Solutions");

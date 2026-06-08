@@ -26,7 +26,6 @@ const getPayrolls = asyncHandler(async (req, res) => {
   if (status && PAYROLL_STATUS.includes(status)) filter.status = status;
 
   if (employeeId) {
-    // Verify employee belongs to this company
     const emp = await Employee.findOne({
       _id: employeeId,
       company: req.user.company,
@@ -55,23 +54,19 @@ const getPayrolls = asyncHandler(async (req, res) => {
   });
 });
 
-// Count actual working days in a month based on employee's work days per week (5/6/7)
 function getWorkingDays(year, month, workDaysPerWeek) {
   const days = workDaysPerWeek ?? 6;
   let count = 0;
   const end = new Date(year, month, 0).getDate();
   for (let d = 1; d <= end; d++) {
-    const dow = new Date(year, month - 1, d).getDay(); // 0=Sun, 6=Sat
-    if (days >= 7)
-      count++; // every day
-    else if (days >= 6 && dow >= 1 && dow <= 6)
-      count++; // Mon-Sat
-    else if (dow >= 1 && dow <= 5) count++; // Mon-Fri (default for 5)
+    const dow = new Date(year, month - 1, d).getDay();
+    if (days >= 7) count++;
+    else if (days >= 6 && dow >= 1 && dow <= 6) count++;
+    else if (dow >= 1 && dow <= 5) count++;
   }
   return count || 1;
 }
 
-// Parse "HH:MM" string into { hour, minute }
 function parseTime(timeStr) {
   const [h, m] = (timeStr || "00:00").split(":").map(Number);
   return { hour: h || 0, minute: m || 0 };
@@ -114,16 +109,13 @@ const processPayroll = asyncHandler(async (req, res) => {
       date: { $gte: startDate, $lte: endDate },
     });
 
-    // Skip employees with no attendance records for this month
     if (attendances.length === 0) continue;
 
-    // ── Working days for this employee based on their work week ────────────
     const workDaysPerWeek = emp.workDaysPerWeek ?? 6;
     const workingDays = getWorkingDays(y, m, workDaysPerWeek);
-    const salary = emp.salary ?? 0; // emp.salary is monthly
+    const salary = emp.salary ?? 0;
     const dailyRate = workingDays > 0 ? salary / workingDays : 0;
 
-    // ── Shift timing: use employee's assigned Shift, fall back to DeductionRule ─
     const empShift = emp.shift;
     let shiftH, shiftM, shiftEndH, shiftEndM;
 
@@ -174,12 +166,11 @@ const processPayroll = asyncHandler(async (req, res) => {
         presentDays++;
 
         if (minutesLate > halfDayMins) {
-          halfDayCount++; // very late = half day
+          halfDayCount++;
         } else if (minutesLate > graceMins) {
           lateDays++;
         }
 
-        // Early checkout: proportional deduction on that day's pay
         if (earlyEnabled && a.checkOut && shiftTotalMins > 0) {
           const shiftEnd = new Date(dateObj);
           shiftEnd.setHours(shiftEndH, shiftEndM, 0, 0);
@@ -190,7 +181,6 @@ const processPayroll = asyncHandler(async (req, res) => {
           }
         }
       } else {
-        // No checkIn — trust manually set status
         if (a.status === "present") presentDays++;
         else if (a.status === "late") {
           presentDays++;
@@ -199,37 +189,37 @@ const processPayroll = asyncHandler(async (req, res) => {
           presentDays++;
           halfDayCount++;
         }
-        // absent → not counted in presentDays (handled by proportional pay)
       }
-      // Accumulate OT hours from attendance regardless of status logic above
+
       if (a.overtime && a.overtime > 0) attendanceOTHours += a.overtime;
     }
 
-    // ── Weekly-off (Sunday) credit — only for 6-day workers ──────────────
-    // Rule: if employee attended ≥4 Mon–Sat days in a week, that Sunday is paid.
     let weeklyOffDaysEarned = 0;
     if (workDaysPerWeek === 6) {
-      // Collect dates where the employee was "present" (same rules as main loop)
       const presentDates = new Set();
       for (const a of attendances) {
-        if (a.status === "holiday" || a.status === "weekend" || a.status === "on_leave") continue;
+        if (
+          a.status === "holiday" ||
+          a.status === "weekend" ||
+          a.status === "on_leave"
+        )
+          continue;
         const d = new Date(a.date);
         const dow = d.getDay();
-        if (dow === 0) continue; // ignore Sundays themselves
+        if (dow === 0) continue;
         let wasPresent = false;
         if (a.checkIn) {
-          wasPresent = true; // any check-in = present (late/half_day also counted)
+          wasPresent = true;
         } else {
           wasPresent = ["present", "late", "half_day"].includes(a.status);
         }
         if (wasPresent) presentDates.add(d.toISOString().split("T")[0]);
       }
 
-      // Group present days into Mon-Sun weeks, count per week
       const weekPresentCount = new Map();
       for (const dateStr of presentDates) {
         const d = new Date(dateStr);
-        // Get the Monday of that week as week key
+
         const monday = new Date(d);
         monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
         const key = monday.toISOString().split("T")[0];
@@ -241,11 +231,10 @@ const processPayroll = asyncHandler(async (req, res) => {
       }
     }
 
-    // ── Proportional pay: salary × (effectiveDays / workingDays) ──────────
-    const effectivePaidDays = presentDays - halfDayCount * 0.5 + weeklyOffDaysEarned;
+    const effectivePaidDays =
+      presentDays - halfDayCount * 0.5 + weeklyOffDaysEarned;
     const earnedSalary = Math.max(0, dailyRate * effectivePaidDays);
 
-    // ── Late deduction ─────────────────────────────────────────────────────
     let lateDeduction = 0;
     if (deductionRule && lateDays > 0) {
       lateDeduction =
@@ -254,7 +243,6 @@ const processPayroll = asyncHandler(async (req, res) => {
           : lateDays * dailyRate * (deductionRule.lateDeductionAmount / 100);
     }
 
-    // ── Allowances & Penalties for this employee in this month ────────────
     const txMonthStart = new Date(y, m - 1, 1);
     const txMonthEnd = new Date(y, m, 0, 23, 59, 59);
     const pendingTx = await Transaction.find({
@@ -279,7 +267,6 @@ const processPayroll = asyncHandler(async (req, res) => {
       txIds.push(tx._id);
     }
 
-    // ── Loan EMI deduction ────────────────────────────────────────────────
     const activeLoans = await Loan.find({
       employee: emp._id,
       company: req.user.company,
@@ -289,18 +276,23 @@ const processPayroll = asyncHandler(async (req, res) => {
     let loanDeduction = 0;
     const loanUpdates = [];
 
-    // OT hourly rate = dailyRate ÷ shiftHours (derived, not stored on employee)
     const shiftHours = shiftTotalMins > 0 ? shiftTotalMins / 60 : 8;
     const otHourlyRate = dailyRate / shiftHours;
     const attendanceOTPay = attendanceOTHours * otHourlyRate;
-    const grossSalary = earnedSalary + totalAllowances + totalOT + attendanceOTPay;
-    const preDeductions = lateDeduction + earlyCheckoutDeduction + totalPenalties;
+    const grossSalary =
+      earnedSalary + totalAllowances + totalOT + attendanceOTPay;
+    const preDeductions =
+      lateDeduction + earlyCheckoutDeduction + totalPenalties;
     let salaryAfterDeductions = Math.max(0, grossSalary - preDeductions);
 
     for (const loan of activeLoans) {
       if (loan.remainingBalance <= 0) continue;
-      // EMI is capped at remaining balance and available net salary
-      const emi = Math.min(loan.monthlyEmi || loan.remainingBalance, loan.remainingBalance, salaryAfterDeductions);
+
+      const emi = Math.min(
+        loan.monthlyEmi || loan.remainingBalance,
+        loan.remainingBalance,
+        salaryAfterDeductions,
+      );
       if (emi <= 0) continue;
 
       loanDeduction += emi;
@@ -342,7 +334,6 @@ const processPayroll = asyncHandler(async (req, res) => {
       processedBy: req.user._id,
     });
 
-    // Update loan balances and sync employee.loanBalance
     for (const u of loanUpdates) {
       await Loan.findByIdAndUpdate(u.id, {
         remainingBalance: u.newBalance,
@@ -357,7 +348,6 @@ const processPayroll = asyncHandler(async (req, res) => {
       await Employee.findByIdAndUpdate(emp._id, { loanBalance: newTotalLoan });
     }
 
-    // Mark transactions as applied
     if (txIds.length) {
       await Transaction.updateMany(
         { _id: { $in: txIds } },
@@ -380,7 +370,6 @@ const updatePayroll = asyncHandler(async (req, res) => {
     throw new Error("Payroll not found");
   }
 
-  // Whitelist updatable fields
   const allowed = [
     "basicSalary",
     "hra",
@@ -446,7 +435,6 @@ const bulkMarkPaid = asyncHandler(async (req, res) => {
   });
 });
 
-// Employee self-service: get own payroll records
 const getMyPayrolls = asyncHandler(async (req, res) => {
   const emp = await Employee.findOne({
     user: req.user._id,

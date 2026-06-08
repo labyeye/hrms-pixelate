@@ -92,7 +92,6 @@ export default function NfcManagerPage() {
     fetchData();
   }, [fetchData]);
 
-  // Build a map: employeeId → assigned cards (with device info)
   const cardsByEmployee = new Map<string, AssignedCard[]>();
   for (const device of devices) {
     for (const card of device.nfcCards) {
@@ -177,7 +176,7 @@ export default function NfcManagerPage() {
   return (
     <AppLayout title="NFC Manager">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
+        {}
         <div className="mb-8">
           <h1 className="font-display font-black text-3xl text-black">
             NFC Card Manager
@@ -193,7 +192,7 @@ export default function NfcManagerPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            {/* Employee list */}
+            {}
             <div className="lg:col-span-2">
               <div className="mb-3 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -267,7 +266,7 @@ export default function NfcManagerPage() {
               </div>
             </div>
 
-            {/* Employee NFC detail panel */}
+            {}
             <div className="lg:col-span-3">
               {!selectedEmployee ? (
                 <div className="h-full flex items-center justify-center border-2 border-dashed border-gray-300 bg-white py-24">
@@ -280,7 +279,7 @@ export default function NfcManagerPage() {
                 </div>
               ) : (
                 <div className="bg-white border-2 border-black">
-                  {/* Employee header */}
+                  {}
                   <div className="p-5 border-b-2 border-black bg-[#F0F6FF]">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-4">
@@ -313,7 +312,7 @@ export default function NfcManagerPage() {
                       </button>
                     </div>
 
-                    {/* Employee details grid */}
+                    {}
                     <div className="grid grid-cols-2 gap-3 mt-4">
                       {selectedEmployee.email && (
                         <div className="bg-white border border-gray-200 px-3 py-2">
@@ -362,7 +361,7 @@ export default function NfcManagerPage() {
                     </div>
                   </div>
 
-                  {/* Assign form */}
+                  {}
                   {showAssignForm && (
                     <div className="p-5 border-b-2 border-black bg-yellow-50">
                       <p className="text-xs font-black uppercase mb-3 text-gray-600">
@@ -453,7 +452,7 @@ export default function NfcManagerPage() {
                     </div>
                   )}
 
-                  {/* NFC Cards list */}
+                  {}
                   <div className="p-5">
                     <h3 className="font-black text-sm uppercase mb-4 flex items-center gap-2">
                       <CreditCard className="w-4 h-4" /> Assigned NFC Cards

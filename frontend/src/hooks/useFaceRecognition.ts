@@ -3,7 +3,7 @@ import * as faceapi from "@vladmandic/face-api";
 
 type LoadState = "idle" | "loading" | "ready" | "error";
 
-let modelsLoaded = false; // module-level singleton — load once
+let modelsLoaded = false;
 
 async function ensureModels() {
   if (modelsLoaded) return;
@@ -17,7 +17,7 @@ async function ensureModels() {
 }
 
 export interface FaceDescriptor {
-  descriptor: number[]; // Float32Array serialised as plain array for MongoDB
+  descriptor: number[];
   capturedAt: string;
 }
 
@@ -79,7 +79,6 @@ export function useFaceRecognition() {
     setLiveDetection(null);
   }, []);
 
-  // Capture one frame and return the face descriptor (128 floats)
   const captureFaceDescriptor = useCallback(async (): Promise<number[]> => {
     if (!videoRef.current || loadState !== "ready") {
       throw new Error("Camera or models not ready");
@@ -101,7 +100,6 @@ export function useFaceRecognition() {
     return Array.from(detection.descriptor);
   }, [loadState]);
 
-  // Draw live face box on canvas overlay
   const startLiveDetection = useCallback(() => {
     if (!videoRef.current || !canvasRef.current || loadState !== "ready")
       return;
@@ -138,7 +136,6 @@ export function useFaceRecognition() {
     }, 300);
   }, [loadState]);
 
-  // Match a captured descriptor against a list of stored descriptors
   const matchDescriptor = useCallback(
     (
       captured: number[],

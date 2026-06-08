@@ -18,7 +18,7 @@ const transactionSchema = new mongoose.Schema(
       required: true,
     },
     amount: { type: Number, required: true, min: 0 },
-    hours: { type: Number, default: 0 }, // only for overtime type
+    hours: { type: Number, default: 0 },
     date: { type: Date, required: true },
     remark: { type: String, default: "" },
     status: {

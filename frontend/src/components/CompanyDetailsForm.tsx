@@ -36,14 +36,12 @@ export default function CompanyDetailsForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate company name
     const nameValidation = validators.name(form.name);
     if (!nameValidation.valid) {
       onError(nameValidation.error || "Invalid company name");
       return;
     }
 
-    // Validate phone
     if (!form.phone.trim()) {
       onError("Phone number is required");
       return;
@@ -53,25 +51,21 @@ export default function CompanyDetailsForm({
       return;
     }
 
-    // Validate email if provided
     if (form.email.trim() && !validators.email(form.email)) {
       onError("Please enter a valid email address");
       return;
     }
 
-    // Validate website if provided
     if (form.website.trim() && !validators.url(form.website)) {
       onError("Please enter a valid website URL");
       return;
     }
 
-    // Validate GST if provided
     if (form.gstNumber.trim() && !validators.gst(form.gstNumber)) {
       onError("Please enter a valid GST number (format: 27AABCT1234A1Z5)");
       return;
     }
 
-    // Validate PAN if provided
     if (form.panNumber.trim() && !validators.pan(form.panNumber)) {
       onError("Please enter a valid PAN number (format: AAAAA0000A)");
       return;
@@ -93,7 +87,7 @@ export default function CompanyDetailsForm({
         </div>
       )}
 
-      {/* Company Name - Required */}
+      {}
       <div className="space-y-2">
         <label className="block text-xs font-black uppercase tracking-wider text-black">
           Company Name *
@@ -109,7 +103,7 @@ export default function CompanyDetailsForm({
         />
       </div>
 
-      {/* Email */}
+      {}
       <div className="space-y-2">
         <label className="block text-xs font-black uppercase tracking-wider text-black">
           Company Email
@@ -123,7 +117,7 @@ export default function CompanyDetailsForm({
         />
       </div>
 
-      {/* Phone - Required */}
+      {}
       <div className="space-y-2">
         <label className="block text-xs font-black uppercase tracking-wider text-black">
           Phone *
@@ -140,7 +134,7 @@ export default function CompanyDetailsForm({
         />
       </div>
 
-      {/* Industry */}
+      {}
       <div className="space-y-2">
         <label className="block text-xs font-black uppercase tracking-wider text-black">
           Industry
@@ -154,7 +148,7 @@ export default function CompanyDetailsForm({
         />
       </div>
 
-      {/* Website */}
+      {}
       <div className="space-y-2">
         <label className="block text-xs font-black uppercase tracking-wider text-black">
           Website
@@ -168,7 +162,7 @@ export default function CompanyDetailsForm({
         />
       </div>
 
-      {/* GST Number */}
+      {}
       <div className="space-y-2">
         <label className="block text-xs font-black uppercase tracking-wider text-black">
           GST Number
@@ -184,7 +178,7 @@ export default function CompanyDetailsForm({
         />
       </div>
 
-      {/* PAN Number */}
+      {}
       <div className="space-y-2">
         <label className="block text-xs font-black uppercase tracking-wider text-black">
           PAN Number
@@ -200,7 +194,7 @@ export default function CompanyDetailsForm({
         />
       </div>
 
-      {/* Submit Button with neo-brutalism style */}
+      {}
       <button
         type="submit"
         disabled={loading}

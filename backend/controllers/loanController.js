@@ -3,7 +3,6 @@ const mongoose = require("mongoose");
 const Loan = require("../models/Loan");
 const Employee = require("../models/Employee");
 
-// Recalculates and writes loanBalance on the Employee doc from active Loan records
 async function syncLoanBalance(employeeId) {
   const empObjId = new mongoose.Types.ObjectId(String(employeeId));
   const result = await Loan.aggregate([

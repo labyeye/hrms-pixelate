@@ -13,7 +13,7 @@ const app = express();
 
 app.use(
   helmet({
-    contentSecurityPolicy: false, // Disable CSP here — handled by frontend
+    contentSecurityPolicy: false,
     hsts: { maxAge: 31536000, includeSubDomains: true },
   }),
 );
@@ -39,11 +39,8 @@ app.use(
 app.use(morgan("dev"));
 app.use(express.json({ limit: "5mb" }));
 
-// ADMS device push — mounted before rate-limiters, no /api prefix
-// ESSL MB-20 hits: GET/POST /iclock/cdata, GET /iclock/getrequest
 app.use("/iclock", require("./routes/admsRoutes"));
 
-// Strict rate limit for auth endpoints only
 const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 50,
@@ -52,13 +49,11 @@ const authRateLimit = rateLimit({
     message: "Too many auth attempts, please try again later.",
   },
 });
-// Generous limit for API endpoints (per IP — behind corporate NAT many users share one IP)
+
 const apiRateLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 5000 });
 
-// Company routes
 app.use("/api/company", require("./routes/companyRoutes"));
 
-// User/Employee routes
 app.use("/api/auth", authRateLimit, require("./routes/authRoutes"));
 app.use(apiRateLimit);
 app.use("/api/dashboard", require("./routes/dashboardRoutes"));

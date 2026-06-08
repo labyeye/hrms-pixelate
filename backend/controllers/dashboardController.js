@@ -106,7 +106,6 @@ const getStats = asyncHandler(async (req, res) => {
       { $limit: 6 },
     ]).catch(() => []);
 
-    // Attendance trend: last 6 months present count
     const attTrend = await Promise.all(
       Array.from({ length: 6 }, (_, i) => {
         const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
@@ -124,7 +123,6 @@ const getStats = asyncHandler(async (req, res) => {
       }),
     );
 
-    // Payroll trend: last 6 months net salary totals
     const payTrend = await Promise.all(
       Array.from({ length: 6 }, (_, i) => {
         const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
@@ -145,7 +143,6 @@ const getStats = asyncHandler(async (req, res) => {
       }),
     );
 
-    // Today's attendance breakdown
     const [todayLate, todayAbsent, todayOnLeave] = await Promise.all([
       Attendance.countDocuments({
         employee: { $in: companyEmployeeIds },

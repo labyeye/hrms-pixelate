@@ -12,6 +12,7 @@ import {
   Clock,
   X,
 } from "lucide-react";
+import { ActionModal } from "@/components/ui/ActionModal";
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
@@ -72,6 +73,12 @@ export default function LeavePage() {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState<LeaveForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [actionModal, setActionModal] = useState<{
+    show: boolean;
+    type: "success" | "error";
+    title: string;
+    message: string;
+  }>({ show: false, type: "success", title: "", message: "" });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -104,11 +111,22 @@ export default function LeavePage() {
     setSaving(true);
     try {
       await leaveAPI.create({ ...form, days: Number(form.days) });
+      setActionModal({
+        show: true,
+        type: "success",
+        title: "Leave Applied",
+        message: "Your leave request has been submitted.",
+      });
       setShowModal(false);
       setForm(EMPTY_FORM);
       load();
     } catch (err: any) {
-      alert(err.message);
+      setActionModal({
+        show: true,
+        type: "error",
+        title: "Error",
+        message: err.message || "Failed to submit leave request.",
+      });
     }
     setSaving(false);
   };
@@ -128,7 +146,7 @@ export default function LeavePage() {
 
   return (
     <AppLayout title="Leave Management">
-      {/* Header */}
+      {}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div className="flex items-center gap-2">
           {["", "pending", "approved", "rejected"].map((s) => (
@@ -162,7 +180,7 @@ export default function LeavePage() {
         </button>
       </div>
 
-      {/* Summary */}
+      {}
       <div className="grid grid-cols-3 gap-3 mb-5">
         {[
           { label: "Pending", value: summary.pending, bg: "bg-[#FA731C]" },
@@ -193,7 +211,7 @@ export default function LeavePage() {
         ))}
       </div>
 
-      {/* Table */}
+      {}
       {loading ? (
         <div className="flex items-center justify-center h-48">
           <div className="w-8 h-8 bg-[#024BAB] border-2 border-black animate-bounce" />
@@ -316,7 +334,7 @@ export default function LeavePage() {
         </div>
       )}
 
-      {/* Apply Leave Modal */}
+      {}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 bg-white w-full max-w-md">
@@ -444,6 +462,14 @@ export default function LeavePage() {
           </div>
         </div>
       )}
+
+      <ActionModal
+        show={actionModal.show}
+        type={actionModal.type}
+        title={actionModal.title}
+        message={actionModal.message}
+        onClose={() => setActionModal({ ...actionModal, show: false })}
+      />
     </AppLayout>
   );
 }

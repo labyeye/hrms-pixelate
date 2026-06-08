@@ -30,29 +30,37 @@ const createTransaction = asyncHandler(async (req, res) => {
       throw new Error("hours is required for overtime");
     }
     finalHours = Number(hours);
-    // Auto-calculate OT: dailyRate ÷ shiftHours × OT hours
+
     if (!finalAmount) {
       const emp = await Employee.findById(employee).populate("shift");
       const rule = await DeductionRule.findOne({ company: emp?.company });
 
-      // Shift hours from employee's assigned shift or deduction rule defaults
       let shiftStartH, shiftStartM, shiftEndH, shiftEndM;
       if (emp?.shift?.startTime) {
         const [sh, sm] = emp.shift.startTime.split(":").map(Number);
-        shiftStartH = sh; shiftStartM = sm;
-      } else { shiftStartH = rule?.shiftStartHour ?? 9; shiftStartM = rule?.shiftStartMinute ?? 0; }
+        shiftStartH = sh;
+        shiftStartM = sm;
+      } else {
+        shiftStartH = rule?.shiftStartHour ?? 9;
+        shiftStartM = rule?.shiftStartMinute ?? 0;
+      }
       if (emp?.shift?.endTime) {
         const [eh, em] = emp.shift.endTime.split(":").map(Number);
-        shiftEndH = eh; shiftEndM = em;
-      } else { shiftEndH = rule?.shiftEndHour ?? 18; shiftEndM = rule?.shiftEndMinute ?? 0; }
+        shiftEndH = eh;
+        shiftEndM = em;
+      } else {
+        shiftEndH = rule?.shiftEndHour ?? 18;
+        shiftEndM = rule?.shiftEndMinute ?? 0;
+      }
 
-      const shiftTotalMins = (shiftEndH * 60 + shiftEndM) - (shiftStartH * 60 + shiftStartM);
+      const shiftTotalMins =
+        shiftEndH * 60 + shiftEndM - (shiftStartH * 60 + shiftStartM);
       const shiftHours = shiftTotalMins > 0 ? shiftTotalMins / 60 : 8;
 
-      // Use same working-days logic as payroll (6-day default)
       const workDaysPerWeek = emp?.workDaysPerWeek ?? 6;
       const now = new Date();
-      const y = now.getFullYear(), m = now.getMonth() + 1;
+      const y = now.getFullYear(),
+        m = now.getMonth() + 1;
       let workingDays = 0;
       const daysInMonth = new Date(y, m, 0).getDate();
       for (let d = 1; d <= daysInMonth; d++) {

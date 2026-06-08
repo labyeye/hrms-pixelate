@@ -1,20 +1,3 @@
-/**
- * Notification Service — sends confirmation email + WhatsApp on successful subscription
- *
- * Email config required in .env:
- *   SMTP_HOST         — e.g. smtp.gmail.com | smtp.resend.com | smtp.sendgrid.net
- *   SMTP_PORT         — 587 (TLS) or 465 (SSL)
- *   SMTP_USER         — your SMTP login (email address or API key)
- *   SMTP_PASS         — your SMTP password or API key
- *   SMTP_FROM_NAME    — display name, e.g. "NestHR"
- *   SMTP_FROM_EMAIL   — sender address, e.g. "noreply@pixelatenest.com"
- *
- * WhatsApp config required in .env (or Settings collection):
- *   TWILIO_ACCOUNT_SID
- *   TWILIO_AUTH_TOKEN
- *   TWILIO_WHATSAPP_FROM  — e.g. whatsapp:+14155238886
- */
-
 const nodemailer = require("nodemailer");
 const { sendWhatsApp } = require("./whatsappService");
 
@@ -25,7 +8,7 @@ function getTransporter() {
   const pass = process.env.SMTP_PASS;
 
   if (!host || !user || !pass) {
-    return null; // Email not configured — skip silently
+    return null;
   }
 
   return nodemailer.createTransport({
@@ -52,20 +35,6 @@ function formatDate(date) {
   });
 }
 
-/**
- * Sends a subscription confirmation email to the new client.
- *
- * @param {object} opts
- * @param {string} opts.toEmail
- * @param {string} opts.toName
- * @param {string} opts.companyName
- * @param {string} opts.planName     — e.g. "Professional"
- * @param {number} opts.amount       — in ₹
- * @param {string} opts.billingCycle — "monthly" | "yearly"
- * @param {Date}   opts.renewalDate
- * @param {string} opts.dashboardUrl
- * @param {string} opts.invoiceNumber
- */
 async function sendSubscriptionConfirmationEmail(opts) {
   const transporter = getTransporter();
   if (!transporter) {
@@ -173,9 +142,6 @@ async function sendSubscriptionConfirmationEmail(opts) {
   }
 }
 
-/**
- * Sends a WhatsApp confirmation to the new client.
- */
 async function sendSubscriptionConfirmationWhatsApp(opts) {
   const message =
     `🎉 *Welcome to NestHR, ${opts.toName}!*\n\n` +
@@ -189,10 +155,6 @@ async function sendSubscriptionConfirmationWhatsApp(opts) {
   await sendWhatsApp(opts.toPhone, message);
 }
 
-/**
- * Send both email and WhatsApp confirmation after successful payment.
- * Both are non-blocking — failures are logged but do not throw.
- */
 async function sendPaymentConfirmations(opts) {
   await Promise.allSettled([
     sendSubscriptionConfirmationEmail(opts),

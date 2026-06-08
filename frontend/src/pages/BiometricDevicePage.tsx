@@ -64,17 +64,14 @@ export default function BiometricDevicePage() {
   const [result, setResult] = useState<ScanResult | null>(null);
   const [scanError, setScanError] = useState("");
 
-  // NFC state
   const [nfcSupported, setNfcSupported] = useState(false);
   const [nfcReading, setNfcReading] = useState(false);
   const [manualUid, setManualUid] = useState("");
 
-  // Face attendance state
   const videoRef = useRef<HTMLVideoElement>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [faceEmployeeId, setFaceEmployeeId] = useState("");
 
-  // Face enrollment (enroll mode) state
   const {
     videoRef: enrollVideoRef,
     canvasRef: enrollCanvasRef,
@@ -105,7 +102,6 @@ export default function BiometricDevicePage() {
   );
   const [enrollError, setEnrollError] = useState("");
 
-  // PIN state
   const [pinEmployeeId, setPinEmployeeId] = useState("");
 
   const [online, setOnline] = useState(navigator.onLine);
@@ -190,7 +186,6 @@ export default function BiometricDevicePage() {
     }
   };
 
-  // Web NFC
   const startNfcScan = async () => {
     if (!nfcSupported) return;
     setNfcReading(true);
@@ -211,7 +206,6 @@ export default function BiometricDevicePage() {
     }
   };
 
-  // Camera
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -357,7 +351,7 @@ export default function BiometricDevicePage() {
 
   return (
     <div className="min-h-screen bg-[#0A0F1E] flex flex-col select-none">
-      {/* Status bar */}
+      {}
       <div className="flex items-center justify-between px-6 py-3 border-b border-white/10">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 bg-[#024BAB] border border-white/20 flex items-center justify-center">
@@ -387,9 +381,9 @@ export default function BiometricDevicePage() {
         </div>
       </div>
 
-      {/* Main content */}
+      {}
       <div className="flex-1 flex flex-col items-center justify-center p-6">
-        {/* Location info */}
+        {}
         <div className="text-center mb-8">
           <h1 className="text-white font-black text-3xl">
             {device?.location?.name}
@@ -404,7 +398,7 @@ export default function BiometricDevicePage() {
           </p>
         </div>
 
-        {/* Date */}
+        {}
         <div className="text-white/40 text-sm font-mono mb-8">
           {clock.toLocaleDateString("en-IN", {
             weekday: "long",
@@ -414,7 +408,7 @@ export default function BiometricDevicePage() {
           })}
         </div>
 
-        {/* Mode selector */}
+        {}
         <div className="flex gap-0 border-2 border-white/20 overflow-hidden mb-8">
           {[
             { id: "nfc" as Mode, icon: CreditCard, label: "NFC Card" },
@@ -441,9 +435,9 @@ export default function BiometricDevicePage() {
           ))}
         </div>
 
-        {/* Scan area */}
+        {}
         <div className="w-full max-w-sm">
-          {/* Result overlay */}
+          {}
           {scanState === "success" && result && (
             <div className="border-2 border-green-400 bg-green-950/50 p-8 text-center animate-pulse-once">
               <CheckCircle2 className="w-16 h-16 text-green-400 mx-auto mb-4" />
@@ -490,7 +484,7 @@ export default function BiometricDevicePage() {
 
           {scanState === "idle" && (
             <>
-              {/* NFC Mode */}
+              {}
               {mode === "nfc" && (
                 <div className="text-center">
                   <div
@@ -522,7 +516,7 @@ export default function BiometricDevicePage() {
                       Use manual entry below.
                     </p>
                   )}
-                  {/* Manual NFC UID input (fallback) */}
+                  {}
                   <div className="border-t border-white/10 pt-6">
                     <p className="text-white/40 text-xs font-black uppercase mb-3">
                       Manual Card UID
@@ -556,7 +550,7 @@ export default function BiometricDevicePage() {
                 </div>
               )}
 
-              {/* Face Mode */}
+              {}
               {mode === "face" && (
                 <div className="text-center">
                   <div className="relative w-full aspect-video border-2 border-white/20 bg-black mb-4 overflow-hidden">
@@ -636,14 +630,14 @@ export default function BiometricDevicePage() {
                 </div>
               )}
 
-              {/* Enroll Mode */}
+              {}
               {mode === "enroll" && (
                 <div className="text-center">
                   <p className="text-white/60 text-sm font-black uppercase mb-4">
                     Register Face for Employee
                   </p>
 
-                  {/* Error */}
+                  {}
                   {enrollError && (
                     <div className="flex items-start gap-2 bg-red-950/50 border border-red-400 p-3 mb-4 text-left">
                       <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
@@ -653,7 +647,7 @@ export default function BiometricDevicePage() {
                     </div>
                   )}
 
-                  {/* Step: select employee */}
+                  {}
                   {enrollStep === "select" && (
                     <>
                       {enrollEmpLoading ? (
@@ -719,7 +713,7 @@ export default function BiometricDevicePage() {
                     </>
                   )}
 
-                  {/* Step: capture */}
+                  {}
                   {enrollStep === "capture" && (
                     <>
                       <div className="relative w-full aspect-video border-2 border-white/20 bg-black mb-4 overflow-hidden">
@@ -764,7 +758,7 @@ export default function BiometricDevicePage() {
                     </>
                   )}
 
-                  {/* Step: preview / confirm */}
+                  {}
                   {enrollStep === "preview" && (
                     <>
                       <div className="bg-green-950/50 border-2 border-green-400 p-6 mb-4 text-center">
@@ -791,7 +785,7 @@ export default function BiometricDevicePage() {
                     </>
                   )}
 
-                  {/* Step: saving */}
+                  {}
                   {enrollStep === "saving" && (
                     <div className="flex items-center justify-center gap-2 py-8">
                       <Loader2 className="w-6 h-6 animate-spin text-[#024BAB]" />
@@ -799,7 +793,7 @@ export default function BiometricDevicePage() {
                     </div>
                   )}
 
-                  {/* Step: done */}
+                  {}
                   {enrollStep === "done" && (
                     <>
                       <div className="bg-green-950/50 border-2 border-green-400 p-6 mb-4 text-center">
@@ -827,7 +821,7 @@ export default function BiometricDevicePage() {
                 </div>
               )}
 
-              {/* PIN Mode */}
+              {}
               {mode === "pin" && (
                 <div className="text-center">
                   <div className="w-24 h-24 mx-auto border-4 border-white/20 rounded-full flex items-center justify-center mb-6">
@@ -856,7 +850,7 @@ export default function BiometricDevicePage() {
                     ))}
                   </select>
 
-                  {/* Numpad-style employee grid */}
+                  {}
                   {device && device.nfcCards.length > 0 && (
                     <div className="grid grid-cols-2 gap-2 mt-2">
                       {device.nfcCards.map((card) => (
@@ -893,7 +887,7 @@ export default function BiometricDevicePage() {
         </div>
       </div>
 
-      {/* Footer */}
+      {}
       <div className="text-center py-4 border-t border-white/10">
         <p className="text-white/20 text-xs font-medium">
           NestHR Biometric Terminal · {device?.name}

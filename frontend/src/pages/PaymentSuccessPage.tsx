@@ -36,7 +36,6 @@ export default function PaymentSuccessPage() {
     const hdfcStatus =
       searchParams.get("order_status") || searchParams.get("status");
 
-    // If HDFC already signals failure in the URL, skip verification
     if (hdfcStatus && !["Success", "success", "SUCCESS"].includes(hdfcStatus)) {
       navigate("/payment/failed?reason=" + encodeURIComponent(hdfcStatus), {
         replace: true,
@@ -55,7 +54,7 @@ export default function PaymentSuccessPage() {
       .then((res: any) => {
         setDetails(res.data);
         setStatus("success");
-        // Update local auth state so ProtectedRoute allows entry
+
         updateUser({
           company: { ...user?.company!, status: "active" },
           subscription: { status: "active" },
@@ -65,13 +64,11 @@ export default function PaymentSuccessPage() {
         setErrorMsg(err.message || "Payment verification failed.");
         setStatus("failed");
       });
-    // run once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <div className="min-h-screen bg-[#F0F6FF] flex flex-col">
-      {/* Header */}
+      {}
       <header className="bg-white border-b-2 border-black">
         <div className="max-w-4xl mx-auto px-6 h-16 flex items-center gap-3">
           <div className="w-9 h-9 bg-[#024BAB] border-2 border-black flex items-center justify-center">
@@ -85,7 +82,7 @@ export default function PaymentSuccessPage() {
 
       <main className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
-          {/* Verifying */}
+          {}
           {status === "verifying" && (
             <div className="bg-white border-2 border-black p-10 text-center">
               <Loader2 className="w-12 h-12 animate-spin text-[#024BAB] mx-auto mb-4" />
@@ -98,10 +95,10 @@ export default function PaymentSuccessPage() {
             </div>
           )}
 
-          {/* Success */}
+          {}
           {status === "success" && details && (
             <div className="bg-white border-2 border-black">
-              {/* Green top bar */}
+              {}
               <div className="bg-green-500 border-b-2 border-black p-6 text-center">
                 <CheckCircle className="w-12 h-12 text-white mx-auto mb-3" />
                 <h1 className="font-black text-2xl text-white">
@@ -112,7 +109,7 @@ export default function PaymentSuccessPage() {
                 </p>
               </div>
 
-              {/* Invoice details */}
+              {}
               <div className="p-6 space-y-3 border-b-2 border-black">
                 <div className="flex justify-between text-sm">
                   <span className="font-bold text-gray-500">Invoice</span>
@@ -148,7 +145,7 @@ export default function PaymentSuccessPage() {
                 </div>
               </div>
 
-              {/* Notifications sent */}
+              {}
               <div className="p-4 bg-[#F0F6FF] border-b-2 border-black">
                 <p className="text-xs font-black uppercase text-gray-500 mb-2">
                   Confirmations sent to
@@ -164,7 +161,7 @@ export default function PaymentSuccessPage() {
                 </div>
               </div>
 
-              {/* CTA */}
+              {}
               <div className="p-6">
                 <button
                   onClick={() => navigate("/", { replace: true })}

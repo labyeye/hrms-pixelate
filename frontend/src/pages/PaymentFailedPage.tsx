@@ -32,7 +32,7 @@ export default function PaymentFailedPage() {
       <main className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
           <div className="bg-white border-2 border-black">
-            {/* Red top bar */}
+            {}
             <div className="bg-red-500 border-b-2 border-black p-6 text-center">
               <AlertTriangle className="w-12 h-12 text-white mx-auto mb-3" />
               <h1 className="font-black text-2xl text-white">Payment Failed</h1>
@@ -47,7 +47,7 @@ export default function PaymentFailedPage() {
               </p>
             </div>
 
-            {/* Common causes */}
+            {}
             <div className="p-5 bg-[#FFF8F0] border-b-2 border-black">
               <p className="text-xs font-black uppercase text-gray-500 mb-3">
                 Common causes

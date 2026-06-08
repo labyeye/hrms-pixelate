@@ -76,7 +76,7 @@ export function FingerprintEnrollModal({ device, employee, onClose }: Props) {
         </div>
 
         <div className="p-6 space-y-4">
-          {/* Warnings */}
+          {}
           {!employee.biometricUserId && (
             <div className="flex items-start gap-2 bg-red-50 border-2 border-red-300 p-3">
               <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />

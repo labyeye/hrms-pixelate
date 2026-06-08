@@ -72,7 +72,7 @@ const settingSchema = new mongoose.Schema(
         "This is a computer-generated document.",
       ],
     },
-    // WhatsApp — Meta Business Cloud API (per-company credentials)
+
     whatsappEnabled: { type: Boolean, default: false },
     metaAccessToken: { type: String, default: "" },
     metaPhoneNumberId: { type: String, default: "" },
@@ -85,25 +85,25 @@ const settingSchema = new mongoose.Schema(
     whatsappSendLeaveAlert: { type: String, default: "Both" },
     whatsappConsolidated: { type: Boolean, default: false },
     whatsappLang: { type: String, default: "en" },
-    // Salary mode
+
     salaryMode: {
       type: String,
       enum: ["monthly", "15day", "weekly"],
       default: "monthly",
     },
     salaryPayDay: { type: String, default: "31" },
-    // Punch settings
+
     singlePunchAction: { type: String, default: "half_day" },
     doublePunchInterval: { type: Number, default: 5 },
-    // OT
+
     otEnabled: { type: Boolean, default: true },
     otRate: { type: Number, default: 0 },
-    // System
+
     autoSalary: { type: Boolean, default: false },
     bioSync: { type: Boolean, default: true },
     smsEnabled: { type: Boolean, default: false },
     emailNotif: { type: Boolean, default: true },
-    // Preferences
+
     dashboardType: { type: String, default: "Normal" },
     timeFormat: { type: String, default: "12" },
     currency: { type: String, default: "INR" },
@@ -112,7 +112,7 @@ const settingSchema = new mongoose.Schema(
     empCodeSuffix: { type: String, default: "" },
     showCTC: { type: Boolean, default: false },
     branchwise: { type: Boolean, default: false },
-    // ESS (Employee Self-Service)
+
     essEnabled: { type: Boolean, default: true },
     essAllowPunch: { type: Boolean, default: false },
     essAllowSalarySlip: { type: Boolean, default: true },

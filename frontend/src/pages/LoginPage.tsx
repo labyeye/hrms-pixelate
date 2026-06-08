@@ -8,7 +8,7 @@ import {
   ArrowRight,
   Users,
   Clock,
-  DollarSign,
+  IndianRupee,
   BarChart2,
 } from "lucide-react";
 import nesthrlogo from "../../assets/logo.png";
@@ -36,19 +36,19 @@ export default function LoginPage() {
   const features = [
     { icon: Users, label: "Employee Management" },
     { icon: Clock, label: "Attendance Tracking" },
-    { icon: DollarSign, label: "Payroll Processing" },
+    { icon: IndianRupee, label: "Payroll Processing" },
     { icon: BarChart2, label: "Reports & Analytics" },
   ];
 
   return (
     <div className="min-h-screen flex">
-      {/* ── Left Panel ─────────────────────────────────────────────────────── */}
+      {}
       <div className="hidden lg:flex lg:w-1/2 bg-[#024BAB] flex-col justify-between p-10 relative overflow-hidden">
-        {/* Background decoration */}
+        {}
         <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
 
-        {/* Logo */}
+        {}
         <div className="relative z-10">
           <img
             src={nesthrlogo}
@@ -57,7 +57,7 @@ export default function LoginPage() {
           />
         </div>
 
-        {/* Headline */}
+        {}
         <div className="relative z-10">
           <h1 className="text-4xl xl:text-5xl font-display font-black text-white leading-tight mb-5">
             Every employee.
@@ -72,7 +72,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Feature badges */}
+        {}
         <div className="relative z-10 flex flex-wrap gap-2">
           {features.map(({ icon: Icon, label }) => (
             <div
@@ -86,10 +86,10 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* ── Right Panel ────────────────────────────────────────────────────── */}
+      {}
       <div className="flex-1 bg-white flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-md">
-          {/* Mobile logo */}
+          {}
           <div className="lg:hidden flex justify-center mb-8">
             <img
               src={nesthrlogo}
@@ -98,7 +98,7 @@ export default function LoginPage() {
             />
           </div>
 
-          {/* Heading */}
+          {}
           <div className="mb-8">
             <h2 className="text-2xl sm:text-3xl font-display font-black text-black">
               Welcome back
@@ -108,7 +108,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Error */}
+          {}
           {error && (
             <div className="flex items-center gap-2 bg-red-50 border-2 border-red-400 text-red-600 text-sm px-3 py-2.5 mb-5">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -117,7 +117,7 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email */}
+            {}
             <div>
               <label className="block text-xs font-black text-black uppercase tracking-wider mb-1.5">
                 Email
@@ -137,7 +137,7 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* Password */}
+            {}
             <div>
               <label className="block text-xs font-black text-black uppercase tracking-wider mb-1.5">
                 Password
@@ -169,7 +169,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Submit */}
+            {}
             <button
               type="submit"
               disabled={loading}
@@ -188,7 +188,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Footer */}
+          {}
           <div className="mt-8 pt-6 border-t-2 border-black/10 text-center">
             <p className="text-xs text-gray-500">
               New to NestHR?{" "}

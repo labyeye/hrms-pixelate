@@ -4,8 +4,6 @@ const Subscription = require("../models/Subscription");
 const generateToken = require("../utils/generateToken");
 const { validateBody } = require("../middleware/validate");
 
-// ── Validation schemas ────────────────────────────────────────────────────────
-
 const registerSchema = {
   name: { required: true, type: "string", minLength: 2, maxLength: 80 },
   email: { required: true, email: true },
@@ -17,12 +15,7 @@ const loginSchema = {
   password: { required: true, type: "string", minLength: 1, maxLength: 128 },
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-// Strong password: at least 8 chars, one uppercase, one lowercase, one digit
 const STRONG_PASSWORD_RE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-
-// ── Controllers ───────────────────────────────────────────────────────────────
 
 const register = [
   validateBody(registerSchema),
@@ -41,8 +34,6 @@ const register = [
       throw new Error("An account with this email already exists");
     }
 
-    // Self-registration always creates a super_admin (company owner)
-    // hr_manager and other roles are created by super_admin within their company
     const user = await User.create({
       name: name.trim(),
       email: email.toLowerCase().trim(),
@@ -88,8 +79,6 @@ const login = [
       throw new Error("Your account has been deactivated. Please contact HR.");
     }
 
-    // Non-owner roles (hr_manager, employee, etc.) cannot log in without an active subscription
-    // super_admin is allowed through — they need to access billing to purchase a plan
     if (user.company && user.role !== "super_admin") {
       const subscription = await Subscription.findOne({
         company: user.company._id,
@@ -149,7 +138,6 @@ const updateProfile = asyncHandler(async (req, res) => {
 
   const { name, phone, avatar, password, currentPassword } = req.body;
 
-  // Changing password requires the current password for verification
   if (password) {
     if (!currentPassword) {
       res.status(400);
@@ -191,7 +179,6 @@ const updateProfile = asyncHandler(async (req, res) => {
     user.phone = phone;
   }
   if (avatar !== undefined) {
-    // Only allow URLs or base64 data URIs, cap at 2MB
     if (avatar && avatar.length > 2_000_000) {
       res.status(400);
       throw new Error("Avatar image too large");

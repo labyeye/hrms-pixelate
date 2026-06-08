@@ -4,7 +4,6 @@ const Subscription = require("../models/Subscription");
 const Plan = require("../models/Plan");
 const generateToken = require("../utils/generateToken");
 
-// Register a new company
 const registerCompany = asyncHandler(async (req, res) => {
   const {
     name,
@@ -21,13 +20,11 @@ const registerCompany = asyncHandler(async (req, res) => {
     panNumber,
   } = req.body;
 
-  // Check if company already exists
   if (await Company.findOne({ email })) {
     res.status(400);
     throw new Error("Company already registered with this email");
   }
 
-  // Create company
   const company = await Company.create({
     name,
     email,
@@ -44,7 +41,6 @@ const registerCompany = asyncHandler(async (req, res) => {
     status: "trial",
   });
 
-  // Create trial subscription (Starter plan for 14 days free)
   const starterPlan = await Plan.findOne({ planType: "starter" });
   const trialEndDate = new Date();
   trialEndDate.setDate(trialEndDate.getDate() + 14);
@@ -80,7 +76,6 @@ const registerCompany = asyncHandler(async (req, res) => {
   });
 });
 
-// Login company
 const loginCompany = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -114,7 +109,6 @@ const loginCompany = asyncHandler(async (req, res) => {
   });
 });
 
-// Get company details
 const getCompanyDetails = asyncHandler(async (req, res) => {
   const company = await Company.findById(req.company._id).populate(
     "subscription",
@@ -128,7 +122,6 @@ const getCompanyDetails = asyncHandler(async (req, res) => {
   res.json({ success: true, data: company });
 });
 
-// Update company profile
 const updateCompanyProfile = asyncHandler(async (req, res) => {
   const { name, phone, website, address, city, state, pincode, logo } =
     req.body;
@@ -154,7 +147,6 @@ const updateCompanyProfile = asyncHandler(async (req, res) => {
   res.json({ success: true, data: company });
 });
 
-// Upgrade subscription plan
 const upgradeSubscription = asyncHandler(async (req, res) => {
   const { planType, billingCycle } = req.body;
 
@@ -208,7 +200,6 @@ const upgradeSubscription = asyncHandler(async (req, res) => {
   });
 });
 
-// Get all available plans
 const getPlans = asyncHandler(async (req, res) => {
   const plans = await Plan.find({ active: true });
 
@@ -218,7 +209,6 @@ const getPlans = asyncHandler(async (req, res) => {
   });
 });
 
-// Get subscription details
 const getSubscriptionDetails = asyncHandler(async (req, res) => {
   const company = await Company.findById(req.company._id);
   if (!company) {
@@ -239,7 +229,6 @@ const getSubscriptionDetails = asyncHandler(async (req, res) => {
   });
 });
 
-// Create company for authenticated user
 const createCompanyForUser = asyncHandler(async (req, res) => {
   const { name, email, phone, industry, website, gstNumber, panNumber } =
     req.body;
@@ -250,20 +239,17 @@ const createCompanyForUser = asyncHandler(async (req, res) => {
     throw new Error("Company name and phone are required");
   }
 
-  // Check if user already has a company
   const existingCompany = await Company.findOne({ createdBy: userId });
   if (existingCompany) {
     res.status(400);
     throw new Error("User already has a company");
   }
 
-  // Check if company email is unique
   if (email && (await Company.findOne({ email }))) {
     res.status(400);
     throw new Error("Company email already exists");
   }
 
-  // Create company
   const company = await Company.create({
     name,
     email: email || req.user.email,
@@ -277,7 +263,6 @@ const createCompanyForUser = asyncHandler(async (req, res) => {
     createdBy: userId,
   });
 
-  // Create trial subscription
   const starterPlan = await Plan.findOne({ planType: "starter" });
   const trialEndDate = new Date();
   trialEndDate.setDate(trialEndDate.getDate() + 14);
@@ -298,7 +283,6 @@ const createCompanyForUser = asyncHandler(async (req, res) => {
   company.subscription = subscription._id;
   await company.save();
 
-  // Link company to user
   req.user.company = company._id;
   await req.user.save();
 
@@ -317,7 +301,6 @@ const createCompanyForUser = asyncHandler(async (req, res) => {
   });
 });
 
-// Get current user's company
 const getMyCompany = asyncHandler(async (req, res) => {
   const company = await Company.findOne({ createdBy: req.user._id }).populate(
     "subscription",

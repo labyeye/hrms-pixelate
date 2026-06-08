@@ -62,8 +62,6 @@ const YEARS = Array.from(
   (_, i) => new Date().getFullYear() - 2 + i,
 );
 
-// ─── REPORT CATALOG DEFINITION ───────────────────────────────────────────────
-
 type Category = "payroll" | "attendance" | "employee";
 
 interface ReportDef {
@@ -76,7 +74,6 @@ interface ReportDef {
 }
 
 const REPORTS: ReportDef[] = [
-  // PAYROLL
   {
     id: "pay-report",
     name: "Pay Report",
@@ -237,7 +234,7 @@ const REPORTS: ReportDef[] = [
     icon: FileText,
     available: false,
   },
-  // ATTENDANCE
+
   {
     id: "attendance-report",
     name: "Employee Attendance Report",
@@ -310,7 +307,7 @@ const REPORTS: ReportDef[] = [
     icon: BookOpen,
     available: false,
   },
-  // EMPLOYEE
+
   {
     id: "employee-directory",
     name: "Employee Directory",
@@ -320,8 +317,6 @@ const REPORTS: ReportDef[] = [
     available: true,
   },
 ];
-
-// ─── UTILITIES ────────────────────────────────────────────────────────────────
 
 function exportCSV(rows: string[][], filename: string) {
   const csv = rows
@@ -472,8 +467,6 @@ function ReportTable({
     </div>
   );
 }
-
-// ─── REPORT GENERATORS ────────────────────────────────────────────────────────
 
 function PayReportGen({ departments }: { departments: any[] }) {
   const now = new Date();
@@ -2251,8 +2244,6 @@ const REPORT_COMPONENT: Record<
   "employee-directory": EmployeeDirectoryGen,
 };
 
-// ─── MAIN PAGE ────────────────────────────────────────────────────────────────
-
 const CATEGORY_META: Record<
   Category,
   { label: string; color: string; count: number }
@@ -2363,7 +2354,7 @@ function AnalyticsTab({ departments }: { departments: any[] }) {
 
   return (
     <div className="space-y-5">
-      {/* Sub-tabs */}
+      {}
       <div className="flex gap-0 border-2 border-black w-fit">
         {TABS.map(({ id, label }) => (
           <button
@@ -2851,7 +2842,7 @@ export default function ReportsPage() {
 
   return (
     <AppLayout title="Reports">
-      {/* Header */}
+      {}
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-display font-bold text-black">
@@ -2887,13 +2878,13 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* Analytics view */}
+      {}
       {pageMode === "analytics" && <AnalyticsTab departments={departments} />}
 
-      {/* Catalog view */}
+      {}
       {pageMode === "catalog" && (
         <>
-          {/* Active Report Viewer */}
+          {}
           {activeId && activeReport && ActiveComponent && (
             <div className="mb-8">
               <div className="flex items-center gap-3 mb-4">
@@ -2922,7 +2913,7 @@ export default function ReportsPage() {
             </div>
           )}
 
-          {/* Search + Filter bar */}
+          {}
           <div className="flex flex-wrap gap-3 mb-6">
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -2959,7 +2950,7 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          {/* Count pills */}
+          {}
           <div className="flex gap-3 mb-6">
             {(Object.entries(catCounts) as [Category, number][]).map(
               ([cat, count]) => (
@@ -2982,7 +2973,7 @@ export default function ReportsPage() {
             )}
           </div>
 
-          {/* Report catalog grouped by category */}
+          {}
           {(["payroll", "attendance", "employee"] as Category[]).map((cat) => {
             const catReports = grouped[cat];
             if (catReports.length === 0) return null;

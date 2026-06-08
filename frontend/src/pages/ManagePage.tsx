@@ -23,8 +23,6 @@ import {
   CheckCircle,
 } from "lucide-react";
 
-// ─── shared helpers ───────────────────────────────────────────────────────────
-
 function NbSelect({
   value,
   onChange,
@@ -167,8 +165,6 @@ function NbTable({
     </div>
   );
 }
-
-// ─── SHIFTS ──────────────────────────────────────────────────────────────────
 
 function ShiftsSection({ onBack }: { onBack: () => void }) {
   const [data, setData] = useState<any[]>([]);
@@ -403,8 +399,6 @@ function ShiftsSection({ onBack }: { onBack: () => void }) {
     </div>
   );
 }
-
-// ─── SALARY HEADS ─────────────────────────────────────────────────────────────
 
 function SalaryHeadsSection({ onBack }: { onBack: () => void }) {
   const [data, setData] = useState<any[]>([]);
@@ -657,8 +651,6 @@ function SalaryHeadsSection({ onBack }: { onBack: () => void }) {
   );
 }
 
-// ─── DESIGNATIONS ─────────────────────────────────────────────────────────────
-
 function DesignationsSection({ onBack }: { onBack: () => void }) {
   const [data, setData] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
@@ -887,8 +879,6 @@ function DesignationsSection({ onBack }: { onBack: () => void }) {
   );
 }
 
-// ─── OFFER LETTERS ────────────────────────────────────────────────────────────
-
 function OfferLettersSection({ onBack }: { onBack: () => void }) {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -981,7 +971,7 @@ function OfferLettersSection({ onBack }: { onBack: () => void }) {
           ])}
         />
       )}
-      {/* Edit modal */}
+      {}
       {modal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 bg-white w-full max-w-2xl max-h-[90vh] flex flex-col">
@@ -1048,7 +1038,7 @@ function OfferLettersSection({ onBack }: { onBack: () => void }) {
           </div>
         </div>
       )}
-      {/* Preview modal */}
+      {}
       {preview && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 bg-white w-full max-w-xl max-h-[90vh] flex flex-col">
@@ -1069,8 +1059,6 @@ function OfferLettersSection({ onBack }: { onBack: () => void }) {
     </div>
   );
 }
-
-// ─── ROLES (static display) ───────────────────────────────────────────────────
 
 function RolesSection({ onBack }: { onBack: () => void }) {
   const ROLES = [
@@ -1180,8 +1168,6 @@ function RolesSection({ onBack }: { onBack: () => void }) {
     </div>
   );
 }
-
-// ─── MANAGE TILE GRID ─────────────────────────────────────────────────────────
 
 const MANAGE_ITEMS = [
   {

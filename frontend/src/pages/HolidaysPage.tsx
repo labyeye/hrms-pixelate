@@ -200,7 +200,7 @@ export default function HolidaysPage() {
   return (
     <AppLayout title="Holidays">
       <div className="max-w-5xl mx-auto">
-        {/* Header */}
+        {}
         <div className="flex items-start justify-between mb-6">
           <div>
             <h1 className="font-display font-black text-3xl text-black">
@@ -224,7 +224,7 @@ export default function HolidaysPage() {
           )}
         </div>
 
-        {/* Year picker + stats */}
+        {}
         <div className="flex flex-wrap items-center gap-4 mb-6">
           <div className="flex items-center gap-0 border-2 border-black bg-white overflow-hidden">
             <button
@@ -271,7 +271,7 @@ export default function HolidaysPage() {
           </span>
         </div>
 
-        {/* Add / Edit Form */}
+        {}
         {showForm && canManage && (
           <div className="bg-white border-2 border-black p-6 mb-6">
             <h3 className="font-black text-base mb-4">
@@ -366,7 +366,7 @@ export default function HolidaysPage() {
           </div>
         )}
 
-        {/* Table */}
+        {}
         {loading ? (
           <div className="flex justify-center py-16">
             <Loader2 className="w-8 h-8 animate-spin text-[#024BAB]" />
@@ -411,7 +411,7 @@ export default function HolidaysPage() {
                   .filter((m) => grouped[m])
                   .map((m) => (
                     <>
-                      {/* Month separator row */}
+                      {}
                       <tr
                         key={`month-${m}`}
                         className="border-b border-black/10"
@@ -523,7 +523,7 @@ export default function HolidaysPage() {
           </div>
         )}
 
-        {/* Legend */}
+        {}
         <div className="mt-6 p-4 bg-blue-50 border-2 border-[#024BAB]/20">
           <p className="text-xs font-black uppercase text-[#024BAB] mb-2">
             How holidays affect attendance

@@ -59,7 +59,6 @@ const createReview = asyncHandler(async (req, res) => {
     throw new Error("employee, reviewPeriod, and year are required");
   }
 
-  // Validate employee belongs to this company
   const emp = await Employee.findOne({
     _id: employee,
     company: req.user.company,

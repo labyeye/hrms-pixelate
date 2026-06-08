@@ -24,7 +24,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// ── HRMS Permission matrix ───────────────────────────────────────────────────
 type CrudOp = "create" | "read" | "update" | "delete";
 type HrmsRole =
   | "super_admin"
@@ -333,7 +332,6 @@ export default function SettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
       toast({
         title: "Error",
@@ -343,7 +341,6 @@ export default function SettingsPage() {
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast({
         title: "Error",
@@ -353,7 +350,6 @@ export default function SettingsPage() {
       return;
     }
 
-    // Create preview
     const reader = new FileReader();
     reader.onload = (event) => {
       const base64 = event.target?.result as string;
@@ -405,7 +401,6 @@ export default function SettingsPage() {
     }
   };
 
-  // Auto-close success modal after 2 seconds
   useEffect(() => {
     if (actionModal.show && actionModal.type === "success") {
       const timer = setTimeout(() => {
@@ -461,7 +456,7 @@ export default function SettingsPage() {
   return (
     <AppLayout title="Settings">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
+        {}
         <div className="mb-6">
           <h1 className="text-3xl font-display font-bold text-black">
             Settings
@@ -471,9 +466,9 @@ export default function SettingsPage() {
           </p>
         </div>
 
-        {/* Sidebar + Content layout */}
+        {}
         <div className="flex gap-0 border-2 border-black bg-white">
-          {/* Left Sidebar */}
+          {}
           <aside className="w-56 shrink-0 border-r-2 border-black bg-white flex flex-col">
             {SETTING_TABS.map((group) => (
               <div
@@ -506,10 +501,10 @@ export default function SettingsPage() {
             ))}
           </aside>
 
-          {/* Content area */}
+          {}
           <div className="flex-1 min-w-0 flex flex-col">
             <div className="p-6 flex-1">
-              {/* General Info Tab */}
+              {}
               {activeTab === "general" && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -547,13 +542,13 @@ export default function SettingsPage() {
                     />
                   </div>
 
-                  {/* Logo Upload */}
+                  {}
                   <div className="border-t-2 border-black pt-4 mt-4">
                     <label className="block text-xs font-bold text-black uppercase tracking-wider mb-3">
                       Company Logo
                     </label>
                     <div className="flex gap-4">
-                      {/* Upload Input */}
+                      {}
                       <div className="flex-1">
                         <input
                           type="file"
@@ -575,7 +570,7 @@ export default function SettingsPage() {
                         </label>
                       </div>
 
-                      {/* Logo Preview */}
+                      {}
                       {(logoPreview || settings?.logoUrl) &&
                         !logoPreview?.startsWith("data:") && (
                           <div className="flex items-center gap-2">
@@ -633,7 +628,7 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {/* Bank Details Tab */}
+              {}
               {activeTab === "bank" && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -671,10 +666,10 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {/* WhatsApp Tab */}
+              {}
               {activeTab === "whatsapp" && (
                 <div className="space-y-6">
-                  {/* Enable toggle */}
+                  {}
                   <div className="flex items-center justify-between p-4 border-2 border-black bg-green-50">
                     <div>
                       <p className="font-black text-sm text-black">
@@ -708,7 +703,7 @@ export default function SettingsPage() {
                     </button>
                   </div>
 
-                  {/* Meta WhatsApp Credentials */}
+                  {}
                   <div className="space-y-4">
                     <h3 className="text-xs font-black uppercase tracking-wider text-gray-500">
                       Meta WhatsApp Business API Credentials
@@ -770,7 +765,7 @@ export default function SettingsPage() {
                     </div>
                   </div>
 
-                  {/* Notification toggles */}
+                  {}
                   <div className="border-t-2 border-black pt-4 space-y-3">
                     <h3 className="text-xs font-black uppercase tracking-wider text-gray-500">
                       Notification Events
@@ -829,7 +824,7 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {/* Permissions Tab */}
+              {}
               {activeTab === "permissions" && (
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 mb-2">
@@ -1003,7 +998,7 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {/* Quotation Tab */}
+              {}
               {activeTab === "quotation" && (
                 <div className="space-y-6">
                   <div className="space-y-4">
@@ -1023,7 +1018,7 @@ export default function SettingsPage() {
                     />
                   </div>
 
-                  {/* Terms & Conditions */}
+                  {}
                   <div className="border-t-2 border-black pt-6">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-sm font-bold text-black uppercase tracking-wider">
@@ -1074,7 +1069,7 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {/* Salary Mode Tab */}
+              {}
               {activeTab === "salary_mode" && (
                 <div className="space-y-5">
                   <p className="text-xs text-muted-foreground">
@@ -1180,7 +1175,7 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {/* Punch Settings Tab */}
+              {}
               {activeTab === "punch" && (
                 <div className="space-y-5">
                   <p className="text-xs text-muted-foreground">
@@ -1231,7 +1226,7 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {/* Employee App (ESS) Tab */}
+              {}
               {activeTab === "ess" && (
                 <div className="space-y-4">
                   <p className="text-xs text-muted-foreground">
@@ -1319,7 +1314,7 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {/* System Tab */}
+              {}
               {activeTab === "system" && (
                 <div className="space-y-4">
                   <p className="text-xs text-muted-foreground">
@@ -1378,7 +1373,7 @@ export default function SettingsPage() {
                       </button>
                     </div>
                   ))}
-                  {/* API Key */}
+                  {}
                   <div className="border-t-2 border-black/10 pt-4">
                     <p className="text-xs font-black uppercase tracking-wider text-black mb-3">
                       API Key
@@ -1410,7 +1405,7 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {/* Preferences Tab */}
+              {}
               {activeTab === "preferences" && (
                 <div className="space-y-5">
                   <p className="text-xs text-muted-foreground">
@@ -1560,7 +1555,7 @@ export default function SettingsPage() {
               )}
             </div>
 
-            {/* Save Button — bottom of right column */}
+            {}
             <div className="border-t-2 border-black p-4 flex justify-end bg-gray-50/50">
               <button
                 onClick={handleSave}
@@ -1586,13 +1581,13 @@ export default function SettingsPage() {
               </button>
             </div>
           </div>
-          {/* end right column */}
+          {}
         </div>
-        {/* end sidebar+content flex */}
+        {}
       </div>
-      {/* end max-w-6xl */}
+      {}
 
-      {/* Success/Error Animation Modal */}
+      {}
       {actionModal.show && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 bg-white w-full max-w-sm p-8 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-300">

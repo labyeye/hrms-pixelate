@@ -17,26 +17,21 @@ const paymentMethodSchema = new mongoose.Schema(
     isDefault: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
 
-    // For card payments
-    cardNumber: { type: String }, // Last 4 digits only
+    cardNumber: { type: String },
     cardholderName: { type: String },
     expiryMonth: { type: Number },
     expiryYear: { type: Number },
-    cardBrand: { type: String }, // visa, mastercard, etc.
+    cardBrand: { type: String },
 
-    // For UPI
     upiId: { type: String },
 
-    // For bank transfer
     accountHolderName: { type: String },
-    accountNumber: { type: String }, // Last 4 digits only
+    accountNumber: { type: String },
     bankName: { type: String },
     ifscCode: { type: String },
 
-    // Razorpay token ID for recurring payments
     razorpayTokenId: { type: String },
 
-    // Metadata
     lastUsed: { type: Date },
     failureCount: { type: Number, default: 0 },
     notes: { type: String },
@@ -44,7 +39,6 @@ const paymentMethodSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-// Index to ensure only one default payment method per company
 paymentMethodSchema.index({ company: 1, isDefault: 1 });
 
 module.exports = mongoose.model("PaymentMethod", paymentMethodSchema);

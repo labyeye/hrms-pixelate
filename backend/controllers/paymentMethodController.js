@@ -2,7 +2,6 @@ const asyncHandler = require("express-async-handler");
 const PaymentMethod = require("../models/PaymentMethod");
 const Company = require("../models/Company");
 
-// Get all payment methods for a company
 const getPaymentMethods = asyncHandler(async (req, res) => {
   const company = await Company.findOne({ createdBy: req.user._id });
   if (!company) {
@@ -19,7 +18,6 @@ const getPaymentMethods = asyncHandler(async (req, res) => {
   res.json({ success: true, data: paymentMethods });
 });
 
-// Add new payment method
 const addPaymentMethod = asyncHandler(async (req, res) => {
   const {
     type,
@@ -43,7 +41,6 @@ const addPaymentMethod = asyncHandler(async (req, res) => {
       .json({ success: false, message: "Company not found" });
   }
 
-  // Validate based on type
   if (
     type === "card" &&
     (!cardNumber ||
@@ -72,7 +69,6 @@ const addPaymentMethod = asyncHandler(async (req, res) => {
       .json({ success: false, message: "Bank account details are required" });
   }
 
-  // If this is default, unset other defaults
   if (isDefault) {
     await PaymentMethod.updateMany(
       { company: company._id },
@@ -88,7 +84,7 @@ const addPaymentMethod = asyncHandler(async (req, res) => {
   };
 
   if (type === "card") {
-    paymentMethodData.cardNumber = cardNumber.slice(-4); // Store only last 4 digits
+    paymentMethodData.cardNumber = cardNumber.slice(-4);
     paymentMethodData.cardholderName = cardholderName;
     paymentMethodData.expiryMonth = expiryMonth;
     paymentMethodData.expiryYear = expiryYear;
@@ -97,7 +93,7 @@ const addPaymentMethod = asyncHandler(async (req, res) => {
     paymentMethodData.upiId = upiId;
   } else if (type === "bank_transfer") {
     paymentMethodData.accountHolderName = accountHolderName;
-    paymentMethodData.accountNumber = accountNumber.slice(-4); // Store only last 4 digits
+    paymentMethodData.accountNumber = accountNumber.slice(-4);
     paymentMethodData.bankName = bankName;
     paymentMethodData.ifscCode = ifscCode;
   }
@@ -111,7 +107,6 @@ const addPaymentMethod = asyncHandler(async (req, res) => {
   });
 });
 
-// Update payment method
 const updatePaymentMethod = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { isDefault } = req.body;
@@ -154,7 +149,6 @@ const updatePaymentMethod = asyncHandler(async (req, res) => {
   });
 });
 
-// Delete payment method
 const deletePaymentMethod = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
@@ -175,7 +169,6 @@ const deletePaymentMethod = asyncHandler(async (req, res) => {
       .json({ success: false, message: "Payment method not found" });
   }
 
-  // Don't allow deleting if it's the only active method
   const activeCount = await PaymentMethod.countDocuments({
     company: company._id,
     isActive: true,
@@ -192,7 +185,6 @@ const deletePaymentMethod = asyncHandler(async (req, res) => {
   res.json({ success: true, message: "Payment method deleted successfully" });
 });
 
-// Get default payment method
 const getDefaultPaymentMethod = asyncHandler(async (req, res) => {
   const company = await Company.findOne({ createdBy: req.user._id });
   if (!company) {

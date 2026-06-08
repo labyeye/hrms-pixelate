@@ -96,7 +96,6 @@ const deleteHoliday = asyncHandler(async (req, res) => {
   res.json({ success: true, message: "Holiday deleted" });
 });
 
-// Used internally by other controllers to check if a date is a holiday
 const isHolidayDate = async (companyId, date) => {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);

@@ -173,27 +173,50 @@ export const billingAPI = {
     request<{ success: boolean; data: any }>("/billing/subscription"),
   getInvoices: () =>
     request<{ success: boolean; data: any }>("/billing/invoices"),
-  createOrder: (plan: string, billingCycle: "monthly" | "yearly", gateway: "razorpay" | "hdfc" = "razorpay") =>
+  createOrder: (
+    plan: string,
+    billingCycle: "monthly" | "yearly",
+    gateway: "razorpay" | "hdfc" = "razorpay",
+  ) =>
     request<{ success: boolean; data: any }>("/billing/create-order", {
       method: "POST",
       body: JSON.stringify({ plan, billingCycle, gateway }),
     }),
-  verifyRazorpay: (payload: { razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string }) =>
-    request<{ success: boolean; message: string; data: any }>("/billing/verify-razorpay", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    }),
+  verifyRazorpay: (payload: {
+    razorpayOrderId: string;
+    razorpayPaymentId: string;
+    razorpaySignature: string;
+  }) =>
+    request<{ success: boolean; message: string; data: any }>(
+      "/billing/verify-razorpay",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    ),
   verifyHdfc: (payload: { orderId: string; trackingId?: string | null }) =>
-    request<{ success: boolean; message: string; data: any }>("/billing/verify-hdfc", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    }),
-  verifyPayment: (payload: { orderId?: string; trackingId?: string | null; razorpayOrderId?: string; razorpayPaymentId?: string; razorpaySignature?: string }) =>
-    request<{ success: boolean; message: string; data: any }>("/billing/verify-payment", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    }),
-  // Payment Methods
+    request<{ success: boolean; message: string; data: any }>(
+      "/billing/verify-hdfc",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    ),
+  verifyPayment: (payload: {
+    orderId?: string;
+    trackingId?: string | null;
+    razorpayOrderId?: string;
+    razorpayPaymentId?: string;
+    razorpaySignature?: string;
+  }) =>
+    request<{ success: boolean; message: string; data: any }>(
+      "/billing/verify-payment",
+      {
+        method: "POST",
+        body: JSON.stringify(payload),
+      },
+    ),
+
   getPaymentMethods: () =>
     request<{ success: boolean; data: any }>("/payment-methods"),
   addPaymentMethod: (body: object) =>
@@ -227,7 +250,6 @@ export const holidayAPI = {
 };
 
 export const biometricAPI = {
-  // Locations
   getLocations: () => request("/biometric/locations"),
   createLocation: (body: object) =>
     request("/biometric/locations", {
@@ -242,7 +264,6 @@ export const biometricAPI = {
   deleteLocation: (id: string) =>
     request(`/biometric/locations/${id}`, { method: "DELETE" }),
 
-  // Devices
   getDevices: () => request("/biometric/devices"),
   createDevice: (body: object) =>
     request("/biometric/devices", {
@@ -259,7 +280,6 @@ export const biometricAPI = {
   regenerateDeviceToken: (id: string) =>
     request(`/biometric/devices/${id}/regenerate-token`, { method: "POST" }),
 
-  // NFC Cards
   assignNfcCard: (deviceId: string, body: object) =>
     request(`/biometric/devices/${deviceId}/nfc`, {
       method: "POST",
@@ -268,7 +288,6 @@ export const biometricAPI = {
   removeNfcCard: (deviceId: string, uid: string) =>
     request(`/biometric/devices/${deviceId}/nfc/${uid}`, { method: "DELETE" }),
 
-  // Device public endpoints (no auth token needed)
   getDeviceInfo: (token: string) =>
     fetch(`${BASE_URL}/biometric/device/${token}`).then(async (r) => {
       const d = await r.json();
@@ -286,13 +305,11 @@ export const biometricAPI = {
       return d;
     }),
 
-  // Logs
   getLogs: (params?: Record<string, string>) => {
     const q = params ? "?" + new URLSearchParams(params).toString() : "";
     return request(`/biometric/logs${q}`);
   },
 
-  // ADMS device management
   setDeviceSerial: (id: string, serialNumber: string) =>
     request(`/biometric/devices/${id}/serial`, {
       method: "PUT",
@@ -316,14 +333,12 @@ export const biometricAPI = {
   getDeviceCommands: (deviceId: string) =>
     request(`/biometric/devices/${deviceId}/commands`),
 
-  // RFID card via USB reader
   saveRfidCard: (employeeId: string, rfidCard: string) =>
     request(`/biometric/employees/${employeeId}/rfid`, {
       method: "POST",
       body: JSON.stringify({ rfidCard }),
     }),
 
-  // Face recognition
   saveFaceDescriptor: (employeeId: string, descriptor: number[]) =>
     request(`/biometric/employees/${employeeId}/face`, {
       method: "POST",
@@ -336,21 +351,18 @@ export const biometricAPI = {
       body: JSON.stringify({ descriptor, deviceToken }),
     }),
 
-  // Fingerprint enrollment trigger
   enrollFingerprint: (deviceId: string, employeeId: string, fingerIndex = 0) =>
     request(`/biometric/devices/${deviceId}/enroll-fingerprint`, {
       method: "POST",
       body: JSON.stringify({ employeeId, fingerIndex }),
     }),
 
-  // Face enrollment trigger on physical eSSL/ZKTeco device (ADMS command)
   enrollFaceOnDevice: (deviceId: string, employeeId: string) =>
     request(`/biometric/devices/${deviceId}/enroll-face-device`, {
       method: "POST",
       body: JSON.stringify({ employeeId }),
     }),
 
-  // Device-based face enrollment (no user auth — uses device token)
   getDeviceEmployees: (token: string) =>
     request(`/biometric/device/${token}/employees`),
   enrollFaceFromDevice: (

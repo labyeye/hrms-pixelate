@@ -18,11 +18,9 @@ router.post("/register", registerCompany);
 router.post("/login", loginCompany);
 router.get("/plans", getPlans);
 
-// User-based routes (protected with user auth)
 router.post("/", protect, createCompanyForUser);
 router.get("/me", protect, getMyCompany);
 
-// Company-based routes (legacy, protected with company auth)
 router.get("/details", protectCompany, getCompanyDetails);
 router.put("/profile", protectCompany, updateCompanyProfile);
 router.put("/upgrade-subscription", protectCompany, upgradeSubscription);

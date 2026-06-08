@@ -1,9 +1,6 @@
 const https = require("https");
 const Setting = require("../models/Setting");
 
-// Meta WhatsApp Business Cloud API
-// eventKey: "whatsappNotifyLeave" | "whatsappNotifyPayroll" | "whatsappNotifyCheckIn" | undefined
-// companyId: ObjectId — used to load the right per-client credentials
 async function sendWhatsApp(to, message, eventKey, companyId) {
   try {
     const setting = await Setting.findOne({ company: companyId });
@@ -14,7 +11,6 @@ async function sendWhatsApp(to, message, eventKey, companyId) {
     const phoneNumberId = setting.metaPhoneNumberId;
     if (!accessToken || !phoneNumberId) return;
 
-    // Meta expects digits only, no + or spaces (e.g. 919876543210)
     const toNumber = to.replace(/^\+/, "").replace(/\s/g, "");
 
     const body = JSON.stringify({
@@ -54,8 +50,6 @@ async function sendWhatsApp(to, message, eventKey, companyId) {
     console.error("[WhatsApp]", err.message);
   }
 }
-
-// ── Message templates ──────────────────────────────────────────────────────────
 
 function leaveApprovedMsg(emp, leave) {
   const type =

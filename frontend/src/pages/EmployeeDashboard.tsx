@@ -39,8 +39,6 @@ import {
   Upload,
 } from "lucide-react";
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-
 interface AttendanceStats {
   presentDays: number;
   absentDays: number;
@@ -119,8 +117,6 @@ const MONTHS = [
   "Dec",
 ];
 
-// ── Component ───────────────────────────────────────────────────────────────
-
 export default function EmployeeDashboard() {
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
@@ -134,7 +130,6 @@ export default function EmployeeDashboard() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>("overview");
 
-  // Settings state
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [saving, setSaving] = useState(false);
@@ -208,7 +203,6 @@ export default function EmployeeDashboard() {
     loadEmployeeData();
   }, [loadEmployeeData]);
 
-  // ── Photo upload ──────────────────────────────────────────────────────────
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -228,7 +222,7 @@ export default function EmployeeDashboard() {
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
-      // Compress via canvas if > 500KB
+
       let finalBase64 = base64;
       if (base64.length > 500_000) {
         const img = new Image();
@@ -281,7 +275,6 @@ export default function EmployeeDashboard() {
     }
   };
 
-  // ── Save profile (name + phone) ───────────────────────────────────────────
   const handleSaveProfile = async () => {
     setSaving(true);
     try {
@@ -305,7 +298,6 @@ export default function EmployeeDashboard() {
     }
   };
 
-  // ── Change password ───────────────────────────────────────────────────────
   const handleChangePassword = async () => {
     if (!pwForm.current || !pwForm.next) return;
     if (pwForm.next !== pwForm.confirm) {
@@ -334,7 +326,6 @@ export default function EmployeeDashboard() {
     }
   };
 
-  // ── Loading / empty states ────────────────────────────────────────────────
   if (loading) {
     return (
       <AppLayout title="My Profile">
@@ -365,9 +356,9 @@ export default function EmployeeDashboard() {
 
   return (
     <AppLayout title="My Profile">
-      {/* ── HERO ─────────────────────────────────────────────────────────── */}
+      {}
       <div className="border-2 border-black mb-6 overflow-hidden">
-        {/* Blue banner */}
+        {}
         <div className="bg-[#024BAB] h-28 relative">
           <div
             className="absolute inset-0 opacity-10"
@@ -379,10 +370,10 @@ export default function EmployeeDashboard() {
           />
         </div>
 
-        {/* Profile card below banner */}
+        {}
         <div className="bg-white px-6 pb-5">
           <div className="flex flex-col sm:flex-row gap-4 -mt-10">
-            {/* Avatar with upload overlay */}
+            {}
             <div className="relative shrink-0 group">
               <div className="w-32 h-32 border-4 border-white bg-[#024BAB] flex items-center justify-center text-2xl font-bold text-white overflow-hidden shadow-lg">
                 {avatarSrc ? (
@@ -395,7 +386,7 @@ export default function EmployeeDashboard() {
                   <span>{employee.firstName?.[0]?.toUpperCase()}</span>
                 )}
               </div>
-              {/* Camera overlay */}
+              {}
               <button
                 onClick={() => photoInputRef.current?.click()}
                 disabled={photoUploading}
@@ -417,9 +408,9 @@ export default function EmployeeDashboard() {
               />
             </div>
 
-            {/* Name + meta + stats in one section */}
+            {}
             <div className="flex-1 min-w-0 pb-2 mt-12">
-              {/* Single row: name badge + stats */}
+              {}
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl font-display font-bold text-black">
                   {employee.firstName} {employee.lastName}
@@ -483,7 +474,7 @@ export default function EmployeeDashboard() {
         </div>
       </div>
 
-      {/* ── TABS ─────────────────────────────────────────────────────────── */}
+      {}
       <div className="flex border-2 border-black bg-white mb-6 overflow-x-auto">
         {TABS.map((t, idx) => (
           <button
@@ -502,10 +493,10 @@ export default function EmployeeDashboard() {
         ))}
       </div>
 
-      {/* ── OVERVIEW TAB ─────────────────────────────────────────────────── */}
+      {}
       {tab === "overview" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          {/* Left */}
+          {}
           <div className="space-y-5">
             <div className="border-2 border-black bg-white overflow-hidden">
               <div className="px-4 py-3 bg-[#024BAB] flex items-center gap-2">
@@ -614,9 +605,9 @@ export default function EmployeeDashboard() {
             </div>
           </div>
 
-          {/* Right */}
+          {}
           <div className="lg:col-span-2 space-y-5">
-            {/* Attendance summary */}
+            {}
             {attendance && (
               <div className="grid grid-cols-3 gap-4">
                 {[
@@ -655,7 +646,7 @@ export default function EmployeeDashboard() {
               </div>
             )}
 
-            {/* Recent attendance */}
+            {}
             {recentAttendance.length > 0 && (
               <div className="border-2 border-black bg-white overflow-hidden">
                 <div className="px-4 py-3 bg-[#024BAB]/5 border-b-2 border-black flex items-center gap-2">
@@ -734,7 +725,7 @@ export default function EmployeeDashboard() {
               </div>
             )}
 
-            {/* Latest leave */}
+            {}
             {leaves.length > 0 && (
               <div className="border-2 border-black bg-white overflow-hidden">
                 <div className="px-4 py-3 bg-[#024BAB]/5 border-b-2 border-black flex items-center justify-between">
@@ -781,7 +772,7 @@ export default function EmployeeDashboard() {
               </div>
             )}
 
-            {/* Performance */}
+            {}
             {performance.length > 0 && (
               <div className="border-2 border-black bg-white overflow-hidden">
                 <div className="px-4 py-3 bg-[#024BAB]/5 border-b-2 border-black flex items-center gap-2">
@@ -833,7 +824,7 @@ export default function EmployeeDashboard() {
         </div>
       )}
 
-      {/* ── ATTENDANCE TAB ─────────────────────────────────────────────────── */}
+      {}
       {tab === "attendance" && (
         <div className="space-y-5">
           {attendance && (
@@ -961,7 +952,7 @@ export default function EmployeeDashboard() {
         </div>
       )}
 
-      {/* ── LEAVES TAB ───────────────────────────────────────────────────── */}
+      {}
       {tab === "leaves" && (
         <div className="border-2 border-black bg-white overflow-hidden">
           <div className="px-4 py-3 bg-[#024BAB]/5 border-b-2 border-black">
@@ -1012,7 +1003,7 @@ export default function EmployeeDashboard() {
         </div>
       )}
 
-      {/* ── PAYROLL TAB ──────────────────────────────────────────────────── */}
+      {}
       {tab === "payroll" && (
         <div className="border-2 border-black bg-white overflow-hidden">
           <div className="px-4 py-3 bg-[#024BAB]/5 border-b-2 border-black">
@@ -1094,10 +1085,10 @@ export default function EmployeeDashboard() {
         </div>
       )}
 
-      {/* ── SETTINGS TAB ─────────────────────────────────────────────────── */}
+      {}
       {tab === "settings" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {/* Photo */}
+          {}
           <div className="border-2 border-black bg-white overflow-hidden">
             <div className="px-4 py-3 bg-[#024BAB] border-b-2 border-black flex items-center gap-2">
               <Camera className="w-4 h-4 text-white" />
@@ -1155,7 +1146,7 @@ export default function EmployeeDashboard() {
             </div>
           </div>
 
-          {/* Edit Profile */}
+          {}
           <div className="border-2 border-black bg-white overflow-hidden">
             <div className="px-4 py-3 bg-[#024BAB] border-b-2 border-black flex items-center gap-2">
               <Edit2 className="w-4 h-4 text-white" />
@@ -1214,7 +1205,7 @@ export default function EmployeeDashboard() {
             </div>
           </div>
 
-          {/* Change Password */}
+          {}
           <div className="border-2 border-black bg-white overflow-hidden lg:col-span-2">
             <div className="px-4 py-3 bg-[#024BAB] border-b-2 border-black flex items-center gap-2">
               <Lock className="w-4 h-4 text-white" />

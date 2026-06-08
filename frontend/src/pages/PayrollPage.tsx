@@ -3,14 +3,8 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { payrollAPI, employeeAPI } from "@/services/api";
 import { Payroll } from "@/types/hrms";
 import { cn, formatCurrency } from "@/lib/utils";
-import {
-  IndianRupee,
-  Play,
-  CheckCircle,
-  X,
-  AlertCircle,
-  Printer,
-} from "lucide-react";
+import { IndianRupee, Play, CheckCircle, X, Printer } from "lucide-react";
+import { ActionModal } from "@/components/ui/ActionModal";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
@@ -69,16 +63,6 @@ export default function PayrollPage() {
   useEffect(() => {
     load();
   }, [load]);
-
-  // Auto-close success modal after 2 seconds
-  useEffect(() => {
-    if (actionModal.show && actionModal.type === "success") {
-      const timer = setTimeout(() => {
-        setActionModal((prev) => ({ ...prev, show: false }));
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [actionModal.show, actionModal.type]);
 
   const handleProcess = async () => {
     setProcessing(true);
@@ -145,7 +129,7 @@ export default function PayrollPage() {
 
   return (
     <AppLayout title="Payroll">
-      {/* Header */}
+      {}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div className="flex items-center gap-2">
           <select
@@ -238,7 +222,7 @@ export default function PayrollPage() {
         </div>
       </div>
 
-      {/* Summary */}
+      {}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
         {[
           {
@@ -279,7 +263,7 @@ export default function PayrollPage() {
         ))}
       </div>
 
-      {/* Table */}
+      {}
       {loading ? (
         <div className="flex items-center justify-center h-48">
           <div className="w-8 h-8 bg-[#024BAB] border-2 border-black animate-bounce" />
@@ -323,7 +307,13 @@ export default function PayrollPage() {
                   { label: "Status", cls: "" },
                   { label: "", cls: "" },
                 ].map(({ label, cls }) => (
-                  <th key={label} className={cn("px-4 py-3 text-xs font-bold text-black uppercase tracking-wider", cls)}>
+                  <th
+                    key={label}
+                    className={cn(
+                      "px-4 py-3 text-xs font-bold text-black uppercase tracking-wider",
+                      cls,
+                    )}
+                  >
                     {label}
                   </th>
                 ))}
@@ -338,7 +328,7 @@ export default function PayrollPage() {
                     i % 2 === 0 ? "" : "bg-[#F8FAFF]",
                   )}
                 >
-                  {/* Employee */}
+                  {}
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <div className="w-7 h-7 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[10px] font-bold text-white shrink-0">
@@ -346,7 +336,8 @@ export default function PayrollPage() {
                       </div>
                       <div>
                         <p className="font-bold text-black text-xs">
-                          {(p.employee as any)?.firstName} {(p.employee as any)?.lastName}
+                          {(p.employee as any)?.firstName}{" "}
+                          {(p.employee as any)?.lastName}
                         </p>
                         <p className="text-[10px] text-muted-foreground">
                           {p.presentDays}/{p.workingDays} days
@@ -355,65 +346,101 @@ export default function PayrollPage() {
                     </div>
                   </td>
 
-                  {/* Base earned salary */}
+                  {}
                   <td className="px-4 py-3 text-right">
-                    <p className="text-xs font-bold text-black">{formatCurrency(p.earnedBasic ?? p.basicSalary)}</p>
-                    <p className="text-[10px] text-muted-foreground">of {formatCurrency(p.basicSalary)}</p>
+                    <p className="text-xs font-bold text-black">
+                      {formatCurrency(p.earnedBasic ?? p.basicSalary)}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      of {formatCurrency(p.basicSalary)}
+                    </p>
                   </td>
 
-                  {/* OT */}
+                  {}
                   <td className="px-4 py-3 text-right text-xs font-bold">
                     {(p.otPay ?? 0) > 0 ? (
-                      <span className="text-[#F59E0B]">+{formatCurrency(p.otPay!)}</span>
-                    ) : <span className="text-muted-foreground">—</span>}
+                      <span className="text-[#F59E0B]">
+                        +{formatCurrency(p.otPay!)}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                     {(p.overtimeHours ?? 0) > 0 && (
-                      <p className="text-[10px] text-muted-foreground">{p.overtimeHours}h</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {p.overtimeHours}h
+                      </p>
                     )}
                   </td>
 
-                  {/* Late deduction */}
+                  {}
                   <td className="px-4 py-3 text-right text-xs font-bold">
                     {(p.lateDeductionAmount ?? 0) > 0 ? (
-                      <span className="text-red-500">-{formatCurrency(p.lateDeductionAmount!)}</span>
-                    ) : <span className="text-muted-foreground">—</span>}
+                      <span className="text-red-500">
+                        -{formatCurrency(p.lateDeductionAmount!)}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </td>
 
-                  {/* Penalty */}
+                  {}
                   <td className="px-4 py-3 text-right text-xs font-bold">
                     {(p.penaltyAmount ?? 0) > 0 ? (
-                      <span className="text-red-500">-{formatCurrency(p.penaltyAmount!)}</span>
-                    ) : <span className="text-muted-foreground">—</span>}
+                      <span className="text-red-500">
+                        -{formatCurrency(p.penaltyAmount!)}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </td>
 
-                  {/* Bonus / Allowance */}
+                  {}
                   <td className="px-4 py-3 text-right text-xs font-bold">
                     {(p.otherAllowances ?? 0) > 0 ? (
-                      <span className="text-[#00C48C]">+{formatCurrency(p.otherAllowances!)}</span>
-                    ) : <span className="text-muted-foreground">—</span>}
+                      <span className="text-[#00C48C]">
+                        +{formatCurrency(p.otherAllowances!)}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </td>
 
-                  {/* Loan / Advance */}
+                  {}
                   <td className="px-4 py-3 text-right text-xs font-bold">
                     {p.loanDeduction > 0 ? (
-                      <span className="text-[#FA731C]">-{formatCurrency(p.loanDeduction)}</span>
-                    ) : <span className="text-muted-foreground">—</span>}
+                      <span className="text-[#FA731C]">
+                        -{formatCurrency(p.loanDeduction)}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </td>
 
-                  {/* Net Salary */}
+                  {}
                   <td className="px-4 py-3 text-right">
-                    <span className={cn("text-sm font-black", p.netSalary === 0 ? "text-red-500" : "text-black")}>
+                    <span
+                      className={cn(
+                        "text-sm font-black",
+                        p.netSalary === 0 ? "text-red-500" : "text-black",
+                      )}
+                    >
                       {formatCurrency(p.netSalary)}
                     </span>
                   </td>
 
-                  {/* Status */}
+                  {}
                   <td className="px-4 py-3">
-                    <span className={cn("border-2 text-[10px] capitalize", STATUS_COLORS[p.status])}>
+                    <span
+                      className={cn(
+                        "border-2 text-[10px] capitalize",
+                        STATUS_COLORS[p.status],
+                      )}
+                    >
                       {p.status}
                     </span>
                   </td>
 
-                  {/* Action */}
+                  {}
                   <td className="px-4 py-3">
                     {p.status === "processed" && (
                       <button
@@ -436,7 +463,7 @@ export default function PayrollPage() {
         </div>
       )}
 
-      {/* Process Modal */}
+      {}
       {processModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -463,7 +490,7 @@ export default function PayrollPage() {
                 </strong>
               </p>
 
-              {/* Process Mode Selection */}
+              {}
               <div className="space-y-3 mb-6">
                 <label
                   className="flex items-center gap-3 p-3 border-2 border-black cursor-pointer hover:bg-[#024BAB]/5 transition-colors"
@@ -511,7 +538,7 @@ export default function PayrollPage() {
                 </label>
               </div>
 
-              {/* Employee Selection List */}
+              {}
               {processMode === "select" && (
                 <div className="mb-6 p-4 border-2 border-black bg-[#F8FAFF]">
                   <div className="flex items-center justify-between mb-3">
@@ -572,7 +599,7 @@ export default function PayrollPage() {
                 </div>
               )}
 
-              {/* Warning */}
+              {}
               <div className="p-3 border-2 border-[#FA731C] bg-[#FA731C]/5 mb-4">
                 <p className="text-xs font-bold text-[#FA731C]">
                   ⚠ Existing records won't be overwritten. Verify selection
@@ -609,51 +636,13 @@ export default function PayrollPage() {
         </div>
       )}
 
-      {/* Success/Error Animation Modal */}
-      {actionModal.show && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="border-2 bg-white w-full max-w-sm p-8 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-300">
-            {actionModal.type === "success" ? (
-              <>
-                <div className="mb-4 animate-bounce">
-                  <CheckCircle className="w-16 h-16 text-[#00C48C]" />
-                </div>
-                <h2 className="text-2xl font-display font-bold text-black mb-2">
-                  {actionModal.title}
-                </h2>
-                <p className="text-sm text-muted-foreground mb-6">
-                  {actionModal.message}
-                </p>
-                <div className="flex gap-2">
-                  <div className="w-2 h-2 bg-[#00C48C] rounded-full animate-pulse" />
-                  <div className="w-2 h-2 bg-[#00C48C] rounded-full animate-pulse delay-100" />
-                  <div className="w-2 h-2 bg-[#00C48C] rounded-full animate-pulse delay-200" />
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="mb-4 animate-bounce">
-                  <AlertCircle className="w-16 h-16 text-[#EF4444]" />
-                </div>
-                <h2 className="text-2xl font-display font-bold text-black mb-2">
-                  {actionModal.title}
-                </h2>
-                <p className="text-sm text-muted-foreground mb-6">
-                  {actionModal.message}
-                </p>
-                <button
-                  onClick={() =>
-                    setActionModal({ ...actionModal, show: false })
-                  }
-                  className="mt-4 px-6 py-2 bg-[#EF4444] text-white text-sm font-bold border-2 border-[#EF4444] hover:bg-[#EF4444]/90 transition-colors"
-                >
-                  Dismiss
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      <ActionModal
+        show={actionModal.show}
+        type={actionModal.type}
+        title={actionModal.title}
+        message={actionModal.message}
+        onClose={() => setActionModal({ ...actionModal, show: false })}
+      />
     </AppLayout>
   );
 }

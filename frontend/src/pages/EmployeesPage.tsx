@@ -26,7 +26,7 @@ import {
   ArrowRight,
   Calendar,
   FileText,
-  DollarSign,
+  IndianRupee,
   TrendingUp,
   UserCheck,
   Printer,
@@ -37,6 +37,7 @@ import {
   Shield,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { ActionModal } from "@/components/ui/ActionModal";
 
 const STATUS_COLORS: Record<string, string> = {
   active:
@@ -145,7 +146,9 @@ export default function EmployeesPage() {
     reason: "",
   });
   const [savingLoan, setSavingLoan] = useState(false);
-  const [txModal, setTxModal] = useState<"allowance" | "penalty" | "overtime" | null>(null);
+  const [txModal, setTxModal] = useState<
+    "allowance" | "penalty" | "overtime" | null
+  >(null);
   const [txForm, setTxForm] = useState({
     employee: "",
     amount: "",
@@ -181,15 +184,6 @@ export default function EmployeesPage() {
   useEffect(() => {
     load();
   }, [load]);
-
-  useEffect(() => {
-    if (actionModal.show && actionModal.type === "success") {
-      const timer = setTimeout(() => {
-        setActionModal({ ...actionModal, show: false });
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [actionModal.show, actionModal.type]);
 
   const openAdd = () => {
     setEditEmp(null);
@@ -326,13 +320,23 @@ export default function EmployeesPage() {
     reader.readAsDataURL(file);
   };
 
+  const totalSalary = employees.reduce(
+    (s, e) => s + ((e as any).salary ?? 0),
+    0,
+  );
+  const totalLoan = employees.reduce(
+    (s, e) => s + ((e as any).loanBalance ?? 0),
+    0,
+  );
+  const totalEstBalance = totalSalary - totalLoan;
+
   return (
     <AppLayout title="Employees">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-        <p className="text-sm font-medium text-muted-foreground">
-          {employees.length} total employees
-        </p>
+      {}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <h1 className="font-display font-black text-2xl text-black">
+          Employees
+        </h1>
         <button
           onClick={openAdd}
           className="border-2 border-black bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5 font-bold hover:bg-[#01368A] transition-colors"
@@ -341,7 +345,50 @@ export default function EmployeesPage() {
         </button>
       </div>
 
-      {/* Filters */}
+      {}
+      <div className="grid grid-cols-3 gap-3 mb-5">
+        <div className="border-2 border-black bg-white p-4 flex items-center gap-3">
+          <div className="w-10 h-10 bg-[#024BAB]/10 border-2 border-[#024BAB] flex items-center justify-center shrink-0">
+            <Users className="w-5 h-5 text-[#024BAB]" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              Total Employees
+            </p>
+            <p className="text-2xl font-black text-black">{employees.length}</p>
+          </div>
+        </div>
+        <div className="border-2 border-black bg-white p-4 flex items-center gap-3">
+          <div className="w-10 h-10 bg-[#00C48C]/10 border-2 border-[#00C48C] flex items-center justify-center shrink-0">
+            <IndianRupee className="w-5 h-5 text-[#00C48C]" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              Total Est. Balance
+            </p>
+            <p
+              className={`text-2xl font-black ${totalEstBalance < 0 ? "text-red-500" : "text-[#00C48C]"}`}
+            >
+              {formatCurrency(totalEstBalance)}
+            </p>
+          </div>
+        </div>
+        <div className="border-2 border-black bg-white p-4 flex items-center gap-3">
+          <div className="w-10 h-10 bg-[#EF4444]/10 border-2 border-[#EF4444] flex items-center justify-center shrink-0">
+            <Banknote className="w-5 h-5 text-[#EF4444]" />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              Total Loan Balance
+            </p>
+            <p className="text-2xl font-black text-[#EF4444]">
+              {formatCurrency(totalLoan)}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {}
       <div className="flex flex-wrap gap-2 mb-4">
         <div className="flex items-center gap-2 border-2 border-black bg-white px-3 py-2 flex-1 min-w-48">
           <Search className="w-4 h-4 shrink-0" />
@@ -389,7 +436,7 @@ export default function EmployeesPage() {
         )}
       </div>
 
-      {/* Table */}
+      {}
       {loading ? (
         <div className="flex items-center justify-center h-64">
           <div className="w-8 h-8 bg-[#024BAB] border-2 border-black animate-bounce" />
@@ -474,10 +521,22 @@ export default function EmployeesPage() {
                       const sal = (emp as any).salary ?? 0;
                       const loan = (emp as any).loanBalance ?? 0;
                       const bal = sal - loan;
-                      if (!sal) return <span className="text-muted-foreground">—</span>;
+                      if (!sal)
+                        return <span className="text-muted-foreground">—</span>;
                       return (
-                        <span className={bal < 0 ? "text-[#EF4444]" : bal < sal * 0.3 ? "text-amber-600" : "text-[#00C48C]"}>
-                          ₹{bal.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                        <span
+                          className={
+                            bal < 0
+                              ? "text-[#EF4444]"
+                              : bal < sal * 0.3
+                                ? "text-amber-600"
+                                : "text-[#00C48C]"
+                          }
+                        >
+                          ₹
+                          {bal.toLocaleString("en-IN", {
+                            maximumFractionDigits: 0,
+                          })}
                         </span>
                       );
                     })()}
@@ -539,11 +598,11 @@ export default function EmployeesPage() {
         </div>
       )}
 
-      {/* ── Add / Edit Modal (Tabbed) ── */}
+      {}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="border-2 border-black bg-white w-full max-w-3xl max-h-[95vh] flex flex-col">
-            {/* Modal header */}
+            {}
             <div className="flex items-center justify-between px-6 py-4 border-b-2 border-black bg-[#024BAB]">
               <div className="flex items-center gap-3">
                 {avatarPreview ? (
@@ -576,7 +635,7 @@ export default function EmployeesPage() {
               </button>
             </div>
 
-            {/* Tab bar */}
+            {}
             <div className="flex border-b-2 border-black">
               {FORM_TABS.map((tab, idx) => (
                 <button
@@ -605,16 +664,16 @@ export default function EmployeesPage() {
               ))}
             </div>
 
-            {/* Form body */}
+            {}
             <form
               onSubmit={handleSave}
               className="flex-1 overflow-y-auto flex flex-col"
             >
               <div className="p-6 flex-1">
-                {/* ── Tab 0: Basic Info ── */}
+                {}
                 {formTab === 0 && (
                   <div className="space-y-5">
-                    {/* Avatar */}
+                    {}
                     <div className="flex items-start gap-4 p-4 bg-[#F8FAFF] border-2 border-black">
                       <div className="relative shrink-0">
                         <div className="w-20 h-20 border-2 border-black overflow-hidden bg-[#024BAB] flex items-center justify-center">
@@ -757,7 +816,7 @@ export default function EmployeesPage() {
                       </div>
                     </div>
 
-                    {/* Gender */}
+                    {}
                     <div>
                       <label className="block text-xs font-bold text-black mb-2">
                         Gender
@@ -856,7 +915,7 @@ export default function EmployeesPage() {
                   </div>
                 )}
 
-                {/* ── Tab 1: Attendance ── */}
+                {}
                 {formTab === 1 && (
                   <div className="space-y-6">
                     <div>
@@ -951,7 +1010,7 @@ export default function EmployeesPage() {
                   </div>
                 )}
 
-                {/* ── Tab 2: Salary ── */}
+                {}
                 {formTab === 2 && (
                   <div className="space-y-6">
                     <div>
@@ -1059,7 +1118,7 @@ export default function EmployeesPage() {
                   </div>
                 )}
 
-                {/* ── Tab 3: Other Info ── */}
+                {}
                 {formTab === 3 && (
                   <div className="space-y-6">
                     <div>
@@ -1237,7 +1296,7 @@ export default function EmployeesPage() {
                 )}
               </div>
 
-              {/* Footer nav */}
+              {}
               <div className="flex items-center justify-between px-6 py-4 border-t-2 border-black bg-[#F8FAFF]">
                 <button
                   type="button"
@@ -1292,10 +1351,10 @@ export default function EmployeesPage() {
         </div>
       )}
 
-      {/* ── Employee Detail (Full Page Overlay) ── */}
+      {}
       {viewEmp && (
         <div className="fixed inset-0 z-50 bg-white overflow-y-auto">
-          {/* Sticky top bar */}
+          {}
           <div className="sticky top-0 bg-white border-b-2 border-black flex items-center justify-between px-6 py-3 z-10">
             <button
               onClick={() => setViewEmp(null)}
@@ -1327,7 +1386,7 @@ export default function EmployeesPage() {
           </div>
 
           <div className="max-w-4xl mx-auto p-6 space-y-4">
-            {/* Profile card */}
+            {}
             <div className="border-2 border-black bg-white p-5">
               <div className="flex items-start gap-5">
                 <div className="shrink-0">
@@ -1395,7 +1454,7 @@ export default function EmployeesPage() {
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-black">
-                      <DollarSign className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      <IndianRupee className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                       <span className="font-medium">
                         {formatCurrency(viewEmp.salary || 0)} / month
                       </span>
@@ -1415,7 +1474,7 @@ export default function EmployeesPage() {
               </div>
             </div>
 
-            {/* Stats row */}
+            {}
             <div className="grid grid-cols-3 gap-4">
               <div className="border-2 border-black bg-white p-4">
                 <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-2">
@@ -1462,7 +1521,7 @@ export default function EmployeesPage() {
               </div>
             </div>
 
-            {/* Action grid */}
+            {}
             <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
               {[
                 {
@@ -1555,7 +1614,7 @@ export default function EmployeesPage() {
                   },
                 },
                 {
-                  icon: DollarSign,
+                  icon: IndianRupee,
                   label: "Pay Salary",
                   color: "text-[#00C48C]",
                   action: () => navigate("/payroll"),
@@ -1612,7 +1671,7 @@ export default function EmployeesPage() {
               ))}
             </div>
 
-            {/* Detail sections */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="border-2 border-black bg-white">
                 <div className="flex items-center gap-2 px-4 py-3 border-b-2 border-black bg-[#024BAB]/5">
@@ -1694,7 +1753,7 @@ export default function EmployeesPage() {
         </div>
       )}
 
-      {/* Loan Entry Modal */}
+      {}
       {loanModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 border-black bg-white w-full max-w-md">
@@ -1806,63 +1865,32 @@ export default function EmployeesPage() {
         </div>
       )}
 
-      {/* Success/Error Modal */}
-      {actionModal.show && (
-        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
-          <div className="border-2 border-black bg-white w-full max-w-sm p-8 flex flex-col items-center justify-center text-center">
-            {actionModal.type === "success" ? (
-              <>
-                <div className="mb-4 animate-bounce">
-                  <CheckCircle className="w-16 h-16 text-[#00C48C]" />
-                </div>
-                <h2 className="text-2xl font-bold text-black mb-2">
-                  {actionModal.title}
-                </h2>
-                <p className="text-sm text-muted-foreground mb-6">
-                  {actionModal.message}
-                </p>
-                <div className="flex gap-2">
-                  <div className="w-2 h-2 bg-[#00C48C] rounded-full animate-pulse" />
-                  <div className="w-2 h-2 bg-[#00C48C] rounded-full animate-pulse delay-100" />
-                  <div className="w-2 h-2 bg-[#00C48C] rounded-full animate-pulse delay-200" />
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="mb-4 animate-bounce">
-                  <AlertCircle className="w-16 h-16 text-[#EF4444]" />
-                </div>
-                <h2 className="text-2xl font-bold text-black mb-2">
-                  {actionModal.title}
-                </h2>
-                <p className="text-sm text-muted-foreground mb-6">
-                  {actionModal.message}
-                </p>
-                <button
-                  onClick={() =>
-                    setActionModal({ ...actionModal, show: false })
-                  }
-                  className="mt-4 px-6 py-2 bg-[#EF4444] text-white text-sm font-bold border-2 border-black hover:bg-[#EF4444]/90"
-                >
-                  Dismiss
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-      {/* Allowance / Penalty / Overtime Modal */}
+      <ActionModal
+        show={actionModal.show}
+        type={actionModal.type}
+        title={actionModal.title}
+        message={actionModal.message}
+        onClose={() => setActionModal({ ...actionModal, show: false })}
+      />
+      {}
       {txModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 border-black bg-white w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
               <h3 className="font-bold text-lg flex items-center gap-2">
                 {txModal === "allowance" ? (
-                  <><TrendingUp className="w-5 h-5 text-[#024BAB]" /> Allowance / Bonus</>
+                  <>
+                    <TrendingUp className="w-5 h-5 text-[#024BAB]" /> Allowance
+                    / Bonus
+                  </>
                 ) : txModal === "overtime" ? (
-                  <><Clock className="w-5 h-5 text-[#F59E0B]" /> Overtime</>
+                  <>
+                    <Clock className="w-5 h-5 text-[#F59E0B]" /> Overtime
+                  </>
                 ) : (
-                  <><AlertCircle className="w-5 h-5 text-[#EF4444]" /> Penalty</>
+                  <>
+                    <AlertCircle className="w-5 h-5 text-[#EF4444]" /> Penalty
+                  </>
                 )}
               </h3>
               <button onClick={() => setTxModal(null)}>
@@ -1887,8 +1915,16 @@ export default function EmployeesPage() {
                   }
                   await transactionAPI.create(payload);
                   setTxModal(null);
-                  const label = txModal === "allowance" ? "Allowance/Bonus" : txModal === "overtime" ? "Overtime" : "Penalty";
-                  const detail = txModal === "overtime" ? `${txForm.hours} hrs` : `₹${txForm.amount}`;
+                  const label =
+                    txModal === "allowance"
+                      ? "Allowance/Bonus"
+                      : txModal === "overtime"
+                        ? "Overtime"
+                        : "Penalty";
+                  const detail =
+                    txModal === "overtime"
+                      ? `${txForm.hours} hrs`
+                      : `₹${txForm.amount}`;
                   setActionModal({
                     show: true,
                     type: "success",
@@ -1915,7 +1951,9 @@ export default function EmployeesPage() {
                   type="date"
                   required
                   value={txForm.date}
-                  onChange={(e) => setTxForm({ ...txForm, date: e.target.value })}
+                  onChange={(e) =>
+                    setTxForm({ ...txForm, date: e.target.value })
+                  }
                   className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white outline-none"
                 />
               </div>
@@ -1931,14 +1969,17 @@ export default function EmployeesPage() {
                       min="0.5"
                       step="0.5"
                       value={txForm.hours}
-                      onChange={(e) => setTxForm({ ...txForm, hours: e.target.value })}
+                      onChange={(e) =>
+                        setTxForm({ ...txForm, hours: e.target.value })
+                      }
                       className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white outline-none"
                       placeholder="e.g. 2.5"
                     />
                   </div>
                   {txForm.hours && parseFloat(txForm.hours) > 0 ? (
                     <div className="bg-amber-50 border-2 border-amber-400 px-3 py-2 text-sm font-bold text-amber-800">
-                      OT amount auto-calculated on payroll run: dailyRate ÷ shiftHours × {parseFloat(txForm.hours)}h
+                      OT amount auto-calculated on payroll run: dailyRate ÷
+                      shiftHours × {parseFloat(txForm.hours)}h
                     </div>
                   ) : null}
                 </>
@@ -1952,7 +1993,9 @@ export default function EmployeesPage() {
                     required
                     min="1"
                     value={txForm.amount}
-                    onChange={(e) => setTxForm({ ...txForm, amount: e.target.value })}
+                    onChange={(e) =>
+                      setTxForm({ ...txForm, amount: e.target.value })
+                    }
                     className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white outline-none"
                     placeholder="e.g. 500"
                   />
@@ -1960,17 +2003,25 @@ export default function EmployeesPage() {
               )}
               <div>
                 <label className="block text-xs font-black uppercase tracking-wider text-black mb-1">
-                  {txModal === "allowance" ? "Remark (TA, DA, Incentive, etc.)" : txModal === "overtime" ? "Remark" : "Reason"}
+                  {txModal === "allowance"
+                    ? "Remark (TA, DA, Incentive, etc.)"
+                    : txModal === "overtime"
+                      ? "Remark"
+                      : "Reason"}
                 </label>
                 <input
                   type="text"
                   value={txForm.remark}
-                  onChange={(e) => setTxForm({ ...txForm, remark: e.target.value })}
+                  onChange={(e) =>
+                    setTxForm({ ...txForm, remark: e.target.value })
+                  }
                   className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white outline-none"
                   placeholder={
-                    txModal === "allowance" ? "e.g. Travel allowance, Diwali bonus"
-                    : txModal === "overtime" ? "e.g. Project deadline"
-                    : "e.g. Late coming, misconduct"
+                    txModal === "allowance"
+                      ? "e.g. Travel allowance, Diwali bonus"
+                      : txModal === "overtime"
+                        ? "e.g. Project deadline"
+                        : "e.g. Late coming, misconduct"
                   }
                 />
               </div>
@@ -1979,12 +2030,20 @@ export default function EmployeesPage() {
                   type="submit"
                   disabled={savingTx}
                   className={`flex-1 text-white border-2 border-black py-2.5 text-sm font-bold disabled:opacity-50 ${
-                    txModal === "allowance" ? "bg-[#024BAB]"
-                    : txModal === "overtime" ? "bg-[#F59E0B]"
-                    : "bg-[#EF4444]"
+                    txModal === "allowance"
+                      ? "bg-[#024BAB]"
+                      : txModal === "overtime"
+                        ? "bg-[#F59E0B]"
+                        : "bg-[#EF4444]"
                   }`}
                 >
-                  {savingTx ? "Saving..." : txModal === "allowance" ? "Add Allowance" : txModal === "overtime" ? "Add Overtime" : "Add Penalty"}
+                  {savingTx
+                    ? "Saving..."
+                    : txModal === "allowance"
+                      ? "Add Allowance"
+                      : txModal === "overtime"
+                        ? "Add Overtime"
+                        : "Add Penalty"}
                 </button>
                 <button
                   type="button"

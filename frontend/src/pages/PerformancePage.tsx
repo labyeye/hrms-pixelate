@@ -102,7 +102,7 @@ export default function PerformancePage() {
         </button>
       </div>
 
-      {/* Summary */}
+      {}
       <div className="grid grid-cols-3 gap-3 mb-5">
         {[
           {

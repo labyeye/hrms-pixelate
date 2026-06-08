@@ -62,7 +62,7 @@ export function AppSidebar({ mobileOpen, onClose }: AppSidebarProps) {
           </button>
         </div>
 
-        {/* Nav */}
+        {}
         <nav className="flex-1 py-3 px-2 overflow-y-auto space-y-4">
           {groups.map((group) => (
             <div key={group.label}>
@@ -100,7 +100,7 @@ export function AppSidebar({ mobileOpen, onClose }: AppSidebarProps) {
           ))}
         </nav>
 
-        {/* User info */}
+        {}
         <div
           className={cn(
             "border-t-2 border-black px-3 py-3 shrink-0",
@@ -137,7 +137,7 @@ export function AppSidebar({ mobileOpen, onClose }: AppSidebarProps) {
           </button>
         </div>
 
-        {/* Collapse toggle */}
+        {}
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="hidden lg:flex absolute -right-4 top-20 w-7 h-7 bg-[#024BAB] border-2 border-black items-center justify-center hover:bg-[#024BAB]/80 transition-colors"

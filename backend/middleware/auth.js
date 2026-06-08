@@ -49,7 +49,6 @@ const protectCompany = asyncHandler(async (req, res, next) => {
   }
 });
 
-// Guard: ensure req.user exists and has one of the required roles
 const authorize =
   (...roles) =>
   (req, res, next) => {

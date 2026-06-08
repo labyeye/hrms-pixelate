@@ -12,19 +12,15 @@ const {
   checkOutMsg,
 } = require("../services/whatsappService");
 
-// ─── ADMS Command helpers ─────────────────────────────────────────────────────
-
-// Build the raw ADMS userinfo command string for an employee
 function buildSetUserCmd(employee) {
   const uid = employee.biometricUserId;
-  // Strip control characters (tabs, newlines, etc.) that would break the protocol,
-  // then trim and fall back to biometricUserId so Name= is never blank on the device.
+
   const rawName = `${employee.firstName || ""} ${employee.lastName || ""}`;
   const name = (
     rawName.replace(/[\x00-\x1F\x7F]/g, " ").trim() || `User-${uid}`
   ).slice(0, 24);
   const card = (employee.rfidCard || "").replace(/[\x00-\x1F\x7F]/g, "");
-  // Fields are tab-separated; trailing tab required
+
   return `DATA UPDATE USERINFO PIN=${uid}\tName=${name}\tPri=0\tPasswd=\tCard=${card}\tGrp=1\tTZ=1\tVerify=0\t`;
 }
 
@@ -34,8 +30,6 @@ async function nextCmdId(deviceId) {
     .select("cmdId");
   return (last?.cmdId || 0) + 1;
 }
-
-// ─── Locations ────────────────────────────────────────────────────────────────
 
 const getLocations = asyncHandler(async (req, res) => {
   const locations = await BiometricLocation.find({
@@ -93,8 +87,6 @@ const deleteLocation = asyncHandler(async (req, res) => {
   await location.deleteOne();
   res.json({ success: true, message: "Location deleted" });
 });
-
-// ─── Devices ──────────────────────────────────────────────────────────────────
 
 const getDevices = asyncHandler(async (req, res) => {
   const devices = await BiometricDevice.find({ company: req.user.company })
@@ -180,8 +172,6 @@ const regenerateDeviceToken = asyncHandler(async (req, res) => {
   });
 });
 
-// ─── NFC Cards ────────────────────────────────────────────────────────────────
-
 const assignNfcCard = asyncHandler(async (req, res) => {
   const { uid, employeeId, label } = req.body;
   if (!uid || !employeeId) {
@@ -207,7 +197,6 @@ const assignNfcCard = asyncHandler(async (req, res) => {
     throw new Error("Employee not found");
   }
 
-  // Check if UID already assigned on ANY device in this company
   const existingDevice = await BiometricDevice.findOne({
     company: req.user.company,
     "nfcCards.uid": uid,
@@ -242,8 +231,6 @@ const removeNfcCard = asyncHandler(async (req, res) => {
   res.json({ success: true, data: device });
 });
 
-// ─── Device Registration (hardware device / agent calls this once) ───────────
-
 const registerDevice = asyncHandler(async (req, res) => {
   const { activationCode, model, mac, ip } = req.body;
   if (!activationCode) {
@@ -261,7 +248,6 @@ const registerDevice = asyncHandler(async (req, res) => {
     throw new Error("Invalid activation code");
   }
 
-  // Mark activated and store device metadata
   device.activated = true;
   device.activatedAt = new Date();
   device.lastSeenAt = new Date();
@@ -281,8 +267,6 @@ const registerDevice = asyncHandler(async (req, res) => {
   });
 });
 
-// ─── Device Public Endpoint (no user auth — uses device token) ────────────────
-
 const getDeviceInfo = asyncHandler(async (req, res) => {
   const device = await BiometricDevice.findOne({
     deviceToken: req.params.token,
@@ -296,7 +280,7 @@ const getDeviceInfo = asyncHandler(async (req, res) => {
   }
   device.lastSeenAt = new Date();
   await device.save();
-  // Only expose NFC UIDs needed for matching — do NOT expose employee names/IDs to the device
+
   res.json({
     success: true,
     data: {
@@ -310,7 +294,6 @@ const getDeviceInfo = asyncHandler(async (req, res) => {
 
 const recordBiometric = asyncHandler(async (req, res) => {
   const { deviceToken, method, nfcUid, employeeId, type } = req.body;
-  // type: check_in | check_out
 
   const device = await BiometricDevice.findOne({
     deviceToken,
@@ -358,16 +341,13 @@ const recordBiometric = asyncHandler(async (req, res) => {
   const today = new Date(now);
   today.setHours(0, 0, 0, 0);
 
-  // Check if today is a company holiday
   const holiday = await isHolidayDate(device.company, today);
 
-  // Find the last biometric log for this employee today
   const lastTodayLog = await BiometricLog.findOne({
     employee: employee._id,
     timestamp: { $gte: today },
   }).sort({ timestamp: -1 });
 
-  // Once checked out for the day, lock — no further DB updates regardless of punches
   if (lastTodayLog?.type === "check_out") {
     return res.json({
       success: true,
@@ -385,13 +365,11 @@ const recordBiometric = asyncHandler(async (req, res) => {
     });
   }
 
-  // Determine log type: toggle from last punch, or use explicitly provided type
   let logType = type;
   if (!logType) {
     logType = lastTodayLog?.type === "check_in" ? "check_out" : "check_in";
   }
 
-  // Duplicate check-in guard: if already checked in and another check_in arrives, ignore
   if (logType === "check_in" && lastTodayLog?.type === "check_in") {
     return res.json({
       success: true,
@@ -409,7 +387,6 @@ const recordBiometric = asyncHandler(async (req, res) => {
     });
   }
 
-  // Update attendance — mark as holiday if applicable
   const attendanceUpdate = {
     employee: employee._id,
     date: today,
@@ -495,8 +472,6 @@ const recordBiometric = asyncHandler(async (req, res) => {
   });
 });
 
-// ─── Logs ─────────────────────────────────────────────────────────────────────
-
 const getLogs = asyncHandler(async (req, res) => {
   const { safePagination } = require("../middleware/validate");
   const { page, limit, skip } = safePagination(req.query, 50, 200);
@@ -534,10 +509,6 @@ const getLogs = asyncHandler(async (req, res) => {
   });
 });
 
-// ─── Device serial number registration ───────────────────────────────────────
-
-// PUT /api/biometric/devices/:id/serial  { serialNumber: "AB12345678" }
-// Called once by admin after adding the device record — links the ADMS SN to DB
 const setDeviceSerial = asyncHandler(async (req, res) => {
   const { serialNumber } = req.body;
   if (!serialNumber) {
@@ -552,7 +523,7 @@ const setDeviceSerial = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Device not found");
   }
-  // Ensure no other device in ANY company uses this SN
+
   const conflict = await BiometricDevice.findOne({
     serialNumber,
     _id: { $ne: device._id },
@@ -566,10 +537,6 @@ const setDeviceSerial = asyncHandler(async (req, res) => {
   res.json({ success: true, data: device });
 });
 
-// ─── Sync employee → device via ADMS command queue ───────────────────────────
-
-// POST /api/biometric/devices/:id/sync-employee
-// Body: { employeeId, rfidCard }  (rfidCard optional — scanned via USB reader)
 const syncEmployeeToDevice = asyncHandler(async (req, res) => {
   const { employeeId, rfidCard } = req.body;
   if (!employeeId) {
@@ -603,13 +570,11 @@ const syncEmployeeToDevice = asyncHandler(async (req, res) => {
     throw new Error("Employee has no Biometric User ID — set it first");
   }
 
-  // Persist RFID on employee if provided
   if (rfidCard !== undefined) {
     employee.rfidCard = rfidCard.trim();
     await employee.save();
   }
 
-  // Cancel any existing pending SET_USER command for this employee on this device
   await BiometricCommand.deleteMany({
     device: device._id,
     employee: employee._id,
@@ -634,8 +599,6 @@ const syncEmployeeToDevice = asyncHandler(async (req, res) => {
   });
 });
 
-// POST /api/biometric/devices/:id/sync-all
-// Queues SET_USER commands for every active employee with a biometricUserId
 const syncAllToDevice = asyncHandler(async (req, res) => {
   const device = await BiometricDevice.findOne({
     _id: req.params.id,
@@ -656,7 +619,6 @@ const syncAllToDevice = asyncHandler(async (req, res) => {
     status: { $ne: "terminated" },
   });
 
-  // Cancel all pending SET_USER for this device
   await BiometricCommand.deleteMany({
     device: device._id,
     type: "SET_USER",
@@ -682,8 +644,6 @@ const syncAllToDevice = asyncHandler(async (req, res) => {
   });
 });
 
-// DELETE /api/biometric/devices/:id/sync-employee/:employeeId
-// Queues a DELETE USER command
 const removeEmployeeFromDevice = asyncHandler(async (req, res) => {
   const device = await BiometricDevice.findOne({
     _id: req.params.id,
@@ -716,7 +676,6 @@ const removeEmployeeFromDevice = asyncHandler(async (req, res) => {
   res.json({ success: true, message: "Delete command queued" });
 });
 
-// GET /api/biometric/devices/:id/commands — list recent commands + status
 const getDeviceCommands = asyncHandler(async (req, res) => {
   const device = await BiometricDevice.findOne({
     _id: req.params.id,
@@ -735,8 +694,6 @@ const getDeviceCommands = asyncHandler(async (req, res) => {
   res.json({ success: true, data: cmds });
 });
 
-// POST /api/biometric/employees/:id/rfid  { rfidCard: "scanned-value" }
-// Saves RFID card scanned via USB reader (no device needed)
 const saveRfidCard = asyncHandler(async (req, res) => {
   const { rfidCard } = req.body;
   if (!rfidCard) {
@@ -753,7 +710,6 @@ const saveRfidCard = asyncHandler(async (req, res) => {
     throw new Error("Employee not found");
   }
 
-  // Ensure unique within company
   const conflict = await Employee.findOne({
     company: req.user.company,
     rfidCard: rfidCard.trim(),
@@ -776,9 +732,6 @@ const saveRfidCard = asyncHandler(async (req, res) => {
   });
 });
 
-// ─── Face Recognition (PC webcam) ────────────────────────────────────────────
-
-// POST /api/biometric/employees/:id/face  { descriptor: number[] }
 const saveFaceDescriptor = asyncHandler(async (req, res) => {
   const { descriptor } = req.body;
   if (!Array.isArray(descriptor) || descriptor.length !== 128) {
@@ -801,8 +754,6 @@ const saveFaceDescriptor = asyncHandler(async (req, res) => {
   res.json({ success: true, message: "Face descriptor saved" });
 });
 
-// GET /api/biometric/face-descriptors
-// Returns all employees' face descriptors for client-side matching (no raw images)
 const getFaceDescriptors = asyncHandler(async (req, res) => {
   const employees = await Employee.find({
     company: req.user.company,
@@ -820,8 +771,6 @@ const getFaceDescriptors = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
-// POST /api/biometric/face-attendance  { descriptor: number[], deviceToken }
-// Called from browser — matches face against all employees, marks attendance
 const faceAttendance = asyncHandler(async (req, res) => {
   const { descriptor, deviceToken } = req.body;
   if (!Array.isArray(descriptor) || descriptor.length !== 128) {
@@ -829,10 +778,6 @@ const faceAttendance = asyncHandler(async (req, res) => {
     throw new Error("Invalid face descriptor");
   }
 
-  // Face matching happens client-side before this call —
-  // client sends the matched employee ID as confirmation
-  // But we still verify by fetching all descriptors and re-matching server-side
-  // using euclidean distance (threshold 0.5)
   const employees = await Employee.find({
     faceDescriptor: { $exists: true, $not: { $size: 0 } },
     status: { $ne: "terminated" },
@@ -844,7 +789,7 @@ const faceAttendance = asyncHandler(async (req, res) => {
 
   for (const emp of employees) {
     const stored = emp.faceDescriptor;
-    // Euclidean distance between two 128-float vectors
+
     let dist = 0;
     for (let i = 0; i < 128; i++) {
       const d = (descriptor[i] || 0) - (stored[i] || 0);
@@ -864,7 +809,6 @@ const faceAttendance = asyncHandler(async (req, res) => {
     );
   }
 
-  // Mark attendance for the matched employee
   const now = new Date();
   const today = new Date(now);
   today.setHours(0, 0, 0, 0);
@@ -874,7 +818,6 @@ const faceAttendance = asyncHandler(async (req, res) => {
     timestamp: { $gte: today },
   }).sort({ timestamp: -1 });
 
-  // Lock after checkout — no further updates for the day
   if (lastTodayLogFace?.type === "check_out") {
     return res.json({
       success: true,
@@ -894,7 +837,6 @@ const faceAttendance = asyncHandler(async (req, res) => {
   const logType =
     lastTodayLogFace?.type === "check_in" ? "check_out" : "check_in";
 
-  // Duplicate check-in guard
   if (logType === "check_in" && lastTodayLogFace?.type === "check_in") {
     return res.json({
       success: true,
@@ -936,7 +878,6 @@ const faceAttendance = asyncHandler(async (req, res) => {
     { upsert: true, new: true },
   );
 
-  // Device lookup for log (optional — face attendance may not have a device)
   let device = null;
   if (deviceToken) {
     device = await BiometricDevice.findOne({ deviceToken, isActive: true });
@@ -969,10 +910,6 @@ const faceAttendance = asyncHandler(async (req, res) => {
   });
 });
 
-// ─── Face enrollment trigger via ADMS command (physical eSSL/ZKTeco device) ──
-
-// POST /api/biometric/devices/:id/enroll-face
-// Queues ENROLL_FACE command so the device enters face-capture mode for the employee
 const triggerFaceEnroll = asyncHandler(async (req, res) => {
   const { employeeId } = req.body;
   if (!employeeId) {
@@ -1006,8 +943,6 @@ const triggerFaceEnroll = asyncHandler(async (req, res) => {
 
   const cmdId = await nextCmdId(device._id);
 
-  // eSSL / ZKTeco ADMS face enrollment command.
-  // Device enters face-capture mode for the given PIN and shows "Enroll Face" on screen.
   await BiometricCommand.create({
     device: device._id,
     company: device.company,
@@ -1024,10 +959,6 @@ const triggerFaceEnroll = asyncHandler(async (req, res) => {
   });
 });
 
-// ─── Device-based face enrollment (no user auth — device token) ──────────────
-
-// GET /api/biometric/device/:token/employees
-// Returns all active company employees so the kiosk can show a selection list
 const getDeviceEmployees = asyncHandler(async (req, res) => {
   const { token } = req.params;
   const device = await BiometricDevice.findOne({
@@ -1059,8 +990,6 @@ const getDeviceEmployees = asyncHandler(async (req, res) => {
   });
 });
 
-// POST /api/biometric/device-face-enroll
-// { deviceToken, employeeId, descriptor }
 const enrollFaceFromDevice = asyncHandler(async (req, res) => {
   const { deviceToken, employeeId, descriptor } = req.body;
 
@@ -1098,10 +1027,6 @@ const enrollFaceFromDevice = asyncHandler(async (req, res) => {
   });
 });
 
-// ─── Fingerprint enrollment trigger (via ADMS command queue) ─────────────────
-
-// POST /api/biometric/devices/:id/enroll-fingerprint
-// Body: { employeeId, fingerIndex }  fingerIndex 0-9 (0=right thumb)
 const triggerFingerprintEnroll = asyncHandler(async (req, res) => {
   const { employeeId, fingerIndex = 0 } = req.body;
   if (!employeeId) {
@@ -1133,8 +1058,6 @@ const triggerFingerprintEnroll = asyncHandler(async (req, res) => {
 
   const cmdId = await nextCmdId(device._id);
 
-  // ADMS fingerprint enrollment command:
-  // Sends device into enroll mode for the specified PIN and finger slot
   await BiometricCommand.create({
     device: device._id,
     company: device.company,

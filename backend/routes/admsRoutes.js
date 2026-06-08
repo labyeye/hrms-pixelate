@@ -1,30 +1,9 @@
-/**
- * ADMS push protocol handler for ESSL / ZKTeco devices (MB-20, MB-160, etc.)
- *
- * Device configuration on the MB-20:
- *   Server Mode    : ADMS
- *   Enable Domain  : ON
- *   Server Address : hrms-backend.pixelatenest.com
- *   Port           : 443
- *
- * Flow:
- *   1. Device heartbeat   → GET  /iclock/cdata?SN=<serial>
- *   2. Device push logs   → POST /iclock/cdata?SN=<serial>&table=ATTLOG
- *   3. Device poll cmds   → GET  /iclock/getrequest?SN=<serial>
- *   4. Device cmd result  → POST /iclock/devicecmd?SN=<serial>&ID=<cmdId>
- *
- * Multi-tenant: SN is matched to BiometricDevice.serialNumber → device.company
- * is the tenant. All attendance records are scoped to that company.
- */
-
 const express = require("express");
 const router = express.Router();
 const Employee = require("../models/Employee");
 const Attendance = require("../models/Attendance");
 const BiometricDevice = require("../models/BiometricDevice");
 const BiometricCommand = require("../models/BiometricCommand");
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
 
 function pad(n) {
   return String(n).padStart(2, "0");
@@ -35,8 +14,6 @@ function serverTimeStr() {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 }
 
-// Parse tab-separated ATTLOG pushed by device
-// Format per line: USERID\tDATETIME\tSTATUS\tVERIFYTYPE\tWORKCODE\tSNO
 function parseAttLog(raw) {
   return raw
     .trim()
@@ -46,25 +23,21 @@ function parseAttLog(raw) {
       const cols = line.split("\t");
       return {
         userId: cols[0]?.trim(),
-        datetime: cols[1]?.trim(), // "YYYY-MM-DD HH:MM:SS"
-        // 0=check-in  1=check-out  4=break-out  5=break-in
+        datetime: cols[1]?.trim(),
+
         punchState: parseInt(cols[2]?.trim() || "0", 10),
-        verifyType: parseInt(cols[3]?.trim() || "1", 10), // 1=finger 4=pwd 15=face
+        verifyType: parseInt(cols[3]?.trim() || "1", 10),
       };
     })
     .filter((r) => r.userId && r.datetime);
 }
 
-// Upsert attendance for the day.
-// Strategy: first punch of the day = checkIn, any later punch = checkOut.
-// We intentionally ignore punchState because most ZKTeco MB-series devices
-// send ALL punches as punchState=0 regardless of check-in vs check-out.
 function mapVerifyMode(verifyType) {
   if (verifyType === 1) return "fingerprint";
   if (verifyType === 4 || verifyType === 6) return "card";
   if (verifyType === 7 || verifyType === 15) return "face";
   if (verifyType === 0 || verifyType === 3) return "password";
-  return "fingerprint"; // default for unknown types from device
+  return "fingerprint";
 }
 
 async function processLog(
@@ -83,17 +56,13 @@ async function processLog(
     return;
   }
 
-  // Device sends local IST time without timezone info (e.g. "2026-06-07 00:41:05").
-  // Append +05:30 so the stored UTC value is correct and the browser can display IST.
   const punchTime = new Date(datetime.replace(" ", "T") + "+05:30");
   if (isNaN(punchTime.getTime())) {
     console.log(`[ADMS] Invalid datetime for userId=${userId}: "${datetime}"`);
     return;
   }
 
-  // dayStart: store as UTC midnight of the IST date string reported by the device.
-  // Using the date portion directly avoids UTC/IST boundary issues with the month filter.
-  const datePart = datetime.split(" ")[0]; // "YYYY-MM-DD"
+  const datePart = datetime.split(" ")[0];
   const dayStart = new Date(datePart + "T00:00:00.000Z");
 
   console.log(
@@ -108,7 +77,6 @@ async function processLog(
   const verifyMode = mapVerifyMode(verifyType);
 
   if (!existing) {
-    // First punch of the day → always check-in
     await Attendance.create({
       employee: employee._id,
       date: dayStart,
@@ -122,7 +90,6 @@ async function processLog(
     return;
   }
 
-  // Once checkOut is recorded, the day is locked — ignore any further device pushes
   if (existing.checkOut) {
     console.log(
       `[ADMS] Attendance locked (already checked out) for ${employee.firstName} ${employee.lastName}`,
@@ -133,11 +100,9 @@ async function processLog(
   const upd = {};
 
   if (!existing.checkIn || punchTime < existing.checkIn) {
-    // Earlier punch → shift checkIn earlier
     upd.checkIn = punchTime;
     upd.verifyMode = verifyMode;
   } else if (punchTime > existing.checkIn) {
-    // Later punch → set checkOut (first time only, since we returned above if already set)
     upd.checkOut = punchTime;
   }
 
@@ -155,13 +120,11 @@ async function processLog(
   }
 }
 
-// Resolve BiometricDevice + company from serial number
 async function resolveDevice(sn) {
   if (!sn) return null;
   return BiometricDevice.findOne({ serialNumber: sn, isActive: true });
 }
 
-// ── GET /iclock/cdata(.aspx) — heartbeat ──────────────────────────────────────
 router.get(["/cdata", "/cdata.aspx"], async (req, res) => {
   const { SN } = req.query;
   res.set("Content-Type", "text/plain");
@@ -198,7 +161,6 @@ router.get(["/cdata", "/cdata.aspx"], async (req, res) => {
   );
 });
 
-// ── POST /iclock/cdata(.aspx) — device pushes attendance logs ─────────────────
 router.post(
   ["/cdata", "/cdata.aspx"],
   express.text({ type: "*/*" }),
@@ -211,7 +173,6 @@ router.post(
     const body = req.body;
     if (!body || typeof body !== "string") return res.send("OK");
 
-    // Stamp from query string — device sends its current record count
     const stamp = parseInt(req.query.Stamp || "0", 10) || 0;
 
     try {
@@ -224,7 +185,6 @@ router.post(
       console.log(`[ADMS] Parsed logs:`, JSON.stringify(logs));
       await Promise.allSettled(logs.map((log) => processLog(log, companyId)));
 
-      // Save stamp so heartbeat returns ATTLOGStamp=N — device won't re-send old records
       if (device && stamp > (device.attlogStamp || 0)) {
         device.attlogStamp = stamp;
         device.lastSeenAt = new Date();
@@ -234,12 +194,11 @@ router.post(
       res.send(`OK: ${stamp}`);
     } catch (err) {
       console.error("[ADMS] cdata POST error:", err.message);
-      res.send("OK"); // always ACK — device retries on error response
+      res.send("OK");
     }
   },
 );
 
-// ── GET /iclock/getrequest(.aspx) — device polls for pending commands ─────────
 router.get(["/getrequest", "/getrequest.aspx"], async (req, res) => {
   const { SN } = req.query;
   res.set("Content-Type", "text/plain");
@@ -248,7 +207,6 @@ router.get(["/getrequest", "/getrequest.aspx"], async (req, res) => {
     const device = await resolveDevice(SN);
     if (!device) return res.send("OK");
 
-    // Fetch next pending command for this device
     const cmd = await BiometricCommand.findOneAndUpdate(
       { device: device._id, status: "pending" },
       { $set: { status: "sent", sentAt: new Date() } },
@@ -257,7 +215,6 @@ router.get(["/getrequest", "/getrequest.aspx"], async (req, res) => {
 
     if (!cmd) return res.send("OK");
 
-    // ADMS command format: C:{id}:{command}\n
     res.send(`C:${cmd.cmdId}:${cmd.command}\n`);
   } catch (err) {
     console.error("[ADMS] getrequest error:", err.message);
@@ -265,7 +222,6 @@ router.get(["/getrequest", "/getrequest.aspx"], async (req, res) => {
   }
 });
 
-// ── POST /iclock/devicecmd(.aspx) — device reports command result ─────────────
 router.post(
   ["/devicecmd", "/devicecmd.aspx"],
   express.text({ type: "*/*" }),
@@ -277,7 +233,6 @@ router.post(
       if (ID) {
         const device = await resolveDevice(SN);
         if (device) {
-          // Parse return code from body: "Return=0&CMD=DATA UPDATE USERINFO"
           const body = req.body || "";
           const returnMatch = body.match(/Return=(\d+)/);
           const returnCode = returnMatch ? returnMatch[1] : "0";

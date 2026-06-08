@@ -46,7 +46,6 @@ const createDepartment = asyncHandler(async (req, res) => {
     throw new Error("Department code is required (max 20 chars)");
   }
 
-  // Per-company uniqueness check
   const existing = await Department.findOne({
     company: req.user.company,
     code: code.trim().toUpperCase(),

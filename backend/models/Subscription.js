@@ -7,7 +7,7 @@ const subscriptionSchema = new mongoose.Schema(
       ref: "Company",
       required: true,
     },
-    plan: { type: String, required: true }, // "starter" | "professional" | "enterprise"
+    plan: { type: String, required: true },
     monthlyPrice: { type: Number, required: true },
     yearlyPrice: { type: Number, required: true },
     maxEmployees: { type: Number, required: true },

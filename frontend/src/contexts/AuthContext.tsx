@@ -71,7 +71,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const token = getToken();
       if (token) {
         try {
-          // Always fetch fresh user data from server — never store user object in localStorage
           const res = await authAPI.getMe();
           setUser(mapUser(res.data));
         } catch (err: any) {

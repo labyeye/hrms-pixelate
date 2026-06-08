@@ -25,11 +25,11 @@ const biometricDeviceSchema = new mongoose.Schema(
       required: true,
     },
     name: { type: String, required: true, trim: true },
-    // Serial number the ESSL/ZKTeco device sends in ADMS requests (SN= query param)
+
     serialNumber: { type: String, default: "", index: true },
-    // Long-lived secret used by device for all API calls
+
     deviceToken: { type: String, unique: true },
-    // Short code shown to admin — hardware device/agent calls /register once with this
+
     activationCode: { type: String, unique: true, sparse: true },
     activated: { type: Boolean, default: false },
     activatedAt: { type: Date },
@@ -41,7 +41,7 @@ const biometricDeviceSchema = new mongoose.Schema(
     nfcCards: [nfcCardSchema],
     isActive: { type: Boolean, default: true },
     lastSeenAt: { type: Date },
-    attlogStamp: { type: Number, default: 0 }, // last ATTLOG Stamp ACK'd — device only sends newer records
+    attlogStamp: { type: Number, default: 0 },
   },
   { timestamps: true },
 );
@@ -51,7 +51,6 @@ biometricDeviceSchema.pre("save", function (next) {
     this.deviceToken = crypto.randomBytes(32).toString("hex");
   }
   if (!this.activationCode) {
-    // 8-char uppercase alphanumeric — easy to type into a device web panel
     this.activationCode = crypto.randomBytes(4).toString("hex").toUpperCase();
   }
   next();

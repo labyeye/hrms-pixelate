@@ -164,7 +164,7 @@ export default function EmployeePayrollPage() {
           </div>
         </div>
 
-        {/* Summary cards */}
+        {}
         {payrolls.length > 0 && (
           <div className="grid grid-cols-3 gap-3 mb-6">
             {[
@@ -228,7 +228,7 @@ export default function EmployeePayrollPage() {
                 key={p._id}
                 className="bg-white border-2 border-black flex items-center justify-between px-5 py-4 gap-4"
               >
-                {/* Month */}
+                {}
                 <div className="flex items-center gap-3 min-w-[130px]">
                   <div className="w-10 h-10 bg-[#024BAB] border-2 border-black flex flex-col items-center justify-center shrink-0">
                     <span className="text-[9px] font-black text-white uppercase leading-none">
@@ -246,14 +246,14 @@ export default function EmployeePayrollPage() {
                   </div>
                 </div>
 
-                {/* Attendance */}
+                {}
                 <div className="hidden sm:flex items-center gap-1 text-xs text-gray-600">
                   <Clock className="w-3.5 h-3.5 text-gray-400" />
                   <span className="font-bold">{p.presentDays}</span>
                   <span className="text-gray-400">/ {p.workingDays} days</span>
                 </div>
 
-                {/* Financials */}
+                {}
                 <div className="flex gap-6 items-center">
                   <div className="text-center hidden md:block">
                     <p className="text-[10px] font-black uppercase text-gray-400">
@@ -281,7 +281,7 @@ export default function EmployeePayrollPage() {
                   </div>
                 </div>
 
-                {/* Download */}
+                {}
                 <button
                   onClick={() => handlePrint(p)}
                   className="flex items-center gap-1.5 border-2 border-black px-3 py-2 text-xs font-black hover:bg-[#024BAB] hover:text-white transition-colors shrink-0"

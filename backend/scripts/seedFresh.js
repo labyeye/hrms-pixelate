@@ -1,17 +1,7 @@
-/**
- * Fresh Seed Script
- * - Wipes all MongoDB collections
- * - Creates plans: Starter (₹50/emp, 10 emp), Professional (₹100/emp, 20 emp), Enterprise (₹200/emp, unlimited)
- * - Creates one test company with Enterprise plan (₹200/emp/month)
- * - Creates super_admin who bought the subscription + hr_manager + hr_executive + employees
- * - Seeds departments, attendance, leaves, payroll, performance, recruitment
- */
-
 require("dotenv").config();
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
-// Models
 const Company = require("../models/Company");
 const User = require("../models/User");
 const Plan = require("../models/Plan");
@@ -26,8 +16,6 @@ const Recruitment = require("../models/Recruitment");
 
 const connectDB = require("../config/db");
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
-
 function addDays(date, n) {
   const d = new Date(date);
   d.setDate(d.getDate() + n);
@@ -40,12 +28,9 @@ function dateOnly(date) {
   return d;
 }
 
-// ─── main ─────────────────────────────────────────────────────────────────────
-
 async function seed() {
   await connectDB();
 
-  // ── 1. Wipe everything ─────────────────────────────────────────────────────
   console.log("🗑  Dropping all collections...");
   const models = [
     Recruitment,
@@ -65,15 +50,14 @@ async function seed() {
   }
   console.log("✅ All collections cleared.\n");
 
-  // ── 2. Plans ───────────────────────────────────────────────────────────────
   console.log("📦 Creating plans...");
   const [starterPlan, professionalPlan, enterprisePlan] = await Plan.insertMany(
     [
       {
         name: "Starter",
         planType: "starter",
-        monthlyPrice: 50, // ₹50 per employee per month
-        yearlyPrice: 500, // ₹500 per employee per year (saves ~17%)
+        monthlyPrice: 50,
+        yearlyPrice: 500,
         maxEmployees: 10,
         description:
           "For small teams up to 10 employees. ₹50 per employee/month (₹500/month total).",
@@ -87,8 +71,8 @@ async function seed() {
       {
         name: "Professional",
         planType: "professional",
-        monthlyPrice: 100, // ₹100 per employee per month
-        yearlyPrice: 1000, // ₹1000 per employee per year
+        monthlyPrice: 100,
+        yearlyPrice: 1000,
         maxEmployees: 20,
         description:
           "For growing teams up to 20 employees. ₹100 per employee/month (₹2000/month total).",
@@ -103,8 +87,8 @@ async function seed() {
       {
         name: "Enterprise",
         planType: "enterprise",
-        monthlyPrice: 200, // ₹200 per employee per month
-        yearlyPrice: 2000, // ₹2000 per employee per year
+        monthlyPrice: 200,
+        yearlyPrice: 2000,
         maxEmployees: 9999,
         description:
           "For large organisations. ₹200 per employee/month (unlimited employees).",
@@ -123,13 +107,12 @@ async function seed() {
     `✅ Plans created: Starter (₹50/emp), Professional (₹100/emp), Enterprise (₹200/emp)\n`,
   );
 
-  // ── 3. Company ─────────────────────────────────────────────────────────────
   console.log("🏢 Creating test company...");
   const companyRaw = new Company({
     name: "Pixelate Technologies Pvt Ltd",
     email: "admin@pixelate.tech",
     phone: "9876543210",
-    password: "Company@123", // will be hashed by pre-save hook
+    password: "Company@123",
     industry: "Information Technology",
     website: "https://pixelate.tech",
     address: "101, Tech Park, Whitefield",
@@ -142,7 +125,6 @@ async function seed() {
   const company = await companyRaw.save();
   console.log(`✅ Company: ${company.name} (${company._id})\n`);
 
-  // ── 4. Super Admin user (the subscription buyer) ───────────────────────────
   console.log("👤 Creating super_admin...");
   const superAdmin = await User.create({
     name: "Rajan Mehta",
@@ -156,20 +138,19 @@ async function seed() {
   });
   console.log(`✅ super_admin: ${superAdmin.email} / password: Admin@1234\n`);
 
-  // ── 5. Subscription (Enterprise, ₹200/emp/month, 10 employees → ₹2000/month) ──
   console.log("💳 Creating subscription...");
   const today = new Date();
   const renewal = new Date(today);
   renewal.setMonth(renewal.getMonth() + 1);
 
-  const employeeCount = 10; // company will have 10 employees
-  const amountPaid = enterprisePlan.monthlyPrice * employeeCount; // 200 * 10 = 2000
+  const employeeCount = 10;
+  const amountPaid = enterprisePlan.monthlyPrice * employeeCount;
 
   const subscription = await Subscription.create({
     company: company._id,
     plan: "enterprise",
-    monthlyPrice: enterprisePlan.monthlyPrice, // 200 per employee
-    yearlyPrice: enterprisePlan.yearlyPrice, // 2000 per employee
+    monthlyPrice: enterprisePlan.monthlyPrice,
+    yearlyPrice: enterprisePlan.yearlyPrice,
     maxEmployees: enterprisePlan.maxEmployees,
     billingCycle: "monthly",
     currentEmployeeCount: employeeCount,
@@ -179,11 +160,10 @@ async function seed() {
     autoRenew: true,
     paymentStatus: "completed",
     paymentMethod: "razorpay",
-    amountPaid: amountPaid, // ₹2000 charged this month
+    amountPaid: amountPaid,
     notes: `Enterprise plan @ ₹${enterprisePlan.monthlyPrice}/employee × ${employeeCount} employees = ₹${amountPaid}/month`,
   });
 
-  // Link subscription back to company
   company.subscription = subscription._id;
   company.createdBy = superAdmin._id;
   await company.save();
@@ -191,7 +171,6 @@ async function seed() {
     `✅ Subscription: Enterprise plan, ₹${enterprisePlan.monthlyPrice}/emp × ${employeeCount} emp = ₹${amountPaid}/month\n`,
   );
 
-  // ── 6. Departments ─────────────────────────────────────────────────────────
   console.log("🏗  Creating departments...");
   const [deptEng, deptHR, deptSales, deptFinance] = await Department.insertMany(
     [
@@ -227,7 +206,6 @@ async function seed() {
   );
   console.log(`✅ Departments: Engineering, Human Resources, Sales, Finance\n`);
 
-  // ── 7. HR Manager user ─────────────────────────────────────────────────────
   console.log("👤 Creating hr_manager...");
   const hrManager = await User.create({
     name: "Priya Sharma",
@@ -241,7 +219,6 @@ async function seed() {
     employeeId: "EMP-002",
   });
 
-  // ── 8. HR Executive user ───────────────────────────────────────────────────
   console.log("👤 Creating hr_executive...");
   const hrExec = await User.create({
     name: "Ankit Verma",
@@ -257,7 +234,6 @@ async function seed() {
   console.log(`✅ hr_manager: hrmanager@pixelate.tech / HrManager@1234`);
   console.log(`✅ hr_executive: hrexecutive@pixelate.tech / HrExec@1234\n`);
 
-  // ── 9. Employee users (7 employees, total = 10 with admin+hrm+hrx) ─────────
   console.log("👥 Creating employee users...");
   const employeeData = [
     {
@@ -329,11 +305,9 @@ async function seed() {
   }
   console.log(`✅ 7 employee users created (password: Employee@1234)\n`);
 
-  // ── 10. Employee records ───────────────────────────────────────────────────
   console.log("📋 Creating Employee records...");
   const joinBase = new Date("2024-01-01");
 
-  // HR Manager employee record
   const hrManagerEmp = await Employee.create({
     user: hrManager._id,
     employeeId: "EMP-002",
@@ -353,7 +327,6 @@ async function seed() {
     ifscCode: "SBIN0001234",
   });
 
-  // HR Executive employee record
   const hrExecEmp = await Employee.create({
     user: hrExec._id,
     employeeId: "EMP-003",
@@ -374,7 +347,6 @@ async function seed() {
     ifscCode: "SBIN0001235",
   });
 
-  // Remaining employees
   const empRecords = [];
   const firstNames = [
     "Siddharth",
@@ -428,7 +400,6 @@ async function seed() {
     empRecords.push(rec);
   }
 
-  // Set department heads
   deptHR.head = hrManager._id;
   deptHR.headcount = 2;
   await deptHR.save();
@@ -443,7 +414,6 @@ async function seed() {
   const allEmpRecords = [hrManagerEmp, hrExecEmp, ...empRecords];
   console.log(`✅ ${allEmpRecords.length} Employee records created\n`);
 
-  // ── 11. Attendance (last 60 days for all employees) ────────────────────────
   console.log("📅 Seeding attendance (60 days)...");
   const attendanceStatuses = [
     "present",
@@ -507,7 +477,6 @@ async function seed() {
   await Attendance.insertMany(attendanceDocs);
   console.log(`✅ ${attendanceDocs.length} attendance records seeded\n`);
 
-  // ── 12. Leave requests ─────────────────────────────────────────────────────
   console.log("🏖  Seeding leave requests...");
   const leaveTypes = ["casual", "sick", "earned"];
   const leaveStatuses = ["approved", "approved", "pending", "rejected"];
@@ -534,7 +503,6 @@ async function seed() {
   await Leave.insertMany(leaveDocs);
   console.log(`✅ ${leaveDocs.length} leave records seeded\n`);
 
-  // ── 13. Payroll (last 3 months) ────────────────────────────────────────────
   console.log("💰 Seeding payroll (3 months)...");
   const payrollDocs = [];
   const nowDate = new Date();
@@ -545,7 +513,6 @@ async function seed() {
       const month = d.getMonth() + 1;
       const year = d.getFullYear();
 
-      // Find the salary from createdUsers or fixed for HR
       let basicSalary = 45000;
       const matchedUser = createdUsers.find(
         (cu) => cu.user._id.toString() === emp.user.toString(),
@@ -592,7 +559,6 @@ async function seed() {
   await Payroll.insertMany(payrollDocs);
   console.log(`✅ ${payrollDocs.length} payroll records seeded\n`);
 
-  // ── 14. Performance reviews ────────────────────────────────────────────────
   console.log("⭐ Seeding performance reviews...");
   const perfDocs = [];
   for (let i = 0; i < Math.min(5, allEmpRecords.length); i++) {
@@ -632,7 +598,6 @@ async function seed() {
   await Performance.insertMany(perfDocs);
   console.log(`✅ ${perfDocs.length} performance reviews seeded\n`);
 
-  // ── 15. Recruitment postings ───────────────────────────────────────────────
   console.log("📢 Seeding recruitment postings...");
   await Recruitment.insertMany([
     {
@@ -718,7 +683,6 @@ async function seed() {
   ]);
   console.log(`✅ 3 recruitment postings seeded\n`);
 
-  // ── Summary ────────────────────────────────────────────────────────────────
   console.log(
     "═══════════════════════════════════════════════════════════════",
   );

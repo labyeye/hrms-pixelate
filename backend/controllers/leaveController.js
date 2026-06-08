@@ -25,7 +25,6 @@ const getLeaves = asyncHandler(async (req, res) => {
   const { page, limit, skip } = safePagination(req.query);
   const { status, employeeId, leaveType, year, department } = req.query;
 
-  // If the requesting user is an employee, scope to only their own leave records
   if (req.user.role === "employee") {
     const selfEmp = await Employee.findOne({ user: req.user._id }).select(
       "_id",
@@ -63,7 +62,6 @@ const getLeaves = asyncHandler(async (req, res) => {
     });
   }
 
-  // Company scope via employee list
   const companyEmployees = await Employee.find({
     company: req.user.company,
   }).select("_id");
@@ -133,7 +131,6 @@ const createLeave = asyncHandler(async (req, res) => {
     halfDayType,
   } = req.body;
 
-  // Employees can only apply leave for themselves
   let emp;
   if (req.user.role === "employee") {
     emp = await Employee.findOne({ user: req.user._id });
@@ -143,7 +140,6 @@ const createLeave = asyncHandler(async (req, res) => {
     }
     employee = emp._id;
   } else {
-    // Validate employee belongs to this company
     emp = await Employee.findOne({
       _id: employee,
       company: req.user.company,
@@ -154,7 +150,6 @@ const createLeave = asyncHandler(async (req, res) => {
     }
   }
 
-  // Validate required fields
   if (!leaveType || !LEAVE_TYPES.includes(leaveType)) {
     res.status(400);
     throw new Error("Invalid leave type");
@@ -179,7 +174,6 @@ const createLeave = asyncHandler(async (req, res) => {
     throw new Error("Invalid days value");
   }
 
-  // Overlap check — reject if approved/pending leave already covers these dates
   const overlap = await Leave.findOne({
     employee,
     status: { $in: ["pending", "approved"] },
@@ -205,7 +199,6 @@ const createLeave = asyncHandler(async (req, res) => {
     halfDayType: isHalfDay ? halfDayType : undefined,
   });
 
-  // Notify HR managers via WhatsApp
   try {
     const hrUsers = await User.find({
       company: req.user.company,

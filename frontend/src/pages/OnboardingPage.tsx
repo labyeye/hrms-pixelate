@@ -154,7 +154,6 @@ export default function OnboardingPage() {
     }
   }, [user?.company, user?.subscription?.status, navigate]);
 
-  // Auto-select plan based on employee count
   useEffect(() => {
     if (!employeeCount) return;
     const count = Number(employeeCount);
@@ -237,7 +236,7 @@ export default function OnboardingPage() {
       const { paymentUrl } = res.data;
       if (!paymentUrl)
         throw new Error("Payment URL not received. Please try again.");
-      // Full-page redirect to HDFC SmartGateway
+
       window.location.href = paymentUrl;
     } catch (err: any) {
       toast({
@@ -258,7 +257,7 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen bg-[#F0F6FF]">
-      {/* Header */}
+      {}
       <header className="bg-white border-b-2 border-black sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -281,7 +280,7 @@ export default function OnboardingPage() {
       <main className="max-w-4xl mx-auto px-6 py-10">
         <StepIndicator current={step} />
 
-        {/* ── STEP 1: Company Details ──────────────────────────────────── */}
+        {}
         {step === "company" && (
           <div>
             <div className="text-center mb-8">
@@ -303,7 +302,7 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* ── STEP 2: Employee Count ───────────────────────────────────── */}
+        {}
         {step === "employees" && (
           <div>
             <div className="text-center mb-8">

@@ -104,7 +104,7 @@ export function FaceEnrollModal({ employee, onClose, onSaved }: Props) {
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
       <div className="border-2 w-full max-w-lg bg-white">
-        {/* Header */}
+        {}
         <div className="px-6 py-4 border-b-2 border-black flex items-center justify-between">
           <div>
             <h2 className="font-display font-black text-base flex items-center gap-2">
@@ -126,7 +126,7 @@ export function FaceEnrollModal({ employee, onClose, onSaved }: Props) {
         </div>
 
         <div className="p-6 space-y-4">
-          {/* Model loading notice */}
+          {}
           {loadState === "loading" && (
             <div className="flex items-center gap-3 bg-blue-50 border-2 border-blue-300 p-3">
               <Loader2 className="w-4 h-4 animate-spin text-blue-600 shrink-0" />
@@ -136,7 +136,7 @@ export function FaceEnrollModal({ employee, onClose, onSaved }: Props) {
             </div>
           )}
 
-          {/* Existing face warning */}
+          {}
           {employee.faceDescriptor &&
             employee.faceDescriptor.length === 128 &&
             step === "setup" && (
@@ -148,7 +148,7 @@ export function FaceEnrollModal({ employee, onClose, onSaved }: Props) {
               </div>
             )}
 
-          {/* Camera view — always mounted so videoRef is available before step changes to "capture" */}
+          {}
           <div
             className={cn(
               "relative bg-black aspect-video overflow-hidden border-2 border-black",
@@ -168,7 +168,7 @@ export function FaceEnrollModal({ employee, onClose, onSaved }: Props) {
               ref={canvasRef}
               className="absolute inset-0 w-full h-full"
             />
-            {/* Face detection indicator */}
+            {}
             <div
               className={cn(
                 "absolute top-3 right-3 px-2 py-1 text-[10px] font-black uppercase border",
@@ -181,7 +181,7 @@ export function FaceEnrollModal({ employee, onClose, onSaved }: Props) {
             </div>
           </div>
 
-          {/* Preview after capture */}
+          {}
           {capturedDescriptor && step !== "saving" && step !== "done" && (
             <div className="bg-green-50 border-2 border-green-400 p-4 text-center">
               <Check className="w-10 h-10 text-green-600 mx-auto mb-2" />
@@ -194,7 +194,7 @@ export function FaceEnrollModal({ employee, onClose, onSaved }: Props) {
             </div>
           )}
 
-          {/* Done state */}
+          {}
           {step === "done" && (
             <div className="bg-green-50 border-2 border-green-400 p-6 text-center">
               <Check className="w-12 h-12 text-green-600 mx-auto mb-2" />
@@ -208,7 +208,7 @@ export function FaceEnrollModal({ employee, onClose, onSaved }: Props) {
             </div>
           )}
 
-          {/* Error */}
+          {}
           {error && (
             <div className="flex items-start gap-2 bg-red-50 border-2 border-red-300 p-3">
               <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
@@ -216,7 +216,7 @@ export function FaceEnrollModal({ employee, onClose, onSaved }: Props) {
             </div>
           )}
 
-          {/* Instructions */}
+          {}
           {step === "setup" && (
             <div className="space-y-2 text-sm text-gray-600">
               <p className="font-bold text-black">How it works:</p>
@@ -236,7 +236,7 @@ export function FaceEnrollModal({ employee, onClose, onSaved }: Props) {
             </div>
           )}
 
-          {/* Action buttons */}
+          {}
           <div className="flex gap-3 pt-2">
             {step === "setup" && (
               <button

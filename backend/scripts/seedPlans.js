@@ -7,7 +7,6 @@ connectDB();
 
 const seedPlans = async () => {
   try {
-    // Clear existing plans
     await Plan.deleteMany({});
 
     const plans = [
@@ -15,7 +14,7 @@ const seedPlans = async () => {
         name: "Starter",
         planType: "starter",
         monthlyPrice: 50,
-        yearlyPrice: 500, // 16.67% discount (₹6 per month)
+        yearlyPrice: 500,
         maxEmployees: 10,
         features: [
           "Up to 10 employees",
@@ -32,7 +31,7 @@ const seedPlans = async () => {
         name: "Professional",
         planType: "professional",
         monthlyPrice: 100,
-        yearlyPrice: 1000, // 16.67% discount (₹16.67 per month)
+        yearlyPrice: 1000,
         maxEmployees: 20,
         features: [
           "Up to 20 employees",
@@ -51,8 +50,8 @@ const seedPlans = async () => {
         name: "Enterprise",
         planType: "enterprise",
         monthlyPrice: 200,
-        yearlyPrice: 2000, // 16.67% discount (₹33.33 per month)
-        maxEmployees: 999999, // Unlimited
+        yearlyPrice: 2000,
+        maxEmployees: 999999,
         features: [
           "Unlimited employees",
           "Full HR Management Suite",

@@ -41,7 +41,6 @@ async function seedDemoData() {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("✅ Connected to MongoDB");
 
-    // Wipe existing demo data
     const existingUser = await User.findOne({ email: "demo@nesthr.com" });
     if (existingUser) {
       const existingCompany = await Company.findOne({
@@ -67,7 +66,6 @@ async function seedDemoData() {
       console.log("🗑️  Cleared existing demo data");
     }
 
-    // Seed Plans (upsert so re-runs don't duplicate)
     await Plan.deleteMany({});
     await Plan.insertMany([
       {
@@ -125,7 +123,6 @@ async function seedDemoData() {
     ]);
     console.log("✅ Plans seeded (3)");
 
-    // Create Admin User
     const adminUser = await User.create({
       name: "Rajesh Kumar",
       email: "demo@nesthr.com",
@@ -136,7 +133,6 @@ async function seedDemoData() {
     });
     console.log("✅ Admin user created:", adminUser.name);
 
-    // Create Company
     const company = await Company.create({
       name: "TechVision Solutions Pvt. Ltd.",
       email: "hr@techvision.com",
@@ -179,7 +175,6 @@ async function seedDemoData() {
     });
     await User.findByIdAndUpdate(adminUser._id, { company: company._id });
 
-    // Seed 3 months of invoice history
     const now2 = new Date();
     for (let m = 2; m >= 0; m--) {
       const invoiceDate = new Date(now2.getFullYear(), now2.getMonth() - m, 1);
@@ -198,7 +193,6 @@ async function seedDemoData() {
     }
     console.log("✅ Invoices seeded (3)");
 
-    // Create Departments
     const deptHR = await Department.create({
       company: company._id,
       name: "Human Resources",
@@ -237,7 +231,6 @@ async function seedDemoData() {
     });
     console.log("✅ Departments created (4)");
 
-    // Employee data — index 0 is the demo/admin user themselves
     const employeesData = [
       {
         firstName: "Rajesh",
@@ -404,14 +397,12 @@ async function seedDemoData() {
       },
     ];
 
-    // Create Employee records
     const employees = [];
     for (const empData of employeesData) {
       const { isAdminUser, ...rest } = empData;
       const employeeId = `EMP${String(employees.length + 1001)}`;
       const userId = isAdminUser ? adminUser._id : adminUser._id;
 
-      // For non-admin employees, create a separate User account
       let empUserId = adminUser._id;
       if (!isAdminUser) {
         let empUser = await User.findOne({ email: empData.email });
@@ -443,17 +434,15 @@ async function seedDemoData() {
       currentEmployeeCount: employees.length,
     });
 
-    // ─── ATTENDANCE (last 60 days for all employees) ────────────────────────
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const attendanceRecords = [];
     for (const emp of employees) {
       for (let d = 60; d >= 0; d--) {
         const date = daysAgo(d);
-        const dow = date.getDay(); // 0=Sun,6=Sat
-        if (dow === 0 || dow === 6) continue; // skip weekends
+        const dow = date.getDay();
+        if (dow === 0 || dow === 6) continue;
 
-        // Occasionally absent or late
         const roll = Math.random();
         let status = "present";
         let checkIn = null;
@@ -487,7 +476,6 @@ async function seedDemoData() {
     await Attendance.insertMany(attendanceRecords);
     console.log(`✅ Attendance records created (${attendanceRecords.length})`);
 
-    // ─── LEAVES ─────────────────────────────────────────────────────────────
     const leaveData = [
       {
         empIdx: 0,
@@ -591,7 +579,6 @@ async function seedDemoData() {
     }
     console.log(`✅ Leave records created (${leaveData.length})`);
 
-    // ─── PAYROLL (last 4 months for all employees) ──────────────────────────
     const now = new Date();
     for (const emp of employees) {
       for (let m = 3; m >= 0; m--) {
@@ -644,7 +631,6 @@ async function seedDemoData() {
       `✅ Payroll records created (${employees.length * 4} records, 4 months)`,
     );
 
-    // ─── RECRUITMENT ─────────────────────────────────────────────────────────
     await Recruitment.insertMany([
       {
         title: "Senior React Developer",
@@ -750,7 +736,6 @@ async function seedDemoData() {
     ]);
     console.log("✅ Recruitment postings created (3)");
 
-    // ─── PERFORMANCE ─────────────────────────────────────────────────────────
     const perfData = [
       {
         empIdx: 0,

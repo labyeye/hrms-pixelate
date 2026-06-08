@@ -8,7 +8,6 @@ const getAttendance = asyncHandler(async (req, res) => {
   const { page, limit, skip } = safePagination(req.query, 50, 200);
   const { month, year, employeeId, department } = req.query;
 
-  // If the requesting user is an employee, scope to only their own records
   if (req.user.role === "employee") {
     const selfEmp = await Employee.findOne({ user: req.user._id }).select(
       "_id",
@@ -40,7 +39,6 @@ const getAttendance = asyncHandler(async (req, res) => {
     });
   }
 
-  // Company-scope: only employees belonging to this company
   const companyEmployees = await Employee.find({
     company: req.user.company,
   }).select("_id");
@@ -49,7 +47,6 @@ const getAttendance = asyncHandler(async (req, res) => {
   const filter = { employee: { $in: companyEmpIds } };
 
   if (employeeId) {
-    // Ensure the requested employee belongs to this company
     if (!companyEmpIds.some((id) => id.toString() === employeeId)) {
       return res.json({ success: true, data: [], total: 0 });
     }
@@ -95,7 +92,6 @@ const getAttendance = asyncHandler(async (req, res) => {
 const markAttendance = asyncHandler(async (req, res) => {
   const { employee, date, status, checkIn, checkOut, notes } = req.body;
 
-  // Verify employee belongs to this company
   const emp = await Employee.findOne({
     _id: employee,
     company: req.user.company,
@@ -154,7 +150,6 @@ const bulkMarkAttendance = asyncHandler(async (req, res) => {
 
   const holiday = await isHolidayDate(req.user.company, d);
 
-  // Verify all employee IDs belong to this company
   const companyEmployees = await Employee.find({
     company: req.user.company,
   }).select("_id");
@@ -200,7 +195,6 @@ const getMonthSummary = asyncHandler(async (req, res) => {
   const start = new Date(y, m - 1, 1);
   const end = new Date(y, m, 0);
 
-  // Company-scoped aggregate
   const companyEmployees = await Employee.find({
     company: req.user.company,
   }).select("_id");

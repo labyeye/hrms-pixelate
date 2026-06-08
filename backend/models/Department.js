@@ -10,8 +10,8 @@ const departmentSchema = new mongoose.Schema(
     headcount: { type: Number, default: 0 },
     budget: { type: Number, default: 0 },
     status: { type: String, enum: ["active", "inactive"], default: "active" },
-    shiftStartTime: { type: String }, // "HH:MM" e.g. "09:00"
-    shiftEndTime: { type: String }, // "HH:MM" e.g. "18:00"
+    shiftStartTime: { type: String },
+    shiftEndTime: { type: String },
   },
   { timestamps: true },
 );

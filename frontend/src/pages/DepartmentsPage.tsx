@@ -4,6 +4,7 @@ import { departmentAPI } from "@/services/api";
 import { Department } from "@/types/hrms";
 import { cn } from "@/lib/utils";
 import { Plus, Building2, Users, Edit, X } from "lucide-react";
+import { ActionModal } from "@/components/ui/ActionModal";
 
 const DEPT_BG_COLORS = [
   "bg-[#024BAB]",
@@ -40,6 +41,12 @@ export default function DepartmentsPage() {
   const [editDept, setEditDept] = useState<Department | null>(null);
   const [form, setForm] = useState<DeptForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [actionModal, setActionModal] = useState<{
+    show: boolean;
+    type: "success" | "error";
+    title: string;
+    message: string;
+  }>({ show: false, type: "success", title: "", message: "" });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -86,10 +93,23 @@ export default function DepartmentsPage() {
           ...form,
           budget: Number(form.budget) || 0,
         });
+      setActionModal({
+        show: true,
+        type: "success",
+        title: editDept ? "Department Updated" : "Department Created",
+        message: editDept
+          ? "Department updated successfully."
+          : "New department added successfully.",
+      });
       setShowModal(false);
       load();
     } catch (err: any) {
-      alert(err.message);
+      setActionModal({
+        show: true,
+        type: "error",
+        title: "Error",
+        message: err.message || "Failed to save department.",
+      });
     }
     setSaving(false);
   };
@@ -369,6 +389,14 @@ export default function DepartmentsPage() {
           </div>
         </div>
       )}
+
+      <ActionModal
+        show={actionModal.show}
+        type={actionModal.type}
+        title={actionModal.title}
+        message={actionModal.message}
+        onClose={() => setActionModal({ ...actionModal, show: false })}
+      />
     </AppLayout>
   );
 }

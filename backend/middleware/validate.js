@@ -1,15 +1,11 @@
-// Input validation middleware — no external packages required
-
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^[+\d\s\-().]{7,20}$/;
 const MONGO_ID_RE = /^[a-f\d]{24}$/i;
 
-// Escape special regex chars to prevent ReDoS / NoSQL regex injection
 function escapeRegex(str) {
   return String(str).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-// Safe pagination — cap limit, ensure positive integers
 function safePagination(query, defaultLimit = 20, maxLimit = 100) {
   const page = Math.max(1, parseInt(query.page) || 1);
   const limit = Math.min(
@@ -19,7 +15,6 @@ function safePagination(query, defaultLimit = 20, maxLimit = 100) {
   return { page, limit, skip: (page - 1) * limit };
 }
 
-// Validate a single value against a rule object
 function checkField(value, rule, fieldName, errors) {
   const isEmpty = value === undefined || value === null || value === "";
 
@@ -27,7 +22,7 @@ function checkField(value, rule, fieldName, errors) {
     errors.push(`${fieldName} is required`);
     return;
   }
-  if (isEmpty) return; // optional field absent — skip further checks
+  if (isEmpty) return;
 
   const str = String(value);
 
@@ -63,7 +58,6 @@ function checkField(value, rule, fieldName, errors) {
     errors.push(`${fieldName} format is invalid`);
 }
 
-// Middleware factory — pass a schema object { fieldName: ruleObject }
 function validateBody(schema) {
   return (req, res, next) => {
     const errors = [];
@@ -78,7 +72,6 @@ function validateBody(schema) {
   };
 }
 
-// Validate query params (same logic, different source)
 function validateQuery(schema) {
   return (req, res, next) => {
     const errors = [];
@@ -93,7 +86,6 @@ function validateQuery(schema) {
   };
 }
 
-// Validate MongoDB ObjectId params
 function validateMongoId(...paramNames) {
   return (req, res, next) => {
     for (const name of paramNames) {

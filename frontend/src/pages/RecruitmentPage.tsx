@@ -161,7 +161,7 @@ export default function RecruitmentPage() {
         <div className="space-y-3">
           {jobs.map((job) => (
             <div key={job._id} className="border-2 bg-white overflow-hidden">
-              {/* Job header */}
+              {}
               <div
                 className="p-4 flex items-start justify-between gap-3 cursor-pointer"
                 onClick={() =>
@@ -239,7 +239,7 @@ export default function RecruitmentPage() {
                 </div>
               </div>
 
-              {/* Candidates */}
+              {}
               {expandedJob === job._id && job.candidates.length > 0 && (
                 <div className="border-t-2 border-black p-4">
                   <h4 className="font-bold text-sm text-black mb-3">
@@ -321,7 +321,7 @@ export default function RecruitmentPage() {
         </div>
       )}
 
-      {/* Post Job Modal */}
+      {}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto">
@@ -472,7 +472,7 @@ export default function RecruitmentPage() {
         </div>
       )}
 
-      {/* Add Candidate Modal */}
+      {}
       {candidateModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 bg-white w-full max-w-sm">

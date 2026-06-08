@@ -230,7 +230,7 @@ export default function DashboardPage() {
 
   return (
     <AppLayout title="Dashboard">
-      {/* Header */}
+      {}
       <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
         <div>
           <h2 className="font-display font-bold text-2xl text-black">

@@ -48,14 +48,11 @@ export default function EmployeeCredentialsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      // For HR Manager: only see their department's employees
-      // For Super Admin / HR Manager with admin role: see all company employees
       const params: Record<string, string> = { status: "active" };
       if (search) params.search = search;
 
       const res = await employeeAPI.getAll(params);
       if (res.success) {
-        // All employees for now - company filtering can be done on backend
         setEmployees(res.data);
       }
     } catch {}
@@ -64,11 +61,10 @@ export default function EmployeeCredentialsPage() {
 
   useEffect(() => {
     load();
-    // Fetch manager/admin credentials
+
     fetchManagerCredentials();
   }, [load]);
 
-  // Auto-close success modal after 2 seconds
   useEffect(() => {
     if (actionModal.show && actionModal.type === "success") {
       const timer = setTimeout(() => {
@@ -80,7 +76,6 @@ export default function EmployeeCredentialsPage() {
 
   const fetchManagerCredentials = async () => {
     try {
-      // Show current logged-in user (manager/admin) credentials info
       if (user?.email) {
         setManagerCredentials({
           name: user.name,
@@ -107,7 +102,6 @@ export default function EmployeeCredentialsPage() {
       const res = await employeeAPI.resetPassword(selectedEmp._id, newPassword);
 
       if (res.success) {
-        // Copy credentials to clipboard
         await navigator.clipboard.writeText(
           `Email: ${selectedEmp.email}\nPassword: ${newPassword}`,
         );
@@ -173,7 +167,6 @@ export default function EmployeeCredentialsPage() {
       );
 
       if (res.success) {
-        // Copy credentials to clipboard
         await navigator.clipboard.writeText(
           `Email: ${createFormData.selectedEmployee.email}\nPassword: ${createFormData.password}`,
         );
@@ -222,13 +215,11 @@ export default function EmployeeCredentialsPage() {
 
     setUpdating(true);
     try {
-      // Call backend API to update manager password
       const res = await authAPI.updateProfile({
         password: managerPassword,
       });
 
       if (res.success) {
-        // Copy credentials to clipboard
         await navigator.clipboard.writeText(
           `Email: ${user?.email}\nPassword: ${managerPassword}`,
         );
@@ -265,7 +256,7 @@ export default function EmployeeCredentialsPage() {
 
   return (
     <AppLayout title="Employee Credentials">
-      {/* Header */}
+      {}
       <div className="flex items-center justify-between mb-5">
         <div>
           <h1 className="text-3xl font-display font-bold text-black">
@@ -278,7 +269,7 @@ export default function EmployeeCredentialsPage() {
         </div>
       </div>
 
-      {/* Search */}
+      {}
       <div className="flex items-center gap-2 border-2 border-black bg-white px-3 py-2 mb-5">
         <Search className="w-4 h-4 shrink-0" />
         <input
@@ -290,7 +281,7 @@ export default function EmployeeCredentialsPage() {
         />
       </div>
 
-      {/* Company Info Card */}
+      {}
       <div className=" bg-white p-4 mb-5 border-2 border-[#024BAB] bg-[#024BAB]/5">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-[#024BAB] border-2 border-black flex items-center justify-center">
@@ -307,7 +298,7 @@ export default function EmployeeCredentialsPage() {
         </div>
       </div>
 
-      {/* Manager/Admin Credentials Card */}
+      {}
       {managerCredentials && (
         <div className=" bg-white p-4 mb-5 border-2 border-[#00C48C] bg-[#00C48C]/5">
           <div className="flex items-start justify-between">
@@ -340,7 +331,7 @@ export default function EmployeeCredentialsPage() {
         </div>
       )}
 
-      {/* Table */}
+      {}
       {loading ? (
         <div className="flex items-center justify-center h-64">
           <div className="w-8 h-8 bg-[#024BAB] border-2 border-black animate-bounce" />
@@ -429,7 +420,7 @@ export default function EmployeeCredentialsPage() {
         </div>
       )}
 
-      {/* Reset Password Modal */}
+      {}
       {showModal && selectedEmp && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 bg-white w-full max-w-md">
@@ -447,7 +438,7 @@ export default function EmployeeCredentialsPage() {
             </div>
 
             <div className="p-5 space-y-4">
-              {/* Employee Info */}
+              {}
               <div className="p-3 bg-[#024BAB]/5 border-2 border-[#024BAB]">
                 <p className="text-xs font-bold text-muted-foreground uppercase mb-2">
                   Employee
@@ -460,7 +451,7 @@ export default function EmployeeCredentialsPage() {
                 </p>
               </div>
 
-              {/* Password Input */}
+              {}
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-black uppercase tracking-wider">
                   New Password
@@ -496,7 +487,7 @@ export default function EmployeeCredentialsPage() {
                 </button>
               </div>
 
-              {/* Info Box */}
+              {}
               <div className="p-3 bg-[#FFD60A]/10 border-2 border-[#FFD60A]">
                 <p className="text-xs font-bold text-[#FFD60A] mb-1">
                   ℹ️ Share Securely
@@ -507,7 +498,7 @@ export default function EmployeeCredentialsPage() {
                 </p>
               </div>
 
-              {/* Buttons */}
+              {}
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={handleResetPassword}
@@ -542,7 +533,7 @@ export default function EmployeeCredentialsPage() {
         </div>
       )}
 
-      {/* Create New Credential Modal */}
+      {}
       {showCreateForm && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 bg-white w-full max-w-md max-h-[90vh] overflow-y-auto">
@@ -561,7 +552,7 @@ export default function EmployeeCredentialsPage() {
             </div>
 
             <div className="p-5 space-y-4">
-              {/* Employee Selection */}
+              {}
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-black uppercase tracking-wider">
                   Select Employee
@@ -588,7 +579,7 @@ export default function EmployeeCredentialsPage() {
                 </select>
               </div>
 
-              {/* Selected Employee Info */}
+              {}
               {createFormData.selectedEmployee && (
                 <div className="p-3 bg-[#024BAB]/5 border-2 border-[#024BAB]">
                   <p className="text-xs font-bold text-muted-foreground uppercase mb-2">
@@ -604,7 +595,7 @@ export default function EmployeeCredentialsPage() {
                 </div>
               )}
 
-              {/* Password Input */}
+              {}
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-black uppercase tracking-wider">
                   Password
@@ -655,7 +646,7 @@ export default function EmployeeCredentialsPage() {
                 </button>
               </div>
 
-              {/* Info Box */}
+              {}
               <div className="p-3 bg-[#FFD60A]/10 border-2 border-[#FFD60A]">
                 <p className="text-xs font-bold text-[#FFD60A] mb-1">
                   ℹ️ New Credential
@@ -666,7 +657,7 @@ export default function EmployeeCredentialsPage() {
                 </p>
               </div>
 
-              {/* Buttons */}
+              {}
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={handleCreateCredential}
@@ -704,7 +695,7 @@ export default function EmployeeCredentialsPage() {
         </div>
       )}
 
-      {/* Edit Manager Account Modal */}
+      {}
       {showEditManagerForm && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 bg-white w-full max-w-md">
@@ -723,7 +714,7 @@ export default function EmployeeCredentialsPage() {
             </div>
 
             <div className="p-5 space-y-4">
-              {/* Account Info */}
+              {}
               <div className="p-3 bg-[#00C48C]/5 border-2 border-[#00C48C]">
                 <p className="text-xs font-bold text-muted-foreground uppercase mb-2">
                   Your Account
@@ -735,7 +726,7 @@ export default function EmployeeCredentialsPage() {
                 </p>
               </div>
 
-              {/* Password Input */}
+              {}
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-black uppercase tracking-wider">
                   New Password
@@ -781,7 +772,7 @@ export default function EmployeeCredentialsPage() {
                 </button>
               </div>
 
-              {/* Info Box */}
+              {}
               <div className="p-3 bg-[#FFD60A]/10 border-2 border-[#FFD60A]">
                 <p className="text-xs font-bold text-[#FFD60A] mb-1">
                   ℹ️ Update Your Password
@@ -792,7 +783,7 @@ export default function EmployeeCredentialsPage() {
                 </p>
               </div>
 
-              {/* Buttons */}
+              {}
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={handleEditManagerAccount}
@@ -826,7 +817,7 @@ export default function EmployeeCredentialsPage() {
         </div>
       )}
 
-      {/* Success/Error Animation Modal */}
+      {}
       {actionModal.show && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 bg-white w-full max-w-sm p-8 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-300">

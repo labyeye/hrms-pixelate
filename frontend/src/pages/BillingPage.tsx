@@ -27,7 +27,6 @@ declare global {
   }
 }
 
-// Fallback plan UI config keyed by planType
 const PLAN_COLORS: Record<string, string> = {
   starter: "#00C48C",
   professional: "#FA731C",
@@ -47,7 +46,9 @@ export default function BillingPage() {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [upgrading, setUpgrading] = useState<string | null>(null);
-  const [gatewayModal, setGatewayModal] = useState<{ planId: string } | null>(null);
+  const [gatewayModal, setGatewayModal] = useState<{ planId: string } | null>(
+    null,
+  );
 
   useEffect(() => {
     Promise.all([
@@ -72,7 +73,6 @@ export default function BillingPage() {
   const sub = subscription || user?.company?.subscription;
   const currentPlanId = sub?.plan || "starter";
 
-  // Find current plan from API data or fall back to a minimal object
   const currentPlan = plans.find((p) => p.planType === currentPlanId) || {
     name: currentPlanId.charAt(0).toUpperCase() + currentPlanId.slice(1),
     monthlyPrice: sub?.monthlyPrice || 0,
@@ -126,7 +126,10 @@ export default function BillingPage() {
 
       if (gateway === "razorpay") {
         const loaded = await loadRazorpayScript();
-        if (!loaded) throw new Error("Failed to load Razorpay checkout. Check your connection.");
+        if (!loaded)
+          throw new Error(
+            "Failed to load Razorpay checkout. Check your connection.",
+          );
 
         await new Promise<void>((resolve, reject) => {
           const rzp = new window.Razorpay({
@@ -149,7 +152,12 @@ export default function BillingPage() {
                   razorpayPaymentId: response.razorpay_payment_id,
                   razorpaySignature: response.razorpay_signature,
                 });
-                toast({ title: "Payment Successful!", description: verify.data?.plan ? `${verify.data.plan} plan activated.` : "Subscription activated." });
+                toast({
+                  title: "Payment Successful!",
+                  description: verify.data?.plan
+                    ? `${verify.data.plan} plan activated.`
+                    : "Subscription activated.",
+                });
                 resolve();
               } catch (err: any) {
                 reject(err);
@@ -162,13 +170,17 @@ export default function BillingPage() {
           rzp.open();
         });
       } else {
-        // HDFC — redirect to payment URL
-        if (!order.paymentUrl) throw new Error("HDFC did not return a payment URL.");
+        if (!order.paymentUrl)
+          throw new Error("HDFC did not return a payment URL.");
         window.location.href = order.paymentUrl;
       }
     } catch (err: any) {
       if (err.message !== "Payment cancelled") {
-        toast({ title: "Payment Error", description: err.message || "Failed to process payment", variant: "destructive" });
+        toast({
+          title: "Payment Error",
+          description: err.message || "Failed to process payment",
+          variant: "destructive",
+        });
       }
     } finally {
       setUpgrading(null);
@@ -190,20 +202,23 @@ export default function BillingPage() {
   return (
     <AppLayout title="Billing">
       <div className="max-w-5xl mx-auto space-y-6 sm:space-y-8 p-4 sm:p-6">
-        {/* ── No subscription banner ── */}
+        {}
         {!isActive && (
           <div className="border-2 border-[#EF4444] bg-[#EF4444]/5 p-4 flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-[#EF4444] shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold text-[#EF4444] text-sm">No Active Subscription</p>
+              <p className="font-bold text-[#EF4444] text-sm">
+                No Active Subscription
+              </p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Your account is not yet activated. Choose a plan below to start using NestHR.
+                Your account is not yet activated. Choose a plan below to start
+                using NestHR.
               </p>
             </div>
           </div>
         )}
 
-        {/* ── Current plan banner ── */}
+        {}
         <div className="border-2 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-[#024BAB]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white border-2 border-black flex items-center justify-center shrink-0">
@@ -235,7 +250,7 @@ export default function BillingPage() {
           </div>
         </div>
 
-        {/* ── Usage stats ── */}
+        {}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
             {
@@ -288,7 +303,7 @@ export default function BillingPage() {
           ))}
         </div>
 
-        {/* ── Plan cards ── */}
+        {}
         <div>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <h2 className="font-display font-bold text-2xl text-black">
@@ -420,7 +435,7 @@ export default function BillingPage() {
           )}
         </div>
 
-        {/* ── Payment method ── */}
+        {}
         <div className="border-2 p-4 sm:p-5 bg-white">
           <h3 className="font-display font-bold text-lg text-black mb-4 flex items-center gap-2">
             <CreditCard className="w-5 h-5 text-[#024BAB]" /> Payment Method
@@ -463,11 +478,12 @@ export default function BillingPage() {
           )}
           <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
             <ShieldCheck className="w-3 h-3 shrink-0" />
-            Payments processed securely via Razorpay or HDFC SmartGateway. We never store your card details.
+            Payments processed securely via Razorpay or HDFC SmartGateway. We
+            never store your card details.
           </p>
         </div>
 
-        {/* ── Invoice history ── */}
+        {}
         <div className="border-2 p-4 sm:p-5 bg-white">
           <h3 className="font-display font-bold text-lg text-black mb-4">
             Invoice History
@@ -523,13 +539,15 @@ export default function BillingPage() {
         </div>
       </div>
 
-      {/* ── Gateway picker modal ── */}
+      {}
       {gatewayModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 border-black bg-white w-full max-w-sm">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
               <h3 className="font-bold text-lg">Choose Payment Gateway</h3>
-              <button onClick={() => setGatewayModal(null)}><X className="w-5 h-5" /></button>
+              <button onClick={() => setGatewayModal(null)}>
+                <X className="w-5 h-5" />
+              </button>
             </div>
             <div className="p-5 space-y-3">
               <p className="text-sm text-muted-foreground mb-4">
@@ -546,7 +564,9 @@ export default function BillingPage() {
                 </div>
                 <div>
                   <p className="font-bold text-black text-sm">Razorpay</p>
-                  <p className="text-xs text-muted-foreground">Cards, UPI, Net Banking, Wallets</p>
+                  <p className="text-xs text-muted-foreground">
+                    Cards, UPI, Net Banking, Wallets
+                  </p>
                 </div>
                 <ArrowRight className="w-4 h-4 ml-auto text-muted-foreground" />
               </button>
@@ -560,14 +580,19 @@ export default function BillingPage() {
                   <Building2 className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="font-bold text-black text-sm">HDFC SmartGateway</p>
-                  <p className="text-xs text-muted-foreground">Redirect to HDFC secure payment page</p>
+                  <p className="font-bold text-black text-sm">
+                    HDFC SmartGateway
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Redirect to HDFC secure payment page
+                  </p>
                 </div>
                 <ArrowRight className="w-4 h-4 ml-auto text-muted-foreground" />
               </button>
 
               <p className="text-xs text-muted-foreground text-center pt-2 flex items-center justify-center gap-1">
-                <ShieldCheck className="w-3 h-3" /> All payments are 256-bit encrypted
+                <ShieldCheck className="w-3 h-3" /> All payments are 256-bit
+                encrypted
               </p>
             </div>
           </div>

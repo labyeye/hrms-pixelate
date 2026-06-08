@@ -144,7 +144,8 @@ export default function AttendancePage() {
   };
 
   const summary = {
-    total: records.filter((r) => !["holiday", "weekend"].includes(r.status)).length,
+    total: records.filter((r) => !["holiday", "weekend"].includes(r.status))
+      .length,
     present: records.filter((r) => r.status === "present").length,
     absent: records.filter((r) => r.status === "absent").length,
     halfDay: records.filter((r) => r.status === "half_day").length,
@@ -160,14 +161,16 @@ export default function AttendancePage() {
     ? activeFilter === "early_leaving"
       ? records.filter((r) => {
           const rec = r as any;
-          return rec.earlyLeaving || (r.status === "present" && rec.earlyCheckout);
+          return (
+            rec.earlyLeaving || (r.status === "present" && rec.earlyCheckout)
+          );
         })
       : records.filter((r) => r.status === activeFilter)
     : records;
 
   return (
     <AppLayout title="Attendance">
-      {/* Controls */}
+      {}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div className="flex items-center gap-2">
           <select
@@ -206,22 +209,61 @@ export default function AttendancePage() {
         )}
       </div>
 
-      {/* Summary bar */}
+      {}
       <div className="border-2 border-black bg-white mb-5 flex flex-wrap">
         {[
-          { label: "Total", value: summary.total, color: "text-[#024BAB]", filterKey: "total" },
-          { label: "Present", value: summary.present, color: "text-[#22C55E]", filterKey: "present" },
-          { label: "Absent", value: summary.absent, color: "text-[#EF4444]", filterKey: "absent" },
-          { label: "Half Day", value: summary.halfDay, color: "text-[#F59E0B]", filterKey: "half_day" },
-          { label: "Late Commers", value: summary.late, color: "text-[#A855F7]", filterKey: "late" },
-          { label: "Early Leaving", value: summary.earlyLeaving, color: "text-[#3B82F6]", filterKey: "early_leaving" },
-          { label: "On Leave", value: summary.leave, color: "text-[#EAB308]", filterKey: "on_leave" },
+          {
+            label: "Total",
+            value: summary.total,
+            color: "text-[#024BAB]",
+            filterKey: "total",
+          },
+          {
+            label: "Present",
+            value: summary.present,
+            color: "text-[#22C55E]",
+            filterKey: "present",
+          },
+          {
+            label: "Absent",
+            value: summary.absent,
+            color: "text-[#EF4444]",
+            filterKey: "absent",
+          },
+          {
+            label: "Half Day",
+            value: summary.halfDay,
+            color: "text-[#F59E0B]",
+            filterKey: "half_day",
+          },
+          {
+            label: "Late Commers",
+            value: summary.late,
+            color: "text-[#A855F7]",
+            filterKey: "late",
+          },
+          {
+            label: "Early Leaving",
+            value: summary.earlyLeaving,
+            color: "text-[#3B82F6]",
+            filterKey: "early_leaving",
+          },
+          {
+            label: "On Leave",
+            value: summary.leave,
+            color: "text-[#EAB308]",
+            filterKey: "on_leave",
+          },
         ].map(({ label, value, color, filterKey }, idx, arr) => {
           const isActive = activeFilter === filterKey;
           return (
             <button
               key={label}
-              onClick={() => setActiveFilter(isActive || filterKey === "total" ? null : filterKey)}
+              onClick={() =>
+                setActiveFilter(
+                  isActive || filterKey === "total" ? null : filterKey,
+                )
+              }
               className={cn(
                 "flex flex-col gap-1 px-6 py-4 flex-1 min-w-[100px] text-left transition-colors",
                 idx === 0 ? "bg-[#F3F4FF]" : "",
@@ -229,14 +271,16 @@ export default function AttendancePage() {
                 isActive && "ring-2 ring-inset ring-black",
               )}
             >
-              <p className="text-xs text-muted-foreground font-medium">{label}</p>
+              <p className="text-xs text-muted-foreground font-medium">
+                {label}
+              </p>
               <p className={cn("text-3xl font-bold", color)}>{value}</p>
             </button>
           );
         })}
       </div>
 
-      {/* Table */}
+      {}
       {loading ? (
         <div className="flex items-center justify-center h-48">
           <div className="w-8 h-8 bg-[#024BAB] border-2 border-black animate-bounce" />
@@ -364,7 +408,7 @@ export default function AttendancePage() {
         </div>
       )}
 
-      {/* Mark Attendance Modal */}
+      {}
       {markModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 bg-white w-full max-w-md">

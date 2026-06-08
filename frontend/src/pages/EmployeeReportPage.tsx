@@ -84,7 +84,6 @@ export default function EmployeeReportPage() {
   const [payroll, setPayroll] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // Get employee record for this user
   useEffect(() => {
     if (!user?.email) return;
     employeeAPI
@@ -125,7 +124,6 @@ export default function EmployeeReportPage() {
     load();
   }, [load]);
 
-  // Derived stats
   const present = records.filter(
     (r) => r.status === "present" || r.status === "late",
   ).length;
@@ -222,7 +220,7 @@ export default function EmployeeReportPage() {
           </div>
         </div>
 
-        {/* Summary cards */}
+        {}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
           {[
             {
@@ -275,7 +273,7 @@ export default function EmployeeReportPage() {
           ))}
         </div>
 
-        {/* Payroll snapshot */}
+        {}
         {payroll && (
           <div className="bg-[#024BAB] border-2 border-black p-4 mb-6 flex flex-wrap items-center gap-6">
             <div>
@@ -310,7 +308,7 @@ export default function EmployeeReportPage() {
           </div>
         )}
 
-        {/* Attendance log */}
+        {}
         {loading ? (
           <div className="flex justify-center py-16">
             <Loader2 className="w-6 h-6 animate-spin text-[#024BAB]" />

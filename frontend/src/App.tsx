@@ -53,13 +53,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (isLoading) return <LoadingScreen />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
-  // No company yet → complete onboarding (company setup)
   const hasCompany = user?.company;
   if (!hasCompany) return <Navigate to="/onboarding" replace />;
 
-  // No active subscription:
-  // super_admin → go to billing to purchase a plan
-  // other roles → should not happen (login is blocked on backend), but guard anyway
   const hasActiveSubscription =
     user?.subscription?.status === "active" ||
     user?.subscription?.status === "pending_renewal";
@@ -71,7 +67,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Billing is accessible to authenticated super_admin even without active subscription
 function BillingRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, user } = useAuth();
   if (isLoading) return <LoadingScreen />;
@@ -80,7 +75,6 @@ function BillingRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Redirects employees to My Profile; admins/HR to Dashboard
 function RootRedirect() {
   const { user } = useAuth();
   if (user?.role === "employee") return <Navigate to="/my-profile" replace />;
@@ -113,7 +107,7 @@ function AppRoutes() {
           )
         }
       />
-      {/* HDFC SmartGateway callback pages — require auth but not active subscription */}
+      {}
       <Route
         path="/payment/success"
         element={
@@ -294,7 +288,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      {/* Public biometric device terminal — no login required */}
+      {}
       <Route path="/device/:token" element={<BiometricDevicePage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>

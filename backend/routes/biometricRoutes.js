@@ -32,14 +32,12 @@ const {
   triggerFaceEnroll,
 } = require("../controllers/biometricController");
 
-// Public device endpoints (no user auth — device token / activation code used instead)
 router.post("/register", registerDevice);
 router.get("/device/:token", getDeviceInfo);
 router.post("/record", recordBiometric);
 router.get("/device/:token/employees", getDeviceEmployees);
 router.post("/device-face-enroll", enrollFaceFromDevice);
 
-// Admin endpoints
 router.use(protect);
 
 router.get("/locations", getLocations);
@@ -90,7 +88,6 @@ router.delete(
 
 router.get("/logs", getLogs);
 
-// ── ADMS device management (serial, sync, commands) ──────────────────────────
 router.put(
   "/devices/:id/serial",
   authorize("super_admin", "hr_manager"),
@@ -113,30 +110,26 @@ router.delete(
 );
 router.get("/devices/:id/commands", getDeviceCommands);
 
-// ── RFID card assignment (USB reader or manual) ───────────────────────────────
 router.post(
   "/employees/:id/rfid",
   authorize("super_admin", "hr_manager"),
   saveRfidCard,
 );
 
-// ── Face recognition (PC webcam) ─────────────────────────────────────────────
 router.post(
   "/employees/:id/face",
   authorize("super_admin", "hr_manager"),
   saveFaceDescriptor,
 );
 router.get("/face-descriptors", getFaceDescriptors);
-router.post("/face-attendance", faceAttendance); // no protect — called from device terminal
+router.post("/face-attendance", faceAttendance);
 
-// ── Fingerprint enrollment trigger ───────────────────────────────────────────
 router.post(
   "/devices/:id/enroll-fingerprint",
   authorize("super_admin", "hr_manager"),
   triggerFingerprintEnroll,
 );
 
-// ── Face enrollment trigger (ADMS — physical eSSL device) ────────────────────
 router.post(
   "/devices/:id/enroll-face-device",
   authorize("super_admin", "hr_manager"),
