@@ -284,7 +284,16 @@ export default function DepartmentsPage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleSave} className="p-5 space-y-4">
+            <form
+              onSubmit={handleSave}
+              onInvalidCapture={(e) => {
+                const el = e.target as HTMLInputElement;
+                e.preventDefault();
+                const label = el.closest("div")?.querySelector("label")?.textContent?.replace("*", "").trim() || el.placeholder || el.name || "a required field";
+                setActionModal({ show: true, type: "error", title: "Required Field Missing", message: `Please fill in: ${label}` });
+              }}
+              className="p-5 space-y-4"
+            >
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
                   Department Name
@@ -344,6 +353,7 @@ export default function DepartmentsPage() {
                   </label>
                   <input
                     type="time"
+                    required
                     value={form.shiftStartTime}
                     onChange={(e) =>
                       setForm({ ...form, shiftStartTime: e.target.value })
@@ -357,6 +367,7 @@ export default function DepartmentsPage() {
                   </label>
                   <input
                     type="time"
+                    required
                     value={form.shiftEndTime}
                     onChange={(e) =>
                       setForm({ ...form, shiftEndTime: e.target.value })

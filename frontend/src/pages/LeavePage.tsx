@@ -344,7 +344,16 @@ export default function LeavePage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleCreate} className="p-5 space-y-4">
+            <form
+              onSubmit={handleCreate}
+              onInvalidCapture={(e) => {
+                const el = e.target as HTMLInputElement;
+                e.preventDefault();
+                const label = el.closest("div")?.querySelector("label")?.textContent?.replace("*", "").trim() || el.placeholder || el.name || "a required field";
+                setActionModal({ show: true, type: "error", title: "Required Field Missing", message: `Please fill in: ${label}` });
+              }}
+              className="p-5 space-y-4"
+            >
               {!isEmployee && (
                 <div>
                   <label className="block text-xs font-bold text-black mb-1">
@@ -372,6 +381,7 @@ export default function LeavePage() {
                   Leave Type
                 </label>
                 <select
+                  required
                   value={form.leaveType}
                   onChange={(e) =>
                     setForm({ ...form, leaveType: e.target.value })
@@ -422,10 +432,12 @@ export default function LeavePage() {
                 <input
                   type="number"
                   min="0.5"
+                  max="30"
                   step="0.5"
                   value={form.days}
                   onChange={(e) => setForm({ ...form, days: e.target.value })}
                   className="border-2 w-full px-3 py-2 text-sm"
+                  title="Number of days must be between 0.5 and 30"
                   required
                 />
               </div>

@@ -23,6 +23,7 @@ import {
   Copy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ActionModal } from "@/components/ui/ActionModal";
 
 type CrudOp = "create" | "read" | "update" | "delete";
 type HrmsRole =
@@ -209,6 +210,11 @@ function InputField({
   value,
   placeholder = "",
   type = "text",
+  required = false,
+  maxLength,
+  minLength,
+  pattern,
+  title: fieldTitle,
   onChange,
 }: {
   label: string;
@@ -216,12 +222,17 @@ function InputField({
   value: string;
   placeholder?: string;
   type?: string;
+  required?: boolean;
+  maxLength?: number;
+  minLength?: number;
+  pattern?: string;
+  title?: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
   return (
     <div className="space-y-2">
       <label className="block text-xs font-bold text-black uppercase tracking-wider">
-        {label}
+        {label}{required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
       <input
         type={type}
@@ -229,6 +240,11 @@ function InputField({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
+        required={required}
+        maxLength={maxLength}
+        minLength={minLength}
+        pattern={pattern}
+        title={fieldTitle}
         className="w-full px-3 py-2 border-2 border-black text-sm focus:outline-none focus:ring-2 focus:ring-[#024BAB] focus:ring-offset-0 bg-white"
       />
     </div>
@@ -241,6 +257,7 @@ function TextAreaField({
   value,
   placeholder = "",
   rows = 3,
+  required = false,
   onChange,
 }: {
   label: string;
@@ -248,12 +265,13 @@ function TextAreaField({
   value: string;
   placeholder?: string;
   rows?: number;
+  required?: boolean;
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 }) {
   return (
     <div className="space-y-2">
       <label className="block text-xs font-bold text-black uppercase tracking-wider">
-        {label}
+        {label}{required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
       <textarea
         name={name}
@@ -261,6 +279,7 @@ function TextAreaField({
         onChange={onChange}
         placeholder={placeholder}
         rows={rows}
+        required={required}
         className="w-full px-3 py-2 border-2 border-black text-sm focus:outline-none focus:ring-2 focus:ring-[#024BAB] focus:ring-offset-0 bg-white resize-none"
       />
     </div>
@@ -380,6 +399,34 @@ export default function SettingsPage() {
   };
 
   const handleSave = async () => {
+    if (activeTab === "general") {
+      if (!settings?.companyName?.trim()) {
+        setActionModal({ show: true, type: "error", title: "Required Field Missing", message: "Please fill in: Company Name" });
+        return;
+      }
+      if (!settings?.companyAddress?.trim()) {
+        setActionModal({ show: true, type: "error", title: "Required Field Missing", message: "Please fill in: Company Address" });
+        return;
+      }
+    }
+    if (activeTab === "bank") {
+      if (!settings?.bankName?.trim()) {
+        setActionModal({ show: true, type: "error", title: "Required Field Missing", message: "Please fill in: Bank Name" });
+        return;
+      }
+      if (!settings?.bankAccountName?.trim()) {
+        setActionModal({ show: true, type: "error", title: "Required Field Missing", message: "Please fill in: Account Holder Name" });
+        return;
+      }
+      if (!settings?.bankAccountNumber?.trim()) {
+        setActionModal({ show: true, type: "error", title: "Required Field Missing", message: "Please fill in: Account Number" });
+        return;
+      }
+      if (!settings?.bankIFSC?.trim()) {
+        setActionModal({ show: true, type: "error", title: "Required Field Missing", message: "Please fill in: IFSC Code" });
+        return;
+      }
+    }
     try {
       setSaving(true);
       await settingsAPI.update(settings);
@@ -401,14 +448,6 @@ export default function SettingsPage() {
     }
   };
 
-  useEffect(() => {
-    if (actionModal.show && actionModal.type === "success") {
-      const timer = setTimeout(() => {
-        setActionModal({ ...actionModal, show: false });
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [actionModal.show, actionModal.type]);
 
   if (loading) {
     return (
@@ -512,6 +551,7 @@ export default function SettingsPage() {
                       label="Company Name"
                       name="companyName"
                       value={settings?.companyName || ""}
+                      required
                       onChange={handleChange}
                     />
                     <InputField
@@ -525,13 +565,29 @@ export default function SettingsPage() {
                       label="Company Phone"
                       name="companyPhone"
                       value={settings?.companyPhone || ""}
-                      onChange={handleChange}
+                      maxLength={10}
+                      minLength={10}
+                      pattern="\d{10}"
+                      title="Enter a valid 10-digit phone number"
+                      placeholder="10-digit phone number"
+                      onChange={(e) => {
+                        const v = e.target.value.replace(/\D/g, "").slice(0, 10);
+                        handleChange({ ...e, target: { ...e.target, name: "companyPhone", value: v } });
+                      }}
                     />
                     <InputField
                       label="GST Number"
                       name="companyGST"
                       value={settings?.companyGST || ""}
-                      onChange={handleChange}
+                      maxLength={15}
+                      minLength={15}
+                      pattern="\d{2}[A-Z]{5}\d{4}[A-Z]{1}[A-Z\d]{1}Z[A-Z\d]{1}"
+                      title="GST format: e.g. 22AAAAA0000A1Z5"
+                      placeholder="e.g. 22AAAAA0000A1Z5"
+                      onChange={(e) => {
+                        const v = e.target.value.toUpperCase().slice(0, 15);
+                        handleChange({ ...e, target: { ...e.target, name: "companyGST", value: v } });
+                      }}
                     />
                     <InputField
                       label="Website"
@@ -623,6 +679,7 @@ export default function SettingsPage() {
                     value={settings?.companyAddress || ""}
                     placeholder="Enter full company address"
                     rows={3}
+                    required
                     onChange={handleChange}
                   />
                 </div>
@@ -636,6 +693,7 @@ export default function SettingsPage() {
                       label="Bank Name"
                       name="bankName"
                       value={settings?.bankName || ""}
+                      required
                       onChange={handleChange}
                     />
                     <InputField
@@ -648,19 +706,38 @@ export default function SettingsPage() {
                       label="Account Holder Name"
                       name="bankAccountName"
                       value={settings?.bankAccountName || ""}
+                      required
                       onChange={handleChange}
                     />
                     <InputField
                       label="Account Number"
                       name="bankAccountNumber"
                       value={settings?.bankAccountNumber || ""}
-                      onChange={handleChange}
+                      required
+                      minLength={9}
+                      maxLength={18}
+                      pattern="\d{9,18}"
+                      title="Account number must be 9–18 digits"
+                      placeholder="9–18 digit account number"
+                      onChange={(e) => {
+                        const v = e.target.value.replace(/\D/g, "").slice(0, 18);
+                        handleChange({ ...e, target: { ...e.target, name: "bankAccountNumber", value: v } });
+                      }}
                     />
                     <InputField
                       label="IFSC Code"
                       name="bankIFSC"
                       value={settings?.bankIFSC || ""}
-                      onChange={handleChange}
+                      required
+                      maxLength={11}
+                      minLength={11}
+                      pattern="[A-Z]{4}0[A-Z0-9]{6}"
+                      title="IFSC format: 4 letters + 0 + 6 alphanumeric (e.g. SBIN0001234)"
+                      placeholder="e.g. SBIN0001234"
+                      onChange={(e) => {
+                        const v = e.target.value.toUpperCase().slice(0, 11);
+                        handleChange({ ...e, target: { ...e.target, name: "bankIFSC", value: v } });
+                      }}
                     />
                   </div>
                 </div>
@@ -1585,53 +1662,13 @@ export default function SettingsPage() {
         </div>
         {}
       </div>
-      {}
-
-      {}
-      {actionModal.show && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="border-2 bg-white w-full max-w-sm p-8 flex flex-col items-center justify-center text-center animate-in fade-in zoom-in-95 duration-300">
-            {actionModal.type === "success" ? (
-              <>
-                <div className="mb-4 animate-bounce">
-                  <CheckCircle className="w-16 h-16 text-[#00C48C]" />
-                </div>
-                <h2 className="text-2xl font-display font-bold text-black mb-2">
-                  {actionModal.title}
-                </h2>
-                <p className="text-sm text-muted-foreground mb-6">
-                  {actionModal.message}
-                </p>
-                <div className="flex gap-2">
-                  <div className="w-2 h-2 bg-[#00C48C] rounded-full animate-pulse" />
-                  <div className="w-2 h-2 bg-[#00C48C] rounded-full animate-pulse delay-100" />
-                  <div className="w-2 h-2 bg-[#00C48C] rounded-full animate-pulse delay-200" />
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="mb-4 animate-bounce">
-                  <AlertCircle className="w-16 h-16 text-[#EF4444]" />
-                </div>
-                <h2 className="text-2xl font-display font-bold text-black mb-2">
-                  {actionModal.title}
-                </h2>
-                <p className="text-sm text-muted-foreground mb-6">
-                  {actionModal.message}
-                </p>
-                <button
-                  onClick={() =>
-                    setActionModal({ ...actionModal, show: false })
-                  }
-                  className="mt-4 px-6 py-2 bg-[#EF4444] text-white text-sm font-bold border-2 border-[#EF4444] hover:bg-[#EF4444]/90 transition-colors"
-                >
-                  Dismiss
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+      <ActionModal
+        show={actionModal.show}
+        type={actionModal.type}
+        title={actionModal.title}
+        message={actionModal.message}
+        onClose={() => setActionModal({ ...actionModal, show: false })}
+      />
     </AppLayout>
   );
 }

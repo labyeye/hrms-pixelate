@@ -4,6 +4,7 @@ import { holidayAPI } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { ActionModal } from "@/components/ui/ActionModal";
 import {
   CalendarDays,
   Plus,
@@ -100,6 +101,7 @@ export default function HolidaysPage() {
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [actionModal, setActionModal] = useState<{ show: boolean; type: "success" | "error"; title: string; message: string }>({ show: false, type: "success", title: "", message: "" });
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -133,7 +135,15 @@ export default function HolidaysPage() {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim() || !form.date || saving) return;
+    if (saving) return;
+    if (!form.name.trim()) {
+      setActionModal({ show: true, type: "error", title: "Required Field Missing", message: "Please fill in: Holiday Name" });
+      return;
+    }
+    if (!form.date) {
+      setActionModal({ show: true, type: "error", title: "Required Field Missing", message: "Please fill in: Date" });
+      return;
+    }
     setSaving(true);
     try {
       if (editingId) {
@@ -283,6 +293,7 @@ export default function HolidaysPage() {
                   Holiday Name *
                 </label>
                 <input
+                  required
                   value={form.name}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, name: e.target.value }))
@@ -297,6 +308,7 @@ export default function HolidaysPage() {
                 </label>
                 <input
                   type="date"
+                  required
                   value={form.date}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, date: e.target.value }))
@@ -544,6 +556,14 @@ export default function HolidaysPage() {
           </ul>
         </div>
       </div>
+
+      <ActionModal
+        show={actionModal.show}
+        type={actionModal.type}
+        title={actionModal.title}
+        message={actionModal.message}
+        onClose={() => setActionModal({ ...actionModal, show: false })}
+      />
     </AppLayout>
   );
 }

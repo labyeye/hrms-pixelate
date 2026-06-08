@@ -667,6 +667,12 @@ export default function EmployeesPage() {
             {}
             <form
               onSubmit={handleSave}
+              onInvalidCapture={(e) => {
+                const el = e.target as HTMLInputElement;
+                e.preventDefault();
+                const label = el.closest("div")?.querySelector("label")?.textContent?.replace("*", "").trim() || el.placeholder || el.name || "a required field";
+                setActionModal({ show: true, type: "error", title: "Required Field Missing", message: `Please fill in: ${label}` });
+              }}
               className="flex-1 overflow-y-auto flex flex-col"
             >
               <div className="p-6 flex-1">
@@ -779,10 +785,14 @@ export default function EmployeesPage() {
                           type="tel"
                           value={form.phone}
                           onChange={(e) =>
-                            setForm({ ...form, phone: e.target.value })
+                            setForm({ ...form, phone: e.target.value.replace(/\D/g, "").slice(0, 10) })
                           }
+                          maxLength={10}
+                          minLength={10}
+                          pattern="\d{10}"
+                          title="Enter a valid 10-digit mobile number"
                           className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                          placeholder="+91 XXXXX XXXXX"
+                          placeholder="10-digit mobile number"
                         />
                       </div>
                       <div>
@@ -846,6 +856,7 @@ export default function EmployeesPage() {
                           Department
                         </label>
                         <select
+                          required
                           value={form.department}
                           onChange={(e) =>
                             setForm({ ...form, department: e.target.value })
@@ -906,8 +917,10 @@ export default function EmployeesPage() {
                             onChange={(e) =>
                               setForm({ ...form, password: e.target.value })
                             }
+                            minLength={6}
+                            title="Password must be at least 6 characters"
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="hrms@123"
+                            placeholder="Min 6 characters (e.g. hrms@123)"
                           />
                         </div>
                       )}
@@ -1023,7 +1036,8 @@ export default function EmployeesPage() {
                         </label>
                         <input
                           type="number"
-                          min="0"
+                          required
+                          min="1"
                           value={form.salary}
                           onChange={(e) =>
                             setForm({ ...form, salary: e.target.value })
@@ -1089,14 +1103,15 @@ export default function EmployeesPage() {
                             onChange={(e) =>
                               setForm({
                                 ...form,
-                                uanNumber: e.target.value
-                                  .replace(/\D/g, "")
-                                  .slice(0, 12),
+                                uanNumber: e.target.value.replace(/\D/g, "").slice(0, 12),
                               })
                             }
+                            maxLength={12}
+                            minLength={12}
+                            pattern="\d{12}"
+                            title="UAN must be exactly 12 digits"
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
                             placeholder="12-digit UAN"
-                            maxLength={12}
                           />
                         </div>
                         <div>
@@ -1107,10 +1122,14 @@ export default function EmployeesPage() {
                             type="text"
                             value={form.esicNumber}
                             onChange={(e) =>
-                              setForm({ ...form, esicNumber: e.target.value })
+                              setForm({ ...form, esicNumber: e.target.value.replace(/\D/g, "").slice(0, 17) })
                             }
+                            maxLength={17}
+                            minLength={17}
+                            pattern="\d{17}"
+                            title="ESIC number must be exactly 17 digits"
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="ESIC number"
+                            placeholder="17-digit ESIC number"
                           />
                         </div>
                       </div>
@@ -1144,16 +1163,20 @@ export default function EmployeesPage() {
                             Emergency Contact
                           </label>
                           <input
-                            type="text"
+                            type="tel"
                             value={form.emergencyContact}
                             onChange={(e) =>
                               setForm({
                                 ...form,
-                                emergencyContact: e.target.value,
+                                emergencyContact: e.target.value.replace(/\D/g, "").slice(0, 10),
                               })
                             }
+                            maxLength={10}
+                            minLength={10}
+                            pattern="\d{10}"
+                            title="Enter a valid 10-digit phone number"
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="Name — Phone"
+                            placeholder="10-digit phone number"
                           />
                         </div>
                         <div className="col-span-2">
@@ -1188,12 +1211,15 @@ export default function EmployeesPage() {
                             onChange={(e) =>
                               setForm({
                                 ...form,
-                                panNumber: e.target.value.toUpperCase(),
+                                panNumber: e.target.value.toUpperCase().slice(0, 10),
                               })
                             }
+                            maxLength={10}
+                            minLength={10}
+                            pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}"
+                            title="PAN format: 5 letters + 4 digits + 1 letter (e.g. ABCDE1234F)"
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 uppercase"
                             placeholder="ABCDE1234F"
-                            maxLength={10}
                           />
                         </div>
                         <div>
@@ -1206,14 +1232,15 @@ export default function EmployeesPage() {
                             onChange={(e) =>
                               setForm({
                                 ...form,
-                                aadharNumber: e.target.value
-                                  .replace(/\D/g, "")
-                                  .slice(0, 12),
+                                aadharNumber: e.target.value.replace(/\D/g, "").slice(0, 12),
                               })
                             }
-                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="12-digit number"
                             maxLength={12}
+                            minLength={12}
+                            pattern="\d{12}"
+                            title="Aadhar must be exactly 12 digits"
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="12-digit Aadhar number"
                           />
                         </div>
                       </div>
@@ -1230,6 +1257,7 @@ export default function EmployeesPage() {
                           </label>
                           <input
                             type="text"
+                            required
                             value={form.accountHolderName}
                             onChange={(e) =>
                               setForm({
@@ -1247,15 +1275,20 @@ export default function EmployeesPage() {
                           </label>
                           <input
                             type="text"
+                            required
                             value={form.bankAccount}
                             onChange={(e) =>
                               setForm({
                                 ...form,
-                                bankAccount: e.target.value.replace(/\D/g, ""),
+                                bankAccount: e.target.value.replace(/\D/g, "").slice(0, 18),
                               })
                             }
+                            minLength={9}
+                            maxLength={18}
+                            pattern="\d{9,18}"
+                            title="Bank account number must be 9–18 digits"
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="Account number"
+                            placeholder="9–18 digit account number"
                           />
                         </div>
                         <div>
@@ -1264,16 +1297,20 @@ export default function EmployeesPage() {
                           </label>
                           <input
                             type="text"
+                            required
                             value={form.ifscCode}
                             onChange={(e) =>
                               setForm({
                                 ...form,
-                                ifscCode: e.target.value.toUpperCase(),
+                                ifscCode: e.target.value.toUpperCase().slice(0, 11),
                               })
                             }
+                            maxLength={11}
+                            minLength={11}
+                            pattern="[A-Z]{4}0[A-Z0-9]{6}"
+                            title="IFSC format: 4 letters + 0 + 6 alphanumeric (e.g. SBIN0001234)"
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 uppercase"
                             placeholder="SBIN0001234"
-                            maxLength={11}
                           />
                         </div>
                         <div>
@@ -1282,6 +1319,7 @@ export default function EmployeesPage() {
                           </label>
                           <input
                             type="text"
+                            required
                             value={form.bankName}
                             onChange={(e) =>
                               setForm({ ...form, bankName: e.target.value })
@@ -1766,6 +1804,12 @@ export default function EmployeesPage() {
               </button>
             </div>
             <form
+              onInvalidCapture={(e) => {
+                const el = e.target as HTMLInputElement;
+                e.preventDefault();
+                const label = el.closest("div")?.querySelector("label")?.textContent?.replace("*", "").trim() || el.placeholder || el.name || "a required field";
+                setActionModal({ show: true, type: "error", title: "Required Field Missing", message: `Please fill in: ${label}` });
+              }}
               onSubmit={async (e) => {
                 e.preventDefault();
                 setSavingLoan(true);
@@ -1775,10 +1819,11 @@ export default function EmployeesPage() {
                     amount: parseFloat(loanForm.amount),
                     monthlyEmi: parseFloat(loanForm.monthlyEmi || "0"),
                   });
+                  setActionModal({ show: true, type: "success", title: "Loan Created", message: "Loan / advance entry saved successfully." });
                   setLoanModal(false);
                   load();
                 } catch (err: any) {
-                  alert(err.message);
+                  setActionModal({ show: true, type: "error", title: "Error", message: err.message || "Failed to create loan entry." });
                 }
                 setSavingLoan(false);
               }}
@@ -1821,7 +1866,8 @@ export default function EmployeesPage() {
                 </label>
                 <input
                   type="number"
-                  min="0"
+                  required
+                  min="1"
                   value={loanForm.monthlyEmi}
                   onChange={(e) =>
                     setLoanForm({ ...loanForm, monthlyEmi: e.target.value })
@@ -1898,6 +1944,12 @@ export default function EmployeesPage() {
               </button>
             </div>
             <form
+              onInvalidCapture={(e) => {
+                const el = e.target as HTMLInputElement;
+                e.preventDefault();
+                const label = el.closest("div")?.querySelector("label")?.textContent?.replace("*", "").trim() || el.placeholder || el.name || "a required field";
+                setActionModal({ show: true, type: "error", title: "Required Field Missing", message: `Please fill in: ${label}` });
+              }}
               onSubmit={async (e) => {
                 e.preventDefault();
                 setSavingTx(true);
@@ -2011,6 +2063,7 @@ export default function EmployeesPage() {
                 </label>
                 <input
                   type="text"
+                  required
                   value={txForm.remark}
                   onChange={(e) =>
                     setTxForm({ ...txForm, remark: e.target.value })

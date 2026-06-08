@@ -11,6 +11,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import { ActionModal } from "@/components/ui/ActionModal";
 
 const STATUS_COLORS: Record<string, string> = {
   open: "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C] px-2 py-0.5",
@@ -58,6 +59,7 @@ export default function RecruitmentPage() {
   });
   const [candForm, setCandForm] = useState({ name: "", email: "", phone: "" });
   const [saving, setSaving] = useState(false);
+  const [actionModal, setActionModal] = useState<{ show: boolean; type: "success" | "error"; title: string; message: string }>({ show: false, type: "success", title: "", message: "" });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -84,10 +86,11 @@ export default function RecruitmentPage() {
         ...form,
         positions: Number(form.positions),
       });
+      setActionModal({ show: true, type: "success", title: "Job Posted", message: "New job opening has been created successfully." });
       setShowModal(false);
       load();
     } catch (err: any) {
-      alert(err.message);
+      setActionModal({ show: true, type: "error", title: "Error", message: err.message || "Failed to create job." });
     }
     setSaving(false);
   };
@@ -98,11 +101,12 @@ export default function RecruitmentPage() {
     setSaving(true);
     try {
       await recruitmentAPI.addCandidate(candidateModal.jobId, candForm);
+      setActionModal({ show: true, type: "success", title: "Candidate Added", message: "Candidate has been added to the pipeline." });
       setCandidateModal(null);
       setCandForm({ name: "", email: "", phone: "" });
       load();
     } catch (err: any) {
-      alert(err.message);
+      setActionModal({ show: true, type: "error", title: "Error", message: err.message || "Failed to add candidate." });
     }
     setSaving(false);
   };
@@ -331,7 +335,16 @@ export default function RecruitmentPage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleCreateJob} className="p-5 space-y-4">
+            <form
+              onSubmit={handleCreateJob}
+              onInvalidCapture={(e) => {
+                const el = e.target as HTMLInputElement;
+                e.preventDefault();
+                const label = el.closest("div")?.querySelector("label")?.textContent?.replace("*", "").trim() || el.placeholder || el.name || "a required field";
+                setActionModal({ show: true, type: "error", title: "Required Field Missing", message: `Please fill in: ${label}` });
+              }}
+              className="p-5 space-y-4"
+            >
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
                   Job Title
@@ -350,13 +363,14 @@ export default function RecruitmentPage() {
                     Department
                   </label>
                   <select
+                    required
                     value={form.department}
                     onChange={(e) =>
                       setForm({ ...form, department: e.target.value })
                     }
                     className="border-2 w-full px-3 py-2 text-sm"
                   >
-                    <option value="">Select</option>
+                    <option value="">Select department</option>
                     {departments.map((d) => (
                       <option key={d._id} value={d._id}>
                         {d.name}
@@ -371,10 +385,12 @@ export default function RecruitmentPage() {
                   <input
                     type="number"
                     min="1"
+                    max="50"
                     value={form.positions}
                     onChange={(e) =>
                       setForm({ ...form, positions: e.target.value })
                     }
+                    title="Positions must be between 1 and 50"
                     className="border-2 w-full px-3 py-2 text-sm"
                   />
                 </div>
@@ -482,7 +498,16 @@ export default function RecruitmentPage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleAddCandidate} className="p-5 space-y-4">
+            <form
+              onSubmit={handleAddCandidate}
+              onInvalidCapture={(e) => {
+                const el = e.target as HTMLInputElement;
+                e.preventDefault();
+                const label = el.closest("div")?.querySelector("label")?.textContent?.replace("*", "").trim() || el.placeholder || el.name || "a required field";
+                setActionModal({ show: true, type: "error", title: "Required Field Missing", message: `Please fill in: ${label}` });
+              }}
+              className="p-5 space-y-4"
+            >
               {[
                 {
                   label: "Full Name",
@@ -528,6 +553,14 @@ export default function RecruitmentPage() {
           </div>
         </div>
       )}
+
+      <ActionModal
+        show={actionModal.show}
+        type={actionModal.type}
+        title={actionModal.title}
+        message={actionModal.message}
+        onClose={() => setActionModal({ ...actionModal, show: false })}
+      />
     </AppLayout>
   );
 }
