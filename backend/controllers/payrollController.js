@@ -6,7 +6,7 @@ const DeductionRule = require("../models/DeductionRule");
 const Transaction = require("../models/Transaction");
 const Loan = require("../models/Loan");
 const { safePagination } = require("../middleware/validate");
-const { sendWhatsApp, payrollPaidMsg } = require("../services/whatsappService");
+const { sendSalaryPaid } = require("../services/whatsappService");
 
 const PAYROLL_STATUS = ["processed", "paid", "cancelled"];
 
@@ -409,10 +409,11 @@ const markPaid = asyncHandler(async (req, res) => {
 
   if (payroll.employee?.phone) {
     try {
-      await sendWhatsApp(
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      const period = `${months[(payroll.month || 1) - 1]} ${payroll.year}`;
+      await sendSalaryPaid(
         payroll.employee.phone,
-        payrollPaidMsg(payroll.employee, payroll),
-        "whatsappNotifyPayroll",
+        { firstName: payroll.employee.firstName, period, netSalary: payroll.netSalary },
         req.user.company,
       );
     } catch {}

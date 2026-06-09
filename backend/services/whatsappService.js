@@ -1,125 +1,277 @@
 const https = require("https");
 const Setting = require("../models/Setting");
 
-async function sendWhatsApp(to, message, eventKey, companyId) {
-  try {
-    const setting = await Setting.findOne({ company: companyId });
-    if (!setting?.whatsappEnabled) return;
-    if (eventKey && setting[eventKey] === false) return;
+// ─── Internal: send a Meta template message ──────────────────────────────────
 
-    const accessToken = setting.metaAccessToken;
-    const phoneNumberId = setting.metaPhoneNumberId;
-    if (!accessToken || !phoneNumberId) return;
+async function sendTemplate(phone, templateName, params, lang = "en") {
+  const accessToken = process.env.META_WA_TOKEN;
+  const phoneNumberId = process.env.META_WA_PHONE_ID;
+  if (!accessToken || !phoneNumberId) {
+    console.warn("[WhatsApp] META_WA_TOKEN or META_WA_PHONE_ID not set in env");
+    return;
+  }
 
-    const toNumber = to.replace(/^\+/, "").replace(/\s/g, "");
-
-    const body = JSON.stringify({
-      messaging_product: "whatsapp",
-      to: toNumber,
-      type: "text",
-      text: { preview_url: false, body: message },
-    });
-
-    await new Promise((resolve, reject) => {
-      const req = https.request(
+  const toNumber = phone.replace(/^\+/, "").replace(/\s/g, "");
+  const body = JSON.stringify({
+    messaging_product: "whatsapp",
+    to: toNumber,
+    type: "template",
+    template: {
+      name: templateName,
+      language: { code: lang },
+      components: [
         {
-          hostname: "graph.facebook.com",
-          path: `/v20.0/${phoneNumberId}/messages`,
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Content-Length": Buffer.byteLength(body),
-            Authorization: `Bearer ${accessToken}`,
-          },
+          type: "body",
+          parameters: params.map((v) => ({ type: "text", text: String(v) })),
         },
-        (res) => {
-          let data = "";
-          res.on("data", (chunk) => (data += chunk));
-          res.on("end", () => {
-            if (res.statusCode >= 200 && res.statusCode < 300)
-              resolve(JSON.parse(data));
-            else reject(new Error(`Meta API ${res.statusCode}: ${data}`));
-          });
+      ],
+    },
+  });
+
+  await new Promise((resolve, reject) => {
+    const req = https.request(
+      {
+        hostname: "graph.facebook.com",
+        path: `/v20.0/${phoneNumberId}/messages`,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body),
+          Authorization: `Bearer ${accessToken}`,
         },
-      );
-      req.on("error", reject);
-      req.write(body);
-      req.end();
+      },
+      (res) => {
+        let data = "";
+        res.on("data", (chunk) => (data += chunk));
+        res.on("end", () => {
+          if (res.statusCode >= 200 && res.statusCode < 300)
+            resolve(JSON.parse(data));
+          else reject(new Error(`Meta API ${res.statusCode}: ${data}`));
+        });
+      },
+    );
+    req.on("error", reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+// ─── Internal: check company WhatsApp gate ────────────────────────────────────
+
+async function getCompanySetting(eventKey, companyId) {
+  if (!companyId) return null;
+  const setting = await Setting.findOne({ company: companyId }).select(
+    `whatsappEnabled whatsappLang ${eventKey}`,
+  );
+  if (!setting?.whatsappEnabled) return null;
+  if (eventKey && setting[eventKey] === false) return null;
+  return setting;
+}
+
+// ─── Attendance ───────────────────────────────────────────────────────────────
+
+/**
+ * Template: neshr_checkin
+ * Body:  Hi {{1}}, your Check-In at {{2}} was recorded at {{3}}. Have a productive day!
+ */
+async function sendCheckIn(
+  phone,
+  { firstName, locationName, time },
+  companyId,
+) {
+  try {
+    const s = await getCompanySetting("whatsappNotifyCheckIn", companyId);
+    if (!s) return;
+    const t = new Date(time).toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
     });
+    await sendTemplate(
+      phone,
+      "neshr_checkin",
+      [firstName, locationName, t],
+      s.whatsappLang || "en",
+    );
   } catch (err) {
-    console.error("[WhatsApp]", err.message);
+    console.error("[WhatsApp] sendCheckIn:", err.message);
   }
 }
 
-function leaveApprovedMsg(emp, leave) {
-  const type =
-    leave.leaveType.charAt(0).toUpperCase() + leave.leaveType.slice(1);
-  const from = new Date(leave.startDate).toLocaleDateString("en-IN");
-  const to = new Date(leave.endDate).toLocaleDateString("en-IN");
-  return `✅ Hi ${emp.firstName}, your *${type} Leave* (${from} – ${to}, ${leave.days} day(s)) has been *APPROVED*. Enjoy your time off! 🎉\n\n— NestHR`;
+/**
+ * Template: neshr_checkout
+ * Body:  Hi {{1}}, your Check-Out at {{2}} was recorded at {{3}}. Total hours: {{4}}.
+ */
+async function sendCheckOut(
+  phone,
+  { firstName, locationName, time, workHours },
+  companyId,
+) {
+  try {
+    const s = await getCompanySetting("whatsappNotifyCheckIn", companyId);
+    if (!s) return;
+    const t = new Date(time).toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const hrs = workHours ? `${Number(workHours).toFixed(1)}h` : "-";
+    await sendTemplate(
+      phone,
+      "neshr_checkout",
+      [firstName, locationName, t, hrs],
+      s.whatsappLang || "en",
+    );
+  } catch (err) {
+    console.error("[WhatsApp] sendCheckOut:", err.message);
+  }
 }
 
-function leaveRejectedMsg(emp, leave, reason) {
-  const type =
-    leave.leaveType.charAt(0).toUpperCase() + leave.leaveType.slice(1);
-  return `❌ Hi ${emp.firstName}, your *${type} Leave* request has been *REJECTED*.\nReason: ${reason || "Not specified"}.\n\nPlease contact HR for more information.\n\n— NestHR`;
+// ─── Leave ────────────────────────────────────────────────────────────────────
+
+/**
+ * Template: neshr_leave_approved
+ * Body:  Hi {{1}}, your {{2}} Leave ({{3}} to {{4}}, {{5}} day(s)) has been APPROVED.
+ */
+async function sendLeaveApproved(
+  phone,
+  { firstName, leaveType, startDate, endDate, days },
+  companyId,
+) {
+  try {
+    const s = await getCompanySetting("whatsappNotifyLeave", companyId);
+    if (!s) return;
+    const type = leaveType.charAt(0).toUpperCase() + leaveType.slice(1);
+    const from = new Date(startDate).toLocaleDateString("en-IN");
+    const to = new Date(endDate).toLocaleDateString("en-IN");
+    await sendTemplate(
+      phone,
+      "neshr_leave_approved",
+      [firstName, type, from, to, String(days)],
+      s.whatsappLang || "en",
+    );
+  } catch (err) {
+    console.error("[WhatsApp] sendLeaveApproved:", err.message);
+  }
 }
 
-function payrollPaidMsg(emp, payroll) {
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-  const period = `${months[payroll.month - 1]} ${payroll.year}`;
-  const net = new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(payroll.netSalary);
-  return `💰 Hi ${emp.firstName}, your salary for *${period}* of *${net}* has been processed and credited to your registered bank account.\n\nPlease check your account for the credit.\n\n— NestHR`;
+/**
+ * Template: neshr_leave_rejected
+ * Body:  Hi {{1}}, your {{2}} Leave request has been REJECTED. Reason: {{3}}.
+ */
+async function sendLeaveRejected(
+  phone,
+  { firstName, leaveType, reason },
+  companyId,
+) {
+  try {
+    const s = await getCompanySetting("whatsappNotifyLeave", companyId);
+    if (!s) return;
+    const type = leaveType.charAt(0).toUpperCase() + leaveType.slice(1);
+    await sendTemplate(
+      phone,
+      "neshr_leave_rejected",
+      [firstName, type, reason || "Not specified"],
+      s.whatsappLang || "en",
+    );
+  } catch (err) {
+    console.error("[WhatsApp] sendLeaveRejected:", err.message);
+  }
 }
 
-function checkInMsg(emp, locationName, time) {
-  const t = new Date(time).toLocaleTimeString("en-IN", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  return `🟢 Hi ${emp.firstName}, your *Check-In* at *${locationName}* was recorded at *${t}*.\n\nHave a productive day! 💼\n\n— NestHR`;
+/**
+ * Template: neshr_leave_request_hr
+ * Body:  New Leave Request — Employee: {{1}} ({{2}}), Type: {{3}}, Dates: {{4}} to {{5}} ({{6}} day(s)), Reason: {{7}}.
+ */
+async function sendLeaveAppliedHR(
+  phone,
+  { empName, empId, leaveType, startDate, endDate, days, reason },
+  companyId,
+) {
+  try {
+    const s = await getCompanySetting("whatsappNotifyLeave", companyId);
+    if (!s) return;
+    const type = leaveType.charAt(0).toUpperCase() + leaveType.slice(1);
+    const from = new Date(startDate).toLocaleDateString("en-IN");
+    const to = new Date(endDate).toLocaleDateString("en-IN");
+    await sendTemplate(
+      phone,
+      "neshr_leave_request_hr",
+      [empName, empId, type, from, to, String(days), reason || "-"],
+      s.whatsappLang || "en",
+    );
+  } catch (err) {
+    console.error("[WhatsApp] sendLeaveAppliedHR:", err.message);
+  }
 }
 
-function checkOutMsg(emp, locationName, time, workHours) {
-  const t = new Date(time).toLocaleTimeString("en-IN", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  const hrs = workHours ? `Total hours: *${workHours.toFixed(1)}h*` : "";
-  return `🔴 Hi ${emp.firstName}, your *Check-Out* at *${locationName}* was recorded at *${t}*. ${hrs}\n\nSee you tomorrow! 👋\n\n— NestHR`;
+// ─── Payroll ──────────────────────────────────────────────────────────────────
+
+/**
+ * Template: neshr_salary_paid
+ * Body:  Hi {{1}}, your salary for {{2}} of {{3}} has been processed and credited to your bank account.
+ */
+async function sendSalaryPaid(
+  phone,
+  { firstName, period, netSalary },
+  companyId,
+) {
+  try {
+    const s = await getCompanySetting("whatsappNotifyPayroll", companyId);
+    if (!s) return;
+    const amt = new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
+    }).format(netSalary);
+    await sendTemplate(
+      phone,
+      "neshr_salary_paid",
+      [firstName, period, amt],
+      s.whatsappLang || "en",
+    );
+  } catch (err) {
+    console.error("[WhatsApp] sendSalaryPaid:", err.message);
+  }
 }
 
-function leaveAppliedHRMsg(hrPhone, emp, leave) {
-  const type =
-    leave.leaveType.charAt(0).toUpperCase() + leave.leaveType.slice(1);
-  const from = new Date(leave.startDate).toLocaleDateString("en-IN");
-  const to = new Date(leave.endDate).toLocaleDateString("en-IN");
-  return `📋 *New Leave Request*\nEmployee: ${emp.firstName} ${emp.lastName} (${emp.employeeId})\nType: ${type} Leave\nDates: ${from} – ${to} (${leave.days} day(s))\nReason: ${leave.reason}\n\nPlease review in NestHR. — NestHR`;
+// ─── NestHR Billing (no per-company gate) ────────────────────────────────────
+
+/**
+ * Template: neshr_subscription
+ * Body:  Welcome {{1}}! Your {{2}} plan for {{3}} is active. Amount: {{4}}, Renewal: {{5}}. Login: {{6}}
+ */
+async function sendSubscriptionWA(
+  phone,
+  { toName, planName, companyName, amount, renewalDate, dashboardUrl },
+) {
+  try {
+    const amt =
+      typeof amount === "number"
+        ? new Intl.NumberFormat("en-IN", {
+            style: "currency",
+            currency: "INR",
+            maximumFractionDigits: 0,
+          }).format(amount)
+        : String(amount);
+    const renewal = new Date(renewalDate).toLocaleDateString("en-IN");
+    await sendTemplate(phone, "neshr_subscription", [
+      toName,
+      planName,
+      companyName,
+      amt,
+      renewal,
+      dashboardUrl,
+    ]);
+  } catch (err) {
+    console.error("[WhatsApp] sendSubscriptionWA:", err.message);
+  }
 }
 
 module.exports = {
-  sendWhatsApp,
-  leaveApprovedMsg,
-  leaveRejectedMsg,
-  payrollPaidMsg,
-  checkInMsg,
-  checkOutMsg,
-  leaveAppliedHRMsg,
+  sendCheckIn,
+  sendCheckOut,
+  sendLeaveApproved,
+  sendLeaveRejected,
+  sendLeaveAppliedHR,
+  sendSalaryPaid,
+  sendSubscriptionWA,
 };

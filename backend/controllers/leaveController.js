@@ -4,10 +4,9 @@ const Employee = require("../models/Employee");
 const User = require("../models/User");
 const { safePagination } = require("../middleware/validate");
 const {
-  sendWhatsApp,
-  leaveApprovedMsg,
-  leaveRejectedMsg,
-  leaveAppliedHRMsg,
+  sendLeaveApproved,
+  sendLeaveRejected,
+  sendLeaveAppliedHR,
 } = require("../services/whatsappService");
 
 const LEAVE_TYPES = [
@@ -206,10 +205,17 @@ const createLeave = asyncHandler(async (req, res) => {
     }).select("phone");
     for (const hr of hrUsers) {
       if (hr.phone)
-        await sendWhatsApp(
+        await sendLeaveAppliedHR(
           hr.phone,
-          leaveAppliedHRMsg(hr, emp, leave),
-          "whatsappNotifyLeave",
+          {
+            empName: `${emp.firstName} ${emp.lastName}`,
+            empId: emp.employeeId,
+            leaveType: leave.leaveType,
+            startDate: leave.startDate,
+            endDate: leave.endDate,
+            days: leave.days,
+            reason: leave.reason,
+          },
           req.user.company,
         );
     }
@@ -250,17 +256,25 @@ const updateLeaveStatus = asyncHandler(async (req, res) => {
   if (leave.employee?.phone) {
     try {
       if (status === "approved") {
-        await sendWhatsApp(
+        await sendLeaveApproved(
           leave.employee.phone,
-          leaveApprovedMsg(leave.employee, leave),
-          "whatsappNotifyLeave",
+          {
+            firstName: leave.employee.firstName,
+            leaveType: leave.leaveType,
+            startDate: leave.startDate,
+            endDate: leave.endDate,
+            days: leave.days,
+          },
           req.user.company,
         );
       } else if (status === "rejected") {
-        await sendWhatsApp(
+        await sendLeaveRejected(
           leave.employee.phone,
-          leaveRejectedMsg(leave.employee, leave, rejectionReason),
-          "whatsappNotifyLeave",
+          {
+            firstName: leave.employee.firstName,
+            leaveType: leave.leaveType,
+            reason: rejectionReason,
+          },
           req.user.company,
         );
       }

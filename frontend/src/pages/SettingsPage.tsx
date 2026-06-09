@@ -808,8 +808,8 @@ export default function SettingsPage() {
                         Enable WhatsApp Notifications
                       </p>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Send automated WhatsApp messages via Meta Business API
-                        for leave, payroll and attendance events
+                        Send automated WhatsApp messages to employees for
+                        attendance, leave, and salary events — powered by NestHR
                       </p>
                     </div>
                     <button
@@ -835,66 +835,19 @@ export default function SettingsPage() {
                     </button>
                   </div>
 
-                  {}
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-black uppercase tracking-wider text-gray-500">
-                      Meta WhatsApp Business API Credentials
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="md:col-span-2">
-                        <InputField
-                          label="System User Access Token"
-                          name="metaAccessToken"
-                          value={settings?.metaAccessToken || ""}
-                          placeholder="EAAxxxxxxxxxxxxxxxxxxxxxxxx"
-                          type="password"
-                          onChange={handleChange}
-                        />
-                      </div>
-                      <InputField
-                        label="WhatsApp Phone Number ID"
-                        name="metaPhoneNumberId"
-                        value={settings?.metaPhoneNumberId || ""}
-                        placeholder="1234567890123456"
-                        onChange={handleChange}
-                      />
-                      <InputField
-                        label="WhatsApp Business Account ID"
-                        name="metaWabaId"
-                        value={settings?.metaWabaId || ""}
-                        placeholder="9876543210987654"
-                        onChange={handleChange}
-                      />
-                    </div>
-                    <div className="p-3 bg-blue-50 border-2 border-[#024BAB]/30 text-xs text-gray-600 space-y-1">
-                      <p className="font-black text-[#024BAB]">
-                        How to set up Meta WhatsApp Business API
-                      </p>
-                      <p>
-                        1. Go to <strong>developers.facebook.com</strong> → My
-                        Apps → Create App → Business
-                      </p>
-                      <p>
-                        2. Add the <strong>WhatsApp</strong> product to your app
-                      </p>
-                      <p>
-                        3. Under WhatsApp → Getting Started, copy your{" "}
-                        <strong>Phone Number ID</strong> and{" "}
-                        <strong>WhatsApp Business Account ID</strong>
-                      </p>
-                      <p>
-                        4. Create a <strong>System User</strong> in Meta
-                        Business Manager and generate a permanent token with{" "}
-                        <code className="bg-white px-1 border">
-                          whatsapp_business_messaging
-                        </code>{" "}
-                        permission
-                      </p>
-                      <p>
-                        5. Employee phone numbers must include country code
-                        without + (e.g. 919876543210)
-                      </p>
-                    </div>
+                  <div className="p-4 bg-[#F0F7FF] border-2 border-[#024BAB]/30 text-xs text-gray-700 space-y-1">
+                    <p className="font-black text-[#024BAB] text-sm">
+                      Powered by NestHR WhatsApp Service
+                    </p>
+                    <p>
+                      Messages are sent via NestHR's verified WhatsApp Business
+                      number — no setup required on your end. Just enable the
+                      notifications you need below.
+                    </p>
+                    <p className="text-gray-500">
+                      Employee phone numbers must include country code without +
+                      (e.g. 919876543210).
+                    </p>
                   </div>
 
                   {}

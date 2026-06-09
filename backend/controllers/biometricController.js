@@ -6,11 +6,7 @@ const BiometricLog = require("../models/BiometricLog");
 const Attendance = require("../models/Attendance");
 const Employee = require("../models/Employee");
 const { isHolidayDate } = require("./holidayController");
-const {
-  sendWhatsApp,
-  checkInMsg,
-  checkOutMsg,
-} = require("../services/whatsappService");
+const { sendCheckIn, sendCheckOut } = require("../services/whatsappService");
 const { getEffectiveCheckOut } = require("../utils/shiftUtils");
 
 function buildSetUserCmd(employee) {
@@ -441,22 +437,24 @@ const recordBiometric = asyncHandler(async (req, res) => {
   if (employee.phone) {
     try {
       if (logType === "check_in") {
-        await sendWhatsApp(
+        await sendCheckIn(
           employee.phone,
-          checkInMsg(employee, device.location.name, now),
-          "whatsappNotifyCheckIn",
+          {
+            firstName: employee.firstName,
+            locationName: device.location.name,
+            time: now,
+          },
           device.company,
         );
       } else {
-        await sendWhatsApp(
+        await sendCheckOut(
           employee.phone,
-          checkOutMsg(
-            employee,
-            device.location.name,
-            now,
-            attendanceUpdate.workHours,
-          ),
-          "whatsappNotifyCheckIn",
+          {
+            firstName: employee.firstName,
+            locationName: device.location.name,
+            time: now,
+            workHours: attendanceUpdate.workHours,
+          },
           device.company,
         );
       }

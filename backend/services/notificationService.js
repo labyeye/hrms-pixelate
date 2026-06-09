@@ -1,5 +1,5 @@
 const nodemailer = require("nodemailer");
-const { sendWhatsApp } = require("./whatsappService");
+const { sendSubscriptionWA } = require("./whatsappService");
 
 function getTransporter() {
   const host = process.env.SMTP_HOST;
@@ -143,16 +143,14 @@ async function sendSubscriptionConfirmationEmail(opts) {
 }
 
 async function sendSubscriptionConfirmationWhatsApp(opts) {
-  const message =
-    `🎉 *Welcome to NestHR, ${opts.toName}!*\n\n` +
-    `Your *${opts.planName}* plan for *${opts.companyName}* is now active.\n\n` +
-    `💰 Amount Paid: *${formatCurrency(opts.amount)}*\n` +
-    `🔄 Next Renewal: *${formatDate(opts.renewalDate)}*\n\n` +
-    `👉 Login to your dashboard:\n${opts.dashboardUrl}\n\n` +
-    `Need help? Reply to this message or email support@pixelatenest.com\n\n` +
-    `— NestHR by Pixelate Nest`;
-
-  await sendWhatsApp(opts.toPhone, message);
+  await sendSubscriptionWA(opts.toPhone, {
+    toName: opts.toName,
+    planName: opts.planName,
+    companyName: opts.companyName,
+    amount: opts.amount,
+    renewalDate: opts.renewalDate,
+    dashboardUrl: opts.dashboardUrl,
+  });
 }
 
 async function sendPaymentConfirmations(opts) {

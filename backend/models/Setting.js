@@ -74,9 +74,6 @@ const settingSchema = new mongoose.Schema(
     },
 
     whatsappEnabled: { type: Boolean, default: false },
-    metaAccessToken: { type: String, default: "" },
-    metaPhoneNumberId: { type: String, default: "" },
-    metaWabaId: { type: String, default: "" },
     whatsappNotifyCheckIn: { type: Boolean, default: true },
     whatsappNotifyLeave: { type: Boolean, default: true },
     whatsappNotifyPayroll: { type: Boolean, default: true },
