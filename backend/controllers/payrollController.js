@@ -409,11 +409,28 @@ const markPaid = asyncHandler(async (req, res) => {
 
   if (payroll.employee?.phone) {
     try {
-      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      const months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
       const period = `${months[(payroll.month || 1) - 1]} ${payroll.year}`;
       await sendSalaryPaid(
         payroll.employee.phone,
-        { firstName: payroll.employee.firstName, period, netSalary: payroll.netSalary },
+        {
+          firstName: payroll.employee.firstName,
+          period,
+          netSalary: payroll.netSalary,
+        },
         req.user.company,
       );
     } catch {}
