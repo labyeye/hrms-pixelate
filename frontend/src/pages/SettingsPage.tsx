@@ -1213,8 +1213,8 @@ export default function SettingsPage() {
                     {[
                       {
                         key: "otEnabled",
-                        label: "Enable OT Calculation",
-                        sub: "Automatically calculate overtime based on shift hours",
+                        label: "Enable Overtime",
+                        sub: "When off, checkout is capped at shift end — extra hours are not counted",
                       },
                     ].map(({ key, label, sub }) => (
                       <div
@@ -1417,11 +1417,6 @@ export default function SettingsPage() {
                       key: "emailNotif",
                       label: "Email Notifications",
                       sub: "Send email alerts to employees and admins",
-                    },
-                    {
-                      key: "otEnabled",
-                      label: "Overtime Calculation",
-                      sub: "Enable automatic OT calculation in payroll",
                     },
                   ].map(({ key, label, sub }) => (
                     <div

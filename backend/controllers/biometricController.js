@@ -11,6 +11,7 @@ const {
   checkInMsg,
   checkOutMsg,
 } = require("../services/whatsappService");
+const { getEffectiveCheckOut } = require("../utils/shiftUtils");
 
 function buildSetUserCmd(employee) {
   const uid = employee.biometricUserId;
@@ -405,8 +406,14 @@ const recordBiometric = asyncHandler(async (req, res) => {
       date: today,
     });
     if (existing?.checkIn) {
-      attendanceUpdate.checkOut = now;
-      attendanceUpdate.workHours = (now - existing.checkIn) / 3600000;
+      const effectiveCheckOut = await getEffectiveCheckOut(
+        device.company,
+        employee._id,
+        now,
+      );
+      attendanceUpdate.checkOut = effectiveCheckOut;
+      attendanceUpdate.workHours =
+        (effectiveCheckOut - existing.checkIn) / 3600000;
     }
   }
 
@@ -867,8 +874,14 @@ const faceAttendance = asyncHandler(async (req, res) => {
       date: today,
     });
     if (existing?.checkIn) {
-      attendanceUpdate.checkOut = now;
-      attendanceUpdate.workHours = (now - existing.checkIn) / 3600000;
+      const effectiveCheckOut = await getEffectiveCheckOut(
+        bestMatch.company,
+        bestMatch._id,
+        now,
+      );
+      attendanceUpdate.checkOut = effectiveCheckOut;
+      attendanceUpdate.workHours =
+        (effectiveCheckOut - existing.checkIn) / 3600000;
     }
   }
 

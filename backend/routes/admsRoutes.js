@@ -4,6 +4,7 @@ const Employee = require("../models/Employee");
 const Attendance = require("../models/Attendance");
 const BiometricDevice = require("../models/BiometricDevice");
 const BiometricCommand = require("../models/BiometricCommand");
+const { getEffectiveCheckOut } = require("../utils/shiftUtils");
 
 function pad(n) {
   return String(n).padStart(2, "0");
@@ -103,7 +104,11 @@ async function processLog(
     upd.checkIn = punchTime;
     upd.verifyMode = verifyMode;
   } else if (punchTime > existing.checkIn) {
-    upd.checkOut = punchTime;
+    upd.checkOut = await getEffectiveCheckOut(
+      companyId,
+      employee._id,
+      punchTime,
+    );
   }
 
   if (Object.keys(upd).length) {
