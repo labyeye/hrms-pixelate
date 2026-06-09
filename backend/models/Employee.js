@@ -49,6 +49,7 @@ const employeeSchema = new mongoose.Schema(
     loanBalance: { type: Number, default: 0 },
     advanceBalance: { type: Number, default: 0 },
     otRate: { type: Number, default: 0 },
+    otEnabled: { type: Boolean, default: false },
     workDaysPerWeek: { type: Number, enum: [5, 6, 7], default: 6 },
     biometricUserId: { type: String, default: "" },
     rfidCard: { type: String, default: "" },

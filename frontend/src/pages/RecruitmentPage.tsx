@@ -59,7 +59,12 @@ export default function RecruitmentPage() {
   });
   const [candForm, setCandForm] = useState({ name: "", email: "", phone: "" });
   const [saving, setSaving] = useState(false);
-  const [actionModal, setActionModal] = useState<{ show: boolean; type: "success" | "error"; title: string; message: string }>({ show: false, type: "success", title: "", message: "" });
+  const [actionModal, setActionModal] = useState<{
+    show: boolean;
+    type: "success" | "error";
+    title: string;
+    message: string;
+  }>({ show: false, type: "success", title: "", message: "" });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -86,11 +91,21 @@ export default function RecruitmentPage() {
         ...form,
         positions: Number(form.positions),
       });
-      setActionModal({ show: true, type: "success", title: "Job Posted", message: "New job opening has been created successfully." });
+      setActionModal({
+        show: true,
+        type: "success",
+        title: "Job Posted",
+        message: "New job opening has been created successfully.",
+      });
       setShowModal(false);
       load();
     } catch (err: any) {
-      setActionModal({ show: true, type: "error", title: "Error", message: err.message || "Failed to create job." });
+      setActionModal({
+        show: true,
+        type: "error",
+        title: "Error",
+        message: err.message || "Failed to create job.",
+      });
     }
     setSaving(false);
   };
@@ -101,12 +116,22 @@ export default function RecruitmentPage() {
     setSaving(true);
     try {
       await recruitmentAPI.addCandidate(candidateModal.jobId, candForm);
-      setActionModal({ show: true, type: "success", title: "Candidate Added", message: "Candidate has been added to the pipeline." });
+      setActionModal({
+        show: true,
+        type: "success",
+        title: "Candidate Added",
+        message: "Candidate has been added to the pipeline.",
+      });
       setCandidateModal(null);
       setCandForm({ name: "", email: "", phone: "" });
       load();
     } catch (err: any) {
-      setActionModal({ show: true, type: "error", title: "Error", message: err.message || "Failed to add candidate." });
+      setActionModal({
+        show: true,
+        type: "error",
+        title: "Error",
+        message: err.message || "Failed to add candidate.",
+      });
     }
     setSaving(false);
   };
@@ -340,8 +365,21 @@ export default function RecruitmentPage() {
               onInvalidCapture={(e) => {
                 const el = e.target as HTMLInputElement;
                 e.preventDefault();
-                const label = el.closest("div")?.querySelector("label")?.textContent?.replace("*", "").trim() || el.placeholder || el.name || "a required field";
-                setActionModal({ show: true, type: "error", title: "Required Field Missing", message: `Please fill in: ${label}` });
+                const label =
+                  el
+                    .closest("div")
+                    ?.querySelector("label")
+                    ?.textContent?.replace("*", "")
+                    .trim() ||
+                  el.placeholder ||
+                  el.name ||
+                  "a required field";
+                setActionModal({
+                  show: true,
+                  type: "error",
+                  title: "Required Field Missing",
+                  message: `Please fill in: ${label}`,
+                });
               }}
               className="p-5 space-y-4"
             >
@@ -503,8 +541,21 @@ export default function RecruitmentPage() {
               onInvalidCapture={(e) => {
                 const el = e.target as HTMLInputElement;
                 e.preventDefault();
-                const label = el.closest("div")?.querySelector("label")?.textContent?.replace("*", "").trim() || el.placeholder || el.name || "a required field";
-                setActionModal({ show: true, type: "error", title: "Required Field Missing", message: `Please fill in: ${label}` });
+                const label =
+                  el
+                    .closest("div")
+                    ?.querySelector("label")
+                    ?.textContent?.replace("*", "")
+                    .trim() ||
+                  el.placeholder ||
+                  el.name ||
+                  "a required field";
+                setActionModal({
+                  show: true,
+                  type: "error",
+                  title: "Required Field Missing",
+                  message: `Please fill in: ${label}`,
+                });
               }}
               className="p-5 space-y-4"
             >

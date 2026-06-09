@@ -101,7 +101,12 @@ export default function HolidaysPage() {
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [actionModal, setActionModal] = useState<{ show: boolean; type: "success" | "error"; title: string; message: string }>({ show: false, type: "success", title: "", message: "" });
+  const [actionModal, setActionModal] = useState<{
+    show: boolean;
+    type: "success" | "error";
+    title: string;
+    message: string;
+  }>({ show: false, type: "success", title: "", message: "" });
 
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -137,11 +142,21 @@ export default function HolidaysPage() {
   const handleSave = async () => {
     if (saving) return;
     if (!form.name.trim()) {
-      setActionModal({ show: true, type: "error", title: "Required Field Missing", message: "Please fill in: Holiday Name" });
+      setActionModal({
+        show: true,
+        type: "error",
+        title: "Required Field Missing",
+        message: "Please fill in: Holiday Name",
+      });
       return;
     }
     if (!form.date) {
-      setActionModal({ show: true, type: "error", title: "Required Field Missing", message: "Please fill in: Date" });
+      setActionModal({
+        show: true,
+        type: "error",
+        title: "Required Field Missing",
+        message: "Please fill in: Date",
+      });
       return;
     }
     setSaving(true);

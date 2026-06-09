@@ -349,8 +349,21 @@ export default function LeavePage() {
               onInvalidCapture={(e) => {
                 const el = e.target as HTMLInputElement;
                 e.preventDefault();
-                const label = el.closest("div")?.querySelector("label")?.textContent?.replace("*", "").trim() || el.placeholder || el.name || "a required field";
-                setActionModal({ show: true, type: "error", title: "Required Field Missing", message: `Please fill in: ${label}` });
+                const label =
+                  el
+                    .closest("div")
+                    ?.querySelector("label")
+                    ?.textContent?.replace("*", "")
+                    .trim() ||
+                  el.placeholder ||
+                  el.name ||
+                  "a required field";
+                setActionModal({
+                  show: true,
+                  type: "error",
+                  title: "Required Field Missing",
+                  message: `Please fill in: ${label}`,
+                });
               }}
               className="p-5 space-y-4"
             >

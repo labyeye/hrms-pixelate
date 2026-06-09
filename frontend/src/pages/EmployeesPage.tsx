@@ -90,6 +90,7 @@ interface EmployeeFormData {
   pfNumber: string;
   workDaysPerWeek: string;
   otRate: string;
+  otEnabled: boolean;
 }
 
 const EMPTY_FORM: EmployeeFormData = {
@@ -120,6 +121,7 @@ const EMPTY_FORM: EmployeeFormData = {
   pfNumber: "",
   workDaysPerWeek: "6",
   otRate: "",
+  otEnabled: false,
 };
 
 export default function EmployeesPage() {
@@ -224,6 +226,7 @@ export default function EmployeesPage() {
       pfNumber: (emp as any).pfNumber || "",
       workDaysPerWeek: String((emp as any).workDaysPerWeek || 6),
       otRate: String((emp as any).otRate || ""),
+      otEnabled: (emp as any).otEnabled === true,
     });
     setFormTab(0);
     setShowModal(true);
@@ -670,8 +673,21 @@ export default function EmployeesPage() {
               onInvalidCapture={(e) => {
                 const el = e.target as HTMLInputElement;
                 e.preventDefault();
-                const label = el.closest("div")?.querySelector("label")?.textContent?.replace("*", "").trim() || el.placeholder || el.name || "a required field";
-                setActionModal({ show: true, type: "error", title: "Required Field Missing", message: `Please fill in: ${label}` });
+                const label =
+                  el
+                    .closest("div")
+                    ?.querySelector("label")
+                    ?.textContent?.replace("*", "")
+                    .trim() ||
+                  el.placeholder ||
+                  el.name ||
+                  "a required field";
+                setActionModal({
+                  show: true,
+                  type: "error",
+                  title: "Required Field Missing",
+                  message: `Please fill in: ${label}`,
+                });
               }}
               className="flex-1 overflow-y-auto flex flex-col"
             >
@@ -785,7 +801,12 @@ export default function EmployeesPage() {
                           type="tel"
                           value={form.phone}
                           onChange={(e) =>
-                            setForm({ ...form, phone: e.target.value.replace(/\D/g, "").slice(0, 10) })
+                            setForm({
+                              ...form,
+                              phone: e.target.value
+                                .replace(/\D/g, "")
+                                .slice(0, 10),
+                            })
                           }
                           maxLength={10}
                           minLength={10}
@@ -973,6 +994,34 @@ export default function EmployeesPage() {
                       <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-4">
                         Overtime & Biometric
                       </p>
+                      <div className="flex items-center justify-between p-3 border-2 border-black/10 hover:border-black transition-colors mb-4">
+                        <div>
+                          <p className="text-sm font-bold text-black">
+                            Enable Overtime
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            When on, extra hours beyond shift end are counted as
+                            OT
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setForm({ ...form, otEnabled: !form.otEnabled })
+                          }
+                          className={cn(
+                            "w-12 h-6 border-2 border-black transition-colors relative flex-shrink-0",
+                            form.otEnabled ? "bg-[#024BAB]" : "bg-gray-200",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "absolute top-0.5 w-4 h-4 bg-white border border-black transition-all",
+                              form.otEnabled ? "left-6" : "left-0.5",
+                            )}
+                          />
+                        </button>
+                      </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-xs font-bold text-black mb-1">
@@ -1103,7 +1152,9 @@ export default function EmployeesPage() {
                             onChange={(e) =>
                               setForm({
                                 ...form,
-                                uanNumber: e.target.value.replace(/\D/g, "").slice(0, 12),
+                                uanNumber: e.target.value
+                                  .replace(/\D/g, "")
+                                  .slice(0, 12),
                               })
                             }
                             maxLength={12}
@@ -1122,7 +1173,12 @@ export default function EmployeesPage() {
                             type="text"
                             value={form.esicNumber}
                             onChange={(e) =>
-                              setForm({ ...form, esicNumber: e.target.value.replace(/\D/g, "").slice(0, 17) })
+                              setForm({
+                                ...form,
+                                esicNumber: e.target.value
+                                  .replace(/\D/g, "")
+                                  .slice(0, 17),
+                              })
                             }
                             maxLength={17}
                             minLength={17}
@@ -1168,7 +1224,9 @@ export default function EmployeesPage() {
                             onChange={(e) =>
                               setForm({
                                 ...form,
-                                emergencyContact: e.target.value.replace(/\D/g, "").slice(0, 10),
+                                emergencyContact: e.target.value
+                                  .replace(/\D/g, "")
+                                  .slice(0, 10),
                               })
                             }
                             maxLength={10}
@@ -1211,7 +1269,9 @@ export default function EmployeesPage() {
                             onChange={(e) =>
                               setForm({
                                 ...form,
-                                panNumber: e.target.value.toUpperCase().slice(0, 10),
+                                panNumber: e.target.value
+                                  .toUpperCase()
+                                  .slice(0, 10),
                               })
                             }
                             maxLength={10}
@@ -1232,7 +1292,9 @@ export default function EmployeesPage() {
                             onChange={(e) =>
                               setForm({
                                 ...form,
-                                aadharNumber: e.target.value.replace(/\D/g, "").slice(0, 12),
+                                aadharNumber: e.target.value
+                                  .replace(/\D/g, "")
+                                  .slice(0, 12),
                               })
                             }
                             maxLength={12}
@@ -1280,7 +1342,9 @@ export default function EmployeesPage() {
                             onChange={(e) =>
                               setForm({
                                 ...form,
-                                bankAccount: e.target.value.replace(/\D/g, "").slice(0, 18),
+                                bankAccount: e.target.value
+                                  .replace(/\D/g, "")
+                                  .slice(0, 18),
                               })
                             }
                             minLength={9}
@@ -1302,7 +1366,9 @@ export default function EmployeesPage() {
                             onChange={(e) =>
                               setForm({
                                 ...form,
-                                ifscCode: e.target.value.toUpperCase().slice(0, 11),
+                                ifscCode: e.target.value
+                                  .toUpperCase()
+                                  .slice(0, 11),
                               })
                             }
                             maxLength={11}
@@ -1807,8 +1873,21 @@ export default function EmployeesPage() {
               onInvalidCapture={(e) => {
                 const el = e.target as HTMLInputElement;
                 e.preventDefault();
-                const label = el.closest("div")?.querySelector("label")?.textContent?.replace("*", "").trim() || el.placeholder || el.name || "a required field";
-                setActionModal({ show: true, type: "error", title: "Required Field Missing", message: `Please fill in: ${label}` });
+                const label =
+                  el
+                    .closest("div")
+                    ?.querySelector("label")
+                    ?.textContent?.replace("*", "")
+                    .trim() ||
+                  el.placeholder ||
+                  el.name ||
+                  "a required field";
+                setActionModal({
+                  show: true,
+                  type: "error",
+                  title: "Required Field Missing",
+                  message: `Please fill in: ${label}`,
+                });
               }}
               onSubmit={async (e) => {
                 e.preventDefault();
@@ -1819,11 +1898,21 @@ export default function EmployeesPage() {
                     amount: parseFloat(loanForm.amount),
                     monthlyEmi: parseFloat(loanForm.monthlyEmi || "0"),
                   });
-                  setActionModal({ show: true, type: "success", title: "Loan Created", message: "Loan / advance entry saved successfully." });
+                  setActionModal({
+                    show: true,
+                    type: "success",
+                    title: "Loan Created",
+                    message: "Loan / advance entry saved successfully.",
+                  });
                   setLoanModal(false);
                   load();
                 } catch (err: any) {
-                  setActionModal({ show: true, type: "error", title: "Error", message: err.message || "Failed to create loan entry." });
+                  setActionModal({
+                    show: true,
+                    type: "error",
+                    title: "Error",
+                    message: err.message || "Failed to create loan entry.",
+                  });
                 }
                 setSavingLoan(false);
               }}
@@ -1947,8 +2036,21 @@ export default function EmployeesPage() {
               onInvalidCapture={(e) => {
                 const el = e.target as HTMLInputElement;
                 e.preventDefault();
-                const label = el.closest("div")?.querySelector("label")?.textContent?.replace("*", "").trim() || el.placeholder || el.name || "a required field";
-                setActionModal({ show: true, type: "error", title: "Required Field Missing", message: `Please fill in: ${label}` });
+                const label =
+                  el
+                    .closest("div")
+                    ?.querySelector("label")
+                    ?.textContent?.replace("*", "")
+                    .trim() ||
+                  el.placeholder ||
+                  el.name ||
+                  "a required field";
+                setActionModal({
+                  show: true,
+                  type: "error",
+                  title: "Required Field Missing",
+                  message: `Please fill in: ${label}`,
+                });
               }}
               onSubmit={async (e) => {
                 e.preventDefault();

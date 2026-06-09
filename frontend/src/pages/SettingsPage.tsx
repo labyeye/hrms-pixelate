@@ -232,7 +232,8 @@ function InputField({
   return (
     <div className="space-y-2">
       <label className="block text-xs font-bold text-black uppercase tracking-wider">
-        {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+        {label}
+        {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
       <input
         type={type}
@@ -271,7 +272,8 @@ function TextAreaField({
   return (
     <div className="space-y-2">
       <label className="block text-xs font-bold text-black uppercase tracking-wider">
-        {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+        {label}
+        {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
       <textarea
         name={name}
@@ -401,29 +403,59 @@ export default function SettingsPage() {
   const handleSave = async () => {
     if (activeTab === "general") {
       if (!settings?.companyName?.trim()) {
-        setActionModal({ show: true, type: "error", title: "Required Field Missing", message: "Please fill in: Company Name" });
+        setActionModal({
+          show: true,
+          type: "error",
+          title: "Required Field Missing",
+          message: "Please fill in: Company Name",
+        });
         return;
       }
       if (!settings?.companyAddress?.trim()) {
-        setActionModal({ show: true, type: "error", title: "Required Field Missing", message: "Please fill in: Company Address" });
+        setActionModal({
+          show: true,
+          type: "error",
+          title: "Required Field Missing",
+          message: "Please fill in: Company Address",
+        });
         return;
       }
     }
     if (activeTab === "bank") {
       if (!settings?.bankName?.trim()) {
-        setActionModal({ show: true, type: "error", title: "Required Field Missing", message: "Please fill in: Bank Name" });
+        setActionModal({
+          show: true,
+          type: "error",
+          title: "Required Field Missing",
+          message: "Please fill in: Bank Name",
+        });
         return;
       }
       if (!settings?.bankAccountName?.trim()) {
-        setActionModal({ show: true, type: "error", title: "Required Field Missing", message: "Please fill in: Account Holder Name" });
+        setActionModal({
+          show: true,
+          type: "error",
+          title: "Required Field Missing",
+          message: "Please fill in: Account Holder Name",
+        });
         return;
       }
       if (!settings?.bankAccountNumber?.trim()) {
-        setActionModal({ show: true, type: "error", title: "Required Field Missing", message: "Please fill in: Account Number" });
+        setActionModal({
+          show: true,
+          type: "error",
+          title: "Required Field Missing",
+          message: "Please fill in: Account Number",
+        });
         return;
       }
       if (!settings?.bankIFSC?.trim()) {
-        setActionModal({ show: true, type: "error", title: "Required Field Missing", message: "Please fill in: IFSC Code" });
+        setActionModal({
+          show: true,
+          type: "error",
+          title: "Required Field Missing",
+          message: "Please fill in: IFSC Code",
+        });
         return;
       }
     }
@@ -447,7 +479,6 @@ export default function SettingsPage() {
       setSaving(false);
     }
   };
-
 
   if (loading) {
     return (
@@ -571,8 +602,17 @@ export default function SettingsPage() {
                       title="Enter a valid 10-digit phone number"
                       placeholder="10-digit phone number"
                       onChange={(e) => {
-                        const v = e.target.value.replace(/\D/g, "").slice(0, 10);
-                        handleChange({ ...e, target: { ...e.target, name: "companyPhone", value: v } });
+                        const v = e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 10);
+                        handleChange({
+                          ...e,
+                          target: {
+                            ...e.target,
+                            name: "companyPhone",
+                            value: v,
+                          },
+                        });
                       }}
                     />
                     <InputField
@@ -586,7 +626,10 @@ export default function SettingsPage() {
                       placeholder="e.g. 22AAAAA0000A1Z5"
                       onChange={(e) => {
                         const v = e.target.value.toUpperCase().slice(0, 15);
-                        handleChange({ ...e, target: { ...e.target, name: "companyGST", value: v } });
+                        handleChange({
+                          ...e,
+                          target: { ...e.target, name: "companyGST", value: v },
+                        });
                       }}
                     />
                     <InputField
@@ -720,8 +763,17 @@ export default function SettingsPage() {
                       title="Account number must be 9–18 digits"
                       placeholder="9–18 digit account number"
                       onChange={(e) => {
-                        const v = e.target.value.replace(/\D/g, "").slice(0, 18);
-                        handleChange({ ...e, target: { ...e.target, name: "bankAccountNumber", value: v } });
+                        const v = e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 18);
+                        handleChange({
+                          ...e,
+                          target: {
+                            ...e.target,
+                            name: "bankAccountNumber",
+                            value: v,
+                          },
+                        });
                       }}
                     />
                     <InputField
@@ -736,7 +788,10 @@ export default function SettingsPage() {
                       placeholder="e.g. SBIN0001234"
                       onChange={(e) => {
                         const v = e.target.value.toUpperCase().slice(0, 11);
-                        handleChange({ ...e, target: { ...e.target, name: "bankIFSC", value: v } });
+                        handleChange({
+                          ...e,
+                          target: { ...e.target, name: "bankIFSC", value: v },
+                        });
                       }}
                     />
                   </div>

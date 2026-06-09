@@ -59,6 +59,7 @@ export interface Employee {
   salary?: number;
   workDaysPerWeek?: 5 | 6 | 7;
   otRate?: number;
+  otEnabled?: boolean;
   avatar?: string;
   gender?: "male" | "female" | "other";
   dateOfBirth?: string;
