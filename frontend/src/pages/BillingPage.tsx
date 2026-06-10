@@ -571,24 +571,20 @@ export default function BillingPage() {
                 <ArrowRight className="w-4 h-4 ml-auto text-muted-foreground" />
               </button>
 
-              {/* HDFC SmartGateway */}
-              <button
-                onClick={() => handleGatewaySelect("hdfc")}
-                className="w-full border-2 border-black p-4 flex items-center gap-4 hover:bg-[#024BAB]/5 transition-colors text-left"
-              >
-                <div className="w-10 h-10 bg-[#EF4444] border-2 border-black flex items-center justify-center shrink-0">
-                  <Building2 className="w-5 h-5 text-white" />
+              {/* HDFC SmartGateway — disabled until merchant account is configured */}
+              <div className="w-full border-2 border-gray-200 p-4 flex items-center gap-4 opacity-50 cursor-not-allowed">
+                <div className="w-10 h-10 bg-gray-300 border-2 border-gray-200 flex items-center justify-center shrink-0">
+                  <Building2 className="w-5 h-5 text-gray-400" />
                 </div>
                 <div>
-                  <p className="font-bold text-black text-sm">
+                  <p className="font-bold text-gray-400 text-sm">
                     HDFC SmartGateway
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    Redirect to HDFC secure payment page
+                  <p className="text-xs text-gray-400">
+                    Coming soon
                   </p>
                 </div>
-                <ArrowRight className="w-4 h-4 ml-auto text-muted-foreground" />
-              </button>
+              </div>
 
               <p className="text-xs text-muted-foreground text-center pt-2 flex items-center justify-center gap-1">
                 <ShieldCheck className="w-3 h-3" /> All payments are 256-bit
