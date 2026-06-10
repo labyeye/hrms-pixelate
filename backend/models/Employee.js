@@ -54,6 +54,9 @@ const employeeSchema = new mongoose.Schema(
     biometricUserId: { type: String, default: "" },
     rfidCard: { type: String, default: "" },
     faceDescriptor: { type: [Number], default: [] },
+    // Raw face template received from ZKTeco/ESSL device (hex string, device-specific binary format)
+    deviceFaceTemplate: { type: String, default: "" },
+    deviceFaceEnrolledAt: { type: Date },
   },
   { timestamps: true },
 );

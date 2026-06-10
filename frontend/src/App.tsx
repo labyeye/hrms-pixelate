@@ -29,6 +29,7 @@ import PaymentFailedPage from "./pages/PaymentFailedPage";
 import ManagePage from "./pages/ManagePage";
 import EmployeePayrollPage from "./pages/EmployeePayrollPage";
 import EmployeeReportPage from "./pages/EmployeeReportPage";
+import LoansPage from "./pages/LoansPage";
 import NotFound from "./pages/NotFound";
 import nesthrlogo from "../assets/nesthr.png";
 const queryClient = new QueryClient({
@@ -285,6 +286,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <EmployeeReportPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/loans"
+        element={
+          <ProtectedRoute>
+            <LoansPage />
           </ProtectedRoute>
         }
       />

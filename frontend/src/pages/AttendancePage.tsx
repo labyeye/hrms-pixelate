@@ -15,6 +15,7 @@ import {
   Scan,
   KeyRound,
   MousePointerClick,
+  Pencil,
 } from "lucide-react";
 
 const VERIFY_MODE_CONFIG: Record<
@@ -102,6 +103,7 @@ export default function AttendancePage() {
   });
   const [saving, setSaving] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -127,6 +129,26 @@ export default function AttendancePage() {
     load();
   }, [load]);
 
+  const toLocalInput = (iso: string | undefined) => {
+    if (!iso) return "";
+    return new Date(iso).toISOString().slice(0, 16);
+  };
+
+  const openEdit = (rec: AttendanceRecord) => {
+    const emp = rec.employee as any;
+    setMarkForm({
+      employee: emp?._id ?? "",
+      date: new Date(rec.date).toISOString().split("T")[0],
+      status: rec.status,
+      checkIn: toLocalInput(rec.checkIn as any),
+      checkOut: toLocalInput(rec.checkOut as any),
+      overtime: (rec as any).overtime ? String((rec as any).overtime) : "",
+      notes: (rec as any).notes ?? "",
+    });
+    setEditingId(rec._id);
+    setMarkModal(true);
+  };
+
   const handleMark = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -136,6 +158,7 @@ export default function AttendancePage() {
         overtime: markForm.overtime ? parseFloat(markForm.overtime) : 0,
       });
       setMarkModal(false);
+      setEditingId(null);
       load();
     } catch (err: any) {
       alert(err.message);
@@ -307,6 +330,7 @@ export default function AttendancePage() {
                   "OT Hrs",
                   "Via",
                   "Status",
+                  ...(isEmployee ? [] : [""]),
                 ].map((h) => (
                   <th
                     key={h}
@@ -400,6 +424,17 @@ export default function AttendancePage() {
                         {rec.status.replace("_", " ")}
                       </span>
                     </td>
+                    {!isEmployee && (
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => openEdit(rec)}
+                          title="Edit attendance"
+                          className="p-1.5 border-2 border-black hover:bg-[#024BAB] hover:text-white transition-colors"
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -414,9 +449,9 @@ export default function AttendancePage() {
           <div className="border-2 bg-white w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
               <h3 className="font-display font-bold text-lg">
-                Mark Attendance
+                {editingId ? "Edit Attendance" : "Mark Attendance"}
               </h3>
-              <button onClick={() => setMarkModal(false)}>
+              <button onClick={() => { setMarkModal(false); setEditingId(null); }}>
                 <XCircle className="w-5 h-5" />
               </button>
             </div>
@@ -430,8 +465,9 @@ export default function AttendancePage() {
                   onChange={(e) =>
                     setMarkForm({ ...markForm, employee: e.target.value })
                   }
-                  className="border-2 w-full px-3 py-2 text-sm"
+                  className="border-2 w-full px-3 py-2 text-sm disabled:opacity-60 disabled:bg-gray-50"
                   required
+                  disabled={!!editingId}
                 >
                   <option value="">Select employee</option>
                   {employees.map((e) => (
@@ -524,11 +560,11 @@ export default function AttendancePage() {
                   disabled={saving}
                   className="border-2 bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold flex-1"
                 >
-                  {saving ? "Saving..." : "Mark Attendance"}
+                  {saving ? "Saving..." : editingId ? "Update Attendance" : "Mark Attendance"}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setMarkModal(false)}
+                  onClick={() => { setMarkModal(false); setEditingId(null); }}
                   className="border-2 bg-white text-black px-4 py-2.5 text-sm font-bold"
                 >
                   Cancel

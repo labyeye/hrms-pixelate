@@ -179,10 +179,46 @@ router.post(
     const { SN, table } = req.query;
     res.set("Content-Type", "text/plain");
 
-    if (table !== "ATTLOG") return res.send("OK");
-
     const body = req.body;
     if (!body || typeof body !== "string") return res.send("OK");
+
+    // Handle face/finger bio template upload from device after ENROLL_BIO command
+    if (table === "BIODATA") {
+      try {
+        const device = await resolveDevice(SN);
+        console.log(`[ADMS] BIODATA from SN=${SN} body="${body.slice(0, 200)}"`);
+
+        if (device) {
+          // Parse PIN= from the body to identify employee
+          const pinMatch = body.match(/\bPIN=(\S+)/);
+          const typeMatch = body.match(/\bType=(\d+)/);
+          const pin = pinMatch ? pinMatch[1] : null;
+          const biotype = typeMatch ? parseInt(typeMatch[1], 10) : null;
+
+          if (pin && biotype === 9) {
+            // Type=9 = face template on ZKTeco ZLM60
+            const Employee = require("../models/Employee");
+            const employee = await Employee.findOne({
+              biometricUserId: pin,
+              company: device.company,
+            });
+            if (employee) {
+              employee.deviceFaceTemplate = Buffer.from(body).toString("hex");
+              employee.deviceFaceEnrolledAt = new Date();
+              await employee.save();
+              console.log(`[ADMS] BIODATA: stored face template for emp ${employee.firstName} ${employee.lastName} (PIN=${pin})`);
+            } else {
+              console.warn(`[ADMS] BIODATA: no employee found for PIN=${pin} company=${device.company}`);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("[ADMS] BIODATA handler error:", err.message);
+      }
+      return res.send("OK");
+    }
+
+    if (table !== "ATTLOG") return res.send("OK");
 
     const stamp = parseInt(req.query.Stamp || "0", 10) || 0;
 

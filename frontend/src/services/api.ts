@@ -368,6 +368,12 @@ export const biometricAPI = {
       body: JSON.stringify({ employeeId }),
     }),
 
+  pushFaceTemplateToDevice: (deviceId: string, employeeId: string) =>
+    request(`/biometric/devices/${deviceId}/push-face-template`, {
+      method: "POST",
+      body: JSON.stringify({ employeeId }),
+    }),
+
   getDeviceEmployees: (token: string) =>
     request(`/biometric/device/${token}/employees`),
   enrollFaceFromDevice: (

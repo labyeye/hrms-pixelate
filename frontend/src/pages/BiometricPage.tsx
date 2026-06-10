@@ -494,6 +494,20 @@ export default function BiometricPage() {
     }
   };
 
+  const handlePushFaceTemplate = async (emp: any) => {
+    if (!admsDevice) return;
+    try {
+      const res = await biometricAPI.pushFaceTemplateToDevice(
+        admsDevice._id,
+        emp._id,
+      );
+      toast({ title: "Face template push queued", description: res.message });
+      fetchCommands(admsDevice._id);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+  };
+
   const handleSaveBioId = async (emp: any) => {
     if (!editBioId) return;
     try {
@@ -1793,18 +1807,34 @@ export default function BiometricPage() {
                                           </button>
                                         )}
 
-                                        {/* Face enroll trigger on physical ADMS device */}
+                                        {/* Face enroll / push template on physical ADMS device */}
                                         {emp.biometricUserId && admsDevice && (
-                                          <button
-                                            onClick={() =>
-                                              handleTriggerFaceEnroll(emp)
-                                            }
-                                            title="Trigger face enrollment on eSSL/ZKTeco device"
-                                            className=" px-2 py-1.5 text-[10px] font-black flex items-center gap-1 bg-green-50 border-2 border-green-600 text-green-800 hover:bg-green-100"
-                                          >
-                                            <Scan className="w-3 h-3" /> Face
-                                            Enroll
-                                          </button>
+                                          <>
+                                            <button
+                                              onClick={() =>
+                                                handleTriggerFaceEnroll(emp)
+                                              }
+                                              title="Send command to device — employee stands in front of device to scan face"
+                                              className=" px-2 py-1.5 text-[10px] font-black flex items-center gap-1 bg-green-50 border-2 border-green-600 text-green-800 hover:bg-green-100"
+                                            >
+                                              <Scan className="w-3 h-3" />{" "}
+                                              {emp.deviceFaceTemplate
+                                                ? "Re-Enroll"
+                                                : "Face Enroll"}
+                                            </button>
+                                            {emp.deviceFaceTemplate && (
+                                              <button
+                                                onClick={() =>
+                                                  handlePushFaceTemplate(emp)
+                                                }
+                                                title="Push stored face template to this device (for employees enrolled on another device)"
+                                                className=" px-2 py-1.5 text-[10px] font-black flex items-center gap-1 bg-blue-50 border-2 border-blue-600 text-blue-800 hover:bg-blue-100"
+                                              >
+                                                <Scan className="w-3 h-3" />{" "}
+                                                Push Face
+                                              </button>
+                                            )}
+                                          </>
                                         )}
 
                                         {/* Sync to device */}

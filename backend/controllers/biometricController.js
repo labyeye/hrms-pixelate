@@ -969,14 +969,69 @@ const triggerFaceEnroll = asyncHandler(async (req, res) => {
     device: device._id,
     company: device.company,
     cmdId,
-    command: `ENROLL_FACE PIN=${employee.biometricUserId}\tOverWrite=1`,
-    type: "SET_USER",
+    // ENROLL_BIO Type=9 = face on ZKTeco ZLM60 series (ESSL MB20 firmware ZLM60-NF28VA)
+    command: `ENROLL_BIO PIN=${employee.biometricUserId}\tType=9\tNo=0\tOverWrite=1`,
+    type: "ENROLL_FACE",
     employee: employee._id,
   });
 
   res.json({
     success: true,
     message: `Face enrollment queued for ${employee.firstName} ${employee.lastName}. Ask them to stand in front of the device.`,
+    data: { cmdId },
+  });
+});
+
+const pushFaceTemplateToDevice = asyncHandler(async (req, res) => {
+  const { employeeId } = req.body;
+  if (!employeeId) {
+    res.status(400);
+    throw new Error("employeeId is required");
+  }
+
+  const device = await BiometricDevice.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!device) {
+    res.status(404);
+    throw new Error("Device not found");
+  }
+  if (!device.serialNumber) {
+    res.status(400);
+    throw new Error("Device serial number not registered");
+  }
+
+  const employee = await Employee.findOne({
+    _id: employeeId,
+    company: req.user.company,
+  });
+  if (!employee || !employee.biometricUserId) {
+    res.status(400);
+    throw new Error("Employee not found or has no biometric user ID");
+  }
+  if (!employee.deviceFaceTemplate) {
+    res.status(400);
+    throw new Error(
+      "No face template stored for this employee. Enroll their face on any device first.",
+    );
+  }
+
+  const cmdId = await nextCmdId(device._id);
+  const templateStr = Buffer.from(employee.deviceFaceTemplate, "hex").toString();
+
+  await BiometricCommand.create({
+    device: device._id,
+    company: device.company,
+    cmdId,
+    command: templateStr,
+    type: "PUSH_FACE",
+    employee: employee._id,
+  });
+
+  res.json({
+    success: true,
+    message: `Face template push queued for ${employee.firstName} ${employee.lastName}.`,
     data: { cmdId },
   });
 });
@@ -1125,4 +1180,5 @@ module.exports = {
   getDeviceEmployees,
   enrollFaceFromDevice,
   triggerFaceEnroll,
+  pushFaceTemplateToDevice,
 };

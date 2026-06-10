@@ -50,9 +50,16 @@ const getEmployees = asyncHandler(async (req, res) => {
     .skip(skip)
     .limit(limit);
 
+  // Convert large binary fields to lightweight flags before sending to client
+  const data = employees.map((e) => {
+    const obj = e.toObject();
+    obj.deviceFaceTemplate = !!obj.deviceFaceTemplate;
+    return obj;
+  });
+
   res.json({
     success: true,
-    data: employees,
+    data,
     total,
     page,
     pages: Math.ceil(total / limit),
@@ -226,9 +233,14 @@ const updateEmployee = [
       "shiftName",
     ];
 
+    // Fields that hold ObjectId references — empty string must become undefined,
+    // otherwise Mongoose throws a BSONError trying to cast "" to ObjectId.
+    const objectIdFields = new Set(["shift", "department", "reportingTo"]);
+
     for (const key of allowed) {
       if (req.body[key] !== undefined) {
-        employee[key] = req.body[key];
+        const val = req.body[key];
+        employee[key] = objectIdFields.has(key) && val === "" ? undefined : val;
       }
     }
 

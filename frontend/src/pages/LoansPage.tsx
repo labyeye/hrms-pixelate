@@ -1,0 +1,417 @@
+import { useState, useEffect, useCallback } from "react";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { loanAPI, employeeAPI } from "@/services/api";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import { Banknote, Plus, Pencil, Trash2, X, IndianRupee, TrendingDown, CheckCircle2, PauseCircle } from "lucide-react";
+import { Employee } from "@/types/hrms";
+
+interface Loan {
+  _id: string;
+  employee: { _id: string; firstName: string; lastName: string; employeeId: string; department?: any };
+  type: "loan" | "advance";
+  amount: number;
+  remainingBalance: number;
+  monthlyEmi: number;
+  reason: string;
+  disbursedOn: string;
+  status: "active" | "cleared" | "paused";
+  clearedOn?: string;
+  remarks: string;
+}
+
+const EMPTY_FORM = {
+  employee: "",
+  type: "loan" as "loan" | "advance",
+  amount: "",
+  monthlyEmi: "",
+  reason: "",
+  disbursedOn: new Date().toISOString().split("T")[0],
+  status: "active" as "active" | "cleared" | "paused",
+  remarks: "",
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  active: "bg-green-50 border-green-500 text-green-800",
+  cleared: "bg-gray-100 border-gray-400 text-gray-600",
+  paused: "bg-yellow-50 border-yellow-500 text-yellow-800",
+};
+
+export default function LoansPage() {
+  const { toast } = useToast();
+  const [loans, setLoans] = useState<Loan[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filterType, setFilterType] = useState<"all" | "loan" | "advance">("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "cleared" | "paused">("all");
+  const [modal, setModal] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [saving, setSaving] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [loanRes, empRes] = await Promise.all([
+        loanAPI.getAll(),
+        employeeAPI.getAll({ status: "active", limit: "300" }),
+      ]);
+      setLoans(loanRes.data || []);
+      setEmployees(empRes.data || []);
+    } catch {}
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const openAdd = () => {
+    setForm({ ...EMPTY_FORM });
+    setEditId(null);
+    setModal(true);
+  };
+
+  const openEdit = (loan: Loan) => {
+    setForm({
+      employee: loan.employee._id,
+      type: loan.type,
+      amount: String(loan.amount),
+      monthlyEmi: String(loan.monthlyEmi),
+      reason: loan.reason,
+      disbursedOn: loan.disbursedOn ? loan.disbursedOn.split("T")[0] : "",
+      status: loan.status,
+      remarks: loan.remarks,
+    });
+    setEditId(loan._id);
+    setModal(true);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const payload = {
+        employee: form.employee,
+        type: form.type,
+        amount: parseFloat(form.amount),
+        monthlyEmi: parseFloat(form.monthlyEmi) || 0,
+        reason: form.reason,
+        disbursedOn: form.disbursedOn,
+        status: form.status,
+        remarks: form.remarks,
+        remainingBalance: parseFloat(form.amount),
+      };
+      if (editId) {
+        await loanAPI.update(editId, payload);
+        toast({ title: "Updated", description: "Loan/advance record updated." });
+      } else {
+        await loanAPI.create(payload);
+        toast({ title: "Created", description: "Loan/advance entry added." });
+      }
+      setModal(false);
+      load();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+    setSaving(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await loanAPI.delete(id);
+      toast({ title: "Deleted" });
+      setDeleteConfirm(null);
+      load();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const displayed = loans.filter((l) => {
+    if (filterType !== "all" && l.type !== filterType) return false;
+    if (filterStatus !== "all" && l.status !== filterStatus) return false;
+    return true;
+  });
+
+  const totalDisbursed = displayed.reduce((s, l) => s + l.amount, 0);
+  const totalOutstanding = displayed.filter((l) => l.status === "active").reduce((s, l) => s + l.remainingBalance, 0);
+  const activeCount = displayed.filter((l) => l.status === "active").length;
+  const clearedCount = displayed.filter((l) => l.status === "cleared").length;
+
+  const fmt = (n: number) =>
+    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
+
+  return (
+    <AppLayout title="Loans & Advances">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+        <div className="flex flex-wrap gap-2">
+          {(["all", "loan", "advance"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setFilterType(t)}
+              className={cn(
+                "px-3 py-1.5 text-xs font-bold border-2 capitalize",
+                filterType === t ? "bg-[#024BAB] text-white border-[#024BAB]" : "bg-white border-black text-black",
+              )}
+            >
+              {t === "all" ? "All" : t === "loan" ? "Loans" : "Advances"}
+            </button>
+          ))}
+          <span className="border-l-2 border-black/20 mx-1" />
+          {(["all", "active", "cleared", "paused"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setFilterStatus(s)}
+              className={cn(
+                "px-3 py-1.5 text-xs font-bold border-2 capitalize",
+                filterStatus === s ? "bg-black text-white border-black" : "bg-white border-black text-black",
+              )}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={openAdd}
+          className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5 font-bold"
+        >
+          <Plus className="w-4 h-4" /> Add Loan / Advance
+        </button>
+      </div>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+        {[
+          { label: "Total Disbursed", value: fmt(totalDisbursed), icon: Banknote, color: "text-[#024BAB]" },
+          { label: "Outstanding", value: fmt(totalOutstanding), icon: TrendingDown, color: "text-red-600" },
+          { label: "Active", value: String(activeCount), icon: IndianRupee, color: "text-green-600" },
+          { label: "Cleared", value: String(clearedCount), icon: CheckCircle2, color: "text-gray-600" },
+        ].map(({ label, value, icon: Icon, color }) => (
+          <div key={label} className="border-2 border-black bg-white p-4 flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <Icon className={cn("w-4 h-4", color)} />
+              <p className="text-xs font-bold text-gray-500 uppercase">{label}</p>
+            </div>
+            <p className={cn("text-xl font-black", color)}>{value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Table */}
+      {loading ? (
+        <div className="flex items-center justify-center h-48">
+          <div className="w-8 h-8 bg-[#024BAB] border-2 border-black animate-bounce" />
+        </div>
+      ) : displayed.length === 0 ? (
+        <div className="border-2 bg-white p-12 flex flex-col items-center justify-center">
+          <Banknote className="w-12 h-12 text-muted-foreground/30 mb-3" />
+          <p className="font-bold text-black">No records found</p>
+        </div>
+      ) : (
+        <div className="border-2 bg-white overflow-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b-2 border-black bg-[#024BAB]/5">
+                {["Employee", "Type", "Amount", "Remaining", "EMI/Month", "Disbursed On", "Reason", "Status", ""].map((h) => (
+                  <th key={h} className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {displayed.map((loan, i) => (
+                <tr key={loan._id} className={cn("border-b border-black/10 hover:bg-[#024BAB]/5", i % 2 === 0 ? "" : "bg-[#F8FAFF]")}>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                        {loan.employee.firstName[0]}
+                      </div>
+                      <div>
+                        <p className="font-bold text-xs text-black">{loan.employee.firstName} {loan.employee.lastName}</p>
+                        <p className="text-[10px] text-gray-500">{loan.employee.employeeId}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={cn("px-2 py-0.5 text-[10px] font-bold border-2", loan.type === "loan" ? "bg-blue-50 border-blue-500 text-blue-800" : "bg-orange-50 border-orange-500 text-orange-800")}>
+                      {loan.type === "loan" ? "Loan" : "Advance"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 font-bold text-xs">{fmt(loan.amount)}</td>
+                  <td className="px-4 py-3 text-xs">
+                    <span className={cn("font-bold", loan.remainingBalance > 0 ? "text-red-600" : "text-green-600")}>
+                      {fmt(loan.remainingBalance)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-gray-700">{loan.monthlyEmi > 0 ? fmt(loan.monthlyEmi) : "—"}</td>
+                  <td className="px-4 py-3 text-xs text-gray-700">
+                    {loan.disbursedOn ? new Date(loan.disbursedOn).toLocaleDateString("en-IN") : "—"}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-gray-700 max-w-[140px] truncate">{loan.reason || "—"}</td>
+                  <td className="px-4 py-3">
+                    <span className={cn("px-2 py-0.5 text-[10px] font-bold border-2 capitalize", STATUS_COLORS[loan.status])}>
+                      {loan.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => openEdit(loan)} className="p-1.5 border-2 border-black hover:bg-[#024BAB] hover:text-white transition-colors" title="Edit">
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                      <button onClick={() => setDeleteConfirm(loan._id)} className="p-1.5 border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors" title="Delete">
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Add / Edit Modal */}
+      {modal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="border-2 bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-5 border-b-2 border-black sticky top-0 bg-white z-10">
+              <h3 className="font-display font-bold text-lg">{editId ? "Edit Loan / Advance" : "Add Loan / Advance"}</h3>
+              <button onClick={() => setModal(false)}><X className="w-5 h-5" /></button>
+            </div>
+            <form onSubmit={handleSave} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-bold mb-1">Employee</label>
+                <select
+                  value={form.employee}
+                  onChange={(e) => setForm({ ...form, employee: e.target.value })}
+                  className="border-2 w-full px-3 py-2 text-sm disabled:opacity-60 disabled:bg-gray-50"
+                  required
+                  disabled={!!editId}
+                >
+                  <option value="">Select employee</option>
+                  {employees.map((e) => (
+                    <option key={e._id} value={e._id}>{e.firstName} {e.lastName} ({e.employeeId})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold mb-1">Type</label>
+                  <select
+                    value={form.type}
+                    onChange={(e) => setForm({ ...form, type: e.target.value as any })}
+                    className="border-2 w-full px-3 py-2 text-sm"
+                  >
+                    <option value="loan">Loan</option>
+                    <option value="advance">Salary Advance</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-1">Status</label>
+                  <select
+                    value={form.status}
+                    onChange={(e) => setForm({ ...form, status: e.target.value as any })}
+                    className="border-2 w-full px-3 py-2 text-sm"
+                  >
+                    <option value="active">Active</option>
+                    <option value="paused">Paused</option>
+                    <option value="cleared">Cleared</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold mb-1">Amount (₹)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={form.amount}
+                    onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                    className="border-2 w-full px-3 py-2 text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold mb-1">Monthly EMI (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="0 = no EMI"
+                    value={form.monthlyEmi}
+                    onChange={(e) => setForm({ ...form, monthlyEmi: e.target.value })}
+                    className="border-2 w-full px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold mb-1">Disbursed On</label>
+                <input
+                  type="date"
+                  value={form.disbursedOn}
+                  onChange={(e) => setForm({ ...form, disbursedOn: e.target.value })}
+                  className="border-2 w-full px-3 py-2 text-sm"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold mb-1">Reason</label>
+                <input
+                  type="text"
+                  value={form.reason}
+                  onChange={(e) => setForm({ ...form, reason: e.target.value })}
+                  placeholder="e.g. Medical emergency"
+                  className="border-2 w-full px-3 py-2 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold mb-1">Remarks</label>
+                <textarea
+                  value={form.remarks}
+                  onChange={(e) => setForm({ ...form, remarks: e.target.value })}
+                  rows={2}
+                  className="border-2 w-full px-3 py-2 text-sm resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-1">
+                <button type="submit" disabled={saving} className="border-2 bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold flex-1 disabled:opacity-60">
+                  {saving ? "Saving..." : editId ? "Update" : "Save"}
+                </button>
+                <button type="button" onClick={() => setModal(false)} className="border-2 bg-white text-black px-4 py-2.5 text-sm font-bold">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="border-2 bg-white w-full max-w-sm p-6 space-y-4">
+            <p className="font-bold text-base">Delete this record?</p>
+            <p className="text-sm text-gray-600">This will remove the loan/advance and recalculate the employee balance.</p>
+            <div className="flex gap-3">
+              <button onClick={() => handleDelete(deleteConfirm)} className="flex-1 border-2 bg-red-600 text-white py-2.5 text-sm font-bold">
+                Delete
+              </button>
+              <button onClick={() => setDeleteConfirm(null)} className="flex-1 border-2 bg-white text-black py-2.5 text-sm font-bold">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </AppLayout>
+  );
+}

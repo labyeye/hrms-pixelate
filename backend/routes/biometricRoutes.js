@@ -30,6 +30,7 @@ const {
   getDeviceEmployees,
   enrollFaceFromDevice,
   triggerFaceEnroll,
+  pushFaceTemplateToDevice,
 } = require("../controllers/biometricController");
 
 router.post("/register", registerDevice);
@@ -134,6 +135,12 @@ router.post(
   "/devices/:id/enroll-face-device",
   authorize("super_admin", "hr_manager"),
   triggerFaceEnroll,
+);
+
+router.post(
+  "/devices/:id/push-face-template",
+  authorize("super_admin", "hr_manager"),
+  pushFaceTemplateToDevice,
 );
 
 module.exports = router;
