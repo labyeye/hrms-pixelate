@@ -45,6 +45,7 @@ const getEmployees = asyncHandler(async (req, res) => {
   const employees = await Employee.find(filter)
     .populate("department", "name code")
     .populate("reportingTo", "firstName lastName")
+    .populate("shift", "name startTime endTime")
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
@@ -110,6 +111,8 @@ const createEmployee = [
       dateOfBirth,
       reportingTo,
       avatar,
+      shift,
+      shiftName,
     } = req.body;
 
     const normalizedEmail = email.toLowerCase().trim();
@@ -174,6 +177,8 @@ const createEmployee = [
       dateOfBirth: dateOfBirth || undefined,
       reportingTo: reportingTo || undefined,
       avatar: avatar || undefined,
+      shift: shift || undefined,
+      shiftName: shiftName || "General",
     });
 
     res.status(201).json({ success: true, data: employee });
@@ -217,6 +222,8 @@ const updateEmployee = [
       "status",
       "exitDate",
       "biometricUserId",
+      "shift",
+      "shiftName",
     ];
 
     for (const key of allowed) {

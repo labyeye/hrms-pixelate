@@ -6,6 +6,7 @@ import {
   departmentAPI,
   loanAPI,
   transactionAPI,
+  shiftAPI,
 } from "@/services/api";
 import { Employee, Department } from "@/types/hrms";
 import { cn, formatDate } from "@/lib/utils";
@@ -91,6 +92,8 @@ interface EmployeeFormData {
   workDaysPerWeek: string;
   otRate: string;
   otEnabled: boolean;
+  shift: string;
+  shiftName: string;
 }
 
 const EMPTY_FORM: EmployeeFormData = {
@@ -122,12 +125,15 @@ const EMPTY_FORM: EmployeeFormData = {
   workDaysPerWeek: "6",
   otRate: "",
   otEnabled: false,
+  shift: "",
+  shiftName: "",
 };
 
 export default function EmployeesPage() {
   const navigate = useNavigate();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [shifts, setShifts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterDept, setFilterDept] = useState("");
@@ -173,12 +179,14 @@ export default function EmployeesPage() {
       if (search) params.search = search;
       if (filterDept) params.department = filterDept;
       if (filterStatus) params.status = filterStatus;
-      const [empRes, deptRes] = await Promise.all([
+      const [empRes, deptRes, shiftRes] = await Promise.all([
         employeeAPI.getAll(params),
         departmentAPI.getAll(),
+        shiftAPI.getAll(),
       ]);
       if (empRes.success) setEmployees(empRes.data);
       if (deptRes.success) setDepartments(deptRes.data);
+      if ((shiftRes as any).success) setShifts((shiftRes as any).data);
     } catch {}
     setLoading(false);
   }, [search, filterDept, filterStatus]);
@@ -227,6 +235,8 @@ export default function EmployeesPage() {
       workDaysPerWeek: String((emp as any).workDaysPerWeek || 6),
       otRate: String((emp as any).otRate || ""),
       otEnabled: (emp as any).otEnabled === true,
+      shift: (emp as any).shift?._id || (emp as any).shift || "",
+      shiftName: (emp as any).shiftName || "",
     });
     setFormTab(0);
     setShowModal(true);
@@ -1058,16 +1068,39 @@ export default function EmployeesPage() {
                       </div>
                     </div>
 
-                    <div className="bg-[#F8FAFF] border-2 border-black p-4">
-                      <p className="text-xs font-bold text-black mb-1">
+                    <div className="border-t-2 border-black pt-5">
+                      <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-4">
                         Shift Assignment
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        Shifts are managed under{" "}
-                        <strong>Manage → Shifts</strong>. Assign a shift after
-                        creation, or use the Attendance page to override
-                        individual days.
-                      </p>
+                      <div>
+                        <label className="block text-xs font-bold text-black mb-1">
+                          Shift
+                        </label>
+                        <select
+                          value={form.shift}
+                          onChange={(e) => {
+                            const selected = shifts.find(s => s._id === e.target.value);
+                            setForm({
+                              ...form,
+                              shift: e.target.value,
+                              shiftName: selected ? selected.name : "",
+                            });
+                          }}
+                          className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 bg-white"
+                        >
+                          <option value="">— No shift assigned —</option>
+                          {shifts.map((s) => (
+                            <option key={s._id} value={s._id}>
+                              {s.name} ({s.startTime} – {s.endTime})
+                            </option>
+                          ))}
+                        </select>
+                        {shifts.length === 0 && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            No shifts yet. Create one under <strong>Manage → Shifts</strong>.
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
