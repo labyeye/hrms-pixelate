@@ -13,12 +13,26 @@ function buildSetUserCmd(employee) {
   const uid = employee.biometricUserId;
 
   const rawName = `${employee.firstName || ""} ${employee.lastName || ""}`;
-  const name = (
-    rawName.replace(/[\x00-\x1F\x7F]/g, " ").trim() || `User-${uid}`
-  ).slice(0, 24);
-  const card = (employee.rfidCard || "").replace(/[\x00-\x1F\x7F]/g, "");
 
-  return `DATA UPDATE USERINFO PIN=${uid}\tName=${name}\tPri=0\tPasswd=\tCard=${card}\tGrp=1\tTZ=1\tVerify=0\t`;
+  // Strip non-printable and non-ASCII characters — ZKTeco firmware only accepts ASCII names
+  const asciiName = rawName
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "") // remove diacritics
+    .replace(/[^\x20-\x7E]/g, "") // strip anything outside printable ASCII
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const name = (asciiName || `User-${uid}`).slice(0, 24);
+  const card = (employee.rfidCard || "").replace(/[^\x20-\x7E]/g, "");
+
+  // DATA SET USERINFO creates-or-overwrites the full user record (Name included).
+  // DATA UPDATE USERINFO only patches an existing record; on a fresh device the
+  // Name field never gets written, which is why it appeared empty.
+  const cmd = `DATA SET USERINFO PIN=${uid}\tName=${name}\tPri=0\tPasswd=\tCard=${card}\tGrp=1\tTZ=0\tVerify=0\t`;
+  console.log(
+    `[ADMS] buildSetUserCmd uid=${uid} name="${name}" cmd="${cmd.replace(/\t/g, "\\t")}"`,
+  );
+  return cmd;
 }
 
 async function nextCmdId(deviceId) {
@@ -419,7 +433,7 @@ const recordBiometric = asyncHandler(async (req, res) => {
     { upsert: true, new: true },
   );
 
-  const log = await BiometricLog.create({
+  await BiometricLog.create({
     company: device.company,
     employee: employee._id,
     device: device._id,
