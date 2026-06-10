@@ -8,6 +8,7 @@ import {
   loanAPI,
   transactionAPI,
   shiftAPI,
+  payrollAPI,
 } from "@/services/api";
 import { Employee, Department } from "@/types/hrms";
 import { cn, formatDate } from "@/lib/utils";
@@ -138,6 +139,7 @@ export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [shifts, setShifts] = useState<any[]>([]);
+  const [payrollNetMap, setPayrollNetMap] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterDept, setFilterDept] = useState("");
@@ -196,14 +198,24 @@ export default function EmployeesPage() {
       if (search) params.search = search;
       if (filterDept) params.department = filterDept;
       if (filterStatus) params.status = filterStatus;
-      const [empRes, deptRes, shiftRes] = await Promise.all([
+      const now = new Date();
+      const [empRes, deptRes, shiftRes, payrollRes] = await Promise.all([
         employeeAPI.getAll(params),
         departmentAPI.getAll(),
         shiftAPI.getAll(),
+        payrollAPI.getAll({ month: String(now.getMonth() + 1), year: String(now.getFullYear()), limit: "200" }),
       ]);
       if (empRes.success) setEmployees(empRes.data);
       if (deptRes.success) setDepartments(deptRes.data);
       if ((shiftRes as any).success) setShifts((shiftRes as any).data);
+      if ((payrollRes as any).success) {
+        const map: Record<string, number> = {};
+        for (const p of (payrollRes as any).data) {
+          const empId = typeof p.employee === "object" ? p.employee._id : p.employee;
+          if (empId && p.netSalary != null) map[empId] = p.netSalary;
+        }
+        setPayrollNetMap(map);
+      }
     } catch {}
     setLoading(false);
   }, [search, filterDept, filterStatus]);
@@ -565,7 +577,11 @@ export default function EmployeesPage() {
     (s, e) => s + ((e as any).loanBalance ?? 0),
     0,
   );
-  const totalEstBalance = totalSalary - totalLoan;
+  const totalEstBalance = employees.reduce((s, e) => {
+    const id = (e as any)._id;
+    const net = payrollNetMap[id];
+    return s + (net != null ? net : ((e as any).salary ?? 0) - ((e as any).loanBalance ?? 0));
+  }, 0);
 
   return (
     <AppLayout title="Employees">
@@ -768,7 +784,8 @@ export default function EmployeesPage() {
                     {(() => {
                       const sal = (emp as any).salary ?? 0;
                       const loan = (emp as any).loanBalance ?? 0;
-                      const bal = sal - loan;
+                      const processedNet = payrollNetMap[(emp as any)._id];
+                      const bal = processedNet != null ? processedNet : sal - loan;
                       if (!sal)
                         return <span className="text-muted-foreground">—</span>;
                       return (
