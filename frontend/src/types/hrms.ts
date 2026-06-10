@@ -116,6 +116,8 @@ export interface Payroll {
   otherAllowances?: number;
   otPay?: number;
   lateDeductionAmount?: number;
+  halfDayDeduction?: number;
+  earlyCheckoutDeduction?: number;
   penaltyAmount?: number;
   grossSalary: number;
   loanDeduction: number;

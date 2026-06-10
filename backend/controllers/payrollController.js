@@ -241,6 +241,7 @@ const processPayroll = asyncHandler(async (req, res) => {
     const effectivePaidDays =
       presentDays - halfDayCount * 0.5 + weeklyOffDaysEarned;
     const earnedSalary = Math.max(0, dailyRate * effectivePaidDays);
+    const halfDayDeduction = halfDayCount * 0.5 * dailyRate;
 
     let lateDeduction = 0;
     if (deductionRule && lateDays > 0) {
@@ -327,6 +328,8 @@ const processPayroll = asyncHandler(async (req, res) => {
       otPay: attendanceOTPay + totalOT,
       grossSalary,
       lateDeductionAmount: lateDeduction,
+      halfDayDeduction: parseFloat(halfDayDeduction.toFixed(2)),
+      earlyCheckoutDeduction: parseFloat(earlyCheckoutDeduction.toFixed(2)),
       penaltyAmount: totalPenalties,
       loanDeduction,
       otherDeductions: preDeductions,

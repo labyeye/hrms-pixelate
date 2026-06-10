@@ -300,6 +300,8 @@ export default function PayrollPage() {
                   { label: "Salary", cls: "text-right" },
                   { label: "OT", cls: "text-right text-[#F59E0B]" },
                   { label: "Late", cls: "text-right text-red-500" },
+                  { label: "Half Day", cls: "text-right text-red-500" },
+                  { label: "Early Out", cls: "text-right text-red-500" },
                   { label: "Penalty", cls: "text-right text-red-500" },
                   { label: "Bonus / Allow", cls: "text-right text-[#00C48C]" },
                   { label: "Loan / Advance", cls: "text-right text-[#FA731C]" },
@@ -377,6 +379,28 @@ export default function PayrollPage() {
                     {(p.lateDeductionAmount ?? 0) > 0 ? (
                       <span className="text-red-500">
                         -{formatCurrency(p.lateDeductionAmount!)}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </td>
+
+                  {}
+                  <td className="px-4 py-3 text-right text-xs font-bold">
+                    {(p.halfDayDeduction ?? 0) > 0 ? (
+                      <span className="text-red-500">
+                        -{formatCurrency(p.halfDayDeduction!)}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </td>
+
+                  {}
+                  <td className="px-4 py-3 text-right text-xs font-bold">
+                    {(p.earlyCheckoutDeduction ?? 0) > 0 ? (
+                      <span className="text-red-500">
+                        -{formatCurrency(p.earlyCheckoutDeduction!)}
                       </span>
                     ) : (
                       <span className="text-muted-foreground">—</span>
