@@ -31,6 +31,8 @@ const payrollSchema = new mongoose.Schema(
     workingDays: { type: Number, default: 0 },
     presentDays: { type: Number, default: 0 },
     leaveDays: { type: Number, default: 0 },
+    totalWorkHours: { type: Number, default: 0 },
+    hourlyRate: { type: Number, default: 0 },
     earnedBasic: { type: Number, default: 0 },
     otPay: { type: Number, default: 0 },
     lateDeductionAmount: { type: Number, default: 0 },

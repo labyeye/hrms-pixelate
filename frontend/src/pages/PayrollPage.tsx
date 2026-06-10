@@ -342,7 +342,12 @@ export default function PayrollPage() {
                           {(p.employee as any)?.lastName}
                         </p>
                         <p className="text-[10px] text-muted-foreground">
-                          {p.presentDays}/{p.workingDays} days
+                          {p.totalWorkHours != null
+                            ? `${p.totalWorkHours}h worked`
+                            : `${p.presentDays}/${p.workingDays} days`}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          ₹{p.hourlyRate?.toFixed(2) ?? "—"}/hr
                         </p>
                       </div>
                     </div>

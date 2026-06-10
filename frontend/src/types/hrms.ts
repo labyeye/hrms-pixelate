@@ -115,6 +115,8 @@ export interface Payroll {
   earnedBasic?: number;
   otherAllowances?: number;
   otPay?: number;
+  totalWorkHours?: number;
+  hourlyRate?: number;
   lateDeductionAmount?: number;
   halfDayDeduction?: number;
   earlyCheckoutDeduction?: number;

@@ -147,109 +147,59 @@ const processPayroll = asyncHandler(async (req, res) => {
       shiftEndM = deductionRule?.shiftEndMinute ?? 0;
     }
 
-    const graceMins = deductionRule?.lateThresholdMinutes ?? 15;
-    const halfDayMins = deductionRule?.halfDayThresholdMinutes ?? 120;
-    const earlyThreshold = deductionRule?.earlyCheckoutThresholdMinutes ?? 15;
-    const earlyEnabled = deductionRule?.earlyCheckoutDeductionEnabled ?? false;
+    // Hours-based payroll: earnedSalary = totalHoursWorked × hourlyRate
+    const otEnabled = emp.otEnabled === true;
     const shiftTotalMins = shiftEndH * 60 + shiftEndM - (shiftH * 60 + shiftM);
+    const shiftHoursPerDay = shiftTotalMins > 0 ? shiftTotalMins / 60 : 8;
+    const hourlyRate = dailyRate / shiftHoursPerDay;
 
-    let presentDays = 0,
-      lateDays = 0,
-      halfDayCount = 0,
-      leaveDays = 0;
-    let earlyCheckoutDeduction = 0;
-    let attendanceOTHours = 0;
+    let presentDays = 0, leaveDays = 0, totalWorkHours = 0, attendanceOTHours = 0;
 
     for (const a of attendances) {
       if (a.status === "holiday" || a.status === "weekend") continue;
-      if (a.status === "on_leave") {
-        leaveDays++;
-        continue;
-      }
+      if (a.status === "on_leave") { leaveDays++; continue; }
 
-      if (a.checkIn) {
-        // Trust the stored status — it was computed with full second precision
-        // at punch/save time. Re-deriving from truncated IST minutes causes
-        // boundary mismatches (e.g. 11:15:30 → stored "late" but recalc = "present").
+      if (a.checkIn && a.checkOut) {
+        // Early arrival → start from shift start.
+        // Late departure → cap at shift end unless employee has otEnabled.
+        const dateMS = new Date(a.date).getTime();
+        const shiftStartUTC = new Date(dateMS + (shiftH * 60 + shiftM) * 60000 - IST_OFFSET_MS);
+        const shiftEndUTC   = new Date(dateMS + (shiftEndH * 60 + shiftEndM) * 60000 - IST_OFFSET_MS);
+
+        const effectiveIn  = Math.max(new Date(a.checkIn).getTime(), shiftStartUTC.getTime());
+        const rawOut       = new Date(a.checkOut).getTime();
+        const effectiveOut = otEnabled ? rawOut : Math.min(rawOut, shiftEndUTC.getTime());
+        const paidHours    = Math.max(0, (effectiveOut - effectiveIn) / 3_600_000);
+
+        totalWorkHours += paidHours;
         presentDays++;
-        if (a.status === "half_day") {
-          halfDayCount++;
-        } else if (a.status === "late") {
-          lateDays++;
-        }
+      } else if (a.checkIn) {
+        // Checked in but no checkout — pay from clamped checkIn till shift end
+        const dateMS = new Date(a.date).getTime();
+        const shiftStartUTC = new Date(dateMS + (shiftH * 60 + shiftM) * 60000 - IST_OFFSET_MS);
+        const shiftEndUTC   = new Date(dateMS + (shiftEndH * 60 + shiftEndM) * 60000 - IST_OFFSET_MS);
 
-        if (earlyEnabled && a.checkOut && shiftTotalMins > 0) {
-          const checkOutIST = istMinutes(a.checkOut);
-          const shiftEndIST = shiftEndH * 60 + shiftEndM;
-          const minutesEarly = shiftEndIST - checkOutIST;
-          if (minutesEarly > earlyThreshold) {
-            earlyCheckoutDeduction +=
-              (minutesEarly / shiftTotalMins) * dailyRate;
-          }
-        }
-      } else {
-        if (a.status === "present") presentDays++;
-        else if (a.status === "late") {
-          presentDays++;
-          lateDays++;
-        } else if (a.status === "half_day") {
-          presentDays++;
-          halfDayCount++;
-        }
+        const effectiveIn = Math.max(new Date(a.checkIn).getTime(), shiftStartUTC.getTime());
+        const paidHours = Math.max(0, (shiftEndUTC.getTime() - effectiveIn) / 3_600_000);
+
+        totalWorkHours += paidHours;
+        presentDays++;
+      } else if (["present", "late", "half_day"].includes(a.status)) {
+        // Manual attendance without punch times — use full/half shift hours
+        totalWorkHours += a.status === "half_day" ? shiftHoursPerDay * 0.5 : shiftHoursPerDay;
+        presentDays++;
       }
 
       if (a.overtime && a.overtime > 0) attendanceOTHours += a.overtime;
     }
 
-    let weeklyOffDaysEarned = 0;
-    if (workDaysPerWeek === 6) {
-      const presentDates = new Set();
-      for (const a of attendances) {
-        if (
-          a.status === "holiday" ||
-          a.status === "weekend" ||
-          a.status === "on_leave"
-        )
-          continue;
-        const d = new Date(a.date);
-        const dow = d.getDay();
-        if (dow === 0) continue;
-        let wasPresent = false;
-        if (a.checkIn) {
-          wasPresent = true;
-        } else {
-          wasPresent = ["present", "late", "half_day"].includes(a.status);
-        }
-        if (wasPresent) presentDates.add(d.toISOString().split("T")[0]);
-      }
+    const earnedSalary = Math.max(0, parseFloat((totalWorkHours * hourlyRate).toFixed(2)));
 
-      const weekPresentCount = new Map();
-      for (const dateStr of presentDates) {
-        const d = new Date(dateStr);
-
-        const monday = new Date(d);
-        monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-        const key = monday.toISOString().split("T")[0];
-        weekPresentCount.set(key, (weekPresentCount.get(key) || 0) + 1);
-      }
-
-      for (const count of weekPresentCount.values()) {
-        if (count >= 4) weeklyOffDaysEarned++;
-      }
-    }
-
-    const effectivePaidDays =
-      presentDays - halfDayCount * 0.5 + weeklyOffDaysEarned;
-    const earnedSalary = Math.max(0, dailyRate * effectivePaidDays);
-    const halfDayDeduction = halfDayCount * 0.5 * dailyRate;
-
-    let lateDeduction = 0;
-    if (deductionRule && lateDays > 0) {
-      lateDeduction =
-        deductionRule.lateDeductionType === "fixed"
-          ? lateDays * deductionRule.lateDeductionAmount
-          : lateDays * dailyRate * (deductionRule.lateDeductionAmount / 100);
-    }
+    // No separate late/half-day deductions — they're already reflected in hours worked.
+    // Only manual penalties from deduction rules (e.g. fixed penalty per late punch) apply.
+    const lateDeduction = 0;
+    const halfDayDeduction = 0;
+    const earlyCheckoutDeduction = 0;
 
     const txMonthStart = new Date(y, m - 1, 1);
     const txMonthEnd = new Date(y, m, 0, 23, 59, 59);
@@ -324,12 +274,14 @@ const processPayroll = asyncHandler(async (req, res) => {
       year: y,
       basicSalary: salary,
       earnedBasic: earnedSalary,
+      totalWorkHours: parseFloat(totalWorkHours.toFixed(2)),
+      hourlyRate: parseFloat(hourlyRate.toFixed(4)),
       otherAllowances: totalAllowances,
       otPay: attendanceOTPay + totalOT,
       grossSalary,
-      lateDeductionAmount: lateDeduction,
-      halfDayDeduction: parseFloat(halfDayDeduction.toFixed(2)),
-      earlyCheckoutDeduction: parseFloat(earlyCheckoutDeduction.toFixed(2)),
+      lateDeductionAmount: 0,
+      halfDayDeduction: 0,
+      earlyCheckoutDeduction: 0,
       penaltyAmount: totalPenalties,
       loanDeduction,
       otherDeductions: preDeductions,
@@ -338,7 +290,7 @@ const processPayroll = asyncHandler(async (req, res) => {
       workingDays,
       presentDays,
       leaveDays,
-      weeklyOffDays: weeklyOffDaysEarned,
+      weeklyOffDays: 0,
       overtimeHours: attendanceOTHours + totalOTHours,
       status: "processed",
       processedBy: req.user._id,
