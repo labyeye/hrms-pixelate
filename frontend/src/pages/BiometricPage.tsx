@@ -194,8 +194,11 @@ export default function BiometricPage() {
     }
   }, [tab, fetchDevices, fetchEmployees]);
   useEffect(() => {
-    if (tab === "logs") fetchLogs();
-  }, [tab, fetchLogs]);
+    if (tab === "logs") {
+      fetchLogs();
+      fetchDevices();
+    }
+  }, [tab, fetchLogs, fetchDevices]);
 
   const handleSaveLocation = async () => {
     if (!locForm.name.trim() || locSaving) return;
@@ -582,54 +585,45 @@ export default function BiometricPage() {
   return (
     <AppLayout title="Biometric System">
       <div className="max-w-6xl mx-auto">
-        <div className="flex gap-6">
-          {}
-          <div className="w-56 shrink-0">
-            <div className="border-2 border-black bg-white overflow-hidden sticky top-4">
-              <div className="px-4 py-3 bg-[#024BAB] border-b-2 border-black">
-                <p className="text-xs font-black uppercase tracking-wider text-white">
-                  Biometric System
-                </p>
-              </div>
-              {SIDEBAR_ITEMS.map((item, idx) => (
-                <button
-                  key={item.id}
-                  onClick={() => setTab(item.id)}
+        <div className="border-2 border-black bg-white overflow-hidden mb-6">
+          <div className="flex">
+            {SIDEBAR_ITEMS.map((item, idx) => (
+              <button
+                key={item.id}
+                onClick={() => setTab(item.id)}
+                className={cn(
+                  "flex items-center gap-2.5 px-5 py-3.5 text-left transition-all border-b-4",
+                  idx < SIDEBAR_ITEMS.length - 1 && "border-r-2 border-r-black",
+                  tab === item.id
+                    ? "border-b-[#024BAB] bg-[#024BAB]/5"
+                    : "border-b-transparent bg-white hover:bg-gray-50",
+                )}
+              >
+                <item.icon
                   className={cn(
-                    "w-full flex items-start gap-3 px-4 py-3.5 text-left transition-all",
-                    idx < SIDEBAR_ITEMS.length - 1 && "border-b-2 border-black",
-                    tab === item.id
-                      ? "bg-[#024BAB]/10 border-l-4 border-l-[#024BAB]"
-                      : "bg-white hover:bg-gray-50 border-l-4 border-l-transparent",
+                    "w-4 h-4 shrink-0",
+                    tab === item.id ? "text-[#024BAB]" : "text-gray-400",
                   )}
-                >
-                  <item.icon
+                />
+                <div className="text-left">
+                  <p
                     className={cn(
-                      "w-4 h-4 mt-0.5 shrink-0",
-                      tab === item.id ? "text-[#024BAB]" : "text-gray-400",
+                      "text-sm font-black",
+                      tab === item.id ? "text-[#024BAB]" : "text-black",
                     )}
-                  />
-                  <div>
-                    <p
-                      className={cn(
-                        "text-sm font-black",
-                        tab === item.id ? "text-[#024BAB]" : "text-black",
-                      )}
-                    >
-                      {item.label}
-                    </p>
-                    <p className="text-[10px] text-gray-400 font-medium mt-0.5">
-                      {item.sub}
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </div>
+                  >
+                    {item.label}
+                  </p>
+                  <p className="text-[10px] text-gray-400 font-medium">
+                    {item.sub}
+                  </p>
+                </div>
+              </button>
+            ))}
           </div>
+        </div>
 
-          {}
-          <div className="flex-1 min-w-0">
-            {}
+        <div className="min-w-0">
             {tab === "locations_devices" && (
               <div>
                 <div className="flex items-center justify-between mb-6">
@@ -642,7 +636,7 @@ export default function BiometricPage() {
                       setEditingLoc(null);
                       setLocForm({ name: "", address: "", description: "" });
                     }}
-                    className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-black text-sm uppercase hover: transition-all"
+                    className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-black text-sm uppercase transition-all"
                   >
                     <Plus className="w-4 h-4" /> Add Location
                   </button>
@@ -804,11 +798,9 @@ export default function BiometricPage() {
                   </div>
                 )}
 
-                {}
-                <div className="mt-8 border-t-2 border-black pt-8">
+<div className="mt-8 border-t-2 border-black pt-8">
                   <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                    {}
-                    <div className="lg:col-span-2">
+        <div className="lg:col-span-2">
                       <div className="flex items-center justify-between mb-4">
                         <h2 className="font-black text-lg flex items-center gap-2">
                           <Cpu className="w-5 h-5 text-[#024BAB]" /> Devices
@@ -899,8 +891,8 @@ export default function BiometricPage() {
                               className={cn(
                                 "w-full text-left p-4 border-2 transition-all",
                                 selectedDevice?._id === dev._id
-                                  ? "border-[#024BAB] bg-blue-50 border-2"
-                                  : "border-black bg-white hover:border-2",
+                                  ? "border-[#024BAB] bg-blue-50"
+                                  : "border-black bg-white hover:border-[#024BAB]",
                               )}
                             >
                               <div className="flex items-center justify-between">
@@ -943,8 +935,7 @@ export default function BiometricPage() {
                       )}
                     </div>
 
-                    {}
-                    <div className="lg:col-span-3">
+        <div className="lg:col-span-3">
                       {!selectedDevice ? (
                         <div className="h-full flex items-center justify-center border-2 border-dashed border-gray-300 bg-white py-20">
                           <div className="text-center">
@@ -956,8 +947,7 @@ export default function BiometricPage() {
                         </div>
                       ) : (
                         <div className="bg-white border-2 border-black">
-                          {}
-                          <div className="p-5 border-b-2 border-black">
+                    <div className="p-5 border-b-2 border-black">
                             <div className="flex items-start justify-between">
                               <div>
                                 <h3 className="font-black text-xl">
@@ -999,8 +989,7 @@ export default function BiometricPage() {
                               </div>
                             </div>
 
-                            {}
-                            <div className="mt-3 flex items-center gap-2">
+                        <div className="mt-3 flex items-center gap-2">
                               {selectedDevice.activated ? (
                                 <span className="flex items-center gap-1.5 text-xs font-black text-[#00C48C] bg-[#00C48C]/10 border-2 border-[#00C48C] px-2 py-1">
                                   <CheckCircle2 className="w-3.5 h-3.5" />
@@ -1026,10 +1015,8 @@ export default function BiometricPage() {
                               )}
                             </div>
 
-                            {}
-                            <div className="mt-4 space-y-3">
-                              {}
-                              <div className="p-3 bg-blue-50 border-2 border-[#024BAB]/20">
+                        <div className="mt-4 space-y-3">
+                            <div className="p-3 bg-blue-50 border-2 border-[#024BAB]/20">
                                 <div className="flex items-center gap-2 mb-2">
                                   <Monitor className="w-4 h-4 text-[#024BAB]" />
                                   <span className="text-xs font-black uppercase text-[#024BAB]">
@@ -1092,8 +1079,7 @@ export default function BiometricPage() {
                                 </div>
                               </div>
 
-                              {}
-                              <div className="p-3 bg-gray-50 border-2 border-gray-200">
+                            <div className="p-3 bg-gray-50 border-2 border-gray-200">
                                 <div className="flex items-center gap-2 mb-2">
                                   <Terminal className="w-4 h-4 text-gray-600" />
                                   <span className="text-xs font-black uppercase text-gray-600">
@@ -1170,8 +1156,7 @@ export default function BiometricPage() {
                             </div>
                           </div>
 
-                          {}
-                          <div className="p-5">
+                    <div className="p-5">
                             <div className="flex items-center justify-between mb-4">
                               <h4 className="font-black flex items-center gap-2">
                                 <CreditCard className="w-4 h-4" /> NFC Cards
@@ -1303,10 +1288,8 @@ export default function BiometricPage() {
               </div>
             )}
 
-            {}
             {tab === "logs" && (
               <div>
-                {}
                 <div className="border-2 border-black bg-white mb-6">
                   <div className="flex items-center justify-between p-4 border-b-2 border-black">
                     <h3 className="font-black text-sm text-black uppercase tracking-wider">
@@ -1381,8 +1364,7 @@ export default function BiometricPage() {
                   </div>
                 </div>
 
-                {}
-                <div className="flex flex-wrap gap-3 mb-6">
+<div className="flex flex-wrap gap-3 mb-6">
                   <select
                     value={logFilter.locationId}
                     onChange={(e) =>
@@ -1532,10 +1514,8 @@ export default function BiometricPage() {
                 )}
               </div>
             )}
-            {}
             {tab === "adms" && (
               <div className="space-y-6">
-                {}
                 <div className="border-2 border-black p-5">
                   <h2 className="font-display font-black text-base mb-4 flex items-center gap-2">
                     <span className="w-6 h-6 bg-black text-white text-xs font-black flex items-center justify-center">
@@ -1584,8 +1564,7 @@ export default function BiometricPage() {
 
                 {admsDevice && (
                   <>
-                    {}
-                    <div className="border-2 border-black p-5">
+        <div className="border-2 border-black p-5">
                       <h2 className="font-display font-black text-base mb-1 flex items-center gap-2">
                         <span className="w-6 h-6 bg-black text-white text-xs font-black flex items-center justify-center">
                           2
@@ -1634,8 +1613,7 @@ export default function BiometricPage() {
                       )}
                     </div>
 
-                    {}
-                    <div className="border-2 border-black">
+        <div className="border-2 border-black">
                       <div className="px-5 py-4 border-b-2 border-black flex items-center justify-between">
                         <div>
                           <h2 className="font-display font-black text-base flex items-center gap-2">
@@ -1708,7 +1686,7 @@ export default function BiometricPage() {
 
                                     {/* Biometric User ID cell — inline edit */}
                                     <td className="px-4 py-3">
-                                      {editBioId?.empId === emp._id ? (
+                                      {editBioId !== null && editBioId.empId === emp._id ? (
                                         <div className="flex items-center gap-1.5">
                                           <input
                                             value={editBioId.val}
@@ -2083,10 +2061,7 @@ export default function BiometricPage() {
                 </div>
               </div>
             )}
-          </div>
-          {/* end main content */}
         </div>
-        {/* end flex sidebar+content */}
       </div>
     </AppLayout>
   );
