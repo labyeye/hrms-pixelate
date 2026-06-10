@@ -25,10 +25,7 @@ function buildSetUserCmd(employee) {
   const name = (asciiName || `User-${uid}`).slice(0, 24);
   const card = (employee.rfidCard || "").replace(/[^\x20-\x7E]/g, "");
 
-  // DATA SET USERINFO creates-or-overwrites the full user record (Name included).
-  // DATA UPDATE USERINFO only patches an existing record; on a fresh device the
-  // Name field never gets written, which is why it appeared empty.
-  const cmd = `DATA SET USERINFO PIN=${uid}\tName=${name}\tPri=0\tPasswd=\tCard=${card}\tGrp=1\tTZ=0\tVerify=0\t`;
+  const cmd = `DATA UPDATE USERINFO PIN=${uid}\tName=${name}\tPri=0\tPasswd=\tCard=${card}\tGrp=1\tTZ=0\tVerify=0\t`;
   console.log(
     `[ADMS] buildSetUserCmd uid=${uid} name="${name}" cmd="${cmd.replace(/\t/g, "\\t")}"`,
   );
