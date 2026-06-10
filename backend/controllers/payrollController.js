@@ -10,6 +10,16 @@ const { sendSalaryPaid } = require("../services/whatsappService");
 
 const PAYROLL_STATUS = ["processed", "paid", "cancelled"];
 
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000; // UTC+5:30
+
+// Returns minutes-since-midnight in IST for any Date or ISO string.
+// All shift times (e.g. "09:00") are IST — so we compare apples-to-apples.
+function istMinutes(date) {
+  const d = new Date(date);
+  const ist = new Date(d.getTime() + IST_OFFSET_MS);
+  return ist.getUTCHours() * 60 + ist.getUTCMinutes();
+}
+
 const getPayrolls = asyncHandler(async (req, res) => {
   const { page, limit, skip } = safePagination(req.query);
   const { month, year, employeeId, status } = req.query;
@@ -158,11 +168,10 @@ const processPayroll = asyncHandler(async (req, res) => {
       }
 
       if (a.checkIn) {
-        const dateObj = new Date(a.date);
-        const shiftStart = new Date(dateObj);
-        shiftStart.setHours(shiftH, shiftM, 0, 0);
-
-        const minutesLate = (new Date(a.checkIn) - shiftStart) / 60000;
+        // Compare in IST — shift times are IST strings; checkIn stored as UTC
+        const checkInIST  = istMinutes(a.checkIn);
+        const shiftStartIST = shiftH * 60 + shiftM;
+        const minutesLate = checkInIST - shiftStartIST;
         presentDays++;
 
         if (minutesLate > halfDayMins) {
@@ -172,9 +181,9 @@ const processPayroll = asyncHandler(async (req, res) => {
         }
 
         if (earlyEnabled && a.checkOut && shiftTotalMins > 0) {
-          const shiftEnd = new Date(dateObj);
-          shiftEnd.setHours(shiftEndH, shiftEndM, 0, 0);
-          const minutesEarly = (shiftEnd - new Date(a.checkOut)) / 60000;
+          const checkOutIST = istMinutes(a.checkOut);
+          const shiftEndIST = shiftEndH * 60 + shiftEndM;
+          const minutesEarly = shiftEndIST - checkOutIST;
           if (minutesEarly > earlyThreshold) {
             earlyCheckoutDeduction +=
               (minutesEarly / shiftTotalMins) * dailyRate;

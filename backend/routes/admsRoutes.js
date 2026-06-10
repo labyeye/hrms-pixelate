@@ -4,7 +4,28 @@ const Employee = require("../models/Employee");
 const Attendance = require("../models/Attendance");
 const BiometricDevice = require("../models/BiometricDevice");
 const BiometricCommand = require("../models/BiometricCommand");
+const Shift = require("../models/Shift");
 const { getEffectiveCheckOut } = require("../utils/shiftUtils");
+
+const GRACE_MINUTES = 15;
+const HALF_DAY_MINUTES = 120;
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+
+async function resolveAttendanceStatus(employee, checkIn) {
+  if (!checkIn) return "present";
+  const shiftId = employee.shift;
+  if (!shiftId) return "present";
+  const shift = await Shift.findById(shiftId).select("startTime");
+  if (!shift?.startTime) return "present";
+  const [h, m] = shift.startTime.split(":").map(Number);
+  const shiftStartMins = h * 60 + m;
+  const ist = new Date(new Date(checkIn).getTime() + IST_OFFSET_MS);
+  const checkInMins = ist.getUTCHours() * 60 + ist.getUTCMinutes();
+  const minutesLate = checkInMins - shiftStartMins;
+  if (minutesLate > HALF_DAY_MINUTES) return "half_day";
+  if (minutesLate > GRACE_MINUTES) return "late";
+  return "present";
+}
 
 function pad(n) {
   return String(n).padStart(2, "0");
@@ -78,15 +99,16 @@ async function processLog(
   const verifyMode = mapVerifyMode(verifyType);
 
   if (!existing) {
+    const status = await resolveAttendanceStatus(employee, punchTime);
     await Attendance.create({
       employee: employee._id,
       date: dayStart,
-      status: "present",
+      status,
       checkIn: punchTime,
       verifyMode,
     });
     console.log(
-      `[ADMS] Created attendance checkIn=${punchTime.toISOString()} verifyMode=${verifyMode} for ${employee.firstName}`,
+      `[ADMS] Created attendance checkIn=${punchTime.toISOString()} status=${status} verifyMode=${verifyMode} for ${employee.firstName}`,
     );
     return;
   }
@@ -103,6 +125,7 @@ async function processLog(
   if (!existing.checkIn || punchTime < existing.checkIn) {
     upd.checkIn = punchTime;
     upd.verifyMode = verifyMode;
+    upd.status = await resolveAttendanceStatus(employee, punchTime);
   } else if (punchTime > existing.checkIn) {
     upd.checkOut = await getEffectiveCheckOut(
       companyId,
@@ -117,10 +140,10 @@ async function processLog(
     if (ci && co && co > ci) {
       upd.workHours = parseFloat(((co - ci) / 3_600_000).toFixed(2));
     }
-    upd.status = "present";
+    if (!upd.status) upd.status = existing.status || "present";
     await Attendance.updateOne({ _id: existing._id }, { $set: upd });
     console.log(
-      `[ADMS] Updated attendance for ${employee.firstName}: checkIn=${ci?.toISOString()} checkOut=${co?.toISOString()}`,
+      `[ADMS] Updated attendance for ${employee.firstName}: checkIn=${ci?.toISOString()} checkOut=${co?.toISOString()} status=${upd.status}`,
     );
   }
 }

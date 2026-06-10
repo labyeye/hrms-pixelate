@@ -3,7 +3,7 @@ const Attendance = require("../models/Attendance");
 const Employee = require("../models/Employee");
 const Shift = require("../models/Shift");
 const { isHolidayDate } = require("./holidayController");
-const { safePagination, validateMongoId } = require("../middleware/validate");
+const { safePagination } = require("../middleware/validate");
 
 const GRACE_MINUTES = 15;
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000; // UTC+5:30
@@ -185,14 +185,8 @@ const updateAttendance = asyncHandler(async (req, res) => {
   if (overtime !== undefined) record.overtime = parseFloat(overtime) || 0;
   if (verifyMode !== undefined) record.verifyMode = verifyMode;
 
-  // Auto-detect late: only resolves present → late; explicit absent/leave are kept
-  if (status !== undefined) {
-    record.status = await resolveStatus(
-      record.employee._id,
-      record.checkIn,
-      status,
-    );
-  }
+  // Admin explicitly chose a status — honour it directly, no auto-override.
+  if (status !== undefined) record.status = status;
 
   if (record.checkIn && record.checkOut) {
     record.workHours = parseFloat(
