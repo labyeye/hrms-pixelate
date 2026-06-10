@@ -168,15 +168,13 @@ const processPayroll = asyncHandler(async (req, res) => {
       }
 
       if (a.checkIn) {
-        // Compare in IST — shift times are IST strings; checkIn stored as UTC
-        const checkInIST  = istMinutes(a.checkIn);
-        const shiftStartIST = shiftH * 60 + shiftM;
-        const minutesLate = checkInIST - shiftStartIST;
+        // Trust the stored status — it was computed with full second precision
+        // at punch/save time. Re-deriving from truncated IST minutes causes
+        // boundary mismatches (e.g. 11:15:30 → stored "late" but recalc = "present").
         presentDays++;
-
-        if (minutesLate > halfDayMins) {
+        if (a.status === "half_day") {
           halfDayCount++;
-        } else if (minutesLate > graceMins) {
+        } else if (a.status === "late") {
           lateDays++;
         }
 
