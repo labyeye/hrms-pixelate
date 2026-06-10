@@ -100,6 +100,7 @@ export default function AttendancePage() {
     checkOut: "",
     overtime: "",
     notes: "",
+    verifyMode: "manual",
   });
   const [saving, setSaving] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
@@ -146,6 +147,7 @@ export default function AttendancePage() {
       checkOut: toLocalInput(rec.checkOut as any),
       overtime: (rec as any).overtime ? String((rec as any).overtime) : "",
       notes: (rec as any).notes ?? "",
+      verifyMode: (rec as any).verifyMode ?? "manual",
     });
     setEditingId(rec._id);
     setMarkModal(true);
@@ -552,21 +554,41 @@ export default function AttendancePage() {
                   />
                 </div>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Overtime Hours (optional)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  placeholder="e.g. 1.5"
-                  value={markForm.overtime}
-                  onChange={(e) =>
-                    setMarkForm({ ...markForm, overtime: e.target.value })
-                  }
-                  className="border-2 w-full px-3 py-2 text-sm"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-black mb-1">
+                    Overtime Hours
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    placeholder="e.g. 1.5"
+                    value={markForm.overtime}
+                    onChange={(e) =>
+                      setMarkForm({ ...markForm, overtime: e.target.value })
+                    }
+                    className="border-2 w-full px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-black mb-1">
+                    Via (Verify Mode)
+                  </label>
+                  <select
+                    value={markForm.verifyMode}
+                    onChange={(e) =>
+                      setMarkForm({ ...markForm, verifyMode: e.target.value })
+                    }
+                    className="border-2 w-full px-3 py-2 text-sm"
+                  >
+                    <option value="manual">Manual</option>
+                    <option value="fingerprint">Fingerprint</option>
+                    <option value="face">Face</option>
+                    <option value="card">Card</option>
+                    <option value="password">Password</option>
+                  </select>
+                </div>
               </div>
               <div className="flex gap-3">
                 <button

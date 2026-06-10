@@ -1,8 +1,32 @@
 const asyncHandler = require("express-async-handler");
 const Attendance = require("../models/Attendance");
 const Employee = require("../models/Employee");
+const Shift = require("../models/Shift");
 const { isHolidayDate } = require("./holidayController");
 const { safePagination, validateMongoId } = require("../middleware/validate");
+
+const GRACE_MINUTES = 15;
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000; // UTC+5:30
+
+async function resolveStatus(employeeId, checkIn, requestedStatus) {
+  // Only auto-promote present → late; never override an explicit absent/leave/etc.
+  if (!checkIn || requestedStatus !== "present") return requestedStatus;
+
+  const emp = await Employee.findById(employeeId).select("shift");
+  if (!emp?.shift) return requestedStatus;
+
+  const shift = await Shift.findById(emp.shift).select("startTime");
+  if (!shift?.startTime) return requestedStatus;
+
+  const [shiftH, shiftM] = shift.startTime.split(":").map(Number);
+  const shiftStartMinutes = shiftH * 60 + shiftM;
+
+  // Convert stored UTC time → IST to compare against shift start (which is local IST)
+  const checkInIST = new Date(new Date(checkIn).getTime() + IST_OFFSET_MS);
+  const checkInMinutes = checkInIST.getUTCHours() * 60 + checkInIST.getUTCMinutes();
+
+  return checkInMinutes > shiftStartMinutes + GRACE_MINUTES ? "late" : requestedStatus;
+}
 
 const getAttendance = asyncHandler(async (req, res) => {
   const { page, limit, skip } = safePagination(req.query, 50, 200);
@@ -90,7 +114,7 @@ const getAttendance = asyncHandler(async (req, res) => {
 });
 
 const markAttendance = asyncHandler(async (req, res) => {
-  const { employee, date, status, checkIn, checkOut, notes } = req.body;
+  const { employee, date, status, checkIn, checkOut, notes, verifyMode } = req.body;
 
   const emp = await Employee.findOne({
     _id: employee,
@@ -105,7 +129,7 @@ const markAttendance = asyncHandler(async (req, res) => {
   d.setHours(0, 0, 0, 0);
 
   const holiday = await isHolidayDate(req.user.company, d);
-  const finalStatus = holiday ? "holiday" : status;
+  const computedStatus = holiday ? "holiday" : await resolveStatus(employee, checkIn, status);
 
   let workHours = 0;
   if (checkIn && checkOut && !holiday) {
@@ -117,10 +141,11 @@ const markAttendance = asyncHandler(async (req, res) => {
     {
       employee,
       date: d,
-      status: finalStatus,
+      status: computedStatus,
       checkIn: holiday ? undefined : checkIn,
       checkOut: holiday ? undefined : checkOut,
       workHours,
+      verifyMode: verifyMode || "manual",
       notes: holiday ? `Holiday: ${holiday.name}` : notes || undefined,
       markedBy: req.user._id,
     },
@@ -136,7 +161,7 @@ const markAttendance = asyncHandler(async (req, res) => {
 
 const updateAttendance = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { status, checkIn, checkOut, notes, overtime, date } = req.body;
+  const { status, checkIn, checkOut, notes, overtime, date, verifyMode } = req.body;
 
   const companyEmployees = await Employee.find({
     company: req.user.company,
@@ -154,11 +179,20 @@ const updateAttendance = asyncHandler(async (req, res) => {
     d.setHours(0, 0, 0, 0);
     record.date = d;
   }
-  if (status !== undefined) record.status = status;
   if (checkIn !== undefined) record.checkIn = checkIn ? new Date(checkIn) : undefined;
   if (checkOut !== undefined) record.checkOut = checkOut ? new Date(checkOut) : undefined;
   if (notes !== undefined) record.notes = notes;
   if (overtime !== undefined) record.overtime = parseFloat(overtime) || 0;
+  if (verifyMode !== undefined) record.verifyMode = verifyMode;
+
+  // Auto-detect late: only resolves present → late; explicit absent/leave are kept
+  if (status !== undefined) {
+    record.status = await resolveStatus(
+      record.employee._id,
+      record.checkIn,
+      status,
+    );
+  }
 
   if (record.checkIn && record.checkOut) {
     record.workHours = parseFloat(
