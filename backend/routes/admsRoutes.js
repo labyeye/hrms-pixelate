@@ -235,15 +235,21 @@ router.post(
     res.set("Content-Type", "text/plain");
 
     try {
-      if (ID) {
+      const body = req.body || "";
+      // ID may come in the query string OR in the POST body (firmware-dependent)
+      const bodyIdMatch = body.match(/\bID=(\d+)/);
+      const cmdId = ID || (bodyIdMatch ? bodyIdMatch[1] : null);
+
+      console.log(`[ADMS] devicecmd SN=${SN} ID=${cmdId} body="${body.trim()}"`);
+
+      if (cmdId) {
         const device = await resolveDevice(SN);
         if (device) {
-          const body = req.body || "";
           const returnMatch = body.match(/Return=(\d+)/);
           const returnCode = returnMatch ? returnMatch[1] : "0";
 
           await BiometricCommand.findOneAndUpdate(
-            { device: device._id, cmdId: Number(ID) },
+            { device: device._id, cmdId: Number(cmdId) },
             {
               $set: {
                 status: returnCode === "0" ? "done" : "failed",
