@@ -241,12 +241,19 @@ export default function OnboardingPage() {
   const handlePay = async () => {
     setPaying(true);
     try {
-      const res = await billingAPI.createOrder(selectedPlan, billing, "razorpay");
+      const res = await billingAPI.createOrder(
+        selectedPlan,
+        billing,
+        "razorpay",
+      );
       if (!res.success) throw new Error("Failed to create order");
       const order = res.data;
 
       const loaded = await loadRazorpayScript();
-      if (!loaded) throw new Error("Failed to load payment checkout. Check your connection.");
+      if (!loaded)
+        throw new Error(
+          "Failed to load payment checkout. Check your connection.",
+        );
 
       await new Promise<void>((resolve, reject) => {
         const rzp = new window.Razorpay({

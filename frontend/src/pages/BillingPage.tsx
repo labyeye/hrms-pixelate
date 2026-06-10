@@ -580,9 +580,7 @@ export default function BillingPage() {
                   <p className="font-bold text-gray-400 text-sm">
                     HDFC SmartGateway
                   </p>
-                  <p className="text-xs text-gray-400">
-                    Coming soon
-                  </p>
+                  <p className="text-xs text-gray-400">Coming soon</p>
                 </div>
               </div>
 

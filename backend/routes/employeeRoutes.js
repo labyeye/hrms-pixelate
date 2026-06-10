@@ -7,6 +7,7 @@ const {
   updateEmployee,
   deleteEmployee,
   resetEmployeePassword,
+  bulkImportEmployees,
 } = require("../controllers/employeeController");
 const { protect, authorize } = require("../middleware/auth");
 const router = express.Router();
@@ -30,6 +31,13 @@ router
     updateEmployee,
   )
   .delete(protect, authorize("super_admin", "hr_manager"), deleteEmployee);
+
+router.post(
+  "/bulk-import",
+  protect,
+  authorize("super_admin", "hr_manager", "hr_executive"),
+  bulkImportEmployees,
+);
 
 router.post(
   "/:id/reset-password",

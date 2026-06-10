@@ -60,6 +60,11 @@ export const employeeAPI = {
       method: "POST",
       body: JSON.stringify({ password }),
     }),
+  bulkImport: (employees: object[]) =>
+    request("/employees/bulk-import", {
+      method: "POST",
+      body: JSON.stringify({ employees }),
+    }),
 };
 
 export const attendanceAPI = {

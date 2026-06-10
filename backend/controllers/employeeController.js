@@ -292,6 +292,129 @@ const resetEmployeePassword = asyncHandler(async (req, res) => {
   res.json({ success: true, message: "Password updated successfully" });
 });
 
+const bulkImportEmployees = asyncHandler(async (req, res) => {
+  const { employees: rows } = req.body;
+  if (!Array.isArray(rows) || rows.length === 0) {
+    res.status(400);
+    throw new Error("employees array is required");
+  }
+  if (rows.length > 200) {
+    res.status(400);
+    throw new Error("Maximum 200 employees per import");
+  }
+
+  const Department = require("../models/Department");
+  const Shift = require("../models/Shift");
+
+  const [allDepts, allShifts] = await Promise.all([
+    Department.find({ company: req.user.company }),
+    Shift.find({ company: req.user.company }),
+  ]);
+
+  const lastEmp = await Employee.findOne({ company: req.user.company }).sort({
+    createdAt: -1,
+  });
+  let lastNum = lastEmp
+    ? parseInt(lastEmp.employeeId?.replace(/\D/g, "") || "0")
+    : 0;
+
+  const results = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    try {
+      const firstName = (row.firstName || "").trim();
+      const lastName = (row.lastName || "").trim();
+      const email = (row.email || "").toLowerCase().trim();
+      const designation = (row.designation || "").trim();
+      const joinDate = row.joinDate;
+
+      if (!firstName || !lastName || !email || !designation || !joinDate) {
+        results.push({
+          row: i + 1,
+          status: "error",
+          message:
+            "Missing required field (firstName, lastName, email, designation, joinDate)",
+        });
+        continue;
+      }
+
+      const deptMatch = allDepts.find(
+        (d) => d.name.toLowerCase() === (row.department || "").toLowerCase(),
+      );
+      const shiftMatch = allShifts.find(
+        (s) => s.name.toLowerCase() === (row.shiftName || "").toLowerCase(),
+      );
+
+      let userId;
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        userId = existingUser._id;
+      } else {
+        const tempPassword =
+          row.password && row.password.length >= 6
+            ? row.password
+            : crypto.randomBytes(8).toString("hex") + "A1";
+        const user = await User.create({
+          name: `${firstName} ${lastName}`,
+          email,
+          password: tempPassword,
+          role: "employee",
+          company: req.user.company,
+        });
+        userId = user._id;
+      }
+
+      lastNum += 1;
+      const empId = `EMP${String(lastNum).padStart(4, "0")}`;
+
+      const employee = await Employee.create({
+        user: userId,
+        company: req.user.company,
+        employeeId: empId,
+        firstName,
+        lastName,
+        email,
+        designation,
+        joinDate,
+        phone: row.phone || undefined,
+        department: deptMatch?._id || undefined,
+        employmentType: row.employmentType || "full_time",
+        salary: Number(row.salary) || 0,
+        gender: row.gender || undefined,
+        dateOfBirth: row.dateOfBirth || undefined,
+        address: row.address || undefined,
+        emergencyContact: row.emergencyContact || undefined,
+        bankAccount: row.bankAccount || undefined,
+        accountHolderName: row.accountHolderName || undefined,
+        ifscCode: row.ifscCode || undefined,
+        bankName: row.bankName || undefined,
+        panNumber: row.panNumber || undefined,
+        aadharNumber: row.aadharNumber || undefined,
+        uanNumber: row.uanNumber || undefined,
+        esicNumber: row.esicNumber || undefined,
+        pfNumber: row.pfNumber || undefined,
+        shift: shiftMatch?._id || undefined,
+        shiftName: shiftMatch?.name || row.shiftName || "General",
+      });
+
+      results.push({
+        row: i + 1,
+        status: "success",
+        employeeId: employee.employeeId,
+        name: `${firstName} ${lastName}`,
+      });
+    } catch (err) {
+      results.push({ row: i + 1, status: "error", message: err.message });
+    }
+  }
+
+  const imported = results.filter((r) => r.status === "success").length;
+  const failed = results.filter((r) => r.status === "error").length;
+
+  res.json({ success: true, imported, failed, results });
+});
+
 module.exports = {
   getEmployees,
   getEmployee,
@@ -300,4 +423,5 @@ module.exports = {
   updateEmployee,
   deleteEmployee,
   resetEmployeePassword,
+  bulkImportEmployees,
 };
