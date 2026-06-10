@@ -127,7 +127,13 @@ async function processLog(
 
 async function resolveDevice(sn) {
   if (!sn) return null;
-  return BiometricDevice.findOne({ serialNumber: sn, isActive: true });
+  // Find by SN regardless of isActive — if the device is polling, it IS active.
+  // Auto-heal isActive so admin routes also see it correctly.
+  return BiometricDevice.findOneAndUpdate(
+    { serialNumber: sn },
+    { $set: { isActive: true, lastSeenAt: new Date() } },
+    { new: true },
+  );
 }
 
 router.get(["/cdata", "/cdata.aspx"], async (req, res) => {
@@ -214,21 +220,9 @@ router.get(["/getrequest", "/getrequest.aspx"], async (req, res) => {
       return res.send("OK");
     }
 
-    // Also update lastSeenAt so dashboard shows device as online
-    const device = await BiometricDevice.findOneAndUpdate(
-      { serialNumber: SN, isActive: true },
-      { $set: { lastSeenAt: new Date() } },
-      { new: true },
-    );
-
+    const device = await resolveDevice(SN);
     if (!device) {
-      // Check if device exists at all (helps diagnose isActive vs missing SN)
-      const anyDevice = await BiometricDevice.findOne({ serialNumber: SN });
-      if (!anyDevice) {
-        console.warn(`[ADMS] getrequest: unknown device SN=${SN}`);
-      } else {
-        console.warn(`[ADMS] getrequest: device SN=${SN} found but isActive=${anyDevice.isActive} — returning OK`);
-      }
+      console.warn(`[ADMS] getrequest: unknown device SN=${SN}`);
       return res.send("OK");
     }
 
