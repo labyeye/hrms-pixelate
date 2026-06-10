@@ -10,7 +10,6 @@ import {
   Zap,
   Users,
   Loader2,
-  Building2,
   ChevronRight,
   ExternalLink,
   AlertCircle,
@@ -229,21 +228,67 @@ export default function OnboardingPage() {
     setStep("plan");
   };
 
+  const loadRazorpayScript = (): Promise<boolean> =>
+    new Promise((resolve) => {
+      if (window.Razorpay) return resolve(true);
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+
   const handlePay = async () => {
     setPaying(true);
     try {
-      const res = await billingAPI.createOrder(selectedPlan, billing);
-      const { paymentUrl } = res.data;
-      if (!paymentUrl)
-        throw new Error("Payment URL not received. Please try again.");
+      const res = await billingAPI.createOrder(selectedPlan, billing, "razorpay");
+      if (!res.success) throw new Error("Failed to create order");
+      const order = res.data;
 
-      window.location.href = paymentUrl;
-    } catch (err: any) {
-      toast({
-        title: "Could not initiate payment",
-        description: err.message || "Please try again.",
-        variant: "destructive",
+      const loaded = await loadRazorpayScript();
+      if (!loaded) throw new Error("Failed to load payment checkout. Check your connection.");
+
+      await new Promise<void>((resolve, reject) => {
+        const rzp = new window.Razorpay({
+          key: order.keyId,
+          order_id: order.orderId,
+          amount: order.amount * 100,
+          currency: order.currency || "INR",
+          name: "NestHR",
+          description: `${plan.name} Plan — ${billing}`,
+          theme: { color: "#024BAB" },
+          handler: async (response: any) => {
+            try {
+              await billingAPI.verifyRazorpay({
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+              });
+              toast({
+                title: "Payment Successful!",
+                description: `${plan.name} plan activated. Welcome to NestHR!`,
+                variant: "success",
+              });
+              setTimeout(() => navigate("/", { replace: true }), 1500);
+              resolve();
+            } catch (err: any) {
+              reject(err);
+            }
+          },
+          modal: {
+            ondismiss: () => reject(new Error("Payment cancelled")),
+          },
+        });
+        rzp.open();
       });
+    } catch (err: any) {
+      if (err.message !== "Payment cancelled") {
+        toast({
+          title: "Could not initiate payment",
+          description: err.message || "Please try again.",
+          variant: "destructive",
+        });
+      }
       setPaying(false);
     }
   };
@@ -554,8 +599,7 @@ export default function OnboardingPage() {
                 Confirm & Pay
               </h1>
               <p className="text-gray-500 font-medium text-sm">
-                You'll be redirected to HDFC SmartGateway to complete payment
-                securely
+                A secure Razorpay checkout will open to complete your payment
               </p>
             </div>
 
@@ -625,7 +669,7 @@ export default function OnboardingPage() {
                     <span className="w-5 h-5 bg-[#024BAB] text-white flex items-center justify-center font-black text-[10px] shrink-0 mt-0.5">
                       1
                     </span>
-                    You'll be redirected to HDFC SmartGateway (secure page)
+                    A Razorpay checkout window will open (secure page)
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="w-5 h-5 bg-[#024BAB] text-white flex items-center justify-center font-black text-[10px] shrink-0 mt-0.5">
@@ -637,8 +681,7 @@ export default function OnboardingPage() {
                     <span className="w-5 h-5 bg-[#024BAB] text-white flex items-center justify-center font-black text-[10px] shrink-0 mt-0.5">
                       3
                     </span>
-                    HDFC redirects you back and your subscription activates
-                    instantly
+                    Complete payment and your subscription activates instantly
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="w-5 h-5 bg-[#024BAB] text-white flex items-center justify-center font-black text-[10px] shrink-0 mt-0.5">
@@ -657,20 +700,19 @@ export default function OnboardingPage() {
                 {paying ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Redirecting to HDFC...
+                    Opening checkout...
                   </>
                 ) : (
                   <>
                     <ExternalLink className="w-5 h-5" />
-                    Pay ₹{planTotal.toLocaleString("en-IN")} via HDFC
-                    SmartGateway
+                    Pay ₹{planTotal.toLocaleString("en-IN")} via Razorpay
                   </>
                 )}
               </button>
 
               <div className="flex items-center justify-center gap-2 text-xs text-gray-400 font-medium">
                 <AlertCircle className="w-3.5 h-3.5" />
-                Secured by HDFC SmartGateway · PCI-DSS compliant
+                Secured by Razorpay · PCI-DSS compliant
               </div>
 
               <button
