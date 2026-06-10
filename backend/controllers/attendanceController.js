@@ -185,8 +185,22 @@ const updateAttendance = asyncHandler(async (req, res) => {
   if (overtime !== undefined) record.overtime = parseFloat(overtime) || 0;
   if (verifyMode !== undefined) record.verifyMode = verifyMode;
 
-  // Admin explicitly chose a status — honour it directly, no auto-override.
-  if (status !== undefined) record.status = status;
+  // If admin picked an explicit non-present status, honour it.
+  // If status is "present" (or not sent), auto-resolve based on updated checkIn
+  // so that a late punch correctly becomes "late".
+  const explicitNonPresent =
+    status !== undefined && status !== "present";
+  if (explicitNonPresent) {
+    record.status = status;
+  } else if (record.checkIn) {
+    record.status = await resolveStatus(
+      record.employee._id,
+      record.checkIn,
+      "present",
+    );
+  } else if (status !== undefined) {
+    record.status = status;
+  }
 
   if (record.checkIn && record.checkOut) {
     record.workHours = parseFloat(
