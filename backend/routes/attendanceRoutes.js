@@ -2,6 +2,7 @@ const express = require("express");
 const {
   getAttendance,
   markAttendance,
+  updateAttendance,
   bulkMarkAttendance,
   getMonthSummary,
 } = require("../controllers/attendanceController");
@@ -15,6 +16,12 @@ router.post(
   protect,
   authorize("super_admin", "hr_manager", "hr_executive"),
   markAttendance,
+);
+router.put(
+  "/:id",
+  protect,
+  authorize("super_admin", "hr_manager", "hr_executive"),
+  updateAttendance,
 );
 router.post(
   "/bulk",

@@ -160,12 +160,17 @@ export default function AttendancePage() {
     e.preventDefault();
     setSaving(true);
     try {
-      await attendanceAPI.mark({
+      const payload = {
         ...markForm,
         checkIn: localToISO(markForm.checkIn),
         checkOut: localToISO(markForm.checkOut),
         overtime: markForm.overtime ? parseFloat(markForm.overtime) : 0,
-      });
+      };
+      if (editingId) {
+        await attendanceAPI.update(editingId, payload);
+      } else {
+        await attendanceAPI.mark(payload);
+      }
       setMarkModal(false);
       setEditingId(null);
       load();

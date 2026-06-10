@@ -74,6 +74,8 @@ export const attendanceAPI = {
   },
   mark: (body: object) =>
     request("/attendance", { method: "POST", body: JSON.stringify(body) }),
+  update: (id: string, body: object) =>
+    request(`/attendance/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   bulkMark: (body: object) =>
     request("/attendance/bulk", { method: "POST", body: JSON.stringify(body) }),
   getSummary: (params: Record<string, string>) =>

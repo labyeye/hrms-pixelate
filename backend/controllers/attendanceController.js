@@ -134,6 +134,50 @@ const markAttendance = asyncHandler(async (req, res) => {
   res.json({ success: true, data: record });
 });
 
+const updateAttendance = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { status, checkIn, checkOut, notes, overtime, date } = req.body;
+
+  const companyEmployees = await Employee.find({
+    company: req.user.company,
+  }).select("_id");
+  const companyEmpIds = new Set(companyEmployees.map((e) => e._id.toString()));
+
+  const record = await Attendance.findById(id).populate("employee", "_id");
+  if (!record || !companyEmpIds.has(record.employee._id.toString())) {
+    res.status(404);
+    throw new Error("Attendance record not found");
+  }
+
+  if (date) {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    record.date = d;
+  }
+  if (status !== undefined) record.status = status;
+  if (checkIn !== undefined) record.checkIn = checkIn ? new Date(checkIn) : undefined;
+  if (checkOut !== undefined) record.checkOut = checkOut ? new Date(checkOut) : undefined;
+  if (notes !== undefined) record.notes = notes;
+  if (overtime !== undefined) record.overtime = parseFloat(overtime) || 0;
+
+  if (record.checkIn && record.checkOut) {
+    record.workHours = parseFloat(
+      ((record.checkOut - record.checkIn) / 3_600_000).toFixed(2),
+    );
+  }
+
+  record.markedBy = req.user._id;
+  await record.save();
+
+  await record.populate({
+    path: "employee",
+    select: "firstName lastName employeeId department",
+    populate: { path: "department", select: "name" },
+  });
+
+  res.json({ success: true, data: record });
+});
+
 const bulkMarkAttendance = asyncHandler(async (req, res) => {
   const { date, records } = req.body;
   if (!Array.isArray(records) || records.length === 0) {
@@ -216,6 +260,7 @@ const getMonthSummary = asyncHandler(async (req, res) => {
 module.exports = {
   getAttendance,
   markAttendance,
+  updateAttendance,
   bulkMarkAttendance,
   getMonthSummary,
 };
