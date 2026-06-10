@@ -209,8 +209,28 @@ router.get(["/getrequest", "/getrequest.aspx"], async (req, res) => {
   res.set("Content-Type", "text/plain");
 
   try {
-    const device = await resolveDevice(SN);
-    if (!device) return res.send("OK");
+    if (!SN) {
+      console.warn("[ADMS] getrequest: no SN in query");
+      return res.send("OK");
+    }
+
+    // Also update lastSeenAt so dashboard shows device as online
+    const device = await BiometricDevice.findOneAndUpdate(
+      { serialNumber: SN, isActive: true },
+      { $set: { lastSeenAt: new Date() } },
+      { new: true },
+    );
+
+    if (!device) {
+      // Check if device exists at all (helps diagnose isActive vs missing SN)
+      const anyDevice = await BiometricDevice.findOne({ serialNumber: SN });
+      if (!anyDevice) {
+        console.warn(`[ADMS] getrequest: unknown device SN=${SN}`);
+      } else {
+        console.warn(`[ADMS] getrequest: device SN=${SN} found but isActive=${anyDevice.isActive} — returning OK`);
+      }
+      return res.send("OK");
+    }
 
     const cmd = await BiometricCommand.findOneAndUpdate(
       { device: device._id, status: "pending" },
@@ -218,8 +238,12 @@ router.get(["/getrequest", "/getrequest.aspx"], async (req, res) => {
       { new: true, sort: { createdAt: 1 } },
     );
 
-    if (!cmd) return res.send("OK");
+    if (!cmd) {
+      // Normal quiet poll — no command queued
+      return res.send("OK");
+    }
 
+    console.log(`[ADMS] getrequest: SN=${SN} → C:${cmd.cmdId}:${cmd.command.replace(/\t/g, "\\t")}`);
     res.send(`C:${cmd.cmdId}:${cmd.command}\n`);
   } catch (err) {
     console.error("[ADMS] getrequest error:", err.message);
