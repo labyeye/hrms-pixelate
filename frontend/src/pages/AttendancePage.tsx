@@ -151,12 +151,19 @@ export default function AttendancePage() {
     setMarkModal(true);
   };
 
+  // "2024-06-10T09:00" from datetime-local has no timezone.
+  // new Date() in the browser parses it as local (IST), so .toISOString() gives
+  // the correct UTC equivalent before it's sent to the server.
+  const localToISO = (s: string) => (s ? new Date(s).toISOString() : undefined);
+
   const handleMark = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
       await attendanceAPI.mark({
         ...markForm,
+        checkIn: localToISO(markForm.checkIn),
+        checkOut: localToISO(markForm.checkOut),
         overtime: markForm.overtime ? parseFloat(markForm.overtime) : 0,
       });
       setMarkModal(false);
