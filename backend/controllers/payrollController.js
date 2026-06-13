@@ -153,47 +153,76 @@ const processPayroll = asyncHandler(async (req, res) => {
     const shiftHoursPerDay = shiftTotalMins > 0 ? shiftTotalMins / 60 : 8;
     const hourlyRate = dailyRate / shiftHoursPerDay;
 
-    let presentDays = 0, leaveDays = 0, totalWorkHours = 0, attendanceOTHours = 0;
+    let presentDays = 0,
+      leaveDays = 0,
+      totalWorkHours = 0,
+      attendanceOTHours = 0;
 
     for (const a of attendances) {
       if (a.status === "holiday" || a.status === "weekend") continue;
-      if (a.status === "on_leave") { leaveDays++; continue; }
+      if (a.status === "on_leave") {
+        leaveDays++;
+        continue;
+      }
 
       if (a.checkIn && a.checkOut) {
         // Early arrival → start from shift start.
         // Late departure → cap at shift end unless employee has otEnabled.
         const dateMS = new Date(a.date).getTime();
-        const shiftStartUTC = new Date(dateMS + (shiftH * 60 + shiftM) * 60000 - IST_OFFSET_MS);
-        const shiftEndUTC   = new Date(dateMS + (shiftEndH * 60 + shiftEndM) * 60000 - IST_OFFSET_MS);
+        const shiftStartUTC = new Date(
+          dateMS + (shiftH * 60 + shiftM) * 60000 - IST_OFFSET_MS,
+        );
+        const shiftEndUTC = new Date(
+          dateMS + (shiftEndH * 60 + shiftEndM) * 60000 - IST_OFFSET_MS,
+        );
 
-        const effectiveIn  = Math.max(new Date(a.checkIn).getTime(), shiftStartUTC.getTime());
-        const rawOut       = new Date(a.checkOut).getTime();
-        const effectiveOut = otEnabled ? rawOut : Math.min(rawOut, shiftEndUTC.getTime());
-        const paidHours    = Math.max(0, (effectiveOut - effectiveIn) / 3_600_000);
+        const effectiveIn = Math.max(
+          new Date(a.checkIn).getTime(),
+          shiftStartUTC.getTime(),
+        );
+        const rawOut = new Date(a.checkOut).getTime();
+        const effectiveOut = otEnabled
+          ? rawOut
+          : Math.min(rawOut, shiftEndUTC.getTime());
+        const paidHours = Math.max(0, (effectiveOut - effectiveIn) / 3_600_000);
 
         totalWorkHours += paidHours;
         presentDays++;
       } else if (a.checkIn) {
         // Checked in but no checkout — pay from clamped checkIn till shift end
         const dateMS = new Date(a.date).getTime();
-        const shiftStartUTC = new Date(dateMS + (shiftH * 60 + shiftM) * 60000 - IST_OFFSET_MS);
-        const shiftEndUTC   = new Date(dateMS + (shiftEndH * 60 + shiftEndM) * 60000 - IST_OFFSET_MS);
+        const shiftStartUTC = new Date(
+          dateMS + (shiftH * 60 + shiftM) * 60000 - IST_OFFSET_MS,
+        );
+        const shiftEndUTC = new Date(
+          dateMS + (shiftEndH * 60 + shiftEndM) * 60000 - IST_OFFSET_MS,
+        );
 
-        const effectiveIn = Math.max(new Date(a.checkIn).getTime(), shiftStartUTC.getTime());
-        const paidHours = Math.max(0, (shiftEndUTC.getTime() - effectiveIn) / 3_600_000);
+        const effectiveIn = Math.max(
+          new Date(a.checkIn).getTime(),
+          shiftStartUTC.getTime(),
+        );
+        const paidHours = Math.max(
+          0,
+          (shiftEndUTC.getTime() - effectiveIn) / 3_600_000,
+        );
 
         totalWorkHours += paidHours;
         presentDays++;
       } else if (["present", "late", "half_day"].includes(a.status)) {
         // Manual attendance without punch times — use full/half shift hours
-        totalWorkHours += a.status === "half_day" ? shiftHoursPerDay * 0.5 : shiftHoursPerDay;
+        totalWorkHours +=
+          a.status === "half_day" ? shiftHoursPerDay * 0.5 : shiftHoursPerDay;
         presentDays++;
       }
 
       if (a.overtime && a.overtime > 0) attendanceOTHours += a.overtime;
     }
 
-    const earnedSalary = Math.max(0, parseFloat((totalWorkHours * hourlyRate).toFixed(2)));
+    const earnedSalary = Math.max(
+      0,
+      parseFloat((totalWorkHours * hourlyRate).toFixed(2)),
+    );
 
     // No separate late/half-day deductions — they're already reflected in hours worked.
     // Only manual penalties from deduction rules (e.g. fixed penalty per late punch) apply.

@@ -1018,7 +1018,10 @@ const pushFaceTemplateToDevice = asyncHandler(async (req, res) => {
   }
 
   const cmdId = await nextCmdId(device._id);
-  const templateStr = Buffer.from(employee.deviceFaceTemplate, "hex").toString();
+  const templateStr = Buffer.from(
+    employee.deviceFaceTemplate,
+    "hex",
+  ).toString();
 
   await BiometricCommand.create({
     device: device._id,

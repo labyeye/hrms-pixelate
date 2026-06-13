@@ -2,5 +2,13 @@ const express = require("express");
 const { getStats } = require("../controllers/dashboardController");
 const { protect } = require("../middleware/auth");
 const router = express.Router();
-router.get("/stats", protect, getStats);
+
+const noCache = (_req, res, next) => {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
+  next();
+};
+
+router.get("/stats", protect, noCache, getStats);
 module.exports = router;

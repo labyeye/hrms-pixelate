@@ -23,9 +23,12 @@ async function resolveStatus(employeeId, checkIn, requestedStatus) {
 
   // Convert stored UTC time → IST to compare against shift start (which is local IST)
   const checkInIST = new Date(new Date(checkIn).getTime() + IST_OFFSET_MS);
-  const checkInMinutes = checkInIST.getUTCHours() * 60 + checkInIST.getUTCMinutes();
+  const checkInMinutes =
+    checkInIST.getUTCHours() * 60 + checkInIST.getUTCMinutes();
 
-  return checkInMinutes > shiftStartMinutes + GRACE_MINUTES ? "late" : requestedStatus;
+  return checkInMinutes > shiftStartMinutes + GRACE_MINUTES
+    ? "late"
+    : requestedStatus;
 }
 
 const getAttendance = asyncHandler(async (req, res) => {
@@ -114,7 +117,8 @@ const getAttendance = asyncHandler(async (req, res) => {
 });
 
 const markAttendance = asyncHandler(async (req, res) => {
-  const { employee, date, status, checkIn, checkOut, notes, verifyMode } = req.body;
+  const { employee, date, status, checkIn, checkOut, notes, verifyMode } =
+    req.body;
 
   const emp = await Employee.findOne({
     _id: employee,
@@ -129,7 +133,9 @@ const markAttendance = asyncHandler(async (req, res) => {
   d.setHours(0, 0, 0, 0);
 
   const holiday = await isHolidayDate(req.user.company, d);
-  const computedStatus = holiday ? "holiday" : await resolveStatus(employee, checkIn, status);
+  const computedStatus = holiday
+    ? "holiday"
+    : await resolveStatus(employee, checkIn, status);
 
   let workHours = 0;
   if (checkIn && checkOut && !holiday) {
@@ -161,7 +167,8 @@ const markAttendance = asyncHandler(async (req, res) => {
 
 const updateAttendance = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { status, checkIn, checkOut, notes, overtime, date, verifyMode } = req.body;
+  const { status, checkIn, checkOut, notes, overtime, date, verifyMode } =
+    req.body;
 
   const companyEmployees = await Employee.find({
     company: req.user.company,
@@ -179,8 +186,10 @@ const updateAttendance = asyncHandler(async (req, res) => {
     d.setHours(0, 0, 0, 0);
     record.date = d;
   }
-  if (checkIn !== undefined) record.checkIn = checkIn ? new Date(checkIn) : undefined;
-  if (checkOut !== undefined) record.checkOut = checkOut ? new Date(checkOut) : undefined;
+  if (checkIn !== undefined)
+    record.checkIn = checkIn ? new Date(checkIn) : undefined;
+  if (checkOut !== undefined)
+    record.checkOut = checkOut ? new Date(checkOut) : undefined;
   if (notes !== undefined) record.notes = notes;
   if (overtime !== undefined) record.overtime = parseFloat(overtime) || 0;
   if (verifyMode !== undefined) record.verifyMode = verifyMode;
@@ -188,8 +197,7 @@ const updateAttendance = asyncHandler(async (req, res) => {
   // If admin picked an explicit non-present status, honour it.
   // If status is "present" (or not sent), auto-resolve based on updated checkIn
   // so that a late punch correctly becomes "late".
-  const explicitNonPresent =
-    status !== undefined && status !== "present";
+  const explicitNonPresent = status !== undefined && status !== "present";
   if (explicitNonPresent) {
     record.status = status;
   } else if (record.checkIn) {

@@ -139,7 +139,9 @@ export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [shifts, setShifts] = useState<any[]>([]);
-  const [payrollNetMap, setPayrollNetMap] = useState<Record<string, number>>({});
+  const [payrollNetMap, setPayrollNetMap] = useState<Record<string, number>>(
+    {},
+  );
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterDept, setFilterDept] = useState("");
@@ -203,7 +205,11 @@ export default function EmployeesPage() {
         employeeAPI.getAll(params),
         departmentAPI.getAll(),
         shiftAPI.getAll(),
-        payrollAPI.getAll({ month: String(now.getMonth() + 1), year: String(now.getFullYear()), limit: "200" }),
+        payrollAPI.getAll({
+          month: String(now.getMonth() + 1),
+          year: String(now.getFullYear()),
+          limit: "200",
+        }),
       ]);
       if (empRes.success) setEmployees(empRes.data);
       if (deptRes.success) setDepartments(deptRes.data);
@@ -211,7 +217,8 @@ export default function EmployeesPage() {
       if ((payrollRes as any).success) {
         const map: Record<string, number> = {};
         for (const p of (payrollRes as any).data) {
-          const empId = typeof p.employee === "object" ? p.employee._id : p.employee;
+          const empId =
+            typeof p.employee === "object" ? p.employee._id : p.employee;
           if (empId && p.netSalary != null) map[empId] = p.netSalary;
         }
         setPayrollNetMap(map);
@@ -580,7 +587,12 @@ export default function EmployeesPage() {
   const totalEstBalance = employees.reduce((s, e) => {
     const id = (e as any)._id;
     const net = payrollNetMap[id];
-    return s + (net != null ? net : ((e as any).salary ?? 0) - ((e as any).loanBalance ?? 0));
+    return (
+      s +
+      (net != null
+        ? net
+        : ((e as any).salary ?? 0) - ((e as any).loanBalance ?? 0))
+    );
   }, 0);
 
   return (
@@ -785,7 +797,8 @@ export default function EmployeesPage() {
                       const sal = (emp as any).salary ?? 0;
                       const loan = (emp as any).loanBalance ?? 0;
                       const processedNet = payrollNetMap[(emp as any)._id];
-                      const bal = processedNet != null ? processedNet : sal - loan;
+                      const bal =
+                        processedNet != null ? processedNet : sal - loan;
                       if (!sal)
                         return <span className="text-muted-foreground">—</span>;
                       return (
@@ -1607,7 +1620,6 @@ export default function EmployeesPage() {
                           </label>
                           <input
                             type="text"
-                            required
                             value={form.accountHolderName}
                             onChange={(e) =>
                               setForm({
@@ -1625,7 +1637,6 @@ export default function EmployeesPage() {
                           </label>
                           <input
                             type="text"
-                            required
                             value={form.bankAccount}
                             onChange={(e) =>
                               setForm({
@@ -1635,10 +1646,7 @@ export default function EmployeesPage() {
                                   .slice(0, 18),
                               })
                             }
-                            minLength={9}
                             maxLength={18}
-                            pattern="\d{9,18}"
-                            title="Bank account number must be 9–18 digits"
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
                             placeholder="9–18 digit account number"
                           />
@@ -1649,7 +1657,6 @@ export default function EmployeesPage() {
                           </label>
                           <input
                             type="text"
-                            required
                             value={form.ifscCode}
                             onChange={(e) =>
                               setForm({
@@ -1673,7 +1680,6 @@ export default function EmployeesPage() {
                           </label>
                           <input
                             type="text"
-                            required
                             value={form.bankName}
                             onChange={(e) =>
                               setForm({ ...form, bankName: e.target.value })

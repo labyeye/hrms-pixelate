@@ -209,7 +209,9 @@ router.post(
     if (table === "BIODATA") {
       try {
         const device = await resolveDevice(SN);
-        console.log(`[ADMS] BIODATA from SN=${SN} body="${body.slice(0, 200)}"`);
+        console.log(
+          `[ADMS] BIODATA from SN=${SN} body="${body.slice(0, 200)}"`,
+        );
 
         if (device) {
           // Parse PIN= from the body to identify employee
@@ -229,9 +231,13 @@ router.post(
               employee.deviceFaceTemplate = Buffer.from(body).toString("hex");
               employee.deviceFaceEnrolledAt = new Date();
               await employee.save();
-              console.log(`[ADMS] BIODATA: stored face template for emp ${employee.firstName} ${employee.lastName} (PIN=${pin})`);
+              console.log(
+                `[ADMS] BIODATA: stored face template for emp ${employee.firstName} ${employee.lastName} (PIN=${pin})`,
+              );
             } else {
-              console.warn(`[ADMS] BIODATA: no employee found for PIN=${pin} company=${device.company}`);
+              console.warn(
+                `[ADMS] BIODATA: no employee found for PIN=${pin} company=${device.company}`,
+              );
             }
           }
         }
@@ -296,7 +302,9 @@ router.get(["/getrequest", "/getrequest.aspx"], async (req, res) => {
       return res.send("OK");
     }
 
-    console.log(`[ADMS] getrequest: SN=${SN} → C:${cmd.cmdId}:${cmd.command.replace(/\t/g, "\\t")}`);
+    console.log(
+      `[ADMS] getrequest: SN=${SN} → C:${cmd.cmdId}:${cmd.command.replace(/\t/g, "\\t")}`,
+    );
     res.send(`C:${cmd.cmdId}:${cmd.command}\n`);
   } catch (err) {
     console.error("[ADMS] getrequest error:", err.message);
@@ -317,7 +325,9 @@ router.post(
       const bodyIdMatch = body.match(/\bID=(\d+)/);
       const cmdId = ID || (bodyIdMatch ? bodyIdMatch[1] : null);
 
-      console.log(`[ADMS] devicecmd SN=${SN} ID=${cmdId} body="${body.trim()}"`);
+      console.log(
+        `[ADMS] devicecmd SN=${SN} ID=${cmdId} body="${body.trim()}"`,
+      );
 
       if (cmdId) {
         const device = await resolveDevice(SN);

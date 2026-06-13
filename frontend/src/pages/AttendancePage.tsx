@@ -467,7 +467,12 @@ export default function AttendancePage() {
               <h3 className="font-display font-bold text-lg">
                 {editingId ? "Edit Attendance" : "Mark Attendance"}
               </h3>
-              <button onClick={() => { setMarkModal(false); setEditingId(null); }}>
+              <button
+                onClick={() => {
+                  setMarkModal(false);
+                  setEditingId(null);
+                }}
+              >
                 <XCircle className="w-5 h-5" />
               </button>
             </div>
@@ -596,11 +601,18 @@ export default function AttendancePage() {
                   disabled={saving}
                   className="border-2 bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold flex-1"
                 >
-                  {saving ? "Saving..." : editingId ? "Update Attendance" : "Mark Attendance"}
+                  {saving
+                    ? "Saving..."
+                    : editingId
+                      ? "Update Attendance"
+                      : "Mark Attendance"}
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setMarkModal(false); setEditingId(null); }}
+                  onClick={() => {
+                    setMarkModal(false);
+                    setEditingId(null);
+                  }}
                   className="border-2 bg-white text-black px-4 py-2.5 text-sm font-bold"
                 >
                   Cancel
