@@ -84,6 +84,17 @@
   }
 }
 
+@layer base {
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+    border-color: #024bab !important;
+    background-color: #f0f6ff !important;
+    box-shadow: 0 0 0 3px rgba(2, 75, 171, 0.15);
+  }
+}
+
 @layer utilities {
   .nb-shadow {
     box-shadow: 4px 4px 0px #0a0a0a;

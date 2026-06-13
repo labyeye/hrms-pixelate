@@ -37,6 +37,8 @@ import {
   X,
   ChevronRight,
   Upload,
+  Plus,
+  Send,
 } from "lucide-react";
 
 interface AttendanceStats {
@@ -141,6 +143,17 @@ export default function EmployeeDashboard() {
     confirm: false,
   });
   const [pwSaving, setPwSaving] = useState(false);
+
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [leaveForm, setLeaveForm] = useState({
+    leaveType: "casual",
+    startDate: "",
+    endDate: "",
+    reason: "",
+    isHalfDay: false,
+    halfDayType: "first_half",
+  });
+  const [leaveSaving, setLeaveSaving] = useState(false);
 
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -323,6 +336,43 @@ export default function EmployeeDashboard() {
       });
     } finally {
       setPwSaving(false);
+    }
+  };
+
+  const calcDays = (start: string, end: string, isHalf: boolean) => {
+    if (!start || !end) return 0;
+    const s = new Date(start);
+    const e = new Date(end);
+    if (isNaN(s.getTime()) || isNaN(e.getTime()) || s > e) return 0;
+    const diff = Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
+    return isHalf ? 0.5 : diff;
+  };
+
+  const handleRequestLeave = async () => {
+    const { leaveType, startDate, endDate, reason, isHalfDay, halfDayType } = leaveForm;
+    if (!startDate || !endDate || !reason.trim()) {
+      toast({ title: "Please fill all fields", variant: "destructive" });
+      return;
+    }
+    const days = calcDays(startDate, endDate, isHalfDay);
+    if (days <= 0) {
+      toast({ title: "Invalid date range", variant: "destructive" });
+      return;
+    }
+    setLeaveSaving(true);
+    try {
+      const res = await leaveAPI.create({ leaveType, startDate, endDate, days, reason: reason.trim(), isHalfDay, halfDayType });
+      if (res.success) {
+        toast({ title: "Leave requested", description: "Your request has been submitted for approval." });
+        setShowLeaveModal(false);
+        setLeaveForm({ leaveType: "casual", startDate: "", endDate: "", reason: "", isHalfDay: false, halfDayType: "first_half" });
+        const emp = employee;
+        leaveAPI.getAll({ employeeId: emp._id }).then((r: any) => r.success && setLeaves(r.data)).catch(() => {});
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to submit leave", variant: "destructive" });
+    } finally {
+      setLeaveSaving(false);
     }
   };
 
@@ -954,52 +1004,185 @@ export default function EmployeeDashboard() {
 
       {}
       {tab === "leaves" && (
-        <div className="border-2 border-black bg-white overflow-hidden">
-          <div className="px-4 py-3 bg-[#024BAB]/5 border-b-2 border-black">
-            <p className="text-xs font-black uppercase tracking-wider text-black">
-              Leave Records ({leaves.length})
-            </p>
-          </div>
-          {leaves.length === 0 ? (
-            <div className="p-10 text-center text-muted-foreground">
-              No leave records found
+        <div className="space-y-4">
+          <div className="border-2 border-black bg-white overflow-hidden">
+            <div className="px-4 py-3 bg-[#024BAB]/5 border-b-2 border-black flex items-center justify-between">
+              <p className="text-xs font-black uppercase tracking-wider text-black">
+                Leave Records ({leaves.length})
+              </p>
+              <button
+                onClick={() => setShowLeaveModal(true)}
+                className="flex items-center gap-1.5 bg-[#024BAB] text-white border-2 border-black px-3 py-1.5 text-xs font-black uppercase hover:bg-[#024BAB]/90 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Request Leave
+              </button>
             </div>
-          ) : (
-            <div className="divide-y divide-black/10">
-              {leaves.map((lv) => (
-                <div
-                  key={lv._id}
-                  className="flex items-start justify-between px-4 py-4"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="text-sm font-bold text-black capitalize">
-                        {lv.leaveType?.replace("_", " ")} Leave
+            {leaves.length === 0 ? (
+              <div className="p-10 text-center text-muted-foreground">
+                No leave records found
+              </div>
+            ) : (
+              <div className="divide-y divide-black/10">
+                {leaves.map((lv) => (
+                  <div
+                    key={lv._id}
+                    className="flex items-start justify-between px-4 py-4"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="text-sm font-bold text-black capitalize">
+                          {lv.leaveType?.replace("_", " ")} Leave
+                        </p>
+                        <span
+                          className={cn(
+                            "px-2 py-0.5 text-[10px] font-black uppercase border-2",
+                            leaveStatusColor[lv.status] ||
+                              "bg-gray-100 text-gray-500 border-gray-300",
+                          )}
+                        >
+                          {lv.status}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(lv.startDate)} → {formatDate(lv.endDate)} ·{" "}
+                        {lv.days} day{lv.days > 1 ? "s" : ""}
                       </p>
-                      <span
-                        className={cn(
-                          "px-2 py-0.5 text-[10px] font-black uppercase border-2",
-                          leaveStatusColor[lv.status] ||
-                            "bg-gray-100 text-gray-500 border-gray-300",
-                        )}
-                      >
-                        {lv.status}
-                      </span>
+                      {lv.reason && (
+                        <p className="text-xs text-muted-foreground mt-0.5 italic">
+                          "{lv.reason}"
+                        </p>
+                      )}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDate(lv.startDate)} → {formatDate(lv.endDate)} ·{" "}
-                      {lv.days} day{lv.days > 1 ? "s" : ""}
-                    </p>
-                    {lv.reason && (
-                      <p className="text-xs text-muted-foreground mt-0.5 italic">
-                        "{lv.reason}"
-                      </p>
-                    )}
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Leave Request Modal */}
+      {showLeaveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white border-2 border-black w-full max-w-lg">
+            <div className="flex items-center justify-between px-5 py-4 border-b-2 border-black bg-[#024BAB]">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-white" />
+                <p className="text-sm font-black uppercase tracking-wider text-white">
+                  Request Leave
+                </p>
+              </div>
+              <button
+                onClick={() => setShowLeaveModal(false)}
+                className="text-white hover:text-white/70"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-          )}
+            <div className="p-5 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-black uppercase mb-1.5">
+                    Leave Type
+                  </label>
+                  <select
+                    value={leaveForm.leaveType}
+                    onChange={(e) => setLeaveForm((f) => ({ ...f, leaveType: e.target.value }))}
+                    className="w-full border-2 border-black px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#024BAB] bg-white"
+                  >
+                    {["casual", "sick", "earned", "maternity", "paternity", "unpaid", "compensatory"].map((t) => (
+                      <option key={t} value={t} className="capitalize">
+                        {t.charAt(0).toUpperCase() + t.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex items-end">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={leaveForm.isHalfDay}
+                      onChange={(e) => setLeaveForm((f) => ({ ...f, isHalfDay: e.target.checked }))}
+                      className="w-4 h-4 border-2 border-black accent-[#024BAB]"
+                    />
+                    <span className="text-xs font-bold uppercase">Half Day</span>
+                  </label>
+                </div>
+              </div>
+
+              {leaveForm.isHalfDay && (
+                <div>
+                  <label className="block text-xs font-black uppercase mb-1.5">Half Day Type</label>
+                  <select
+                    value={leaveForm.halfDayType}
+                    onChange={(e) => setLeaveForm((f) => ({ ...f, halfDayType: e.target.value }))}
+                    className="w-full border-2 border-black px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#024BAB] bg-white"
+                  >
+                    <option value="first_half">First Half</option>
+                    <option value="second_half">Second Half</option>
+                  </select>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-black uppercase mb-1.5">Start Date</label>
+                  <input
+                    type="date"
+                    value={leaveForm.startDate}
+                    onChange={(e) => setLeaveForm((f) => ({ ...f, startDate: e.target.value }))}
+                    className="w-full border-2 border-black px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-black uppercase mb-1.5">End Date</label>
+                  <input
+                    type="date"
+                    value={leaveForm.endDate}
+                    min={leaveForm.startDate}
+                    onChange={(e) => setLeaveForm((f) => ({ ...f, endDate: e.target.value }))}
+                    className="w-full border-2 border-black px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
+                  />
+                </div>
+              </div>
+
+              {leaveForm.startDate && leaveForm.endDate && (
+                <p className="text-xs text-[#024BAB] font-bold">
+                  Duration: {calcDays(leaveForm.startDate, leaveForm.endDate, leaveForm.isHalfDay)} day(s)
+                </p>
+              )}
+
+              <div>
+                <label className="block text-xs font-black uppercase mb-1.5">Reason</label>
+                <textarea
+                  value={leaveForm.reason}
+                  onChange={(e) => setLeaveForm((f) => ({ ...f, reason: e.target.value }))}
+                  rows={3}
+                  maxLength={500}
+                  placeholder="Brief reason for leave..."
+                  className="w-full border-2 border-black px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#024BAB] resize-none"
+                />
+                <p className="text-[10px] text-muted-foreground text-right">{leaveForm.reason.length}/500</p>
+              </div>
+            </div>
+            <div className="flex gap-3 px-5 pb-5">
+              <button
+                onClick={() => setShowLeaveModal(false)}
+                className="flex-1 border-2 border-black py-2.5 text-sm font-black uppercase hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRequestLeave}
+                disabled={leaveSaving}
+                className="flex-1 flex items-center justify-center gap-2 bg-[#024BAB] text-white border-2 border-black py-2.5 text-sm font-black uppercase disabled:opacity-50"
+              >
+                {leaveSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                {leaveSaving ? "Submitting..." : "Submit Request"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
