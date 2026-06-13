@@ -8,7 +8,7 @@ const employeeSchema = new mongoose.Schema(
       ref: "Company",
       required: true,
     },
-    employeeId: { type: String, required: true, unique: true },
+    employeeId: { type: String, required: true },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     email: { type: String, required: true },
@@ -60,5 +60,7 @@ const employeeSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+employeeSchema.index({ employeeId: 1, company: 1 }, { unique: true });
 
 module.exports = mongoose.model("Employee", employeeSchema);
