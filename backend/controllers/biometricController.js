@@ -7,6 +7,7 @@ const Attendance = require("../models/Attendance");
 const Employee = require("../models/Employee");
 const { isHolidayDate } = require("./holidayController");
 const { sendCheckIn, sendCheckOut } = require("../services/whatsappService");
+const { sendPushToEmployee } = require("../services/pushNotificationService");
 const { getEffectiveCheckOut } = require("../utils/shiftUtils");
 
 function buildSetUserCmd(employee) {
@@ -472,6 +473,31 @@ const recordBiometric = asyncHandler(async (req, res) => {
     } catch {}
   }
 
+  try {
+    const timeStr = now.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    if (logType === "check_in") {
+      await sendPushToEmployee(employee._id, {
+        title: "Punch In Recorded",
+        body: `Hi ${employee.firstName}, you punched in at ${timeStr} at ${device.location.name}.`,
+        tag: "attendance-checkin",
+        url: "/dashboard",
+      });
+    } else {
+      const hrs = attendanceUpdate.workHours
+        ? `${attendanceUpdate.workHours.toFixed(1)} hrs`
+        : "";
+      await sendPushToEmployee(employee._id, {
+        title: "Punch Out Recorded",
+        body: `Hi ${employee.firstName}, you punched out at ${timeStr}${hrs ? ` · ${hrs} worked` : ""}.`,
+        tag: "attendance-checkout",
+        url: "/dashboard",
+      });
+    }
+  } catch {}
+
   res.json({
     success: true,
     data: {
@@ -917,6 +943,31 @@ const faceAttendance = asyncHandler(async (req, res) => {
       timestamp: now,
     });
   }
+
+  try {
+    const timeStr = now.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    if (logType === "check_in") {
+      await sendPushToEmployee(bestMatch._id, {
+        title: "Punch In Recorded",
+        body: `Hi ${bestMatch.firstName}, you punched in at ${timeStr}.`,
+        tag: "attendance-checkin",
+        url: "/dashboard",
+      });
+    } else {
+      const hrs = attendanceUpdate.workHours
+        ? `${attendanceUpdate.workHours.toFixed(1)} hrs`
+        : "";
+      await sendPushToEmployee(bestMatch._id, {
+        title: "Punch Out Recorded",
+        body: `Hi ${bestMatch.firstName}, you punched out at ${timeStr}${hrs ? ` · ${hrs} worked` : ""}.`,
+        tag: "attendance-checkout",
+        url: "/dashboard",
+      });
+    }
+  } catch {}
 
   res.json({
     success: true,

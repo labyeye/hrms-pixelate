@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { leaveAPI, employeeAPI } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,6 +12,9 @@ import {
   XCircle,
   Clock,
   X,
+  Search,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { ActionModal } from "@/components/ui/ActionModal";
 
@@ -79,6 +83,9 @@ export default function LeavePage() {
     title: string;
     message: string;
   }>({ show: false, type: "success", title: "", message: "" });
+  const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState<"startDate" | "days" | "employee">("startDate");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -143,6 +150,24 @@ export default function LeavePage() {
     approved: leaves.filter((l) => l.status === "approved").length,
     rejected: leaves.filter((l) => l.status === "rejected").length,
   };
+
+  const displayedLeaves = [...leaves]
+    .filter(l => {
+      if (!search) return true;
+      const name = `${(l.employee as any)?.firstName ?? ""} ${(l.employee as any)?.lastName ?? ""}`.toLowerCase();
+      return name.includes(search.toLowerCase());
+    })
+    .sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === "startDate") cmp = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+      else if (sortKey === "days") cmp = (a.days ?? 0) - (b.days ?? 0);
+      else if (sortKey === "employee") {
+        const na = `${(a.employee as any)?.firstName ?? ""}${(a.employee as any)?.lastName ?? ""}`;
+        const nb = `${(b.employee as any)?.firstName ?? ""}${(b.employee as any)?.lastName ?? ""}`;
+        cmp = na.localeCompare(nb);
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
 
   return (
     <AppLayout title="Leave Management">
@@ -211,12 +236,34 @@ export default function LeavePage() {
         ))}
       </div>
 
+      {/* Search & Sort */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex items-center gap-2 border-2 border-black bg-white px-3 py-2 flex-1 min-w-48">
+          <Search className="w-4 h-4 shrink-0 text-muted-foreground" />
+          <input type="text" placeholder="Search by employee name..." value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="bg-transparent text-sm outline-none w-full font-medium" />
+          {search && <button onClick={() => setSearch("")}><X className="w-3.5 h-3.5 text-muted-foreground" /></button>}
+        </div>
+        <select value={sortKey} onChange={e => setSortKey(e.target.value as any)}
+          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none">
+          <option value="startDate">Sort: Date</option>
+          <option value="days">Sort: Days</option>
+          <option value="employee">Sort: Employee</option>
+        </select>
+        <button onClick={() => setSortDir(d => d === "asc" ? "desc" : "asc")}
+          className="border-2 border-black bg-white px-3 py-2 flex items-center gap-1 font-semibold text-sm">
+          {sortDir === "asc" ? <ArrowUp className="w-4 h-4"/> : <ArrowDown className="w-4 h-4"/>}
+          {sortDir === "asc" ? "Asc" : "Desc"}
+        </button>
+      </div>
+
       {}
       {loading ? (
         <div className="flex items-center justify-center h-48">
-          <div className="w-8 h-8 bg-[#024BAB] border-2 border-black animate-bounce" />
+          <img src={nesthrlogo} alt="NestHR" className="h-16 w-auto" />
         </div>
-      ) : leaves.length === 0 ? (
+      ) : displayedLeaves.length === 0 ? (
         <div className="border-2 bg-white p-12 flex flex-col items-center justify-center">
           <CalendarDays className="w-12 h-12 text-muted-foreground/30 mb-3" />
           <p className="font-bold text-black">No leave requests</p>
@@ -245,7 +292,7 @@ export default function LeavePage() {
               </tr>
             </thead>
             <tbody>
-              {leaves.map((leave, i) => (
+              {displayedLeaves.map((leave, i) => (
                 <tr
                   key={leave._id}
                   className={cn(

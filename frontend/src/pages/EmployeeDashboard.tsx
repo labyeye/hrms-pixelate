@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -19,7 +20,6 @@ import {
   Eye,
   EyeOff,
   Save,
-  CheckCircle,
   Lock,
   User,
   Phone,
@@ -32,7 +32,6 @@ import {
   Shield,
   CreditCard,
   TrendingUp,
-  FileText,
   Edit2,
   X,
   ChevronRight,
@@ -380,9 +379,7 @@ export default function EmployeeDashboard() {
     return (
       <AppLayout title="My Profile">
         <div className="flex h-[80vh] items-center justify-center">
-          <div className="w-10 h-10 bg-[#024BAB] border-2 border-black animate-bounce flex items-center justify-center">
-            <Loader2 className="w-5 h-5 text-white animate-spin" />
-          </div>
+          <img src={nesthrlogo} alt="NestHR" className="h-16 w-auto" />
         </div>
       </AppLayout>
     );
@@ -526,7 +523,7 @@ export default function EmployeeDashboard() {
 
       {}
       <div className="flex border-2 border-black bg-white mb-6 overflow-x-auto">
-        {TABS.map((t, idx) => (
+        {TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}

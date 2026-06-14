@@ -19,6 +19,8 @@ import {
   SlidersHorizontal,
   FileText,
   Banknote,
+  LogOut,
+  Shield,
 } from "lucide-react";
 
 export interface NavItem {
@@ -148,6 +150,12 @@ const allGroups: NavGroup[] = [
         roles: ["super_admin", "hr_manager"],
       },
       {
+        title: "Exit Management",
+        href: "/exit-management",
+        icon: LogOut,
+        roles: ["super_admin", "hr_manager", "hr_executive"],
+      },
+      {
         title: "Recruitment",
         href: "/recruitment",
         icon: Briefcase,
@@ -186,6 +194,12 @@ const allGroups: NavGroup[] = [
         title: "Settings",
         href: "/settings",
         icon: Settings,
+        roles: ["super_admin", "hr_manager"],
+      },
+      {
+        title: "Audit Log",
+        href: "/audit-log",
+        icon: Shield,
         roles: ["super_admin", "hr_manager"],
       },
     ],

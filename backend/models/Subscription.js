@@ -33,6 +33,8 @@ const subscriptionSchema = new mongoose.Schema(
     paymentMethod: { type: String },
     amountPaid: { type: Number, default: 0 },
     notes: { type: String },
+    isTrial: { type: Boolean, default: false },
+    trialEndDate: { type: Date },
     hdfcOrderId: { type: String, index: true },
     hdfcTrackingId: { type: String },
     hdfcBankRefNo: { type: String },

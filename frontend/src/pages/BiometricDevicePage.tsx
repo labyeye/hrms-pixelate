@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import nesthrlogo from "../../assets/nesthr.png";
 import { useParams } from "react-router-dom";
 import { biometricAPI } from "@/services/api";
 import { useFaceRecognition } from "@/hooks/useFaceRecognition";
@@ -321,12 +322,7 @@ export default function BiometricDevicePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0A0F1E] flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-[#024BAB] animate-spin mx-auto mb-4" />
-          <p className="text-white font-black text-lg">
-            Initializing Device...
-          </p>
-        </div>
+        <img src={nesthrlogo} alt="NestHR" className="h-16 w-auto" />
       </div>
     );
   }

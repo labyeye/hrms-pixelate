@@ -9,6 +9,9 @@ export interface Subscription {
   status: "active" | "inactive" | "pending_renewal" | "trial";
   plan?: string;
   paymentStatus?: "completed" | "pending" | "failed";
+  isTrial?: boolean;
+  renewalDate?: string;
+  trialEndDate?: string;
 }
 
 export interface Company {

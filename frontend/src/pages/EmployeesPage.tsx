@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import nesthrlogo from "../../assets/nesthr.png";
 import * as XLSX from "xlsx";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -41,6 +42,8 @@ import {
   FileSpreadsheet,
   Download,
   Loader2,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { ActionModal } from "@/components/ui/ActionModal";
@@ -146,6 +149,8 @@ export default function EmployeesPage() {
   const [search, setSearch] = useState("");
   const [filterDept, setFilterDept] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [sortKey, setSortKey] = useState<"firstName" | "department" | "joinDate">("firstName");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [showModal, setShowModal] = useState(false);
   const [formTab, setFormTab] = useState(0);
   const [editEmp, setEditEmp] = useState<Employee | null>(null);
@@ -576,6 +581,14 @@ export default function EmployeesPage() {
     reader.readAsDataURL(file);
   };
 
+  const displayedEmployees = [...employees].sort((a, b) => {
+    let cmp = 0;
+    if (sortKey === "firstName") cmp = (a.firstName ?? "").localeCompare(b.firstName ?? "");
+    else if (sortKey === "department") cmp = ((a.department as any)?.name ?? "").localeCompare((b.department as any)?.name ?? "");
+    else if (sortKey === "joinDate") cmp = new Date(a.joinDate ?? 0).getTime() - new Date(b.joinDate ?? 0).getTime();
+    return sortDir === "asc" ? cmp : -cmp;
+  });
+
   const totalSalary = employees.reduce(
     (s, e) => s + ((e as any).salary ?? 0),
     0,
@@ -602,7 +615,7 @@ export default function EmployeesPage() {
         <h1 className="font-display font-black text-2xl text-black">
           Employees
         </h1>
-        <div className="flex items-center gap-2">
+        <div className="grid-cols-2 grid gap-2">
           <button
             onClick={() => {
               setImportModal(true);
@@ -622,7 +635,8 @@ export default function EmployeesPage() {
       </div>
 
       {}
-      <div className="grid grid-cols-3 gap-3 mb-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-5">
+        {" "}
         <div className="border-2 border-black bg-white p-4 flex items-center gap-3">
           <div className="w-10 h-10 bg-[#024BAB]/10 border-2 border-[#024BAB] flex items-center justify-center shrink-0">
             <Users className="w-5 h-5 text-[#024BAB]" />
@@ -676,29 +690,32 @@ export default function EmployeesPage() {
             className="bg-transparent text-sm outline-none w-full font-medium"
           />
         </div>
-        <select
-          value={filterDept}
-          onChange={(e) => setFilterDept(e.target.value)}
-          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none"
-        >
-          <option value="">All Departments</option>
-          {departments.map((d) => (
-            <option key={d._id} value={d._id}>
-              {d.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none"
-        >
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="on_leave">On Leave</option>
-          <option value="inactive">Inactive</option>
-          <option value="terminated">Terminated</option>
-        </select>
+        <div className="grid grid-cols-2 gap-3">
+          <select
+            value={filterDept}
+            onChange={(e) => setFilterDept(e.target.value)}
+            className="w-full border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none"
+          >
+            <option value="">All Departments</option>
+            {departments.map((d) => (
+              <option key={d._id} value={d._id}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="w-full border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none"
+          >
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="on_leave">On Leave</option>
+            <option value="inactive">Inactive</option>
+            <option value="terminated">Terminated</option>
+          </select>
+        </div>
         {(filterDept || filterStatus) && (
           <button
             onClick={() => {
@@ -710,12 +727,28 @@ export default function EmployeesPage() {
             <X className="w-3.5 h-3.5" /> Clear
           </button>
         )}
+        <select
+          value={sortKey}
+          onChange={(e) => setSortKey(e.target.value as any)}
+          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none"
+        >
+          <option value="firstName">Sort: Name</option>
+          <option value="department">Sort: Department</option>
+          <option value="joinDate">Sort: Join Date</option>
+        </select>
+        <button
+          onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold flex items-center gap-1"
+        >
+          {sortDir === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
+          {sortDir === "asc" ? "Asc" : "Desc"}
+        </button>
       </div>
 
       {}
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 bg-[#024BAB] border-2 border-black animate-bounce" />
+          <img src={nesthrlogo} alt="NestHR" className="h-16 w-auto" />
         </div>
       ) : employees.length === 0 ? (
         <div className="border-2 border-black bg-white p-12 flex flex-col items-center justify-center">
@@ -732,148 +765,247 @@ export default function EmployeesPage() {
           </button>
         </div>
       ) : (
-        <div className="border-2 border-black bg-white overflow-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b-2 border-black bg-[#024BAB]/5">
-                {[
-                  "Employee",
-                  "Department",
-                  "Designation",
-                  "Est. Balance",
-                  "Join Date",
-                  "Loan Balance",
-                  "Status",
-                  "Actions",
-                ].map((h) => (
-                  <th
-                    key={h}
-                    className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider"
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {employees.map((emp, i) => (
-                <tr
+        <>
+          {/* Mobile cards */}
+          <div className="grid grid-cols-1 gap-3 sm:hidden">
+            {displayedEmployees.map((emp) => {
+              const sal = (emp as any).salary ?? 0;
+              const loan = (emp as any).loanBalance ?? 0;
+              const processedNet = payrollNetMap[(emp as any)._id];
+              const bal = processedNet != null ? processedNet : sal - loan;
+              return (
+                <div
                   key={emp._id}
-                  className={cn(
-                    "border-b border-black/10 hover:bg-[#024BAB]/5 transition-colors cursor-pointer",
-                    i % 2 === 0 ? "" : "bg-[#F8FAFF]",
-                  )}
+                  className="border-2 border-black bg-white p-4 active:bg-[#024BAB]/5"
                   onClick={() => setViewEmp(emp)}
                 >
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 border-[1px] border-black shrink-0 overflow-hidden bg-[#024BAB] flex items-center justify-center text-xs font-bold text-white rounded-full">
-                        {emp.avatar ? (
-                          <img
-                            src={emp.avatar}
-                            alt={emp.firstName}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          emp.firstName?.[0]?.toUpperCase()
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-bold text-black">
-                          {emp.firstName} {emp.lastName}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {emp.employeeId}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-black font-medium">
-                    {(emp.department as any)?.name || "—"}
-                  </td>
-                  <td className="px-4 py-3 text-black">{emp.designation}</td>
-                  <td className="px-4 py-3 text-xs font-bold">
-                    {(() => {
-                      const sal = (emp as any).salary ?? 0;
-                      const loan = (emp as any).loanBalance ?? 0;
-                      const processedNet = payrollNetMap[(emp as any)._id];
-                      const bal =
-                        processedNet != null ? processedNet : sal - loan;
-                      if (!sal)
-                        return <span className="text-muted-foreground">—</span>;
-                      return (
-                        <span
-                          className={
-                            bal < 0
-                              ? "text-[#EF4444]"
-                              : bal < sal * 0.3
-                                ? "text-amber-600"
-                                : "text-[#00C48C]"
-                          }
-                        >
-                          ₹
-                          {bal.toLocaleString("en-IN", {
-                            maximumFractionDigits: 0,
-                          })}
-                        </span>
-                      );
-                    })()}
-                  </td>
-                  <td className="px-4 py-3 text-black text-xs">
-                    {formatDate(emp.joinDate)}
-                  </td>
-                  <td className="px-4 py-3 text-xs">
-                    {(emp as any).loanBalance > 0 ? (
-                      <span className="font-bold text-[#EF4444]">
-                        ₹{(emp as any).loanBalance.toLocaleString()}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={cn(
-                        "border-2 text-[10px] capitalize",
-                        STATUS_COLORS[emp.status],
+                  {/* Header row */}
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-11 h-11 border-2 border-black shrink-0 overflow-hidden bg-[#024BAB] flex items-center justify-center text-sm font-bold text-white rounded-full">
+                      {emp.avatar ? (
+                        <img src={emp.avatar} alt={emp.firstName} className="w-full h-full object-cover" />
+                      ) : (
+                        emp.firstName?.[0]?.toUpperCase()
                       )}
-                    >
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-black truncate">{emp.firstName} {emp.lastName}</p>
+                      <p className="text-xs text-muted-foreground">{emp.employeeId}</p>
+                    </div>
+                    <span className={cn("border-2 text-[10px] capitalize shrink-0", STATUS_COLORS[emp.status])}>
                       {emp.status.replace("_", " ")}
                     </span>
-                  </td>
-                  <td
-                    className="px-4 py-3"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => setViewEmp(emp)}
-                        className="p-1.5 border-2 border-transparent hover:border-black hover:bg-[#024BAB]/10 transition-colors"
-                        title="View Profile"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => openEdit(emp)}
-                        className="p-1.5 border-2 border-transparent hover:border-black hover:bg-[#024BAB]/10 transition-colors"
-                        title="Edit"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(emp._id)}
-                        className="p-1.5 border-2 border-transparent hover:border-black hover:bg-red-50 transition-colors"
-                        title="Terminate"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 text-red-600" />
-                      </button>
+                  </div>
+
+                  {/* Info grid */}
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs mb-3">
+                    <div>
+                      <span className="text-muted-foreground">Dept: </span>
+                      <span className="font-bold text-black">{(emp.department as any)?.name || "—"}</span>
                     </div>
-                  </td>
+                    <div>
+                      <span className="text-muted-foreground">Joined: </span>
+                      <span className="font-bold text-black">{formatDate(emp.joinDate)}</span>
+                    </div>
+                    <div className="col-span-2 truncate">
+                      <span className="text-muted-foreground">Role: </span>
+                      <span className="font-bold text-black">{emp.designation}</span>
+                    </div>
+                  </div>
+
+                  {/* Balance chips */}
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div className="bg-[#F8FAFF] border border-black/10 px-3 py-2">
+                      <p className="text-[10px] font-black uppercase text-muted-foreground">Est. Balance</p>
+                      {sal ? (
+                        <p className={cn("text-sm font-black", bal < 0 ? "text-[#EF4444]" : bal < sal * 0.3 ? "text-amber-600" : "text-[#00C48C]")}>
+                          ₹{bal.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                        </p>
+                      ) : (
+                        <p className="text-sm font-black text-muted-foreground">—</p>
+                      )}
+                    </div>
+                    <div className="bg-[#F8FAFF] border border-black/10 px-3 py-2">
+                      <p className="text-[10px] font-black uppercase text-muted-foreground">Loan Balance</p>
+                      {loan > 0 ? (
+                        <p className="text-sm font-black text-[#EF4444]">₹{loan.toLocaleString()}</p>
+                      ) : (
+                        <p className="text-sm font-black text-muted-foreground">—</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => setViewEmp(emp)}
+                      className="flex-1 flex items-center justify-center gap-1.5 border-2 border-black py-2 text-xs font-bold bg-white hover:bg-[#024BAB]/5"
+                    >
+                      <Eye className="w-3.5 h-3.5" /> View
+                    </button>
+                    <button
+                      onClick={() => openEdit(emp)}
+                      className="flex-1 flex items-center justify-center gap-1.5 border-2 border-black py-2 text-xs font-bold bg-[#024BAB] text-white hover:bg-[#01368A]"
+                    >
+                      <Edit className="w-3.5 h-3.5" /> Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(emp._id)}
+                      className="p-2 border-2 border-black bg-white hover:bg-red-50"
+                      title="Terminate"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden sm:block border-2 border-black bg-white overflow-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b-2 border-black bg-[#024BAB]/5">
+                  {[
+                    "Employee",
+                    "Department",
+                    "Designation",
+                    "Est. Balance",
+                    "Join Date",
+                    "Loan Balance",
+                    "Status",
+                    "Actions",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider"
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {displayedEmployees.map((emp, i) => (
+                  <tr
+                    key={emp._id}
+                    className={cn(
+                      "border-b border-black/10 hover:bg-[#024BAB]/5 transition-colors cursor-pointer",
+                      i % 2 === 0 ? "" : "bg-[#F8FAFF]",
+                    )}
+                    onClick={() => setViewEmp(emp)}
+                  >
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 border-[1px] border-black shrink-0 overflow-hidden bg-[#024BAB] flex items-center justify-center text-xs font-bold text-white rounded-full">
+                          {emp.avatar ? (
+                            <img
+                              src={emp.avatar}
+                              alt={emp.firstName}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            emp.firstName?.[0]?.toUpperCase()
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-bold text-black">
+                            {emp.firstName} {emp.lastName}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {emp.employeeId}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-black font-medium">
+                      {(emp.department as any)?.name || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-black">{emp.designation}</td>
+                    <td className="px-4 py-3 text-xs font-bold">
+                      {(() => {
+                        const sal = (emp as any).salary ?? 0;
+                        const loan = (emp as any).loanBalance ?? 0;
+                        const processedNet = payrollNetMap[(emp as any)._id];
+                        const bal =
+                          processedNet != null ? processedNet : sal - loan;
+                        if (!sal)
+                          return <span className="text-muted-foreground">—</span>;
+                        return (
+                          <span
+                            className={
+                              bal < 0
+                                ? "text-[#EF4444]"
+                                : bal < sal * 0.3
+                                  ? "text-amber-600"
+                                  : "text-[#00C48C]"
+                            }
+                          >
+                            ₹
+                            {bal.toLocaleString("en-IN", {
+                              maximumFractionDigits: 0,
+                            })}
+                          </span>
+                        );
+                      })()}
+                    </td>
+                    <td className="px-4 py-3 text-black text-xs">
+                      {formatDate(emp.joinDate)}
+                    </td>
+                    <td className="px-4 py-3 text-xs">
+                      {(emp as any).loanBalance > 0 ? (
+                        <span className="font-bold text-[#EF4444]">
+                          ₹{(emp as any).loanBalance.toLocaleString()}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={cn(
+                          "border-2 text-[10px] capitalize",
+                          STATUS_COLORS[emp.status],
+                        )}
+                      >
+                        {emp.status.replace("_", " ")}
+                      </span>
+                    </td>
+                    <td
+                      className="px-4 py-3"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setViewEmp(emp)}
+                          className="p-1.5 border-2 border-transparent hover:border-black hover:bg-[#024BAB]/10 transition-colors"
+                          title="View Profile"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => openEdit(emp)}
+                          className="p-1.5 border-2 border-transparent hover:border-black hover:bg-[#024BAB]/10 transition-colors"
+                          title="Edit"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(emp._id)}
+                          className="p-1.5 border-2 border-transparent hover:border-black hover:bg-red-50 transition-colors"
+                          title="Terminate"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {}
@@ -1760,7 +1892,6 @@ export default function EmployeesPage() {
             >
               <ArrowLeft className="w-4 h-4" /> Back
             </button>
-            <h2 className="font-bold text-base">Employee Profile</h2>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {
@@ -1795,7 +1926,7 @@ export default function EmployeesPage() {
                       className="w-20 h-20 object-cover border-2 border-black"
                     />
                   ) : (
-                    <div className="w-20 h-20 bg-[#024BAB] border-2 border-black flex items-center justify-center text-3xl font-bold text-white">
+                    <div className="w-20 h-20 bg-[#024BAB] border-2 border-black flex items-center justify-center text-3xl font-bold text-white rounded-full">
                       {viewEmp.firstName?.[0]?.toUpperCase()}
                     </div>
                   )}
@@ -1873,7 +2004,7 @@ export default function EmployeesPage() {
             </div>
 
             {}
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div className="border-2 border-black bg-white p-4">
                 <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-2">
                   Monthly Salary

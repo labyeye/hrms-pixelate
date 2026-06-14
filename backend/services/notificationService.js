@@ -162,4 +162,153 @@ async function sendPaymentConfirmations(opts) {
   ]);
 }
 
-module.exports = { sendPaymentConfirmations };
+async function sendPasswordResetEmail({ toEmail, toName, resetUrl }) {
+  const transporter = getTransporter();
+  if (!transporter) return;
+
+  const fromName = process.env.SMTP_FROM_NAME || "NestHR";
+  const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER;
+
+  const html = `
+<!DOCTYPE html><html><head><meta charset="utf-8" />
+<style>
+  body{font-family:Arial,sans-serif;background:#F0F6FF;margin:0;padding:0}
+  .container{max-width:520px;margin:32px auto;background:#fff;border:2px solid #000}
+  .header{background:#024BAB;padding:24px 32px;border-bottom:2px solid #000}
+  .header h1{color:#fff;margin:0;font-size:20px;font-weight:900}
+  .body{padding:32px}
+  .text{font-size:14px;color:#555;line-height:1.6;margin-bottom:20px}
+  .btn{display:inline-block;background:#024BAB;color:#fff;font-weight:900;font-size:14px;text-decoration:none;padding:14px 28px;border:2px solid #000}
+  .footer{background:#f8f8f8;border-top:2px solid #000;padding:16px 32px;font-size:12px;color:#888}
+</style></head><body>
+<div class="container">
+  <div class="header"><h1>NestHR — Password Reset</h1></div>
+  <div class="body">
+    <p class="text"><strong>Hello ${toName},</strong></p>
+    <p class="text">We received a request to reset your NestHR password. Click the button below to set a new password. This link expires in <strong>1 hour</strong>.</p>
+    <a href="${resetUrl}" class="btn">Reset Password &rarr;</a>
+    <p class="text" style="margin-top:24px;font-size:13px;color:#888">If you didn't request this, you can safely ignore this email. Your password will not change.</p>
+  </div>
+  <div class="footer">&copy; ${new Date().getFullYear()} Pixelate Nest — NestHR. This email was sent to ${toEmail}.</div>
+</div></body></html>`;
+
+  try {
+    await transporter.sendMail({
+      from: `"${fromName}" <${fromEmail}>`,
+      to: toEmail,
+      subject: "NestHR — Reset your password",
+      html,
+    });
+  } catch (err) {
+    console.error("[Email] Password reset email failed:", err.message);
+  }
+}
+
+async function sendLeaveStatusEmail({ toEmail, toName, status, leaveType, startDate, endDate, days, rejectionReason }) {
+  const transporter = getTransporter();
+  if (!transporter) return;
+
+  const fromName = process.env.SMTP_FROM_NAME || "NestHR";
+  const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER;
+  const isApproved = status === "approved";
+  const color = isApproved ? "#16a34a" : "#dc2626";
+  const label = isApproved ? "Approved" : "Rejected";
+
+  const html = `
+<!DOCTYPE html><html><head><meta charset="utf-8" />
+<style>
+  body{font-family:Arial,sans-serif;background:#F0F6FF;margin:0;padding:0}
+  .container{max-width:520px;margin:32px auto;background:#fff;border:2px solid #000}
+  .header{background:${color};padding:24px 32px;border-bottom:2px solid #000}
+  .header h1{color:#fff;margin:0;font-size:20px;font-weight:900}
+  .body{padding:32px}
+  .text{font-size:14px;color:#555;line-height:1.6;margin-bottom:16px}
+  .card{background:#F0F6FF;border:2px solid #000;padding:16px;margin-bottom:20px}
+  .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #d0d9e8;font-size:13px}
+  .row:last-child{border-bottom:none}
+  .lbl{color:#666;font-weight:600}.val{color:#000;font-weight:800}
+  .footer{background:#f8f8f8;border-top:2px solid #000;padding:16px 32px;font-size:12px;color:#888}
+</style></head><body>
+<div class="container">
+  <div class="header"><h1>Leave ${label} — NestHR</h1></div>
+  <div class="body">
+    <p class="text"><strong>Hello ${toName},</strong></p>
+    <p class="text">Your leave request has been <strong>${label.toLowerCase()}</strong>.</p>
+    <div class="card">
+      <div class="row"><span class="lbl">Type</span><span class="val">${leaveType.charAt(0).toUpperCase() + leaveType.slice(1)} Leave</span></div>
+      <div class="row"><span class="lbl">From</span><span class="val">${formatDate(startDate)}</span></div>
+      <div class="row"><span class="lbl">To</span><span class="val">${formatDate(endDate)}</span></div>
+      <div class="row"><span class="lbl">Days</span><span class="val">${days}</span></div>
+      <div class="row"><span class="lbl">Status</span><span class="val" style="color:${color}">${label}</span></div>
+      ${!isApproved && rejectionReason ? `<div class="row"><span class="lbl">Reason</span><span class="val">${rejectionReason}</span></div>` : ""}
+    </div>
+    <p class="text" style="font-size:13px;color:#888">If you have questions, contact your HR manager.</p>
+  </div>
+  <div class="footer">&copy; ${new Date().getFullYear()} Pixelate Nest — NestHR.</div>
+</div></body></html>`;
+
+  try {
+    await transporter.sendMail({
+      from: `"${fromName}" <${fromEmail}>`,
+      to: toEmail,
+      subject: `NestHR — Your leave has been ${label.toLowerCase()}`,
+      html,
+    });
+  } catch (err) {
+    console.error("[Email] Leave status email failed:", err.message);
+  }
+}
+
+async function sendLeaveAppliedEmail({ toEmail, toName, empName, leaveType, startDate, endDate, days, reason }) {
+  const transporter = getTransporter();
+  if (!transporter) return;
+
+  const fromName = process.env.SMTP_FROM_NAME || "NestHR";
+  const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER;
+
+  const html = `
+<!DOCTYPE html><html><head><meta charset="utf-8" />
+<style>
+  body{font-family:Arial,sans-serif;background:#F0F6FF;margin:0;padding:0}
+  .container{max-width:520px;margin:32px auto;background:#fff;border:2px solid #000}
+  .header{background:#024BAB;padding:24px 32px;border-bottom:2px solid #000}
+  .header h1{color:#fff;margin:0;font-size:20px;font-weight:900}
+  .body{padding:32px}
+  .text{font-size:14px;color:#555;line-height:1.6;margin-bottom:16px}
+  .card{background:#F0F6FF;border:2px solid #000;padding:16px;margin-bottom:20px}
+  .row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #d0d9e8;font-size:13px}
+  .row:last-child{border-bottom:none}
+  .lbl{color:#666;font-weight:600}.val{color:#000;font-weight:800}
+  .footer{background:#f8f8f8;border-top:2px solid #000;padding:16px 32px;font-size:12px;color:#888}
+</style></head><body>
+<div class="container">
+  <div class="header"><h1>New Leave Request — NestHR</h1></div>
+  <div class="body">
+    <p class="text"><strong>Hello ${toName},</strong></p>
+    <p class="text">A new leave request has been submitted and requires your review.</p>
+    <div class="card">
+      <div class="row"><span class="lbl">Employee</span><span class="val">${empName}</span></div>
+      <div class="row"><span class="lbl">Type</span><span class="val">${leaveType.charAt(0).toUpperCase() + leaveType.slice(1)} Leave</span></div>
+      <div class="row"><span class="lbl">From</span><span class="val">${formatDate(startDate)}</span></div>
+      <div class="row"><span class="lbl">To</span><span class="val">${formatDate(endDate)}</span></div>
+      <div class="row"><span class="lbl">Days</span><span class="val">${days}</span></div>
+      <div class="row"><span class="lbl">Reason</span><span class="val">${reason}</span></div>
+    </div>
+    <p class="text" style="font-size:13px;color:#888">Log in to NestHR to approve or reject this request.</p>
+  </div>
+  <div class="footer">&copy; ${new Date().getFullYear()} Pixelate Nest — NestHR.</div>
+</div></body></html>`;
+
+  try {
+    await transporter.sendMail({
+      from: `"${fromName}" <${fromEmail}>`,
+      to: toEmail,
+      subject: `NestHR — Leave request from ${empName} needs review`,
+      html,
+    });
+  } catch (err) {
+    console.error("[Email] Leave applied email failed:", err.message);
+  }
+}
+
+module.exports = { sendPaymentConfirmations, sendPasswordResetEmail, sendLeaveStatusEmail, sendLeaveAppliedEmail };

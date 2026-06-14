@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { settingsAPI, authAPI } from "@/services/api";
@@ -6,7 +7,6 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Building2,
   Landmark,
-  FileText,
   Loader2,
   Save,
   Plus,
@@ -293,6 +293,150 @@ function TextAreaField({
   );
 }
 
+function TwoFactorPanel() {
+  const { toast } = useToast();
+  const [step, setStep] = useState<"idle" | "setup" | "backup">("idle");
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [qr, setQr] = useState("");
+  const [secret, setSecret] = useState("");
+  const [code, setCode] = useState("");
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
+  const [disableCode, setDisableCode] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // Detect 2FA status from /auth/me
+  useEffect(() => {
+    authAPI.getMe().then((r: any) => {
+      setEnabled(!!r.data?.twoFactorEnabled);
+    }).catch(() => {});
+  }, []);
+
+  const handleSetup = async () => {
+    setLoading(true);
+    try {
+      const res = await authAPI.setup2FA() as any;
+      setQr(res.data.qr);
+      setSecret(res.data.secret);
+      setStep("setup");
+    } catch (err: any) {
+      toast({ title: err.message || "Failed to start 2FA setup", variant: "destructive" });
+    } finally { setLoading(false); }
+  };
+
+  const handleConfirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await authAPI.confirm2FA(code) as any;
+      setBackupCodes(res.data.backupCodes);
+      setEnabled(true);
+      setStep("backup");
+      toast({ title: "2FA enabled successfully" });
+    } catch (err: any) {
+      toast({ title: err.message || "Invalid code", variant: "destructive" });
+    } finally { setLoading(false); }
+  };
+
+  const handleDisable = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await authAPI.disable2FA(disableCode);
+      setEnabled(false);
+      setStep("idle");
+      setDisableCode("");
+      toast({ title: "2FA disabled" });
+    } catch (err: any) {
+      toast({ title: err.message || "Invalid code", variant: "destructive" });
+    } finally { setLoading(false); }
+  };
+
+  if (enabled === null) return <div className="p-6 text-sm text-gray-400">Loading...</div>;
+
+  return (
+    <div className="p-6 space-y-6 max-w-lg">
+      <div>
+        <h3 className="text-lg font-black text-black flex items-center gap-2">
+          <ShieldCheck className="w-5 h-5" /> Two-Factor Authentication
+        </h3>
+        <p className="text-sm text-gray-500 mt-1">
+          Add an extra layer of security — after your password, you'll enter a code from your authenticator app.
+        </p>
+      </div>
+
+      <div className={`flex items-center gap-3 px-4 py-3 border-2 font-black text-sm ${enabled ? "border-green-400 bg-green-50 text-green-800" : "border-gray-300 bg-gray-50 text-gray-500"}`}>
+        <ShieldCheck className="w-4 h-4 shrink-0" />
+        {enabled ? "2FA is currently ENABLED on your account" : "2FA is currently DISABLED"}
+      </div>
+
+      {!enabled && step === "idle" && (
+        <button onClick={handleSetup} disabled={loading}
+          className="bg-[#024BAB] text-white px-5 py-2.5 text-sm font-black border-2 border-black hover:shadow-[4px_4px_0px_#0a0a0a] transition-all disabled:opacity-50">
+          {loading ? "Setting up..." : "Enable 2FA"}
+        </button>
+      )}
+
+      {step === "setup" && (
+        <div className="border-2 border-black p-5 space-y-4">
+          <p className="text-sm font-bold">1. Scan this QR code with Google Authenticator, Authy, or any TOTP app:</p>
+          <div className="flex justify-center">
+            <img src={qr} alt="2FA QR Code" className="border-2 border-black w-48 h-48" />
+          </div>
+          <p className="text-xs text-gray-500">Can't scan? Enter this secret manually: <code className="bg-gray-100 px-2 py-0.5 font-mono text-xs border border-gray-300 break-all">{secret}</code></p>
+          <p className="text-sm font-bold">2. Enter the 6-digit code from your app to confirm:</p>
+          <form onSubmit={handleConfirm} className="flex gap-2">
+            <input
+              type="text" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="000000" maxLength={6}
+              className="flex-1 px-3 py-2.5 border-2 border-black text-lg font-black tracking-[0.4em] text-center focus:outline-none focus:border-[#024BAB]"
+            />
+            <button type="submit" disabled={loading || code.length < 6}
+              className="bg-[#024BAB] text-white px-5 py-2.5 text-sm font-black border-2 border-black disabled:opacity-50 hover:shadow-[4px_4px_0px_#0a0a0a] transition-all">
+              {loading ? "..." : "Verify"}
+            </button>
+          </form>
+          <button type="button" onClick={() => setStep("idle")} className="text-xs text-gray-400 hover:text-black font-bold">Cancel</button>
+        </div>
+      )}
+
+      {step === "backup" && (
+        <div className="border-2 border-black p-5 space-y-4">
+          <div className="flex items-start gap-2 bg-yellow-50 border-2 border-yellow-400 p-3">
+            <AlertCircle className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />
+            <p className="text-sm font-bold text-yellow-800">Save these backup codes now. Each can only be used once. Store them somewhere safe.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {backupCodes.map((c) => (
+              <code key={c} className="bg-gray-100 border border-gray-300 px-3 py-1.5 text-sm font-mono text-center tracking-widest">{c}</code>
+            ))}
+          </div>
+          <button onClick={() => setStep("idle")} className="bg-[#024BAB] text-white px-5 py-2.5 text-sm font-black border-2 border-black hover:shadow-[4px_4px_0px_#0a0a0a] transition-all">
+            Done — I've saved my codes
+          </button>
+        </div>
+      )}
+
+      {enabled && step === "idle" && (
+        <div className="border-2 border-red-300 p-5 space-y-3">
+          <p className="text-sm font-black text-red-700">Disable 2FA</p>
+          <p className="text-xs text-gray-500">Enter a code from your authenticator app to disable 2FA.</p>
+          <form onSubmit={handleDisable} className="flex gap-2">
+            <input
+              type="text" value={disableCode} onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="000000" maxLength={6}
+              className="flex-1 px-3 py-2.5 border-2 border-black text-lg font-black tracking-[0.4em] text-center focus:outline-none focus:border-red-400"
+            />
+            <button type="submit" disabled={loading || disableCode.length < 6}
+              className="bg-red-600 text-white px-5 py-2.5 text-sm font-black border-2 border-black disabled:opacity-50">
+              {loading ? "..." : "Disable"}
+            </button>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
@@ -435,9 +579,6 @@ export default function SettingsPage() {
         bankIFSC: "",
         bankName: "",
         bankBranch: "",
-        quotationTitle: "PROFORMA INVOICE",
-        quotationFooter: "",
-        quotationTerms: [],
       });
     } finally {
       setLoading(false);
@@ -480,26 +621,6 @@ export default function SettingsPage() {
       setSettings((prev: any) => ({ ...prev, logoUrl: base64 }));
     };
     reader.readAsDataURL(file);
-  };
-
-  const handleTermsChange = (index: number, value: string) => {
-    const newTerms = [...(settings.quotationTerms || [])];
-    newTerms[index] = value;
-    setSettings((prev: any) => ({ ...prev, quotationTerms: newTerms }));
-  };
-
-  const addTerm = () => {
-    setSettings((prev: any) => ({
-      ...prev,
-      quotationTerms: [...(prev.quotationTerms || []), ""],
-    }));
-  };
-
-  const removeTerm = (index: number) => {
-    const newTerms = (settings.quotationTerms || []).filter(
-      (_: any, i: number) => i !== index,
-    );
-    setSettings((prev: any) => ({ ...prev, quotationTerms: newTerms }));
   };
 
   const handleSave = async () => {
@@ -586,9 +707,7 @@ export default function SettingsPage() {
     return (
       <AppLayout title="Settings">
         <div className="flex h-[80vh] items-center justify-center">
-          <div className="w-10 h-10 bg-[#024BAB] border-2 border-black animate-bounce flex items-center justify-center">
-            <Loader2 className="w-5 h-5 text-white animate-spin" />
-          </div>
+          <img src={nesthrlogo} alt="NestHR" className="h-16 w-auto" />
         </div>
       </AppLayout>
     );
@@ -600,7 +719,6 @@ export default function SettingsPage() {
       items: [
         { id: "general", label: "General Info", icon: Building2 },
         { id: "bank", label: "Bank Details", icon: Landmark },
-        { id: "quotation", label: "Quotation", icon: FileText },
       ],
     },
     {
@@ -627,6 +745,7 @@ export default function SettingsPage() {
       group: "Account",
       items: [
         { id: "my_profile", label: "My Profile", icon: UserCircle },
+        { id: "two_factor", label: "2FA Security", icon: ShieldCheck },
       ],
     },
   ];
@@ -1192,76 +1311,6 @@ export default function SettingsPage() {
               )}
 
               {}
-              {activeTab === "quotation" && (
-                <div className="space-y-6">
-                  <div className="space-y-4">
-                    <InputField
-                      label="Quotation Title"
-                      name="quotationTitle"
-                      value={settings?.quotationTitle || ""}
-                      onChange={handleChange}
-                    />
-                    <TextAreaField
-                      label="Quotation Footer"
-                      name="quotationFooter"
-                      value={settings?.quotationFooter || ""}
-                      placeholder="Footer text for quotations"
-                      rows={2}
-                      onChange={handleChange}
-                    />
-                  </div>
-
-                  {}
-                  <div className="border-t-2 border-black pt-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-bold text-black uppercase tracking-wider">
-                        Terms & Conditions
-                      </h3>
-                      <button
-                        onClick={addTerm}
-                        className=" px-3 py-1.5 text-xs font-bold text-white bg-[#00C48C] border-2 border-black hover:bg-[#00B87C] transition-colors flex items-center gap-1"
-                      >
-                        <Plus className="w-3 h-3" />
-                        Add Term
-                      </button>
-                    </div>
-
-                    <div className="space-y-3">
-                      {(settings?.quotationTerms || []).map(
-                        (term: string, index: number) => (
-                          <div key={index} className="flex gap-2">
-                            <textarea
-                              value={term}
-                              onChange={(e) =>
-                                handleTermsChange(index, e.target.value)
-                              }
-                              placeholder={`Term ${index + 1}`}
-                              rows={2}
-                              className="flex-1 px-3 py-2 border-2 border-black text-sm focus:outline-none focus:ring-2 focus:ring-[#024BAB] focus:ring-offset-0 bg-white resize-none"
-                            />
-                            <button
-                              onClick={() => removeTerm(index)}
-                              className=" px-3 py-2 text-white bg-[#EF4444] border-2 border-black hover:bg-[#DC2626] transition-colors flex items-center gap-1 self-start"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ),
-                      )}
-                    </div>
-
-                    {(!settings?.quotationTerms ||
-                      settings.quotationTerms.length === 0) && (
-                      <div className="text-center py-6 border-2 border-dashed border-gray-300">
-                        <p className="text-xs text-muted-foreground">
-                          No terms added. Click "Add Term" to get started.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
               {}
               {activeTab === "salary_mode" && (
                 <div className="space-y-5">
@@ -1903,6 +1952,10 @@ export default function SettingsPage() {
               </button>
             </div>
             )}
+
+              {activeTab === "two_factor" && (
+                <TwoFactorPanel />
+              )}
           </div>
           {}
         </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import nesthrlogo from "../../assets/nesthr.png";
 import { payrollConfigAPI } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -168,7 +169,7 @@ export default function PayrollSettingsPage() {
 
         {loading ? (
           <div className="flex justify-center py-20">
-            <Loader2 className="w-6 h-6 animate-spin text-[#024BAB]" />
+            <img src={nesthrlogo} alt="NestHR" className="h-16 w-auto" />
           </div>
         ) : (
           <div className="space-y-4">

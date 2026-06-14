@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { attendanceAPI, employeeAPI } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,7 +17,18 @@ import {
   KeyRound,
   MousePointerClick,
   Pencil,
+  ChevronLeft,
+  ChevronRight,
+  Users,
+  UserCheck,
+  UserX,
+  Timer,
+  AlarmClock,
+  LogOut,
+  Palmtree,
 } from "lucide-react";
+
+const DAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 const VERIFY_MODE_CONFIG: Record<
   string,
@@ -105,6 +117,8 @@ export default function AttendancePage() {
   const [saving, setSaving] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [windowStart, setWindowStart] = useState<number>(1); // 1-based day of month
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -196,21 +210,65 @@ export default function AttendancePage() {
     leave: records.filter((r) => r.status === "on_leave").length,
   };
 
-  const displayedRecords = activeFilter
+  // days in selected month
+  const daysInMonth = new Date(year, month, 0).getDate();
+
+  // sync windowStart to show today's week when month changes
+  useEffect(() => {
+    const today = new Date();
+    if (today.getFullYear() === year && today.getMonth() + 1 === month) {
+      const d = today.getDate();
+      setWindowStart(Math.max(1, d - 3));
+    } else {
+      setWindowStart(1);
+    }
+    setSelectedDate(null);
+  }, [month, year]);
+
+  // 7 days shown in the strip
+  const stripDays = Array.from({ length: 7 }, (_, i) => {
+    const day = windowStart + i;
+    if (day > daysInMonth) return null;
+    const date = new Date(year, month - 1, day);
+    const iso = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const dayRecords = records.filter(
+      (r) => new Date(r.date).toISOString().split("T")[0] === iso,
+    );
+    const presentCount = dayRecords.filter((r) =>
+      ["present", "late", "half_day"].includes(r.status),
+    ).length;
+    const absentCount = dayRecords.filter((r) => r.status === "absent").length;
+    return { day, date, iso, dayRecords, presentCount, absentCount };
+  }).filter(Boolean) as {
+    day: number;
+    date: Date;
+    iso: string;
+    dayRecords: AttendanceRecord[];
+    presentCount: number;
+    absentCount: number;
+  }[];
+
+  const todayIso = new Date().toISOString().split("T")[0];
+
+  const baseRecords = activeFilter
     ? activeFilter === "early_leaving"
       ? records.filter((r) => {
           const rec = r as any;
-          return (
-            rec.earlyLeaving || (r.status === "present" && rec.earlyCheckout)
-          );
+          return rec.earlyLeaving || (r.status === "present" && rec.earlyCheckout);
         })
       : records.filter((r) => r.status === activeFilter)
     : records;
 
+  const displayedRecords = selectedDate
+    ? baseRecords.filter(
+        (r) => new Date(r.date).toISOString().split("T")[0] === selectedDate,
+      )
+    : baseRecords;
+
   return (
     <AppLayout title="Attendance">
-      {}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+      {/* Top bar: month/year + button */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-2">
           <select
             value={month}
@@ -218,9 +276,7 @@ export default function AttendancePage() {
             className="border-2 border-black px-3 py-2 text-sm font-semibold outline-none bg-white"
           >
             {MONTHS.map((m, i) => (
-              <option key={m} value={i + 1}>
-                {m}
-              </option>
+              <option key={m} value={i + 1}>{m}</option>
             ))}
           </select>
           <select
@@ -228,15 +284,18 @@ export default function AttendancePage() {
             onChange={(e) => setYear(Number(e.target.value))}
             className="border-2 border-black px-3 py-2 text-sm font-semibold outline-none bg-white"
           >
-            {Array.from(
-              { length: 5 },
-              (_, i) => new Date().getFullYear() - 2 + i,
-            ).map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
+            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map((y) => (
+              <option key={y} value={y}>{y}</option>
             ))}
           </select>
+          {selectedDate && (
+            <button
+              onClick={() => setSelectedDate(null)}
+              className="border-2 border-black px-3 py-2 text-xs font-bold bg-white hover:bg-gray-50 flex items-center gap-1"
+            >
+              <XCircle className="w-3.5 h-3.5" /> Clear date
+            </button>
+          )}
         </div>
         {!isEmployee && (
           <button
@@ -248,81 +307,137 @@ export default function AttendancePage() {
         )}
       </div>
 
-      {}
-      <div className="border-2 border-black bg-white mb-5 flex flex-wrap">
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-5">
         {[
-          {
-            label: "Total",
-            value: summary.total,
-            color: "text-[#024BAB]",
-            filterKey: "total",
-          },
-          {
-            label: "Present",
-            value: summary.present,
-            color: "text-[#22C55E]",
-            filterKey: "present",
-          },
-          {
-            label: "Absent",
-            value: summary.absent,
-            color: "text-[#EF4444]",
-            filterKey: "absent",
-          },
-          {
-            label: "Half Day",
-            value: summary.halfDay,
-            color: "text-[#F59E0B]",
-            filterKey: "half_day",
-          },
-          {
-            label: "Late Commers",
-            value: summary.late,
-            color: "text-[#A855F7]",
-            filterKey: "late",
-          },
-          {
-            label: "Early Leaving",
-            value: summary.earlyLeaving,
-            color: "text-[#3B82F6]",
-            filterKey: "early_leaving",
-          },
-          {
-            label: "On Leave",
-            value: summary.leave,
-            color: "text-[#EAB308]",
-            filterKey: "on_leave",
-          },
-        ].map(({ label, value, color, filterKey }, idx, arr) => {
+          { label: "Total",         value: summary.total,        icon: Users,      bg: "bg-[#024BAB]",   text: "text-white",          filterKey: "total" },
+          { label: "Present",       value: summary.present,      icon: UserCheck,  bg: "bg-[#00C48C]",   text: "text-white",          filterKey: "present" },
+          { label: "Absent",        value: summary.absent,       icon: UserX,      bg: "bg-[#EF4444]",   text: "text-white",          filterKey: "absent" },
+          { label: "Half Day",      value: summary.halfDay,      icon: Timer,      bg: "bg-[#F59E0B]",   text: "text-white",          filterKey: "half_day" },
+          { label: "Late",          value: summary.late,         icon: AlarmClock, bg: "bg-[#A855F7]",   text: "text-white",          filterKey: "late" },
+          { label: "Early Leave",   value: summary.earlyLeaving, icon: LogOut,     bg: "bg-[#3B82F6]",   text: "text-white",          filterKey: "early_leaving" },
+          { label: "On Leave",      value: summary.leave,        icon: Palmtree,   bg: "bg-[#EAB308]",   text: "text-white",          filterKey: "on_leave" },
+        ].map(({ label, value, icon: Icon, bg, text, filterKey }) => {
           const isActive = activeFilter === filterKey;
           return (
             <button
-              key={label}
-              onClick={() =>
-                setActiveFilter(
-                  isActive || filterKey === "total" ? null : filterKey,
-                )
-              }
+              key={filterKey}
+              onClick={() => setActiveFilter(isActive || filterKey === "total" ? null : filterKey)}
               className={cn(
-                "flex flex-col gap-1 px-6 py-4 flex-1 min-w-[100px] text-left transition-colors",
-                idx === 0 ? "bg-[#F3F4FF]" : "",
-                idx !== arr.length - 1 && "border-r border-black/10",
-                isActive && "ring-2 ring-inset ring-black",
+                "border-2 border-black p-4 flex flex-col gap-2 text-left transition-all",
+                isActive ? `${bg} ${text} shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]` : "bg-white hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]",
               )}
             >
-              <p className="text-xs text-muted-foreground font-medium">
-                {label}
-              </p>
-              <p className={cn("text-3xl font-bold", color)}>{value}</p>
+              <div className={cn(
+                "w-8 h-8 border-2 border-black flex items-center justify-center shrink-0",
+                isActive ? "bg-white/20 border-white/40" : bg,
+              )}>
+                <Icon className={cn("w-4 h-4", isActive ? text : "text-white")} />
+              </div>
+              <div>
+                <p className={cn("text-2xl font-black leading-none", isActive ? text : "text-black")}>{value}</p>
+                <p className={cn("text-[11px] font-bold mt-1 uppercase tracking-wider", isActive ? `${text} opacity-80` : "text-muted-foreground")}>{label}</p>
+              </div>
             </button>
           );
         })}
       </div>
 
+
+
+      {/* Date strip */}
+      <div className="border-2 border-black bg-white mb-5 flex items-stretch">
+        {/* Left arrow */}
+        <button
+          onClick={() => setWindowStart((s) => Math.max(1, s - 7))}
+          disabled={windowStart <= 1}
+          className="px-3 border-r-2 border-black hover:bg-[#024BAB]/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors shrink-0"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+
+        {/* Day cells */}
+        <div className="flex flex-1 overflow-hidden">
+          {stripDays.map(({ day, date, iso, presentCount, absentCount }) => {
+            const isToday = iso === todayIso;
+            const isSelected = iso === selectedDate;
+            const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+            return (
+              <button
+                key={iso}
+                onClick={() => setSelectedDate(iso === selectedDate ? null : iso)}
+                className={cn(
+                  "flex-1 flex flex-col items-center justify-center py-3 px-1 border-r last:border-r-0 border-black/10 transition-colors relative",
+                  isSelected
+                    ? "bg-[#024BAB] text-white"
+                    : isToday
+                      ? "bg-[#024BAB]/5"
+                      : isWeekend
+                        ? "bg-gray-50"
+                        : "hover:bg-[#024BAB]/5",
+                )}
+              >
+                {/* Today indicator dot */}
+                {isToday && !isSelected && (
+                  <span className="absolute top-1.5 w-1.5 h-1.5 rounded-full bg-[#024BAB]" />
+                )}
+
+                {/* Day + Date on one line */}
+                <span className={cn(
+                  "text-xs font-bold whitespace-nowrap mb-2",
+                  isSelected ? "text-white" : isToday ? "text-[#024BAB]" : isWeekend ? "text-gray-400" : "text-black",
+                )}>
+                  {DAY_ABBR[date.getDay()]},{" "}
+                  {date.toLocaleDateString("en-IN", { month: "short" })} {day}
+                </span>
+
+                {/* Present / absent counts */}
+                {presentCount > 0 || absentCount > 0 ? (
+                  <div className="flex flex-col items-center gap-0.5">
+                    {presentCount > 0 && (
+                      <span className={cn(
+                        "text-[11px] font-bold leading-none",
+                        isSelected ? "text-[#86efac]" : "text-[#00C48C]",
+                      )}>
+                        {presentCount}P
+                      </span>
+                    )}
+                    {absentCount > 0 && (
+                      <span className={cn(
+                        "text-[11px] font-bold leading-none",
+                        isSelected ? "text-[#fca5a5]" : "text-[#EF4444]",
+                      )}>
+                        {absentCount}A
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <span className={cn("text-[10px]", isSelected ? "text-white/40" : "text-muted-foreground/40")}>—</span>
+                )}
+
+                {/* Selected underline */}
+                {isSelected && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right arrow */}
+        <button
+          onClick={() => setWindowStart((s) => Math.min(daysInMonth - 6, s + 7))}
+          disabled={windowStart + 7 > daysInMonth}
+          className="px-3 border-l-2 border-black hover:bg-[#024BAB]/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors shrink-0"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+
       {}
       {loading ? (
         <div className="flex items-center justify-center h-48">
-          <div className="w-8 h-8 bg-[#024BAB] border-2 border-black animate-bounce" />
+          <img src={nesthrlogo} alt="NestHR" className="h-16 w-auto" />
         </div>
       ) : displayedRecords.length === 0 ? (
         <div className="border-2 bg-white p-12 flex flex-col items-center justify-center">

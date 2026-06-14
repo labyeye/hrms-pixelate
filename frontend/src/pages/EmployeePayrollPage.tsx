@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import nesthrlogo from "../../assets/nesthr.png";
 import { payrollAPI } from "@/services/api";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
@@ -209,7 +210,7 @@ export default function EmployeePayrollPage() {
 
         {loading ? (
           <div className="flex justify-center py-20">
-            <Loader2 className="w-6 h-6 animate-spin text-[#024BAB]" />
+            <img src={nesthrlogo} alt="NestHR" className="h-16 w-auto" />
           </div>
         ) : payrolls.length === 0 ? (
           <div className="border-2 border-black bg-white p-12 text-center">

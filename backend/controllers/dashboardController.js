@@ -1,4 +1,5 @@
 const asyncHandler = require("express-async-handler");
+const mongoose = require("mongoose");
 const Employee = require("../models/Employee");
 const Attendance = require("../models/Attendance");
 const Leave = require("../models/Leave");
@@ -12,7 +13,7 @@ const getStats = asyncHandler(async (req, res) => {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   try {
-    const companyId = req.user.company;
+    const companyId = new mongoose.Types.ObjectId(req.user.company);
     const companyEmployeeIds = await Employee.find({ company: companyId })
       .select("_id")
       .lean()
@@ -100,7 +101,7 @@ const getStats = asyncHandler(async (req, res) => {
           as: "dept",
         },
       },
-      { $unwind: { path: "$dept", preserveNullAndEmpty: true } },
+      { $unwind: { path: "$dept", preserveNullAndEmptyArrays: true } },
       { $project: { name: { $ifNull: ["$dept.name", "No Dept"] }, count: 1 } },
       { $sort: { count: -1 } },
       { $limit: 6 },

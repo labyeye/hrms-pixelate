@@ -1,8 +1,12 @@
 const asyncHandler = require("express-async-handler");
+const crypto = require("crypto");
+const speakeasy = require("speakeasy");
+const QRCode = require("qrcode");
 const User = require("../models/User");
 const Subscription = require("../models/Subscription");
 const generateToken = require("../utils/generateToken");
 const { validateBody } = require("../middleware/validate");
+const { sendPasswordResetEmail } = require("../services/notificationService");
 
 const registerSchema = {
   name: { required: true, type: "string", minLength: 2, maxLength: 80 },
@@ -65,7 +69,8 @@ const login = [
       populate: {
         path: "subscription",
         select:
-          "status plan paymentStatus billingCycle monthlyPrice yearlyPrice maxEmployees currentEmployeeCount renewalDate",
+          "status plan paymentStatus billingCycle monthlyPrice yearlyPrice maxEmployees currentEmployeeCount renewalDate isTrial trialEndDate",
+
       },
     });
 
@@ -90,10 +95,23 @@ const login = [
           "No active subscription. Please contact your administrator.",
         );
       }
+      if (subscription.isTrial && subscription.trialEndDate && subscription.trialEndDate < new Date()) {
+        res.status(403);
+        throw new Error(
+          "Your 2-month free trial has expired. Please subscribe to continue.",
+        );
+      }
     }
 
     user.lastLogin = new Date();
     await user.save();
+
+    if (user.twoFactorEnabled) {
+      return res.json({
+        success: true,
+        data: { requires2FA: true, userId: user._id },
+      });
+    }
 
     res.json({
       success: true,
@@ -123,7 +141,7 @@ const getMe = asyncHandler(async (req, res) => {
       populate: {
         path: "subscription",
         select:
-          "status plan paymentStatus billingCycle monthlyPrice yearlyPrice maxEmployees currentEmployeeCount renewalDate",
+          "status plan paymentStatus billingCycle monthlyPrice yearlyPrice maxEmployees currentEmployeeCount renewalDate isTrial trialEndDate",
       },
     });
   res.json({ success: true, data: user });
@@ -192,4 +210,161 @@ const updateProfile = asyncHandler(async (req, res) => {
   res.json({ success: true, data: updated });
 });
 
-module.exports = { register, login, getMe, updateProfile };
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  if (!email) { res.status(400); throw new Error("Email is required"); }
+
+  const user = await User.findOne({ email: email.toLowerCase().trim() });
+  if (!user) {
+    return res.json({ success: true, message: "If that email exists, a reset link has been sent." });
+  }
+
+  const token = crypto.randomBytes(32).toString("hex");
+  user.resetPasswordToken = crypto.createHash("sha256").update(token).digest("hex");
+  user.resetPasswordExpire = new Date(Date.now() + 60 * 60 * 1000);
+  await user.save();
+
+  const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:5173"}/reset-password/${token}`;
+  try {
+    await sendPasswordResetEmail({ toEmail: user.email, toName: user.name, resetUrl });
+  } catch {}
+
+  res.json({ success: true, message: "If that email exists, a reset link has been sent." });
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  if (!password || !STRONG_PASSWORD_RE.test(password)) {
+    res.status(400);
+    throw new Error("Password must be at least 8 characters and include uppercase, lowercase, and a number");
+  }
+
+  const hashed = crypto.createHash("sha256").update(token).digest("hex");
+  const user = await User.findOne({
+    resetPasswordToken: hashed,
+    resetPasswordExpire: { $gt: new Date() },
+  });
+  if (!user) { res.status(400); throw new Error("Invalid or expired reset link"); }
+
+  user.password = password;
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpire = undefined;
+  await user.save();
+
+  res.json({ success: true, message: "Password reset successful. You can now log in." });
+});
+
+// 2FA setup — generates secret + QR code for authenticator app
+const setup2FA = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+  const secret = speakeasy.generateSecret({
+    name: `NestHR (${user.email})`,
+    length: 32,
+  });
+
+  user.twoFactorSecret = secret.base32;
+  user.pendingTwoFactor = true;
+  await user.save();
+
+  const qrDataUrl = await QRCode.toDataURL(secret.otpauth_url);
+  res.json({ success: true, data: { secret: secret.base32, qr: qrDataUrl } });
+});
+
+// 2FA confirm — verifies a TOTP token, enables 2FA and returns backup codes
+const confirm2FA = asyncHandler(async (req, res) => {
+  const { token } = req.body;
+  if (!token) { res.status(400); throw new Error("Token is required"); }
+
+  const user = await User.findById(req.user._id);
+  if (!user.twoFactorSecret) { res.status(400); throw new Error("2FA setup not initiated"); }
+
+  const valid = speakeasy.totp.verify({
+    secret: user.twoFactorSecret,
+    encoding: "base32",
+    token,
+    window: 1,
+  });
+  if (!valid) { res.status(400); throw new Error("Invalid code — try again"); }
+
+  const backupCodes = Array.from({ length: 8 }, () => crypto.randomBytes(4).toString("hex"));
+  user.twoFactorEnabled = true;
+  user.pendingTwoFactor = false;
+  user.twoFactorBackupCodes = backupCodes;
+  await user.save();
+
+  res.json({ success: true, data: { backupCodes } });
+});
+
+// 2FA disable
+const disable2FA = asyncHandler(async (req, res) => {
+  const { token } = req.body;
+  const user = await User.findById(req.user._id);
+  if (!user.twoFactorEnabled) { res.status(400); throw new Error("2FA is not enabled"); }
+
+  const valid = speakeasy.totp.verify({
+    secret: user.twoFactorSecret,
+    encoding: "base32",
+    token,
+    window: 1,
+  });
+  if (!valid) { res.status(400); throw new Error("Invalid code"); }
+
+  user.twoFactorEnabled = false;
+  user.twoFactorSecret = undefined;
+  user.twoFactorBackupCodes = [];
+  user.pendingTwoFactor = false;
+  await user.save();
+
+  res.json({ success: true, message: "2FA disabled" });
+});
+
+// 2FA verify — called after first-step login when 2FA is enabled
+const verify2FA = asyncHandler(async (req, res) => {
+  const { userId, token } = req.body;
+  if (!userId || !token) { res.status(400); throw new Error("userId and token are required"); }
+
+  const user = await User.findById(userId).populate({
+    path: "company",
+    select: "name email phone status subscription industry website",
+    populate: {
+      path: "subscription",
+      select: "status plan paymentStatus billingCycle monthlyPrice yearlyPrice maxEmployees currentEmployeeCount renewalDate isTrial trialEndDate",
+    },
+  });
+  if (!user || !user.twoFactorEnabled) { res.status(400); throw new Error("Invalid request"); }
+
+  const isBackup = user.twoFactorBackupCodes.includes(token);
+  const isTotp = speakeasy.totp.verify({
+    secret: user.twoFactorSecret,
+    encoding: "base32",
+    token,
+    window: 1,
+  });
+
+  if (!isTotp && !isBackup) { res.status(401); throw new Error("Invalid authentication code"); }
+
+  if (isBackup) {
+    user.twoFactorBackupCodes = user.twoFactorBackupCodes.filter((c) => c !== token);
+    await user.save();
+  }
+
+  res.json({
+    success: true,
+    data: {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      avatar: user.avatar,
+      phone: user.phone,
+      status: user.status,
+      department: user.department,
+      company: user.company,
+      token: generateToken(user._id),
+    },
+  });
+});
+
+module.exports = { register, login, getMe, updateProfile, forgotPassword, resetPassword, setup2FA, confirm2FA, disable2FA, verify2FA };

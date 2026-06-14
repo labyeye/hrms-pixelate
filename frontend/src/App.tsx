@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ToastProvider } from "@/hooks/use-toast";
+import { usePushNotification } from "@/hooks/usePushNotification";
 import { Users2 } from "lucide-react";
 import DashboardPage from "./pages/DashboardPage";
 import EmployeesPage from "./pages/EmployeesPage";
@@ -26,11 +27,16 @@ import NfcManagerPage from "./pages/NfcManagerPage";
 import PayrollSettingsPage from "./pages/PayrollSettingsPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import PaymentFailedPage from "./pages/PaymentFailedPage";
+import WelcomePage from "./pages/WelcomePage";
 import ManagePage from "./pages/ManagePage";
 import EmployeePayrollPage from "./pages/EmployeePayrollPage";
 import EmployeeReportPage from "./pages/EmployeeReportPage";
 import LoansPage from "./pages/LoansPage";
 import NotFound from "./pages/NotFound";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import ExitManagementPage from "./pages/ExitManagementPage";
+import AuditLogPage from "./pages/AuditLogPage";
 import nesthrlogo from "../assets/nesthr.png";
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -84,6 +90,7 @@ function RootRedirect() {
 
 function AppRoutes() {
   const { isAuthenticated, isLoading } = useAuth();
+  usePushNotification(isAuthenticated);
   if (isLoading) return <LoadingScreen />;
 
   return (
@@ -98,6 +105,8 @@ function AppRoutes() {
           !isAuthenticated ? <RegisterPage /> : <Navigate to="/" replace />
         }
       />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
       <Route
         path="/onboarding"
         element={
@@ -124,6 +133,16 @@ function AppRoutes() {
         element={
           isAuthenticated ? (
             <PaymentFailedPage />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+      <Route
+        path="/welcome"
+        element={
+          isAuthenticated ? (
+            <WelcomePage />
           ) : (
             <Navigate to="/login" replace />
           )
@@ -294,6 +313,22 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <LoansPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/exit-management"
+        element={
+          <ProtectedRoute>
+            <ExitManagementPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/audit-log"
+        element={
+          <ProtectedRoute>
+            <AuditLogPage />
           </ProtectedRoute>
         }
       />

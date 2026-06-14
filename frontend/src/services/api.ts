@@ -37,6 +37,17 @@ export const authAPI = {
   getMe: () => request("/auth/me"),
   updateProfile: (body: object) =>
     request("/auth/profile", { method: "PUT", body: JSON.stringify(body) }),
+  forgotPassword: (email: string) =>
+    request("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
+  resetPassword: (token: string, password: string) =>
+    request(`/auth/reset-password/${token}`, { method: "POST", body: JSON.stringify({ password }) }),
+  setup2FA: () => request("/auth/2fa/setup", { method: "POST" }),
+  confirm2FA: (token: string) =>
+    request("/auth/2fa/confirm", { method: "POST", body: JSON.stringify({ token }) }),
+  disable2FA: (token: string) =>
+    request("/auth/2fa/disable", { method: "POST", body: JSON.stringify({ token }) }),
+  verify2FA: (userId: string, token: string) =>
+    request("/auth/2fa/verify", { method: "POST", body: JSON.stringify({ userId, token }) }),
 };
 
 export const dashboardAPI = {
@@ -494,4 +505,22 @@ export const transactionAPI = {
   create: (body: object) =>
     request("/transactions", { method: "POST", body: JSON.stringify(body) }),
   delete: (id: string) => request(`/transactions/${id}`, { method: "DELETE" }),
+};
+
+export const exitAPI = {
+  getAll: (params?: Record<string, string>) => {
+    const q = params ? "?" + new URLSearchParams(params).toString() : "";
+    return request(`/exit${q}`);
+  },
+  getOne: (id: string) => request(`/exit/${id}`),
+  create: (body: object) => request("/exit", { method: "POST", body: JSON.stringify(body) }),
+  update: (id: string, body: object) => request(`/exit/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  delete: (id: string) => request(`/exit/${id}`, { method: "DELETE" }),
+};
+
+export const auditAPI = {
+  getLogs: (params?: Record<string, string>) => {
+    const q = params ? "?" + new URLSearchParams(params).toString() : "";
+    return request(`/audit${q}`);
+  },
 };

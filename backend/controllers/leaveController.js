@@ -8,6 +8,8 @@ const {
   sendLeaveRejected,
   sendLeaveAppliedHR,
 } = require("../services/whatsappService");
+const { sendLeaveStatusEmail, sendLeaveAppliedEmail } = require("../services/notificationService");
+const { logAudit } = require("../utils/auditLogger");
 
 const LEAVE_TYPES = [
   "casual",
@@ -202,7 +204,7 @@ const createLeave = asyncHandler(async (req, res) => {
     const hrUsers = await User.find({
       company: req.user.company,
       role: { $in: ["super_admin", "hr_manager"] },
-    }).select("phone");
+    }).select("phone email name");
     for (const hr of hrUsers) {
       if (hr.phone)
         await sendLeaveAppliedHR(
@@ -218,6 +220,17 @@ const createLeave = asyncHandler(async (req, res) => {
           },
           req.user.company,
         );
+      if (hr.email)
+        await sendLeaveAppliedEmail({
+          toEmail: hr.email,
+          toName: hr.name,
+          empName: `${emp.firstName} ${emp.lastName}`,
+          leaveType: leave.leaveType,
+          startDate: leave.startDate,
+          endDate: leave.endDate,
+          days: leave.days,
+          reason: leave.reason,
+        });
     }
   } catch {}
 
@@ -235,7 +248,11 @@ const updateLeaveStatus = asyncHandler(async (req, res) => {
   const leave = await Leave.findOne({
     _id: req.params.id,
     company: req.user.company,
-  }).populate("employee", "firstName lastName employeeId phone");
+  }).populate({
+    path: "employee",
+    select: "firstName lastName employeeId phone user",
+    populate: { path: "user", select: "email name" },
+  });
   if (!leave) {
     res.status(404);
     throw new Error("Leave not found");
@@ -253,33 +270,43 @@ const updateLeaveStatus = asyncHandler(async (req, res) => {
   }
   await leave.save();
 
-  if (leave.employee?.phone) {
-    try {
+  try {
+    if (leave.employee?.phone) {
       if (status === "approved") {
-        await sendLeaveApproved(
-          leave.employee.phone,
-          {
-            firstName: leave.employee.firstName,
-            leaveType: leave.leaveType,
-            startDate: leave.startDate,
-            endDate: leave.endDate,
-            days: leave.days,
-          },
-          req.user.company,
-        );
+        await sendLeaveApproved(leave.employee.phone, {
+          firstName: leave.employee.firstName,
+          leaveType: leave.leaveType,
+          startDate: leave.startDate,
+          endDate: leave.endDate,
+          days: leave.days,
+        }, req.user.company);
       } else if (status === "rejected") {
-        await sendLeaveRejected(
-          leave.employee.phone,
-          {
-            firstName: leave.employee.firstName,
-            leaveType: leave.leaveType,
-            reason: rejectionReason,
-          },
-          req.user.company,
-        );
+        await sendLeaveRejected(leave.employee.phone, {
+          firstName: leave.employee.firstName,
+          leaveType: leave.leaveType,
+          reason: rejectionReason,
+        }, req.user.company);
       }
-    } catch {}
-  }
+    }
+    if (leave.employee?.user?.email && (status === "approved" || status === "rejected")) {
+      await sendLeaveStatusEmail({
+        toEmail: leave.employee.user.email,
+        toName: `${leave.employee.firstName} ${leave.employee.lastName}`,
+        status,
+        leaveType: leave.leaveType,
+        startDate: leave.startDate,
+        endDate: leave.endDate,
+        days: leave.days,
+        rejectionReason,
+      });
+    }
+  } catch {}
+
+  await logAudit(req, `leave_${status}`, "Leave", leave._id, {
+    employeeName: `${leave.employee?.firstName} ${leave.employee?.lastName}`,
+    leaveType: leave.leaveType,
+    days: leave.days,
+  });
 
   res.json({ success: true, data: leave });
 });

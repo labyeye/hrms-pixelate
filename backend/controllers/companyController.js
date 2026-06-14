@@ -43,7 +43,7 @@ const registerCompany = asyncHandler(async (req, res) => {
 
   const starterPlan = await Plan.findOne({ planType: "starter" });
   const trialEndDate = new Date();
-  trialEndDate.setDate(trialEndDate.getDate() + 14);
+  trialEndDate.setMonth(trialEndDate.getMonth() + 2);
 
   const subscription = await Subscription.create({
     company: company._id,
@@ -54,6 +54,8 @@ const registerCompany = asyncHandler(async (req, res) => {
     billingCycle: "monthly",
     startDate: new Date(),
     renewalDate: trialEndDate,
+    trialEndDate,
+    isTrial: true,
     status: "active",
     paymentStatus: "completed",
   });

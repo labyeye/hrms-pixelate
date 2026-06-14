@@ -77,6 +77,9 @@ app.use("/api/salary-heads", require("./routes/salaryHeadRoutes"));
 app.use("/api/designations", require("./routes/designationRoutes"));
 app.use("/api/offer-letters", require("./routes/offerLetterRoutes"));
 app.use("/api/transactions", require("./routes/transactionRoutes"));
+app.use("/api/push", require("./routes/pushRoutes"));
+app.use("/api/exit", require("./routes/exitRoutes"));
+app.use("/api/audit", require("./routes/auditRoutes"));
 
 app.get("/api/health", (req, res) =>
   res.json({ status: "ok", service: "HRMS API" }),

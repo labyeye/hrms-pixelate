@@ -164,10 +164,10 @@ export default function PaymentSuccessPage() {
               {}
               <div className="p-6">
                 <button
-                  onClick={() => navigate("/", { replace: true })}
+                  onClick={() => navigate("/welcome", { replace: true })}
                   className="w-full bg-[#024BAB] text-white border-2 border-black font-black uppercase text-sm px-4 py-3 flex items-center justify-center gap-2 hover:bg-[#023590] transition-all"
                 >
-                  Go to Dashboard
+                  Continue to Dashboard
                   <ArrowRight className="w-4 h-4" />
                 </button>
                 <p className="text-xs text-gray-400 text-center mt-3 font-medium">

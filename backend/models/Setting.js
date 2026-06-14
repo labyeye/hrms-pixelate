@@ -56,22 +56,6 @@ const settingSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    quotationTitle: {
-      type: String,
-      default: "PROFORMA INVOICE",
-    },
-    quotationFooter: {
-      type: String,
-      default: "",
-    },
-    quotationTerms: {
-      type: [String],
-      default: [
-        "Payment terms as per agreement.",
-        "Delivery subject to warehouse availability.",
-        "This is a computer-generated document.",
-      ],
-    },
 
     whatsappEnabled: { type: Boolean, default: false },
     whatsappNotifyCheckIn: { type: Boolean, default: true },

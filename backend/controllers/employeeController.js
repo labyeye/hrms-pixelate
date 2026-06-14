@@ -8,6 +8,7 @@ const {
   validateBody,
   validateMongoId,
 } = require("../middleware/validate");
+const { logAudit } = require("../utils/auditLogger");
 
 const createSchema = {
   firstName: { required: true, type: "string", minLength: 1, maxLength: 80 },
@@ -188,6 +189,10 @@ const createEmployee = [
       shiftName: shiftName || "General",
     });
 
+    await logAudit(req, "employee_created", "Employee", employee._id, {
+      employeeId: employee.employeeId,
+      name: `${employee.firstName} ${employee.lastName}`,
+    });
     res.status(201).json({ success: true, data: employee });
   }),
 ];
@@ -254,6 +259,10 @@ const updateEmployee = [
 
     await employee.save();
     await employee.populate("department", "name code");
+    await logAudit(req, "employee_updated", "Employee", employee._id, {
+      employeeId: employee.employeeId,
+      name: `${employee.firstName} ${employee.lastName}`,
+    });
     res.json({ success: true, data: employee });
   }),
 ];
@@ -269,6 +278,10 @@ const deleteEmployee = asyncHandler(async (req, res) => {
   }
   employee.status = "terminated";
   await employee.save();
+  await logAudit(req, "employee_terminated", "Employee", employee._id, {
+    employeeId: employee.employeeId,
+    name: `${employee.firstName} ${employee.lastName}`,
+  });
   res.json({ success: true, message: "Employee terminated" });
 });
 

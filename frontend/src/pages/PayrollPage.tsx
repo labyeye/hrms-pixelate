@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
+import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { payrollAPI, employeeAPI } from "@/services/api";
 import { Payroll } from "@/types/hrms";
 import { cn, formatCurrency } from "@/lib/utils";
-import { IndianRupee, Play, CheckCircle, X, Printer } from "lucide-react";
+import { IndianRupee, Play, CheckCircle, X, Printer, Search, ArrowUp, ArrowDown } from "lucide-react";
 import { ActionModal } from "@/components/ui/ActionModal";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -46,6 +47,10 @@ export default function PayrollPage() {
     title: string;
     message: string;
   }>({ show: false, type: "success", title: "", message: "" });
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [sortKey, setSortKey] = useState<"employee" | "net" | "gross" | "deductions">("employee");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -126,6 +131,25 @@ export default function PayrollPage() {
   const totalNet = payrolls.reduce((s, p) => s + p.netSalary, 0);
   const totalDed = payrolls.reduce((s, p) => s + p.totalDeductions, 0);
   const paidCount = payrolls.filter((p) => p.status === "paid").length;
+
+  const displayedPayrolls = [...payrolls]
+    .filter(p => {
+      const name = `${(p.employee as any)?.firstName ?? ""} ${(p.employee as any)?.lastName ?? ""}`.toLowerCase();
+      if (search && !name.includes(search.toLowerCase())) return false;
+      if (filterStatus && p.status !== filterStatus) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === "employee") {
+        const na = `${(a.employee as any)?.firstName ?? ""}${(a.employee as any)?.lastName ?? ""}`;
+        const nb = `${(b.employee as any)?.firstName ?? ""}${(b.employee as any)?.lastName ?? ""}`;
+        cmp = na.localeCompare(nb);
+      } else if (sortKey === "net") cmp = a.netSalary - b.netSalary;
+      else if (sortKey === "gross") cmp = a.grossSalary - b.grossSalary;
+      else if (sortKey === "deductions") cmp = a.totalDeductions - b.totalDeductions;
+      return sortDir === "asc" ? cmp : -cmp;
+    });
 
   return (
     <AppLayout title="Payroll">
@@ -263,10 +287,40 @@ export default function PayrollPage() {
         ))}
       </div>
 
+      {/* Search, Filter & Sort */}
+      <div className="flex flex-wrap gap-2 mb-5">
+        <div className="flex items-center gap-2 border-2 border-black bg-white px-3 py-2 flex-1 min-w-48">
+          <Search className="w-4 h-4 shrink-0 text-muted-foreground" />
+          <input type="text" placeholder="Search by employee name..." value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="bg-transparent text-sm outline-none w-full font-medium" />
+          {search && <button onClick={() => setSearch("")}><X className="w-3.5 h-3.5 text-muted-foreground" /></button>}
+        </div>
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none">
+          <option value="">All Status</option>
+          <option value="draft">Draft</option>
+          <option value="processed">Processed</option>
+          <option value="paid">Paid</option>
+        </select>
+        <select value={sortKey} onChange={e => setSortKey(e.target.value as any)}
+          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none">
+          <option value="employee">Sort: Employee</option>
+          <option value="net">Sort: Net Pay</option>
+          <option value="gross">Sort: Gross</option>
+          <option value="deductions">Sort: Deductions</option>
+        </select>
+        <button onClick={() => setSortDir(d => d === "asc" ? "desc" : "asc")}
+          className="border-2 border-black bg-white px-3 py-2 flex items-center gap-1 font-semibold text-sm">
+          {sortDir === "asc" ? <ArrowUp className="w-4 h-4"/> : <ArrowDown className="w-4 h-4"/>}
+          {sortDir === "asc" ? "Asc" : "Desc"}
+        </button>
+      </div>
+
       {}
       {loading ? (
         <div className="flex items-center justify-center h-48">
-          <div className="w-8 h-8 bg-[#024BAB] border-2 border-black animate-bounce" />
+          <img src={nesthrlogo} alt="NestHR" className="h-16 w-auto" />
         </div>
       ) : payrolls.length === 0 ? (
         <div className="border-2 bg-white p-12 flex flex-col items-center justify-center">
@@ -322,7 +376,7 @@ export default function PayrollPage() {
               </tr>
             </thead>
             <tbody>
-              {payrolls.map((p, i) => (
+              {displayedPayrolls.map((p, i) => (
                 <tr
                   key={p._id}
                   className={cn(

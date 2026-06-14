@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { loanAPI, employeeAPI } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
@@ -12,7 +13,6 @@ import {
   IndianRupee,
   TrendingDown,
   CheckCircle2,
-  PauseCircle,
 } from "lucide-react";
 import { Employee } from "@/types/hrms";
 
@@ -64,6 +64,9 @@ export default function LoansPage() {
   const [filterStatus, setFilterStatus] = useState<
     "all" | "active" | "cleared" | "paused"
   >("all");
+  const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState<"employee" | "amount" | "remaining" | "date">("date");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [modal, setModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
@@ -160,18 +163,34 @@ export default function LoansPage() {
     }
   };
 
-  const displayed = loans.filter((l) => {
-    if (filterType !== "all" && l.type !== filterType) return false;
-    if (filterStatus !== "all" && l.status !== filterStatus) return false;
-    return true;
-  });
+  const displayedLoans = [...loans]
+    .filter((l) => {
+      if (filterType !== "all" && l.type !== filterType) return false;
+      if (filterStatus !== "all" && l.status !== filterStatus) return false;
+      if (search) {
+        const name = `${(l.employee as any)?.firstName ?? ""} ${(l.employee as any)?.lastName ?? ""}`.toLowerCase();
+        if (!name.includes(search.toLowerCase())) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === "employee") {
+        const na = `${(a.employee as any)?.firstName ?? ""}${(a.employee as any)?.lastName ?? ""}`;
+        const nb = `${(b.employee as any)?.firstName ?? ""}${(b.employee as any)?.lastName ?? ""}`;
+        cmp = na.localeCompare(nb);
+      } else if (sortKey === "amount") cmp = a.amount - b.amount;
+      else if (sortKey === "remaining") cmp = a.remainingBalance - b.remainingBalance;
+      else if (sortKey === "date") cmp = new Date(a.disbursedOn ?? 0).getTime() - new Date(b.disbursedOn ?? 0).getTime();
+      return sortDir === "asc" ? cmp : -cmp;
+    });
 
-  const totalDisbursed = displayed.reduce((s, l) => s + l.amount, 0);
-  const totalOutstanding = displayed
+  const totalDisbursed = displayedLoans.reduce((s, l) => s + l.amount, 0);
+  const totalOutstanding = displayedLoans
     .filter((l) => l.status === "active")
     .reduce((s, l) => s + l.remainingBalance, 0);
-  const activeCount = displayed.filter((l) => l.status === "active").length;
-  const clearedCount = displayed.filter((l) => l.status === "cleared").length;
+  const activeCount = displayedLoans.filter((l) => l.status === "active").length;
+  const clearedCount = displayedLoans.filter((l) => l.status === "cleared").length;
 
   const fmt = (n: number) =>
     new Intl.NumberFormat("en-IN", {
@@ -269,9 +288,9 @@ export default function LoansPage() {
       {/* Table */}
       {loading ? (
         <div className="flex items-center justify-center h-48">
-          <div className="w-8 h-8 bg-[#024BAB] border-2 border-black animate-bounce" />
+          <img src={nesthrlogo} alt="NestHR" className="h-16 w-auto" />
         </div>
-      ) : displayed.length === 0 ? (
+      ) : displayedLoans.length === 0 ? (
         <div className="border-2 bg-white p-12 flex flex-col items-center justify-center">
           <Banknote className="w-12 h-12 text-muted-foreground/30 mb-3" />
           <p className="font-bold text-black">No records found</p>
@@ -302,7 +321,7 @@ export default function LoansPage() {
               </tr>
             </thead>
             <tbody>
-              {displayed.map((loan, i) => (
+              {displayedLoans.map((loan, i) => (
                 <tr
                   key={loan._id}
                   className={cn(

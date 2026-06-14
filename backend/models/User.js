@@ -24,6 +24,12 @@ const userSchema = new mongoose.Schema(
     department: { type: mongoose.Schema.Types.ObjectId, ref: "Department" },
     employeeId: { type: String },
     lastLogin: { type: Date },
+    resetPasswordToken: { type: String },
+    resetPasswordExpire: { type: Date },
+    twoFactorSecret: { type: String },
+    twoFactorEnabled: { type: Boolean, default: false },
+    twoFactorBackupCodes: [{ type: String }],
+    pendingTwoFactor: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

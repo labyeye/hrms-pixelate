@@ -276,7 +276,11 @@ export default function OnboardingPage() {
                 description: `${plan.name} plan activated. Welcome to NestHR!`,
                 variant: "success",
               });
-              setTimeout(() => navigate("/", { replace: true }), 1500);
+              updateUser({
+                company: { ...user?.company!, status: "active" },
+                subscription: { status: "active" },
+              });
+              setTimeout(() => navigate("/welcome", { replace: true }), 1500);
               resolve();
             } catch (err: any) {
               reject(err);

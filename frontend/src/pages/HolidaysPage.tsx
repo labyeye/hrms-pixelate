@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { holidayAPI } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -396,7 +397,7 @@ export default function HolidaysPage() {
         {}
         {loading ? (
           <div className="flex justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-[#024BAB]" />
+            <img src={nesthrlogo} alt="NestHR" className="h-16 w-auto" />
           </div>
         ) : holidays.length === 0 ? (
           <div className="text-center py-16 bg-white border-2 border-black">

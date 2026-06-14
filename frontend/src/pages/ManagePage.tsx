@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
   shiftAPI,
@@ -21,6 +22,9 @@ import {
   X,
   Loader2,
   CheckCircle,
+  Search,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 
 function NbSelect({
@@ -171,6 +175,10 @@ function ShiftsSection({ onBack }: { onBack: () => void }) {
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<any>(null);
+  const [shiftSearch, setShiftSearch] = useState("");
+  const [shiftFilterStatus, setShiftFilterStatus] = useState("");
+  const [shiftSortKey, setShiftSortKey] = useState<"name" | "workingHours">("name");
+  const [shiftSortDir, setShiftSortDir] = useState<"asc" | "desc">("asc");
   const [form, setForm] = useState({
     name: "",
     startTime: "09:00",
@@ -242,6 +250,19 @@ function ShiftsSection({ onBack }: { onBack: () => void }) {
     }
   };
 
+  const displayedShifts = [...data]
+    .filter(s => {
+      if (shiftSearch && !s.name.toLowerCase().includes(shiftSearch.toLowerCase())) return false;
+      if (shiftFilterStatus && s.status !== shiftFilterStatus) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      let cmp = 0;
+      if (shiftSortKey === "name") cmp = a.name.localeCompare(b.name);
+      else if (shiftSortKey === "workingHours") cmp = (a.workingHours ?? 0) - (b.workingHours ?? 0);
+      return shiftSortDir === "asc" ? cmp : -cmp;
+    });
+
   return (
     <div>
       <SubHeader
@@ -251,9 +272,36 @@ function ShiftsSection({ onBack }: { onBack: () => void }) {
         onAdd={openAdd}
         addLabel="Add Shift"
       />
+      {/* Search, Filter & Sort */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex items-center gap-2 border-2 border-black bg-white px-3 py-2 flex-1 min-w-48">
+          <Search className="w-4 h-4 shrink-0 text-muted-foreground" />
+          <input type="text" placeholder="Search shifts..." value={shiftSearch}
+            onChange={e => setShiftSearch(e.target.value)}
+            className="bg-transparent text-sm outline-none w-full font-medium" />
+          {shiftSearch && <button onClick={() => setShiftSearch("")}><X className="w-3.5 h-3.5 text-muted-foreground" /></button>}
+        </div>
+        <select value={shiftFilterStatus} onChange={e => setShiftFilterStatus(e.target.value)}
+          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none">
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+        <select value={shiftSortKey} onChange={e => setShiftSortKey(e.target.value as any)}
+          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none">
+          <option value="name">Sort: Name</option>
+          <option value="workingHours">Sort: Working Hrs</option>
+        </select>
+        <button onClick={() => setShiftSortDir(d => d === "asc" ? "desc" : "asc")}
+          className="border-2 border-black bg-white px-3 py-2 flex items-center gap-1 font-semibold text-sm">
+          {shiftSortDir === "asc" ? <ArrowUp className="w-4 h-4"/> : <ArrowDown className="w-4 h-4"/>}
+          {shiftSortDir === "asc" ? "Asc" : "Desc"}
+        </button>
+      </div>
+
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-[#024BAB]" />
+          <img src={nesthrlogo} alt="NestHR" className="h-16 w-auto" />
         </div>
       ) : (
         <NbTable
@@ -268,7 +316,7 @@ function ShiftsSection({ onBack }: { onBack: () => void }) {
             "Status",
             "Action",
           ]}
-          rows={data.map((s, i) => [
+          rows={displayedShifts.map((s, i) => [
             i + 1,
             <div className="flex items-center gap-2">
               <span
@@ -489,7 +537,7 @@ function SalaryHeadsSection({ onBack }: { onBack: () => void }) {
       />
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-[#024BAB]" />
+          <img src={nesthrlogo} alt="NestHR" className="h-16 w-auto" />
         </div>
       ) : (
         <NbTable
@@ -739,7 +787,7 @@ function DesignationsSection({ onBack }: { onBack: () => void }) {
       />
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-[#024BAB]" />
+          <img src={nesthrlogo} alt="NestHR" className="h-16 w-auto" />
         </div>
       ) : (
         <NbTable
@@ -934,7 +982,7 @@ function OfferLettersSection({ onBack }: { onBack: () => void }) {
       />
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-[#024BAB]" />
+          <img src={nesthrlogo} alt="NestHR" className="h-16 w-auto" />
         </div>
       ) : (
         <NbTable

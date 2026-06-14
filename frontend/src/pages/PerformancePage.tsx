@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { performanceAPI, employeeAPI } from "@/services/api";
 import { PerformanceReview, Employee } from "@/types/hrms";
@@ -155,7 +156,7 @@ export default function PerformancePage() {
 
       {loading ? (
         <div className="flex items-center justify-center h-48">
-          <div className="w-8 h-8 bg-[#024BAB] border-2 border-black animate-bounce" />
+          <img src={nesthrlogo} alt="NestHR" className="h-16 w-auto" />
         </div>
       ) : reviews.length === 0 ? (
         <div className="border-2 bg-white p-12 flex flex-col items-center justify-center">

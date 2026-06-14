@@ -15,12 +15,13 @@ interface AuthContextType {
   login: (
     email: string,
     password: string,
-  ) => Promise<{ success: boolean; error?: string }>;
+  ) => Promise<{ success: boolean; error?: string; requires2FA?: boolean; userId?: string }>;
   register: (data: {
     name: string;
     email: string;
     password: string;
   }) => Promise<{ success: boolean; error?: string }>;
+  completeLogin: (userData: any, token: string) => void;
   logout: () => void;
   updateUser: (data: Partial<User>) => void;
 }
@@ -48,6 +49,9 @@ function mapUser(data: any): User {
                 status: data.company.subscription.status,
                 plan: data.company.subscription.plan,
                 paymentStatus: data.company.subscription.paymentStatus,
+                isTrial: data.company.subscription.isTrial,
+                renewalDate: data.company.subscription.renewalDate,
+                trialEndDate: data.company.subscription.trialEndDate,
               }
             : undefined,
         }
@@ -57,6 +61,9 @@ function mapUser(data: any): User {
           status: data.company.subscription.status,
           plan: data.company.subscription.plan,
           paymentStatus: data.company.subscription.paymentStatus,
+          isTrial: data.company.subscription.isTrial,
+          renewalDate: data.company.subscription.renewalDate,
+          trialEndDate: data.company.subscription.trialEndDate,
         }
       : undefined,
   };
@@ -88,6 +95,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     try {
       const res = await authAPI.login(email, password);
+      if (res.data.requires2FA) {
+        return { success: false, requires2FA: true, userId: res.data.userId };
+      }
       const { token, ...userData } = res.data;
       setToken(token);
       setUser(mapUser(userData));
@@ -95,6 +105,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       return { success: false, error: err.message || "Login failed" };
     }
+  }, []);
+
+  const completeLogin = useCallback((userData: any, token: string) => {
+    setToken(token);
+    setUser(mapUser(userData));
   }, []);
 
   const register = useCallback(
@@ -129,6 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         login,
         register,
+        completeLogin,
         logout,
         updateUser,
       }}

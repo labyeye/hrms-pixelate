@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { billingAPI } from "@/services/api";
@@ -85,11 +86,14 @@ export default function BillingPage() {
   const empPct =
     empMax > 0 ? Math.min(Math.round((empUsed / empMax) * 100), 100) : 0;
 
+  const isTrial = sub?.isTrial ?? false;
+  const trialEndDate = sub?.trialEndDate ? new Date(sub.trialEndDate) : null;
   const renewalDate = sub?.renewalDate ? new Date(sub.renewalDate) : null;
-  const daysLeft = renewalDate
-    ? Math.max(0, Math.ceil((renewalDate.getTime() - Date.now()) / 86400000))
+  const expiryDate = isTrial ? trialEndDate : renewalDate;
+  const daysLeft = expiryDate
+    ? Math.max(0, Math.ceil((expiryDate.getTime() - Date.now()) / 86400000))
     : null;
-  const totalDays = sub?.billingCycle === "yearly" ? 365 : 30;
+  const totalDays = isTrial ? 60 : sub?.billingCycle === "yearly" ? 365 : 30;
   const daysPct =
     daysLeft != null
       ? Math.min(Math.round((daysLeft / totalDays) * 100), 100)
@@ -191,9 +195,7 @@ export default function BillingPage() {
     return (
       <AppLayout title="Billing">
         <div className="flex items-center justify-center h-[60vh]">
-          <div className="w-10 h-10 bg-[#024BAB] border-2 border-black animate-bounce flex items-center justify-center">
-            <Loader2 className="w-5 h-5 text-white animate-spin" />
-          </div>
+          <img src={nesthrlogo} alt="NestHR" className="h-16 w-auto" />
         </div>
       </AppLayout>
     );
@@ -203,7 +205,22 @@ export default function BillingPage() {
     <AppLayout title="Billing">
       <div className="max-w-5xl mx-auto space-y-6 sm:space-y-8 p-4 sm:p-6">
         {}
-        {!isActive && (
+        {isTrial && (
+          <div className="border-2 border-[#FBBF24] bg-[#FBBF24]/10 p-4 flex items-start gap-3">
+            <Zap className="w-5 h-5 text-[#D97706] shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-[#D97706] text-sm">
+                2-Month Free Trial Active — {daysLeft ?? 0} days remaining
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                You're on a free trial until{" "}
+                {trialEndDate?.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.
+                Subscribe anytime below to keep full access and unlock yearly savings.
+              </p>
+            </div>
+          </div>
+        )}
+        {!isActive && !isTrial && (
           <div className="border-2 border-[#EF4444] bg-[#EF4444]/5 p-4 flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-[#EF4444] shrink-0 mt-0.5" />
             <div>
@@ -226,27 +243,40 @@ export default function BillingPage() {
             </div>
             <div>
               <p className="font-display font-bold text-white text-lg">
-                {currentPlan.name} Plan — {isActive ? "Active" : "Inactive"}
+                {currentPlan.name} Plan —{" "}
+                {isTrial ? "Free Trial" : isActive ? "Active" : "Inactive"}
               </p>
               <p className="text-sm font-medium text-white/70">
-                {renewalDate
-                  ? `Next billing: ${renewalDate.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}`
-                  : "No active subscription"}
+                {isTrial && trialEndDate
+                  ? `Trial ends: ${trialEndDate.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}`
+                  : renewalDate
+                    ? `Next billing: ${renewalDate.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}`
+                    : "No active subscription"}
               </p>
             </div>
           </div>
           <div
             className={cn(
               "flex items-center gap-1.5 self-start sm:self-auto px-3 py-1.5 border-2 border-black font-bold text-sm",
-              isActive ? "bg-white text-[#024BAB]" : "bg-[#EF4444] text-white",
+              isTrial
+                ? "bg-[#FBBF24] text-black"
+                : isActive
+                  ? "bg-white text-[#024BAB]"
+                  : "bg-[#EF4444] text-white",
             )}
           >
-            {isActive ? (
+            {isTrial ? (
+              <Zap className="w-4 h-4" />
+            ) : isActive ? (
               <Check className="w-4 h-4" />
             ) : (
               <AlertTriangle className="w-4 h-4" />
             )}
-            {isActive ? "Paid & Active" : "Attention Required"}
+            {isTrial
+              ? `${daysLeft ?? 0} days left`
+              : isActive
+                ? "Paid & Active"
+                : "Attention Required"}
           </div>
         </div>
 

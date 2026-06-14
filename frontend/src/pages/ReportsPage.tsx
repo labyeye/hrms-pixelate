@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import * as XLSX from "xlsx";
 import {
@@ -412,7 +413,7 @@ function EmptyState({ msg }: { msg: string }) {
 function LoadingState() {
   return (
     <div className="flex justify-center py-16">
-      <Loader2 className="w-6 h-6 animate-spin text-[#024BAB]" />
+      <img src={nesthrlogo} alt="NestHR" className="h-16 w-auto" />
     </div>
   );
 }
@@ -2348,7 +2349,7 @@ function AnalyticsTab({ departments }: { departments: any[] }) {
   if (loading)
     return (
       <div className="flex justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-[#024BAB]" />
+        <img src={nesthrlogo} alt="NestHR" className="h-16 w-auto" />
       </div>
     );
 
