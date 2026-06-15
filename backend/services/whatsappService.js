@@ -6,8 +6,9 @@ const Setting = require("../models/Setting");
 async function sendTemplate(phone, templateName, params, lang = "en") {
   const accessToken = process.env.META_WA_TOKEN;
   const phoneNumberId = process.env.META_WA_PHONE_ID;
+  console.log(`[WA-DEBUG] sendTemplate → phone=${phone} template=${templateName} META_WA_TOKEN=${accessToken ? "SET" : "MISSING"} META_WA_PHONE_ID=${phoneNumberId ? "SET" : "MISSING"}`);
   if (!accessToken || !phoneNumberId) {
-    console.warn("[WhatsApp] META_WA_TOKEN or META_WA_PHONE_ID not set in env");
+    console.warn("[WA-DEBUG] ABORT: META_WA_TOKEN or META_WA_PHONE_ID not set in .env");
     return;
   }
 
@@ -59,12 +60,26 @@ async function sendTemplate(phone, templateName, params, lang = "en") {
 // ─── Internal: check company WhatsApp gate ────────────────────────────────────
 
 async function getCompanySetting(eventKey, companyId) {
-  if (!companyId) return null;
+  if (!companyId) {
+    console.warn(`[WA-DEBUG] getCompanySetting: companyId is null/undefined`);
+    return null;
+  }
   const setting = await Setting.findOne({ company: companyId }).select(
     `whatsappEnabled whatsappLang ${eventKey}`,
   );
-  if (!setting?.whatsappEnabled) return null;
-  if (eventKey && setting[eventKey] === false) return null;
+  if (!setting) {
+    console.warn(`[WA-DEBUG] getCompanySetting: no Setting doc found for company=${companyId}`);
+    return null;
+  }
+  if (!setting.whatsappEnabled) {
+    console.warn(`[WA-DEBUG] getCompanySetting: whatsappEnabled=false for company=${companyId} — enable it in Settings`);
+    return null;
+  }
+  if (eventKey && setting[eventKey] === false) {
+    console.warn(`[WA-DEBUG] getCompanySetting: ${eventKey}=false for company=${companyId} — disabled in Settings`);
+    return null;
+  }
+  console.log(`[WA-DEBUG] getCompanySetting: OK — whatsappEnabled=true, ${eventKey}=${setting[eventKey]}`);
   return setting;
 }
 

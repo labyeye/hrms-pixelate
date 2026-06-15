@@ -65,38 +65,66 @@ function mapVerifyMode(verifyType) {
 }
 
 async function notifyCheckIn(employee, locationName, time, companyId) {
+  console.log(`[WA-DEBUG] notifyCheckIn called — emp=${employee.firstName} phone=${employee.phone || "MISSING"} companyId=${companyId}`);
   try {
     const empFullName = `${employee.firstName} ${employee.lastName}`;
     const hrUsers = await User.find({
       company: companyId,
       role: { $in: ["super_admin", "hr_manager"] },
-    }).select("phone");
-    if (employee.phone)
+    }).select("phone name");
+    console.log(`[WA-DEBUG] HR users found: ${hrUsers.length} — phones: ${hrUsers.map(h => h.phone || "MISSING").join(", ")}`);
+
+    if (employee.phone) {
+      console.log(`[WA-DEBUG] Sending check-in WA to staff: ${employee.phone}`);
       await sendCheckIn(employee.phone, { firstName: employee.firstName, locationName, time }, companyId);
+      console.log(`[WA-DEBUG] Staff check-in WA sent OK`);
+    } else {
+      console.warn(`[WA-DEBUG] SKIP staff check-in WA — employee.phone is empty`);
+    }
+
     for (const hr of hrUsers) {
-      if (hr.phone)
+      if (hr.phone) {
+        console.log(`[WA-DEBUG] Sending check-in WA to HR/admin: ${hr.phone}`);
         await sendCheckInHR(hr.phone, { empName: empFullName, empId: employee.employeeId, locationName, time }, companyId);
+        console.log(`[WA-DEBUG] HR check-in WA sent OK to ${hr.phone}`);
+      } else {
+        console.warn(`[WA-DEBUG] SKIP HR check-in WA — hr.phone is empty for user ${hr._id}`);
+      }
     }
   } catch (err) {
-    console.error("[ADMS] WhatsApp check-in notify error:", err.message);
+    console.error("[WA-DEBUG] notifyCheckIn ERROR:", err.message);
   }
 }
 
 async function notifyCheckOut(employee, locationName, time, workHours, companyId) {
+  console.log(`[WA-DEBUG] notifyCheckOut called — emp=${employee.firstName} phone=${employee.phone || "MISSING"} companyId=${companyId}`);
   try {
     const empFullName = `${employee.firstName} ${employee.lastName}`;
     const hrUsers = await User.find({
       company: companyId,
       role: { $in: ["super_admin", "hr_manager"] },
-    }).select("phone");
-    if (employee.phone)
+    }).select("phone name");
+    console.log(`[WA-DEBUG] HR users found: ${hrUsers.length} — phones: ${hrUsers.map(h => h.phone || "MISSING").join(", ")}`);
+
+    if (employee.phone) {
+      console.log(`[WA-DEBUG] Sending check-out WA to staff: ${employee.phone}`);
       await sendCheckOut(employee.phone, { firstName: employee.firstName, locationName, time, workHours }, companyId);
+      console.log(`[WA-DEBUG] Staff check-out WA sent OK`);
+    } else {
+      console.warn(`[WA-DEBUG] SKIP staff check-out WA — employee.phone is empty`);
+    }
+
     for (const hr of hrUsers) {
-      if (hr.phone)
+      if (hr.phone) {
+        console.log(`[WA-DEBUG] Sending check-out WA to HR/admin: ${hr.phone}`);
         await sendCheckOutHR(hr.phone, { empName: empFullName, empId: employee.employeeId, locationName, time, workHours }, companyId);
+        console.log(`[WA-DEBUG] HR check-out WA sent OK to ${hr.phone}`);
+      } else {
+        console.warn(`[WA-DEBUG] SKIP HR check-out WA — hr.phone is empty for user ${hr._id}`);
+      }
     }
   } catch (err) {
-    console.error("[ADMS] WhatsApp check-out notify error:", err.message);
+    console.error("[WA-DEBUG] notifyCheckOut ERROR:", err.message);
   }
 }
 
