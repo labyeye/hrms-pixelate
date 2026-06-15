@@ -34,7 +34,8 @@ function TrialBanner() {
         {daysLeft > 0
           ? `Free trial: ${daysLeft} day${daysLeft !== 1 ? "s" : ""} remaining`
           : "Your free trial has ended"}
-        {endDate && ` — expires ${endDate.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`}
+        {endDate &&
+          ` — expires ${endDate.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`}
       </span>
       <button
         onClick={() => navigate("/billing")}
