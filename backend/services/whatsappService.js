@@ -12,7 +12,9 @@ async function sendTemplate(phone, templateName, params, lang = "en") {
     return;
   }
 
-  const toNumber = phone.replace(/^\+/, "").replace(/\s/g, "");
+  let toNumber = phone.replace(/^\+/, "").replace(/\s/g, "");
+  // Auto-add India country code for bare 10-digit numbers
+  if (/^[6-9]\d{9}$/.test(toNumber)) toNumber = "91" + toNumber;
   const body = JSON.stringify({
     messaging_product: "whatsapp",
     to: toNumber,
