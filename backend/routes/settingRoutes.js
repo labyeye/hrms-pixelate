@@ -11,6 +11,6 @@ router.use(protect);
 router
   .route("/")
   .get(getSettings)
-  .put(authorize("admin", "hr_manager"), updateSettings);
+  .put(authorize("super_admin", "admin", "hr_manager"), updateSettings);
 
 module.exports = router;

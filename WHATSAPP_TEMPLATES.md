@@ -6,6 +6,9 @@ Register all of these in **Meta Business Manager → WhatsApp → Message Templa
 - Language: **English (en)**
 - Template names must be exactly as written below (lowercase, underscores)
 
+> **Meta rule:** variable count must be ≤ (non-variable characters ÷ 10).
+> All bodies below are written to satisfy this ratio — copy them exactly.
+
 ---
 
 ## 1. `neshr_checkin`
@@ -13,7 +16,7 @@ Register all of these in **Meta Business Manager → WhatsApp → Message Templa
 
 **Body:**
 ```
-Hi {{1}}, your Check-In at {{2}} was recorded at {{3}}. Have a productive day!
+Hi {{1}}, your check-in at {{2}} has been recorded successfully at {{3}}. Have a great and productive day ahead!
 ```
 
 | Parameter | Value |
@@ -29,7 +32,7 @@ Hi {{1}}, your Check-In at {{2}} was recorded at {{3}}. Have a productive day!
 
 **Body:**
 ```
-Hi {{1}}, your Check-Out at {{2}} was recorded at {{3}}. Total hours: {{4}}.
+Hi {{1}}, your check-out from {{2}} has been recorded at {{3}}. Total hours worked today: {{4}}. Great work, see you tomorrow!
 ```
 
 | Parameter | Value |
@@ -46,7 +49,7 @@ Hi {{1}}, your Check-Out at {{2}} was recorded at {{3}}. Total hours: {{4}}.
 
 **Body:**
 ```
-Employee {{1}} (ID: {{2}}) checked in at {{3}} at {{4}}.
+NestHR Attendance Alert: Employee {{1}} (ID: {{2}}) has successfully checked in at location {{3}}. Time of check-in recorded: {{4}}.
 ```
 
 | Parameter | Value |
@@ -63,7 +66,7 @@ Employee {{1}} (ID: {{2}}) checked in at {{3}} at {{4}}.
 
 **Body:**
 ```
-Employee {{1}} (ID: {{2}}) checked out at {{3}} at {{4}}. Total hours: {{5}}.
+NestHR Attendance Alert: Employee {{1}} (ID: {{2}}) has checked out from location {{3}}. Check-out time: {{4}}. Total hours worked today: {{5}}.
 ```
 
 | Parameter | Value |
@@ -81,7 +84,7 @@ Employee {{1}} (ID: {{2}}) checked out at {{3}} at {{4}}. Total hours: {{5}}.
 
 **Body:**
 ```
-Hi {{1}}, your {{2}} Leave ({{3}} to {{4}}, {{5}} day(s)) has been APPROVED.
+Hi {{1}}, great news! Your {{2}} leave request from {{3}} to {{4}} for {{5}} day(s) has been approved by your manager. Enjoy your time off and take care!
 ```
 
 | Parameter | Value |
@@ -99,7 +102,7 @@ Hi {{1}}, your {{2}} Leave ({{3}} to {{4}}, {{5}} day(s)) has been APPROVED.
 
 **Body:**
 ```
-Hi {{1}}, your {{2}} Leave request has been REJECTED. Reason: {{3}}.
+Hi {{1}}, your {{2}} leave request could not be approved at this time. Reason for rejection: {{3}}. Please contact your manager for further details.
 ```
 
 | Parameter | Value |
@@ -115,7 +118,7 @@ Hi {{1}}, your {{2}} Leave request has been REJECTED. Reason: {{3}}.
 
 **Body:**
 ```
-New Leave Request — Employee: {{1}} ({{2}}), Type: {{3}}, Dates: {{4}} to {{5}} ({{6}} day(s)), Reason: {{7}}.
+NestHR Leave Request: Employee {{1}} (ID: {{2}}) has submitted a {{3}} leave application. Duration: {{4}} to {{5}} totalling {{6}} day(s). Reason given by employee: {{7}}. Please log in to review and take action.
 ```
 
 | Parameter | Value |
@@ -135,7 +138,7 @@ New Leave Request — Employee: {{1}} ({{2}}), Type: {{3}}, Dates: {{4}} to {{5}
 
 **Body:**
 ```
-Hi {{1}}, your salary for {{2}} of {{3}} has been processed and credited to your bank account.
+Hi {{1}}, your salary for the month of {{2}} amounting to {{3}} has been successfully processed and credited to your registered bank account.
 ```
 
 | Parameter | Value |
@@ -151,13 +154,13 @@ Hi {{1}}, your salary for {{2}} of {{3}} has been processed and credited to your
 
 **Body:**
 ```
-Welcome {{1}}! Your {{2}} plan for {{3}} is active. Amount: {{4}}, Renewal: {{5}}. Login: {{6}}
+Welcome to NestHR, {{1}}! Your {{2}} subscription plan for {{3}} has been activated successfully. Amount paid: {{4}}. Your next renewal date is {{5}}. Access your dashboard at: {{6}}
 ```
 
 | Parameter | Value |
 |---|---|
 | `{{1}}` | Account owner name |
-| `{{2}}` | Plan name (e.g. Pro) |
+| `{{2}}` | Plan name (e.g. Professional) |
 | `{{3}}` | Company name |
 | `{{4}}` | Amount paid (e.g. ₹4,999) |
 | `{{5}}` | Next renewal date |
