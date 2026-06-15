@@ -30,6 +30,12 @@ import {
 
 const DAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+// Use LOCAL date so IST midnight stored as UTC doesn't shift the day
+const toLocalDateStr = (isoStr: string) => {
+  const d = new Date(isoStr);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
+
 const VERIFY_MODE_CONFIG: Record<
   string,
   { label: string; icon: any; color: string }
@@ -118,7 +124,8 @@ export default function AttendancePage() {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [windowStart, setWindowStart] = useState<number>(1); // 1-based day of month
+  const [windowStart, setWindowStart] = useState<number>(1);
+  const [markingAbsent, setMarkingAbsent] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -196,6 +203,21 @@ export default function AttendancePage() {
     setSaving(false);
   };
 
+  const handleMarkAbsent = async (empIds: string[], date: string) => {
+    setMarkingAbsent(true);
+    try {
+      await Promise.all(
+        empIds.map((empId) =>
+          attendanceAPI.mark({ employee: empId, date, status: "absent", verifyMode: "manual" })
+        )
+      );
+      load();
+    } catch (err: any) {
+      alert(err.message);
+    }
+    setMarkingAbsent(false);
+  };
+
   const summary = {
     total: records.filter((r) => !["holiday", "weekend"].includes(r.status))
       .length,
@@ -232,7 +254,7 @@ export default function AttendancePage() {
     const date = new Date(year, month - 1, day);
     const iso = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const dayRecords = records.filter(
-      (r) => new Date(r.date).toISOString().split("T")[0] === iso,
+      (r) => toLocalDateStr(r.date) === iso,
     );
     const presentCount = dayRecords.filter((r) =>
       ["present", "late", "half_day"].includes(r.status),
@@ -261,7 +283,7 @@ export default function AttendancePage() {
 
   const displayedRecords = selectedDate
     ? baseRecords.filter(
-        (r) => new Date(r.date).toISOString().split("T")[0] === selectedDate,
+        (r) => toLocalDateStr(r.date) === selectedDate,
       )
     : baseRecords;
 
@@ -433,6 +455,30 @@ export default function AttendancePage() {
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
+
+      {/* Auto-absent banner */}
+      {!isEmployee && selectedDate && selectedDate <= todayIso && employees.length > 0 && (() => {
+        const recordedEmpIds = new Set(displayedRecords.map((r) => (r.employee as any)?._id));
+        const unrecorded = employees.filter((e) => !recordedEmpIds.has(e._id));
+        if (unrecorded.length === 0) return null;
+        return (
+          <div className="mb-4 border-2 border-[#EF4444] bg-[#EF4444]/5 px-4 py-3 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <UserX className="w-4 h-4 text-[#EF4444] shrink-0" />
+              <p className="text-sm font-bold text-[#EF4444]">
+                {unrecorded.length} employee{unrecorded.length > 1 ? "s" : ""} have no record for this date
+              </p>
+            </div>
+            <button
+              onClick={() => handleMarkAbsent(unrecorded.map((e) => e._id), selectedDate)}
+              disabled={markingAbsent}
+              className="border-2 border-[#EF4444] bg-[#EF4444] text-white text-xs font-bold px-3 py-1.5 hover:bg-[#dc2626] disabled:opacity-50 shrink-0"
+            >
+              {markingAbsent ? "Saving…" : "Mark All Absent"}
+            </button>
+          </div>
+        );
+      })()}
 
       {}
       {loading ? (
