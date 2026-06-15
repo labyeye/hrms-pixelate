@@ -86,7 +86,6 @@ async function notifyCheckIn(employee, locationName, time, companyId) {
       if (hr.phone) {
         console.log(`[WA-DEBUG] Sending check-in WA to HR/admin: ${hr.phone}`);
         await sendCheckInHR(hr.phone, { empName: empFullName, empId: employee.employeeId, locationName, time }, companyId);
-        console.log(`[WA-DEBUG] HR check-in WA sent OK to ${hr.phone}`);
       } else {
         console.warn(`[WA-DEBUG] SKIP HR check-in WA — hr.phone is empty for user ${hr._id}`);
       }
@@ -109,7 +108,6 @@ async function notifyCheckOut(employee, locationName, time, workHours, companyId
     if (employee.phone) {
       console.log(`[WA-DEBUG] Sending check-out WA to staff: ${employee.phone}`);
       await sendCheckOut(employee.phone, { firstName: employee.firstName, locationName, time, workHours }, companyId);
-      console.log(`[WA-DEBUG] Staff check-out WA sent OK`);
     } else {
       console.warn(`[WA-DEBUG] SKIP staff check-out WA — employee.phone is empty`);
     }
@@ -118,7 +116,6 @@ async function notifyCheckOut(employee, locationName, time, workHours, companyId
       if (hr.phone) {
         console.log(`[WA-DEBUG] Sending check-out WA to HR/admin: ${hr.phone}`);
         await sendCheckOutHR(hr.phone, { empName: empFullName, empId: employee.employeeId, locationName, time, workHours }, companyId);
-        console.log(`[WA-DEBUG] HR check-out WA sent OK to ${hr.phone}`);
       } else {
         console.warn(`[WA-DEBUG] SKIP HR check-out WA — hr.phone is empty for user ${hr._id}`);
       }

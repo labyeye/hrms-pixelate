@@ -109,8 +109,9 @@ async function sendCheckIn(
       [firstName, locationName, t],
       s.whatsappLang || "en",
     );
+    console.log(`[WA-DEBUG] ✅ Staff check-in message DELIVERED to ${phone}`);
   } catch (err) {
-    console.error("[WhatsApp] sendCheckIn:", err.message);
+    console.error(`[WA-DEBUG] ❌ Staff check-in FAILED to ${phone}:`, err.message);
   }
 }
 
