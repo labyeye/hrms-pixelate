@@ -128,6 +128,32 @@ async function sendCheckOut(
 // ─── Leave ────────────────────────────────────────────────────────────────────
 
 /**
+ * Template: neshr_leave_submitted
+ * Body:  Hi {{1}}, your {{2}} leave request from {{3}} to {{4}} for {{5}} day(s) has been submitted and is awaiting approval from your manager.
+ */
+async function sendLeaveSubmitted(
+  phone,
+  { firstName, leaveType, startDate, endDate, days },
+  companyId,
+) {
+  try {
+    const s = await getCompanySetting("whatsappNotifyLeave", companyId);
+    if (!s) return;
+    const type = leaveType.charAt(0).toUpperCase() + leaveType.slice(1);
+    const from = new Date(startDate).toLocaleDateString("en-IN");
+    const to = new Date(endDate).toLocaleDateString("en-IN");
+    await sendTemplate(
+      phone,
+      "neshr_leave_submitted",
+      [firstName, type, from, to, String(days)],
+      s.whatsappLang || "en",
+    );
+  } catch (err) {
+    console.error("[WhatsApp] sendLeaveSubmitted:", err.message);
+  }
+}
+
+/**
  * Template: neshr_leave_approved
  * Body:  Hi {{1}}, your {{2}} Leave ({{3}} to {{4}}, {{5}} day(s)) has been APPROVED.
  */
@@ -304,6 +330,7 @@ module.exports = {
   sendCheckOut,
   sendCheckInHR,
   sendCheckOutHR,
+  sendLeaveSubmitted,
   sendLeaveApproved,
   sendLeaveRejected,
   sendLeaveAppliedHR,

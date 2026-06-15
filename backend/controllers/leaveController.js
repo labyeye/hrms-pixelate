@@ -2,8 +2,10 @@ const asyncHandler = require("express-async-handler");
 const Leave = require("../models/Leave");
 const Employee = require("../models/Employee");
 const User = require("../models/User");
+const Company = require("../models/Company");
 const { safePagination } = require("../middleware/validate");
 const {
+  sendLeaveSubmitted,
   sendLeaveApproved,
   sendLeaveRejected,
   sendLeaveAppliedHR,
@@ -201,14 +203,33 @@ const createLeave = asyncHandler(async (req, res) => {
   });
 
   try {
+    // Notify employee that their request was submitted
+    if (emp.phone) {
+      await sendLeaveSubmitted(
+        emp.phone,
+        {
+          firstName: emp.firstName,
+          leaveType: leave.leaveType,
+          startDate: leave.startDate,
+          endDate: leave.endDate,
+          days: leave.days,
+        },
+        req.user.company,
+      );
+    }
+
+    // Notify all HR/admin — use Company.phone as fallback if user.phone is empty
+    const company = await Company.findById(req.user.company).select("phone");
     const hrUsers = await User.find({
       company: req.user.company,
       role: { $in: ["super_admin", "hr_manager"] },
-    }).select("phone email name");
+    }).select("phone email name role");
+
     for (const hr of hrUsers) {
-      if (hr.phone)
+      const phone = hr.phone || (hr.role === "super_admin" ? company?.phone : null);
+      if (phone)
         await sendLeaveAppliedHR(
-          hr.phone,
+          phone,
           {
             empName: `${emp.firstName} ${emp.lastName}`,
             empId: emp.employeeId,
@@ -311,17 +332,96 @@ const updateLeaveStatus = asyncHandler(async (req, res) => {
   res.json({ success: true, data: leave });
 });
 
-const deleteLeave = asyncHandler(async (req, res) => {
+// Employee edits their own PENDING leave before approval
+const updateLeave = asyncHandler(async (req, res) => {
+  const selfEmp = await Employee.findOne({ user: req.user._id });
+  if (!selfEmp) {
+    res.status(404);
+    throw new Error("Employee record not found");
+  }
+
   const leave = await Leave.findOne({
     _id: req.params.id,
     company: req.user.company,
+    employee: selfEmp._id,
   });
   if (!leave) {
     res.status(404);
     throw new Error("Leave not found");
   }
-  await leave.deleteOne();
-  res.json({ success: true, message: "Leave deleted" });
+  if (leave.status !== "pending") {
+    res.status(400);
+    throw new Error("Only pending leave requests can be edited");
+  }
+
+  const { leaveType, startDate, endDate, days, reason, isHalfDay, halfDayType } = req.body;
+
+  if (leaveType && LEAVE_TYPES.includes(leaveType)) leave.leaveType = leaveType;
+  if (reason && typeof reason === "string") leave.reason = reason.trim().slice(0, 500);
+  if (isHalfDay !== undefined) {
+    leave.isHalfDay = !!isHalfDay;
+    leave.halfDayType = isHalfDay ? halfDayType : undefined;
+  }
+
+  if (startDate && endDate && days) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const daysNum = Number(days);
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) {
+      res.status(400);
+      throw new Error("Invalid date range");
+    }
+    if (isNaN(daysNum) || daysNum <= 0) {
+      res.status(400);
+      throw new Error("Invalid days value");
+    }
+    // Check overlap (exclude current leave)
+    const overlap = await Leave.findOne({
+      _id: { $ne: leave._id },
+      employee: selfEmp._id,
+      status: { $in: ["pending", "approved"] },
+      startDate: { $lte: end },
+      endDate: { $gte: start },
+    });
+    if (overlap) {
+      res.status(400);
+      throw new Error("Another leave request overlaps these dates");
+    }
+    leave.startDate = start;
+    leave.endDate = end;
+    leave.days = daysNum;
+  }
+
+  await leave.save();
+  res.json({ success: true, data: leave });
 });
 
-module.exports = { getLeaves, createLeave, updateLeaveStatus, deleteLeave };
+const deleteLeave = asyncHandler(async (req, res) => {
+  const filter = { _id: req.params.id, company: req.user.company };
+
+  // Employees can only delete their own pending leaves
+  if (req.user.role === "employee") {
+    const selfEmp = await Employee.findOne({ user: req.user._id }).select("_id");
+    if (!selfEmp) {
+      res.status(404);
+      throw new Error("Employee record not found");
+    }
+    filter.employee = selfEmp._id;
+  }
+
+  const leave = await Leave.findOne(filter);
+  if (!leave) {
+    res.status(404);
+    throw new Error("Leave not found");
+  }
+
+  if (req.user.role === "employee" && leave.status !== "pending") {
+    res.status(400);
+    throw new Error("Only pending leave requests can be withdrawn");
+  }
+
+  await leave.deleteOne();
+  res.json({ success: true, message: "Leave request withdrawn" });
+});
+
+module.exports = { getLeaves, createLeave, updateLeave, updateLeaveStatus, deleteLeave };

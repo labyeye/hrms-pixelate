@@ -79,7 +79,25 @@ NestHR Attendance Alert: Employee {{1}} (ID: {{2}}) has checked out from locatio
 
 ---
 
-## 5. `neshr_leave_approved`
+## 5. `neshr_leave_submitted`
+**Sent to:** Employee when they submit a leave request
+
+**Body:**
+```
+Hi {{1}}, your {{2}} leave request from {{3}} to {{4}} for {{5}} day(s) has been submitted and is awaiting approval from your manager.
+```
+
+| Parameter | Value |
+|---|---|
+| `{{1}}` | Employee first name |
+| `{{2}}` | Leave type (e.g. Casual, Sick) |
+| `{{3}}` | Start date (e.g. 15/06/2026) |
+| `{{4}}` | End date |
+| `{{5}}` | Number of days |
+
+---
+
+## 7. `neshr_leave_approved`
 **Sent to:** Employee when their leave is approved
 
 **Body:**
@@ -97,7 +115,7 @@ Hi {{1}}, great news! Your {{2}} leave request from {{3}} to {{4}} for {{5}} day
 
 ---
 
-## 6. `neshr_leave_rejected`
+## 8. `neshr_leave_rejected`
 **Sent to:** Employee when their leave is rejected
 
 **Body:**
@@ -113,7 +131,7 @@ Hi {{1}}, your {{2}} leave request could not be approved at this time. Reason fo
 
 ---
 
-## 7. `neshr_leave_request_hr`
+## 9. `neshr_leave_request_hr`
 **Sent to:** HR Manager / Admin when an employee applies for leave
 
 **Body:**
@@ -133,7 +151,7 @@ NestHR Leave Request: Employee {{1}} (ID: {{2}}) has submitted a {{3}} leave app
 
 ---
 
-## 8. `neshr_salary_paid`
+## 10. `neshr_salary_paid`
 **Sent to:** Employee when their salary is processed and marked as paid
 
 **Body:**
@@ -149,7 +167,7 @@ Hi {{1}}, your salary for the month of {{2}} amounting to {{3}} has been success
 
 ---
 
-## 9. `neshr_subscription`
+## 11. `neshr_subscription`
 **Sent to:** Account owner when a NestHR subscription is activated
 
 **Body:**
