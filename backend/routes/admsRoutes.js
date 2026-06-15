@@ -5,7 +5,9 @@ const Attendance = require("../models/Attendance");
 const BiometricDevice = require("../models/BiometricDevice");
 const BiometricCommand = require("../models/BiometricCommand");
 const Shift = require("../models/Shift");
+const User = require("../models/User");
 const { getEffectiveCheckOut } = require("../utils/shiftUtils");
+const { sendCheckIn, sendCheckInHR, sendCheckOut, sendCheckOutHR } = require("../services/whatsappService");
 
 const GRACE_MINUTES = 15;
 const HALF_DAY_MINUTES = 120;
@@ -62,9 +64,46 @@ function mapVerifyMode(verifyType) {
   return "fingerprint";
 }
 
+async function notifyCheckIn(employee, locationName, time, companyId) {
+  try {
+    const empFullName = `${employee.firstName} ${employee.lastName}`;
+    const hrUsers = await User.find({
+      company: companyId,
+      role: { $in: ["super_admin", "hr_manager"] },
+    }).select("phone");
+    if (employee.phone)
+      await sendCheckIn(employee.phone, { firstName: employee.firstName, locationName, time }, companyId);
+    for (const hr of hrUsers) {
+      if (hr.phone)
+        await sendCheckInHR(hr.phone, { empName: empFullName, empId: employee.employeeId, locationName, time }, companyId);
+    }
+  } catch (err) {
+    console.error("[ADMS] WhatsApp check-in notify error:", err.message);
+  }
+}
+
+async function notifyCheckOut(employee, locationName, time, workHours, companyId) {
+  try {
+    const empFullName = `${employee.firstName} ${employee.lastName}`;
+    const hrUsers = await User.find({
+      company: companyId,
+      role: { $in: ["super_admin", "hr_manager"] },
+    }).select("phone");
+    if (employee.phone)
+      await sendCheckOut(employee.phone, { firstName: employee.firstName, locationName, time, workHours }, companyId);
+    for (const hr of hrUsers) {
+      if (hr.phone)
+        await sendCheckOutHR(hr.phone, { empName: empFullName, empId: employee.employeeId, locationName, time, workHours }, companyId);
+    }
+  } catch (err) {
+    console.error("[ADMS] WhatsApp check-out notify error:", err.message);
+  }
+}
+
 async function processLog(
   { userId, datetime, punchState, verifyType },
   companyId,
+  locationName,
 ) {
   const employee = await Employee.findOne({
     biometricUserId: userId,
@@ -97,6 +136,7 @@ async function processLog(
   });
 
   const verifyMode = mapVerifyMode(verifyType);
+  const loc = locationName || "Office";
 
   if (!existing) {
     const status = await resolveAttendanceStatus(employee, punchTime);
@@ -110,6 +150,7 @@ async function processLog(
     console.log(
       `[ADMS] Created attendance checkIn=${punchTime.toISOString()} status=${status} verifyMode=${verifyMode} for ${employee.firstName}`,
     );
+    await notifyCheckIn(employee, loc, punchTime, companyId);
     return;
   }
 
@@ -121,17 +162,20 @@ async function processLog(
   }
 
   const upd = {};
+  let logType = null;
 
   if (!existing.checkIn || punchTime < existing.checkIn) {
     upd.checkIn = punchTime;
     upd.verifyMode = verifyMode;
     upd.status = await resolveAttendanceStatus(employee, punchTime);
+    logType = "check_in";
   } else if (punchTime > existing.checkIn) {
     upd.checkOut = await getEffectiveCheckOut(
       companyId,
       employee._id,
       punchTime,
     );
+    logType = "check_out";
   }
 
   if (Object.keys(upd).length) {
@@ -145,6 +189,11 @@ async function processLog(
     console.log(
       `[ADMS] Updated attendance for ${employee.firstName}: checkIn=${ci?.toISOString()} checkOut=${co?.toISOString()} status=${upd.status}`,
     );
+    if (logType === "check_in") {
+      await notifyCheckIn(employee, loc, upd.checkIn, companyId);
+    } else if (logType === "check_out") {
+      await notifyCheckOut(employee, loc, upd.checkOut, upd.workHours, companyId);
+    }
   }
 }
 
@@ -259,7 +308,15 @@ router.post(
       console.log(`[ADMS] Raw body:\n${body}`);
       const logs = parseAttLog(body);
       console.log(`[ADMS] Parsed logs:`, JSON.stringify(logs));
-      await Promise.allSettled(logs.map((log) => processLog(log, companyId)));
+
+      let devLocationName = "Office";
+      if (device?.location) {
+        const BiometricLocation = require("../models/BiometricLocation");
+        const loc = await BiometricLocation.findById(device.location).select("name");
+        if (loc?.name) devLocationName = loc.name;
+      }
+
+      await Promise.allSettled(logs.map((log) => processLog(log, companyId, devLocationName)));
 
       if (device && stamp > (device.attlogStamp || 0)) {
         device.attlogStamp = stamp;
