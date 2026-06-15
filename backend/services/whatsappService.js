@@ -203,6 +203,39 @@ async function sendLeaveAppliedHR(
   }
 }
 
+// ─── Attendance (HR copy) ─────────────────────────────────────────────────────
+
+/**
+ * Template: neshr_checkin_hr
+ * Body:  Employee {{1}} (ID: {{2}}) checked in at {{3}} at {{4}}.
+ */
+async function sendCheckInHR(phone, { empName, empId, locationName, time }, companyId) {
+  try {
+    const s = await getCompanySetting("whatsappNotifyCheckIn", companyId);
+    if (!s) return;
+    const t = new Date(time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+    await sendTemplate(phone, "neshr_checkin_hr", [empName, empId, locationName, t], s.whatsappLang || "en");
+  } catch (err) {
+    console.error("[WhatsApp] sendCheckInHR:", err.message);
+  }
+}
+
+/**
+ * Template: neshr_checkout_hr
+ * Body:  Employee {{1}} (ID: {{2}}) checked out at {{3}} at {{4}}. Total hours: {{5}}.
+ */
+async function sendCheckOutHR(phone, { empName, empId, locationName, time, workHours }, companyId) {
+  try {
+    const s = await getCompanySetting("whatsappNotifyCheckIn", companyId);
+    if (!s) return;
+    const t = new Date(time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+    const hrs = workHours ? `${Number(workHours).toFixed(1)}h` : "-";
+    await sendTemplate(phone, "neshr_checkout_hr", [empName, empId, locationName, t, hrs], s.whatsappLang || "en");
+  } catch (err) {
+    console.error("[WhatsApp] sendCheckOutHR:", err.message);
+  }
+}
+
 // ─── Payroll ──────────────────────────────────────────────────────────────────
 
 /**
@@ -269,6 +302,8 @@ async function sendSubscriptionWA(
 module.exports = {
   sendCheckIn,
   sendCheckOut,
+  sendCheckInHR,
+  sendCheckOutHR,
   sendLeaveApproved,
   sendLeaveRejected,
   sendLeaveAppliedHR,

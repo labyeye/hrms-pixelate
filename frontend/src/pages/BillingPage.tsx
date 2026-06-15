@@ -4,6 +4,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { billingAPI } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+import { buildInvoiceHTML } from "@/lib/buildInvoiceHTML";
 import {
   Check,
   CreditCard,
@@ -47,6 +48,7 @@ export default function BillingPage() {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [upgrading, setUpgrading] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState<string | null>(null);
   const [gatewayModal, setGatewayModal] = useState<{ planId: string } | null>(
     null,
   );
@@ -112,6 +114,21 @@ export default function BillingPage() {
       document.body.appendChild(script);
     });
   }, []);
+
+  const handleDownloadInvoice = (inv: any) => {
+    setDownloading(inv._id);
+    try {
+      const html = buildInvoiceHTML(inv);
+      const w = window.open('', '_blank');
+      if (w) {
+        w.document.write(html);
+        w.document.close();
+        setTimeout(() => { w.print(); }, 500);
+      }
+    } finally {
+      setDownloading(null);
+    }
+  };
 
   const handleUpgrade = (planId: string) => {
     if (planId === currentPlanId) return;
@@ -558,8 +575,13 @@ export default function BillingPage() {
                       {inv.status === "paid" && <Check className="w-3 h-3" />}
                       {inv.status.charAt(0).toUpperCase() + inv.status.slice(1)}
                     </span>
-                    <button className="text-xs font-bold text-[#024BAB] underline hover:text-[#024BAB]/80 transition-colors flex items-center gap-1">
-                      <Download className="w-3 h-3" /> Download
+                    <button
+                      onClick={() => handleDownloadInvoice(inv)}
+                      disabled={downloading === inv._id}
+                      className="text-xs font-bold text-[#024BAB] underline hover:text-[#024BAB]/80 transition-colors flex items-center gap-1 disabled:opacity-50"
+                    >
+                      <Download className="w-3 h-3" />
+                      {downloading === inv._id ? 'Opening…' : 'Download'}
                     </button>
                   </div>
                 </div>

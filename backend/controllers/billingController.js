@@ -36,6 +36,7 @@ const getInvoices = asyncHandler(async (req, res) => {
       .status(404)
       .json({ success: false, message: "Company not found" });
   const invoices = await Invoice.find({ company: company._id })
+    .populate("company", "name email phone address city state pincode gstNumber panNumber")
     .sort({ createdAt: -1 })
     .limit(20);
   res.json({ success: true, data: invoices });
@@ -282,7 +283,8 @@ async function _activateSubscription({ lookup, update, invoiceExtra, res }) {
     subscription: updatedSub._id,
   });
 
-  const invoiceNumber = `INV-${Date.now().toString().slice(-8)}`;
+  const invoiceCount = await Invoice.countDocuments();
+  const invoiceNumber = `KHT-HR-${String(invoiceCount + 1).padStart(3, "0")}`;
   await Invoice.create({
     company: company._id,
     subscription: updatedSub._id,
