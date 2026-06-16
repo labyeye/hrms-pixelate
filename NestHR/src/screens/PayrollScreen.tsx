@@ -414,66 +414,55 @@ export default function PayrollScreen() {
             >
               {(() => {
                 const s = selected as any;
-                return [
+                const rows: Array<{ label: string; val: number; prefix: string; color?: string; bold?: boolean; large?: boolean; section?: boolean }> = [
+                  { label: 'EARNINGS', val: 0, prefix: '', section: true },
                   { label: 'Basic Salary', val: s.basicSalary, prefix: '₹' },
-                  { label: 'HRA', val: s.hra, prefix: '₹' },
-                  { label: 'Allowances', val: s.allowances, prefix: '₹' },
-                  {
-                    label: 'Gross Salary',
-                    val: s.grossSalary,
-                    prefix: '₹',
-                    bold: true,
-                  },
-                  {
-                    label: 'PF Deduction',
-                    val: s.pfDeduction,
-                    prefix: '-₹',
-                    color: C.danger,
-                  },
-                  {
-                    label: 'Tax Deduction',
-                    val: s.taxDeduction,
-                    prefix: '-₹',
-                    color: C.danger,
-                  },
-                  {
-                    label: 'Other Deductions',
-                    val: s.otherDeductions,
-                    prefix: '-₹',
-                    color: C.danger,
-                  },
-                  {
-                    label: 'Total Deductions',
-                    val: s.totalDeductions,
-                    prefix: '-₹',
-                    color: C.danger,
-                    bold: true,
-                  },
-                  {
-                    label: 'Net Salary',
-                    val: s.netSalary,
-                    prefix: '₹',
-                    color: C.success,
-                    bold: true,
-                    large: true,
-                  },
+                  { label: 'Earned Basic', val: s.earnedBasic, prefix: '₹' },
+                  { label: 'Allowances / Bonus', val: s.otherAllowances, prefix: '₹' },
+                  { label: 'Overtime Pay', val: s.otPay, prefix: '₹' },
+                  { label: 'Gross Salary', val: s.grossSalary, prefix: '₹', bold: true },
+                  { label: 'DEDUCTIONS', val: 0, prefix: '', section: true },
+                  { label: 'Late Deduction', val: s.lateDeductionAmount, prefix: '-₹', color: C.danger },
+                  { label: 'Half-Day Deduction', val: s.halfDayDeduction, prefix: '-₹', color: C.danger },
+                  { label: 'Penalty', val: s.penaltyAmount, prefix: '-₹', color: C.danger },
+                  { label: 'Loan / Advance EMI', val: s.loanDeduction, prefix: '-₹', color: C.danger },
+                  { label: 'Total Deductions', val: s.totalDeductions, prefix: '-₹', color: C.danger, bold: true },
+                  { label: 'SUMMARY', val: 0, prefix: '', section: true },
+                  { label: 'Days Worked', val: s.presentDays, prefix: '' },
+                  { label: 'Working Days', val: s.workingDays, prefix: '' },
+                  { label: 'Hours Worked', val: s.totalWorkHours, prefix: '' },
+                  { label: 'Net Salary', val: s.netSalary, prefix: '₹', color: C.success, bold: true, large: true },
                 ];
-              })().map(row => (
-                <View key={row.label} style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>{row.label}</Text>
-                  <Text
-                    style={[
-                      styles.detailVal,
-                      row.bold && { fontWeight: '700' },
-                      row.color && { color: row.color },
-                      row.large && { fontSize: 20 },
-                    ]}
-                  >
-                    {row.prefix}
-                    {(row.val || 0).toLocaleString()}
-                  </Text>
-                </View>
-              ))}
+                return rows;
+              })().map((row, i) => {
+                if (row.section) {
+                  return (
+                    <View key={i} style={styles.detailSection}>
+                      <Text style={styles.detailSectionLabel}>{row.label}</Text>
+                    </View>
+                  );
+                }
+                const val = row.val || 0;
+                const display = typeof val === 'number' && !Number.isInteger(val)
+                  ? val.toFixed(2)
+                  : val.toLocaleString();
+                return (
+                  <View key={i} style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>{row.label}</Text>
+                    <Text
+                      style={[
+                        styles.detailVal,
+                        row.bold && { fontWeight: '700' },
+                        row.color ? { color: row.color } : {},
+                        row.large ? { fontSize: 20 } : {},
+                        val === 0 && { color: C.textMuted },
+                      ]}
+                    >
+                      {val === 0 ? '—' : `${row.prefix}${display}`}
+                    </Text>
+                  </View>
+                );
+              })}
             </ScrollView>
           </SafeAreaView>
         )}
@@ -635,6 +624,22 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
+  },
+  detailSection: {
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
+    backgroundColor: '#F3F4F6',
+    paddingVertical: 6,
+    paddingHorizontal: 2,
+    marginTop: 4,
+    marginBottom: 2,
+  },
+  detailSectionLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: C.black,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
   detailLabel: { fontSize: 13, fontWeight: '600', color: C.textMuted },
   detailVal: { fontSize: 15, fontWeight: '700', color: C.black },

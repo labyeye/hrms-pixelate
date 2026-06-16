@@ -155,6 +155,8 @@ const processPayroll = asyncHandler(async (req, res) => {
 
     let presentDays = 0,
       leaveDays = 0,
+      halfDayCount = 0,
+      lateCount = 0,
       totalWorkHours = 0,
       attendanceOTHours = 0;
 
@@ -162,6 +164,16 @@ const processPayroll = asyncHandler(async (req, res) => {
       if (a.status === "holiday" || a.status === "weekend") continue;
       if (a.status === "on_leave") {
         leaveDays++;
+        continue;
+      }
+
+      if (a.status === "half_day") {
+        // Track half-days separately for explicit deduction display.
+        // Add full shift hours here; halfDayDeduction will subtract half below.
+        halfDayCount++;
+        presentDays++;
+        totalWorkHours += shiftHoursPerDay;
+        if (a.overtime && a.overtime > 0) attendanceOTHours += a.overtime;
         continue;
       }
 
@@ -188,6 +200,7 @@ const processPayroll = asyncHandler(async (req, res) => {
 
         totalWorkHours += paidHours;
         presentDays++;
+        if (a.status === "late") lateCount++;
       } else if (a.checkIn) {
         // Checked in but no checkout — pay from clamped checkIn till shift end
         const dateMS = new Date(a.date).getTime();
@@ -209,11 +222,12 @@ const processPayroll = asyncHandler(async (req, res) => {
 
         totalWorkHours += paidHours;
         presentDays++;
-      } else if (["present", "late", "half_day"].includes(a.status)) {
-        // Manual attendance without punch times — use full/half shift hours
-        totalWorkHours +=
-          a.status === "half_day" ? shiftHoursPerDay * 0.5 : shiftHoursPerDay;
+        if (a.status === "late") lateCount++;
+      } else if (["present", "late"].includes(a.status)) {
+        // Manual attendance without punch times — use full shift hours
+        totalWorkHours += shiftHoursPerDay;
         presentDays++;
+        if (a.status === "late") lateCount++;
       }
 
       if (a.overtime && a.overtime > 0) attendanceOTHours += a.overtime;
@@ -224,10 +238,26 @@ const processPayroll = asyncHandler(async (req, res) => {
       parseFloat((totalWorkHours * hourlyRate).toFixed(2)),
     );
 
-    // No separate late/half-day deductions — they're already reflected in hours worked.
-    // Only manual penalties from deduction rules (e.g. fixed penalty per late punch) apply.
-    const lateDeduction = 0;
-    const halfDayDeduction = 0;
+    // Half-day deduction: daily rate × 0.5 per half-day record.
+    // (We credited full shift hours above, so this nets out to half-day pay — now shown explicitly.)
+    const halfDayDeduction = parseFloat(
+      (halfDayCount * dailyRate * 0.5).toFixed(2),
+    );
+
+    // Late deduction: fixed fine or percentage per late punch from DeductionRule.
+    let lateDeduction = 0;
+    if (deductionRule && lateCount > 0 && deductionRule.lateDeductionAmount > 0) {
+      if (deductionRule.lateDeductionType === "percent") {
+        lateDeduction = parseFloat(
+          (lateCount * dailyRate * (deductionRule.lateDeductionAmount / 100)).toFixed(2),
+        );
+      } else {
+        lateDeduction = parseFloat(
+          (lateCount * deductionRule.lateDeductionAmount).toFixed(2),
+        );
+      }
+    }
+
     const earlyCheckoutDeduction = 0;
 
     const txMonthStart = new Date(y, m - 1, 1);
@@ -269,7 +299,7 @@ const processPayroll = asyncHandler(async (req, res) => {
     const grossSalary =
       earnedSalary + totalAllowances + totalOT + attendanceOTPay;
     const preDeductions =
-      lateDeduction + earlyCheckoutDeduction + totalPenalties;
+      lateDeduction + halfDayDeduction + earlyCheckoutDeduction + totalPenalties;
     let salaryAfterDeductions = Math.max(0, grossSalary - preDeductions);
 
     for (const loan of activeLoans) {
@@ -308,8 +338,8 @@ const processPayroll = asyncHandler(async (req, res) => {
       otherAllowances: totalAllowances,
       otPay: attendanceOTPay + totalOT,
       grossSalary,
-      lateDeductionAmount: 0,
-      halfDayDeduction: 0,
+      lateDeductionAmount: lateDeduction,
+      halfDayDeduction: halfDayDeduction,
       earlyCheckoutDeduction: 0,
       penaltyAmount: totalPenalties,
       loanDeduction,
