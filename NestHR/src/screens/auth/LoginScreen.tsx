@@ -46,20 +46,11 @@ export default function LoginScreen({ navigation }: any) {
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Logo */}
-          <View style={styles.logoWrap}>
-            <Image
-              source={require('../../assets/images/nesthr_bgwhite.png')}
-              style={styles.logoImg}
-              resizeMode="contain"
-            />
-            <Text style={styles.appSub}>NestHR</Text>
-          </View>
 
           {/* Card */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Welcome back</Text>
-            <Text style={styles.cardSub}>Sign in to your HR dashboard</Text>
+            <Text style={styles.cardSub}></Text>
 
             {/* Email */}
             <View style={styles.field}>
@@ -160,16 +151,18 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   cardTitle: {
-    fontSize: 22,
+    fontSize: 30,
     fontWeight: '700',
     color: C.black,
     marginBottom: 4,
+    textAlign: 'center',
+    marginTop: 10,
   },
   cardSub: {
     fontSize: 13,
     color: C.textMuted,
     fontWeight: '500',
-    marginBottom: 24,
+    marginBottom: 10,
   },
   field: { marginBottom: 16 },
   label: {

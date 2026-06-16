@@ -13,6 +13,7 @@ import {
   ScrollView,
   Switch,
   Image,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -37,6 +38,13 @@ const STATUS_COLOR: Record<string, string> = {
   inactive: '#9CA3AF',
   terminated: C.danger,
   on_leave: C.warning,
+};
+
+const STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
+  active:     { color: C.success,   bg: '#F0FDF4' },
+  inactive:   { color: '#9CA3AF',   bg: '#F9FAFB' },
+  on_leave:   { color: C.warning,   bg: '#FFF7ED' },
+  terminated: { color: C.danger,    bg: '#FEF2F2' },
 };
 const EMP_TYPES = ['full_time', 'part_time', 'contract', 'intern'];
 const GENDERS = ['male', 'female', 'other'];
@@ -373,30 +381,41 @@ export default function EmployeesScreen() {
         horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.filterBar}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8 }}
+        contentContainerStyle={styles.filterContent}
       >
-        {[
-          { key: '', label: 'All' },
-          { key: 'active', label: 'Active' },
-          { key: 'inactive', label: 'Inactive' },
-          { key: 'on_leave', label: 'On Leave' },
-          { key: 'terminated', label: 'Terminated' },
-        ].map(f => (
-          <TouchableOpacity
-            key={f.key}
-            style={[styles.chip, statusFilter === f.key && styles.chipActive]}
-            onPress={() => setStatusFilter(f.key)}
-          >
-            <Text
-              style={[
-                styles.chipText,
-                statusFilter === f.key && styles.chipTextActive,
-              ]}
+        {/* ALL pill */}
+        <TouchableOpacity
+          style={[styles.summaryPill, { backgroundColor: statusFilter === '' ? C.primary : '#F3F4F6', borderColor: C.primary }]}
+          onPress={() => setStatusFilter('')}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.summaryCount, { color: statusFilter === '' ? C.white : C.primary }]}>
+            {employees.length}
+          </Text>
+          <Text style={[styles.summaryStatus, { color: statusFilter === '' ? C.white : C.primary }]}>
+            All
+          </Text>
+        </TouchableOpacity>
+
+        {Object.entries(STATUS_CONFIG).map(([status, cfg]) => {
+          const count = employees.filter(e => e.status === status).length;
+          const active = statusFilter === status;
+          return (
+            <TouchableOpacity
+              key={status}
+              style={[styles.summaryPill, { backgroundColor: active ? cfg.color : cfg.bg, borderColor: cfg.color }]}
+              onPress={() => setStatusFilter(p => p === status ? '' : status)}
+              activeOpacity={0.8}
             >
-              {f.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text style={[styles.summaryCount, { color: active ? C.white : cfg.color }]}>
+                {count}
+              </Text>
+              <Text style={[styles.summaryStatus, { color: active ? C.white : cfg.color }]}>
+                {status.replace('_', ' ')}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </ScrollView>
 
       {loading ? (
@@ -945,27 +964,36 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, fontSize: 14, fontWeight: '500', color: C.black },
   filterBar: {
-    height: 52,
+    flexShrink: 0,
     backgroundColor: C.white,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-    borderWidth: 2,
-    borderColor: C.black,
-    backgroundColor: C.white,
-    marginRight: 8,
+  filterContent: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
   },
-  chipActive: { backgroundColor: C.primary },
-  chipText: {
-    fontSize: 11,
+  summaryPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 76,
+  },
+  summaryCount: {
+      fontSize: 20,
+      fontWeight: '800',
+      lineHeight: Platform.OS === 'android' ? 28 : 24,
+      includeFontPadding: false,
+    } as any,
+  summaryStatus: {
+    fontSize: 8,
     fontWeight: '700',
     textTransform: 'uppercase',
-    color: C.black,
+    letterSpacing: 0.4,
   },
-  chipTextActive: { color: C.white },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 14, fontWeight: '700', color: C.textMuted },

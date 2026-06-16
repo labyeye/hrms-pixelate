@@ -11,6 +11,7 @@ import {
   Alert,
   Modal,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -23,6 +24,7 @@ import {
   LogIn,
   LogOut,
   X,
+  Pencil,
 } from 'lucide-react-native';
 import { attendanceAPI, employeeAPI } from '../api/api';
 import { AttendanceRecord } from '../types/hrms';
@@ -44,6 +46,20 @@ function toDateStr(d: Date) {
   return `${y}-${m}-${day}`;
 }
 
+function timeToISO(dateStr: string, timeStr: string): string | undefined {
+  if (!timeStr) return undefined;
+  return `${dateStr}T${timeStr}:00`;
+}
+
+function isoToTime(iso: string | undefined): string {
+  if (!iso) return '';
+  return new Date(iso).toLocaleTimeString('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+}
+
 export default function AttendanceScreen() {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
@@ -55,6 +71,7 @@ export default function AttendanceScreen() {
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedEmpId, setSelectedEmpId] = useState('');
+  const [editRecord, setEditRecord] = useState<AttendanceRecord | null>(null);
   const [form, setForm] = useState({
     status: 'present',
     checkIn: '',
@@ -71,7 +88,6 @@ export default function AttendanceScreen() {
       try {
         const res = await attendanceAPI.getAll({ date: dateFilter });
         const all: AttendanceRecord[] = res.data || [];
-        // Filter by date on frontend too (backend may not filter reliably)
         const forDate = all.filter(r => {
           const d = r.date ? r.date.split('T')[0] : '';
           return d === dateFilter;
@@ -93,17 +109,38 @@ export default function AttendanceScreen() {
     } catch {}
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
-  useEffect(() => {
-    loadEmps();
-  }, [loadEmps]);
+  useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadEmps(); }, [loadEmps]);
 
   const onRefresh = async () => {
     setRefreshing(true);
     await load(false);
     setRefreshing(false);
+  };
+
+  const openNew = () => {
+    setEditRecord(null);
+    setSelectedEmpId('');
+    setForm({ status: 'present', checkIn: '', checkOut: '', notes: '' });
+    setShowModal(true);
+  };
+
+  const openEdit = (record: AttendanceRecord) => {
+    setEditRecord(record);
+    const emp = record.employee as any;
+    setSelectedEmpId(emp?._id || '');
+    setForm({
+      status: record.status,
+      checkIn: isoToTime(record.checkIn),
+      checkOut: isoToTime(record.checkOut),
+      notes: record.notes || '',
+    });
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditRecord(null);
   };
 
   const filtered = records.filter(r => {
@@ -116,22 +153,32 @@ export default function AttendanceScreen() {
     return true;
   });
 
-  const handleMark = async () => {
-    if (!selectedEmpId) {
-      Alert.alert('Validation', 'Please select an employee');
-      return;
-    }
+  const handleSave = async () => {
     setSaving(true);
     try {
-      await attendanceAPI.mark({
-        employee: selectedEmpId,
-        date: dateFilter,
-        status: form.status,
-        checkIn: form.checkIn || undefined,
-        checkOut: form.checkOut || undefined,
-        notes: form.notes || undefined,
-      });
-      setShowModal(false);
+      if (editRecord) {
+        await attendanceAPI.update(editRecord._id, {
+          status: form.status,
+          checkIn: timeToISO(dateFilter, form.checkIn),
+          checkOut: timeToISO(dateFilter, form.checkOut),
+          notes: form.notes || undefined,
+        });
+      } else {
+        if (!selectedEmpId) {
+          Alert.alert('Validation', 'Please select an employee');
+          setSaving(false);
+          return;
+        }
+        await attendanceAPI.mark({
+          employee: selectedEmpId,
+          date: dateFilter,
+          status: form.status,
+          checkIn: timeToISO(dateFilter, form.checkIn),
+          checkOut: timeToISO(dateFilter, form.checkOut),
+          notes: form.notes || undefined,
+        });
+      }
+      closeModal();
       await load();
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -147,12 +194,8 @@ export default function AttendanceScreen() {
   };
 
   const summary: Record<string, number> = {};
-  Object.keys(STATUS_CONFIG).forEach(s => {
-    summary[s] = 0;
-  });
-  records.forEach(r => {
-    if (r.status in summary) summary[r.status]++;
-  });
+  Object.keys(STATUS_CONFIG).forEach(s => { summary[s] = 0; });
+  records.forEach(r => { if (r.status in summary) summary[r.status]++; });
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -161,20 +204,14 @@ export default function AttendanceScreen() {
           <Clock size={20} color={C.primary} />
           <Text style={styles.headerTitle}>Attendance</Text>
         </View>
-        <TouchableOpacity
-          style={styles.addBtn}
-          onPress={() => setShowModal(true)}
-        >
+        <TouchableOpacity style={styles.addBtn} onPress={openNew}>
           <CheckCircle2 size={14} color={C.white} />
           <Text style={styles.addBtnText}>Mark</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.dateRow}>
-        <TouchableOpacity
-          onPress={() => shiftDate(-1)}
-          style={styles.dateBtnArrow}
-        >
+        <TouchableOpacity onPress={() => shiftDate(-1)} style={styles.dateBtnArrow}>
           <Text style={styles.dateBtnArrowText}>‹</Text>
         </TouchableOpacity>
         <View style={styles.dateCurrent}>
@@ -188,10 +225,7 @@ export default function AttendanceScreen() {
             })}
           </Text>
         </View>
-        <TouchableOpacity
-          onPress={() => shiftDate(1)}
-          style={styles.dateBtnArrow}
-        >
+        <TouchableOpacity onPress={() => shiftDate(1)} style={styles.dateBtnArrow}>
           <Text style={styles.dateBtnArrowText}>›</Text>
         </TouchableOpacity>
       </View>
@@ -200,33 +234,28 @@ export default function AttendanceScreen() {
         horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.summaryBar}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8 }}
+        contentContainerStyle={styles.summaryContent}
       >
         {Object.entries(summary).map(([status, count]) => {
           const active = statusFilter === status;
+          const cfg = STATUS_CONFIG[status];
           return (
             <TouchableOpacity
               key={status}
               style={[
                 styles.summaryPill,
-                { backgroundColor: active ? C.primary : C.white },
+                {
+                  backgroundColor: active ? cfg.color : cfg.bg,
+                  borderColor: cfg.color,
+                },
               ]}
               onPress={() => setStatusFilter(p => (p === status ? '' : status))}
+              activeOpacity={0.8}
             >
-              <Text
-                style={[
-                  styles.summaryCount,
-                  { color: active ? C.white : C.black },
-                ]}
-              >
+              <Text style={[styles.summaryCount, { color: active ? C.white : cfg.color }]}>
                 {count}
               </Text>
-              <Text
-                style={[
-                  styles.summaryStatus,
-                  { color: active ? C.white : C.black },
-                ]}
-              >
+              <Text style={[styles.summaryStatus, { color: active ? C.white : cfg.color }]}>
                 {status.replace('_', ' ')}
               </Text>
             </TouchableOpacity>
@@ -260,11 +289,7 @@ export default function AttendanceScreen() {
           keyExtractor={item => item._id}
           contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 32 }}
           refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={C.primary}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} />
           }
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
@@ -282,28 +307,15 @@ export default function AttendanceScreen() {
             };
             const Icon = cfg.icon;
             const ciTime = item.checkIn
-              ? new Date(item.checkIn).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
+              ? new Date(item.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
               : null;
             const coTime = item.checkOut
-              ? new Date(item.checkOut).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
+              ? new Date(item.checkOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
               : null;
             return (
-              <View
-                style={[
-                  styles.card,
-                  { borderLeftColor: cfg.color, borderLeftWidth: 4 },
-                ]}
-              >
+              <View style={[styles.card, { borderLeftColor: cfg.color, borderLeftWidth: 4 }]}>
                 <View style={styles.cardRow}>
-                  <View
-                    style={[styles.statusIcon, { backgroundColor: cfg.bg }]}
-                  >
+                  <View style={[styles.statusIcon, { backgroundColor: cfg.bg }]}>
                     <Icon size={18} color={cfg.color} />
                   </View>
                   <View style={{ flex: 1, marginLeft: 12 }}>
@@ -311,19 +323,22 @@ export default function AttendanceScreen() {
                       {emp ? `${emp.firstName} ${emp.lastName}` : 'Unknown'}
                     </Text>
                     <Text style={styles.empSub}>
-                      {emp?.employeeId || ''}{' '}
-                      {emp?.designation ? `· ${emp.designation}` : ''}
+                      {emp?.employeeId || ''}{emp?.designation ? ` · ${emp.designation}` : ''}
                     </Text>
                   </View>
-                  <View
-                    style={[
-                      styles.statusTag,
-                      { backgroundColor: cfg.bg, borderColor: cfg.color },
-                    ]}
-                  >
-                    <Text style={[styles.statusTagText, { color: cfg.color }]}>
-                      {item.status.replace('_', ' ').toUpperCase()}
-                    </Text>
+                  <View style={styles.cardActions}>
+                    <View style={[styles.statusTag, { backgroundColor: cfg.bg, borderColor: cfg.color }]}>
+                      <Text style={[styles.statusTagText, { color: cfg.color }]}>
+                        {item.status.replace('_', ' ').toUpperCase()}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.editBtn}
+                      onPress={() => openEdit(item)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Pencil size={14} color={C.primary} />
+                    </TouchableOpacity>
                   </View>
                 </View>
                 {(ciTime || coTime || item.workingHours) && (
@@ -343,9 +358,7 @@ export default function AttendanceScreen() {
                     {item.workingHours && (
                       <View style={styles.timePill}>
                         <Clock size={11} color={C.primary} />
-                        <Text style={styles.timeText}>
-                          {item.workingHours}h
-                        </Text>
+                        <Text style={styles.timeText}>{item.workingHours}h</Text>
                       </View>
                     )}
                   </View>
@@ -359,15 +372,13 @@ export default function AttendanceScreen() {
         />
       )}
 
-      <Modal
-        visible={showModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
+      <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">
         <SafeAreaView style={styles.safe} edges={['top']}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Mark Attendance</Text>
-            <TouchableOpacity onPress={() => setShowModal(false)}>
+            <Text style={styles.modalTitle}>
+              {editRecord ? 'Edit Attendance' : 'Mark Attendance'}
+            </Text>
+            <TouchableOpacity onPress={closeModal}>
               <X size={22} color={C.black} />
             </TouchableOpacity>
           </View>
@@ -376,69 +387,56 @@ export default function AttendanceScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <View>
-              <Text style={styles.fieldLabel}>Employee *</Text>
-              <ScrollView style={{ maxHeight: 180 }} nestedScrollEnabled>
-                {employees.map(e => (
-                  <TouchableOpacity
-                    key={e._id}
-                    style={[
-                      styles.empOption,
-                      selectedEmpId === e._id && styles.empOptionActive,
-                    ]}
-                    onPress={() => setSelectedEmpId(e._id)}
-                  >
-                    <Text
+            {editRecord ? (
+              <View style={styles.editInfoBox}>
+                <Text style={styles.editInfoLabel}>Employee</Text>
+                <Text style={styles.editInfoValue}>
+                  {(editRecord.employee as any)?.firstName}{' '}
+                  {(editRecord.employee as any)?.lastName}
+                </Text>
+              </View>
+            ) : (
+              <View>
+                <Text style={styles.fieldLabel}>Employee *</Text>
+                <ScrollView style={{ maxHeight: 180 }} nestedScrollEnabled>
+                  {employees.map(e => (
+                    <TouchableOpacity
+                      key={e._id}
                       style={[
-                        styles.empOptionName,
-                        selectedEmpId === e._id && { color: C.white },
+                        styles.empOption,
+                        selectedEmpId === e._id && styles.empOptionActive,
                       ]}
+                      onPress={() => setSelectedEmpId(e._id)}
                     >
-                      {e.firstName} {e.lastName}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.empOptionId,
-                        selectedEmpId === e._id && { color: '#93C5FD' },
-                      ]}
-                    >
-                      {e.employeeId}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
+                      <Text style={[styles.empOptionName, selectedEmpId === e._id && { color: C.white }]}>
+                        {e.firstName} {e.lastName}
+                      </Text>
+                      <Text style={[styles.empOptionId, selectedEmpId === e._id && { color: '#93C5FD' }]}>
+                        {e.employeeId}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
             <View>
               <Text style={styles.fieldLabel}>Status *</Text>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  flexWrap: 'wrap',
-                  gap: 8,
-                  marginTop: 6,
-                }}
-              >
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
                 {Object.keys(STATUS_CONFIG).map(s => (
                   <TouchableOpacity
                     key={s}
-                    style={[
-                      styles.selChip,
-                      form.status === s && styles.selChipActive,
-                    ]}
+                    style={[styles.selChip, form.status === s && styles.selChipActive]}
                     onPress={() => setForm(p => ({ ...p, status: s }))}
                   >
-                    <Text
-                      style={[
-                        styles.selChipText,
-                        form.status === s && { color: C.white },
-                      ]}
-                    >
+                    <Text style={[styles.selChipText, form.status === s && { color: C.white }]}>
                       {s.replace('_', ' ').toUpperCase()}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
             </View>
+
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.fieldLabel}>Check In</Text>
@@ -448,6 +446,7 @@ export default function AttendanceScreen() {
                   onChangeText={v => setForm(p => ({ ...p, checkIn: v }))}
                   placeholder="09:00"
                   placeholderTextColor={C.textLight}
+                  keyboardType="numeric"
                 />
               </View>
               <View style={{ flex: 1 }}>
@@ -458,9 +457,11 @@ export default function AttendanceScreen() {
                   onChangeText={v => setForm(p => ({ ...p, checkOut: v }))}
                   placeholder="18:00"
                   placeholderTextColor={C.textLight}
+                  keyboardType="numeric"
                 />
               </View>
             </View>
+
             <View>
               <Text style={styles.fieldLabel}>Notes</Text>
               <TextInput
@@ -472,15 +473,14 @@ export default function AttendanceScreen() {
                 multiline
               />
             </View>
-            <TouchableOpacity
-              style={styles.submitBtn}
-              onPress={handleMark}
-              disabled={saving}
-            >
+
+            <TouchableOpacity style={styles.submitBtn} onPress={handleSave} disabled={saving}>
               {saving ? (
                 <ActivityIndicator color={C.white} />
               ) : (
-                <Text style={styles.submitBtnText}>Save Attendance</Text>
+                <Text style={styles.submitBtnText}>
+                  {editRecord ? 'Update Attendance' : 'Save Attendance'}
+                </Text>
               )}
             </TouchableOpacity>
           </ScrollView>
@@ -514,12 +514,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  addBtnText: {
-    color: C.white,
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
+  addBtnText: { color: C.white, fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -534,24 +529,36 @@ const styles = StyleSheet.create({
   dateCurrent: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dateCurrentText: { fontSize: 13, fontWeight: '700', color: C.black },
   summaryBar: {
-  height: 80,
-  backgroundColor: C.white,
-  borderBottomWidth: 2,
-  borderBottomColor: C.black,
-},
+    flexShrink: 0,
+    backgroundColor: C.white,
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
+  },
+  summaryContent: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    gap: 8,
+  },
   summaryPill: {
-  paddingHorizontal: 16,
-  paddingVertical: 8,
-  borderWidth: 2,
-  alignItems: 'center',
-  marginRight: 8,
-},
-  summaryCount: { fontSize: 16, fontWeight: '700' },
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 76,
+  },
+  summaryCount: {
+    fontSize: 20,
+    fontWeight: '800',
+    lineHeight: Platform.OS === 'android' ? 28 : 24,
+    includeFontPadding: false,
+  } as any,
   summaryStatus: {
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '700',
     textTransform: 'uppercase',
-    marginTop: 1,
+    letterSpacing: 0.4,
   },
   searchWrap: {
     flexDirection: 'row',
@@ -574,16 +581,18 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   cardRow: { flexDirection: 'row', alignItems: 'center' },
-  statusIcon: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  cardActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  statusIcon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   empName: { fontSize: 15, fontWeight: '700', color: C.black },
   empSub: { fontSize: 11, color: C.textMuted, fontWeight: '500' },
   statusTag: { borderWidth: 2, paddingHorizontal: 8, paddingVertical: 3 },
   statusTagText: { fontSize: 9, fontWeight: '700' },
+  editBtn: {
+    borderWidth: 2,
+    borderColor: C.primary,
+    padding: 6,
+    backgroundColor: '#EFF6FF',
+  },
   timeRow: { flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' },
   timePill: {
     flexDirection: 'row',
@@ -596,12 +605,7 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   timeText: { fontSize: 12, fontWeight: '700', color: C.black },
-  noteText: {
-    fontSize: 12,
-    color: C.textMuted,
-    fontStyle: 'italic',
-    marginTop: 8,
-  },
+  noteText: { fontSize: 12, color: C.textMuted, fontStyle: 'italic', marginTop: 8 },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -612,6 +616,14 @@ const styles = StyleSheet.create({
     borderBottomColor: C.black,
   },
   modalTitle: { fontSize: 20, fontWeight: '700', color: C.black },
+  editInfoBox: {
+    borderWidth: 2,
+    borderColor: C.primary,
+    backgroundColor: '#EFF6FF',
+    padding: 12,
+  },
+  editInfoLabel: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', color: C.primary, marginBottom: 4 },
+  editInfoValue: { fontSize: 15, fontWeight: '700', color: C.black },
   fieldLabel: {
     fontSize: 10,
     fontWeight: '700',
@@ -644,12 +656,7 @@ const styles = StyleSheet.create({
   empOptionActive: { backgroundColor: C.primary, borderColor: C.primary },
   empOptionName: { fontSize: 13, fontWeight: '700', color: C.black },
   empOptionId: { fontSize: 11, color: C.textMuted },
-  selChip: {
-    borderWidth: 2,
-    borderColor: C.black,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
+  selChip: { borderWidth: 2, borderColor: C.black, paddingHorizontal: 12, paddingVertical: 6 },
   selChipActive: { backgroundColor: C.primary },
   selChipText: { fontSize: 11, fontWeight: '700', color: C.black },
   submitBtn: {
@@ -660,10 +667,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
-  submitBtnText: {
-    color: C.white,
-    fontWeight: '700',
-    fontSize: 14,
-    textTransform: 'uppercase',
-  },
+  submitBtnText: { color: C.white, fontWeight: '700', fontSize: 14, textTransform: 'uppercase' },
 });

@@ -1,10 +1,6 @@
 import { createAsyncStorage } from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
 
-const BASE_URL =
-  Platform.OS === 'android'
-    ? 'http://10.0.2.2:5001/api'
-    : 'http://localhost:5001/api';
+const BASE_URL = 'https://hrms-backend.pixelatenest.com/api';
 
 const storage = createAsyncStorage('hrms');
 const TOKEN_KEY = 'hrms_token';
