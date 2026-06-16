@@ -171,6 +171,7 @@ const processPayroll = asyncHandler(async (req, res) => {
       halfDayCount = 0,
       lateCount = 0,
       lateHoursLost = 0,
+      absentCount = 0,
       totalWorkHours = 0,
       attendanceOTHours = 0;
 
@@ -180,7 +181,10 @@ const processPayroll = asyncHandler(async (req, res) => {
         leaveDays++;
         continue;
       }
-      if (a.status === "absent") continue;
+      if (a.status === "absent") {
+        absentCount++;
+        continue;
+      }
 
       if (a.status === "half_day") {
         // Credit full shift hours; halfDayDeduction subtracts half below — shown explicitly.
@@ -250,11 +254,16 @@ const processPayroll = asyncHandler(async (req, res) => {
       if (a.overtime && a.overtime > 0) attendanceOTHours += a.overtime;
     }
 
-    // earnedSalary now reflects "on-time" credit for late employees — late deduction shown separately.
-    const earnedSalary = Math.max(
+    // Absent deduction: 1 full daily rate per explicitly absent-marked day.
+    const absentDeduction = parseFloat((absentCount * dailyRate).toFixed(2));
+
+    // earnedSalary = actual hours earned + absent days credit (inflated so absentDeduction
+    // can be shown as an explicit column without changing net salary).
+    const hoursEarned = Math.max(
       0,
       parseFloat((totalWorkHours * hourlyRate).toFixed(2)),
     );
+    const earnedSalary = parseFloat((hoursEarned + absentDeduction).toFixed(2));
 
     // Half-day deduction: daily rate × 0.5 per half-day record (credited full hours above).
     const halfDayDeduction = parseFloat(
@@ -318,6 +327,7 @@ const processPayroll = asyncHandler(async (req, res) => {
     const preDeductions =
       lateDeduction +
       halfDayDeduction +
+      absentDeduction +
       earlyCheckoutDeduction +
       totalPenalties;
     let salaryAfterDeductions = Math.max(0, grossSalary - preDeductions);
@@ -360,6 +370,8 @@ const processPayroll = asyncHandler(async (req, res) => {
       grossSalary,
       lateDeductionAmount: lateDeduction,
       halfDayDeduction: halfDayDeduction,
+      absentDays: absentCount,
+      absentDeduction: absentDeduction,
       earlyCheckoutDeduction: 0,
       penaltyAmount: totalPenalties,
       loanDeduction,

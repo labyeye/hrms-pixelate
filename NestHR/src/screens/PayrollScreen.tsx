@@ -288,6 +288,11 @@ export default function PayrollScreen() {
                     <Text style={styles.empSub}>
                       {emp?.designation || 'N/A'} · {period}
                     </Text>
+                    {(item as any).absentDays > 0 && (
+                      <Text style={[styles.empSub, { color: C.danger }]}>
+                        {(item as any).absentDays} absent · -₹{((item as any).absentDeduction || 0).toLocaleString()}
+                      </Text>
+                    )}
                   </View>
                   <View style={{ alignItems: 'flex-end', gap: 6 }}>
                     <View
@@ -479,6 +484,12 @@ export default function PayrollScreen() {
                     bold: true,
                   },
                   { label: 'DEDUCTIONS', val: 0, prefix: '', section: true },
+                  {
+                    label: `Absent (${s.absentDays || 0} days)`,
+                    val: s.absentDeduction,
+                    prefix: '-₹',
+                    color: C.danger,
+                  },
                   {
                     label: 'Late Deduction',
                     val: s.lateDeductionAmount,

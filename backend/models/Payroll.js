@@ -38,6 +38,8 @@ const payrollSchema = new mongoose.Schema(
     lateDeductionAmount: { type: Number, default: 0 },
     halfDayDeduction: { type: Number, default: 0 },
     earlyCheckoutDeduction: { type: Number, default: 0 },
+    absentDays: { type: Number, default: 0 },
+    absentDeduction: { type: Number, default: 0 },
     penaltyAmount: { type: Number, default: 0 },
     weeklyOffDays: { type: Number, default: 0 },
     overtimeHours: { type: Number, default: 0 },

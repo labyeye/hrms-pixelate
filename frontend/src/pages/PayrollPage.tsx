@@ -387,6 +387,7 @@ export default function PayrollPage() {
                   { label: "Employee", cls: "" },
                   { label: "Salary", cls: "text-right" },
                   { label: "OT", cls: "text-right text-[#F59E0B]" },
+                  { label: "Absent", cls: "text-right text-red-500" },
                   { label: "Late", cls: "text-right text-red-500" },
                   { label: "Half Day", cls: "text-right text-red-500" },
                   { label: "Early Out", cls: "text-right text-red-500" },
@@ -463,6 +464,22 @@ export default function PayrollPage() {
                     {(p.overtimeHours ?? 0) > 0 && (
                       <p className="text-[10px] text-muted-foreground">
                         {p.overtimeHours}h
+                      </p>
+                    )}
+                  </td>
+
+                  {}
+                  <td className="px-4 py-3 text-right text-xs font-bold">
+                    {(p as any).absentDeduction > 0 ? (
+                      <span className="text-red-500">
+                        -{formatCurrency((p as any).absentDeduction)}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                    {(p as any).absentDays > 0 && (
+                      <p className="text-[10px] text-muted-foreground">
+                        {(p as any).absentDays}d
                       </p>
                     )}
                   </td>
