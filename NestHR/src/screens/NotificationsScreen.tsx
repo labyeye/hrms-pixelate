@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Platform,
+  PermissionsAndroid,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -61,15 +63,29 @@ export default function NotificationsScreen() {
     setLoading(true);
     try {
       let all = await localNotificationsAPI.getAll();
-      // Seed demo notifications if empty
       if (all.length === 0) {
         for (const n of DEMO_NOTIFICATIONS) {
           await localNotificationsAPI.add(n);
         }
-        // Slightly offset timestamps so they appear in order
         all = await localNotificationsAPI.getAll();
       }
       setNotifications(all);
+      if (Platform.OS === 'android' && Platform.Version >= 33) {
+        try {
+          await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+            {
+              title: 'Notification Permission',
+              message: 'NestHR needs permission to send you attendance and leave notifications.',
+              buttonPositive: 'Allow',
+              buttonNegative: 'Deny',
+            }
+          );
+        } catch {}
+      }
+      if (Platform.OS === 'ios' && all.length === 0) {
+        Alert.alert('Enable Notifications', 'Enable notifications in Settings to get real-time check-in and leave alerts.');
+      }
     } finally {
       setLoading(false);
     }
@@ -175,11 +191,16 @@ export default function NotificationsScreen() {
           contentContainerStyle={{ paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
-            unreadCount > 0 ? (
-              <View style={styles.listHeader}>
-                <Text style={styles.listHeaderText}>{unreadCount} unread</Text>
+            <View>
+              <View style={styles.infoBanner}>
+                <Text style={styles.infoBannerText}>Real-time check-in/check-out and leave request notifications appear here.</Text>
               </View>
-            ) : null
+              {unreadCount > 0 && (
+                <View style={styles.listHeader}>
+                  <Text style={styles.listHeaderText}>{unreadCount} unread</Text>
+                </View>
+              )}
+            </View>
           }
         />
       )}
@@ -201,6 +222,8 @@ const styles = StyleSheet.create({
   badgeText: { color: C.white, fontSize: 10, fontWeight: '700' },
   headerActions: { flexDirection: 'row', gap: 4 },
   actionBtn: { padding: 8, borderWidth: 2, borderColor: '#E5E7EB', backgroundColor: C.white },
+  infoBanner: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#FFFBEB', borderBottomWidth: 2, borderBottomColor: C.black },
+  infoBannerText: { fontSize: 11, fontWeight: '600', color: '#92400E' },
   listHeader: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#EFF6FF', borderBottomWidth: 1, borderBottomColor: '#DBEAFE' },
   listHeaderText: { fontSize: 11, fontWeight: '700', color: C.primary, textTransform: 'uppercase', letterSpacing: 0.5 },
   notifRow: {

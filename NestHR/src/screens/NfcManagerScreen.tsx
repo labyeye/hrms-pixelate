@@ -10,6 +10,7 @@ import {
   TextInput,
   Modal,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -32,6 +33,7 @@ interface Employee {
   firstName: string;
   lastName: string;
   employeeId: string;
+  avatar?: string;
   department?: { name: string } | string;
 }
 
@@ -215,11 +217,15 @@ export default function NfcManagerScreen() {
               const cards = cardsByEmployee.get(emp._id) || [];
               return (
                 <View key={emp._id} style={[styles.empRow, i > 0 && styles.rowBorder]}>
-                  <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>
-                      {(emp.firstName[0] || '') + (emp.lastName[0] || '')}
-                    </Text>
-                  </View>
+                  {emp.avatar ? (
+                    <Image source={{ uri: emp.avatar }} style={styles.avatarPhoto} />
+                  ) : (
+                    <View style={styles.avatar}>
+                      <Text style={styles.avatarText}>
+                        {(emp.firstName[0] || '') + (emp.lastName[0] || '')}
+                      </Text>
+                    </View>
+                  )}
                   <View style={{ flex: 1 }}>
                     <Text style={styles.empName}>{emp.firstName} {emp.lastName}</Text>
                     <Text style={styles.empId}>{emp.employeeId}</Text>
@@ -285,9 +291,13 @@ export default function NfcManagerScreen() {
                       style={[styles.empOption, i > 0 && styles.rowBorder]}
                       onPress={() => selectEmployee(emp)}
                     >
-                      <View style={[styles.avatar, { width: 32, height: 32 }]}>
-                        <Text style={[styles.avatarText, { fontSize: 11 }]}>{emp.firstName[0]}{emp.lastName[0]}</Text>
-                      </View>
+                      {emp.avatar ? (
+                        <Image source={{ uri: emp.avatar }} style={[styles.avatarPhoto, { width: 32, height: 32, borderRadius: 16 }]} />
+                      ) : (
+                        <View style={[styles.avatar, { width: 32, height: 32 }]}>
+                          <Text style={[styles.avatarText, { fontSize: 11 }]}>{emp.firstName[0]}{emp.lastName[0]}</Text>
+                        </View>
+                      )}
                       <View>
                         <Text style={styles.empName}>{emp.firstName} {emp.lastName}</Text>
                         <Text style={styles.empId}>{emp.employeeId}</Text>
@@ -384,6 +394,9 @@ const styles = StyleSheet.create({
   avatar: {
     width: 40, height: 40, backgroundColor: C.primary,
     borderWidth: 2, borderColor: C.black, alignItems: 'center', justifyContent: 'center',
+  },
+  avatarPhoto: {
+    width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: C.black,
   },
   avatarText: { color: C.white, fontSize: 13, fontWeight: '700' },
   empName: { fontSize: 14, fontWeight: '700', color: C.black },

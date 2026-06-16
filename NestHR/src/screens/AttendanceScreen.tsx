@@ -12,6 +12,7 @@ import {
   Modal,
   ScrollView,
   Platform,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -109,8 +110,12 @@ export default function AttendanceScreen() {
     } catch {}
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-  useEffect(() => { loadEmps(); }, [loadEmps]);
+  useEffect(() => {
+    load();
+  }, [load]);
+  useEffect(() => {
+    loadEmps();
+  }, [loadEmps]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -194,8 +199,12 @@ export default function AttendanceScreen() {
   };
 
   const summary: Record<string, number> = {};
-  Object.keys(STATUS_CONFIG).forEach(s => { summary[s] = 0; });
-  records.forEach(r => { if (r.status in summary) summary[r.status]++; });
+  Object.keys(STATUS_CONFIG).forEach(s => {
+    summary[s] = 0;
+  });
+  records.forEach(r => {
+    if (r.status in summary) summary[r.status]++;
+  });
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -211,7 +220,10 @@ export default function AttendanceScreen() {
       </View>
 
       <View style={styles.dateRow}>
-        <TouchableOpacity onPress={() => shiftDate(-1)} style={styles.dateBtnArrow}>
+        <TouchableOpacity
+          onPress={() => shiftDate(-1)}
+          style={styles.dateBtnArrow}
+        >
           <Text style={styles.dateBtnArrowText}>‹</Text>
         </TouchableOpacity>
         <View style={styles.dateCurrent}>
@@ -225,7 +237,10 @@ export default function AttendanceScreen() {
             })}
           </Text>
         </View>
-        <TouchableOpacity onPress={() => shiftDate(1)} style={styles.dateBtnArrow}>
+        <TouchableOpacity
+          onPress={() => shiftDate(1)}
+          style={styles.dateBtnArrow}
+        >
           <Text style={styles.dateBtnArrowText}>›</Text>
         </TouchableOpacity>
       </View>
@@ -252,10 +267,20 @@ export default function AttendanceScreen() {
               onPress={() => setStatusFilter(p => (p === status ? '' : status))}
               activeOpacity={0.8}
             >
-              <Text style={[styles.summaryCount, { color: active ? C.white : cfg.color }]}>
+              <Text
+                style={[
+                  styles.summaryCount,
+                  { color: active ? C.white : cfg.color },
+                ]}
+              >
                 {count}
               </Text>
-              <Text style={[styles.summaryStatus, { color: active ? C.white : cfg.color }]}>
+              <Text
+                style={[
+                  styles.summaryStatus,
+                  { color: active ? C.white : cfg.color },
+                ]}
+              >
                 {status.replace('_', ' ')}
               </Text>
             </TouchableOpacity>
@@ -289,7 +314,11 @@ export default function AttendanceScreen() {
           keyExtractor={item => item._id}
           contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 32 }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={C.primary}
+            />
           }
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
@@ -307,28 +336,84 @@ export default function AttendanceScreen() {
             };
             const Icon = cfg.icon;
             const ciTime = item.checkIn
-              ? new Date(item.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              ? new Date(item.checkIn).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
               : null;
             const coTime = item.checkOut
-              ? new Date(item.checkOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              ? new Date(item.checkOut).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
               : null;
+            const workHours = (item as any).workingHours;
+            const overtime = (item as any).overtime;
+            const initials = emp
+              ? `${emp.firstName?.[0] || ''}${
+                  emp.lastName?.[0] || ''
+                }`.toUpperCase()
+              : '?';
             return (
-              <View style={[styles.card, { borderLeftColor: cfg.color, borderLeftWidth: 4 }]}>
+              <View
+                style={[
+                  styles.card,
+                  { borderLeftColor: cfg.color, borderLeftWidth: 4 },
+                ]}
+              >
                 <View style={styles.cardRow}>
-                  <View style={[styles.statusIcon, { backgroundColor: cfg.bg }]}>
-                    <Icon size={18} color={cfg.color} />
+                  <View style={styles.photoWrap}>
+                    {emp?.avatar ? (
+                      <Image
+                        source={{ uri: emp.avatar }}
+                        style={[styles.empPhoto, { borderColor: cfg.color }]}
+                      />
+                    ) : (
+                      <View
+                        style={[
+                          styles.empPhoto,
+                          styles.empPhotoFallback,
+                          { backgroundColor: cfg.bg, borderColor: cfg.color },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.empPhotoInitials,
+                            { color: cfg.color },
+                          ]}
+                        >
+                          {initials}
+                        </Text>
+                      </View>
+                    )}
+                    <View
+                      style={[
+                        styles.statusBadgeOverlay,
+                        { backgroundColor: cfg.bg, borderColor: cfg.color },
+                      ]}
+                    >
+                      <Icon size={10} color={cfg.color} />
+                    </View>
                   </View>
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={styles.empName}>
                       {emp ? `${emp.firstName} ${emp.lastName}` : 'Unknown'}
                     </Text>
                     <Text style={styles.empSub}>
-                      {emp?.employeeId || ''}{emp?.designation ? ` · ${emp.designation}` : ''}
+                      {emp?.employeeId || ''}
+                      {emp?.designation ? ` · ${emp.designation}` : ''}
                     </Text>
                   </View>
                   <View style={styles.cardActions}>
-                    <View style={[styles.statusTag, { backgroundColor: cfg.bg, borderColor: cfg.color }]}>
-                      <Text style={[styles.statusTagText, { color: cfg.color }]}>
+                    <View
+                      style={[
+                        styles.statusTag,
+                        { backgroundColor: cfg.bg, borderColor: cfg.color },
+                      ]}
+                    >
+                      <Text
+                        style={[styles.statusTagText, { color: cfg.color }]}
+                      >
                         {item.status.replace('_', ' ').toUpperCase()}
                       </Text>
                     </View>
@@ -341,7 +426,7 @@ export default function AttendanceScreen() {
                     </TouchableOpacity>
                   </View>
                 </View>
-                {(ciTime || coTime || item.workingHours) && (
+                {(ciTime || coTime || workHours || overtime > 0) && (
                   <View style={styles.timeRow}>
                     {ciTime && (
                       <View style={styles.timePill}>
@@ -355,12 +440,30 @@ export default function AttendanceScreen() {
                         <Text style={styles.timeText}>{coTime}</Text>
                       </View>
                     )}
-                    {item.workingHours && (
+                    {workHours && (
                       <View style={styles.timePill}>
                         <Clock size={11} color={C.primary} />
-                        <Text style={styles.timeText}>{item.workingHours}h</Text>
+                        <Text style={styles.timeText}>{workHours}h</Text>
                       </View>
                     )}
+                    {overtime > 0 && (
+                      <View
+                        style={[styles.timePill, { borderColor: C.warning }]}
+                      >
+                        <Clock size={11} color={C.warning} />
+                        <Text style={[styles.timeText, { color: C.warning }]}>
+                          OT: {overtime}h
+                        </Text>
+                      </View>
+                    )}
+                    {(item as any).verifyMode &&
+                      (item as any).verifyMode !== 'manual' && (
+                        <View style={styles.verifyPill}>
+                          <Text style={styles.verifyPillText}>
+                            {(item as any).verifyMode.toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
                   </View>
                 )}
                 {item.notes && (
@@ -372,7 +475,11 @@ export default function AttendanceScreen() {
         />
       )}
 
-      <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">
+      <Modal
+        visible={showModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
         <SafeAreaView style={styles.safe} edges={['top']}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
@@ -408,10 +515,20 @@ export default function AttendanceScreen() {
                       ]}
                       onPress={() => setSelectedEmpId(e._id)}
                     >
-                      <Text style={[styles.empOptionName, selectedEmpId === e._id && { color: C.white }]}>
+                      <Text
+                        style={[
+                          styles.empOptionName,
+                          selectedEmpId === e._id && { color: C.white },
+                        ]}
+                      >
                         {e.firstName} {e.lastName}
                       </Text>
-                      <Text style={[styles.empOptionId, selectedEmpId === e._id && { color: '#93C5FD' }]}>
+                      <Text
+                        style={[
+                          styles.empOptionId,
+                          selectedEmpId === e._id && { color: '#93C5FD' },
+                        ]}
+                      >
                         {e.employeeId}
                       </Text>
                     </TouchableOpacity>
@@ -422,14 +539,29 @@ export default function AttendanceScreen() {
 
             <View>
               <Text style={styles.fieldLabel}>Status *</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  gap: 8,
+                  marginTop: 6,
+                }}
+              >
                 {Object.keys(STATUS_CONFIG).map(s => (
                   <TouchableOpacity
                     key={s}
-                    style={[styles.selChip, form.status === s && styles.selChipActive]}
+                    style={[
+                      styles.selChip,
+                      form.status === s && styles.selChipActive,
+                    ]}
                     onPress={() => setForm(p => ({ ...p, status: s }))}
                   >
-                    <Text style={[styles.selChipText, form.status === s && { color: C.white }]}>
+                    <Text
+                      style={[
+                        styles.selChipText,
+                        form.status === s && { color: C.white },
+                      ]}
+                    >
                       {s.replace('_', ' ').toUpperCase()}
                     </Text>
                   </TouchableOpacity>
@@ -474,7 +606,11 @@ export default function AttendanceScreen() {
               />
             </View>
 
-            <TouchableOpacity style={styles.submitBtn} onPress={handleSave} disabled={saving}>
+            <TouchableOpacity
+              style={styles.submitBtn}
+              onPress={handleSave}
+              disabled={saving}
+            >
               {saving ? (
                 <ActivityIndicator color={C.white} />
               ) : (
@@ -514,7 +650,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  addBtnText: { color: C.white, fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
+  addBtnText: {
+    color: C.white,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -582,7 +723,40 @@ const styles = StyleSheet.create({
   },
   cardRow: { flexDirection: 'row', alignItems: 'center' },
   cardActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  statusIcon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  statusIcon: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoWrap: { position: 'relative', width: 44, height: 44 },
+  empPhoto: { width: 44, height: 44, borderRadius: 22, borderWidth: 2 },
+  empPhotoFallback: { alignItems: 'center', justifyContent: 'center' },
+  empPhotoInitials: { fontSize: 15, fontWeight: '700' },
+  statusBadgeOverlay: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  verifyPill: {
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    paddingHorizontal: 6,
+    paddingVertical: 6,
+  },
+  verifyPillText: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: C.textMuted,
+    textTransform: 'uppercase',
+  },
   empName: { fontSize: 15, fontWeight: '700', color: C.black },
   empSub: { fontSize: 11, color: C.textMuted, fontWeight: '500' },
   statusTag: { borderWidth: 2, paddingHorizontal: 8, paddingVertical: 3 },
@@ -605,7 +779,12 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   timeText: { fontSize: 12, fontWeight: '700', color: C.black },
-  noteText: { fontSize: 12, color: C.textMuted, fontStyle: 'italic', marginTop: 8 },
+  noteText: {
+    fontSize: 12,
+    color: C.textMuted,
+    fontStyle: 'italic',
+    marginTop: 8,
+  },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -622,7 +801,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     padding: 12,
   },
-  editInfoLabel: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', color: C.primary, marginBottom: 4 },
+  editInfoLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    color: C.primary,
+    marginBottom: 4,
+  },
   editInfoValue: { fontSize: 15, fontWeight: '700', color: C.black },
   fieldLabel: {
     fontSize: 10,
@@ -656,7 +841,12 @@ const styles = StyleSheet.create({
   empOptionActive: { backgroundColor: C.primary, borderColor: C.primary },
   empOptionName: { fontSize: 13, fontWeight: '700', color: C.black },
   empOptionId: { fontSize: 11, color: C.textMuted },
-  selChip: { borderWidth: 2, borderColor: C.black, paddingHorizontal: 12, paddingVertical: 6 },
+  selChip: {
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
   selChipActive: { backgroundColor: C.primary },
   selChipText: { fontSize: 11, fontWeight: '700', color: C.black },
   submitBtn: {
@@ -667,5 +857,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
-  submitBtnText: { color: C.white, fontWeight: '700', fontSize: 14, textTransform: 'uppercase' },
+  submitBtnText: {
+    color: C.white,
+    fontWeight: '700',
+    fontSize: 14,
+    textTransform: 'uppercase',
+  },
 });

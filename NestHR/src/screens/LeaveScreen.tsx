@@ -11,6 +11,7 @@ import {
   Modal,
   ScrollView,
   TextInput,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -288,7 +289,18 @@ export default function LeaveScreen() {
 
                 {emp && (
                   <View style={styles.empRow}>
-                    <User size={12} color={C.textMuted} />
+                    {emp.avatar ? (
+                      <Image
+                        source={{ uri: emp.avatar }}
+                        style={styles.empPhoto}
+                      />
+                    ) : (
+                      <View style={styles.empInitials}>
+                        <Text style={styles.empInitialsText}>
+                          {(emp.firstName?.[0] || '') + (emp.lastName?.[0] || '')}
+                        </Text>
+                      </View>
+                    )}
                     <Text style={styles.empText}>
                       {emp.firstName} {emp.lastName}
                     </Text>
@@ -548,6 +560,24 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: 10,
   },
+  empPhoto: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: C.black,
+  },
+  empInitials: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: C.black,
+    backgroundColor: C.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  empInitialsText: { fontSize: 9, fontWeight: '700', color: C.white },
   empText: { fontSize: 13, fontWeight: '700', color: C.black },
   empId: { fontSize: 11, color: C.textMuted, fontFamily: 'monospace' },
   dateRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },

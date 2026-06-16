@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -135,11 +136,13 @@ export default function MoreScreen({ navigation }: any) {
   const { user, logout } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
 
-  useFocusEffect(useCallback(() => {
-    localNotificationsAPI.getAll().then(all => {
-      setUnreadCount(all.filter(n => !n.read).length);
-    });
-  }, []));
+  useFocusEffect(
+    useCallback(() => {
+      localNotificationsAPI.getAll().then(all => {
+        setUnreadCount(all.filter(n => !n.read).length);
+      });
+    }, []),
+  );
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -155,7 +158,9 @@ export default function MoreScreen({ navigation }: any) {
           <Bell size={20} color={C.black} />
           {unreadCount > 0 && (
             <View style={styles.bellBadge}>
-              <Text style={styles.bellBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+              <Text style={styles.bellBadgeText}>
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </Text>
             </View>
           )}
         </TouchableOpacity>
@@ -167,16 +172,20 @@ export default function MoreScreen({ navigation }: any) {
         onPress={() => navigation.navigate('Profile')}
         activeOpacity={0.8}
       >
-        <View style={styles.userAvatar}>
-          <Text style={styles.userAvatarText}>
-            {(user?.name || 'U')
-              .split(' ')
-              .map((n: string) => n[0])
-              .join('')
-              .toUpperCase()
-              .slice(0, 2)}
-          </Text>
-        </View>
+        {user?.avatar ? (
+          <Image source={{ uri: user.avatar }} style={styles.userAvatarPhoto} />
+        ) : (
+          <View style={styles.userAvatar}>
+            <Text style={styles.userAvatarText}>
+              {(user?.name || 'U')
+                .split(' ')
+                .map((n: string) => n[0])
+                .join('')
+                .toUpperCase()
+                .slice(0, 2)}
+            </Text>
+          </View>
+        )}
         <View style={{ flex: 1 }}>
           <Text style={styles.userName}>{user?.name || 'User'}</Text>
           <Text style={styles.userRole}>
@@ -263,6 +272,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   userAvatarText: { color: C.white, fontSize: 18, fontWeight: '700' },
+  userAvatarPhoto: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: C.black,
+  },
   userName: { fontSize: 15, fontWeight: '700', color: C.black },
   userRole: {
     fontSize: 10,
@@ -336,9 +352,16 @@ const styles = StyleSheet.create({
   },
   bellBtn: { padding: 4, position: 'relative' },
   bellBadge: {
-    position: 'absolute', top: 0, right: 0,
-    backgroundColor: C.danger, borderRadius: 8,
-    minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3,
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: C.danger,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
   },
   bellBadgeText: { color: C.white, fontSize: 9, fontWeight: '700' },
 });

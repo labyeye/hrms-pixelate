@@ -43,6 +43,10 @@ export default function PayrollScreen() {
   const [statusFilter, setStatusFilter] = useState('');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Payroll | null>(null);
+  const [showGenModal, setShowGenModal] = useState(false);
+  const [genMonth, setGenMonth] = useState(String(new Date().getMonth() + 1));
+  const [genYear, setGenYear] = useState(String(new Date().getFullYear()));
+  const [generating, setGenerating] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -112,6 +116,19 @@ export default function PayrollScreen() {
     ]);
   };
 
+  const handleGenerate = async () => {
+    setGenerating(true);
+    try {
+      await payrollAPI.process({ month: parseInt(genMonth), year: parseInt(genYear) });
+      setShowGenModal(false);
+      await load();
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
@@ -125,6 +142,10 @@ export default function PayrollScreen() {
           <IndianRupee size={20} color={C.primary} />
           <Text style={styles.headerTitle}>Payroll</Text>
         </View>
+        <TouchableOpacity style={styles.genBtn} onPress={() => setShowGenModal(true)}>
+          <Zap size={14} color={C.white} />
+          <Text style={styles.genBtnText}>Generate</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Search */}
@@ -314,6 +335,64 @@ export default function PayrollScreen() {
           }}
         />
       )}
+
+      <Modal visible={showGenModal} animationType="slide" presentationStyle="pageSheet">
+        <SafeAreaView style={styles.safe} edges={['top']}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Generate Payroll</Text>
+            <TouchableOpacity onPress={() => setShowGenModal(false)}>
+              <X size={22} color={C.black} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            contentContainerStyle={{ padding: 20, gap: 16 }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.genNote}>
+              <Text style={styles.genNoteText}>
+                This will generate payroll for all active employees for the selected month.
+              </Text>
+            </View>
+            <View>
+              <Text style={styles.fieldLabel}>Month (1–12)</Text>
+              <TextInput
+                style={styles.fieldInput}
+                value={genMonth}
+                onChangeText={setGenMonth}
+                keyboardType="numeric"
+                placeholder="e.g. 6"
+                placeholderTextColor={C.textLight}
+              />
+            </View>
+            <View>
+              <Text style={styles.fieldLabel}>Year</Text>
+              <TextInput
+                style={styles.fieldInput}
+                value={genYear}
+                onChangeText={setGenYear}
+                keyboardType="numeric"
+                placeholder="e.g. 2026"
+                placeholderTextColor={C.textLight}
+              />
+            </View>
+            <TouchableOpacity
+              style={styles.genSubmitBtn}
+              onPress={handleGenerate}
+              disabled={generating}
+            >
+              {generating ? (
+                <ActivityIndicator color={C.white} />
+              ) : (
+                <>
+                  <Zap size={14} color={C.white} />
+                  <Text style={styles.genSubmitBtnText}>Generate Payroll</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
 
       {/* Detail Modal */}
       <Modal
@@ -559,4 +638,52 @@ const styles = StyleSheet.create({
   },
   detailLabel: { fontSize: 13, fontWeight: '600', color: C.textMuted },
   detailVal: { fontSize: 15, fontWeight: '700', color: C.black },
+  genBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: C.success,
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  genBtnText: { color: C.white, fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
+  genNote: {
+    borderWidth: 2,
+    borderColor: C.success,
+    backgroundColor: '#F0FDF4',
+    padding: 12,
+  },
+  genNoteText: { fontSize: 13, fontWeight: '500', color: C.black },
+  fieldLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    color: C.black,
+    marginBottom: 5,
+    letterSpacing: 0.5,
+  },
+  fieldInput: {
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    fontSize: 14,
+    fontWeight: '500',
+    color: C.black,
+    backgroundColor: C.white,
+  },
+  genSubmitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: C.success,
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingVertical: 14,
+    marginTop: 8,
+  },
+  genSubmitBtnText: { color: C.white, fontWeight: '700', fontSize: 14, textTransform: 'uppercase' },
 });

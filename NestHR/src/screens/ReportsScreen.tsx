@@ -12,6 +12,7 @@ import {
   Alert,
   Dimensions,
   Platform,
+  Image,
 } from 'react-native';
 import RNPrint from 'react-native-print';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -1171,6 +1172,7 @@ export default function ReportsScreen() {
         >
           <ChevronLeft size={22} color={C.black} />
         </TouchableOpacity>
+        <Text style={s.logoText}>Nest<Text style={{ color: C.primary }}>HR</Text></Text>
         <BarChart2 size={20} color={C.primary} />
         <Text style={s.headerTitle}>Reports</Text>
         <View style={s.countBadge}>
@@ -1198,7 +1200,7 @@ export default function ReportsScreen() {
               ]}
               onPress={() => setCatFilter(c.key)}
             >
-              <Text style={[s.catChipText, active && { color: C.white }]}>
+              <Text style={[s.catChipText, active && { color: C.white }]} numberOfLines={1}>
                 {c.label}
               </Text>
             </TouchableOpacity>
@@ -1272,6 +1274,7 @@ const s = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
+  logoText: { fontSize: 16, fontWeight: '900', color: C.black },
   headerTitle: { fontSize: 20, fontWeight: '700', color: C.black, flex: 1 },
   countBadge: {
     backgroundColor: C.primary,
@@ -1294,6 +1297,9 @@ const s = StyleSheet.create({
     borderWidth: 2,
     borderColor: C.black,
     backgroundColor: C.white,
+    minWidth: 90,
+    flexShrink: 0,
+    alignItems: 'center',
   },
   catChipText: {
     fontSize: 11,

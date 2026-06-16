@@ -11,6 +11,7 @@ import {
   Modal,
   ScrollView,
   TextInput,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -24,7 +25,7 @@ import {
   ChevronLeft,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
-import { loanAPI } from '../api/api';
+import { loanAPI, employeeAPI } from '../api/api';
 import { C } from '../theme';
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> =
@@ -45,6 +46,14 @@ const LOAN_TYPES = [
   'other',
 ];
 
+const EMPTY_FORM = {
+  loanType: 'personal',
+  amount: '',
+  interestRate: '',
+  tenure: '',
+  purpose: '',
+};
+
 export default function LoansScreen() {
   const navigation = useNavigation<any>();
   const [loans, setLoans] = useState<any[]>([]);
@@ -53,13 +62,9 @@ export default function LoansScreen() {
   const [statusFilter, setStatusFilter] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    loanType: 'personal',
-    amount: '',
-    interestRate: '',
-    tenure: '',
-    purpose: '',
-  });
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [selectedEmpId, setSelectedEmpId] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -72,9 +77,18 @@ export default function LoansScreen() {
     }
   }, []);
 
+  const loadEmployees = useCallback(async () => {
+    try {
+      const res = await employeeAPI.getAll();
+      setEmployees(res.data || []);
+    } catch {}
+  }, []);
+
   useEffect(() => {
     load();
-  }, [load]);
+    loadEmployees();
+  }, [load, loadEmployees]);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await load();
@@ -85,7 +99,11 @@ export default function LoansScreen() {
     ? loans.filter(l => l.status === statusFilter)
     : loans;
 
-  const handleApply = async () => {
+  const handleGiveLoan = async () => {
+    if (!selectedEmpId) {
+      Alert.alert('Validation', 'Please select an employee');
+      return;
+    }
     if (!form.amount || !form.purpose.trim()) {
       Alert.alert('Validation', 'Amount and purpose are required');
       return;
@@ -94,6 +112,7 @@ export default function LoansScreen() {
     try {
       await loanAPI.create({
         ...form,
+        employee: selectedEmpId,
         amount: parseFloat(form.amount),
         interestRate: form.interestRate
           ? parseFloat(form.interestRate)
@@ -101,13 +120,8 @@ export default function LoansScreen() {
         tenure: form.tenure ? parseInt(form.tenure) : undefined,
       });
       setShowForm(false);
-      setForm({
-        loanType: 'personal',
-        amount: '',
-        interestRate: '',
-        tenure: '',
-        purpose: '',
-      });
+      setForm(EMPTY_FORM);
+      setSelectedEmpId('');
       await load();
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -157,10 +171,14 @@ export default function LoansScreen() {
         </View>
         <TouchableOpacity
           style={styles.addBtn}
-          onPress={() => setShowForm(true)}
+          onPress={() => {
+            setForm(EMPTY_FORM);
+            setSelectedEmpId('');
+            setShowForm(true);
+          }}
         >
           <Plus size={14} color={C.white} />
-          <Text style={styles.addBtnText}>Apply</Text>
+          <Text style={styles.addBtnText}>Give Loan</Text>
         </TouchableOpacity>
       </View>
 
@@ -250,7 +268,6 @@ export default function LoansScreen() {
               bg: '#F3F4F6',
               icon: Clock,
             };
-            const Icon = cfg.icon;
             const emp = item.employee as any;
             const monthlyEmi =
               item.amount && item.tenure
@@ -259,9 +276,20 @@ export default function LoansScreen() {
             return (
               <View style={styles.card}>
                 <View style={styles.cardTop}>
-                  <View style={styles.iconBox}>
-                    <Icon size={18} color={C.white} />
-                  </View>
+                  {emp?.avatar ? (
+                    <Image
+                      source={{ uri: emp.avatar }}
+                      style={styles.empPhoto}
+                    />
+                  ) : (
+                    <View style={styles.empInitials}>
+                      <Text style={styles.empInitialsText}>
+                        {emp
+                          ? `${(emp.firstName || '')[0] || ''}${(emp.lastName || '')[0] || ''}`
+                          : '?'}
+                      </Text>
+                    </View>
+                  )}
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={styles.loanType}>
                       {item.loanType?.replace('_', ' ').toUpperCase()} LOAN
@@ -337,7 +365,7 @@ export default function LoansScreen() {
       >
         <SafeAreaView style={styles.safe} edges={['top']}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Apply for Loan</Text>
+            <Text style={styles.modalTitle}>Give Loan to Staff</Text>
             <TouchableOpacity onPress={() => setShowForm(false)}>
               <X size={22} color={C.black} />
             </TouchableOpacity>
@@ -347,6 +375,60 @@ export default function LoansScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
+            <View>
+              <Text style={styles.fieldLabel}>Employee *</Text>
+              <View style={styles.empPicker}>
+                {employees.map(e => {
+                  const isSelected = selectedEmpId === e._id;
+                  return (
+                    <TouchableOpacity
+                      key={e._id}
+                      style={[
+                        styles.empPickerRow,
+                        isSelected && styles.empPickerRowActive,
+                      ]}
+                      onPress={() => setSelectedEmpId(e._id)}
+                    >
+                      {e.avatar ? (
+                        <Image
+                          source={{ uri: e.avatar }}
+                          style={styles.empPickerPhoto}
+                        />
+                      ) : (
+                        <View style={styles.empPickerInitials}>
+                          <Text style={styles.empPickerInitialsText}>
+                            {`${(e.firstName || '')[0] || ''}${(e.lastName || '')[0] || ''}`}
+                          </Text>
+                        </View>
+                      )}
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[
+                            styles.empPickerName,
+                            isSelected && { color: C.white },
+                          ]}
+                        >
+                          {e.firstName} {e.lastName}
+                        </Text>
+                        {e.employeeId && (
+                          <Text
+                            style={[
+                              styles.empPickerSub,
+                              isSelected && { color: C.white + 'CC' },
+                            ]}
+                          >
+                            {e.employeeId}
+                          </Text>
+                        )}
+                      </View>
+                      {isSelected && (
+                        <Check size={14} color={C.white} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
             <View>
               <Text style={styles.fieldLabel}>Loan Type</Text>
               <View
@@ -426,13 +508,13 @@ export default function LoansScreen() {
             </View>
             <TouchableOpacity
               style={styles.submitBtn}
-              onPress={handleApply}
+              onPress={handleGiveLoan}
               disabled={saving}
             >
               {saving ? (
                 <ActivityIndicator color={C.white} />
               ) : (
-                <Text style={styles.submitBtnText}>Submit Application</Text>
+                <Text style={styles.submitBtnText}>Give Loan</Text>
               )}
             </TouchableOpacity>
           </ScrollView>
@@ -532,15 +614,24 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   cardTop: { flexDirection: 'row', alignItems: 'center' },
-  iconBox: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: C.primary,
+  empPhoto: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 2,
     borderColor: C.black,
   },
+  empInitials: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: C.black,
+    backgroundColor: C.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  empInitialsText: { fontSize: 14, fontWeight: '700', color: C.white },
   loanType: { fontSize: 13, fontWeight: '700', color: C.black },
   empName: {
     fontSize: 11,
@@ -650,4 +741,38 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textTransform: 'uppercase',
   },
+  empPicker: {
+    borderWidth: 2,
+    borderColor: C.black,
+    backgroundColor: C.white,
+  },
+  empPickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  empPickerRowActive: { backgroundColor: C.primary },
+  empPickerPhoto: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: C.black,
+  },
+  empPickerInitials: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: C.black,
+    backgroundColor: C.primary + '44',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  empPickerInitialsText: { fontSize: 11, fontWeight: '700', color: C.black },
+  empPickerName: { fontSize: 13, fontWeight: '600', color: C.black },
+  empPickerSub: { fontSize: 10, color: C.textMuted, marginTop: 1 },
 });

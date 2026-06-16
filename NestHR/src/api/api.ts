@@ -1,6 +1,6 @@
 import { createAsyncStorage } from '@react-native-async-storage/async-storage';
 
-const BASE_URL = 'https://hrms-backend.pixelatenest.com/api';
+const BASE_URL = 'http://localhost:5001/api';
 
 const storage = createAsyncStorage('hrms');
 const TOKEN_KEY = 'hrms_token';
@@ -300,6 +300,26 @@ export const biometricAPI = {
     }),
   removeNfc: (deviceId: string, uid: string) =>
     request(`/biometric/devices/${deviceId}/nfc/${uid}`, { method: 'DELETE' }),
+  syncAll: (deviceId: string) =>
+    request(`/biometric/devices/${deviceId}/sync-all`, { method: 'POST', body: JSON.stringify({}) }),
+  syncEmployee: (deviceId: string, employeeId: string) =>
+    request(`/biometric/devices/${deviceId}/sync-employee/${employeeId}`, { method: 'POST', body: JSON.stringify({}) }),
+  setDeviceSerial: (deviceId: string, serialNumber: string) =>
+    request(`/biometric/devices/${deviceId}/serial`, { method: 'PUT', body: JSON.stringify({ serialNumber }) }),
+  getDeviceCommands: (deviceId: string) =>
+    request(`/biometric/devices/${deviceId}/commands`),
+  syncEmployeeToDevice: (deviceId: string, employeeId: string, rfidCard?: string) =>
+    request(`/biometric/devices/${deviceId}/sync-employee`, { method: 'POST', body: JSON.stringify({ employeeId, rfidCard }) }),
+  syncAllToDevice: (deviceId: string) =>
+    request(`/biometric/devices/${deviceId}/sync-all`, { method: 'POST', body: JSON.stringify({}) }),
+  enrollFpOnDevice: (deviceId: string, employeeId: string, fingerIndex?: number) =>
+    request(`/biometric/devices/${deviceId}/enroll-fingerprint`, { method: 'POST', body: JSON.stringify({ employeeId, fingerIndex: fingerIndex ?? 0 }) }),
+  enrollFaceOnDevice: (deviceId: string, employeeId: string) =>
+    request(`/biometric/devices/${deviceId}/enroll-face-device`, { method: 'POST', body: JSON.stringify({ employeeId }) }),
+  pushFaceTemplate: (deviceId: string, employeeId: string) =>
+    request(`/biometric/devices/${deviceId}/push-face-template`, { method: 'POST', body: JSON.stringify({ employeeId }) }),
+  saveRfidCard: (employeeId: string, rfidCard: string) =>
+    request(`/biometric/employees/${employeeId}/rfid`, { method: 'POST', body: JSON.stringify({ rfidCard }) }),
 };
 
 export const authAPI_extras = {
@@ -344,6 +364,13 @@ export async function getCached<T = any>(key: string): Promise<T | null> {
 }
 
 // ── Audit Log ─────────────────────────────────────────────────────────────────
+export const transactionAPI = {
+  getAll: (params?: Record<string, string>) =>
+    request(`/transactions${qs(params)}`),
+  create: (body: object) =>
+    request('/transactions', { method: 'POST', body: JSON.stringify(body) }),
+};
+
 export const auditAPI = {
   getLogs: (params?: Record<string, string>) =>
     request(`/audit${qs(params)}`),

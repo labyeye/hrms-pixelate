@@ -21,11 +21,21 @@ import {
   Trash2,
   Check,
   ChevronLeft,
+  Edit2,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { departmentAPI } from '../api/api';
 import { Department } from '../types/hrms';
 import { C } from '../theme';
+
+const EMPTY_FORM = {
+  name: '',
+  description: '',
+  budget: '',
+  code: '',
+  shiftStartTime: '',
+  shiftEndTime: '',
+};
 
 export default function DepartmentsScreen() {
   const navigation = useNavigation<any>();
@@ -34,7 +44,8 @@ export default function DepartmentsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ name: '', description: '', budget: '' });
+  const [editingDept, setEditingDept] = useState<Department | null>(null);
+  const [form, setForm] = useState(EMPTY_FORM);
 
   const load = useCallback(async () => {
     try {
@@ -50,25 +61,61 @@ export default function DepartmentsScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await load();
     setRefreshing(false);
   };
 
-  const handleCreate = async () => {
+  const openCreate = () => {
+    setEditingDept(null);
+    setForm(EMPTY_FORM);
+    setShowForm(true);
+  };
+
+  const openEdit = (dept: any) => {
+    setEditingDept(dept);
+    setForm({
+      name: dept.name || '',
+      description: dept.description || '',
+      budget: dept.budget ? String(dept.budget) : '',
+      code: dept.code || '',
+      shiftStartTime: dept.shiftStartTime || '',
+      shiftEndTime: dept.shiftEndTime || '',
+    });
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingDept(null);
+    setForm(EMPTY_FORM);
+  };
+
+  const handleSubmit = async () => {
     if (!form.name.trim()) {
       Alert.alert('Validation', 'Department name is required');
       return;
     }
     setSaving(true);
     try {
-      await departmentAPI.create({
-        ...form,
+      const payload: any = {
+        name: form.name,
+        description: form.description,
         budget: form.budget ? parseFloat(form.budget) : undefined,
-      });
-      setShowForm(false);
-      setForm({ name: '', description: '', budget: '' });
+        shiftStartTime: form.shiftStartTime || undefined,
+        shiftEndTime: form.shiftEndTime || undefined,
+      };
+      if (!editingDept) {
+        payload.code = form.code || undefined;
+      }
+      if (editingDept) {
+        await departmentAPI.update((editingDept as any)._id, payload);
+      } else {
+        await departmentAPI.create(payload);
+      }
+      closeForm();
       await load();
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -111,10 +158,7 @@ export default function DepartmentsScreen() {
             <Text style={styles.countText}>{departments.length}</Text>
           </View>
         </View>
-        <TouchableOpacity
-          style={styles.addBtn}
-          onPress={() => setShowForm(true)}
-        >
+        <TouchableOpacity style={styles.addBtn} onPress={openCreate}>
           <Plus size={14} color={C.white} />
           <Text style={styles.addBtnText}>Add</Text>
         </TouchableOpacity>
@@ -137,8 +181,6 @@ export default function DepartmentsScreen() {
             />
           }
           showsVerticalScrollIndicator={false}
-          numColumns={2}
-          columnWrapperStyle={{ gap: 12 }}
           ListEmptyComponent={
             <View style={styles.empty}>
               <Building2 size={40} color="#D1D5DB" />
@@ -148,42 +190,69 @@ export default function DepartmentsScreen() {
           renderItem={({ item }) => {
             const dept = item as any;
             const manager = dept.manager;
-            const empCount = dept.employeeCount || 0;
+            const empCount = dept.headcount ?? dept.employeeCount ?? 0;
             return (
               <View style={styles.deptCard}>
-                <View style={styles.deptIcon}>
-                  <Building2 size={20} color={C.white} />
+                <View style={styles.cardTopRow}>
+                  <View style={styles.deptIcon}>
+                    <Building2 size={20} color={C.white} />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <View style={styles.nameRow}>
+                      <Text style={styles.deptName} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                      {dept.code ? (
+                        <View style={styles.codeBadge}>
+                          <Text style={styles.codeText}>{dept.code}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    {item.description ? (
+                      <Text style={styles.deptDesc} numberOfLines={2}>
+                        {item.description}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <View style={styles.cardActions}>
+                    <TouchableOpacity
+                      style={styles.editBtn}
+                      onPress={() => openEdit(item)}
+                    >
+                      <Edit2 size={13} color={C.primary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.deleteBtn}
+                      onPress={() => handleDelete(item)}
+                    >
+                      <Trash2 size={13} color={C.danger} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-                <Text style={styles.deptName} numberOfLines={1}>
-                  {item.name}
-                </Text>
-                {item.description && (
-                  <Text style={styles.deptDesc} numberOfLines={2}>
-                    {item.description}
-                  </Text>
-                )}
-                <View style={styles.deptMeta}>
-                  <Users size={11} color={C.textMuted} />
-                  <Text style={styles.deptMetaText}>
-                    {empCount} member{empCount !== 1 ? 's' : ''}
-                  </Text>
+
+                <View style={styles.deptFooter}>
+                  <View style={styles.deptMeta}>
+                    <Users size={11} color={C.textMuted} />
+                    <Text style={styles.deptMetaText}>
+                      {empCount} member{empCount !== 1 ? 's' : ''}
+                    </Text>
+                  </View>
+                  {dept.shiftStartTime && dept.shiftEndTime ? (
+                    <Text style={styles.shiftText}>
+                      {dept.shiftStartTime} – {dept.shiftEndTime}
+                    </Text>
+                  ) : null}
+                  {manager ? (
+                    <Text style={styles.deptManager} numberOfLines={1}>
+                      Mgr: {manager.firstName} {manager.lastName}
+                    </Text>
+                  ) : null}
+                  {item.budget ? (
+                    <Text style={styles.deptBudget}>
+                      ₹{(item.budget / 1000).toFixed(0)}K
+                    </Text>
+                  ) : null}
                 </View>
-                {manager && (
-                  <Text style={styles.deptManager} numberOfLines={1}>
-                    Manager: {manager.firstName} {manager.lastName}
-                  </Text>
-                )}
-                {item.budget && (
-                  <Text style={styles.deptBudget}>
-                    Budget: ₹{(item.budget / 1000).toFixed(0)}K
-                  </Text>
-                )}
-                <TouchableOpacity
-                  style={styles.deleteBtn}
-                  onPress={() => handleDelete(item)}
-                >
-                  <Trash2 size={13} color={C.danger} />
-                </TouchableOpacity>
               </View>
             );
           }}
@@ -197,8 +266,10 @@ export default function DepartmentsScreen() {
       >
         <SafeAreaView style={styles.safe} edges={['top']}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>New Department</Text>
-            <TouchableOpacity onPress={() => setShowForm(false)}>
+            <Text style={styles.modalTitle}>
+              {editingDept ? 'Edit Department' : 'New Department'}
+            </Text>
+            <TouchableOpacity onPress={closeForm}>
               <X size={22} color={C.black} />
             </TouchableOpacity>
           </View>
@@ -217,6 +288,19 @@ export default function DepartmentsScreen() {
                 placeholderTextColor={C.textLight}
               />
             </View>
+            {!editingDept && (
+              <View>
+                <Text style={styles.fieldLabel}>Code *</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  value={form.code}
+                  onChangeText={v => setForm(p => ({ ...p, code: v }))}
+                  placeholder="ENG"
+                  placeholderTextColor={C.textLight}
+                  autoCapitalize="characters"
+                />
+              </View>
+            )}
             <View>
               <Text style={styles.fieldLabel}>Description</Text>
               <TextInput
@@ -239,9 +323,31 @@ export default function DepartmentsScreen() {
                 keyboardType="numeric"
               />
             </View>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.fieldLabel}>Shift Start</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  value={form.shiftStartTime}
+                  onChangeText={v => setForm(p => ({ ...p, shiftStartTime: v }))}
+                  placeholder="09:00"
+                  placeholderTextColor={C.textLight}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.fieldLabel}>Shift End</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  value={form.shiftEndTime}
+                  onChangeText={v => setForm(p => ({ ...p, shiftEndTime: v }))}
+                  placeholder="18:00"
+                  placeholderTextColor={C.textLight}
+                />
+              </View>
+            </View>
             <TouchableOpacity
               style={styles.submitBtn}
-              onPress={handleCreate}
+              onPress={handleSubmit}
               disabled={saving}
             >
               {saving ? (
@@ -249,7 +355,9 @@ export default function DepartmentsScreen() {
               ) : (
                 <>
                   <Check size={16} color={C.white} />
-                  <Text style={styles.submitBtnText}>Create Department</Text>
+                  <Text style={styles.submitBtnText}>
+                    {editingDept ? 'Save Changes' : 'Create Department'}
+                  </Text>
                 </>
               )}
             </TouchableOpacity>
@@ -302,49 +410,70 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 14, fontWeight: '700', color: C.textMuted },
   deptCard: {
-    flex: 1,
     backgroundColor: C.white,
     borderWidth: 2,
     borderColor: C.black,
     padding: 14,
   },
+  cardTopRow: { flexDirection: 'row', alignItems: 'flex-start' },
   deptIcon: {
     width: 40,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
     backgroundColor: C.primary,
     borderWidth: 2,
     borderColor: C.black,
+    flexShrink: 0,
   },
-  deptName: { fontSize: 15, fontWeight: '700', color: C.black },
-  deptDesc: { fontSize: 11, color: C.textMuted, lineHeight: 16, marginTop: 4 },
-  deptMeta: {
+  nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    marginTop: 10,
+    gap: 8,
+    flexWrap: 'wrap',
   },
-  deptMetaText: { fontSize: 12, fontWeight: '700', color: C.textMuted },
-  deptManager: { fontSize: 11, color: C.textMuted, marginTop: 4 },
-  deptBudget: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: C.success,
-    marginTop: 2,
+  deptName: { fontSize: 15, fontWeight: '700', color: C.black },
+  codeBadge: {
+    backgroundColor: C.primary + '18',
+    borderWidth: 1,
+    borderColor: C.primary,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  codeText: { fontSize: 10, fontWeight: '700', color: C.primary },
+  deptDesc: { fontSize: 11, color: C.textMuted, lineHeight: 16, marginTop: 4 },
+  cardActions: { flexDirection: 'row', gap: 6, marginLeft: 8 },
+  editBtn: {
+    width: 28,
+    height: 28,
+    borderWidth: 1,
+    borderColor: C.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   deleteBtn: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 26,
-    height: 26,
+    width: 28,
+    height: 28,
     borderWidth: 1,
     borderColor: C.danger,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  deptFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  deptMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  deptMetaText: { fontSize: 12, fontWeight: '700', color: C.textMuted },
+  shiftText: { fontSize: 11, fontWeight: '600', color: C.textMuted },
+  deptManager: { fontSize: 11, color: C.textMuted },
+  deptBudget: { fontSize: 11, fontWeight: '700', color: C.success },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',

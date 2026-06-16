@@ -19,14 +19,12 @@ import {
   Building2,
   Briefcase,
   TrendingUp,
-  LogOut,
   RefreshCw,
   Bell,
-  WifiOff,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
-import { dashboardAPI, cachedRequest, localNotificationsAPI } from '../api/api';
+import { dashboardAPI, localNotificationsAPI } from '../api/api';
 import { C } from '../theme';
 
 const CARD_WIDTH = (Dimensions.get('window').width - 32 - 10) / 2;
@@ -91,7 +89,6 @@ export default function DashboardScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [fromCache, setFromCache] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const loadUnread = useCallback(async () => {
@@ -102,11 +99,7 @@ export default function DashboardScreen() {
   const load = useCallback(async () => {
     setError(null);
     try {
-      const { data: res, fromCache: cached } = await cachedRequest(
-        'dashboard_stats',
-        () => dashboardAPI.getStats(),
-      );
-      setFromCache(cached);
+      const res = await dashboardAPI.getStats();
       const payload = res.data || res;
       setStats({
         ...payload.stats,
@@ -143,6 +136,22 @@ export default function DashboardScreen() {
   };
 
   const isAdmin = user?.role !== 'employee';
+
+  const handleCardPress = (key: string) => {
+    if (key === 'totalEmployees') {
+      navigation.navigate('Employees');
+    } else if (key === 'todayPresent') {
+      navigation.navigate('Attendance');
+    } else if (key === 'todayOnLeave') {
+      navigation.navigate('Leave');
+    } else if (key === 'pendingLeaves') {
+      navigation.navigate('Leave');
+    } else if (key === 'departments') {
+      navigation.navigate('More', { screen: 'Departments' });
+    } else if (key === 'openPositions') {
+      navigation.navigate('More');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -201,14 +210,6 @@ export default function DashboardScreen() {
           }
           showsVerticalScrollIndicator={false}
         >
-          {fromCache && (
-            <View style={styles.cacheBanner}>
-              <WifiOff size={12} color={C.warning} />
-              <Text style={styles.cacheText}>
-                Showing cached data — pull to refresh
-              </Text>
-            </View>
-          )}
           {error && (
             <View style={styles.errorBanner}>
               <Text style={styles.errorText}>{error}</Text>
@@ -225,7 +226,12 @@ export default function DashboardScreen() {
               const Icon = s.icon;
               const val = stats?.[s.key] ?? '—';
               return (
-                <View key={s.key} style={styles.statCard}>
+                <TouchableOpacity
+                  key={s.key}
+                  style={styles.statCard}
+                  activeOpacity={0.8}
+                  onPress={() => handleCardPress(s.key)}
+                >
                   <View
                     style={[styles.statIconWrap, { backgroundColor: s.color }]}
                   >
@@ -233,7 +239,7 @@ export default function DashboardScreen() {
                   </View>
                   <Text style={styles.statValue}>{val}</Text>
                   <Text style={styles.statLabel}>{s.label}</Text>
-                </View>
+                </TouchableOpacity>
               );
             })}
           </View>

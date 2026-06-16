@@ -9,17 +9,19 @@ import {
   RefreshControl,
   Alert,
   Modal,
+  ScrollView,
   TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  Calendar,
+  
   Plus,
   X,
   Trash2,
   Check,
   Sun,
   ChevronLeft,
+  Edit2,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { holidayAPI } from '../api/api';
@@ -32,6 +34,8 @@ const TYPE_COLOR: Record<string, string> = {
   religious: C.success,
 };
 
+const EMPTY_FORM = { name: '', date: '', type: 'national', description: '' };
+
 export default function HolidaysScreen() {
   const navigation = useNavigation<any>();
   const [holidays, setHolidays] = useState<any[]>([]);
@@ -39,12 +43,8 @@ export default function HolidaysScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    name: '',
-    date: '',
-    type: 'national',
-    description: '',
-  });
+  const [editingHoliday, setEditingHoliday] = useState<any | null>(null);
+  const [form, setForm] = useState(EMPTY_FORM);
 
   const load = useCallback(async () => {
     try {
@@ -60,22 +60,49 @@ export default function HolidaysScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await load();
     setRefreshing(false);
   };
 
-  const handleCreate = async () => {
+  const openCreate = () => {
+    setEditingHoliday(null);
+    setForm(EMPTY_FORM);
+    setShowForm(true);
+  };
+
+  const openEdit = (h: any) => {
+    setEditingHoliday(h);
+    setForm({
+      name: h.name || '',
+      date: h.date ? h.date.slice(0, 10) : '',
+      type: h.type || 'national',
+      description: h.description || '',
+    });
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingHoliday(null);
+    setForm(EMPTY_FORM);
+  };
+
+  const handleSubmit = async () => {
     if (!form.name.trim() || !form.date) {
       Alert.alert('Validation', 'Name and date are required');
       return;
     }
     setSaving(true);
     try {
-      await holidayAPI.create(form);
-      setShowForm(false);
-      setForm({ name: '', date: '', type: 'national', description: '' });
+      if (editingHoliday) {
+        await holidayAPI.update(editingHoliday._id, form);
+      } else {
+        await holidayAPI.create(form);
+      }
+      closeForm();
       await load();
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -120,10 +147,7 @@ export default function HolidaysScreen() {
             <Text style={styles.countText}>{upcoming} upcoming</Text>
           </View>
         </View>
-        <TouchableOpacity
-          style={styles.addBtn}
-          onPress={() => setShowForm(true)}
-        >
+        <TouchableOpacity style={styles.addBtn} onPress={openCreate}>
           <Plus size={14} color={C.white} />
           <Text style={styles.addBtnText}>Add</Text>
         </TouchableOpacity>
@@ -189,12 +213,20 @@ export default function HolidaysScreen() {
                     </Text>
                   )}
                 </View>
-                <TouchableOpacity
-                  onPress={() => handleDelete(item)}
-                  style={styles.deleteBtn}
-                >
-                  <Trash2 size={13} color={C.danger} />
-                </TouchableOpacity>
+                <View style={styles.cardActions}>
+                  <TouchableOpacity
+                    onPress={() => openEdit(item)}
+                    style={styles.editBtn}
+                  >
+                    <Edit2 size={13} color={C.primary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => handleDelete(item)}
+                    style={styles.deleteBtn}
+                  >
+                    <Trash2 size={13} color={C.danger} />
+                  </TouchableOpacity>
+                </View>
               </View>
             );
           }}
@@ -208,12 +240,18 @@ export default function HolidaysScreen() {
       >
         <SafeAreaView style={styles.safe} edges={['top']}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Add Holiday</Text>
-            <TouchableOpacity onPress={() => setShowForm(false)}>
+            <Text style={styles.modalTitle}>
+              {editingHoliday ? 'Edit Holiday' : 'Add Holiday'}
+            </Text>
+            <TouchableOpacity onPress={closeForm}>
               <X size={22} color={C.black} />
             </TouchableOpacity>
           </View>
-          <View style={{ padding: 20, gap: 16 }}>
+          <ScrollView
+            contentContainerStyle={{ padding: 20, gap: 16 }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
             <View>
               <Text style={styles.fieldLabel}>Holiday Name *</Text>
               <TextInput
@@ -280,7 +318,7 @@ export default function HolidaysScreen() {
             </View>
             <TouchableOpacity
               style={styles.submitBtn}
-              onPress={handleCreate}
+              onPress={handleSubmit}
               disabled={saving}
             >
               {saving ? (
@@ -288,11 +326,13 @@ export default function HolidaysScreen() {
               ) : (
                 <>
                   <Check size={16} color={C.white} />
-                  <Text style={styles.submitBtnText}>Add Holiday</Text>
+                  <Text style={styles.submitBtnText}>
+                    {editingHoliday ? 'Save Changes' : 'Add Holiday'}
+                  </Text>
                 </>
               )}
             </TouchableOpacity>
-          </View>
+          </ScrollView>
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
@@ -364,9 +404,18 @@ const styles = StyleSheet.create({
   typePillText: { fontSize: 9, fontWeight: '700' },
   weekday: { fontSize: 11, color: C.textMuted, fontWeight: '500' },
   desc: { fontSize: 11, color: C.textMuted, marginTop: 4 },
+  cardActions: { flexDirection: 'column', gap: 6, marginLeft: 8 },
+  editBtn: {
+    width: 30,
+    height: 30,
+    borderWidth: 1,
+    borderColor: C.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   deleteBtn: {
-    width: 32,
-    height: 32,
+    width: 30,
+    height: 30,
     borderWidth: 1,
     borderColor: C.danger,
     alignItems: 'center',
