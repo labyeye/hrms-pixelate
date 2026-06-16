@@ -208,8 +208,13 @@ export default function AttendancePage() {
     try {
       await Promise.all(
         empIds.map((empId) =>
-          attendanceAPI.mark({ employee: empId, date, status: "absent", verifyMode: "manual" })
-        )
+          attendanceAPI.mark({
+            employee: empId,
+            date,
+            status: "absent",
+            verifyMode: "manual",
+          }),
+        ),
       );
       load();
     } catch (err: any) {
@@ -253,9 +258,7 @@ export default function AttendancePage() {
     if (day > daysInMonth) return null;
     const date = new Date(year, month - 1, day);
     const iso = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const dayRecords = records.filter(
-      (r) => toLocalDateStr(r.date) === iso,
-    );
+    const dayRecords = records.filter((r) => toLocalDateStr(r.date) === iso);
     const presentCount = dayRecords.filter((r) =>
       ["present", "late", "half_day"].includes(r.status),
     ).length;
@@ -276,15 +279,15 @@ export default function AttendancePage() {
     ? activeFilter === "early_leaving"
       ? records.filter((r) => {
           const rec = r as any;
-          return rec.earlyLeaving || (r.status === "present" && rec.earlyCheckout);
+          return (
+            rec.earlyLeaving || (r.status === "present" && rec.earlyCheckout)
+          );
         })
       : records.filter((r) => r.status === activeFilter)
     : records;
 
   const displayedRecords = selectedDate
-    ? baseRecords.filter(
-        (r) => toLocalDateStr(r.date) === selectedDate,
-      )
+    ? baseRecords.filter((r) => toLocalDateStr(r.date) === selectedDate)
     : baseRecords;
 
   return (
@@ -298,7 +301,9 @@ export default function AttendancePage() {
             className="border-2 border-black px-3 py-2 text-sm font-semibold outline-none bg-white"
           >
             {MONTHS.map((m, i) => (
-              <option key={m} value={i + 1}>{m}</option>
+              <option key={m} value={i + 1}>
+                {m}
+              </option>
             ))}
           </select>
           <select
@@ -306,8 +311,13 @@ export default function AttendancePage() {
             onChange={(e) => setYear(Number(e.target.value))}
             className="border-2 border-black px-3 py-2 text-sm font-semibold outline-none bg-white"
           >
-            {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map((y) => (
-              <option key={y} value={y}>{y}</option>
+            {Array.from(
+              { length: 5 },
+              (_, i) => new Date().getFullYear() - 2 + i,
+            ).map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
             ))}
           </select>
           {selectedDate && (
@@ -332,40 +342,111 @@ export default function AttendancePage() {
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-5">
         {[
-          { label: "Total",         value: summary.total,        icon: Users,      bg: "bg-[#024BAB]",   text: "text-white",          filterKey: "total" },
-          { label: "Present",       value: summary.present,      icon: UserCheck,  bg: "bg-[#00C48C]",   text: "text-white",          filterKey: "present" },
-          { label: "Absent",        value: summary.absent,       icon: UserX,      bg: "bg-[#EF4444]",   text: "text-white",          filterKey: "absent" },
-          { label: "Half Day",      value: summary.halfDay,      icon: Timer,      bg: "bg-[#F59E0B]",   text: "text-white",          filterKey: "half_day" },
-          { label: "Late",          value: summary.late,         icon: AlarmClock, bg: "bg-[#A855F7]",   text: "text-white",          filterKey: "late" },
-          { label: "Early Leave",   value: summary.earlyLeaving, icon: LogOut,     bg: "bg-[#3B82F6]",   text: "text-white",          filterKey: "early_leaving" },
-          { label: "On Leave",      value: summary.leave,        icon: Palmtree,   bg: "bg-[#EAB308]",   text: "text-white",          filterKey: "on_leave" },
+          {
+            label: "Total",
+            value: summary.total,
+            icon: Users,
+            bg: "bg-[#024BAB]",
+            text: "text-white",
+            filterKey: "total",
+          },
+          {
+            label: "Present",
+            value: summary.present,
+            icon: UserCheck,
+            bg: "bg-[#00C48C]",
+            text: "text-white",
+            filterKey: "present",
+          },
+          {
+            label: "Absent",
+            value: summary.absent,
+            icon: UserX,
+            bg: "bg-[#EF4444]",
+            text: "text-white",
+            filterKey: "absent",
+          },
+          {
+            label: "Half Day",
+            value: summary.halfDay,
+            icon: Timer,
+            bg: "bg-[#F59E0B]",
+            text: "text-white",
+            filterKey: "half_day",
+          },
+          {
+            label: "Late",
+            value: summary.late,
+            icon: AlarmClock,
+            bg: "bg-[#A855F7]",
+            text: "text-white",
+            filterKey: "late",
+          },
+          {
+            label: "Early Leave",
+            value: summary.earlyLeaving,
+            icon: LogOut,
+            bg: "bg-[#3B82F6]",
+            text: "text-white",
+            filterKey: "early_leaving",
+          },
+          {
+            label: "On Leave",
+            value: summary.leave,
+            icon: Palmtree,
+            bg: "bg-[#EAB308]",
+            text: "text-white",
+            filterKey: "on_leave",
+          },
         ].map(({ label, value, icon: Icon, bg, text, filterKey }) => {
           const isActive = activeFilter === filterKey;
           return (
             <button
               key={filterKey}
-              onClick={() => setActiveFilter(isActive || filterKey === "total" ? null : filterKey)}
+              onClick={() =>
+                setActiveFilter(
+                  isActive || filterKey === "total" ? null : filterKey,
+                )
+              }
               className={cn(
                 "border-2 border-black p-4 flex flex-col gap-2 text-left transition-all",
-                isActive ? `${bg} ${text} shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]` : "bg-white hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]",
+                isActive
+                  ? `${bg} ${text} shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]`
+                  : "bg-white hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]",
               )}
             >
-              <div className={cn(
-                "w-8 h-8 border-2 border-black flex items-center justify-center shrink-0",
-                isActive ? "bg-white/20 border-white/40" : bg,
-              )}>
-                <Icon className={cn("w-4 h-4", isActive ? text : "text-white")} />
+              <div
+                className={cn(
+                  "w-8 h-8 border-2 border-black flex items-center justify-center shrink-0",
+                  isActive ? "bg-white/20 border-white/40" : bg,
+                )}
+              >
+                <Icon
+                  className={cn("w-4 h-4", isActive ? text : "text-white")}
+                />
               </div>
               <div>
-                <p className={cn("text-2xl font-black leading-none", isActive ? text : "text-black")}>{value}</p>
-                <p className={cn("text-[11px] font-bold mt-1 uppercase tracking-wider", isActive ? `${text} opacity-80` : "text-muted-foreground")}>{label}</p>
+                <p
+                  className={cn(
+                    "text-2xl font-black leading-none",
+                    isActive ? text : "text-black",
+                  )}
+                >
+                  {value}
+                </p>
+                <p
+                  className={cn(
+                    "text-[11px] font-bold mt-1 uppercase tracking-wider",
+                    isActive ? `${text} opacity-80` : "text-muted-foreground",
+                  )}
+                >
+                  {label}
+                </p>
               </div>
             </button>
           );
         })}
       </div>
-
-
 
       {/* Date strip */}
       <div className="border-2 border-black bg-white mb-5 flex items-stretch">
@@ -387,7 +468,9 @@ export default function AttendancePage() {
             return (
               <button
                 key={iso}
-                onClick={() => setSelectedDate(iso === selectedDate ? null : iso)}
+                onClick={() =>
+                  setSelectedDate(iso === selectedDate ? null : iso)
+                }
                 className={cn(
                   "flex-1 flex flex-col items-center justify-center py-3 px-1 border-r last:border-r-0 border-black/10 transition-colors relative",
                   isSelected
@@ -405,10 +488,18 @@ export default function AttendancePage() {
                 )}
 
                 {/* Day + Date on one line */}
-                <span className={cn(
-                  "text-xs font-bold whitespace-nowrap mb-2",
-                  isSelected ? "text-white" : isToday ? "text-[#024BAB]" : isWeekend ? "text-gray-400" : "text-black",
-                )}>
+                <span
+                  className={cn(
+                    "text-xs font-bold whitespace-nowrap mb-2",
+                    isSelected
+                      ? "text-white"
+                      : isToday
+                        ? "text-[#024BAB]"
+                        : isWeekend
+                          ? "text-gray-400"
+                          : "text-black",
+                  )}
+                >
                   {DAY_ABBR[date.getDay()]},{" "}
                   {date.toLocaleDateString("en-IN", { month: "short" })} {day}
                 </span>
@@ -417,24 +508,35 @@ export default function AttendancePage() {
                 {presentCount > 0 || absentCount > 0 ? (
                   <div className="flex flex-col items-center gap-0.5">
                     {presentCount > 0 && (
-                      <span className={cn(
-                        "text-[11px] font-bold leading-none",
-                        isSelected ? "text-[#86efac]" : "text-[#00C48C]",
-                      )}>
+                      <span
+                        className={cn(
+                          "text-[11px] font-bold leading-none",
+                          isSelected ? "text-[#86efac]" : "text-[#00C48C]",
+                        )}
+                      >
                         {presentCount}P
                       </span>
                     )}
                     {absentCount > 0 && (
-                      <span className={cn(
-                        "text-[11px] font-bold leading-none",
-                        isSelected ? "text-[#fca5a5]" : "text-[#EF4444]",
-                      )}>
+                      <span
+                        className={cn(
+                          "text-[11px] font-bold leading-none",
+                          isSelected ? "text-[#fca5a5]" : "text-[#EF4444]",
+                        )}
+                      >
                         {absentCount}A
                       </span>
                     )}
                   </div>
                 ) : (
-                  <span className={cn("text-[10px]", isSelected ? "text-white/40" : "text-muted-foreground/40")}>—</span>
+                  <span
+                    className={cn(
+                      "text-[10px]",
+                      isSelected ? "text-white/40" : "text-muted-foreground/40",
+                    )}
+                  >
+                    —
+                  </span>
                 )}
 
                 {/* Selected underline */}
@@ -448,7 +550,9 @@ export default function AttendancePage() {
 
         {/* Right arrow */}
         <button
-          onClick={() => setWindowStart((s) => Math.min(daysInMonth - 6, s + 7))}
+          onClick={() =>
+            setWindowStart((s) => Math.min(daysInMonth - 6, s + 7))
+          }
           disabled={windowStart + 7 > daysInMonth}
           className="px-3 border-l-2 border-black hover:bg-[#024BAB]/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors shrink-0"
         >
@@ -457,28 +561,42 @@ export default function AttendancePage() {
       </div>
 
       {/* Auto-absent banner */}
-      {!isEmployee && selectedDate && selectedDate <= todayIso && employees.length > 0 && (() => {
-        const recordedEmpIds = new Set(displayedRecords.map((r) => (r.employee as any)?._id));
-        const unrecorded = employees.filter((e) => !recordedEmpIds.has(e._id));
-        if (unrecorded.length === 0) return null;
-        return (
-          <div className="mb-4 border-2 border-[#EF4444] bg-[#EF4444]/5 px-4 py-3 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <UserX className="w-4 h-4 text-[#EF4444] shrink-0" />
-              <p className="text-sm font-bold text-[#EF4444]">
-                {unrecorded.length} employee{unrecorded.length > 1 ? "s" : ""} have no record for this date
-              </p>
+      {!isEmployee &&
+        selectedDate &&
+        selectedDate <= todayIso &&
+        employees.length > 0 &&
+        (() => {
+          const recordedEmpIds = new Set(
+            displayedRecords.map((r) => (r.employee as any)?._id),
+          );
+          const unrecorded = employees.filter(
+            (e) => !recordedEmpIds.has(e._id),
+          );
+          if (unrecorded.length === 0) return null;
+          return (
+            <div className="mb-4 border-2 border-[#EF4444] bg-[#EF4444]/5 px-4 py-3 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <UserX className="w-4 h-4 text-[#EF4444] shrink-0" />
+                <p className="text-sm font-bold text-[#EF4444]">
+                  {unrecorded.length} employee{unrecorded.length > 1 ? "s" : ""}{" "}
+                  have no record for this date
+                </p>
+              </div>
+              <button
+                onClick={() =>
+                  handleMarkAbsent(
+                    unrecorded.map((e) => e._id),
+                    selectedDate,
+                  )
+                }
+                disabled={markingAbsent}
+                className="border-2 border-[#EF4444] bg-[#EF4444] text-white text-xs font-bold px-3 py-1.5 hover:bg-[#dc2626] disabled:opacity-50 shrink-0"
+              >
+                {markingAbsent ? "Saving…" : "Mark All Absent"}
+              </button>
             </div>
-            <button
-              onClick={() => handleMarkAbsent(unrecorded.map((e) => e._id), selectedDate)}
-              disabled={markingAbsent}
-              className="border-2 border-[#EF4444] bg-[#EF4444] text-white text-xs font-bold px-3 py-1.5 hover:bg-[#dc2626] disabled:opacity-50 shrink-0"
-            >
-              {markingAbsent ? "Saving…" : "Mark All Absent"}
-            </button>
-          </div>
-        );
-      })()}
+          );
+        })()}
 
       {}
       {loading ? (

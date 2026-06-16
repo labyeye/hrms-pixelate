@@ -279,16 +279,28 @@ export const payrollConfigAPI = {
 export const biometricAPI = {
   getLocations: () => request('/biometric/locations'),
   createLocation: (body: object) =>
-    request('/biometric/locations', { method: 'POST', body: JSON.stringify(body) }),
+    request('/biometric/locations', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   updateLocation: (id: string, body: object) =>
-    request(`/biometric/locations/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+    request(`/biometric/locations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
   deleteLocation: (id: string) =>
     request(`/biometric/locations/${id}`, { method: 'DELETE' }),
   getDevices: () => request('/biometric/devices'),
   createDevice: (body: object) =>
-    request('/biometric/devices', { method: 'POST', body: JSON.stringify(body) }),
+    request('/biometric/devices', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   updateDevice: (id: string, body: object) =>
-    request(`/biometric/devices/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+    request(`/biometric/devices/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
   deleteDevice: (id: string) =>
     request(`/biometric/devices/${id}`, { method: 'DELETE' }),
   getLogs: (params?: Record<string, string>) =>
@@ -301,25 +313,60 @@ export const biometricAPI = {
   removeNfc: (deviceId: string, uid: string) =>
     request(`/biometric/devices/${deviceId}/nfc/${uid}`, { method: 'DELETE' }),
   syncAll: (deviceId: string) =>
-    request(`/biometric/devices/${deviceId}/sync-all`, { method: 'POST', body: JSON.stringify({}) }),
+    request(`/biometric/devices/${deviceId}/sync-all`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
   syncEmployee: (deviceId: string, employeeId: string) =>
-    request(`/biometric/devices/${deviceId}/sync-employee/${employeeId}`, { method: 'POST', body: JSON.stringify({}) }),
+    request(`/biometric/devices/${deviceId}/sync-employee/${employeeId}`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
   setDeviceSerial: (deviceId: string, serialNumber: string) =>
-    request(`/biometric/devices/${deviceId}/serial`, { method: 'PUT', body: JSON.stringify({ serialNumber }) }),
+    request(`/biometric/devices/${deviceId}/serial`, {
+      method: 'PUT',
+      body: JSON.stringify({ serialNumber }),
+    }),
   getDeviceCommands: (deviceId: string) =>
     request(`/biometric/devices/${deviceId}/commands`),
-  syncEmployeeToDevice: (deviceId: string, employeeId: string, rfidCard?: string) =>
-    request(`/biometric/devices/${deviceId}/sync-employee`, { method: 'POST', body: JSON.stringify({ employeeId, rfidCard }) }),
+  syncEmployeeToDevice: (
+    deviceId: string,
+    employeeId: string,
+    rfidCard?: string,
+  ) =>
+    request(`/biometric/devices/${deviceId}/sync-employee`, {
+      method: 'POST',
+      body: JSON.stringify({ employeeId, rfidCard }),
+    }),
   syncAllToDevice: (deviceId: string) =>
-    request(`/biometric/devices/${deviceId}/sync-all`, { method: 'POST', body: JSON.stringify({}) }),
-  enrollFpOnDevice: (deviceId: string, employeeId: string, fingerIndex?: number) =>
-    request(`/biometric/devices/${deviceId}/enroll-fingerprint`, { method: 'POST', body: JSON.stringify({ employeeId, fingerIndex: fingerIndex ?? 0 }) }),
+    request(`/biometric/devices/${deviceId}/sync-all`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  enrollFpOnDevice: (
+    deviceId: string,
+    employeeId: string,
+    fingerIndex?: number,
+  ) =>
+    request(`/biometric/devices/${deviceId}/enroll-fingerprint`, {
+      method: 'POST',
+      body: JSON.stringify({ employeeId, fingerIndex: fingerIndex ?? 0 }),
+    }),
   enrollFaceOnDevice: (deviceId: string, employeeId: string) =>
-    request(`/biometric/devices/${deviceId}/enroll-face-device`, { method: 'POST', body: JSON.stringify({ employeeId }) }),
+    request(`/biometric/devices/${deviceId}/enroll-face-device`, {
+      method: 'POST',
+      body: JSON.stringify({ employeeId }),
+    }),
   pushFaceTemplate: (deviceId: string, employeeId: string) =>
-    request(`/biometric/devices/${deviceId}/push-face-template`, { method: 'POST', body: JSON.stringify({ employeeId }) }),
+    request(`/biometric/devices/${deviceId}/push-face-template`, {
+      method: 'POST',
+      body: JSON.stringify({ employeeId }),
+    }),
   saveRfidCard: (employeeId: string, rfidCard: string) =>
-    request(`/biometric/employees/${employeeId}/rfid`, { method: 'POST', body: JSON.stringify({ rfidCard }) }),
+    request(`/biometric/employees/${employeeId}/rfid`, {
+      method: 'POST',
+      body: JSON.stringify({ rfidCard }),
+    }),
 };
 
 export const authAPI_extras = {
@@ -339,7 +386,10 @@ export async function cachedRequest<T = any>(
 ): Promise<{ data: T; fromCache: boolean }> {
   try {
     const fresh = await fetcher();
-    storage.setItem(`cache_${key}`, JSON.stringify({ ts: Date.now(), data: fresh }));
+    storage.setItem(
+      `cache_${key}`,
+      JSON.stringify({ ts: Date.now(), data: fresh }),
+    );
     return { data: fresh, fromCache: false };
   } catch (_err) {
     const raw = await storage.getItem(`cache_${key}`);
@@ -372,8 +422,7 @@ export const transactionAPI = {
 };
 
 export const auditAPI = {
-  getLogs: (params?: Record<string, string>) =>
-    request(`/audit${qs(params)}`),
+  getLogs: (params?: Record<string, string>) => request(`/audit${qs(params)}`),
 };
 
 // ── Local notification store ──────────────────────────────────────────────────
@@ -391,23 +440,37 @@ export const localNotificationsAPI = {
   getAll: async (): Promise<LocalNotification[]> => {
     const raw = await storage.getItem(NOTIF_KEY);
     if (!raw) return [];
-    try { return JSON.parse(raw); } catch { return []; }
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return [];
+    }
   },
   add: async (n: Omit<LocalNotification, 'id' | 'ts' | 'read'>) => {
     const all = await localNotificationsAPI.getAll();
-    const entry: LocalNotification = { ...n, id: Date.now().toString(), ts: Date.now(), read: false };
+    const entry: LocalNotification = {
+      ...n,
+      id: Date.now().toString(),
+      ts: Date.now(),
+      read: false,
+    };
     const updated = [entry, ...all].slice(0, 50);
     await storage.setItem(NOTIF_KEY, JSON.stringify(updated));
     return entry;
   },
   markRead: async (id: string) => {
     const all = await localNotificationsAPI.getAll();
-    const updated = all.map(n => n.id === id ? { ...n, read: true } : n);
+    const updated = all.map(n => (n.id === id ? { ...n, read: true } : n));
     await storage.setItem(NOTIF_KEY, JSON.stringify(updated));
   },
   markAllRead: async () => {
     const all = await localNotificationsAPI.getAll();
-    await storage.setItem(NOTIF_KEY, JSON.stringify(all.map(n => ({ ...n, read: true }))));
+    await storage.setItem(
+      NOTIF_KEY,
+      JSON.stringify(all.map(n => ({ ...n, read: true }))),
+    );
   },
-  clear: async () => { await storage.setItem(NOTIF_KEY, '[]'); },
+  clear: async () => {
+    await storage.setItem(NOTIF_KEY, '[]');
+  },
 };

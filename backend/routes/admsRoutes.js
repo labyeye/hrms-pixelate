@@ -7,7 +7,12 @@ const BiometricCommand = require("../models/BiometricCommand");
 const Shift = require("../models/Shift");
 const User = require("../models/User");
 const { getEffectiveCheckOut } = require("../utils/shiftUtils");
-const { sendCheckIn, sendCheckInHR, sendCheckOut, sendCheckOutHR } = require("../services/whatsappService");
+const {
+  sendCheckIn,
+  sendCheckInHR,
+  sendCheckOut,
+  sendCheckOutHR,
+} = require("../services/whatsappService");
 
 const GRACE_MINUTES = 15;
 const HALF_DAY_MINUTES = 120;
@@ -65,29 +70,50 @@ function mapVerifyMode(verifyType) {
 }
 
 async function notifyCheckIn(employee, locationName, time, companyId) {
-  console.log(`[WA-DEBUG] notifyCheckIn called — emp=${employee.firstName} phone=${employee.phone || "MISSING"} companyId=${companyId}`);
+  console.log(
+    `[WA-DEBUG] notifyCheckIn called — emp=${employee.firstName} phone=${employee.phone || "MISSING"} companyId=${companyId}`,
+  );
   try {
     const empFullName = `${employee.firstName} ${employee.lastName}`;
     const hrUsers = await User.find({
       company: companyId,
       role: { $in: ["super_admin", "hr_manager"] },
     }).select("phone name");
-    console.log(`[WA-DEBUG] HR users found: ${hrUsers.length} — phones: ${hrUsers.map(h => h.phone || "MISSING").join(", ")}`);
+    console.log(
+      `[WA-DEBUG] HR users found: ${hrUsers.length} — phones: ${hrUsers.map((h) => h.phone || "MISSING").join(", ")}`,
+    );
 
     if (employee.phone) {
       console.log(`[WA-DEBUG] Sending check-in WA to staff: ${employee.phone}`);
-      await sendCheckIn(employee.phone, { firstName: employee.firstName, locationName, time }, companyId);
+      await sendCheckIn(
+        employee.phone,
+        { firstName: employee.firstName, locationName, time },
+        companyId,
+      );
       console.log(`[WA-DEBUG] Staff check-in WA sent OK`);
     } else {
-      console.warn(`[WA-DEBUG] SKIP staff check-in WA — employee.phone is empty`);
+      console.warn(
+        `[WA-DEBUG] SKIP staff check-in WA — employee.phone is empty`,
+      );
     }
 
     for (const hr of hrUsers) {
       if (hr.phone) {
         console.log(`[WA-DEBUG] Sending check-in WA to HR/admin: ${hr.phone}`);
-        await sendCheckInHR(hr.phone, { empName: empFullName, empId: employee.employeeId, locationName, time }, companyId);
+        await sendCheckInHR(
+          hr.phone,
+          {
+            empName: empFullName,
+            empId: employee.employeeId,
+            locationName,
+            time,
+          },
+          companyId,
+        );
       } else {
-        console.warn(`[WA-DEBUG] SKIP HR check-in WA — hr.phone is empty for user ${hr._id}`);
+        console.warn(
+          `[WA-DEBUG] SKIP HR check-in WA — hr.phone is empty for user ${hr._id}`,
+        );
       }
     }
   } catch (err) {
@@ -95,29 +121,59 @@ async function notifyCheckIn(employee, locationName, time, companyId) {
   }
 }
 
-async function notifyCheckOut(employee, locationName, time, workHours, companyId) {
-  console.log(`[WA-DEBUG] notifyCheckOut called — emp=${employee.firstName} phone=${employee.phone || "MISSING"} companyId=${companyId}`);
+async function notifyCheckOut(
+  employee,
+  locationName,
+  time,
+  workHours,
+  companyId,
+) {
+  console.log(
+    `[WA-DEBUG] notifyCheckOut called — emp=${employee.firstName} phone=${employee.phone || "MISSING"} companyId=${companyId}`,
+  );
   try {
     const empFullName = `${employee.firstName} ${employee.lastName}`;
     const hrUsers = await User.find({
       company: companyId,
       role: { $in: ["super_admin", "hr_manager"] },
     }).select("phone name");
-    console.log(`[WA-DEBUG] HR users found: ${hrUsers.length} — phones: ${hrUsers.map(h => h.phone || "MISSING").join(", ")}`);
+    console.log(
+      `[WA-DEBUG] HR users found: ${hrUsers.length} — phones: ${hrUsers.map((h) => h.phone || "MISSING").join(", ")}`,
+    );
 
     if (employee.phone) {
-      console.log(`[WA-DEBUG] Sending check-out WA to staff: ${employee.phone}`);
-      await sendCheckOut(employee.phone, { firstName: employee.firstName, locationName, time, workHours }, companyId);
+      console.log(
+        `[WA-DEBUG] Sending check-out WA to staff: ${employee.phone}`,
+      );
+      await sendCheckOut(
+        employee.phone,
+        { firstName: employee.firstName, locationName, time, workHours },
+        companyId,
+      );
     } else {
-      console.warn(`[WA-DEBUG] SKIP staff check-out WA — employee.phone is empty`);
+      console.warn(
+        `[WA-DEBUG] SKIP staff check-out WA — employee.phone is empty`,
+      );
     }
 
     for (const hr of hrUsers) {
       if (hr.phone) {
         console.log(`[WA-DEBUG] Sending check-out WA to HR/admin: ${hr.phone}`);
-        await sendCheckOutHR(hr.phone, { empName: empFullName, empId: employee.employeeId, locationName, time, workHours }, companyId);
+        await sendCheckOutHR(
+          hr.phone,
+          {
+            empName: empFullName,
+            empId: employee.employeeId,
+            locationName,
+            time,
+            workHours,
+          },
+          companyId,
+        );
       } else {
-        console.warn(`[WA-DEBUG] SKIP HR check-out WA — hr.phone is empty for user ${hr._id}`);
+        console.warn(
+          `[WA-DEBUG] SKIP HR check-out WA — hr.phone is empty for user ${hr._id}`,
+        );
       }
     }
   } catch (err) {
@@ -217,7 +273,13 @@ async function processLog(
     if (logType === "check_in") {
       await notifyCheckIn(employee, loc, upd.checkIn, companyId);
     } else if (logType === "check_out") {
-      await notifyCheckOut(employee, loc, upd.checkOut, upd.workHours, companyId);
+      await notifyCheckOut(
+        employee,
+        loc,
+        upd.checkOut,
+        upd.workHours,
+        companyId,
+      );
     }
   }
 }
@@ -337,11 +399,15 @@ router.post(
       let devLocationName = "Office";
       if (device?.location) {
         const BiometricLocation = require("../models/BiometricLocation");
-        const loc = await BiometricLocation.findById(device.location).select("name");
+        const loc = await BiometricLocation.findById(device.location).select(
+          "name",
+        );
         if (loc?.name) devLocationName = loc.name;
       }
 
-      await Promise.allSettled(logs.map((log) => processLog(log, companyId, devLocationName)));
+      await Promise.allSettled(
+        logs.map((log) => processLog(log, companyId, devLocationName)),
+      );
 
       if (device && stamp > (device.attlogStamp || 0)) {
         device.attlogStamp = stamp;

@@ -46,7 +46,6 @@ export default function LoginScreen({ navigation }: any) {
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
         >
-
           {/* Card */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Welcome back</Text>

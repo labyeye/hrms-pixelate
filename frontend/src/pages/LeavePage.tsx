@@ -84,7 +84,9 @@ export default function LeavePage() {
     message: string;
   }>({ show: false, type: "success", title: "", message: "" });
   const [search, setSearch] = useState("");
-  const [sortKey, setSortKey] = useState<"startDate" | "days" | "employee">("startDate");
+  const [sortKey, setSortKey] = useState<"startDate" | "days" | "employee">(
+    "startDate",
+  );
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const load = useCallback(async () => {
@@ -152,14 +154,16 @@ export default function LeavePage() {
   };
 
   const displayedLeaves = [...leaves]
-    .filter(l => {
+    .filter((l) => {
       if (!search) return true;
-      const name = `${(l.employee as any)?.firstName ?? ""} ${(l.employee as any)?.lastName ?? ""}`.toLowerCase();
+      const name =
+        `${(l.employee as any)?.firstName ?? ""} ${(l.employee as any)?.lastName ?? ""}`.toLowerCase();
       return name.includes(search.toLowerCase());
     })
     .sort((a, b) => {
       let cmp = 0;
-      if (sortKey === "startDate") cmp = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+      if (sortKey === "startDate")
+        cmp = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
       else if (sortKey === "days") cmp = (a.days ?? 0) - (b.days ?? 0);
       else if (sortKey === "employee") {
         const na = `${(a.employee as any)?.firstName ?? ""}${(a.employee as any)?.lastName ?? ""}`;
@@ -240,20 +244,37 @@ export default function LeavePage() {
       <div className="flex flex-wrap gap-2 mb-4">
         <div className="flex items-center gap-2 border-2 border-black bg-white px-3 py-2 flex-1 min-w-48">
           <Search className="w-4 h-4 shrink-0 text-muted-foreground" />
-          <input type="text" placeholder="Search by employee name..." value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="bg-transparent text-sm outline-none w-full font-medium" />
-          {search && <button onClick={() => setSearch("")}><X className="w-3.5 h-3.5 text-muted-foreground" /></button>}
+          <input
+            type="text"
+            placeholder="Search by employee name..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="bg-transparent text-sm outline-none w-full font-medium"
+          />
+          {search && (
+            <button onClick={() => setSearch("")}>
+              <X className="w-3.5 h-3.5 text-muted-foreground" />
+            </button>
+          )}
         </div>
-        <select value={sortKey} onChange={e => setSortKey(e.target.value as any)}
-          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none">
+        <select
+          value={sortKey}
+          onChange={(e) => setSortKey(e.target.value as any)}
+          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none"
+        >
           <option value="startDate">Sort: Date</option>
           <option value="days">Sort: Days</option>
           <option value="employee">Sort: Employee</option>
         </select>
-        <button onClick={() => setSortDir(d => d === "asc" ? "desc" : "asc")}
-          className="border-2 border-black bg-white px-3 py-2 flex items-center gap-1 font-semibold text-sm">
-          {sortDir === "asc" ? <ArrowUp className="w-4 h-4"/> : <ArrowDown className="w-4 h-4"/>}
+        <button
+          onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+          className="border-2 border-black bg-white px-3 py-2 flex items-center gap-1 font-semibold text-sm"
+        >
+          {sortDir === "asc" ? (
+            <ArrowUp className="w-4 h-4" />
+          ) : (
+            <ArrowDown className="w-4 h-4" />
+          )}
           {sortDir === "asc" ? "Asc" : "Desc"}
         </button>
       </div>

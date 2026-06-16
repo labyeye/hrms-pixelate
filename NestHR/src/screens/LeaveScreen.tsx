@@ -297,7 +297,8 @@ export default function LeaveScreen() {
                     ) : (
                       <View style={styles.empInitials}>
                         <Text style={styles.empInitialsText}>
-                          {(emp.firstName?.[0] || '') + (emp.lastName?.[0] || '')}
+                          {(emp.firstName?.[0] || '') +
+                            (emp.lastName?.[0] || '')}
                         </Text>
                       </View>
                     )}

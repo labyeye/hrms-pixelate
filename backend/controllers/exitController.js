@@ -12,37 +12,71 @@ const getExits = asyncHandler(async (req, res) => {
 
   const total = await ExitManagement.countDocuments(filter);
   const exits = await ExitManagement.find(filter)
-    .populate({ path: "employee", select: "firstName lastName employeeId designation", populate: { path: "department", select: "name" } })
+    .populate({
+      path: "employee",
+      select: "firstName lastName employeeId designation",
+      populate: { path: "department", select: "name" },
+    })
     .populate("initiatedBy", "name")
     .populate("approvedBy", "name")
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
 
-  res.json({ success: true, data: exits, total, page, pages: Math.ceil(total / limit) });
+  res.json({
+    success: true,
+    data: exits,
+    total,
+    page,
+    pages: Math.ceil(total / limit),
+  });
 });
 
 const getExit = asyncHandler(async (req, res) => {
-  const exit = await ExitManagement.findOne({ _id: req.params.id, company: req.user.company })
-    .populate({ path: "employee", select: "firstName lastName employeeId designation", populate: { path: "department", select: "name" } })
+  const exit = await ExitManagement.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  })
+    .populate({
+      path: "employee",
+      select: "firstName lastName employeeId designation",
+      populate: { path: "department", select: "name" },
+    })
     .populate("initiatedBy", "name")
     .populate("approvedBy", "name");
-  if (!exit) { res.status(404); throw new Error("Exit record not found"); }
+  if (!exit) {
+    res.status(404);
+    throw new Error("Exit record not found");
+  }
   res.json({ success: true, data: exit });
 });
 
 const createExit = asyncHandler(async (req, res) => {
-  const { employee, resignationDate, noticePeriodDays, reason, reasonDetails } = req.body;
+  const { employee, resignationDate, noticePeriodDays, reason, reasonDetails } =
+    req.body;
 
   if (!employee || !resignationDate || !reason) {
-    res.status(400); throw new Error("employee, resignationDate, and reason are required");
+    res.status(400);
+    throw new Error("employee, resignationDate, and reason are required");
   }
 
-  const emp = await Employee.findOne({ _id: employee, company: req.user.company });
-  if (!emp) { res.status(404); throw new Error("Employee not found"); }
+  const emp = await Employee.findOne({
+    _id: employee,
+    company: req.user.company,
+  });
+  if (!emp) {
+    res.status(404);
+    throw new Error("Employee not found");
+  }
 
-  const existing = await ExitManagement.findOne({ employee, status: { $in: ["pending", "notice_period"] } });
-  if (existing) { res.status(400); throw new Error("An active exit process already exists for this employee"); }
+  const existing = await ExitManagement.findOne({
+    employee,
+    status: { $in: ["pending", "notice_period"] },
+  });
+  if (existing) {
+    res.status(400);
+    throw new Error("An active exit process already exists for this employee");
+  }
 
   const notice = parseInt(noticePeriodDays) || 30;
   const resDate = new Date(resignationDate);
@@ -70,14 +104,29 @@ const createExit = asyncHandler(async (req, res) => {
 });
 
 const updateExit = asyncHandler(async (req, res) => {
-  const exit = await ExitManagement.findOne({ _id: req.params.id, company: req.user.company });
-  if (!exit) { res.status(404); throw new Error("Exit record not found"); }
+  const exit = await ExitManagement.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!exit) {
+    res.status(404);
+    throw new Error("Exit record not found");
+  }
 
   const allowed = [
-    "status", "exitInterviewDone", "exitInterviewNotes",
-    "assetsReturned", "assetsList", "fnfAmount", "fnfStatus",
-    "fnfPaidDate", "fnfBreakdown", "experienceLetterIssued",
-    "experienceLetterDate", "lastWorkingDay", "reasonDetails",
+    "status",
+    "exitInterviewDone",
+    "exitInterviewNotes",
+    "assetsReturned",
+    "assetsList",
+    "fnfAmount",
+    "fnfStatus",
+    "fnfPaidDate",
+    "fnfBreakdown",
+    "experienceLetterIssued",
+    "experienceLetterDate",
+    "lastWorkingDay",
+    "reasonDetails",
   ];
 
   for (const key of allowed) {
@@ -91,14 +140,22 @@ const updateExit = asyncHandler(async (req, res) => {
 
   await exit.save();
 
-  await logAudit(req, "exit_updated", "ExitManagement", exit._id, { status: exit.status });
+  await logAudit(req, "exit_updated", "ExitManagement", exit._id, {
+    status: exit.status,
+  });
 
   res.json({ success: true, data: exit });
 });
 
 const deleteExit = asyncHandler(async (req, res) => {
-  const exit = await ExitManagement.findOne({ _id: req.params.id, company: req.user.company });
-  if (!exit) { res.status(404); throw new Error("Exit record not found"); }
+  const exit = await ExitManagement.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!exit) {
+    res.status(404);
+    throw new Error("Exit record not found");
+  }
   await exit.deleteOne();
   res.json({ success: true, message: "Exit record deleted" });
 });

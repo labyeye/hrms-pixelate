@@ -348,7 +348,8 @@ export default function EmployeeDashboard() {
   };
 
   const handleRequestLeave = async () => {
-    const { leaveType, startDate, endDate, reason, isHalfDay, halfDayType } = leaveForm;
+    const { leaveType, startDate, endDate, reason, isHalfDay, halfDayType } =
+      leaveForm;
     if (!startDate || !endDate || !reason.trim()) {
       toast({ title: "Please fill all fields", variant: "destructive" });
       return;
@@ -360,16 +361,41 @@ export default function EmployeeDashboard() {
     }
     setLeaveSaving(true);
     try {
-      const res = await leaveAPI.create({ leaveType, startDate, endDate, days, reason: reason.trim(), isHalfDay, halfDayType });
+      const res = await leaveAPI.create({
+        leaveType,
+        startDate,
+        endDate,
+        days,
+        reason: reason.trim(),
+        isHalfDay,
+        halfDayType,
+      });
       if (res.success) {
-        toast({ title: "Leave requested", description: "Your request has been submitted for approval." });
+        toast({
+          title: "Leave requested",
+          description: "Your request has been submitted for approval.",
+        });
         setShowLeaveModal(false);
-        setLeaveForm({ leaveType: "casual", startDate: "", endDate: "", reason: "", isHalfDay: false, halfDayType: "first_half" });
+        setLeaveForm({
+          leaveType: "casual",
+          startDate: "",
+          endDate: "",
+          reason: "",
+          isHalfDay: false,
+          halfDayType: "first_half",
+        });
         const emp = employee;
-        leaveAPI.getAll({ employeeId: emp._id }).then((r: any) => r.success && setLeaves(r.data)).catch(() => {});
+        leaveAPI
+          .getAll({ employeeId: emp._id })
+          .then((r: any) => r.success && setLeaves(r.data))
+          .catch(() => {});
       }
     } catch (err: any) {
-      toast({ title: "Error", description: err.message || "Failed to submit leave", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: err.message || "Failed to submit leave",
+        variant: "destructive",
+      });
     } finally {
       setLeaveSaving(false);
     }
@@ -1085,10 +1111,20 @@ export default function EmployeeDashboard() {
                   </label>
                   <select
                     value={leaveForm.leaveType}
-                    onChange={(e) => setLeaveForm((f) => ({ ...f, leaveType: e.target.value }))}
+                    onChange={(e) =>
+                      setLeaveForm((f) => ({ ...f, leaveType: e.target.value }))
+                    }
                     className="w-full border-2 border-black px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#024BAB] bg-white"
                   >
-                    {["casual", "sick", "earned", "maternity", "paternity", "unpaid", "compensatory"].map((t) => (
+                    {[
+                      "casual",
+                      "sick",
+                      "earned",
+                      "maternity",
+                      "paternity",
+                      "unpaid",
+                      "compensatory",
+                    ].map((t) => (
                       <option key={t} value={t} className="capitalize">
                         {t.charAt(0).toUpperCase() + t.slice(1)}
                       </option>
@@ -1100,20 +1136,34 @@ export default function EmployeeDashboard() {
                     <input
                       type="checkbox"
                       checked={leaveForm.isHalfDay}
-                      onChange={(e) => setLeaveForm((f) => ({ ...f, isHalfDay: e.target.checked }))}
+                      onChange={(e) =>
+                        setLeaveForm((f) => ({
+                          ...f,
+                          isHalfDay: e.target.checked,
+                        }))
+                      }
                       className="w-4 h-4 border-2 border-black accent-[#024BAB]"
                     />
-                    <span className="text-xs font-bold uppercase">Half Day</span>
+                    <span className="text-xs font-bold uppercase">
+                      Half Day
+                    </span>
                   </label>
                 </div>
               </div>
 
               {leaveForm.isHalfDay && (
                 <div>
-                  <label className="block text-xs font-black uppercase mb-1.5">Half Day Type</label>
+                  <label className="block text-xs font-black uppercase mb-1.5">
+                    Half Day Type
+                  </label>
                   <select
                     value={leaveForm.halfDayType}
-                    onChange={(e) => setLeaveForm((f) => ({ ...f, halfDayType: e.target.value }))}
+                    onChange={(e) =>
+                      setLeaveForm((f) => ({
+                        ...f,
+                        halfDayType: e.target.value,
+                      }))
+                    }
                     className="w-full border-2 border-black px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#024BAB] bg-white"
                   >
                     <option value="first_half">First Half</option>
@@ -1124,21 +1174,29 @@ export default function EmployeeDashboard() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-black uppercase mb-1.5">Start Date</label>
+                  <label className="block text-xs font-black uppercase mb-1.5">
+                    Start Date
+                  </label>
                   <input
                     type="date"
                     value={leaveForm.startDate}
-                    onChange={(e) => setLeaveForm((f) => ({ ...f, startDate: e.target.value }))}
+                    onChange={(e) =>
+                      setLeaveForm((f) => ({ ...f, startDate: e.target.value }))
+                    }
                     className="w-full border-2 border-black px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-black uppercase mb-1.5">End Date</label>
+                  <label className="block text-xs font-black uppercase mb-1.5">
+                    End Date
+                  </label>
                   <input
                     type="date"
                     value={leaveForm.endDate}
                     min={leaveForm.startDate}
-                    onChange={(e) => setLeaveForm((f) => ({ ...f, endDate: e.target.value }))}
+                    onChange={(e) =>
+                      setLeaveForm((f) => ({ ...f, endDate: e.target.value }))
+                    }
                     className="w-full border-2 border-black px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
                   />
                 </div>
@@ -1146,21 +1204,33 @@ export default function EmployeeDashboard() {
 
               {leaveForm.startDate && leaveForm.endDate && (
                 <p className="text-xs text-[#024BAB] font-bold">
-                  Duration: {calcDays(leaveForm.startDate, leaveForm.endDate, leaveForm.isHalfDay)} day(s)
+                  Duration:{" "}
+                  {calcDays(
+                    leaveForm.startDate,
+                    leaveForm.endDate,
+                    leaveForm.isHalfDay,
+                  )}{" "}
+                  day(s)
                 </p>
               )}
 
               <div>
-                <label className="block text-xs font-black uppercase mb-1.5">Reason</label>
+                <label className="block text-xs font-black uppercase mb-1.5">
+                  Reason
+                </label>
                 <textarea
                   value={leaveForm.reason}
-                  onChange={(e) => setLeaveForm((f) => ({ ...f, reason: e.target.value }))}
+                  onChange={(e) =>
+                    setLeaveForm((f) => ({ ...f, reason: e.target.value }))
+                  }
                   rows={3}
                   maxLength={500}
                   placeholder="Brief reason for leave..."
                   className="w-full border-2 border-black px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#024BAB] resize-none"
                 />
-                <p className="text-[10px] text-muted-foreground text-right">{leaveForm.reason.length}/500</p>
+                <p className="text-[10px] text-muted-foreground text-right">
+                  {leaveForm.reason.length}/500
+                </p>
               </div>
             </div>
             <div className="flex gap-3 px-5 pb-5">
@@ -1175,7 +1245,11 @@ export default function EmployeeDashboard() {
                 disabled={leaveSaving}
                 className="flex-1 flex items-center justify-center gap-2 bg-[#024BAB] text-white border-2 border-black py-2.5 text-sm font-black uppercase disabled:opacity-50"
               >
-                {leaveSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                {leaveSaving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
                 {leaveSaving ? "Submitting..." : "Submit Request"}
               </button>
             </div>

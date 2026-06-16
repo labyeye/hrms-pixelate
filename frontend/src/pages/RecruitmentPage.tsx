@@ -72,7 +72,9 @@ export default function RecruitmentPage() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterPriority, setFilterPriority] = useState("");
-  const [sortKey, setSortKey] = useState<"title" | "candidates" | "positions">("title");
+  const [sortKey, setSortKey] = useState<"title" | "candidates" | "positions">(
+    "title",
+  );
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const load = useCallback(async () => {
@@ -166,8 +168,9 @@ export default function RecruitmentPage() {
   const openJobs = jobs.filter((j) => j.status === "open");
 
   const displayedJobs = [...jobs]
-    .filter(j => {
-      if (search && !j.title.toLowerCase().includes(search.toLowerCase())) return false;
+    .filter((j) => {
+      if (search && !j.title.toLowerCase().includes(search.toLowerCase()))
+        return false;
       if (filterStatus && j.status !== filterStatus) return false;
       if (filterPriority && j.priority !== filterPriority) return false;
       return true;
@@ -175,8 +178,10 @@ export default function RecruitmentPage() {
     .sort((a, b) => {
       let cmp = 0;
       if (sortKey === "title") cmp = a.title.localeCompare(b.title);
-      else if (sortKey === "candidates") cmp = (a.candidates?.length ?? 0) - (b.candidates?.length ?? 0);
-      else if (sortKey === "positions") cmp = (a.positions ?? 0) - (b.positions ?? 0);
+      else if (sortKey === "candidates")
+        cmp = (a.candidates?.length ?? 0) - (b.candidates?.length ?? 0);
+      else if (sortKey === "positions")
+        cmp = (a.positions ?? 0) - (b.positions ?? 0);
       return sortDir === "asc" ? cmp : -cmp;
     });
 
@@ -199,36 +204,59 @@ export default function RecruitmentPage() {
       <div className="flex flex-wrap gap-2 mb-5">
         <div className="flex items-center gap-2 border-2 border-black bg-white px-3 py-2 flex-1 min-w-48">
           <Search className="w-4 h-4 shrink-0 text-muted-foreground" />
-          <input type="text" placeholder="Search by job title..." value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="bg-transparent text-sm outline-none w-full font-medium" />
-          {search && <button onClick={() => setSearch("")}><X className="w-3.5 h-3.5 text-muted-foreground" /></button>}
+          <input
+            type="text"
+            placeholder="Search by job title..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="bg-transparent text-sm outline-none w-full font-medium"
+          />
+          {search && (
+            <button onClick={() => setSearch("")}>
+              <X className="w-3.5 h-3.5 text-muted-foreground" />
+            </button>
+          )}
         </div>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none">
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none"
+        >
           <option value="">All Status</option>
           <option value="open">Open</option>
           <option value="on_hold">On Hold</option>
           <option value="closed">Closed</option>
           <option value="cancelled">Cancelled</option>
         </select>
-        <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)}
-          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none">
+        <select
+          value={filterPriority}
+          onChange={(e) => setFilterPriority(e.target.value)}
+          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none"
+        >
           <option value="">All Priority</option>
           <option value="low">Low</option>
           <option value="medium">Medium</option>
           <option value="high">High</option>
           <option value="urgent">Urgent</option>
         </select>
-        <select value={sortKey} onChange={e => setSortKey(e.target.value as any)}
-          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none">
+        <select
+          value={sortKey}
+          onChange={(e) => setSortKey(e.target.value as any)}
+          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none"
+        >
           <option value="title">Sort: Title</option>
           <option value="candidates">Sort: Candidates</option>
           <option value="positions">Sort: Positions</option>
         </select>
-        <button onClick={() => setSortDir(d => d === "asc" ? "desc" : "asc")}
-          className="border-2 border-black bg-white px-3 py-2 flex items-center gap-1 font-semibold text-sm">
-          {sortDir === "asc" ? <ArrowUp className="w-4 h-4"/> : <ArrowDown className="w-4 h-4"/>}
+        <button
+          onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+          className="border-2 border-black bg-white px-3 py-2 flex items-center gap-1 font-semibold text-sm"
+        >
+          {sortDir === "asc" ? (
+            <ArrowUp className="w-4 h-4" />
+          ) : (
+            <ArrowDown className="w-4 h-4" />
+          )}
           {sortDir === "asc" ? "Asc" : "Desc"}
         </button>
       </div>
@@ -252,8 +280,16 @@ export default function RecruitmentPage() {
         <div className="border-2 border-black bg-white p-12 flex flex-col items-center justify-center">
           <Search className="w-12 h-12 text-muted-foreground/30 mb-3" />
           <p className="font-bold text-black">No jobs match your filters</p>
-          <button onClick={() => { setSearch(""); setFilterStatus(""); setFilterPriority(""); }}
-            className="text-sm text-[#024BAB] font-bold mt-2 hover:underline">Clear filters</button>
+          <button
+            onClick={() => {
+              setSearch("");
+              setFilterStatus("");
+              setFilterPriority("");
+            }}
+            className="text-sm text-[#024BAB] font-bold mt-2 hover:underline"
+          >
+            Clear filters
+          </button>
         </div>
       ) : (
         <div className="space-y-3">

@@ -141,11 +141,7 @@ function AppRoutes() {
       <Route
         path="/welcome"
         element={
-          isAuthenticated ? (
-            <WelcomePage />
-          ) : (
-            <Navigate to="/login" replace />
-          )
+          isAuthenticated ? <WelcomePage /> : <Navigate to="/login" replace />
         }
       />
       <Route

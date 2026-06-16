@@ -306,35 +306,45 @@ function TwoFactorPanel() {
 
   // Detect 2FA status from /auth/me
   useEffect(() => {
-    authAPI.getMe().then((r: any) => {
-      setEnabled(!!r.data?.twoFactorEnabled);
-    }).catch(() => {});
+    authAPI
+      .getMe()
+      .then((r: any) => {
+        setEnabled(!!r.data?.twoFactorEnabled);
+      })
+      .catch(() => {});
   }, []);
 
   const handleSetup = async () => {
     setLoading(true);
     try {
-      const res = await authAPI.setup2FA() as any;
+      const res = (await authAPI.setup2FA()) as any;
       setQr(res.data.qr);
       setSecret(res.data.secret);
       setStep("setup");
     } catch (err: any) {
-      toast({ title: err.message || "Failed to start 2FA setup", variant: "destructive" });
-    } finally { setLoading(false); }
+      toast({
+        title: err.message || "Failed to start 2FA setup",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleConfirm = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await authAPI.confirm2FA(code) as any;
+      const res = (await authAPI.confirm2FA(code)) as any;
       setBackupCodes(res.data.backupCodes);
       setEnabled(true);
       setStep("backup");
       toast({ title: "2FA enabled successfully" });
     } catch (err: any) {
       toast({ title: err.message || "Invalid code", variant: "destructive" });
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDisable = async (e: React.FormEvent) => {
@@ -348,10 +358,13 @@ function TwoFactorPanel() {
       toast({ title: "2FA disabled" });
     } catch (err: any) {
       toast({ title: err.message || "Invalid code", variant: "destructive" });
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (enabled === null) return <div className="p-6 text-sm text-gray-400">Loading...</div>;
+  if (enabled === null)
+    return <div className="p-6 text-sm text-gray-400">Loading...</div>;
 
   return (
     <div className="p-6 space-y-6 max-w-lg">
@@ -360,42 +373,78 @@ function TwoFactorPanel() {
           <ShieldCheck className="w-5 h-5" /> Two-Factor Authentication
         </h3>
         <p className="text-sm text-gray-500 mt-1">
-          Add an extra layer of security — after your password, you'll enter a code from your authenticator app.
+          Add an extra layer of security — after your password, you'll enter a
+          code from your authenticator app.
         </p>
       </div>
 
-      <div className={`flex items-center gap-3 px-4 py-3 border-2 font-black text-sm ${enabled ? "border-green-400 bg-green-50 text-green-800" : "border-gray-300 bg-gray-50 text-gray-500"}`}>
+      <div
+        className={`flex items-center gap-3 px-4 py-3 border-2 font-black text-sm ${enabled ? "border-green-400 bg-green-50 text-green-800" : "border-gray-300 bg-gray-50 text-gray-500"}`}
+      >
         <ShieldCheck className="w-4 h-4 shrink-0" />
-        {enabled ? "2FA is currently ENABLED on your account" : "2FA is currently DISABLED"}
+        {enabled
+          ? "2FA is currently ENABLED on your account"
+          : "2FA is currently DISABLED"}
       </div>
 
       {!enabled && step === "idle" && (
-        <button onClick={handleSetup} disabled={loading}
-          className="bg-[#024BAB] text-white px-5 py-2.5 text-sm font-black border-2 border-black hover:shadow-[4px_4px_0px_#0a0a0a] transition-all disabled:opacity-50">
+        <button
+          onClick={handleSetup}
+          disabled={loading}
+          className="bg-[#024BAB] text-white px-5 py-2.5 text-sm font-black border-2 border-black hover:shadow-[4px_4px_0px_#0a0a0a] transition-all disabled:opacity-50"
+        >
           {loading ? "Setting up..." : "Enable 2FA"}
         </button>
       )}
 
       {step === "setup" && (
         <div className="border-2 border-black p-5 space-y-4">
-          <p className="text-sm font-bold">1. Scan this QR code with Google Authenticator, Authy, or any TOTP app:</p>
+          <p className="text-sm font-bold">
+            1. Scan this QR code with Google Authenticator, Authy, or any TOTP
+            app:
+          </p>
           <div className="flex justify-center">
-            <img src={qr} alt="2FA QR Code" className="border-2 border-black w-48 h-48" />
+            <img
+              src={qr}
+              alt="2FA QR Code"
+              className="border-2 border-black w-48 h-48"
+            />
           </div>
-          <p className="text-xs text-gray-500">Can't scan? Enter this secret manually: <code className="bg-gray-100 px-2 py-0.5 font-mono text-xs border border-gray-300 break-all">{secret}</code></p>
-          <p className="text-sm font-bold">2. Enter the 6-digit code from your app to confirm:</p>
+          <p className="text-xs text-gray-500">
+            Can't scan? Enter this secret manually:{" "}
+            <code className="bg-gray-100 px-2 py-0.5 font-mono text-xs border border-gray-300 break-all">
+              {secret}
+            </code>
+          </p>
+          <p className="text-sm font-bold">
+            2. Enter the 6-digit code from your app to confirm:
+          </p>
           <form onSubmit={handleConfirm} className="flex gap-2">
             <input
-              type="text" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              placeholder="000000" maxLength={6}
+              type="text"
+              value={code}
+              onChange={(e) =>
+                setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+              }
+              placeholder="000000"
+              maxLength={6}
               className="flex-1 px-3 py-2.5 border-2 border-black text-lg font-black tracking-[0.4em] text-center focus:outline-none focus:border-[#024BAB]"
             />
-            <button type="submit" disabled={loading || code.length < 6}
-              className="bg-[#024BAB] text-white px-5 py-2.5 text-sm font-black border-2 border-black disabled:opacity-50 hover:shadow-[4px_4px_0px_#0a0a0a] transition-all">
+            <button
+              type="submit"
+              disabled={loading || code.length < 6}
+              className="bg-[#024BAB] text-white px-5 py-2.5 text-sm font-black border-2 border-black disabled:opacity-50 hover:shadow-[4px_4px_0px_#0a0a0a] transition-all"
+            >
               {loading ? "..." : "Verify"}
             </button>
           </form>
-          <button type="button" onClick={() => setStep("idle")} className="text-xs text-gray-400 hover:text-black font-bold">Cancel</button>
+          <button
+            type="button"
+            onClick={() => setStep("idle")}
+            className="text-xs text-gray-400 hover:text-black font-bold"
+          >
+            Cancel
+          </button>
         </div>
       )}
 
@@ -403,14 +452,25 @@ function TwoFactorPanel() {
         <div className="border-2 border-black p-5 space-y-4">
           <div className="flex items-start gap-2 bg-yellow-50 border-2 border-yellow-400 p-3">
             <AlertCircle className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />
-            <p className="text-sm font-bold text-yellow-800">Save these backup codes now. Each can only be used once. Store them somewhere safe.</p>
+            <p className="text-sm font-bold text-yellow-800">
+              Save these backup codes now. Each can only be used once. Store
+              them somewhere safe.
+            </p>
           </div>
           <div className="grid grid-cols-2 gap-2">
             {backupCodes.map((c) => (
-              <code key={c} className="bg-gray-100 border border-gray-300 px-3 py-1.5 text-sm font-mono text-center tracking-widest">{c}</code>
+              <code
+                key={c}
+                className="bg-gray-100 border border-gray-300 px-3 py-1.5 text-sm font-mono text-center tracking-widest"
+              >
+                {c}
+              </code>
             ))}
           </div>
-          <button onClick={() => setStep("idle")} className="bg-[#024BAB] text-white px-5 py-2.5 text-sm font-black border-2 border-black hover:shadow-[4px_4px_0px_#0a0a0a] transition-all">
+          <button
+            onClick={() => setStep("idle")}
+            className="bg-[#024BAB] text-white px-5 py-2.5 text-sm font-black border-2 border-black hover:shadow-[4px_4px_0px_#0a0a0a] transition-all"
+          >
             Done — I've saved my codes
           </button>
         </div>
@@ -419,15 +479,25 @@ function TwoFactorPanel() {
       {enabled && step === "idle" && (
         <div className="border-2 border-red-300 p-5 space-y-3">
           <p className="text-sm font-black text-red-700">Disable 2FA</p>
-          <p className="text-xs text-gray-500">Enter a code from your authenticator app to disable 2FA.</p>
+          <p className="text-xs text-gray-500">
+            Enter a code from your authenticator app to disable 2FA.
+          </p>
           <form onSubmit={handleDisable} className="flex gap-2">
             <input
-              type="text" value={disableCode} onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              placeholder="000000" maxLength={6}
+              type="text"
+              value={disableCode}
+              onChange={(e) =>
+                setDisableCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+              }
+              placeholder="000000"
+              maxLength={6}
               className="flex-1 px-3 py-2.5 border-2 border-black text-lg font-black tracking-[0.4em] text-center focus:outline-none focus:border-red-400"
             />
-            <button type="submit" disabled={loading || disableCode.length < 6}
-              className="bg-red-600 text-white px-5 py-2.5 text-sm font-black border-2 border-black disabled:opacity-50">
+            <button
+              type="submit"
+              disabled={loading || disableCode.length < 6}
+              className="bg-red-600 text-white px-5 py-2.5 text-sm font-black border-2 border-black disabled:opacity-50"
+            >
               {loading ? "..." : "Disable"}
             </button>
           </form>
@@ -460,7 +530,11 @@ export default function SettingsPage() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [photoUploading, setPhotoUploading] = useState(false);
   const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
-  const [showPw, setShowPw] = useState({ current: false, next: false, confirm: false });
+  const [showPw, setShowPw] = useState({
+    current: false,
+    next: false,
+    confirm: false,
+  });
   const [pwSaving, setPwSaving] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -476,11 +550,21 @@ export default function SettingsPage() {
   const handleSaveProfile = async () => {
     setProfileSaving(true);
     try {
-      const res = (await authAPI.updateProfile({ name: profileName.trim(), phone: profilePhone.trim() })) as any;
-      updateUser({ name: res.data?.name || profileName.trim(), phone: res.data?.phone || profilePhone.trim() });
+      const res = (await authAPI.updateProfile({
+        name: profileName.trim(),
+        phone: profilePhone.trim(),
+      })) as any;
+      updateUser({
+        name: res.data?.name || profileName.trim(),
+        phone: res.data?.phone || profilePhone.trim(),
+      });
       toast({ title: "Profile saved", description: "Name and phone updated." });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message || "Failed to save", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: err.message || "Failed to save",
+        variant: "destructive",
+      });
     } finally {
       setProfileSaving(false);
     }
@@ -490,7 +574,11 @@ export default function SettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 3 * 1024 * 1024) {
-      toast({ title: "File too large", description: "Please choose an image under 3 MB", variant: "destructive" });
+      toast({
+        title: "File too large",
+        description: "Please choose an image under 3 MB",
+        variant: "destructive",
+      });
       return;
     }
     setPhotoUploading(true);
@@ -505,20 +593,28 @@ export default function SettingsPage() {
       if (base64.length > 500_000) {
         const img = new Image();
         img.src = base64;
-        await new Promise<void>((r) => { img.onload = () => r(); });
+        await new Promise<void>((r) => {
+          img.onload = () => r();
+        });
         const canvas = document.createElement("canvas");
         const MAX = 400;
         const scale = Math.min(MAX / img.width, MAX / img.height, 1);
         canvas.width = img.width * scale;
         canvas.height = img.height * scale;
-        canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas
+          .getContext("2d")!
+          .drawImage(img, 0, 0, canvas.width, canvas.height);
         finalBase64 = canvas.toDataURL("image/jpeg", 0.8);
       }
       await authAPI.updateProfile({ avatar: finalBase64 });
       updateUser({ avatar: finalBase64 });
       toast({ title: "Photo updated" });
     } catch (err: any) {
-      toast({ title: "Upload failed", description: err.message || "Could not save photo", variant: "destructive" });
+      toast({
+        title: "Upload failed",
+        description: err.message || "Could not save photo",
+        variant: "destructive",
+      });
     } finally {
       setPhotoUploading(false);
       if (photoInputRef.current) photoInputRef.current.value = "";
@@ -532,7 +628,11 @@ export default function SettingsPage() {
       updateUser({ avatar: "" });
       toast({ title: "Photo removed" });
     } catch (err: any) {
-      toast({ title: "Failed", description: err.message, variant: "destructive" });
+      toast({
+        title: "Failed",
+        description: err.message,
+        variant: "destructive",
+      });
     } finally {
       setPhotoUploading(false);
     }
@@ -545,11 +645,21 @@ export default function SettingsPage() {
     }
     setPwSaving(true);
     try {
-      await authAPI.updateProfile({ currentPassword: pwForm.current, password: pwForm.next });
+      await authAPI.updateProfile({
+        currentPassword: pwForm.current,
+        password: pwForm.next,
+      });
       setPwForm({ current: "", next: "", confirm: "" });
-      toast({ title: "Password changed", description: "Your new password is active." });
+      toast({
+        title: "Password changed",
+        description: "Your new password is active.",
+      });
     } catch (err: any) {
-      toast({ title: "Error", description: err.message || "Failed to change password", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: err.message || "Failed to change password",
+        variant: "destructive",
+      });
     } finally {
       setPwSaving(false);
     }
@@ -1798,7 +1908,11 @@ export default function SettingsPage() {
                     <div className="relative group">
                       <div className="w-24 h-24 border-2 border-black bg-[#024BAB] flex items-center justify-center text-2xl font-bold text-white overflow-hidden">
                         {user?.avatar ? (
-                          <img src={user.avatar} alt="avatar" className="w-full h-full object-cover" />
+                          <img
+                            src={user.avatar}
+                            alt="avatar"
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
                           <span>{user?.name?.[0]?.toUpperCase()}</span>
                         )}
@@ -1808,7 +1922,11 @@ export default function SettingsPage() {
                         disabled={photoUploading}
                         className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                       >
-                        {photoUploading ? <Loader2 className="w-4 h-4 text-white animate-spin" /> : <Camera className="w-4 h-4 text-white" />}
+                        {photoUploading ? (
+                          <Loader2 className="w-4 h-4 text-white animate-spin" />
+                        ) : (
+                          <Camera className="w-4 h-4 text-white" />
+                        )}
                       </button>
                     </div>
                     <div className="flex gap-3">
@@ -1830,18 +1948,28 @@ export default function SettingsPage() {
                         </button>
                       )}
                     </div>
-                    <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+                    <input
+                      ref={photoInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handlePhotoChange}
+                    />
                   </div>
 
                   {/* Edit Info */}
                   <div className="border-2 border-black overflow-hidden">
                     <div className="px-4 py-3 bg-[#024BAB] border-b-2 border-black flex items-center gap-2">
                       <UserCircle className="w-4 h-4 text-white" />
-                      <p className="text-xs font-black uppercase tracking-wider text-white">Edit Profile</p>
+                      <p className="text-xs font-black uppercase tracking-wider text-white">
+                        Edit Profile
+                      </p>
                     </div>
                     <div className="p-5 space-y-4">
                       <div>
-                        <label className="block text-xs font-black uppercase mb-1.5">Display Name</label>
+                        <label className="block text-xs font-black uppercase mb-1.5">
+                          Display Name
+                        </label>
                         <input
                           value={profileName}
                           onChange={(e) => setProfileName(e.target.value)}
@@ -1850,7 +1978,9 @@ export default function SettingsPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-black uppercase mb-1.5">Phone Number</label>
+                        <label className="block text-xs font-black uppercase mb-1.5">
+                          Phone Number
+                        </label>
                         <input
                           value={profilePhone}
                           onChange={(e) => setProfilePhone(e.target.value)}
@@ -1859,20 +1989,28 @@ export default function SettingsPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-black uppercase mb-1.5">Email</label>
+                        <label className="block text-xs font-black uppercase mb-1.5">
+                          Email
+                        </label>
                         <input
                           value={user?.email || ""}
                           disabled
                           className="w-full border-2 border-black/30 px-3 py-2.5 text-sm font-medium bg-gray-50 text-gray-400 cursor-not-allowed"
                         />
-                        <p className="text-[10px] text-muted-foreground mt-1">Email cannot be changed.</p>
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          Email cannot be changed.
+                        </p>
                       </div>
                       <button
                         onClick={handleSaveProfile}
                         disabled={profileSaving}
                         className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-6 py-2.5 text-xs font-black uppercase disabled:opacity-50"
                       >
-                        {profileSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        {profileSaving ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Save className="w-4 h-4" />
+                        )}
                         {profileSaving ? "Saving..." : "Save Changes"}
                       </button>
                     </div>
@@ -1882,7 +2020,9 @@ export default function SettingsPage() {
                   <div className="border-2 border-black overflow-hidden">
                     <div className="px-4 py-3 bg-[#024BAB] border-b-2 border-black flex items-center gap-2">
                       <Lock className="w-4 h-4 text-white" />
-                      <p className="text-xs font-black uppercase tracking-wider text-white">Change Password</p>
+                      <p className="text-xs font-black uppercase tracking-wider text-white">
+                        Change Password
+                      </p>
                     </div>
                     <div className="p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
                       {[
@@ -1891,21 +2031,41 @@ export default function SettingsPage() {
                         { key: "confirm", label: "Confirm New Password" },
                       ].map(({ key, label }) => (
                         <div key={key}>
-                          <label className="block text-xs font-black uppercase mb-1.5">{label}</label>
+                          <label className="block text-xs font-black uppercase mb-1.5">
+                            {label}
+                          </label>
                           <div className="relative">
                             <input
-                              type={showPw[key as keyof typeof showPw] ? "text" : "password"}
+                              type={
+                                showPw[key as keyof typeof showPw]
+                                  ? "text"
+                                  : "password"
+                              }
                               value={pwForm[key as keyof typeof pwForm]}
-                              onChange={(e) => setPwForm((p) => ({ ...p, [key]: e.target.value }))}
+                              onChange={(e) =>
+                                setPwForm((p) => ({
+                                  ...p,
+                                  [key]: e.target.value,
+                                }))
+                              }
                               className="w-full border-2 border-black px-3 py-2.5 pr-9 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
                               placeholder="••••••••"
                             />
                             <button
                               type="button"
-                              onClick={() => setShowPw((p) => ({ ...p, [key]: !p[key as keyof typeof p] }))}
+                              onClick={() =>
+                                setShowPw((p) => ({
+                                  ...p,
+                                  [key]: !p[key as keyof typeof p],
+                                }))
+                              }
                               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black"
                             >
-                              {showPw[key as keyof typeof showPw] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              {showPw[key as keyof typeof showPw] ? (
+                                <EyeOff className="w-4 h-4" />
+                              ) : (
+                                <Eye className="w-4 h-4" />
+                              )}
                             </button>
                           </div>
                         </div>
@@ -1913,10 +2073,19 @@ export default function SettingsPage() {
                       <div className="sm:col-span-3">
                         <button
                           onClick={handleChangePassword}
-                          disabled={pwSaving || !pwForm.current || !pwForm.next || !pwForm.confirm}
+                          disabled={
+                            pwSaving ||
+                            !pwForm.current ||
+                            !pwForm.next ||
+                            !pwForm.confirm
+                          }
                           className="flex items-center gap-2 bg-[#FA731C] text-white border-2 border-black px-6 py-2.5 text-xs font-black uppercase disabled:opacity-50"
                         >
-                          {pwSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+                          {pwSaving ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Lock className="w-4 h-4" />
+                          )}
                           {pwSaving ? "Changing..." : "Change Password"}
                         </button>
                       </div>
@@ -1927,35 +2096,33 @@ export default function SettingsPage() {
             </div>
 
             {activeTab !== "my_profile" && (
-            <div className="border-t-2 border-black p-4 flex justify-end bg-gray-50/50">
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className={cn(
-                  "px-6 py-2.5 text-sm font-bold text-white border-2 border-black flex items-center gap-2 transition-all",
-                  saving
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-[#024BAB] hover:bg-[#01368A] active:scale-95",
-                )}
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    Save Changes
-                  </>
-                )}
-              </button>
-            </div>
+              <div className="border-t-2 border-black p-4 flex justify-end bg-gray-50/50">
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className={cn(
+                    "px-6 py-2.5 text-sm font-bold text-white border-2 border-black flex items-center gap-2 transition-all",
+                    saving
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-[#024BAB] hover:bg-[#01368A] active:scale-95",
+                  )}
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Save Changes
+                    </>
+                  )}
+                </button>
+              </div>
             )}
 
-              {activeTab === "two_factor" && (
-                <TwoFactorPanel />
-              )}
+            {activeTab === "two_factor" && <TwoFactorPanel />}
           </div>
           {}
         </div>

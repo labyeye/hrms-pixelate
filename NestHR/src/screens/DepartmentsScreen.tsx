@@ -329,7 +329,9 @@ export default function DepartmentsScreen() {
                 <TextInput
                   style={styles.fieldInput}
                   value={form.shiftStartTime}
-                  onChangeText={v => setForm(p => ({ ...p, shiftStartTime: v }))}
+                  onChangeText={v =>
+                    setForm(p => ({ ...p, shiftStartTime: v }))
+                  }
                   placeholder="09:00"
                   placeholderTextColor={C.textLight}
                 />

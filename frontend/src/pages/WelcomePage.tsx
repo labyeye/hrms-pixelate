@@ -24,9 +24,21 @@ const FEATURES = [
 ];
 
 const STEPS = [
-  { num: "01", title: "Add your team", desc: "Import or add employees one by one" },
-  { num: "02", title: "Set up departments", desc: "Organise your workforce by teams" },
-  { num: "03", title: "Configure payroll", desc: "Set salary heads and pay cycles" },
+  {
+    num: "01",
+    title: "Add your team",
+    desc: "Import or add employees one by one",
+  },
+  {
+    num: "02",
+    title: "Set up departments",
+    desc: "Organise your workforce by teams",
+  },
+  {
+    num: "03",
+    title: "Configure payroll",
+    desc: "Set salary heads and pay cycles",
+  },
 ];
 
 export default function WelcomePage() {
@@ -59,7 +71,10 @@ export default function WelcomePage() {
       navigate("/", { replace: true });
       return;
     }
-    const t = setTimeout(() => setCountdown((c) => (c !== null ? c - 1 : null)), 1000);
+    const t = setTimeout(
+      () => setCountdown((c) => (c !== null ? c - 1 : null)),
+      1000,
+    );
     return () => clearTimeout(t);
   }, [countdown, navigate]);
 
@@ -74,12 +89,13 @@ export default function WelcomePage() {
           <div className="w-9 h-9 bg-[#024BAB] border-2 border-black flex items-center justify-center">
             <Zap className="w-5 h-5 text-white" />
           </div>
-          <span className="font-display font-black text-xl text-black">NestHR</span>
+          <span className="font-display font-black text-xl text-black">
+            NestHR
+          </span>
         </div>
       </header>
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-12 flex flex-col gap-10">
-
         {/* Hero block */}
         <div
           className={cn(
@@ -115,12 +131,13 @@ export default function WelcomePage() {
               </div>
 
               <h1 className="font-display font-black text-3xl sm:text-4xl text-white leading-tight">
-                Welcome aboard,<br />
+                Welcome aboard,
+                <br />
                 <span className="text-[#FA731C]">{userName}!</span>
               </h1>
               <p className="mt-3 text-white/80 text-sm font-medium max-w-md">
-                Your NestHR workspace is live. Everything you need to manage your
-                team — payroll, attendance, leaves, performance — is ready.
+                Your NestHR workspace is live. Everything you need to manage
+                your team — payroll, attendance, leaves, performance — is ready.
               </p>
             </div>
 
@@ -153,7 +170,9 @@ export default function WelcomePage() {
         <div
           className={cn(
             "transition-all duration-700 ease-out",
-            featuresVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8",
+            featuresVisible
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 translate-y-8",
           )}
         >
           <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4">
@@ -184,7 +203,9 @@ export default function WelcomePage() {
         <div
           className={cn(
             "transition-all duration-700 ease-out",
-            stepsVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8",
+            stepsVisible
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 translate-y-8",
           )}
         >
           <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4">
@@ -201,7 +222,9 @@ export default function WelcomePage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-black text-black">{title}</p>
-                  <p className="text-xs text-gray-500 font-medium mt-0.5">{desc}</p>
+                  <p className="text-xs text-gray-500 font-medium mt-0.5">
+                    {desc}
+                  </p>
                 </div>
                 <ArrowRight className="w-4 h-4 text-gray-300 shrink-0" />
               </div>

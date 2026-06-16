@@ -62,10 +62,10 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
-  active:     { color: C.success,   bg: '#F0FDF4' },
-  inactive:   { color: '#9CA3AF',   bg: '#F9FAFB' },
-  on_leave:   { color: C.warning,   bg: '#FFF7ED' },
-  terminated: { color: C.danger,    bg: '#FEF2F2' },
+  active: { color: C.success, bg: '#F0FDF4' },
+  inactive: { color: '#9CA3AF', bg: '#F9FAFB' },
+  on_leave: { color: C.warning, bg: '#FFF7ED' },
+  terminated: { color: C.danger, bg: '#FEF2F2' },
 };
 const EMP_TYPES = ['full_time', 'part_time', 'contract', 'intern'];
 const GENDERS = ['male', 'female', 'other'];
@@ -327,7 +327,11 @@ export default function EmployeesScreen() {
     setActionRecords([]);
     setActionModal(action);
 
-    if (action === 'attendance' || action === 'payroll' || action === 'leaves') {
+    if (
+      action === 'attendance' ||
+      action === 'payroll' ||
+      action === 'leaves'
+    ) {
       setActionRecordsLoading(true);
       try {
         if (action === 'attendance') {
@@ -349,7 +353,11 @@ export default function EmployeesScreen() {
     if (!detailEmp) return;
     setActionLoading(true);
     try {
-      if (actionModal === 'allowance' || actionModal === 'penalty' || actionModal === 'overtime') {
+      if (
+        actionModal === 'allowance' ||
+        actionModal === 'penalty' ||
+        actionModal === 'overtime'
+      ) {
         const payload: any = {
           employee: detailEmp._id,
           type: actionModal,
@@ -363,7 +371,12 @@ export default function EmployeesScreen() {
           payload.amount = parseFloat(actionForm.amount || '0');
         }
         await transactionAPI.create(payload);
-        const label = actionModal === 'allowance' ? 'Allowance/Bonus' : actionModal === 'overtime' ? 'Overtime' : 'Penalty';
+        const label =
+          actionModal === 'allowance'
+            ? 'Allowance/Bonus'
+            : actionModal === 'overtime'
+              ? 'Overtime'
+              : 'Penalty';
         Alert.alert('Success', `${label} added successfully`);
       } else if (actionModal === 'loan' || actionModal === 'advance') {
         await loanAPI.create({
@@ -374,12 +387,19 @@ export default function EmployeesScreen() {
           monthlyEmi: parseFloat(actionForm.monthlyEmi || '0'),
           reason: actionForm.reason || '',
         });
-        Alert.alert('Success', `${actionModal === 'loan' ? 'Loan' : 'Advance'} added`);
+        Alert.alert(
+          'Success',
+          `${actionModal === 'loan' ? 'Loan' : 'Advance'} added`,
+        );
         await load();
       } else if (actionModal === 'salary') {
         const month = parseInt(actionForm.month || '1');
         const year = parseInt(actionForm.year || '2025');
-        const res = await payrollAPI.process({ employees: [detailEmp._id], month, year });
+        const res = await payrollAPI.process({
+          employees: [detailEmp._id],
+          month,
+          year,
+        });
         const payrollId = res.data?.[0]?._id || res.data?._id;
         if (payrollId) await payrollAPI.markPaid(payrollId);
         Alert.alert('Success', 'Salary processed and marked paid');
@@ -401,16 +421,41 @@ export default function EmployeesScreen() {
   };
 
   const ACTION_ITEMS = [
-    { key: 'attendance', label: 'Attendance Log', icon: ClipboardList, color: C.primary },
-    { key: 'payroll', label: 'Payment History', icon: Receipt, color: '#7C3AED' },
+    {
+      key: 'attendance',
+      label: 'Attendance Log',
+      icon: ClipboardList,
+      color: C.primary,
+    },
+    {
+      key: 'payroll',
+      label: 'Payment History',
+      icon: Receipt,
+      color: '#7C3AED',
+    },
     { key: 'loan', label: 'Add Loan', icon: Landmark, color: C.warning },
     { key: 'advance', label: 'Add Advance', icon: Wallet, color: '#0891B2' },
-    { key: 'allowance', label: 'Allowance / Bonus', icon: TrendingUp, color: C.success },
+    {
+      key: 'allowance',
+      label: 'Allowance / Bonus',
+      icon: TrendingUp,
+      color: C.success,
+    },
     { key: 'penalty', label: 'Penalty', icon: AlertTriangle, color: C.danger },
     { key: 'overtime', label: 'Overtime', icon: Timer, color: '#EA580C' },
     { key: 'salary', label: 'Pay Salary', icon: IndianRupee, color: '#059669' },
-    { key: 'leaves', label: 'Leave Balance', icon: CalendarDays, color: '#DB2777' },
-    { key: 'credentials', label: 'Credentials', icon: KeyRound, color: '#4F46E5' },
+    {
+      key: 'leaves',
+      label: 'Leave Balance',
+      icon: CalendarDays,
+      color: '#DB2777',
+    },
+    {
+      key: 'credentials',
+      label: 'Credentials',
+      icon: KeyRound,
+      color: '#4F46E5',
+    },
   ];
 
   const F = (label: string, key: keyof typeof EMPTY_FORM, props: any = {}) => (
@@ -508,14 +553,30 @@ export default function EmployeesScreen() {
       >
         {/* ALL pill */}
         <TouchableOpacity
-          style={[styles.summaryPill, { backgroundColor: statusFilter === '' ? C.primary : '#F3F4F6', borderColor: C.primary }]}
+          style={[
+            styles.summaryPill,
+            {
+              backgroundColor: statusFilter === '' ? C.primary : '#F3F4F6',
+              borderColor: C.primary,
+            },
+          ]}
           onPress={() => setStatusFilter('')}
           activeOpacity={0.8}
         >
-          <Text style={[styles.summaryCount, { color: statusFilter === '' ? C.white : C.primary }]}>
+          <Text
+            style={[
+              styles.summaryCount,
+              { color: statusFilter === '' ? C.white : C.primary },
+            ]}
+          >
             {employees.length}
           </Text>
-          <Text style={[styles.summaryStatus, { color: statusFilter === '' ? C.white : C.primary }]}>
+          <Text
+            style={[
+              styles.summaryStatus,
+              { color: statusFilter === '' ? C.white : C.primary },
+            ]}
+          >
             All
           </Text>
         </TouchableOpacity>
@@ -526,14 +587,30 @@ export default function EmployeesScreen() {
           return (
             <TouchableOpacity
               key={status}
-              style={[styles.summaryPill, { backgroundColor: active ? cfg.color : cfg.bg, borderColor: cfg.color }]}
-              onPress={() => setStatusFilter(p => p === status ? '' : status)}
+              style={[
+                styles.summaryPill,
+                {
+                  backgroundColor: active ? cfg.color : cfg.bg,
+                  borderColor: cfg.color,
+                },
+              ]}
+              onPress={() => setStatusFilter(p => (p === status ? '' : status))}
               activeOpacity={0.8}
             >
-              <Text style={[styles.summaryCount, { color: active ? C.white : cfg.color }]}>
+              <Text
+                style={[
+                  styles.summaryCount,
+                  { color: active ? C.white : cfg.color },
+                ]}
+              >
                 {count}
               </Text>
-              <Text style={[styles.summaryStatus, { color: active ? C.white : cfg.color }]}>
+              <Text
+                style={[
+                  styles.summaryStatus,
+                  { color: active ? C.white : cfg.color },
+                ]}
+              >
                 {status.replace('_', ' ')}
               </Text>
             </TouchableOpacity>
@@ -567,7 +644,11 @@ export default function EmployeesScreen() {
           renderItem={({ item }) => {
             const statusColor = STATUS_COLOR[item.status] || '#9CA3AF';
             return (
-              <TouchableOpacity style={styles.card} onPress={() => setDetailEmp(item)} activeOpacity={0.85}>
+              <TouchableOpacity
+                style={styles.card}
+                onPress={() => setDetailEmp(item)}
+                activeOpacity={0.85}
+              >
                 <View style={styles.cardTop}>
                   {(item as any).avatar ? (
                     <Image
@@ -576,7 +657,13 @@ export default function EmployeesScreen() {
                     />
                   ) : (
                     <View
-                      style={[styles.avatar, { backgroundColor: C.primary, borderColor: statusColor }]}
+                      style={[
+                        styles.avatar,
+                        {
+                          backgroundColor: C.primary,
+                          borderColor: statusColor,
+                        },
+                      ]}
                     >
                       <Text style={styles.avatarText}>
                         {item.firstName[0]}
@@ -594,7 +681,10 @@ export default function EmployeesScreen() {
                     </Text>
                     {(item as any).loanBalance > 0 && (
                       <View style={styles.loanBadge}>
-                        <Text style={styles.loanBadgeText}>Loan: ₹{(((item as any).loanBalance) / 1000).toFixed(1)}K</Text>
+                        <Text style={styles.loanBadgeText}>
+                          Loan: ₹{((item as any).loanBalance / 1000).toFixed(1)}
+                          K
+                        </Text>
                       </View>
                     )}
                   </View>
@@ -647,13 +737,19 @@ export default function EmployeesScreen() {
                   </View>
                   <View style={{ flexDirection: 'row', gap: 6 }}>
                     <TouchableOpacity
-                      onPress={(e) => { e.stopPropagation?.(); openEdit(item); }}
+                      onPress={e => {
+                        e.stopPropagation?.();
+                        openEdit(item);
+                      }}
                       style={styles.editBtn}
                     >
                       <Edit2 size={13} color={C.primary} />
                     </TouchableOpacity>
                     <TouchableOpacity
-                      onPress={(e) => { e.stopPropagation?.(); handleDelete(item); }}
+                      onPress={e => {
+                        e.stopPropagation?.();
+                        handleDelete(item);
+                      }}
                       style={styles.deleteBtn}
                     >
                       <Trash2 size={13} color={C.danger} />
@@ -671,15 +767,28 @@ export default function EmployeesScreen() {
         visible={!!detailEmp}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={() => { if (actionModal) { setActionModal(null); } else { setDetailEmp(null); } }}
+        onRequestClose={() => {
+          if (actionModal) {
+            setActionModal(null);
+          } else {
+            setDetailEmp(null);
+          }
+        }}
       >
         {detailEmp && (
           <SafeAreaView style={styles.safe} edges={['top']}>
             {/* Header — changes based on current view */}
             <View style={styles.modalHeader}>
               {actionModal ? (
-                <TouchableOpacity onPress={() => setActionModal(null)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <X size={18} color={C.black} style={{ transform: [{ rotate: '180deg' }] }} />
+                <TouchableOpacity
+                  onPress={() => setActionModal(null)}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                >
+                  <X
+                    size={18}
+                    color={C.black}
+                    style={{ transform: [{ rotate: '180deg' }] }}
+                  />
                   <Text style={[styles.modalTitle, { fontSize: 16 }]}>
                     {ACTION_ITEMS.find(a => a.key === actionModal)?.label}
                   </Text>
@@ -687,170 +796,491 @@ export default function EmployeesScreen() {
               ) : (
                 <Text style={styles.modalTitle}>Employee Detail</Text>
               )}
-              <TouchableOpacity onPress={() => { setActionModal(null); setDetailEmp(null); }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setActionModal(null);
+                  setDetailEmp(null);
+                }}
+              >
                 <X size={22} color={C.black} />
               </TouchableOpacity>
             </View>
 
             {/* ── MAIN DETAIL VIEW ── */}
             {!actionModal && (
-            <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-              {/* Profile header */}
-              <View style={{ alignItems: 'center', paddingVertical: 12, gap: 8 }}>
-                {(detailEmp as any).avatar ? (
-                  <Image source={{ uri: (detailEmp as any).avatar }} style={{ width: 80, height: 80, borderRadius: 40, borderWidth: 3, borderColor: STATUS_COLOR[detailEmp.status] || C.black }} />
-                ) : (
-                  <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: C.primary, borderWidth: 3, borderColor: STATUS_COLOR[detailEmp.status] || C.black, alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ color: C.white, fontSize: 26, fontWeight: '700' }}>{detailEmp.firstName[0]}{detailEmp.lastName[0]}</Text>
-                  </View>
-                )}
-                <Text style={{ fontSize: 20, fontWeight: '700', color: C.black }}>{detailEmp.firstName} {detailEmp.lastName}</Text>
-                <Text style={{ fontSize: 12, color: C.textMuted, fontFamily: 'monospace' }}>{detailEmp.employeeId}</Text>
-                <View style={[styles.statusBadge, { backgroundColor: STATUS_COLOR[detailEmp.status] || '#9CA3AF', borderColor: C.black }]}>
-                  <Text style={[styles.statusText, { color: C.white }]}>{detailEmp.status.replace('_', ' ').toUpperCase()}</Text>
-                </View>
-              </View>
-
-              {/* Info table */}
-              <View style={{ borderWidth: 2, borderColor: C.black, backgroundColor: C.white }}>
-                {([
-                  ['Designation', detailEmp.designation || '—'],
-                  ['Department', getDeptName(detailEmp.department)],
-                  ['Employment Type', detailEmp.employmentType?.replace('_', ' ').toUpperCase() || '—'],
-                  ['Joining Date', detailEmp.joiningDate ? new Date(detailEmp.joiningDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'],
-                  ['Email', detailEmp.email || '—'],
-                  ['Phone', (detailEmp as any).phone || '—'],
-                  ...(detailEmp.salary || (detailEmp as any).monthlySalary ? [['Monthly Salary', `₹${((detailEmp as any).monthlySalary || detailEmp.salary || 0).toLocaleString()}`]] : []),
-                  ...((detailEmp as any).loanBalance > 0 ? [['Loan Balance', `₹${(detailEmp as any).loanBalance.toLocaleString()}`]] : []),
-                  ...((detailEmp as any).advanceBalance > 0 ? [['Advance Balance', `₹${(detailEmp as any).advanceBalance.toLocaleString()}`]] : []),
-                ] as [string, string][]).map(([label, value], i, arr) => (
-                  <View key={label} style={{ flexDirection: 'row', paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: i < arr.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: C.textMuted, textTransform: 'uppercase', width: 130 }}>{label}</Text>
-                    <Text style={{ fontSize: 13, fontWeight: '500', color: C.black, flex: 1 }}>{value}</Text>
-                  </View>
-                ))}
-              </View>
-
-              {/* Action grid */}
-              <View>
-                <Text style={styles.sectionDividerText}>Quick Actions</Text>
-                <View style={styles.actionGrid}>
-                  {ACTION_ITEMS.map(({ key, label, icon: Icon, color }) => (
-                    <TouchableOpacity
-                      key={key}
-                      style={styles.actionCell}
-                      onPress={() => openAction(key)}
-                      activeOpacity={0.75}
+              <ScrollView
+                contentContainerStyle={{
+                  padding: 16,
+                  gap: 14,
+                  paddingBottom: 40,
+                }}
+                showsVerticalScrollIndicator={false}
+              >
+                {/* Profile header */}
+                <View
+                  style={{ alignItems: 'center', paddingVertical: 12, gap: 8 }}
+                >
+                  {(detailEmp as any).avatar ? (
+                    <Image
+                      source={{ uri: (detailEmp as any).avatar }}
+                      style={{
+                        width: 80,
+                        height: 80,
+                        borderRadius: 40,
+                        borderWidth: 3,
+                        borderColor: STATUS_COLOR[detailEmp.status] || C.black,
+                      }}
+                    />
+                  ) : (
+                    <View
+                      style={{
+                        width: 80,
+                        height: 80,
+                        borderRadius: 40,
+                        backgroundColor: C.primary,
+                        borderWidth: 3,
+                        borderColor: STATUS_COLOR[detailEmp.status] || C.black,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
                     >
-                      <View style={[styles.actionIcon, { backgroundColor: color + '18', borderColor: color }]}>
-                        <Icon size={20} color={color} />
-                      </View>
-                      <Text style={styles.actionLabel}>{label}</Text>
-                    </TouchableOpacity>
+                      <Text
+                        style={{
+                          color: C.white,
+                          fontSize: 26,
+                          fontWeight: '700',
+                        }}
+                      >
+                        {detailEmp.firstName[0]}
+                        {detailEmp.lastName[0]}
+                      </Text>
+                    </View>
+                  )}
+                  <Text
+                    style={{ fontSize: 20, fontWeight: '700', color: C.black }}
+                  >
+                    {detailEmp.firstName} {detailEmp.lastName}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: C.textMuted,
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    {detailEmp.employeeId}
+                  </Text>
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      {
+                        backgroundColor:
+                          STATUS_COLOR[detailEmp.status] || '#9CA3AF',
+                        borderColor: C.black,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.statusText, { color: C.white }]}>
+                      {detailEmp.status.replace('_', ' ').toUpperCase()}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Info table */}
+                <View
+                  style={{
+                    borderWidth: 2,
+                    borderColor: C.black,
+                    backgroundColor: C.white,
+                  }}
+                >
+                  {(
+                    [
+                      ['Designation', detailEmp.designation || '—'],
+                      ['Department', getDeptName(detailEmp.department)],
+                      [
+                        'Employment Type',
+                        detailEmp.employmentType
+                          ?.replace('_', ' ')
+                          .toUpperCase() || '—',
+                      ],
+                      [
+                        'Joining Date',
+                        detailEmp.joiningDate
+                          ? new Date(detailEmp.joiningDate).toLocaleDateString(
+                              'en-IN',
+                              {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                              },
+                            )
+                          : '—',
+                      ],
+                      ['Email', detailEmp.email || '—'],
+                      ['Phone', (detailEmp as any).phone || '—'],
+                      ...(detailEmp.salary || (detailEmp as any).monthlySalary
+                        ? [
+                            [
+                              'Monthly Salary',
+                              `₹${((detailEmp as any).monthlySalary || detailEmp.salary || 0).toLocaleString()}`,
+                            ],
+                          ]
+                        : []),
+                      ...((detailEmp as any).loanBalance > 0
+                        ? [
+                            [
+                              'Loan Balance',
+                              `₹${(detailEmp as any).loanBalance.toLocaleString()}`,
+                            ],
+                          ]
+                        : []),
+                      ...((detailEmp as any).advanceBalance > 0
+                        ? [
+                            [
+                              'Advance Balance',
+                              `₹${(detailEmp as any).advanceBalance.toLocaleString()}`,
+                            ],
+                          ]
+                        : []),
+                    ] as [string, string][]
+                  ).map(([label, value], i, arr) => (
+                    <View
+                      key={label}
+                      style={{
+                        flexDirection: 'row',
+                        paddingHorizontal: 14,
+                        paddingVertical: 11,
+                        borderBottomWidth: i < arr.length - 1 ? 1 : 0,
+                        borderBottomColor: '#F3F4F6',
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          fontWeight: '700',
+                          color: C.textMuted,
+                          textTransform: 'uppercase',
+                          width: 130,
+                        }}
+                      >
+                        {label}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          fontWeight: '500',
+                          color: C.black,
+                          flex: 1,
+                        }}
+                      >
+                        {value}
+                      </Text>
+                    </View>
                   ))}
                 </View>
-              </View>
 
-              {/* Contact Information */}
-              <View style={styles.infoSection}>
-                <View style={styles.infoSectionHeader}>
-                  <Phone size={14} color={C.primary} />
-                  <Text style={styles.infoSectionTitle}>Contact Information</Text>
-                </View>
-                {([
-                  ['Email', detailEmp.email || '—'],
-                  ['Phone', (detailEmp as any).phone || '—'],
-                  ['Gender', (detailEmp as any).gender || '—'],
-                  ['Date of Birth', (detailEmp as any).dateOfBirth ? new Date((detailEmp as any).dateOfBirth).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'],
-                  ['Emergency Contact', (detailEmp as any).emergencyContact || '—'],
-                  ['Address', (detailEmp as any).address || '—'],
-                ] as [string, string][]).map(([label, value], i, arr) => (
-                  <View key={label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 9, paddingHorizontal: 14, borderBottomWidth: i < arr.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
-                    <Text style={{ fontSize: 10, fontWeight: '700', color: C.textMuted, textTransform: 'uppercase' }}>{label}</Text>
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: C.black, textAlign: 'right', flex: 1, marginLeft: 12 }}>{value}</Text>
+                {/* Action grid */}
+                <View>
+                  <Text style={styles.sectionDividerText}>Quick Actions</Text>
+                  <View style={styles.actionGrid}>
+                    {ACTION_ITEMS.map(({ key, label, icon: Icon, color }) => (
+                      <TouchableOpacity
+                        key={key}
+                        style={styles.actionCell}
+                        onPress={() => openAction(key)}
+                        activeOpacity={0.75}
+                      >
+                        <View
+                          style={[
+                            styles.actionIcon,
+                            {
+                              backgroundColor: color + '18',
+                              borderColor: color,
+                            },
+                          ]}
+                        >
+                          <Icon size={20} color={color} />
+                        </View>
+                        <Text style={styles.actionLabel}>{label}</Text>
+                      </TouchableOpacity>
+                    ))}
                   </View>
-                ))}
-              </View>
-
-              {/* Banking & Compliance */}
-              <View style={styles.infoSection}>
-                <View style={styles.infoSectionHeader}>
-                  <Briefcase size={14} color={C.primary} />
-                  <Text style={styles.infoSectionTitle}>Banking & Compliance</Text>
                 </View>
-                {([
-                  ['Bank', (detailEmp as any).bankName || '—'],
-                  ['Account No.', (detailEmp as any).bankAccountNumber || '—'],
-                  ['Account Holder', (detailEmp as any).accountHolderName || '—'],
-                  ['IFSC', (detailEmp as any).ifscCode || '—'],
-                  ['PAN', (detailEmp as any).panNumber || '—'],
-                  ['Aadhar', (detailEmp as any).aadharNumber || '—'],
-                  ['PF No.', (detailEmp as any).pfNumber || '—'],
-                  ['UAN', (detailEmp as any).uanNumber || '—'],
-                  ['ESIC', (detailEmp as any).esicNumber || '—'],
-                ] as [string, string][]).map(([label, value], i, arr) => (
-                  <View key={label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 9, paddingHorizontal: 14, borderBottomWidth: i < arr.length - 1 ? 1 : 0, borderBottomColor: '#F3F4F6' }}>
-                    <Text style={{ fontSize: 10, fontWeight: '700', color: C.textMuted, textTransform: 'uppercase' }}>{label}</Text>
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: C.black, textAlign: 'right', flex: 1, marginLeft: 12 }}>{value}</Text>
-                  </View>
-                ))}
-              </View>
 
-              {/* Edit profile button */}
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <TouchableOpacity
-                  style={[styles.submitBtn, { flex: 1 }]}
-                  onPress={() => { setDetailEmp(null); openEdit(detailEmp); }}
-                >
-                  <Edit2 size={14} color={C.white} />
-                  <Text style={styles.submitBtnText}>Edit Profile</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.navBtn, { flex: 1 }]} onPress={() => setDetailEmp(null)}>
-                  <Text style={styles.navBtnText}>Close</Text>
-                </TouchableOpacity>
-              </View>
-            </ScrollView>
+                {/* Contact Information */}
+                <View style={styles.infoSection}>
+                  <View style={styles.infoSectionHeader}>
+                    <Phone size={14} color={C.primary} />
+                    <Text style={styles.infoSectionTitle}>
+                      Contact Information
+                    </Text>
+                  </View>
+                  {(
+                    [
+                      ['Email', detailEmp.email || '—'],
+                      ['Phone', (detailEmp as any).phone || '—'],
+                      ['Gender', (detailEmp as any).gender || '—'],
+                      [
+                        'Date of Birth',
+                        (detailEmp as any).dateOfBirth
+                          ? new Date(
+                              (detailEmp as any).dateOfBirth,
+                            ).toLocaleDateString('en-IN', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                            })
+                          : '—',
+                      ],
+                      [
+                        'Emergency Contact',
+                        (detailEmp as any).emergencyContact || '—',
+                      ],
+                      ['Address', (detailEmp as any).address || '—'],
+                    ] as [string, string][]
+                  ).map(([label, value], i, arr) => (
+                    <View
+                      key={label}
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        paddingVertical: 9,
+                        paddingHorizontal: 14,
+                        borderBottomWidth: i < arr.length - 1 ? 1 : 0,
+                        borderBottomColor: '#F3F4F6',
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 10,
+                          fontWeight: '700',
+                          color: C.textMuted,
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        {label}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: '600',
+                          color: C.black,
+                          textAlign: 'right',
+                          flex: 1,
+                          marginLeft: 12,
+                        }}
+                      >
+                        {value}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Banking & Compliance */}
+                <View style={styles.infoSection}>
+                  <View style={styles.infoSectionHeader}>
+                    <Briefcase size={14} color={C.primary} />
+                    <Text style={styles.infoSectionTitle}>
+                      Banking & Compliance
+                    </Text>
+                  </View>
+                  {(
+                    [
+                      ['Bank', (detailEmp as any).bankName || '—'],
+                      [
+                        'Account No.',
+                        (detailEmp as any).bankAccountNumber || '—',
+                      ],
+                      [
+                        'Account Holder',
+                        (detailEmp as any).accountHolderName || '—',
+                      ],
+                      ['IFSC', (detailEmp as any).ifscCode || '—'],
+                      ['PAN', (detailEmp as any).panNumber || '—'],
+                      ['Aadhar', (detailEmp as any).aadharNumber || '—'],
+                      ['PF No.', (detailEmp as any).pfNumber || '—'],
+                      ['UAN', (detailEmp as any).uanNumber || '—'],
+                      ['ESIC', (detailEmp as any).esicNumber || '—'],
+                    ] as [string, string][]
+                  ).map(([label, value], i, arr) => (
+                    <View
+                      key={label}
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        paddingVertical: 9,
+                        paddingHorizontal: 14,
+                        borderBottomWidth: i < arr.length - 1 ? 1 : 0,
+                        borderBottomColor: '#F3F4F6',
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 10,
+                          fontWeight: '700',
+                          color: C.textMuted,
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        {label}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontWeight: '600',
+                          color: C.black,
+                          textAlign: 'right',
+                          flex: 1,
+                          marginLeft: 12,
+                        }}
+                      >
+                        {value}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Edit profile button */}
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <TouchableOpacity
+                    style={[styles.submitBtn, { flex: 1 }]}
+                    onPress={() => {
+                      setDetailEmp(null);
+                      openEdit(detailEmp);
+                    }}
+                  >
+                    <Edit2 size={14} color={C.white} />
+                    <Text style={styles.submitBtnText}>Edit Profile</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.navBtn, { flex: 1 }]}
+                    onPress={() => setDetailEmp(null)}
+                  >
+                    <Text style={styles.navBtnText}>Close</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
             )}
 
             {/* ── ACTION VIEW (replaces detail content in-place) ── */}
             {!!actionModal && (
               <ScrollView
-                contentContainerStyle={{ padding: 20, gap: 14, paddingBottom: 40 }}
+                contentContainerStyle={{
+                  padding: 20,
+                  gap: 14,
+                  paddingBottom: 40,
+                }}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
               >
                 {/* Employee badge */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, backgroundColor: C.primary + '12', borderWidth: 2, borderColor: C.primary }}>
-                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ color: C.white, fontWeight: '700', fontSize: 13 }}>{detailEmp.firstName[0]}{detailEmp.lastName[0]}</Text>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: 12,
+                    backgroundColor: C.primary + '12',
+                    borderWidth: 2,
+                    borderColor: C.primary,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
+                      backgroundColor: C.primary,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: C.white,
+                        fontWeight: '700',
+                        fontSize: 13,
+                      }}
+                    >
+                      {detailEmp.firstName[0]}
+                      {detailEmp.lastName[0]}
+                    </Text>
                   </View>
                   <View>
-                    <Text style={{ fontSize: 14, fontWeight: '700', color: C.black }}>{detailEmp.firstName} {detailEmp.lastName}</Text>
-                    <Text style={{ fontSize: 11, color: C.textMuted }}>{detailEmp.employeeId}</Text>
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: '700',
+                        color: C.black,
+                      }}
+                    >
+                      {detailEmp.firstName} {detailEmp.lastName}
+                    </Text>
+                    <Text style={{ fontSize: 11, color: C.textMuted }}>
+                      {detailEmp.employeeId}
+                    </Text>
                   </View>
                 </View>
 
                 {/* ALLOWANCE / PENALTY / OVERTIME */}
-                {(actionModal === 'allowance' || actionModal === 'penalty' || actionModal === 'overtime') && (
+                {(actionModal === 'allowance' ||
+                  actionModal === 'penalty' ||
+                  actionModal === 'overtime') && (
                   <>
                     {actionModal === 'overtime' ? (
                       <View>
                         <Text style={styles.fieldLabel}>Hours *</Text>
-                        <TextInput style={styles.fieldInput} keyboardType="numeric" placeholder="e.g. 2.5" placeholderTextColor={C.textLight} value={actionForm.hours || ''} onChangeText={v => setActionForm((p: any) => ({ ...p, hours: v }))} />
+                        <TextInput
+                          style={styles.fieldInput}
+                          keyboardType="numeric"
+                          placeholder="e.g. 2.5"
+                          placeholderTextColor={C.textLight}
+                          value={actionForm.hours || ''}
+                          onChangeText={v =>
+                            setActionForm((p: any) => ({ ...p, hours: v }))
+                          }
+                        />
                       </View>
                     ) : (
                       <View>
                         <Text style={styles.fieldLabel}>Amount (₹) *</Text>
-                        <TextInput style={styles.fieldInput} keyboardType="numeric" placeholder="e.g. 500" placeholderTextColor={C.textLight} value={actionForm.amount || ''} onChangeText={v => setActionForm((p: any) => ({ ...p, amount: v }))} />
+                        <TextInput
+                          style={styles.fieldInput}
+                          keyboardType="numeric"
+                          placeholder="e.g. 500"
+                          placeholderTextColor={C.textLight}
+                          value={actionForm.amount || ''}
+                          onChangeText={v =>
+                            setActionForm((p: any) => ({ ...p, amount: v }))
+                          }
+                        />
                       </View>
                     )}
                     <View>
                       <Text style={styles.fieldLabel}>Date *</Text>
-                      <TextInput style={styles.fieldInput} placeholder="YYYY-MM-DD" placeholderTextColor={C.textLight} value={actionForm.date || ''} onChangeText={v => setActionForm((p: any) => ({ ...p, date: v }))} />
+                      <TextInput
+                        style={styles.fieldInput}
+                        placeholder="YYYY-MM-DD"
+                        placeholderTextColor={C.textLight}
+                        value={actionForm.date || ''}
+                        onChangeText={v =>
+                          setActionForm((p: any) => ({ ...p, date: v }))
+                        }
+                      />
                     </View>
                     <View>
                       <Text style={styles.fieldLabel}>Remark</Text>
-                      <TextInput style={[styles.fieldInput, { minHeight: 70 }]} multiline placeholder="Optional note…" placeholderTextColor={C.textLight} value={actionForm.remark || ''} onChangeText={v => setActionForm((p: any) => ({ ...p, remark: v }))} />
+                      <TextInput
+                        style={[styles.fieldInput, { minHeight: 70 }]}
+                        multiline
+                        placeholder="Optional note…"
+                        placeholderTextColor={C.textLight}
+                        value={actionForm.remark || ''}
+                        onChangeText={v =>
+                          setActionForm((p: any) => ({ ...p, remark: v }))
+                        }
+                      />
                     </View>
                   </>
                 )}
@@ -860,15 +1290,42 @@ export default function EmployeesScreen() {
                   <>
                     <View>
                       <Text style={styles.fieldLabel}>Loan Amount (₹) *</Text>
-                      <TextInput style={styles.fieldInput} keyboardType="numeric" placeholder="e.g. 10000" placeholderTextColor={C.textLight} value={actionForm.amount || ''} onChangeText={v => setActionForm((p: any) => ({ ...p, amount: v }))} />
+                      <TextInput
+                        style={styles.fieldInput}
+                        keyboardType="numeric"
+                        placeholder="e.g. 10000"
+                        placeholderTextColor={C.textLight}
+                        value={actionForm.amount || ''}
+                        onChangeText={v =>
+                          setActionForm((p: any) => ({ ...p, amount: v }))
+                        }
+                      />
                     </View>
                     <View>
                       <Text style={styles.fieldLabel}>Monthly EMI (₹)</Text>
-                      <TextInput style={styles.fieldInput} keyboardType="numeric" placeholder="e.g. 1000" placeholderTextColor={C.textLight} value={actionForm.monthlyEmi || ''} onChangeText={v => setActionForm((p: any) => ({ ...p, monthlyEmi: v }))} />
+                      <TextInput
+                        style={styles.fieldInput}
+                        keyboardType="numeric"
+                        placeholder="e.g. 1000"
+                        placeholderTextColor={C.textLight}
+                        value={actionForm.monthlyEmi || ''}
+                        onChangeText={v =>
+                          setActionForm((p: any) => ({ ...p, monthlyEmi: v }))
+                        }
+                      />
                     </View>
                     <View>
                       <Text style={styles.fieldLabel}>Reason</Text>
-                      <TextInput style={[styles.fieldInput, { minHeight: 70 }]} multiline placeholder="Loan purpose…" placeholderTextColor={C.textLight} value={actionForm.reason || ''} onChangeText={v => setActionForm((p: any) => ({ ...p, reason: v }))} />
+                      <TextInput
+                        style={[styles.fieldInput, { minHeight: 70 }]}
+                        multiline
+                        placeholder="Loan purpose…"
+                        placeholderTextColor={C.textLight}
+                        value={actionForm.reason || ''}
+                        onChangeText={v =>
+                          setActionForm((p: any) => ({ ...p, reason: v }))
+                        }
+                      />
                     </View>
                   </>
                 )}
@@ -877,12 +1334,32 @@ export default function EmployeesScreen() {
                 {actionModal === 'advance' && (
                   <>
                     <View>
-                      <Text style={styles.fieldLabel}>Advance Amount (₹) *</Text>
-                      <TextInput style={styles.fieldInput} keyboardType="numeric" placeholder="e.g. 2000" placeholderTextColor={C.textLight} value={actionForm.amount || ''} onChangeText={v => setActionForm((p: any) => ({ ...p, amount: v }))} />
+                      <Text style={styles.fieldLabel}>
+                        Advance Amount (₹) *
+                      </Text>
+                      <TextInput
+                        style={styles.fieldInput}
+                        keyboardType="numeric"
+                        placeholder="e.g. 2000"
+                        placeholderTextColor={C.textLight}
+                        value={actionForm.amount || ''}
+                        onChangeText={v =>
+                          setActionForm((p: any) => ({ ...p, amount: v }))
+                        }
+                      />
                     </View>
                     <View>
                       <Text style={styles.fieldLabel}>Reason</Text>
-                      <TextInput style={[styles.fieldInput, { minHeight: 70 }]} multiline placeholder="Advance purpose…" placeholderTextColor={C.textLight} value={actionForm.reason || ''} onChangeText={v => setActionForm((p: any) => ({ ...p, reason: v }))} />
+                      <TextInput
+                        style={[styles.fieldInput, { minHeight: 70 }]}
+                        multiline
+                        placeholder="Advance purpose…"
+                        placeholderTextColor={C.textLight}
+                        value={actionForm.reason || ''}
+                        onChangeText={v =>
+                          setActionForm((p: any) => ({ ...p, reason: v }))
+                        }
+                      />
                     </View>
                   </>
                 )}
@@ -893,15 +1370,49 @@ export default function EmployeesScreen() {
                     <View style={{ flexDirection: 'row', gap: 12 }}>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.fieldLabel}>Month *</Text>
-                        <TextInput style={styles.fieldInput} keyboardType="numeric" placeholder="1–12" placeholderTextColor={C.textLight} value={actionForm.month || ''} onChangeText={v => setActionForm((p: any) => ({ ...p, month: v }))} />
+                        <TextInput
+                          style={styles.fieldInput}
+                          keyboardType="numeric"
+                          placeholder="1–12"
+                          placeholderTextColor={C.textLight}
+                          value={actionForm.month || ''}
+                          onChangeText={v =>
+                            setActionForm((p: any) => ({ ...p, month: v }))
+                          }
+                        />
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.fieldLabel}>Year *</Text>
-                        <TextInput style={styles.fieldInput} keyboardType="numeric" placeholder="2025" placeholderTextColor={C.textLight} value={actionForm.year || ''} onChangeText={v => setActionForm((p: any) => ({ ...p, year: v }))} />
+                        <TextInput
+                          style={styles.fieldInput}
+                          keyboardType="numeric"
+                          placeholder="2025"
+                          placeholderTextColor={C.textLight}
+                          value={actionForm.year || ''}
+                          onChangeText={v =>
+                            setActionForm((p: any) => ({ ...p, year: v }))
+                          }
+                        />
                       </View>
                     </View>
-                    <View style={{ padding: 12, backgroundColor: '#FFF7ED', borderWidth: 1, borderColor: C.warning }}>
-                      <Text style={{ fontSize: 12, color: C.warning, fontWeight: '600' }}>This will process and mark salary as paid for the selected month.</Text>
+                    <View
+                      style={{
+                        padding: 12,
+                        backgroundColor: '#FFF7ED',
+                        borderWidth: 1,
+                        borderColor: C.warning,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          color: C.warning,
+                          fontWeight: '600',
+                        }}
+                      >
+                        This will process and mark salary as paid for the
+                        selected month.
+                      </Text>
                     </View>
                   </>
                 )}
@@ -910,84 +1421,296 @@ export default function EmployeesScreen() {
                 {actionModal === 'credentials' && (
                   <View>
                     <Text style={styles.fieldLabel}>New Password *</Text>
-                    <TextInput style={styles.fieldInput} secureTextEntry placeholder="Min 6 characters" placeholderTextColor={C.textLight} value={actionForm.password || ''} onChangeText={v => setActionForm((p: any) => ({ ...p, password: v }))} />
+                    <TextInput
+                      style={styles.fieldInput}
+                      secureTextEntry
+                      placeholder="Min 6 characters"
+                      placeholderTextColor={C.textLight}
+                      value={actionForm.password || ''}
+                      onChangeText={v =>
+                        setActionForm((p: any) => ({ ...p, password: v }))
+                      }
+                    />
                   </View>
                 )}
 
                 {/* ATTENDANCE LOG */}
-                {actionModal === 'attendance' && (
-                  actionRecordsLoading ? (
+                {actionModal === 'attendance' &&
+                  (actionRecordsLoading ? (
                     <ActivityIndicator color={C.primary} />
                   ) : actionRecords.length === 0 ? (
-                    <Text style={{ color: C.textMuted, textAlign: 'center', marginTop: 20 }}>No attendance records found</Text>
+                    <Text
+                      style={{
+                        color: C.textMuted,
+                        textAlign: 'center',
+                        marginTop: 20,
+                      }}
+                    >
+                      No attendance records found
+                    </Text>
                   ) : (
                     <View style={{ gap: 8 }}>
                       {actionRecords.map((r: any) => (
-                        <View key={r._id} style={{ borderWidth: 1, borderColor: '#E5E7EB', padding: 12, backgroundColor: C.white, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <View
+                          key={r._id}
+                          style={{
+                            borderWidth: 1,
+                            borderColor: '#E5E7EB',
+                            padding: 12,
+                            backgroundColor: C.white,
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
+                        >
                           <View>
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>{r.date ? new Date(r.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</Text>
-                            <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
-                              {r.checkIn && <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}><LogIn size={10} color={C.success} /><Text style={{ fontSize: 11, color: C.textMuted }}>{new Date(r.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text></View>}
-                              {r.checkOut && <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}><LogOut size={10} color={C.danger} /><Text style={{ fontSize: 11, color: C.textMuted }}>{new Date(r.checkOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text></View>}
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                fontWeight: '700',
+                                color: C.black,
+                              }}
+                            >
+                              {r.date
+                                ? new Date(r.date).toLocaleDateString('en-IN', {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric',
+                                  })
+                                : '—'}
+                            </Text>
+                            <View
+                              style={{
+                                flexDirection: 'row',
+                                gap: 8,
+                                marginTop: 4,
+                              }}
+                            >
+                              {r.checkIn && (
+                                <View
+                                  style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    gap: 3,
+                                  }}
+                                >
+                                  <LogIn size={10} color={C.success} />
+                                  <Text
+                                    style={{ fontSize: 11, color: C.textMuted }}
+                                  >
+                                    {new Date(r.checkIn).toLocaleTimeString(
+                                      [],
+                                      { hour: '2-digit', minute: '2-digit' },
+                                    )}
+                                  </Text>
+                                </View>
+                              )}
+                              {r.checkOut && (
+                                <View
+                                  style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    gap: 3,
+                                  }}
+                                >
+                                  <LogOut size={10} color={C.danger} />
+                                  <Text
+                                    style={{ fontSize: 11, color: C.textMuted }}
+                                  >
+                                    {new Date(r.checkOut).toLocaleTimeString(
+                                      [],
+                                      { hour: '2-digit', minute: '2-digit' },
+                                    )}
+                                  </Text>
+                                </View>
+                              )}
                             </View>
                           </View>
-                          <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: C.black }}>
-                            <Text style={{ fontSize: 10, fontWeight: '700', color: C.black }}>{r.status?.toUpperCase()}</Text>
+                          <View
+                            style={{
+                              paddingHorizontal: 8,
+                              paddingVertical: 3,
+                              borderWidth: 1,
+                              borderColor: C.black,
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 10,
+                                fontWeight: '700',
+                                color: C.black,
+                              }}
+                            >
+                              {r.status?.toUpperCase()}
+                            </Text>
                           </View>
                         </View>
                       ))}
                     </View>
-                  )
-                )}
+                  ))}
 
                 {/* PAYMENT HISTORY */}
-                {actionModal === 'payroll' && (
-                  actionRecordsLoading ? (
+                {actionModal === 'payroll' &&
+                  (actionRecordsLoading ? (
                     <ActivityIndicator color={C.primary} />
                   ) : actionRecords.length === 0 ? (
-                    <Text style={{ color: C.textMuted, textAlign: 'center', marginTop: 20 }}>No payroll records found</Text>
+                    <Text
+                      style={{
+                        color: C.textMuted,
+                        textAlign: 'center',
+                        marginTop: 20,
+                      }}
+                    >
+                      No payroll records found
+                    </Text>
                   ) : (
                     <View style={{ gap: 8 }}>
                       {actionRecords.map((r: any) => (
-                        <View key={r._id} style={{ borderWidth: 1, borderColor: '#E5E7EB', padding: 12, backgroundColor: C.white, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <View
+                          key={r._id}
+                          style={{
+                            borderWidth: 1,
+                            borderColor: '#E5E7EB',
+                            padding: 12,
+                            backgroundColor: C.white,
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
+                        >
                           <View>
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>{r.month}/{r.year}</Text>
-                            <Text style={{ fontSize: 12, color: C.textMuted, marginTop: 2 }}>Net: ₹{(r.netSalary || 0).toLocaleString()}</Text>
+                            <Text
+                              style={{
+                                fontSize: 13,
+                                fontWeight: '700',
+                                color: C.black,
+                              }}
+                            >
+                              {r.month}/{r.year}
+                            </Text>
+                            <Text
+                              style={{
+                                fontSize: 12,
+                                color: C.textMuted,
+                                marginTop: 2,
+                              }}
+                            >
+                              Net: ₹{(r.netSalary || 0).toLocaleString()}
+                            </Text>
                           </View>
-                          <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: r.status === 'paid' ? C.success : C.warning, backgroundColor: r.status === 'paid' ? '#F0FDF4' : '#FFF7ED' }}>
-                            <Text style={{ fontSize: 10, fontWeight: '700', color: r.status === 'paid' ? C.success : C.warning }}>{r.status?.toUpperCase()}</Text>
+                          <View
+                            style={{
+                              paddingHorizontal: 8,
+                              paddingVertical: 3,
+                              borderWidth: 1,
+                              borderColor:
+                                r.status === 'paid' ? C.success : C.warning,
+                              backgroundColor:
+                                r.status === 'paid' ? '#F0FDF4' : '#FFF7ED',
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 10,
+                                fontWeight: '700',
+                                color:
+                                  r.status === 'paid' ? C.success : C.warning,
+                              }}
+                            >
+                              {r.status?.toUpperCase()}
+                            </Text>
                           </View>
                         </View>
                       ))}
                     </View>
-                  )
-                )}
+                  ))}
 
                 {/* LEAVE BALANCE */}
-                {actionModal === 'leaves' && (
-                  actionRecordsLoading ? (
+                {actionModal === 'leaves' &&
+                  (actionRecordsLoading ? (
                     <ActivityIndicator color={C.primary} />
                   ) : (
                     <View style={{ gap: 8 }}>
-                      {(['pending', 'approved', 'rejected'] as const).map(status => {
-                        const count = actionRecords.filter((l: any) => l.status === status).length;
-                        const colors: Record<string, string> = { pending: C.warning, approved: C.success, rejected: C.danger };
-                        return (
-                          <View key={status} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14, borderWidth: 2, borderColor: colors[status], backgroundColor: colors[status] + '10' }}>
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: colors[status], textTransform: 'uppercase' }}>{status}</Text>
-                            <Text style={{ fontSize: 22, fontWeight: '800', color: colors[status] }}>{count}</Text>
-                          </View>
-                        );
-                      })}
-                      {actionRecords.length === 0 && <Text style={{ color: C.textMuted, textAlign: 'center', marginTop: 20 }}>No leave records found</Text>}
+                      {(['pending', 'approved', 'rejected'] as const).map(
+                        status => {
+                          const count = actionRecords.filter(
+                            (l: any) => l.status === status,
+                          ).length;
+                          const colors: Record<string, string> = {
+                            pending: C.warning,
+                            approved: C.success,
+                            rejected: C.danger,
+                          };
+                          return (
+                            <View
+                              key={status}
+                              style={{
+                                flexDirection: 'row',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                padding: 14,
+                                borderWidth: 2,
+                                borderColor: colors[status],
+                                backgroundColor: colors[status] + '10',
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: '700',
+                                  color: colors[status],
+                                  textTransform: 'uppercase',
+                                }}
+                              >
+                                {status}
+                              </Text>
+                              <Text
+                                style={{
+                                  fontSize: 22,
+                                  fontWeight: '800',
+                                  color: colors[status],
+                                }}
+                              >
+                                {count}
+                              </Text>
+                            </View>
+                          );
+                        },
+                      )}
+                      {actionRecords.length === 0 && (
+                        <Text
+                          style={{
+                            color: C.textMuted,
+                            textAlign: 'center',
+                            marginTop: 20,
+                          }}
+                        >
+                          No leave records found
+                        </Text>
+                      )}
                     </View>
-                  )
-                )}
+                  ))}
 
                 {/* Submit for form actions */}
-                {['allowance', 'penalty', 'overtime', 'loan', 'advance', 'salary', 'credentials'].includes(actionModal) && (
-                  <TouchableOpacity style={styles.submitBtn} onPress={submitAction} disabled={actionLoading}>
-                    {actionLoading ? <ActivityIndicator color={C.white} /> : <Text style={styles.submitBtnText}>Confirm</Text>}
+                {[
+                  'allowance',
+                  'penalty',
+                  'overtime',
+                  'loan',
+                  'advance',
+                  'salary',
+                  'credentials',
+                ].includes(actionModal) && (
+                  <TouchableOpacity
+                    style={styles.submitBtn}
+                    onPress={submitAction}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? (
+                      <ActivityIndicator color={C.white} />
+                    ) : (
+                      <Text style={styles.submitBtnText}>Confirm</Text>
+                    )}
                   </TouchableOpacity>
                 )}
               </ScrollView>
@@ -1437,11 +2160,11 @@ const styles = StyleSheet.create({
     minWidth: 76,
   },
   summaryCount: {
-      fontSize: 20,
-      fontWeight: '800',
-      lineHeight: Platform.OS === 'android' ? 28 : 24,
-      includeFontPadding: false,
-    } as any,
+    fontSize: 20,
+    fontWeight: '800',
+    lineHeight: Platform.OS === 'android' ? 28 : 24,
+    includeFontPadding: false,
+  } as any,
   summaryStatus: {
     fontSize: 8,
     fontWeight: '700',

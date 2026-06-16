@@ -40,7 +40,12 @@ interface Employee {
 interface NfcCard {
   uid: string;
   label?: string;
-  employee: { _id: string; firstName: string; lastName: string; employeeId: string };
+  employee: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    employeeId: string;
+  };
   assignedAt: string;
 }
 
@@ -60,9 +65,15 @@ export default function NfcManagerScreen() {
   const [search, setSearch] = useState('');
 
   const [modal, setModal] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
+    null,
+  );
   const [empSearch, setEmpSearch] = useState('');
-  const [assignForm, setAssignForm] = useState({ uid: '', deviceId: '', label: '' });
+  const [assignForm, setAssignForm] = useState({
+    uid: '',
+    deviceId: '',
+    label: '',
+  });
   const [assigning, setAssigning] = useState(false);
   const [step, setStep] = useState<'selectEmp' | 'fillCard'>('selectEmp');
 
@@ -82,10 +93,15 @@ export default function NfcManagerScreen() {
     }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // Build employee → cards map
-  const cardsByEmployee = new Map<string, Array<NfcCard & { deviceName: string; locationName: string }>>();
+  const cardsByEmployee = new Map<
+    string,
+    Array<NfcCard & { deviceName: string; locationName: string }>
+  >();
   for (const dev of devices) {
     for (const card of dev.nfcCards) {
       const key = card.employee._id;
@@ -109,7 +125,10 @@ export default function NfcManagerScreen() {
 
   const openAssign = () => {
     if (devices.length === 0) {
-      Alert.alert('No Devices', 'Add a biometric device first before assigning NFC cards.');
+      Alert.alert(
+        'No Devices',
+        'Add a biometric device first before assigning NFC cards.',
+      );
       return;
     }
     setStep('selectEmp');
@@ -125,8 +144,14 @@ export default function NfcManagerScreen() {
   };
 
   const assign = async () => {
-    if (!assignForm.uid.trim()) { Alert.alert('Validation', 'NFC card UID is required'); return; }
-    if (!assignForm.deviceId) { Alert.alert('Validation', 'Please select a device'); return; }
+    if (!assignForm.uid.trim()) {
+      Alert.alert('Validation', 'NFC card UID is required');
+      return;
+    }
+    if (!assignForm.deviceId) {
+      Alert.alert('Validation', 'Please select a device');
+      return;
+    }
     if (!selectedEmployee) return;
     setAssigning(true);
     try {
@@ -137,7 +162,10 @@ export default function NfcManagerScreen() {
       });
       setModal(false);
       fetchData();
-      Alert.alert('Success', `NFC card assigned to ${selectedEmployee.firstName} ${selectedEmployee.lastName}`);
+      Alert.alert(
+        'Success',
+        `NFC card assigned to ${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
+      );
     } catch (e: any) {
       Alert.alert('Error', e.message);
     } finally {
@@ -149,12 +177,15 @@ export default function NfcManagerScreen() {
     Alert.alert('Remove NFC Card', `Remove card from ${empName}?`, [
       { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Remove', style: 'destructive',
+        text: 'Remove',
+        style: 'destructive',
         onPress: async () => {
           try {
             await biometricAPI.removeNfc(deviceId, uid);
             fetchData();
-          } catch (e: any) { Alert.alert('Error', e.message); }
+          } catch (e: any) {
+            Alert.alert('Error', e.message);
+          }
         },
       },
     ]);
@@ -162,13 +193,19 @@ export default function NfcManagerScreen() {
 
   const empModalFiltered = employees.filter(e => {
     const q = empSearch.toLowerCase();
-    return e.firstName.toLowerCase().includes(q) || e.lastName.toLowerCase().includes(q) || e.employeeId.toLowerCase().includes(q);
+    return (
+      e.firstName.toLowerCase().includes(q) ||
+      e.lastName.toLowerCase().includes(q) ||
+      e.employeeId.toLowerCase().includes(q)
+    );
   });
 
   if (loading) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <View style={styles.loader}><ActivityIndicator size="large" color={C.primary} /></View>
+        <View style={styles.loader}>
+          <ActivityIndicator size="large" color={C.primary} />
+        </View>
       </SafeAreaView>
     );
   }
@@ -177,7 +214,10 @@ export default function NfcManagerScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 4, marginRight: 4 }}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{ padding: 4, marginRight: 4 }}
+          >
             <ChevronLeft size={22} color={C.black} />
           </TouchableOpacity>
           <CreditCard size={20} color={C.primary} />
@@ -199,12 +239,28 @@ export default function NfcManagerScreen() {
           placeholder="Search employees..."
           placeholderTextColor="#9CA3AF"
         />
-        {search ? <TouchableOpacity onPress={() => setSearch('')} style={{ padding: 10 }}><X size={14} color="#9CA3AF" /></TouchableOpacity> : null}
+        {search ? (
+          <TouchableOpacity
+            onPress={() => setSearch('')}
+            style={{ padding: 10 }}
+          >
+            <X size={14} color="#9CA3AF" />
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} tintColor={C.primary} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              fetchData();
+            }}
+            tintColor={C.primary}
+          />
+        }
       >
         {filtered.length === 0 ? (
           <View style={styles.empty}>
@@ -216,9 +272,15 @@ export default function NfcManagerScreen() {
             {filtered.map((emp, i) => {
               const cards = cardsByEmployee.get(emp._id) || [];
               return (
-                <View key={emp._id} style={[styles.empRow, i > 0 && styles.rowBorder]}>
+                <View
+                  key={emp._id}
+                  style={[styles.empRow, i > 0 && styles.rowBorder]}
+                >
                   {emp.avatar ? (
-                    <Image source={{ uri: emp.avatar }} style={styles.avatarPhoto} />
+                    <Image
+                      source={{ uri: emp.avatar }}
+                      style={styles.avatarPhoto}
+                    />
                   ) : (
                     <View style={styles.avatar}>
                       <Text style={styles.avatarText}>
@@ -227,7 +289,9 @@ export default function NfcManagerScreen() {
                     </View>
                   )}
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.empName}>{emp.firstName} {emp.lastName}</Text>
+                    <Text style={styles.empName}>
+                      {emp.firstName} {emp.lastName}
+                    </Text>
                     <Text style={styles.empId}>{emp.employeeId}</Text>
                     {cards.length > 0 ? (
                       <View style={{ marginTop: 6, gap: 4 }}>
@@ -235,12 +299,26 @@ export default function NfcManagerScreen() {
                           <View key={card.uid} style={styles.cardChip}>
                             <CreditCard size={10} color={C.primary} />
                             <Text style={styles.cardChipText}>{card.uid}</Text>
-                            {card.label ? <Text style={styles.cardChipLabel}> · {card.label}</Text> : null}
-                            <Text style={styles.cardChipDev}>{card.deviceName}</Text>
+                            {card.label ? (
+                              <Text style={styles.cardChipLabel}>
+                                {' '}
+                                · {card.label}
+                              </Text>
+                            ) : null}
+                            <Text style={styles.cardChipDev}>
+                              {card.deviceName}
+                            </Text>
                             <TouchableOpacity
                               onPress={() => {
-                                const dev = devices.find(d => d.nfcCards.some(c => c.uid === card.uid));
-                                if (dev) removeCard(dev._id, card.uid, `${emp.firstName} ${emp.lastName}`);
+                                const dev = devices.find(d =>
+                                  d.nfcCards.some(c => c.uid === card.uid),
+                                );
+                                if (dev)
+                                  removeCard(
+                                    dev._id,
+                                    card.uid,
+                                    `${emp.firstName} ${emp.lastName}`,
+                                  );
                               }}
                               style={{ marginLeft: 4 }}
                             >
@@ -266,15 +344,23 @@ export default function NfcManagerScreen() {
           <View style={styles.modal}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
-                {step === 'selectEmp' ? 'Select Employee' : `Assign Card — ${selectedEmployee?.firstName} ${selectedEmployee?.lastName}`}
+                {step === 'selectEmp'
+                  ? 'Select Employee'
+                  : `Assign Card — ${selectedEmployee?.firstName} ${selectedEmployee?.lastName}`}
               </Text>
-              <TouchableOpacity onPress={() => setModal(false)}><X size={20} color={C.black} /></TouchableOpacity>
+              <TouchableOpacity onPress={() => setModal(false)}>
+                <X size={20} color={C.black} />
+              </TouchableOpacity>
             </View>
 
             {step === 'selectEmp' ? (
               <>
                 <View style={styles.searchRow}>
-                  <Search size={14} color="#9CA3AF" style={{ marginLeft: 12 }} />
+                  <Search
+                    size={14}
+                    color="#9CA3AF"
+                    style={{ marginLeft: 12 }}
+                  />
                   <TextInput
                     style={styles.searchInput}
                     value={empSearch}
@@ -292,14 +378,27 @@ export default function NfcManagerScreen() {
                       onPress={() => selectEmployee(emp)}
                     >
                       {emp.avatar ? (
-                        <Image source={{ uri: emp.avatar }} style={[styles.avatarPhoto, { width: 32, height: 32, borderRadius: 16 }]} />
+                        <Image
+                          source={{ uri: emp.avatar }}
+                          style={[
+                            styles.avatarPhoto,
+                            { width: 32, height: 32, borderRadius: 16 },
+                          ]}
+                        />
                       ) : (
-                        <View style={[styles.avatar, { width: 32, height: 32 }]}>
-                          <Text style={[styles.avatarText, { fontSize: 11 }]}>{emp.firstName[0]}{emp.lastName[0]}</Text>
+                        <View
+                          style={[styles.avatar, { width: 32, height: 32 }]}
+                        >
+                          <Text style={[styles.avatarText, { fontSize: 11 }]}>
+                            {emp.firstName[0]}
+                            {emp.lastName[0]}
+                          </Text>
                         </View>
                       )}
                       <View>
-                        <Text style={styles.empName}>{emp.firstName} {emp.lastName}</Text>
+                        <Text style={styles.empName}>
+                          {emp.firstName} {emp.lastName}
+                        </Text>
                         <Text style={styles.empId}>{emp.employeeId}</Text>
                       </View>
                     </TouchableOpacity>
@@ -308,7 +407,10 @@ export default function NfcManagerScreen() {
               </>
             ) : (
               <>
-                <TouchableOpacity style={styles.backBtn} onPress={() => setStep('selectEmp')}>
+                <TouchableOpacity
+                  style={styles.backBtn}
+                  onPress={() => setStep('selectEmp')}
+                >
                   <ChevronLeft size={14} color={C.primary} />
                   <Text style={styles.backBtnText}>Change Employee</Text>
                 </TouchableOpacity>
@@ -341,21 +443,47 @@ export default function NfcManagerScreen() {
                   {devices.map(dev => (
                     <TouchableOpacity
                       key={dev._id}
-                      style={[styles.locOption, assignForm.deviceId === dev._id && styles.locOptionSelected]}
-                      onPress={() => setAssignForm(p => ({ ...p, deviceId: dev._id }))}
+                      style={[
+                        styles.locOption,
+                        assignForm.deviceId === dev._id &&
+                          styles.locOptionSelected,
+                      ]}
+                      onPress={() =>
+                        setAssignForm(p => ({ ...p, deviceId: dev._id }))
+                      }
                     >
-                      {assignForm.deviceId === dev._id && <Check size={12} color={C.primary} />}
+                      {assignForm.deviceId === dev._id && (
+                        <Check size={12} color={C.primary} />
+                      )}
                       <View>
-                        <Text style={[styles.locOptionText, assignForm.deviceId === dev._id && { color: C.primary }]}>{dev.name}</Text>
+                        <Text
+                          style={[
+                            styles.locOptionText,
+                            assignForm.deviceId === dev._id && {
+                              color: C.primary,
+                            },
+                          ]}
+                        >
+                          {dev.name}
+                        </Text>
                         <Text style={styles.empId}>{dev.location?.name}</Text>
                       </View>
                     </TouchableOpacity>
                   ))}
                 </View>
 
-                <TouchableOpacity style={styles.saveBtn} onPress={assign} disabled={assigning}>
-                  {assigning ? <ActivityIndicator size="small" color={C.white} /> : (
-                    <><CreditCard size={14} color={C.white} /><Text style={styles.saveBtnText}>Assign Card</Text></>
+                <TouchableOpacity
+                  style={styles.saveBtn}
+                  onPress={assign}
+                  disabled={assigning}
+                >
+                  {assigning ? (
+                    <ActivityIndicator size="small" color={C.white} />
+                  ) : (
+                    <>
+                      <CreditCard size={14} color={C.white} />
+                      <Text style={styles.saveBtnText}>Assign Card</Text>
+                    </>
                   )}
                 </TouchableOpacity>
               </>
@@ -371,63 +499,181 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F8F9FA' },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 14, backgroundColor: C.white,
-    borderBottomWidth: 2, borderBottomColor: C.black,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: C.white,
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: C.black },
   addBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: C.primary, borderWidth: 2, borderColor: C.black,
-    paddingHorizontal: 12, paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: C.primary,
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
-  addBtnText: { color: C.white, fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
+  addBtnText: {
+    color: C.white,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
   searchRow: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: C.white,
-    borderBottomWidth: 2, borderBottomColor: C.black,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: C.white,
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
   },
-  searchInput: { flex: 1, paddingVertical: 12, paddingHorizontal: 10, fontSize: 14, fontWeight: '500', color: C.black },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    fontSize: 14,
+    fontWeight: '500',
+    color: C.black,
+  },
   card: { backgroundColor: C.white, borderWidth: 2, borderColor: C.black },
-  empRow: { flexDirection: 'row', alignItems: 'flex-start', padding: 14, gap: 12 },
+  empRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 14,
+    gap: 12,
+  },
   rowBorder: { borderTopWidth: 1, borderTopColor: '#F3F4F6' },
   avatar: {
-    width: 40, height: 40, backgroundColor: C.primary,
-    borderWidth: 2, borderColor: C.black, alignItems: 'center', justifyContent: 'center',
+    width: 40,
+    height: 40,
+    backgroundColor: C.primary,
+    borderWidth: 2,
+    borderColor: C.black,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   avatarPhoto: {
-    width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: C.black,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: C.black,
   },
   avatarText: { color: C.white, fontSize: 13, fontWeight: '700' },
   empName: { fontSize: 14, fontWeight: '700', color: C.black },
   empId: { fontSize: 11, color: '#6B7280', marginTop: 1 },
   noCard: { fontSize: 11, color: '#9CA3AF', fontStyle: 'italic', marginTop: 4 },
   cardChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: C.primary,
-    paddingHorizontal: 8, paddingVertical: 4, alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: C.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    alignSelf: 'flex-start',
   },
   cardChipText: { fontSize: 11, fontWeight: '700', color: C.primary },
   cardChipLabel: { fontSize: 11, color: '#6B7280' },
   cardChipDev: { fontSize: 10, color: '#9CA3AF' },
   empty: { alignItems: 'center', paddingVertical: 60, gap: 8 },
   emptyText: { fontSize: 14, fontWeight: '700', color: '#6B7280' },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modal: { backgroundColor: C.white, borderTopWidth: 2, borderTopColor: C.black, padding: 20, paddingBottom: 40, maxHeight: '80%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  modalTitle: { fontSize: 16, fontWeight: '700', color: C.black, flex: 1, marginRight: 10 },
-  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 16 },
-  backBtnText: { fontSize: 12, fontWeight: '700', color: C.primary, textTransform: 'uppercase' },
-  field: { marginBottom: 14 },
-  fieldLabel: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', color: '#6B7280', marginBottom: 6, letterSpacing: 0.5 },
-  fieldInput: { borderWidth: 2, borderColor: C.black, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, fontWeight: '500', color: C.black },
-  saveBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    backgroundColor: C.primary, borderWidth: 2, borderColor: C.black, paddingVertical: 14, marginTop: 4,
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
   },
-  saveBtnText: { color: C.white, fontSize: 13, fontWeight: '700', textTransform: 'uppercase' },
-  locOption: { flexDirection: 'row', alignItems: 'center', gap: 6, padding: 10, borderWidth: 2, borderColor: '#E5E7EB', marginBottom: 6 },
+  modal: {
+    backgroundColor: C.white,
+    borderTopWidth: 2,
+    borderTopColor: C.black,
+    padding: 20,
+    paddingBottom: 40,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: C.black,
+    flex: 1,
+    marginRight: 10,
+  },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 16,
+  },
+  backBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: C.primary,
+    textTransform: 'uppercase',
+  },
+  field: { marginBottom: 14 },
+  fieldLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    color: '#6B7280',
+    marginBottom: 6,
+    letterSpacing: 0.5,
+  },
+  fieldInput: {
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    fontWeight: '500',
+    color: C.black,
+  },
+  saveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: C.primary,
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingVertical: 14,
+    marginTop: 4,
+  },
+  saveBtnText: {
+    color: C.white,
+    fontSize: 13,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  locOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    padding: 10,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    marginBottom: 6,
+  },
   locOptionSelected: { borderColor: C.primary, backgroundColor: '#EFF6FF' },
   locOptionText: { fontSize: 14, fontWeight: '600', color: C.black },
-  empOption: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 4 },
+  empOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+  },
 });

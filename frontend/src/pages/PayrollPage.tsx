@@ -4,7 +4,16 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { payrollAPI, employeeAPI } from "@/services/api";
 import { Payroll } from "@/types/hrms";
 import { cn, formatCurrency } from "@/lib/utils";
-import { IndianRupee, Play, CheckCircle, X, Printer, Search, ArrowUp, ArrowDown } from "lucide-react";
+import {
+  IndianRupee,
+  Play,
+  CheckCircle,
+  X,
+  Printer,
+  Search,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 import { ActionModal } from "@/components/ui/ActionModal";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -49,7 +58,9 @@ export default function PayrollPage() {
   }>({ show: false, type: "success", title: "", message: "" });
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
-  const [sortKey, setSortKey] = useState<"employee" | "net" | "gross" | "deductions">("employee");
+  const [sortKey, setSortKey] = useState<
+    "employee" | "net" | "gross" | "deductions"
+  >("employee");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const load = useCallback(async () => {
@@ -69,7 +80,7 @@ export default function PayrollPage() {
     load();
   }, [load]);
 
-  const handleProcess = async () => {
+  const handleProcess = async (force = false) => {
     setProcessing(true);
     try {
       const selectedIds =
@@ -78,6 +89,7 @@ export default function PayrollPage() {
         month,
         year,
         employeeIds: selectedIds,
+        force,
       });
       setActionModal({
         show: true,
@@ -133,8 +145,9 @@ export default function PayrollPage() {
   const paidCount = payrolls.filter((p) => p.status === "paid").length;
 
   const displayedPayrolls = [...payrolls]
-    .filter(p => {
-      const name = `${(p.employee as any)?.firstName ?? ""} ${(p.employee as any)?.lastName ?? ""}`.toLowerCase();
+    .filter((p) => {
+      const name =
+        `${(p.employee as any)?.firstName ?? ""} ${(p.employee as any)?.lastName ?? ""}`.toLowerCase();
       if (search && !name.includes(search.toLowerCase())) return false;
       if (filterStatus && p.status !== filterStatus) return false;
       return true;
@@ -147,7 +160,8 @@ export default function PayrollPage() {
         cmp = na.localeCompare(nb);
       } else if (sortKey === "net") cmp = a.netSalary - b.netSalary;
       else if (sortKey === "gross") cmp = a.grossSalary - b.grossSalary;
-      else if (sortKey === "deductions") cmp = a.totalDeductions - b.totalDeductions;
+      else if (sortKey === "deductions")
+        cmp = a.totalDeductions - b.totalDeductions;
       return sortDir === "asc" ? cmp : -cmp;
     });
 
@@ -291,28 +305,48 @@ export default function PayrollPage() {
       <div className="flex flex-wrap gap-2 mb-5">
         <div className="flex items-center gap-2 border-2 border-black bg-white px-3 py-2 flex-1 min-w-48">
           <Search className="w-4 h-4 shrink-0 text-muted-foreground" />
-          <input type="text" placeholder="Search by employee name..." value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="bg-transparent text-sm outline-none w-full font-medium" />
-          {search && <button onClick={() => setSearch("")}><X className="w-3.5 h-3.5 text-muted-foreground" /></button>}
+          <input
+            type="text"
+            placeholder="Search by employee name..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="bg-transparent text-sm outline-none w-full font-medium"
+          />
+          {search && (
+            <button onClick={() => setSearch("")}>
+              <X className="w-3.5 h-3.5 text-muted-foreground" />
+            </button>
+          )}
         </div>
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none">
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none"
+        >
           <option value="">All Status</option>
           <option value="draft">Draft</option>
           <option value="processed">Processed</option>
           <option value="paid">Paid</option>
         </select>
-        <select value={sortKey} onChange={e => setSortKey(e.target.value as any)}
-          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none">
+        <select
+          value={sortKey}
+          onChange={(e) => setSortKey(e.target.value as any)}
+          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none"
+        >
           <option value="employee">Sort: Employee</option>
           <option value="net">Sort: Net Pay</option>
           <option value="gross">Sort: Gross</option>
           <option value="deductions">Sort: Deductions</option>
         </select>
-        <button onClick={() => setSortDir(d => d === "asc" ? "desc" : "asc")}
-          className="border-2 border-black bg-white px-3 py-2 flex items-center gap-1 font-semibold text-sm">
-          {sortDir === "asc" ? <ArrowUp className="w-4 h-4"/> : <ArrowDown className="w-4 h-4"/>}
+        <button
+          onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+          className="border-2 border-black bg-white px-3 py-2 flex items-center gap-1 font-semibold text-sm"
+        >
+          {sortDir === "asc" ? (
+            <ArrowUp className="w-4 h-4" />
+          ) : (
+            <ArrowDown className="w-4 h-4" />
+          )}
           {sortDir === "asc" ? "Asc" : "Desc"}
         </button>
       </div>
@@ -691,9 +725,9 @@ export default function PayrollPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
                 <button
-                  onClick={handleProcess}
+                  onClick={() => handleProcess(false)}
                   disabled={
                     processing ||
                     (processMode === "select" && selectedEmployees.size === 0)
@@ -701,6 +735,17 @@ export default function PayrollPage() {
                   className="border-2 bg-[#FA731C] text-white px-6 py-2.5 text-sm font-bold flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {processing ? "Processing..." : "Confirm & Process"}
+                </button>
+                <button
+                  onClick={() => {
+                    if (!confirm(`Force reprocess will DELETE existing payroll for ${month}/${year} (not paid) and recalculate with latest deduction rules. Continue?`)) return;
+                    handleProcess(true);
+                  }}
+                  disabled={processing}
+                  className="border-2 bg-red-600 text-white px-4 py-2.5 text-sm font-bold disabled:opacity-50"
+                  title="Delete and recalculate existing payroll records"
+                >
+                  Force Reprocess
                 </button>
                 <button
                   onClick={() => {

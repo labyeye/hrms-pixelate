@@ -1172,7 +1172,9 @@ export default function ReportsScreen() {
         >
           <ChevronLeft size={22} color={C.black} />
         </TouchableOpacity>
-        <Text style={s.logoText}>Nest<Text style={{ color: C.primary }}>HR</Text></Text>
+        <Text style={s.logoText}>
+          Nest<Text style={{ color: C.primary }}>HR</Text>
+        </Text>
         <BarChart2 size={20} color={C.primary} />
         <Text style={s.headerTitle}>Reports</Text>
         <View style={s.countBadge}>
@@ -1200,7 +1202,10 @@ export default function ReportsScreen() {
               ]}
               onPress={() => setCatFilter(c.key)}
             >
-              <Text style={[s.catChipText, active && { color: C.white }]} numberOfLines={1}>
+              <Text
+                style={[s.catChipText, active && { color: C.white }]}
+                numberOfLines={1}
+              >
                 {c.label}
               </Text>
             </TouchableOpacity>

@@ -149,7 +149,9 @@ export default function EmployeesPage() {
   const [search, setSearch] = useState("");
   const [filterDept, setFilterDept] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
-  const [sortKey, setSortKey] = useState<"firstName" | "department" | "joinDate">("firstName");
+  const [sortKey, setSortKey] = useState<
+    "firstName" | "department" | "joinDate"
+  >("firstName");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [showModal, setShowModal] = useState(false);
   const [formTab, setFormTab] = useState(0);
@@ -583,9 +585,16 @@ export default function EmployeesPage() {
 
   const displayedEmployees = [...employees].sort((a, b) => {
     let cmp = 0;
-    if (sortKey === "firstName") cmp = (a.firstName ?? "").localeCompare(b.firstName ?? "");
-    else if (sortKey === "department") cmp = ((a.department as any)?.name ?? "").localeCompare((b.department as any)?.name ?? "");
-    else if (sortKey === "joinDate") cmp = new Date(a.joinDate ?? 0).getTime() - new Date(b.joinDate ?? 0).getTime();
+    if (sortKey === "firstName")
+      cmp = (a.firstName ?? "").localeCompare(b.firstName ?? "");
+    else if (sortKey === "department")
+      cmp = ((a.department as any)?.name ?? "").localeCompare(
+        (b.department as any)?.name ?? "",
+      );
+    else if (sortKey === "joinDate")
+      cmp =
+        new Date(a.joinDate ?? 0).getTime() -
+        new Date(b.joinDate ?? 0).getTime();
     return sortDir === "asc" ? cmp : -cmp;
   });
 
@@ -740,7 +749,11 @@ export default function EmployeesPage() {
           onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
           className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold flex items-center gap-1"
         >
-          {sortDir === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
+          {sortDir === "asc" ? (
+            <ArrowUp className="w-4 h-4" />
+          ) : (
+            <ArrowDown className="w-4 h-4" />
+          )}
           {sortDir === "asc" ? "Asc" : "Desc"}
         </button>
       </div>
@@ -783,16 +796,29 @@ export default function EmployeesPage() {
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-11 h-11 border-2 border-black shrink-0 overflow-hidden bg-[#024BAB] flex items-center justify-center text-sm font-bold text-white rounded-full">
                       {emp.avatar ? (
-                        <img src={emp.avatar} alt={emp.firstName} className="w-full h-full object-cover" />
+                        <img
+                          src={emp.avatar}
+                          alt={emp.firstName}
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
                         emp.firstName?.[0]?.toUpperCase()
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-black truncate">{emp.firstName} {emp.lastName}</p>
-                      <p className="text-xs text-muted-foreground">{emp.employeeId}</p>
+                      <p className="font-bold text-black truncate">
+                        {emp.firstName} {emp.lastName}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {emp.employeeId}
+                      </p>
                     </div>
-                    <span className={cn("border-2 text-[10px] capitalize shrink-0", STATUS_COLORS[emp.status])}>
+                    <span
+                      className={cn(
+                        "border-2 text-[10px] capitalize shrink-0",
+                        STATUS_COLORS[emp.status],
+                      )}
+                    >
                       {emp.status.replace("_", " ")}
                     </span>
                   </div>
@@ -801,42 +827,73 @@ export default function EmployeesPage() {
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs mb-3">
                     <div>
                       <span className="text-muted-foreground">Dept: </span>
-                      <span className="font-bold text-black">{(emp.department as any)?.name || "—"}</span>
+                      <span className="font-bold text-black">
+                        {(emp.department as any)?.name || "—"}
+                      </span>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Joined: </span>
-                      <span className="font-bold text-black">{formatDate(emp.joinDate)}</span>
+                      <span className="font-bold text-black">
+                        {formatDate(emp.joinDate)}
+                      </span>
                     </div>
                     <div className="col-span-2 truncate">
                       <span className="text-muted-foreground">Role: </span>
-                      <span className="font-bold text-black">{emp.designation}</span>
+                      <span className="font-bold text-black">
+                        {emp.designation}
+                      </span>
                     </div>
                   </div>
 
                   {/* Balance chips */}
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     <div className="bg-[#F8FAFF] border border-black/10 px-3 py-2">
-                      <p className="text-[10px] font-black uppercase text-muted-foreground">Est. Balance</p>
+                      <p className="text-[10px] font-black uppercase text-muted-foreground">
+                        Est. Balance
+                      </p>
                       {sal ? (
-                        <p className={cn("text-sm font-black", bal < 0 ? "text-[#EF4444]" : bal < sal * 0.3 ? "text-amber-600" : "text-[#00C48C]")}>
-                          ₹{bal.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                        <p
+                          className={cn(
+                            "text-sm font-black",
+                            bal < 0
+                              ? "text-[#EF4444]"
+                              : bal < sal * 0.3
+                                ? "text-amber-600"
+                                : "text-[#00C48C]",
+                          )}
+                        >
+                          ₹
+                          {bal.toLocaleString("en-IN", {
+                            maximumFractionDigits: 0,
+                          })}
                         </p>
                       ) : (
-                        <p className="text-sm font-black text-muted-foreground">—</p>
+                        <p className="text-sm font-black text-muted-foreground">
+                          —
+                        </p>
                       )}
                     </div>
                     <div className="bg-[#F8FAFF] border border-black/10 px-3 py-2">
-                      <p className="text-[10px] font-black uppercase text-muted-foreground">Loan Balance</p>
+                      <p className="text-[10px] font-black uppercase text-muted-foreground">
+                        Loan Balance
+                      </p>
                       {loan > 0 ? (
-                        <p className="text-sm font-black text-[#EF4444]">₹{loan.toLocaleString()}</p>
+                        <p className="text-sm font-black text-[#EF4444]">
+                          ₹{loan.toLocaleString()}
+                        </p>
                       ) : (
-                        <p className="text-sm font-black text-muted-foreground">—</p>
+                        <p className="text-sm font-black text-muted-foreground">
+                          —
+                        </p>
                       )}
                     </div>
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <div
+                    className="flex items-center gap-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <button
                       onClick={() => setViewEmp(emp)}
                       className="flex-1 flex items-center justify-center gap-1.5 border-2 border-black py-2 text-xs font-bold bg-white hover:bg-[#024BAB]/5"
@@ -931,7 +988,9 @@ export default function EmployeesPage() {
                         const bal =
                           processedNet != null ? processedNet : sal - loan;
                         if (!sal)
-                          return <span className="text-muted-foreground">—</span>;
+                          return (
+                            <span className="text-muted-foreground">—</span>
+                          );
                         return (
                           <span
                             className={

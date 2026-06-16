@@ -38,16 +38,31 @@ export const authAPI = {
   updateProfile: (body: object) =>
     request("/auth/profile", { method: "PUT", body: JSON.stringify(body) }),
   forgotPassword: (email: string) =>
-    request("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
+    request("/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
   resetPassword: (token: string, password: string) =>
-    request(`/auth/reset-password/${token}`, { method: "POST", body: JSON.stringify({ password }) }),
+    request(`/auth/reset-password/${token}`, {
+      method: "POST",
+      body: JSON.stringify({ password }),
+    }),
   setup2FA: () => request("/auth/2fa/setup", { method: "POST" }),
   confirm2FA: (token: string) =>
-    request("/auth/2fa/confirm", { method: "POST", body: JSON.stringify({ token }) }),
+    request("/auth/2fa/confirm", {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    }),
   disable2FA: (token: string) =>
-    request("/auth/2fa/disable", { method: "POST", body: JSON.stringify({ token }) }),
+    request("/auth/2fa/disable", {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    }),
   verify2FA: (userId: string, token: string) =>
-    request("/auth/2fa/verify", { method: "POST", body: JSON.stringify({ userId, token }) }),
+    request("/auth/2fa/verify", {
+      method: "POST",
+      body: JSON.stringify({ userId, token }),
+    }),
 };
 
 export const dashboardAPI = {
@@ -513,8 +528,10 @@ export const exitAPI = {
     return request(`/exit${q}`);
   },
   getOne: (id: string) => request(`/exit/${id}`),
-  create: (body: object) => request("/exit", { method: "POST", body: JSON.stringify(body) }),
-  update: (id: string, body: object) => request(`/exit/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  create: (body: object) =>
+    request("/exit", { method: "POST", body: JSON.stringify(body) }),
+  update: (id: string, body: object) =>
+    request(`/exit/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   delete: (id: string) => request(`/exit/${id}`, { method: "DELETE" }),
 };
 

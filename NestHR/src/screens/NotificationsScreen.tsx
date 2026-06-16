@@ -40,7 +40,8 @@ function relativeTime(ts: number) {
 function getIcon(title: string) {
   const t = title.toLowerCase();
   if (t.includes('leave') || t.includes('holiday')) return Calendar;
-  if (t.includes('payroll') || t.includes('salary') || t.includes('pay')) return IndianRupee;
+  if (t.includes('payroll') || t.includes('salary') || t.includes('pay'))
+    return IndianRupee;
   if (t.includes('employee') || t.includes('hire')) return Users;
   if (t.includes('attendance') || t.includes('check')) return Clock;
   return Info;
@@ -48,10 +49,22 @@ function getIcon(title: string) {
 
 // Demo notifications seeded on first open so the screen isn't empty
 const DEMO_NOTIFICATIONS: Omit<LocalNotification, 'id' | 'ts' | 'read'>[] = [
-  { title: 'Leave Approved', body: 'Your leave request for Jun 15-16 has been approved.' },
-  { title: 'Payroll Processed', body: 'May 2026 payroll has been successfully processed for 24 employees.' },
-  { title: 'New Employee Added', body: 'Priya Sharma has been added to the Engineering department.' },
-  { title: 'Attendance Alert', body: '5 employees have not checked in yet today.' },
+  {
+    title: 'Leave Approved',
+    body: 'Your leave request for Jun 15-16 has been approved.',
+  },
+  {
+    title: 'Payroll Processed',
+    body: 'May 2026 payroll has been successfully processed for 24 employees.',
+  },
+  {
+    title: 'New Employee Added',
+    body: 'Priya Sharma has been added to the Engineering department.',
+  },
+  {
+    title: 'Attendance Alert',
+    body: '5 employees have not checked in yet today.',
+  },
 ];
 
 export default function NotificationsScreen() {
@@ -76,22 +89,30 @@ export default function NotificationsScreen() {
             PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
             {
               title: 'Notification Permission',
-              message: 'NestHR needs permission to send you attendance and leave notifications.',
+              message:
+                'NestHR needs permission to send you attendance and leave notifications.',
               buttonPositive: 'Allow',
               buttonNegative: 'Deny',
-            }
+            },
           );
         } catch {}
       }
       if (Platform.OS === 'ios' && all.length === 0) {
-        Alert.alert('Enable Notifications', 'Enable notifications in Settings to get real-time check-in and leave alerts.');
+        Alert.alert(
+          'Enable Notifications',
+          'Enable notifications in Settings to get real-time check-in and leave alerts.',
+        );
       }
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useFocusEffect(useCallback(() => { loadNotifications(); }, [loadNotifications]));
+  useFocusEffect(
+    useCallback(() => {
+      loadNotifications();
+    }, [loadNotifications]),
+  );
 
   const markAllRead = async () => {
     await localNotificationsAPI.markAllRead();
@@ -102,7 +123,8 @@ export default function NotificationsScreen() {
     Alert.alert('Clear All', 'Remove all notifications?', [
       { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Clear', style: 'destructive',
+        text: 'Clear',
+        style: 'destructive',
         onPress: async () => {
           await localNotificationsAPI.clear();
           setNotifications([]);
@@ -113,7 +135,9 @@ export default function NotificationsScreen() {
 
   const markRead = async (id: string) => {
     await localNotificationsAPI.markRead(id);
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    setNotifications(prev =>
+      prev.map(n => (n.id === id ? { ...n, read: true } : n)),
+    );
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -131,12 +155,16 @@ export default function NotificationsScreen() {
         </View>
         <View style={{ flex: 1 }}>
           <View style={styles.notifHeader}>
-            <Text style={[styles.notifTitle, !item.read && styles.notifTitleUnread]}>
+            <Text
+              style={[styles.notifTitle, !item.read && styles.notifTitleUnread]}
+            >
               {item.title}
             </Text>
             <Text style={styles.notifTime}>{relativeTime(item.ts)}</Text>
           </View>
-          <Text style={styles.notifBody} numberOfLines={2}>{item.body}</Text>
+          <Text style={styles.notifBody} numberOfLines={2}>
+            {item.body}
+          </Text>
         </View>
         {!item.read && <View style={styles.unreadDot} />}
       </TouchableOpacity>
@@ -147,7 +175,10 @@ export default function NotificationsScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 4, marginRight: 4 }}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{ padding: 4, marginRight: 4 }}
+          >
             <ChevronLeft size={22} color={C.black} />
           </TouchableOpacity>
           <Bell size={20} color={C.primary} />
@@ -180,7 +211,9 @@ export default function NotificationsScreen() {
         <View style={styles.empty}>
           <Bell size={40} color="#D1D5DB" />
           <Text style={styles.emptyTitle}>All caught up!</Text>
-          <Text style={styles.emptySub}>New notifications will appear here</Text>
+          <Text style={styles.emptySub}>
+            New notifications will appear here
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -193,11 +226,16 @@ export default function NotificationsScreen() {
           ListHeaderComponent={
             <View>
               <View style={styles.infoBanner}>
-                <Text style={styles.infoBannerText}>Real-time check-in/check-out and leave request notifications appear here.</Text>
+                <Text style={styles.infoBannerText}>
+                  Real-time check-in/check-out and leave request notifications
+                  appear here.
+                </Text>
               </View>
               {unreadCount > 0 && (
                 <View style={styles.listHeader}>
-                  <Text style={styles.listHeaderText}>{unreadCount} unread</Text>
+                  <Text style={styles.listHeaderText}>
+                    {unreadCount} unread
+                  </Text>
                 </View>
               )}
             </View>
@@ -212,37 +250,98 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F8F9FA' },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 14, backgroundColor: C.white,
-    borderBottomWidth: 2, borderBottomColor: C.black,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: C.white,
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: C.black },
-  badge: { backgroundColor: C.danger, borderRadius: 10, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5 },
+  badge: {
+    backgroundColor: C.danger,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+  },
   badgeText: { color: C.white, fontSize: 10, fontWeight: '700' },
   headerActions: { flexDirection: 'row', gap: 4 },
-  actionBtn: { padding: 8, borderWidth: 2, borderColor: '#E5E7EB', backgroundColor: C.white },
-  infoBanner: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#FFFBEB', borderBottomWidth: 2, borderBottomColor: C.black },
+  actionBtn: {
+    padding: 8,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    backgroundColor: C.white,
+  },
+  infoBanner: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#FFFBEB',
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
+  },
   infoBannerText: { fontSize: 11, fontWeight: '600', color: '#92400E' },
-  listHeader: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#EFF6FF', borderBottomWidth: 1, borderBottomColor: '#DBEAFE' },
-  listHeaderText: { fontSize: 11, fontWeight: '700', color: C.primary, textTransform: 'uppercase', letterSpacing: 0.5 },
+  listHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#EFF6FF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#DBEAFE',
+  },
+  listHeaderText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: C.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   notifRow: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 12,
-    paddingHorizontal: 16, paddingVertical: 14, backgroundColor: C.white,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: C.white,
   },
   notifUnread: { backgroundColor: '#FAFBFF' },
   iconWrap: {
-    width: 36, height: 36, borderRadius: 0,
-    borderWidth: 2, borderColor: '#E5E7EB',
-    backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center',
+    width: 36,
+    height: 36,
+    borderRadius: 0,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   iconWrapActive: { backgroundColor: C.primary, borderColor: C.black },
-  notifHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 3 },
+  notifHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 3,
+  },
   notifTitle: { fontSize: 13, fontWeight: '600', color: '#6B7280', flex: 1 },
   notifTitleUnread: { color: C.black, fontWeight: '700' },
-  notifTime: { fontSize: 10, color: '#9CA3AF', fontWeight: '500', marginLeft: 8 },
+  notifTime: {
+    fontSize: 10,
+    color: '#9CA3AF',
+    fontWeight: '500',
+    marginLeft: 8,
+  },
   notifBody: { fontSize: 12, color: '#6B7280', lineHeight: 18 },
-  unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: C.primary, marginTop: 4 },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: C.primary,
+    marginTop: 4,
+  },
   separator: { height: 1, backgroundColor: '#F3F4F6' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: C.black },

@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     letterSpacing: 0.5,
   },
-  headerAvatarWrap: { marginRight: 10 , marginTop: 8},
+  headerAvatarWrap: { marginRight: 10, marginTop: 8 },
   headerAvatar: {
     width: 44,
     height: 44,

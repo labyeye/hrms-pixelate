@@ -2,14 +2,31 @@ const mongoose = require("mongoose");
 
 const exitSchema = new mongoose.Schema(
   {
-    company: { type: mongoose.Schema.Types.ObjectId, ref: "Company", required: true },
-    employee: { type: mongoose.Schema.Types.ObjectId, ref: "Employee", required: true },
+    company: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
+      required: true,
+    },
+    employee: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Employee",
+      required: true,
+    },
     resignationDate: { type: Date, required: true },
     lastWorkingDay: { type: Date },
     noticePeriodDays: { type: Number, default: 30 },
     reason: {
       type: String,
-      enum: ["personal", "better_opportunity", "relocation", "health", "retirement", "termination", "contract_end", "other"],
+      enum: [
+        "personal",
+        "better_opportunity",
+        "relocation",
+        "health",
+        "retirement",
+        "termination",
+        "contract_end",
+        "other",
+      ],
       required: true,
     },
     reasonDetails: { type: String, maxlength: 1000 },

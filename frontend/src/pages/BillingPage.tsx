@@ -119,11 +119,13 @@ export default function BillingPage() {
     setDownloading(inv._id);
     try {
       const html = buildInvoiceHTML(inv);
-      const w = window.open('', '_blank');
+      const w = window.open("", "_blank");
       if (w) {
         w.document.write(html);
         w.document.close();
-        setTimeout(() => { w.print(); }, 500);
+        setTimeout(() => {
+          w.print();
+        }, 500);
       }
     } finally {
       setDownloading(null);
@@ -231,8 +233,13 @@ export default function BillingPage() {
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 You're on a free trial until{" "}
-                {trialEndDate?.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.
-                Subscribe anytime below to keep full access and unlock yearly savings.
+                {trialEndDate?.toLocaleDateString("en-IN", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+                . Subscribe anytime below to keep full access and unlock yearly
+                savings.
               </p>
             </div>
           </div>
@@ -581,7 +588,7 @@ export default function BillingPage() {
                       className="text-xs font-bold text-[#024BAB] underline hover:text-[#024BAB]/80 transition-colors flex items-center gap-1 disabled:opacity-50"
                     >
                       <Download className="w-3 h-3" />
-                      {downloading === inv._id ? 'Opening…' : 'Download'}
+                      {downloading === inv._id ? "Opening…" : "Download"}
                     </button>
                   </div>
                 </div>

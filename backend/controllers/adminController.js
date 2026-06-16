@@ -21,9 +21,7 @@ const getSaasStats = asyncHandler(async (req, res) => {
   ] = await Promise.all([
     Company.countDocuments(),
 
-    Company.aggregate([
-      { $group: { _id: "$status", count: { $sum: 1 } } },
-    ]),
+    Company.aggregate([{ $group: { _id: "$status", count: { $sum: 1 } } }]),
 
     Company.countDocuments({ createdAt: { $gte: startOfMonth } }),
 
@@ -31,9 +29,7 @@ const getSaasStats = asyncHandler(async (req, res) => {
       { $group: { _id: "$status", count: { $sum: 1 } } },
     ]),
 
-    Subscription.aggregate([
-      { $group: { _id: "$plan", count: { $sum: 1 } } },
-    ]),
+    Subscription.aggregate([{ $group: { _id: "$plan", count: { $sum: 1 } } }]),
 
     Subscription.aggregate([
       { $group: { _id: "$billingCycle", count: { $sum: 1 } } },

@@ -421,9 +421,7 @@ export default function LoansScreen() {
                           </Text>
                         )}
                       </View>
-                      {isSelected && (
-                        <Check size={14} color={C.white} />
-                      )}
+                      {isSelected && <Check size={14} color={C.white} />}
                     </TouchableOpacity>
                   );
                 })}

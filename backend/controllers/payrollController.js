@@ -83,7 +83,7 @@ function parseTime(timeStr) {
 }
 
 const processPayroll = asyncHandler(async (req, res) => {
-  const { month, year, employeeIds } = req.body;
+  const { month, year, employeeIds, employees: empIds, force } = req.body;
   const m = parseInt(month),
     y = parseInt(year);
   if (isNaN(m) || m < 1 || m > 12 || isNaN(y) || y < 2000 || y > 2100) {
@@ -92,8 +92,9 @@ const processPayroll = asyncHandler(async (req, res) => {
   }
 
   const empFilter = { company: req.user.company, status: "active" };
-  if (Array.isArray(employeeIds) && employeeIds.length > 0) {
-    empFilter._id = { $in: employeeIds };
+  const idList = employeeIds || empIds;
+  if (Array.isArray(idList) && idList.length > 0) {
+    empFilter._id = { $in: idList };
   }
   const employees = await Employee.find(empFilter).populate("shift");
 
@@ -103,6 +104,18 @@ const processPayroll = asyncHandler(async (req, res) => {
 
   const startDate = new Date(y, m - 1, 1);
   const endDate = new Date(y, m, 0);
+
+  // force=true: delete existing records for this month and reprocess
+  if (force) {
+    const empIds = employees.map((e) => e._id);
+    await Payroll.deleteMany({
+      company: req.user.company,
+      month: m,
+      year: y,
+      employee: { $in: empIds },
+      status: { $ne: "paid" }, // never delete paid payrolls
+    });
+  }
 
   const payrolls = [];
 
@@ -157,6 +170,7 @@ const processPayroll = asyncHandler(async (req, res) => {
       leaveDays = 0,
       halfDayCount = 0,
       lateCount = 0,
+      lateHoursLost = 0,
       totalWorkHours = 0,
       attendanceOTHours = 0;
 
@@ -166,10 +180,10 @@ const processPayroll = asyncHandler(async (req, res) => {
         leaveDays++;
         continue;
       }
+      if (a.status === "absent") continue;
 
       if (a.status === "half_day") {
-        // Track half-days separately for explicit deduction display.
-        // Add full shift hours here; halfDayDeduction will subtract half below.
+        // Credit full shift hours; halfDayDeduction subtracts half below — shown explicitly.
         halfDayCount++;
         presentDays++;
         totalWorkHours += shiftHoursPerDay;
@@ -177,54 +191,57 @@ const processPayroll = asyncHandler(async (req, res) => {
         continue;
       }
 
-      if (a.checkIn && a.checkOut) {
-        // Early arrival → start from shift start.
-        // Late departure → cap at shift end unless employee has otEnabled.
-        const dateMS = new Date(a.date).getTime();
-        const shiftStartUTC = new Date(
-          dateMS + (shiftH * 60 + shiftM) * 60000 - IST_OFFSET_MS,
-        );
-        const shiftEndUTC = new Date(
-          dateMS + (shiftEndH * 60 + shiftEndM) * 60000 - IST_OFFSET_MS,
-        );
+      const dateMS = new Date(a.date).getTime();
+      const shiftStartUTC = new Date(
+        dateMS + (shiftH * 60 + shiftM) * 60000 - IST_OFFSET_MS,
+      );
+      const shiftEndUTC = new Date(
+        dateMS + (shiftEndH * 60 + shiftEndM) * 60000 - IST_OFFSET_MS,
+      );
 
-        const effectiveIn = Math.max(
-          new Date(a.checkIn).getTime(),
-          shiftStartUTC.getTime(),
-        );
+      if (a.checkIn && a.checkOut) {
+        const rawIn = new Date(a.checkIn).getTime();
         const rawOut = new Date(a.checkOut).getTime();
+
+        // For late employees: credit from shift start so late hours show in lateDeductionAmount
+        // rather than silently reducing earnedBasic.
+        const effectiveFrom = shiftStartUTC.getTime();
         const effectiveOut = otEnabled
           ? rawOut
           : Math.min(rawOut, shiftEndUTC.getTime());
-        const paidHours = Math.max(0, (effectiveOut - effectiveIn) / 3_600_000);
 
-        totalWorkHours += paidHours;
-        presentDays++;
-        if (a.status === "late") lateCount++;
-      } else if (a.checkIn) {
-        // Checked in but no checkout — pay from clamped checkIn till shift end
-        const dateMS = new Date(a.date).getTime();
-        const shiftStartUTC = new Date(
-          dateMS + (shiftH * 60 + shiftM) * 60000 - IST_OFFSET_MS,
-        );
-        const shiftEndUTC = new Date(
-          dateMS + (shiftEndH * 60 + shiftEndM) * 60000 - IST_OFFSET_MS,
-        );
-
-        const effectiveIn = Math.max(
-          new Date(a.checkIn).getTime(),
-          shiftStartUTC.getTime(),
-        );
-        const paidHours = Math.max(
+        const fullHours = Math.max(
           0,
-          (shiftEndUTC.getTime() - effectiveIn) / 3_600_000,
+          (effectiveOut - effectiveFrom) / 3_600_000,
         );
-
-        totalWorkHours += paidHours;
+        totalWorkHours += fullHours;
         presentDays++;
-        if (a.status === "late") lateCount++;
+
+        if (a.status === "late") {
+          lateCount++;
+          // Hours lost = time between shift start and actual check-in
+          const hoursLate = Math.max(
+            0,
+            (rawIn - shiftStartUTC.getTime()) / 3_600_000,
+          );
+          lateHoursLost += hoursLate;
+        }
+      } else if (a.checkIn) {
+        // Checked in but no checkout — credit full shift hours; track late hours.
+        totalWorkHours += shiftHoursPerDay;
+        presentDays++;
+
+        if (a.status === "late") {
+          lateCount++;
+          const rawIn = new Date(a.checkIn).getTime();
+          const hoursLate = Math.max(
+            0,
+            (rawIn - shiftStartUTC.getTime()) / 3_600_000,
+          );
+          lateHoursLost += hoursLate;
+        }
       } else if (["present", "late"].includes(a.status)) {
-        // Manual attendance without punch times — use full shift hours
+        // Manual attendance without punch times — use full shift hours, no late tracking
         totalWorkHours += shiftHoursPerDay;
         presentDays++;
         if (a.status === "late") lateCount++;
@@ -233,29 +250,29 @@ const processPayroll = asyncHandler(async (req, res) => {
       if (a.overtime && a.overtime > 0) attendanceOTHours += a.overtime;
     }
 
+    // earnedSalary now reflects "on-time" credit for late employees — late deduction shown separately.
     const earnedSalary = Math.max(
       0,
       parseFloat((totalWorkHours * hourlyRate).toFixed(2)),
     );
 
-    // Half-day deduction: daily rate × 0.5 per half-day record.
-    // (We credited full shift hours above, so this nets out to half-day pay — now shown explicitly.)
+    // Half-day deduction: daily rate × 0.5 per half-day record (credited full hours above).
     const halfDayDeduction = parseFloat(
       (halfDayCount * dailyRate * 0.5).toFixed(2),
     );
 
-    // Late deduction: fixed fine or percentage per late punch from DeductionRule.
-    let lateDeduction = 0;
-    if (deductionRule && lateCount > 0 && deductionRule.lateDeductionAmount > 0) {
-      if (deductionRule.lateDeductionType === "percent") {
-        lateDeduction = parseFloat(
-          (lateCount * dailyRate * (deductionRule.lateDeductionAmount / 100)).toFixed(2),
-        );
-      } else {
-        lateDeduction = parseFloat(
-          (lateCount * deductionRule.lateDeductionAmount).toFixed(2),
-        );
-      }
+    // Late deduction = hours-lost pay + optional rule fine per occurrence.
+    let lateDeduction = parseFloat((lateHoursLost * hourlyRate).toFixed(2));
+    if (
+      deductionRule &&
+      lateCount > 0 &&
+      deductionRule.lateDeductionAmount > 0
+    ) {
+      const ruleFine =
+        deductionRule.lateDeductionType === "percent"
+          ? lateCount * dailyRate * (deductionRule.lateDeductionAmount / 100)
+          : lateCount * deductionRule.lateDeductionAmount;
+      lateDeduction += parseFloat(ruleFine.toFixed(2));
     }
 
     const earlyCheckoutDeduction = 0;
@@ -299,7 +316,10 @@ const processPayroll = asyncHandler(async (req, res) => {
     const grossSalary =
       earnedSalary + totalAllowances + totalOT + attendanceOTPay;
     const preDeductions =
-      lateDeduction + halfDayDeduction + earlyCheckoutDeduction + totalPenalties;
+      lateDeduction +
+      halfDayDeduction +
+      earlyCheckoutDeduction +
+      totalPenalties;
     let salaryAfterDeductions = Math.max(0, grossSalary - preDeductions);
 
     for (const loan of activeLoans) {

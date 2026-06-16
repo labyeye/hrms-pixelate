@@ -4,7 +4,16 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { departmentAPI } from "@/services/api";
 import { Department } from "@/types/hrms";
 import { cn } from "@/lib/utils";
-import { Plus, Building2, Users, Edit, X, Search, ArrowUp, ArrowDown } from "lucide-react";
+import {
+  Plus,
+  Building2,
+  Users,
+  Edit,
+  X,
+  Search,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 import { ActionModal } from "@/components/ui/ActionModal";
 
 const DEPT_BG_COLORS = [
@@ -49,7 +58,9 @@ export default function DepartmentsPage() {
     message: string;
   }>({ show: false, type: "success", title: "", message: "" });
   const [search, setSearch] = useState("");
-  const [sortKey, setSortKey] = useState<"name" | "headcount" | "budget">("name");
+  const [sortKey, setSortKey] = useState<"name" | "headcount" | "budget">(
+    "name",
+  );
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const load = useCallback(async () => {
@@ -127,11 +138,17 @@ export default function DepartmentsPage() {
   };
 
   const displayedDepts = [...departments]
-    .filter(d => !search || d.name.toLowerCase().includes(search.toLowerCase()) || d.code.toLowerCase().includes(search.toLowerCase()))
+    .filter(
+      (d) =>
+        !search ||
+        d.name.toLowerCase().includes(search.toLowerCase()) ||
+        d.code.toLowerCase().includes(search.toLowerCase()),
+    )
     .sort((a, b) => {
       let cmp = 0;
       if (sortKey === "name") cmp = a.name.localeCompare(b.name);
-      else if (sortKey === "headcount") cmp = (a.headcount ?? 0) - (b.headcount ?? 0);
+      else if (sortKey === "headcount")
+        cmp = (a.headcount ?? 0) - (b.headcount ?? 0);
       else if (sortKey === "budget") cmp = (a.budget ?? 0) - (b.budget ?? 0);
       return sortDir === "asc" ? cmp : -cmp;
     });
@@ -156,20 +173,37 @@ export default function DepartmentsPage() {
       <div className="flex flex-wrap gap-2 mb-4">
         <div className="flex items-center gap-2 border-2 border-black bg-white px-3 py-2 flex-1 min-w-48">
           <Search className="w-4 h-4 shrink-0 text-muted-foreground" />
-          <input type="text" placeholder="Search departments..." value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="bg-transparent text-sm outline-none w-full font-medium" />
-          {search && <button onClick={() => setSearch("")}><X className="w-3.5 h-3.5 text-muted-foreground" /></button>}
+          <input
+            type="text"
+            placeholder="Search departments..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="bg-transparent text-sm outline-none w-full font-medium"
+          />
+          {search && (
+            <button onClick={() => setSearch("")}>
+              <X className="w-3.5 h-3.5 text-muted-foreground" />
+            </button>
+          )}
         </div>
-        <select value={sortKey} onChange={e => setSortKey(e.target.value as any)}
-          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none">
+        <select
+          value={sortKey}
+          onChange={(e) => setSortKey(e.target.value as any)}
+          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none"
+        >
           <option value="name">Sort: Name</option>
           <option value="headcount">Sort: Headcount</option>
           <option value="budget">Sort: Budget</option>
         </select>
-        <button onClick={() => setSortDir(d => d === "asc" ? "desc" : "asc")}
-          className="border-2 border-black bg-white px-3 py-2 flex items-center gap-1 font-semibold text-sm">
-          {sortDir === "asc" ? <ArrowUp className="w-4 h-4"/> : <ArrowDown className="w-4 h-4"/>}
+        <button
+          onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+          className="border-2 border-black bg-white px-3 py-2 flex items-center gap-1 font-semibold text-sm"
+        >
+          {sortDir === "asc" ? (
+            <ArrowUp className="w-4 h-4" />
+          ) : (
+            <ArrowDown className="w-4 h-4" />
+          )}
           {sortDir === "asc" ? "Asc" : "Desc"}
         </button>
       </div>
@@ -193,7 +227,12 @@ export default function DepartmentsPage() {
         <div className="border-2 border-black bg-white p-12 flex flex-col items-center justify-center">
           <Search className="w-12 h-12 text-muted-foreground/30 mb-3" />
           <p className="font-bold text-black">No departments match</p>
-          <button onClick={() => setSearch("")} className="text-sm text-[#024BAB] font-bold mt-2 hover:underline">Clear search</button>
+          <button
+            onClick={() => setSearch("")}
+            className="text-sm text-[#024BAB] font-bold mt-2 hover:underline"
+          >
+            Clear search
+          </button>
         </div>
       ) : (
         <div className="border-2 border-black bg-white overflow-auto">

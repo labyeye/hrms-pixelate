@@ -1,33 +1,90 @@
-import { PIXELATE_NEST_LOGO } from './invoiceLogo';
+import { PIXELATE_NEST_LOGO } from "./invoiceLogo";
 
 function numToWords(n: number): string {
-  const a = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
-    'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
-    'Seventeen', 'Eighteen', 'Nineteen'];
-  const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-  if (n === 0) return 'Zero';
+  const a = [
+    "",
+    "One",
+    "Two",
+    "Three",
+    "Four",
+    "Five",
+    "Six",
+    "Seven",
+    "Eight",
+    "Nine",
+    "Ten",
+    "Eleven",
+    "Twelve",
+    "Thirteen",
+    "Fourteen",
+    "Fifteen",
+    "Sixteen",
+    "Seventeen",
+    "Eighteen",
+    "Nineteen",
+  ];
+  const b = [
+    "",
+    "",
+    "Twenty",
+    "Thirty",
+    "Forty",
+    "Fifty",
+    "Sixty",
+    "Seventy",
+    "Eighty",
+    "Ninety",
+  ];
+  if (n === 0) return "Zero";
   const w = (x: number): string => {
-    if (x < 20) return a[x] || '';
-    if (x < 100) return b[Math.floor(x / 10)] + (x % 10 ? ' ' + a[x % 10] : '');
-    if (x < 1000) return a[Math.floor(x / 100)] + ' Hundred' + (x % 100 ? ' ' + w(x % 100) : '');
-    if (x < 100000) return w(Math.floor(x / 1000)) + ' Thousand' + (x % 1000 ? ' ' + w(x % 1000) : '');
-    if (x < 10000000) return w(Math.floor(x / 100000)) + ' Lakh' + (x % 100000 ? ' ' + w(x % 100000) : '');
-    return w(Math.floor(x / 10000000)) + ' Crore' + (x % 10000000 ? ' ' + w(x % 10000000) : '');
+    if (x < 20) return a[x] || "";
+    if (x < 100) return b[Math.floor(x / 10)] + (x % 10 ? " " + a[x % 10] : "");
+    if (x < 1000)
+      return (
+        a[Math.floor(x / 100)] + " Hundred" + (x % 100 ? " " + w(x % 100) : "")
+      );
+    if (x < 100000)
+      return (
+        w(Math.floor(x / 1000)) +
+        " Thousand" +
+        (x % 1000 ? " " + w(x % 1000) : "")
+      );
+    if (x < 10000000)
+      return (
+        w(Math.floor(x / 100000)) +
+        " Lakh" +
+        (x % 100000 ? " " + w(x % 100000) : "")
+      );
+    return (
+      w(Math.floor(x / 10000000)) +
+      " Crore" +
+      (x % 10000000 ? " " + w(x % 10000000) : "")
+    );
   };
   const paise = Math.round((n % 1) * 100);
-  let res = w(Math.floor(n)) + ' Rupees';
-  if (paise > 0) res += ' and ' + w(paise) + ' Paise';
-  return res + ' Only';
+  let res = w(Math.floor(n)) + " Rupees";
+  if (paise > 0) res += " and " + w(paise) + " Paise";
+  return res + " Only";
 }
 
 function fmt(n: number): string {
-  return 'Rs. ' + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (
+    "Rs. " +
+    Number(n || 0).toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  );
 }
 
 function fmtDate(v: any): string {
-  if (!v) return '—';
+  if (!v) return "—";
   try {
-    return new Date(v).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    return new Date(v).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   } catch {
     return String(v);
   }
@@ -37,8 +94,10 @@ export function buildInvoiceHTML(inv: any): string {
   const company = inv.company || {};
   const total = Number(inv.amount || 0);
 
-  const clientState = String(company.state || '').trim().toLowerCase();
-  const isInterState = clientState && !clientState.includes('bihar');
+  const clientState = String(company.state || "")
+    .trim()
+    .toLowerCase();
+  const isInterState = clientState && !clientState.includes("bihar");
   // Amount stored is GST-inclusive (what Razorpay charged); reverse-calculate base
   const base = total / 1.18;
   const cgst = isInterState ? 0 : base * 0.09;
@@ -47,20 +106,28 @@ export function buildInvoiceHTML(inv: any): string {
   const taxAmt = cgst + sgst + igst;
 
   const planName = inv.plan
-    ? (inv.plan.charAt(0).toUpperCase() + inv.plan.slice(1)) + ' Plan'
-    : 'Subscription Plan';
-  const cycle = inv.billingCycle === 'yearly' ? 'Annual' : 'Monthly';
+    ? inv.plan.charAt(0).toUpperCase() + inv.plan.slice(1) + " Plan"
+    : "Subscription Plan";
+  const cycle = inv.billingCycle === "yearly" ? "Annual" : "Monthly";
   const description = `${planName} — ${cycle} Subscription`;
 
   const invoiceDate = fmtDate(inv.paidAt || inv.createdAt);
-  const invoiceNumber = inv.invoiceNumber || inv._id?.toString().slice(-8).toUpperCase() || '—';
+  const invoiceNumber =
+    inv.invoiceNumber || inv._id?.toString().slice(-8).toUpperCase() || "—";
 
-  const clientName = company.name || '—';
-  const clientAddress = [company.address, company.city, company.state, company.pincode].filter(Boolean).join(', ');
-  const clientGST = company.gstNumber || '';
-  const clientPAN = company.panNumber || '';
-  const clientEmail = company.email || '';
-  const clientPhone = company.phone || '';
+  const clientName = company.name || "—";
+  const clientAddress = [
+    company.address,
+    company.city,
+    company.state,
+    company.pincode,
+  ]
+    .filter(Boolean)
+    .join(", ");
+  const clientGST = company.gstNumber || "";
+  const clientPAN = company.panNumber || "";
+  const clientEmail = company.email || "";
+  const clientPhone = company.phone || "";
 
   const taxRows = isInterState
     ? `<tr><td>998314</td><td style="text-align:right">${fmt(base)}</td><td style="text-align:right">18%</td><td style="text-align:right">${fmt(igst)}</td><td style="text-align:right">${fmt(igst)}</td></tr>`
@@ -173,8 +240,8 @@ td { padding: 7px 5px; font-size: 8pt; color: #111; border-bottom: 0.5pt solid #
       <div class="meta-row"><span class="meta-label">Invoice No.</span><span class="meta-value">: ${invoiceNumber}</span></div>
       <div class="meta-row"><span class="meta-label">Invoice Date</span><span class="meta-value">: ${invoiceDate}</span></div>
       <div class="meta-row"><span class="meta-label">Due Date</span><span class="meta-value">: ${invoiceDate}</span></div>
-      <div class="meta-row"><span class="meta-label">Place of Service</span><span class="meta-value">: ${company.state || 'Bihar'}</span></div>
-      <div class="meta-row"><span class="meta-label">Supply Type</span><span class="meta-value">: ${isInterState ? 'Inter-State (IGST)' : 'Intra-State (CGST+SGST)'}</span></div>
+      <div class="meta-row"><span class="meta-label">Place of Service</span><span class="meta-value">: ${company.state || "Bihar"}</span></div>
+      <div class="meta-row"><span class="meta-label">Supply Type</span><span class="meta-value">: ${isInterState ? "Inter-State (IGST)" : "Intra-State (CGST+SGST)"}</span></div>
     </div>
   </div>
 
@@ -182,16 +249,16 @@ td { padding: 7px 5px; font-size: 8pt; color: #111; border-bottom: 0.5pt solid #
     <div class="party-block">
       <div class="party-label">Bill To</div>
       <div class="party-name">${clientName}</div>
-      ${clientAddress ? `<div class="party-line">${clientAddress}</div>` : ''}
-      ${clientEmail ? `<div class="party-line">Email: ${clientEmail}</div>` : ''}
-      ${clientPhone ? `<div class="party-line">Phone: ${clientPhone}</div>` : ''}
-      ${clientGST ? `<div class="party-line" style="font-weight:700">GSTIN: ${clientGST}</div>` : ''}
-      ${clientPAN ? `<div class="party-line">PAN: ${clientPAN}</div>` : ''}
+      ${clientAddress ? `<div class="party-line">${clientAddress}</div>` : ""}
+      ${clientEmail ? `<div class="party-line">Email: ${clientEmail}</div>` : ""}
+      ${clientPhone ? `<div class="party-line">Phone: ${clientPhone}</div>` : ""}
+      ${clientGST ? `<div class="party-line" style="font-weight:700">GSTIN: ${clientGST}</div>` : ""}
+      ${clientPAN ? `<div class="party-line">PAN: ${clientPAN}</div>` : ""}
     </div>
     <div class="party-block right">
       <div class="party-label">Ship To</div>
       <div class="party-name">${clientName}</div>
-      ${clientAddress ? `<div class="party-line">${clientAddress}</div>` : ''}
+      ${clientAddress ? `<div class="party-line">${clientAddress}</div>` : ""}
       <div class="party-line" style="margin-top:8px;font-size:7.5pt;color:#888">
         (Service delivered digitally — same as billing address)
       </div>
@@ -221,7 +288,12 @@ td { padding: 7px 5px; font-size: 8pt; color: #111; border-bottom: 0.5pt solid #
           <td class="col-rate">${fmt(base)}</td>
           <td class="col-amt">${fmt(base)}</td>
         </tr>
-        ${Array.from({ length: 5 }).map(() => `<tr class="empty-row"><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`).join('')}
+        ${Array.from({ length: 5 })
+          .map(
+            () =>
+              `<tr class="empty-row"><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`,
+          )
+          .join("")}
       </tbody>
     </table>
   </div>
@@ -252,10 +324,12 @@ td { padding: 7px 5px; font-size: 8pt; color: #111; border-bottom: 0.5pt solid #
     <div class="bottom-right">
       <div class="total-row"><span class="total-label">Subtotal</span><span class="total-value">${fmt(base)}</span></div>
       <div class="total-row"><span class="total-label">Taxable Amount</span><span class="total-value">${fmt(base)}</span></div>
-      ${isInterState
-        ? `<div class="total-row"><span class="total-label">IGST (18%)</span><span class="total-value">${fmt(igst)}</span></div>`
-        : `<div class="total-row"><span class="total-label">CGST (9%)</span><span class="total-value">${fmt(cgst)}</span></div>
-           <div class="total-row"><span class="total-label">SGST (9%)</span><span class="total-value">${fmt(sgst)}</span></div>`}
+      ${
+        isInterState
+          ? `<div class="total-row"><span class="total-label">IGST (18%)</span><span class="total-value">${fmt(igst)}</span></div>`
+          : `<div class="total-row"><span class="total-label">CGST (9%)</span><span class="total-value">${fmt(cgst)}</span></div>
+           <div class="total-row"><span class="total-label">SGST (9%)</span><span class="total-value">${fmt(sgst)}</span></div>`
+      }
       <div class="grand-row"><span class="grand-label">Grand Total</span><span class="grand-value">${fmt(total)}</span></div>
       <div class="total-row"><span class="total-label">(−) Amount Paid</span><span class="total-value">${fmt(total)}</span></div>
       <div class="balance-row"><span class="balance-label">Balance Due</span><span class="balance-value">Rs. 0.00</span></div>
@@ -267,9 +341,11 @@ td { padding: 7px 5px; font-size: 8pt; color: #111; border-bottom: 0.5pt solid #
       <thead>${taxHeader}</thead>
       <tbody>${taxRows}</tbody>
       <tfoot>
-        ${isInterState
-          ? `<tr><td><strong>Total</strong></td><td style="text-align:right"><strong>${fmt(base)}</strong></td><td style="text-align:right"></td><td style="text-align:right"><strong>${fmt(igst)}</strong></td><td style="text-align:right"><strong>${fmt(igst)}</strong></td></tr>`
-          : `<tr><td><strong>Total</strong></td><td style="text-align:right"><strong>${fmt(base)}</strong></td><td></td><td style="text-align:right"><strong>${fmt(cgst)}</strong></td><td></td><td style="text-align:right"><strong>${fmt(sgst)}</strong></td><td style="text-align:right"><strong>${fmt(taxAmt)}</strong></td></tr>`}
+        ${
+          isInterState
+            ? `<tr><td><strong>Total</strong></td><td style="text-align:right"><strong>${fmt(base)}</strong></td><td style="text-align:right"></td><td style="text-align:right"><strong>${fmt(igst)}</strong></td><td style="text-align:right"><strong>${fmt(igst)}</strong></td></tr>`
+            : `<tr><td><strong>Total</strong></td><td style="text-align:right"><strong>${fmt(base)}</strong></td><td></td><td style="text-align:right"><strong>${fmt(cgst)}</strong></td><td></td><td style="text-align:right"><strong>${fmt(sgst)}</strong></td><td style="text-align:right"><strong>${fmt(taxAmt)}</strong></td></tr>`
+        }
       </tfoot>
     </table>
   </div>

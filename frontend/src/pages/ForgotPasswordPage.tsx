@@ -14,11 +14,14 @@ export default function ForgotPasswordPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/forgot-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/auth/forgot-password`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        },
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Request failed");
       setSent(true);
@@ -33,7 +36,11 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen bg-[#F0F6FF] flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-8">
-          <img src={nesthrlogo} alt="NestHR" className="h-12 w-auto object-contain" />
+          <img
+            src={nesthrlogo}
+            alt="NestHR"
+            className="h-12 w-auto object-contain"
+          />
         </div>
 
         <div className="bg-white border-2 border-black p-8">
@@ -42,19 +49,29 @@ export default function ForgotPasswordPage() {
               <div className="flex justify-center mb-4">
                 <CheckCircle className="w-14 h-14 text-green-500" />
               </div>
-              <h2 className="text-xl font-black text-black mb-2">Check your email</h2>
+              <h2 className="text-xl font-black text-black mb-2">
+                Check your email
+              </h2>
               <p className="text-sm text-gray-600 mb-6">
-                If an account exists for <strong>{email}</strong>, we've sent a password reset link. It expires in 1 hour.
+                If an account exists for <strong>{email}</strong>, we've sent a
+                password reset link. It expires in 1 hour.
               </p>
-              <Link to="/login" className="flex items-center justify-center gap-2 text-sm font-black text-[#024BAB] hover:underline">
+              <Link
+                to="/login"
+                className="flex items-center justify-center gap-2 text-sm font-black text-[#024BAB] hover:underline"
+              >
                 <ArrowLeft className="w-4 h-4" /> Back to login
               </Link>
             </div>
           ) : (
             <>
               <div className="mb-6">
-                <h2 className="text-2xl font-black text-black">Forgot password?</h2>
-                <p className="text-sm text-gray-500 mt-1">Enter your email and we'll send a reset link.</p>
+                <h2 className="text-2xl font-black text-black">
+                  Forgot password?
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Enter your email and we'll send a reset link.
+                </p>
               </div>
 
               {error && (
@@ -76,7 +93,10 @@ export default function ForgotPasswordPage() {
                     <input
                       type="email"
                       value={email}
-                      onChange={(e) => { setEmail(e.target.value); setError(""); }}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setError("");
+                      }}
                       placeholder="you@company.com"
                       className="flex-1 px-4 py-3 bg-white text-sm font-medium outline-none"
                       required
@@ -91,13 +111,21 @@ export default function ForgotPasswordPage() {
                   className="w-full bg-[#024BAB] text-white py-3.5 text-sm font-black border-2 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#0a0a0a] transition-all flex items-center justify-center gap-2"
                 >
                   {loading ? (
-                    <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Sending...</>
-                  ) : "Send Reset Link"}
+                    <>
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />{" "}
+                      Sending...
+                    </>
+                  ) : (
+                    "Send Reset Link"
+                  )}
                 </button>
               </form>
 
               <div className="mt-6 text-center">
-                <Link to="/login" className="flex items-center justify-center gap-2 text-sm font-black text-[#024BAB] hover:underline">
+                <Link
+                  to="/login"
+                  className="flex items-center justify-center gap-2 text-sm font-black text-[#024BAB] hover:underline"
+                >
                   <ArrowLeft className="w-4 h-4" /> Back to login
                 </Link>
               </div>

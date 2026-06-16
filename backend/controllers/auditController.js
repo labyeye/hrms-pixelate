@@ -23,7 +23,13 @@ const getLogs = asyncHandler(async (req, res) => {
     .skip(skip)
     .limit(limit);
 
-  res.json({ success: true, data: logs, total, page, pages: Math.ceil(total / limit) });
+  res.json({
+    success: true,
+    data: logs,
+    total,
+    page,
+    pages: Math.ceil(total / limit),
+  });
 });
 
 module.exports = { getLogs };

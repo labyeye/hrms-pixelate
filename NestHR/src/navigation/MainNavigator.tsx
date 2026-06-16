@@ -55,9 +55,15 @@ function MoreNavigator() {
       <MoreStack.Screen name="Designations" component={DesignationsScreen} />
       <MoreStack.Screen name="OfferLetters" component={OfferLettersScreen} />
       <MoreStack.Screen name="Profile" component={ProfileScreen} />
-      <MoreStack.Screen name="BiometricDevices" component={BiometricDeviceScreen} />
+      <MoreStack.Screen
+        name="BiometricDevices"
+        component={BiometricDeviceScreen}
+      />
       <MoreStack.Screen name="NfcManager" component={NfcManagerScreen} />
-      <MoreStack.Screen name="PayrollSettings" component={PayrollSettingsScreen} />
+      <MoreStack.Screen
+        name="PayrollSettings"
+        component={PayrollSettingsScreen}
+      />
       <MoreStack.Screen name="Notifications" component={NotificationsScreen} />
       <MoreStack.Screen name="AuditLog" component={AuditLogScreen} />
     </MoreStack.Navigator>

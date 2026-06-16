@@ -36,7 +36,10 @@ const getInvoices = asyncHandler(async (req, res) => {
       .status(404)
       .json({ success: false, message: "Company not found" });
   const invoices = await Invoice.find({ company: company._id })
-    .populate("company", "name email phone address city state pincode gstNumber panNumber")
+    .populate(
+      "company",
+      "name email phone address city state pincode gstNumber panNumber",
+    )
     .sort({ createdAt: -1 })
     .limit(20);
   res.json({ success: true, data: invoices });

@@ -51,7 +51,9 @@ async function registerPush(): Promise<void> {
     return;
   }
 
-  const { publicKey } = await apiGet<{ publicKey: string }>("/push/vapid-public-key");
+  const { publicKey } = await apiGet<{ publicKey: string }>(
+    "/push/vapid-public-key",
+  );
   const applicationServerKey = urlBase64ToUint8Array(publicKey);
 
   const subscription = await registration.pushManager.subscribe({

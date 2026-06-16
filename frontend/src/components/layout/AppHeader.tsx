@@ -149,10 +149,15 @@ export function AppHeader({ title, onMenuOpen }: AppHeaderProps) {
               <div className="flex items-center justify-between px-4 py-3 border-b-2 border-black bg-[#024BAB]">
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-white" />
-                  <span className="text-sm font-bold text-white">Today's Activity</span>
+                  <span className="text-sm font-bold text-white">
+                    Today's Activity
+                  </span>
                 </div>
                 <span className="text-xs text-white/70 font-medium">
-                  {new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                  {new Date().toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                  })}
                 </span>
               </div>
 
@@ -161,12 +166,16 @@ export function AppHeader({ title, onMenuOpen }: AppHeaderProps) {
                 {loading ? (
                   <div className="flex items-center justify-center py-10 gap-2">
                     <div className="w-4 h-4 border-2 border-[#024BAB] border-t-transparent rounded-full animate-spin" />
-                    <span className="text-xs text-muted-foreground font-medium">Loading...</span>
+                    <span className="text-xs text-muted-foreground font-medium">
+                      Loading...
+                    </span>
                   </div>
                 ) : notifs.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-10 gap-2">
                     <Bell className="w-8 h-8 text-muted-foreground/30" />
-                    <p className="text-xs font-bold text-muted-foreground">No activity today</p>
+                    <p className="text-xs font-bold text-muted-foreground">
+                      No activity today
+                    </p>
                   </div>
                 ) : (
                   notifs.map((n) => (
@@ -177,7 +186,11 @@ export function AppHeader({ title, onMenuOpen }: AppHeaderProps) {
                       {/* Avatar */}
                       <div className="w-8 h-8 rounded-full border-2 border-black shrink-0 overflow-hidden bg-[#024BAB] flex items-center justify-center text-xs font-bold text-white">
                         {n.avatar ? (
-                          <img src={n.avatar} alt={n.name} className="w-full h-full object-cover" />
+                          <img
+                            src={n.avatar}
+                            alt={n.name}
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
                           n.name[0]?.toUpperCase()
                         )}
@@ -185,15 +198,22 @@ export function AppHeader({ title, onMenuOpen }: AppHeaderProps) {
 
                       {/* Text */}
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-black truncate">{n.name}</p>
+                        <p className="text-xs font-bold text-black truncate">
+                          {n.name}
+                        </p>
                         <div className="flex items-center gap-1 mt-0.5">
                           {n.type === "checkin" ? (
                             <LogIn className="w-3 h-3 text-[#00C48C] shrink-0" />
                           ) : (
                             <LogOut className="w-3 h-3 text-[#FA731C] shrink-0" />
                           )}
-                          <span className={`text-[11px] font-semibold ${n.type === "checkin" ? "text-[#00C48C]" : "text-[#FA731C]"}`}>
-                            {n.type === "checkin" ? "Checked in" : "Checked out"} at {fmt12(n.time)}
+                          <span
+                            className={`text-[11px] font-semibold ${n.type === "checkin" ? "text-[#00C48C]" : "text-[#FA731C]"}`}
+                          >
+                            {n.type === "checkin"
+                              ? "Checked in"
+                              : "Checked out"}{" "}
+                            at {fmt12(n.time)}
                           </span>
                         </div>
                       </div>
@@ -211,7 +231,10 @@ export function AppHeader({ title, onMenuOpen }: AppHeaderProps) {
               {notifs.length > 0 && (
                 <div className="border-t-2 border-black px-4 py-2.5 bg-[#F8FAFF] flex items-center justify-between">
                   <span className="text-[11px] text-muted-foreground font-medium">
-                    {notifs.filter((n) => n.type === "checkin").length} check-ins · {notifs.filter((n) => n.type === "checkout").length} check-outs
+                    {notifs.filter((n) => n.type === "checkin").length}{" "}
+                    check-ins ·{" "}
+                    {notifs.filter((n) => n.type === "checkout").length}{" "}
+                    check-outs
                   </span>
                   <button
                     onClick={fetchToday}

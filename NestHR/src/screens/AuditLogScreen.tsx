@@ -53,8 +53,15 @@ function actionLabel(action: string) {
 
 function fmtDate(d: string) {
   const date = new Date(d);
-  return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
-    + ' ' + date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+  return (
+    date.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    }) +
+    ' ' +
+    date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+  );
 }
 
 const PAGE_SIZE = 15;
@@ -69,27 +76,35 @@ export default function AuditLogScreen() {
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  const load = useCallback(async (pg = 1, reset = false) => {
-    if (reset) setLoading(true);
-    try {
-      const params: Record<string, string> = { page: String(pg), limit: String(PAGE_SIZE) };
-      if (search) params.action = search;
-      const res = await auditAPI.getLogs(params);
-      if (reset || pg === 1) {
-        setLogs(res.data || []);
-      } else {
-        setLogs(prev => [...prev, ...(res.data || [])]);
-      }
-      setTotal(res.total || 0);
-      setPage(pg);
-    } catch {}
-    setLoading(false);
-    setRefreshing(false);
-  }, [search]);
+  const load = useCallback(
+    async (pg = 1, reset = false) => {
+      if (reset) setLoading(true);
+      try {
+        const params: Record<string, string> = {
+          page: String(pg),
+          limit: String(PAGE_SIZE),
+        };
+        if (search) params.action = search;
+        const res = await auditAPI.getLogs(params);
+        if (reset || pg === 1) {
+          setLogs(res.data || []);
+        } else {
+          setLogs(prev => [...prev, ...(res.data || [])]);
+        }
+        setTotal(res.total || 0);
+        setPage(pg);
+      } catch {}
+      setLoading(false);
+      setRefreshing(false);
+    },
+    [search],
+  );
 
-  useFocusEffect(useCallback(() => {
-    load(1, true);
-  }, [load]));
+  useFocusEffect(
+    useCallback(() => {
+      load(1, true);
+    }, [load]),
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -101,7 +116,10 @@ export default function AuditLogScreen() {
   };
 
   const renderItem = ({ item }: { item: AuditLog }) => {
-    const colors = ACTION_COLORS[item.action] || { bg: '#f3f4f6', text: '#374151' };
+    const colors = ACTION_COLORS[item.action] || {
+      bg: '#f3f4f6',
+      text: '#374151',
+    };
     const isExpanded = expanded === item._id;
     const hasDetails = item.details && Object.keys(item.details).length > 0;
     const displayName = item.user?.name || item.userName || 'System';
@@ -110,16 +128,24 @@ export default function AuditLogScreen() {
     return (
       <TouchableOpacity
         style={styles.card}
-        onPress={() => hasDetails ? setExpanded(isExpanded ? null : item._id) : undefined}
+        onPress={() =>
+          hasDetails ? setExpanded(isExpanded ? null : item._id) : undefined
+        }
         activeOpacity={hasDetails ? 0.7 : 1}
       >
         <View style={styles.cardTop}>
           <View style={[styles.badge, { backgroundColor: colors.bg }]}>
-            <Text style={[styles.badgeText, { color: colors.text }]}>{actionLabel(item.action)}</Text>
+            <Text style={[styles.badgeText, { color: colors.text }]}>
+              {actionLabel(item.action)}
+            </Text>
           </View>
           {hasDetails && (
             <View style={styles.expandIcon}>
-              {isExpanded ? <ChevronUp size={14} color={C.textMuted} /> : <ChevronDown size={14} color={C.textMuted} />}
+              {isExpanded ? (
+                <ChevronUp size={14} color={C.textMuted} />
+              ) : (
+                <ChevronDown size={14} color={C.textMuted} />
+              )}
             </View>
           )}
         </View>
@@ -127,11 +153,20 @@ export default function AuditLogScreen() {
         <View style={styles.cardMeta}>
           <View style={styles.metaRow}>
             <User size={12} color={C.textMuted} />
-            <Text style={styles.metaText} numberOfLines={1}>{displayName}</Text>
-            {displayEmail ? <Text style={styles.metaEmail} numberOfLines={1}> · {displayEmail}</Text> : null}
+            <Text style={styles.metaText} numberOfLines={1}>
+              {displayName}
+            </Text>
+            {displayEmail ? (
+              <Text style={styles.metaEmail} numberOfLines={1}>
+                {' '}
+                · {displayEmail}
+              </Text>
+            ) : null}
           </View>
           <View style={styles.metaRow}>
-            {item.entity ? <Text style={styles.entityTag}>{item.entity}</Text> : null}
+            {item.entity ? (
+              <Text style={styles.entityTag}>{item.entity}</Text>
+            ) : null}
             <Text style={styles.dateText}>{fmtDate(item.createdAt)}</Text>
           </View>
         </View>
@@ -154,7 +189,10 @@ export default function AuditLogScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backBtn}
+        >
           <ChevronLeft size={22} color={C.black} />
         </TouchableOpacity>
         <View style={styles.headerTitle}>
@@ -172,7 +210,9 @@ export default function AuditLogScreen() {
           placeholder="Filter by action..."
           placeholderTextColor={C.textMuted}
           value={search}
-          onChangeText={t => { setSearch(t); }}
+          onChangeText={t => {
+            setSearch(t);
+          }}
           onSubmitEditing={() => load(1, true)}
           returnKeyType="search"
         />
@@ -180,7 +220,9 @@ export default function AuditLogScreen() {
 
       {/* Count */}
       {!loading && (
-        <Text style={styles.countText}>{total} record{total !== 1 ? 's' : ''}</Text>
+        <Text style={styles.countText}>
+          {total} record{total !== 1 ? 's' : ''}
+        </Text>
       )}
 
       {loading ? (
@@ -191,7 +233,9 @@ export default function AuditLogScreen() {
         <View style={styles.center}>
           <Shield size={48} color="#D1D5DB" />
           <Text style={styles.emptyText}>No audit logs yet</Text>
-          <Text style={styles.emptySubtext}>Actions like approving leaves or editing employees will appear here</Text>
+          <Text style={styles.emptySubtext}>
+            Actions like approving leaves or editing employees will appear here
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -199,13 +243,21 @@ export default function AuditLogScreen() {
           keyExtractor={i => i._id}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[C.primary]} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[C.primary]}
+            />
+          }
           onEndReached={loadMore}
           onEndReachedThreshold={0.3}
           ListFooterComponent={
-            logs.length < total
-              ? <View style={styles.loadMore}><ActivityIndicator size="small" color={C.primary} /></View>
-              : null
+            logs.length < total ? (
+              <View style={styles.loadMore}>
+                <ActivityIndicator size="small" color={C.primary} />
+              </View>
+            ) : null
           }
           ItemSeparatorComponent={() => <View style={styles.sep} />}
         />
@@ -226,9 +278,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: '#000',
   },
-  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  backBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerTitle: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerText: { fontSize: 17, fontWeight: '900', color: '#000', letterSpacing: -0.3 },
+  headerText: {
+    fontSize: 17,
+    fontWeight: '900',
+    color: '#000',
+    letterSpacing: -0.3,
+  },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -239,8 +301,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   searchIcon: { marginRight: 6 },
-  searchInput: { flex: 1, paddingVertical: 10, fontSize: 14, color: '#000', fontWeight: '500' },
-  countText: { fontSize: 12, fontWeight: '700', color: '#6B7280', paddingHorizontal: 16, marginBottom: 4 },
+  searchInput: {
+    flex: 1,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#000',
+    fontWeight: '500',
+  },
+  countText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6B7280',
+    paddingHorizontal: 16,
+    marginBottom: 4,
+  },
   list: { padding: 12, paddingTop: 4 },
   sep: { height: 8 },
   card: {
@@ -249,13 +323,23 @@ const styles = StyleSheet.create({
     borderColor: '#000',
     padding: 12,
   },
-  cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  cardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   badge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 2,
   },
-  badgeText: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
   expandIcon: { padding: 2 },
   cardMeta: { gap: 4 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
@@ -280,11 +364,38 @@ const styles = StyleSheet.create({
     padding: 8,
     gap: 4,
   },
-  detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  detailKey: { fontSize: 11, fontWeight: '700', color: '#6B7280', textTransform: 'capitalize', flex: 1 },
-  detailVal: { fontSize: 11, fontWeight: '800', color: '#000', flex: 1, textAlign: 'right' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  detailKey: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#6B7280',
+    textTransform: 'capitalize',
+    flex: 1,
+  },
+  detailVal: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#000',
+    flex: 1,
+    textAlign: 'right',
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    padding: 24,
+  },
   emptyText: { fontSize: 16, fontWeight: '800', color: '#374151' },
-  emptySubtext: { fontSize: 13, color: '#9CA3AF', textAlign: 'center', lineHeight: 20 },
+  emptySubtext: {
+    fontSize: 13,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
   loadMore: { padding: 16, alignItems: 'center' },
 });

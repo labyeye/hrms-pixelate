@@ -177,7 +177,9 @@ function ShiftsSection({ onBack }: { onBack: () => void }) {
   const [editing, setEditing] = useState<any>(null);
   const [shiftSearch, setShiftSearch] = useState("");
   const [shiftFilterStatus, setShiftFilterStatus] = useState("");
-  const [shiftSortKey, setShiftSortKey] = useState<"name" | "workingHours">("name");
+  const [shiftSortKey, setShiftSortKey] = useState<"name" | "workingHours">(
+    "name",
+  );
   const [shiftSortDir, setShiftSortDir] = useState<"asc" | "desc">("asc");
   const [form, setForm] = useState({
     name: "",
@@ -251,15 +253,20 @@ function ShiftsSection({ onBack }: { onBack: () => void }) {
   };
 
   const displayedShifts = [...data]
-    .filter(s => {
-      if (shiftSearch && !s.name.toLowerCase().includes(shiftSearch.toLowerCase())) return false;
+    .filter((s) => {
+      if (
+        shiftSearch &&
+        !s.name.toLowerCase().includes(shiftSearch.toLowerCase())
+      )
+        return false;
       if (shiftFilterStatus && s.status !== shiftFilterStatus) return false;
       return true;
     })
     .sort((a, b) => {
       let cmp = 0;
       if (shiftSortKey === "name") cmp = a.name.localeCompare(b.name);
-      else if (shiftSortKey === "workingHours") cmp = (a.workingHours ?? 0) - (b.workingHours ?? 0);
+      else if (shiftSortKey === "workingHours")
+        cmp = (a.workingHours ?? 0) - (b.workingHours ?? 0);
       return shiftSortDir === "asc" ? cmp : -cmp;
     });
 
@@ -276,25 +283,45 @@ function ShiftsSection({ onBack }: { onBack: () => void }) {
       <div className="flex flex-wrap gap-2 mb-4">
         <div className="flex items-center gap-2 border-2 border-black bg-white px-3 py-2 flex-1 min-w-48">
           <Search className="w-4 h-4 shrink-0 text-muted-foreground" />
-          <input type="text" placeholder="Search shifts..." value={shiftSearch}
-            onChange={e => setShiftSearch(e.target.value)}
-            className="bg-transparent text-sm outline-none w-full font-medium" />
-          {shiftSearch && <button onClick={() => setShiftSearch("")}><X className="w-3.5 h-3.5 text-muted-foreground" /></button>}
+          <input
+            type="text"
+            placeholder="Search shifts..."
+            value={shiftSearch}
+            onChange={(e) => setShiftSearch(e.target.value)}
+            className="bg-transparent text-sm outline-none w-full font-medium"
+          />
+          {shiftSearch && (
+            <button onClick={() => setShiftSearch("")}>
+              <X className="w-3.5 h-3.5 text-muted-foreground" />
+            </button>
+          )}
         </div>
-        <select value={shiftFilterStatus} onChange={e => setShiftFilterStatus(e.target.value)}
-          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none">
+        <select
+          value={shiftFilterStatus}
+          onChange={(e) => setShiftFilterStatus(e.target.value)}
+          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none"
+        >
           <option value="">All Status</option>
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
         </select>
-        <select value={shiftSortKey} onChange={e => setShiftSortKey(e.target.value as any)}
-          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none">
+        <select
+          value={shiftSortKey}
+          onChange={(e) => setShiftSortKey(e.target.value as any)}
+          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none"
+        >
           <option value="name">Sort: Name</option>
           <option value="workingHours">Sort: Working Hrs</option>
         </select>
-        <button onClick={() => setShiftSortDir(d => d === "asc" ? "desc" : "asc")}
-          className="border-2 border-black bg-white px-3 py-2 flex items-center gap-1 font-semibold text-sm">
-          {shiftSortDir === "asc" ? <ArrowUp className="w-4 h-4"/> : <ArrowDown className="w-4 h-4"/>}
+        <button
+          onClick={() => setShiftSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+          className="border-2 border-black bg-white px-3 py-2 flex items-center gap-1 font-semibold text-sm"
+        >
+          {shiftSortDir === "asc" ? (
+            <ArrowUp className="w-4 h-4" />
+          ) : (
+            <ArrowDown className="w-4 h-4" />
+          )}
           {shiftSortDir === "asc" ? "Asc" : "Desc"}
         </button>
       </div>

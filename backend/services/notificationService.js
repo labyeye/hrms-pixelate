@@ -204,7 +204,16 @@ async function sendPasswordResetEmail({ toEmail, toName, resetUrl }) {
   }
 }
 
-async function sendLeaveStatusEmail({ toEmail, toName, status, leaveType, startDate, endDate, days, rejectionReason }) {
+async function sendLeaveStatusEmail({
+  toEmail,
+  toName,
+  status,
+  leaveType,
+  startDate,
+  endDate,
+  days,
+  rejectionReason,
+}) {
   const transporter = getTransporter();
   if (!transporter) return;
 
@@ -259,7 +268,16 @@ async function sendLeaveStatusEmail({ toEmail, toName, status, leaveType, startD
   }
 }
 
-async function sendLeaveAppliedEmail({ toEmail, toName, empName, leaveType, startDate, endDate, days, reason }) {
+async function sendLeaveAppliedEmail({
+  toEmail,
+  toName,
+  empName,
+  leaveType,
+  startDate,
+  endDate,
+  days,
+  reason,
+}) {
   const transporter = getTransporter();
   if (!transporter) return;
 
@@ -311,4 +329,9 @@ async function sendLeaveAppliedEmail({ toEmail, toName, empName, leaveType, star
   }
 }
 
-module.exports = { sendPaymentConfirmations, sendPasswordResetEmail, sendLeaveStatusEmail, sendLeaveAppliedEmail };
+module.exports = {
+  sendPaymentConfirmations,
+  sendPasswordResetEmail,
+  sendLeaveStatusEmail,
+  sendLeaveAppliedEmail,
+};

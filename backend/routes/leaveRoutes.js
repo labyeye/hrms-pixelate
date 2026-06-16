@@ -13,7 +13,11 @@ router.route("/").get(protect, getLeaves).post(protect, createLeave);
 router
   .route("/:id")
   .patch(protect, authorize("employee"), updateLeave)
-  .put(protect, authorize("super_admin", "admin", "hr_manager"), updateLeaveStatus)
+  .put(
+    protect,
+    authorize("super_admin", "admin", "hr_manager"),
+    updateLeaveStatus,
+  )
   .delete(protect, deleteLeave);
 
 module.exports = router;

@@ -2,7 +2,11 @@ const mongoose = require("mongoose");
 
 const auditLogSchema = new mongoose.Schema(
   {
-    company: { type: mongoose.Schema.Types.ObjectId, ref: "Company", index: true },
+    company: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
+      index: true,
+    },
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     userEmail: { type: String },
     userName: { type: String },

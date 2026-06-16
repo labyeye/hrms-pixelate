@@ -6,9 +6,13 @@ const Setting = require("../models/Setting");
 async function sendTemplate(phone, templateName, params, lang = "en") {
   const accessToken = process.env.META_WA_TOKEN;
   const phoneNumberId = process.env.META_WA_PHONE_ID;
-  console.log(`[WA-DEBUG] sendTemplate → phone=${phone} template=${templateName} META_WA_TOKEN=${accessToken ? "SET" : "MISSING"} META_WA_PHONE_ID=${phoneNumberId ? "SET" : "MISSING"}`);
+  console.log(
+    `[WA-DEBUG] sendTemplate → phone=${phone} template=${templateName} META_WA_TOKEN=${accessToken ? "SET" : "MISSING"} META_WA_PHONE_ID=${phoneNumberId ? "SET" : "MISSING"}`,
+  );
   if (!accessToken || !phoneNumberId) {
-    console.warn("[WA-DEBUG] ABORT: META_WA_TOKEN or META_WA_PHONE_ID not set in .env");
+    console.warn(
+      "[WA-DEBUG] ABORT: META_WA_TOKEN or META_WA_PHONE_ID not set in .env",
+    );
     return;
   }
 
@@ -70,18 +74,26 @@ async function getCompanySetting(eventKey, companyId) {
     `whatsappEnabled whatsappLang ${eventKey}`,
   );
   if (!setting) {
-    console.warn(`[WA-DEBUG] getCompanySetting: no Setting doc found for company=${companyId}`);
+    console.warn(
+      `[WA-DEBUG] getCompanySetting: no Setting doc found for company=${companyId}`,
+    );
     return null;
   }
   if (!setting.whatsappEnabled) {
-    console.warn(`[WA-DEBUG] getCompanySetting: whatsappEnabled=false for company=${companyId} — enable it in Settings`);
+    console.warn(
+      `[WA-DEBUG] getCompanySetting: whatsappEnabled=false for company=${companyId} — enable it in Settings`,
+    );
     return null;
   }
   if (eventKey && setting[eventKey] === false) {
-    console.warn(`[WA-DEBUG] getCompanySetting: ${eventKey}=false for company=${companyId} — disabled in Settings`);
+    console.warn(
+      `[WA-DEBUG] getCompanySetting: ${eventKey}=false for company=${companyId} — disabled in Settings`,
+    );
     return null;
   }
-  console.log(`[WA-DEBUG] getCompanySetting: OK — whatsappEnabled=true, ${eventKey}=${setting[eventKey]}`);
+  console.log(
+    `[WA-DEBUG] getCompanySetting: OK — whatsappEnabled=true, ${eventKey}=${setting[eventKey]}`,
+  );
   return setting;
 }
 
@@ -111,7 +123,10 @@ async function sendCheckIn(
     );
     console.log(`[WA-DEBUG] ✅ Staff check-in message DELIVERED to ${phone}`);
   } catch (err) {
-    console.error(`[WA-DEBUG] ❌ Staff check-in FAILED to ${phone}:`, err.message);
+    console.error(
+      `[WA-DEBUG] ❌ Staff check-in FAILED to ${phone}:`,
+      err.message,
+    );
   }
 }
 
@@ -253,12 +268,24 @@ async function sendLeaveAppliedHR(
  * Template: neshr_checkin_hr
  * Body:  Employee {{1}} (ID: {{2}}) checked in at {{3}} at {{4}}.
  */
-async function sendCheckInHR(phone, { empName, empId, locationName, time }, companyId) {
+async function sendCheckInHR(
+  phone,
+  { empName, empId, locationName, time },
+  companyId,
+) {
   try {
     const s = await getCompanySetting("whatsappNotifyCheckIn", companyId);
     if (!s) return;
-    const t = new Date(time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
-    await sendTemplate(phone, "neshr_checkin_hr", [empName, empId, locationName, t], s.whatsappLang || "en");
+    const t = new Date(time).toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    await sendTemplate(
+      phone,
+      "neshr_checkin_hr",
+      [empName, empId, locationName, t],
+      s.whatsappLang || "en",
+    );
   } catch (err) {
     console.error("[WhatsApp] sendCheckInHR:", err.message);
   }
@@ -268,13 +295,25 @@ async function sendCheckInHR(phone, { empName, empId, locationName, time }, comp
  * Template: neshr_checkout_hr
  * Body:  Employee {{1}} (ID: {{2}}) checked out at {{3}} at {{4}}. Total hours: {{5}}.
  */
-async function sendCheckOutHR(phone, { empName, empId, locationName, time, workHours }, companyId) {
+async function sendCheckOutHR(
+  phone,
+  { empName, empId, locationName, time, workHours },
+  companyId,
+) {
   try {
     const s = await getCompanySetting("whatsappNotifyCheckIn", companyId);
     if (!s) return;
-    const t = new Date(time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+    const t = new Date(time).toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
     const hrs = workHours ? `${Number(workHours).toFixed(1)}h` : "-";
-    await sendTemplate(phone, "neshr_checkout_hr", [empName, empId, locationName, t, hrs], s.whatsappLang || "en");
+    await sendTemplate(
+      phone,
+      "neshr_checkout_hr",
+      [empName, empId, locationName, t, hrs],
+      s.whatsappLang || "en",
+    );
   } catch (err) {
     console.error("[WhatsApp] sendCheckOutHR:", err.message);
   }

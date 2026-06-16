@@ -10,7 +10,10 @@ const {
   sendLeaveRejected,
   sendLeaveAppliedHR,
 } = require("../services/whatsappService");
-const { sendLeaveStatusEmail, sendLeaveAppliedEmail } = require("../services/notificationService");
+const {
+  sendLeaveStatusEmail,
+  sendLeaveAppliedEmail,
+} = require("../services/notificationService");
 const { logAudit } = require("../utils/auditLogger");
 
 const LEAVE_TYPES = [
@@ -226,7 +229,8 @@ const createLeave = asyncHandler(async (req, res) => {
     }).select("phone email name role");
 
     for (const hr of hrUsers) {
-      const phone = hr.phone || (hr.role === "super_admin" ? company?.phone : null);
+      const phone =
+        hr.phone || (hr.role === "super_admin" ? company?.phone : null);
       if (phone)
         await sendLeaveAppliedHR(
           phone,
@@ -294,22 +298,33 @@ const updateLeaveStatus = asyncHandler(async (req, res) => {
   try {
     if (leave.employee?.phone) {
       if (status === "approved") {
-        await sendLeaveApproved(leave.employee.phone, {
-          firstName: leave.employee.firstName,
-          leaveType: leave.leaveType,
-          startDate: leave.startDate,
-          endDate: leave.endDate,
-          days: leave.days,
-        }, req.user.company);
+        await sendLeaveApproved(
+          leave.employee.phone,
+          {
+            firstName: leave.employee.firstName,
+            leaveType: leave.leaveType,
+            startDate: leave.startDate,
+            endDate: leave.endDate,
+            days: leave.days,
+          },
+          req.user.company,
+        );
       } else if (status === "rejected") {
-        await sendLeaveRejected(leave.employee.phone, {
-          firstName: leave.employee.firstName,
-          leaveType: leave.leaveType,
-          reason: rejectionReason,
-        }, req.user.company);
+        await sendLeaveRejected(
+          leave.employee.phone,
+          {
+            firstName: leave.employee.firstName,
+            leaveType: leave.leaveType,
+            reason: rejectionReason,
+          },
+          req.user.company,
+        );
       }
     }
-    if (leave.employee?.user?.email && (status === "approved" || status === "rejected")) {
+    if (
+      leave.employee?.user?.email &&
+      (status === "approved" || status === "rejected")
+    ) {
       await sendLeaveStatusEmail({
         toEmail: leave.employee.user.email,
         toName: `${leave.employee.firstName} ${leave.employee.lastName}`,
@@ -354,10 +369,19 @@ const updateLeave = asyncHandler(async (req, res) => {
     throw new Error("Only pending leave requests can be edited");
   }
 
-  const { leaveType, startDate, endDate, days, reason, isHalfDay, halfDayType } = req.body;
+  const {
+    leaveType,
+    startDate,
+    endDate,
+    days,
+    reason,
+    isHalfDay,
+    halfDayType,
+  } = req.body;
 
   if (leaveType && LEAVE_TYPES.includes(leaveType)) leave.leaveType = leaveType;
-  if (reason && typeof reason === "string") leave.reason = reason.trim().slice(0, 500);
+  if (reason && typeof reason === "string")
+    leave.reason = reason.trim().slice(0, 500);
   if (isHalfDay !== undefined) {
     leave.isHalfDay = !!isHalfDay;
     leave.halfDayType = isHalfDay ? halfDayType : undefined;
@@ -401,7 +425,9 @@ const deleteLeave = asyncHandler(async (req, res) => {
 
   // Employees can only delete their own pending leaves
   if (req.user.role === "employee") {
-    const selfEmp = await Employee.findOne({ user: req.user._id }).select("_id");
+    const selfEmp = await Employee.findOne({ user: req.user._id }).select(
+      "_id",
+    );
     if (!selfEmp) {
       res.status(404);
       throw new Error("Employee record not found");
@@ -424,4 +450,10 @@ const deleteLeave = asyncHandler(async (req, res) => {
   res.json({ success: true, message: "Leave request withdrawn" });
 });
 
-module.exports = { getLeaves, createLeave, updateLeave, updateLeaveStatus, deleteLeave };
+module.exports = {
+  getLeaves,
+  createLeave,
+  updateLeave,
+  updateLeaveStatus,
+  deleteLeave,
+};

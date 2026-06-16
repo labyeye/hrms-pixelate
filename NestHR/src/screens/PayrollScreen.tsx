@@ -116,10 +116,29 @@ export default function PayrollScreen() {
     ]);
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (force = false) => {
+    if (force) {
+      Alert.alert(
+        'Reprocess Payroll',
+        'This will DELETE existing payroll records for this month (except paid) and recalculate. Continue?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Yes, Reprocess', style: 'destructive', onPress: () => doGenerate(true) },
+        ],
+      );
+      return;
+    }
+    doGenerate(false);
+  };
+
+  const doGenerate = async (force: boolean) => {
     setGenerating(true);
     try {
-      await payrollAPI.process({ month: parseInt(genMonth), year: parseInt(genYear) });
+      await payrollAPI.process({
+        month: parseInt(genMonth),
+        year: parseInt(genYear),
+        force,
+      });
       setShowGenModal(false);
       await load();
     } catch (e: any) {
@@ -142,7 +161,10 @@ export default function PayrollScreen() {
           <IndianRupee size={20} color={C.primary} />
           <Text style={styles.headerTitle}>Payroll</Text>
         </View>
-        <TouchableOpacity style={styles.genBtn} onPress={() => setShowGenModal(true)}>
+        <TouchableOpacity
+          style={styles.genBtn}
+          onPress={() => setShowGenModal(true)}
+        >
           <Zap size={14} color={C.white} />
           <Text style={styles.genBtnText}>Generate</Text>
         </TouchableOpacity>
@@ -336,7 +358,11 @@ export default function PayrollScreen() {
         />
       )}
 
-      <Modal visible={showGenModal} animationType="slide" presentationStyle="pageSheet">
+      <Modal
+        visible={showGenModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
         <SafeAreaView style={styles.safe} edges={['top']}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Generate Payroll</Text>
@@ -351,7 +377,8 @@ export default function PayrollScreen() {
           >
             <View style={styles.genNote}>
               <Text style={styles.genNoteText}>
-                This will generate payroll for all active employees for the selected month.
+                This will generate payroll for all active employees for the
+                selected month.
               </Text>
             </View>
             <View>
@@ -378,7 +405,7 @@ export default function PayrollScreen() {
             </View>
             <TouchableOpacity
               style={styles.genSubmitBtn}
-              onPress={handleGenerate}
+              onPress={() => handleGenerate(false)}
               disabled={generating}
             >
               {generating ? (
@@ -390,6 +417,19 @@ export default function PayrollScreen() {
                 </>
               )}
             </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.genSubmitBtn, { backgroundColor: C.danger, marginTop: 0 }]}
+              onPress={() => handleGenerate(true)}
+              disabled={generating}
+            >
+              <>
+                <Zap size={14} color={C.white} />
+                <Text style={styles.genSubmitBtnText}>Force Reprocess</Text>
+              </>
+            </TouchableOpacity>
+            <Text style={{ fontSize: 11, color: C.textMuted, textAlign: 'center' }}>
+              Force Reprocess deletes and recalculates existing payroll (not paid ones)
+            </Text>
           </ScrollView>
         </SafeAreaView>
       </Modal>
@@ -414,24 +454,74 @@ export default function PayrollScreen() {
             >
               {(() => {
                 const s = selected as any;
-                const rows: Array<{ label: string; val: number; prefix: string; color?: string; bold?: boolean; large?: boolean; section?: boolean }> = [
+                const rows: Array<{
+                  label: string;
+                  val: number;
+                  prefix: string;
+                  color?: string;
+                  bold?: boolean;
+                  large?: boolean;
+                  section?: boolean;
+                }> = [
                   { label: 'EARNINGS', val: 0, prefix: '', section: true },
                   { label: 'Basic Salary', val: s.basicSalary, prefix: '₹' },
                   { label: 'Earned Basic', val: s.earnedBasic, prefix: '₹' },
-                  { label: 'Allowances / Bonus', val: s.otherAllowances, prefix: '₹' },
+                  {
+                    label: 'Allowances / Bonus',
+                    val: s.otherAllowances,
+                    prefix: '₹',
+                  },
                   { label: 'Overtime Pay', val: s.otPay, prefix: '₹' },
-                  { label: 'Gross Salary', val: s.grossSalary, prefix: '₹', bold: true },
+                  {
+                    label: 'Gross Salary',
+                    val: s.grossSalary,
+                    prefix: '₹',
+                    bold: true,
+                  },
                   { label: 'DEDUCTIONS', val: 0, prefix: '', section: true },
-                  { label: 'Late Deduction', val: s.lateDeductionAmount, prefix: '-₹', color: C.danger },
-                  { label: 'Half-Day Deduction', val: s.halfDayDeduction, prefix: '-₹', color: C.danger },
-                  { label: 'Penalty', val: s.penaltyAmount, prefix: '-₹', color: C.danger },
-                  { label: 'Loan / Advance EMI', val: s.loanDeduction, prefix: '-₹', color: C.danger },
-                  { label: 'Total Deductions', val: s.totalDeductions, prefix: '-₹', color: C.danger, bold: true },
+                  {
+                    label: 'Late Deduction',
+                    val: s.lateDeductionAmount,
+                    prefix: '-₹',
+                    color: C.danger,
+                  },
+                  {
+                    label: 'Half-Day Deduction',
+                    val: s.halfDayDeduction,
+                    prefix: '-₹',
+                    color: C.danger,
+                  },
+                  {
+                    label: 'Penalty',
+                    val: s.penaltyAmount,
+                    prefix: '-₹',
+                    color: C.danger,
+                  },
+                  {
+                    label: 'Loan / Advance EMI',
+                    val: s.loanDeduction,
+                    prefix: '-₹',
+                    color: C.danger,
+                  },
+                  {
+                    label: 'Total Deductions',
+                    val: s.totalDeductions,
+                    prefix: '-₹',
+                    color: C.danger,
+                    bold: true,
+                  },
                   { label: 'SUMMARY', val: 0, prefix: '', section: true },
                   { label: 'Days Worked', val: s.presentDays, prefix: '' },
                   { label: 'Working Days', val: s.workingDays, prefix: '' },
                   { label: 'Hours Worked', val: s.totalWorkHours, prefix: '' },
-                  { label: 'Net Salary', val: s.netSalary, prefix: '₹', color: C.success, bold: true, large: true },
+                  {
+                    label: 'Net Salary',
+                    val: s.netSalary,
+                    prefix: '₹',
+                    color: C.success,
+                    bold: true,
+                    large: true,
+                  },
                 ];
                 return rows;
               })().map((row, i) => {
@@ -443,9 +533,10 @@ export default function PayrollScreen() {
                   );
                 }
                 const val = row.val || 0;
-                const display = typeof val === 'number' && !Number.isInteger(val)
-                  ? val.toFixed(2)
-                  : val.toLocaleString();
+                const display =
+                  typeof val === 'number' && !Number.isInteger(val)
+                    ? val.toFixed(2)
+                    : val.toLocaleString();
                 return (
                   <View key={i} style={styles.detailRow}>
                     <Text style={styles.detailLabel}>{row.label}</Text>
@@ -653,7 +744,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  genBtnText: { color: C.white, fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
+  genBtnText: {
+    color: C.white,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
   genNote: {
     borderWidth: 2,
     borderColor: C.success,
@@ -690,5 +786,10 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     marginTop: 8,
   },
-  genSubmitBtnText: { color: C.white, fontWeight: '700', fontSize: 14, textTransform: 'uppercase' },
+  genSubmitBtnText: {
+    color: C.white,
+    fontWeight: '700',
+    fontSize: 14,
+    textTransform: 'uppercase',
+  },
 });

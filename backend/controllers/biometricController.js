@@ -7,7 +7,12 @@ const Attendance = require("../models/Attendance");
 const Employee = require("../models/Employee");
 const User = require("../models/User");
 const { isHolidayDate } = require("./holidayController");
-const { sendCheckIn, sendCheckOut, sendCheckInHR, sendCheckOutHR } = require("../services/whatsappService");
+const {
+  sendCheckIn,
+  sendCheckOut,
+  sendCheckInHR,
+  sendCheckOutHR,
+} = require("../services/whatsappService");
 const { sendPushToEmployee } = require("../services/pushNotificationService");
 const { getEffectiveCheckOut } = require("../utils/shiftUtils");
 
@@ -456,17 +461,53 @@ const recordBiometric = asyncHandler(async (req, res) => {
 
     if (logType === "check_in") {
       if (employee.phone)
-        await sendCheckIn(employee.phone, { firstName: employee.firstName, locationName: device.location.name, time: now }, device.company);
+        await sendCheckIn(
+          employee.phone,
+          {
+            firstName: employee.firstName,
+            locationName: device.location.name,
+            time: now,
+          },
+          device.company,
+        );
       for (const hr of hrUsers) {
         if (hr.phone)
-          await sendCheckInHR(hr.phone, { empName: empFullName, empId: employee.employeeId, locationName: device.location.name, time: now }, device.company);
+          await sendCheckInHR(
+            hr.phone,
+            {
+              empName: empFullName,
+              empId: employee.employeeId,
+              locationName: device.location.name,
+              time: now,
+            },
+            device.company,
+          );
       }
     } else {
       if (employee.phone)
-        await sendCheckOut(employee.phone, { firstName: employee.firstName, locationName: device.location.name, time: now, workHours: attendanceUpdate.workHours }, device.company);
+        await sendCheckOut(
+          employee.phone,
+          {
+            firstName: employee.firstName,
+            locationName: device.location.name,
+            time: now,
+            workHours: attendanceUpdate.workHours,
+          },
+          device.company,
+        );
       for (const hr of hrUsers) {
         if (hr.phone)
-          await sendCheckOutHR(hr.phone, { empName: empFullName, empId: employee.employeeId, locationName: device.location.name, time: now, workHours: attendanceUpdate.workHours }, device.company);
+          await sendCheckOutHR(
+            hr.phone,
+            {
+              empName: empFullName,
+              empId: employee.employeeId,
+              locationName: device.location.name,
+              time: now,
+              workHours: attendanceUpdate.workHours,
+            },
+            device.company,
+          );
       }
     }
   } catch {}
@@ -961,10 +1002,23 @@ const faceAttendance = asyncHandler(async (req, res) => {
         url: "/dashboard",
       });
       if (bestMatch.phone)
-        await sendCheckIn(bestMatch.phone, { firstName: bestMatch.firstName, locationName: "Office", time: now }, bestMatch.company);
+        await sendCheckIn(
+          bestMatch.phone,
+          { firstName: bestMatch.firstName, locationName: "Office", time: now },
+          bestMatch.company,
+        );
       for (const hr of hrUsers) {
         if (hr.phone)
-          await sendCheckInHR(hr.phone, { empName: empFullName, empId: bestMatch.employeeId, locationName: "Office", time: now }, bestMatch.company);
+          await sendCheckInHR(
+            hr.phone,
+            {
+              empName: empFullName,
+              empId: bestMatch.employeeId,
+              locationName: "Office",
+              time: now,
+            },
+            bestMatch.company,
+          );
       }
     } else {
       const hrs = attendanceUpdate.workHours
@@ -977,10 +1031,29 @@ const faceAttendance = asyncHandler(async (req, res) => {
         url: "/dashboard",
       });
       if (bestMatch.phone)
-        await sendCheckOut(bestMatch.phone, { firstName: bestMatch.firstName, locationName: "Office", time: now, workHours: attendanceUpdate.workHours }, bestMatch.company);
+        await sendCheckOut(
+          bestMatch.phone,
+          {
+            firstName: bestMatch.firstName,
+            locationName: "Office",
+            time: now,
+            workHours: attendanceUpdate.workHours,
+          },
+          bestMatch.company,
+        );
       for (const hr of hrUsers) {
         if (hr.phone)
-          await sendCheckOutHR(hr.phone, { empName: empFullName, empId: bestMatch.employeeId, locationName: "Office", time: now, workHours: attendanceUpdate.workHours }, bestMatch.company);
+          await sendCheckOutHR(
+            hr.phone,
+            {
+              empName: empFullName,
+              empId: bestMatch.employeeId,
+              locationName: "Office",
+              time: now,
+              workHours: attendanceUpdate.workHours,
+            },
+            bestMatch.company,
+          );
       }
     }
   } catch {}

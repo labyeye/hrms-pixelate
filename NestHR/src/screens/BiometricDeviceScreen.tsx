@@ -145,7 +145,9 @@ export default function BiometricDeviceScreen() {
     setAdmsEmpLoading(true);
     try {
       const res = await employeeAPI.getAll();
-      setAdmsEmployees((res.data || []).filter((e: Employee) => e.status !== 'terminated'));
+      setAdmsEmployees(
+        (res.data || []).filter((e: Employee) => e.status !== 'terminated'),
+      );
     } catch {}
     setAdmsEmpLoading(false);
   }, []);
@@ -188,7 +190,10 @@ export default function BiometricDeviceScreen() {
     if (!admsDevice || !admsSerial.trim() || serialSaving) return;
     setSerialSaving(true);
     try {
-      const res = await biometricAPI.setDeviceSerial(admsDevice._id, admsSerial.trim().toUpperCase());
+      const res = await biometricAPI.setDeviceSerial(
+        admsDevice._id,
+        admsSerial.trim().toUpperCase(),
+      );
       setAdmsDevice(res.data);
       Alert.alert('Saved', `Device linked to SN: ${admsSerial.toUpperCase()}`);
     } catch (e: any) {
@@ -235,7 +240,10 @@ export default function BiometricDeviceScreen() {
     setFpEnrollingId(emp._id);
     try {
       await biometricAPI.enrollFpOnDevice(admsDevice._id, emp._id);
-      Alert.alert('Queued', 'Fingerprint enrollment queued — employee should place finger on device');
+      Alert.alert(
+        'Queued',
+        'Fingerprint enrollment queued — employee should place finger on device',
+      );
       fetchCommands(admsDevice._id);
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -248,7 +256,10 @@ export default function BiometricDeviceScreen() {
     setFaceEnrollingId(emp._id);
     try {
       await biometricAPI.enrollFaceOnDevice(admsDevice._id, emp._id);
-      Alert.alert('Queued', 'Face enrollment queued — employee should look at device');
+      Alert.alert(
+        'Queued',
+        'Face enrollment queued — employee should look at device',
+      );
       fetchCommands(admsDevice._id);
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -257,10 +268,21 @@ export default function BiometricDeviceScreen() {
   };
 
   const handleSaveBioId = async (emp: Employee) => {
-    if (!editBioIdVal.trim()) { setEditBioIdEmp(null); return; }
+    if (!editBioIdVal.trim()) {
+      setEditBioIdEmp(null);
+      return;
+    }
     try {
-      await employeeAPI.update(emp._id, { biometricUserId: editBioIdVal.trim() });
-      setAdmsEmployees(prev => prev.map(e => e._id === emp._id ? { ...e, biometricUserId: editBioIdVal.trim() } : e));
+      await employeeAPI.update(emp._id, {
+        biometricUserId: editBioIdVal.trim(),
+      });
+      setAdmsEmployees(prev =>
+        prev.map(e =>
+          e._id === emp._id
+            ? { ...e, biometricUserId: editBioIdVal.trim() }
+            : e,
+        ),
+      );
       setEditBioIdEmp(null);
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -272,7 +294,11 @@ export default function BiometricDeviceScreen() {
     setRfidSaving(true);
     try {
       await biometricAPI.saveRfidCard(rfidModal._id, rfidVal.trim());
-      setAdmsEmployees(prev => prev.map(e => e._id === rfidModal._id ? { ...e, rfidCard: rfidVal.trim() } : e));
+      setAdmsEmployees(prev =>
+        prev.map(e =>
+          e._id === rfidModal._id ? { ...e, rfidCard: rfidVal.trim() } : e,
+        ),
+      );
       setRfidModal(null);
       setRfidVal('');
     } catch (e: any) {
@@ -450,17 +476,21 @@ export default function BiometricDeviceScreen() {
 
       {/* Tabs */}
       <View style={styles.tabs}>
-        {([
-          { id: 'locations', label: `Locations (${locations.length})` },
-          { id: 'devices', label: `Devices (${devices.length})` },
-          { id: 'adms', label: 'ADMS Sync' },
-        ] as const).map(t => (
+        {(
+          [
+            { id: 'locations', label: `Locations (${locations.length})` },
+            { id: 'devices', label: `Devices (${devices.length})` },
+            { id: 'adms', label: 'ADMS Sync' },
+          ] as const
+        ).map(t => (
           <TouchableOpacity
             key={t.id}
             style={[styles.tab, tab === t.id && styles.tabActive]}
             onPress={() => setTab(t.id)}
           >
-            <Text style={[styles.tabText, tab === t.id && styles.tabTextActive]}>
+            <Text
+              style={[styles.tabText, tab === t.id && styles.tabTextActive]}
+            >
               {t.label}
             </Text>
           </TouchableOpacity>
@@ -624,30 +654,61 @@ export default function BiometricDeviceScreen() {
       {tab === 'adms' && (
         <ScrollView
           contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={C.primary}
+            />
+          }
         >
           {/* Step 1 — Select Device */}
           <View style={admsS.section}>
             <View style={admsS.stepRow}>
-              <View style={admsS.stepBadge}><Text style={admsS.stepNum}>1</Text></View>
+              <View style={admsS.stepBadge}>
+                <Text style={admsS.stepNum}>1</Text>
+              </View>
               <Text style={admsS.stepTitle}>Select Device (ESSL / ZKTeco)</Text>
             </View>
             {devices.length === 0 ? (
-              <Text style={admsS.hint}>No devices — create one in the Devices tab first.</Text>
+              <Text style={admsS.hint}>
+                No devices — create one in the Devices tab first.
+              </Text>
             ) : (
               devices.map(d => (
                 <TouchableOpacity
                   key={d._id}
-                  style={[admsS.deviceCard, admsDevice?._id === d._id && admsS.deviceCardActive]}
+                  style={[
+                    admsS.deviceCard,
+                    admsDevice?._id === d._id && admsS.deviceCardActive,
+                  ]}
                   onPress={() => setAdmsDevice(d)}
                   activeOpacity={0.8}
                 >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Cpu size={15} color={admsDevice?._id === d._id ? C.primary : C.black} />
-                    <Text style={[admsS.deviceName, admsDevice?._id === d._id && { color: C.primary }]}>{d.name}</Text>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}
+                  >
+                    <Cpu
+                      size={15}
+                      color={admsDevice?._id === d._id ? C.primary : C.black}
+                    />
+                    <Text
+                      style={[
+                        admsS.deviceName,
+                        admsDevice?._id === d._id && { color: C.primary },
+                      ]}
+                    >
+                      {d.name}
+                    </Text>
                     {(d as any).serialNumber && (
                       <View style={admsS.snBadge}>
-                        <Text style={admsS.snBadgeText}>SN: {(d as any).serialNumber}</Text>
+                        <Text style={admsS.snBadgeText}>
+                          SN: {(d as any).serialNumber}
+                        </Text>
                       </View>
                     )}
                   </View>
@@ -662,15 +723,25 @@ export default function BiometricDeviceScreen() {
               {/* Step 2 — Register Serial */}
               <View style={admsS.section}>
                 <View style={admsS.stepRow}>
-                  <View style={admsS.stepBadge}><Text style={admsS.stepNum}>2</Text></View>
-                  <Text style={admsS.stepTitle}>Register ADMS Serial Number</Text>
+                  <View style={admsS.stepBadge}>
+                    <Text style={admsS.stepNum}>2</Text>
+                  </View>
+                  <Text style={admsS.stepTitle}>
+                    Register ADMS Serial Number
+                  </Text>
                 </View>
                 <Text style={admsS.hint}>
-                  Find it on the device: <Text style={{ fontWeight: '700' }}>Menu → System Info → Device SN</Text>
+                  Find it on the device:{' '}
+                  <Text style={{ fontWeight: '700' }}>
+                    Menu → System Info → Device SN
+                  </Text>
                 </Text>
                 <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
                   <TextInput
-                    style={[styles.fieldInput, { flex: 1, fontFamily: 'monospace' }]}
+                    style={[
+                      styles.fieldInput,
+                      { flex: 1, fontFamily: 'monospace' },
+                    ]}
                     value={admsSerial}
                     onChangeText={v => setAdmsSerial(v.toUpperCase())}
                     placeholder="e.g. EUF7254500727"
@@ -678,41 +749,69 @@ export default function BiometricDeviceScreen() {
                     autoCapitalize="characters"
                   />
                   <TouchableOpacity
-                    style={[admsS.saveSerialBtn, (!admsSerial.trim() || serialSaving) && { opacity: 0.4 }]}
+                    style={[
+                      admsS.saveSerialBtn,
+                      (!admsSerial.trim() || serialSaving) && { opacity: 0.4 },
+                    ]}
                     onPress={handleSaveSerial}
                     disabled={!admsSerial.trim() || serialSaving}
                   >
-                    {serialSaving
-                      ? <ActivityIndicator size="small" color={C.white} />
-                      : <><Check size={14} color={C.white} /><Text style={admsS.saveSerialBtnText}>Save</Text></>}
+                    {serialSaving ? (
+                      <ActivityIndicator size="small" color={C.white} />
+                    ) : (
+                      <>
+                        <Check size={14} color={C.white} />
+                        <Text style={admsS.saveSerialBtnText}>Save</Text>
+                      </>
+                    )}
                   </TouchableOpacity>
                 </View>
                 {(admsDevice as any).serialNumber && (
                   <View style={admsS.serialRegistered}>
                     <CheckCircle2 size={13} color={C.success} />
-                    <Text style={admsS.serialRegisteredText}>Currently registered: {(admsDevice as any).serialNumber}</Text>
+                    <Text style={admsS.serialRegisteredText}>
+                      Currently registered: {(admsDevice as any).serialNumber}
+                    </Text>
                   </View>
                 )}
               </View>
 
               {/* Step 3 — Employees */}
-              <View style={[admsS.section, { paddingHorizontal: 0, paddingTop: 0 }]}>
+              <View
+                style={[admsS.section, { paddingHorizontal: 0, paddingTop: 0 }]}
+              >
                 <View style={[admsS.empHeader]}>
                   <View>
                     <View style={[admsS.stepRow, { marginBottom: 2 }]}>
-                      <View style={admsS.stepBadge}><Text style={admsS.stepNum}>3</Text></View>
-                      <Text style={admsS.stepTitle}>Employees — Assign IDs & Sync</Text>
+                      <View style={admsS.stepBadge}>
+                        <Text style={admsS.stepNum}>3</Text>
+                      </View>
+                      <Text style={admsS.stepTitle}>
+                        Employees — Assign IDs & Sync
+                      </Text>
                     </View>
-                    <Text style={[admsS.hint, { paddingHorizontal: 16 }]}>Set Device User ID, assign RFID, then sync.</Text>
+                    <Text style={[admsS.hint, { paddingHorizontal: 16 }]}>
+                      Set Device User ID, assign RFID, then sync.
+                    </Text>
                   </View>
                   <TouchableOpacity
-                    style={[admsS.syncAllBtn, (syncingAll || !(admsDevice as any).serialNumber) && { opacity: 0.4 }]}
+                    style={[
+                      admsS.syncAllBtn,
+                      (syncingAll || !(admsDevice as any).serialNumber) && {
+                        opacity: 0.4,
+                      },
+                    ]}
                     onPress={handleSyncAll}
                     disabled={syncingAll || !(admsDevice as any).serialNumber}
                   >
-                    {syncingAll
-                      ? <ActivityIndicator size="small" color={C.white} />
-                      : <><Upload size={13} color={C.white} /><Text style={admsS.syncAllBtnText}>Sync All</Text></>}
+                    {syncingAll ? (
+                      <ActivityIndicator size="small" color={C.white} />
+                    ) : (
+                      <>
+                        <Upload size={13} color={C.white} />
+                        <Text style={admsS.syncAllBtnText}>Sync All</Text>
+                      </>
+                    )}
                   </TouchableOpacity>
                 </View>
 
@@ -721,13 +820,20 @@ export default function BiometricDeviceScreen() {
                     <ActivityIndicator size="large" color={C.primary} />
                   </View>
                 ) : admsEmployees.length === 0 ? (
-                  <Text style={[admsS.hint, { padding: 16 }]}>No employees found.</Text>
+                  <Text style={[admsS.hint, { padding: 16 }]}>
+                    No employees found.
+                  </Text>
                 ) : (
                   admsEmployees.map((emp, i) => (
-                    <View key={emp._id} style={[admsS.empRow, i > 0 && admsS.empRowBorder]}>
+                    <View
+                      key={emp._id}
+                      style={[admsS.empRow, i > 0 && admsS.empRowBorder]}
+                    >
                       {/* Name */}
                       <View style={{ minWidth: 110 }}>
-                        <Text style={admsS.empName}>{emp.firstName} {emp.lastName}</Text>
+                        <Text style={admsS.empName}>
+                          {emp.firstName} {emp.lastName}
+                        </Text>
                         <Text style={admsS.empId}>{emp.employeeId}</Text>
                       </View>
 
@@ -742,20 +848,42 @@ export default function BiometricDeviceScreen() {
                             autoFocus
                             onSubmitEditing={() => handleSaveBioId(emp)}
                           />
-                          <TouchableOpacity onPress={() => handleSaveBioId(emp)}>
+                          <TouchableOpacity
+                            onPress={() => handleSaveBioId(emp)}
+                          >
                             <Check size={14} color={C.success} />
                           </TouchableOpacity>
-                          <TouchableOpacity onPress={() => setEditBioIdEmp(null)}>
+                          <TouchableOpacity
+                            onPress={() => setEditBioIdEmp(null)}
+                          >
                             <X size={14} color="#9CA3AF" />
                           </TouchableOpacity>
                         </View>
                       ) : (
                         <TouchableOpacity
-                          style={[admsS.idChip, emp.biometricUserId ? admsS.idChipSet : admsS.idChipUnset]}
-                          onPress={() => { setEditBioIdEmp(emp._id); setEditBioIdVal(emp.biometricUserId || ''); }}
+                          style={[
+                            admsS.idChip,
+                            emp.biometricUserId
+                              ? admsS.idChipSet
+                              : admsS.idChipUnset,
+                          ]}
+                          onPress={() => {
+                            setEditBioIdEmp(emp._id);
+                            setEditBioIdVal(emp.biometricUserId || '');
+                          }}
                         >
-                          <Hash size={10} color={emp.biometricUserId ? C.success : '#9CA3AF'} />
-                          <Text style={[admsS.idChipText, emp.biometricUserId ? { color: C.success } : { color: '#9CA3AF' }]}>
+                          <Hash
+                            size={10}
+                            color={emp.biometricUserId ? C.success : '#9CA3AF'}
+                          />
+                          <Text
+                            style={[
+                              admsS.idChipText,
+                              emp.biometricUserId
+                                ? { color: C.success }
+                                : { color: '#9CA3AF' },
+                            ]}
+                          >
                             {emp.biometricUserId || 'Set ID'}
                           </Text>
                         </TouchableOpacity>
@@ -763,11 +891,27 @@ export default function BiometricDeviceScreen() {
 
                       {/* RFID */}
                       <TouchableOpacity
-                        style={[admsS.idChip, emp.rfidCard ? admsS.rfidChipSet : admsS.idChipUnset]}
-                        onPress={() => { setRfidModal(emp); setRfidVal(emp.rfidCard || ''); }}
+                        style={[
+                          admsS.idChip,
+                          emp.rfidCard ? admsS.rfidChipSet : admsS.idChipUnset,
+                        ]}
+                        onPress={() => {
+                          setRfidModal(emp);
+                          setRfidVal(emp.rfidCard || '');
+                        }}
                       >
-                        <CreditCard size={10} color={emp.rfidCard ? C.primary : '#9CA3AF'} />
-                        <Text style={[admsS.idChipText, emp.rfidCard ? { color: C.primary } : { color: '#9CA3AF' }]}>
+                        <CreditCard
+                          size={10}
+                          color={emp.rfidCard ? C.primary : '#9CA3AF'}
+                        />
+                        <Text
+                          style={[
+                            admsS.idChipText,
+                            emp.rfidCard
+                              ? { color: C.primary }
+                              : { color: '#9CA3AF' },
+                          ]}
+                        >
                           {emp.rfidCard ? emp.rfidCard.slice(0, 8) : 'RFID'}
                         </Text>
                       </TouchableOpacity>
@@ -781,33 +925,94 @@ export default function BiometricDeviceScreen() {
                               onPress={() => handleEnrollFp(emp)}
                               disabled={fpEnrollingId === emp._id}
                             >
-                              {fpEnrollingId === emp._id
-                                ? <ActivityIndicator size="small" color={C.black} />
-                                : <><Fingerprint size={11} color={C.black} /><Text style={admsS.actionBtnText}>FP</Text></>}
+                              {fpEnrollingId === emp._id ? (
+                                <ActivityIndicator
+                                  size="small"
+                                  color={C.black}
+                                />
+                              ) : (
+                                <>
+                                  <Fingerprint size={11} color={C.black} />
+                                  <Text style={admsS.actionBtnText}>FP</Text>
+                                </>
+                              )}
                             </TouchableOpacity>
                             <TouchableOpacity
-                              style={[admsS.actionBtn, { borderColor: '#16A34A', backgroundColor: '#F0FDF4' }]}
+                              style={[
+                                admsS.actionBtn,
+                                {
+                                  borderColor: '#16A34A',
+                                  backgroundColor: '#F0FDF4',
+                                },
+                              ]}
                               onPress={() => handleEnrollFace(emp)}
                               disabled={faceEnrollingId === emp._id}
                             >
-                              {faceEnrollingId === emp._id
-                                ? <ActivityIndicator size="small" color="#16A34A" />
-                                : <><Scan size={11} color="#16A34A" /><Text style={[admsS.actionBtnText, { color: '#16A34A' }]}>Face</Text></>}
+                              {faceEnrollingId === emp._id ? (
+                                <ActivityIndicator
+                                  size="small"
+                                  color="#16A34A"
+                                />
+                              ) : (
+                                <>
+                                  <Scan size={11} color="#16A34A" />
+                                  <Text
+                                    style={[
+                                      admsS.actionBtnText,
+                                      { color: '#16A34A' },
+                                    ]}
+                                  >
+                                    Face
+                                  </Text>
+                                </>
+                              )}
                             </TouchableOpacity>
                             <TouchableOpacity
-                              style={[admsS.actionBtn, { backgroundColor: C.primary, borderColor: C.black }]}
+                              style={[
+                                admsS.actionBtn,
+                                {
+                                  backgroundColor: C.primary,
+                                  borderColor: C.black,
+                                },
+                              ]}
                               onPress={() => handleSyncEmployee(emp)}
-                              disabled={syncingId === emp._id || !(admsDevice as any).serialNumber}
+                              disabled={
+                                syncingId === emp._id ||
+                                !(admsDevice as any).serialNumber
+                              }
                             >
-                              {syncingId === emp._id
-                                ? <ActivityIndicator size="small" color={C.white} />
-                                : <><UserCheck size={11} color={C.white} /><Text style={[admsS.actionBtnText, { color: C.white }]}>Sync</Text></>}
+                              {syncingId === emp._id ? (
+                                <ActivityIndicator
+                                  size="small"
+                                  color={C.white}
+                                />
+                              ) : (
+                                <>
+                                  <UserCheck size={11} color={C.white} />
+                                  <Text
+                                    style={[
+                                      admsS.actionBtnText,
+                                      { color: C.white },
+                                    ]}
+                                  >
+                                    Sync
+                                  </Text>
+                                </>
+                              )}
                             </TouchableOpacity>
                           </>
                         ) : (
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              gap: 3,
+                            }}
+                          >
                             <AlertTriangle size={11} color="#9CA3AF" />
-                            <Text style={{ fontSize: 10, color: '#9CA3AF' }}>Set ID</Text>
+                            <Text style={{ fontSize: 10, color: '#9CA3AF' }}>
+                              Set ID
+                            </Text>
                           </View>
                         )}
                       </View>
@@ -817,9 +1022,17 @@ export default function BiometricDeviceScreen() {
               </View>
 
               {/* Command Queue */}
-              <View style={[admsS.section, { paddingHorizontal: 0, paddingTop: 0 }]}>
+              <View
+                style={[admsS.section, { paddingHorizontal: 0, paddingTop: 0 }]}
+              >
                 <View style={admsS.cmdHeader}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
                     <Terminal size={14} color={C.black} />
                     <Text style={admsS.stepTitle}>Command Queue</Text>
                   </View>
@@ -836,31 +1049,43 @@ export default function BiometricDeviceScreen() {
                     <ActivityIndicator color={C.primary} />
                   </View>
                 ) : commands.length === 0 ? (
-                  <Text style={[admsS.hint, { padding: 16 }]}>No commands — sync an employee to create one.</Text>
+                  <Text style={[admsS.hint, { padding: 16 }]}>
+                    No commands — sync an employee to create one.
+                  </Text>
                 ) : (
                   commands.map(cmd => (
                     <View key={cmd._id} style={admsS.cmdRow}>
                       <View style={{ flex: 1 }}>
                         <Text style={admsS.cmdType}>{cmd.type}</Text>
                         {cmd.employee && (
-                          <Text style={admsS.cmdEmp}>{cmd.employee.firstName} {cmd.employee.lastName}</Text>
+                          <Text style={admsS.cmdEmp}>
+                            {cmd.employee.firstName} {cmd.employee.lastName}
+                          </Text>
                         )}
-                        <Text style={admsS.cmdTime}>{new Date(cmd.createdAt).toLocaleString()}</Text>
+                        <Text style={admsS.cmdTime}>
+                          {new Date(cmd.createdAt).toLocaleString()}
+                        </Text>
                       </View>
-                      <View style={[
-                        admsS.cmdStatus,
-                        cmd.status === 'done' && admsS.cmdDone,
-                        cmd.status === 'pending' && admsS.cmdPending,
-                        cmd.status === 'sent' && admsS.cmdSent,
-                        cmd.status === 'failed' && admsS.cmdFailed,
-                      ]}>
-                        <Text style={[
-                          admsS.cmdStatusText,
-                          cmd.status === 'done' && { color: C.success },
-                          cmd.status === 'pending' && { color: '#FA731C' },
-                          cmd.status === 'sent' && { color: C.primary },
-                          cmd.status === 'failed' && { color: C.danger },
-                        ]}>{cmd.status}</Text>
+                      <View
+                        style={[
+                          admsS.cmdStatus,
+                          cmd.status === 'done' && admsS.cmdDone,
+                          cmd.status === 'pending' && admsS.cmdPending,
+                          cmd.status === 'sent' && admsS.cmdSent,
+                          cmd.status === 'failed' && admsS.cmdFailed,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            admsS.cmdStatusText,
+                            cmd.status === 'done' && { color: C.success },
+                            cmd.status === 'pending' && { color: '#FA731C' },
+                            cmd.status === 'sent' && { color: C.primary },
+                            cmd.status === 'failed' && { color: C.danger },
+                          ]}
+                        >
+                          {cmd.status}
+                        </Text>
                       </View>
                     </View>
                   ))
@@ -883,7 +1108,9 @@ export default function BiometricDeviceScreen() {
             </View>
             {rfidModal && (
               <View style={admsS.rfidEmpBox}>
-                <Text style={admsS.rfidEmpName}>{rfidModal.firstName} {rfidModal.lastName}</Text>
+                <Text style={admsS.rfidEmpName}>
+                  {rfidModal.firstName} {rfidModal.lastName}
+                </Text>
                 <Text style={admsS.rfidEmpId}>{rfidModal.employeeId}</Text>
               </View>
             )}
@@ -899,13 +1126,21 @@ export default function BiometricDeviceScreen() {
               />
             </View>
             <TouchableOpacity
-              style={[styles.saveBtn, (!rfidVal.trim() || rfidSaving) && { opacity: 0.4 }]}
+              style={[
+                styles.saveBtn,
+                (!rfidVal.trim() || rfidSaving) && { opacity: 0.4 },
+              ]}
               onPress={handleSaveRfid}
               disabled={!rfidVal.trim() || rfidSaving}
             >
-              {rfidSaving
-                ? <ActivityIndicator size="small" color={C.white} />
-                : <><Save size={14} color={C.white} /><Text style={styles.saveBtnText}>Save RFID Card</Text></>}
+              {rfidSaving ? (
+                <ActivityIndicator size="small" color={C.white} />
+              ) : (
+                <>
+                  <Save size={14} color={C.white} />
+                  <Text style={styles.saveBtnText}>Save RFID Card</Text>
+                </>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -1254,7 +1489,12 @@ const admsS = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
   },
-  stepRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
   stepBadge: {
     width: 22,
     height: 22,
@@ -1263,7 +1503,12 @@ const admsS = StyleSheet.create({
     justifyContent: 'center',
   },
   stepNum: { color: C.white, fontSize: 11, fontWeight: '900' },
-  stepTitle: { fontSize: 13, fontWeight: '800', color: C.black, textTransform: 'uppercase' },
+  stepTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: C.black,
+    textTransform: 'uppercase',
+  },
   hint: { fontSize: 11, color: '#6B7280', lineHeight: 16 },
   deviceCard: {
     borderWidth: 2,
@@ -1294,8 +1539,18 @@ const admsS = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
-  saveSerialBtnText: { color: C.white, fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
-  serialRegistered: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 8 },
+  saveSerialBtnText: {
+    color: C.white,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  serialRegistered: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 8,
+  },
   serialRegisteredText: { fontSize: 11, color: C.success, fontWeight: '700' },
   empHeader: {
     flexDirection: 'row',
@@ -1316,7 +1571,12 @@ const admsS = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  syncAllBtnText: { color: C.white, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
+  syncAllBtnText: {
+    color: C.white,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
   empRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1327,7 +1587,12 @@ const admsS = StyleSheet.create({
   },
   empRowBorder: { borderTopWidth: 1, borderTopColor: '#F3F4F6' },
   empName: { fontSize: 12, fontWeight: '700', color: C.black },
-  empId: { fontSize: 10, color: '#6B7280', fontFamily: 'monospace', marginTop: 1 },
+  empId: {
+    fontSize: 10,
+    color: '#6B7280',
+    fontFamily: 'monospace',
+    marginTop: 1,
+  },
   bioIdEdit: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   bioIdInput: {
     width: 60,
@@ -1389,7 +1654,12 @@ const admsS = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
   },
-  cmdType: { fontSize: 11, fontWeight: '700', color: C.black, textTransform: 'uppercase' },
+  cmdType: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: C.black,
+    textTransform: 'uppercase',
+  },
   cmdEmp: { fontSize: 11, color: '#6B7280', marginTop: 1 },
   cmdTime: { fontSize: 10, color: '#9CA3AF', marginTop: 2 },
   cmdStatus: {

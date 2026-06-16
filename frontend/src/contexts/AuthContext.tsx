@@ -15,7 +15,12 @@ interface AuthContextType {
   login: (
     email: string,
     password: string,
-  ) => Promise<{ success: boolean; error?: string; requires2FA?: boolean; userId?: string }>;
+  ) => Promise<{
+    success: boolean;
+    error?: string;
+    requires2FA?: boolean;
+    userId?: string;
+  }>;
   register: (data: {
     name: string;
     email: string;

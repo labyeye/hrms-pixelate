@@ -65,7 +65,9 @@ export default function LoansPage() {
     "all" | "active" | "cleared" | "paused"
   >("all");
   const [search, setSearch] = useState("");
-  const [sortKey, setSortKey] = useState<"employee" | "amount" | "remaining" | "date">("date");
+  const [sortKey, setSortKey] = useState<
+    "employee" | "amount" | "remaining" | "date"
+  >("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [modal, setModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -168,7 +170,8 @@ export default function LoansPage() {
       if (filterType !== "all" && l.type !== filterType) return false;
       if (filterStatus !== "all" && l.status !== filterStatus) return false;
       if (search) {
-        const name = `${(l.employee as any)?.firstName ?? ""} ${(l.employee as any)?.lastName ?? ""}`.toLowerCase();
+        const name =
+          `${(l.employee as any)?.firstName ?? ""} ${(l.employee as any)?.lastName ?? ""}`.toLowerCase();
         if (!name.includes(search.toLowerCase())) return false;
       }
       return true;
@@ -180,8 +183,12 @@ export default function LoansPage() {
         const nb = `${(b.employee as any)?.firstName ?? ""}${(b.employee as any)?.lastName ?? ""}`;
         cmp = na.localeCompare(nb);
       } else if (sortKey === "amount") cmp = a.amount - b.amount;
-      else if (sortKey === "remaining") cmp = a.remainingBalance - b.remainingBalance;
-      else if (sortKey === "date") cmp = new Date(a.disbursedOn ?? 0).getTime() - new Date(b.disbursedOn ?? 0).getTime();
+      else if (sortKey === "remaining")
+        cmp = a.remainingBalance - b.remainingBalance;
+      else if (sortKey === "date")
+        cmp =
+          new Date(a.disbursedOn ?? 0).getTime() -
+          new Date(b.disbursedOn ?? 0).getTime();
       return sortDir === "asc" ? cmp : -cmp;
     });
 
@@ -189,8 +196,12 @@ export default function LoansPage() {
   const totalOutstanding = displayedLoans
     .filter((l) => l.status === "active")
     .reduce((s, l) => s + l.remainingBalance, 0);
-  const activeCount = displayedLoans.filter((l) => l.status === "active").length;
-  const clearedCount = displayedLoans.filter((l) => l.status === "cleared").length;
+  const activeCount = displayedLoans.filter(
+    (l) => l.status === "active",
+  ).length;
+  const clearedCount = displayedLoans.filter(
+    (l) => l.status === "cleared",
+  ).length;
 
   const fmt = (n: number) =>
     new Intl.NumberFormat("en-IN", {

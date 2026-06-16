@@ -168,10 +168,16 @@ export default function CredentialsScreen() {
           }
           renderItem={({ item }) => (
             <View style={s.card}>
-              {item.avatar
-                ? <Image source={{ uri: item.avatar }} style={s.photoCircle} />
-                : <View style={s.cardAvatar}><Text style={s.cardAvatarText}>{item.firstName?.[0]}{item.lastName?.[0]}</Text></View>
-              }
+              {item.avatar ? (
+                <Image source={{ uri: item.avatar }} style={s.photoCircle} />
+              ) : (
+                <View style={s.cardAvatar}>
+                  <Text style={s.cardAvatarText}>
+                    {item.firstName?.[0]}
+                    {item.lastName?.[0]}
+                  </Text>
+                </View>
+              )}
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={s.empName}>
                   {item.firstName} {item.lastName}
@@ -209,10 +215,19 @@ export default function CredentialsScreen() {
           >
             {modal && (
               <View style={s.empInfoBox}>
-                {modal.emp.avatar
-                  ? <Image source={{ uri: modal.emp.avatar }} style={s.photoCircle} />
-                  : <View style={s.cardAvatar}><Text style={s.cardAvatarText}>{modal.emp.firstName?.[0]}{modal.emp.lastName?.[0]}</Text></View>
-                }
+                {modal.emp.avatar ? (
+                  <Image
+                    source={{ uri: modal.emp.avatar }}
+                    style={s.photoCircle}
+                  />
+                ) : (
+                  <View style={s.cardAvatar}>
+                    <Text style={s.cardAvatarText}>
+                      {modal.emp.firstName?.[0]}
+                      {modal.emp.lastName?.[0]}
+                    </Text>
+                  </View>
+                )}
                 <View style={{ flex: 1, marginLeft: 12 }}>
                   <Text style={s.empName}>
                     {modal.emp.firstName} {modal.emp.lastName}
@@ -321,7 +336,13 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   cardAvatarText: { color: C.white, fontSize: 13, fontWeight: '700' },
-  photoCircle: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: C.black },
+  photoCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: C.black,
+  },
   empName: { fontSize: 14, fontWeight: '700', color: C.black },
   empSub: { fontSize: 11, color: C.textMuted, fontWeight: '500' },
   empId: {
