@@ -49,7 +49,7 @@ const getLeaves = asyncHandler(async (req, res) => {
     const leaves = await Leave.find(filter)
       .populate({
         path: "employee",
-        select: "firstName lastName employeeId designation phone",
+        select: "firstName lastName employeeId designation phone avatar",
         populate: { path: "department", select: "name" },
       })
       .populate("approvedBy", "name")
@@ -105,7 +105,7 @@ const getLeaves = asyncHandler(async (req, res) => {
   const leaves = await Leave.find(filter)
     .populate({
       path: "employee",
-      select: "firstName lastName employeeId designation phone",
+      select: "firstName lastName employeeId designation phone avatar",
       populate: { path: "department", select: "name" },
     })
     .populate("approvedBy", "name")

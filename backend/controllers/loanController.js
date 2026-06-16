@@ -18,7 +18,7 @@ const getLoans = asyncHandler(async (req, res) => {
   const filter = { company: req.user.company };
   if (employee) filter.employee = employee;
   const loans = await Loan.find(filter)
-    .populate("employee", "firstName lastName employeeId department")
+    .populate("employee", "firstName lastName employeeId department avatar")
     .sort({ createdAt: -1 });
   res.json({ success: true, data: loans });
 });
@@ -32,7 +32,7 @@ const createLoan = asyncHandler(async (req, res) => {
   await syncLoanBalance(loan.employee);
   const populated = await Loan.findById(loan._id).populate(
     "employee",
-    "firstName lastName employeeId",
+    "firstName lastName employeeId avatar",
   );
   res.status(201).json({ success: true, data: populated });
 });
@@ -42,7 +42,7 @@ const updateLoan = asyncHandler(async (req, res) => {
     { _id: req.params.id, company: req.user.company },
     req.body,
     { new: true },
-  ).populate("employee", "firstName lastName employeeId");
+  ).populate("employee", "firstName lastName employeeId avatar");
   if (!loan)
     return res.status(404).json({ success: false, message: "Loan not found" });
   await syncLoanBalance(loan.employee._id);

@@ -51,7 +51,7 @@ const getAttendance = asyncHandler(async (req, res) => {
     const records = await Attendance.find(filter)
       .populate({
         path: "employee",
-        select: "firstName lastName employeeId department",
+        select: "firstName lastName employeeId department avatar",
         populate: { path: "department", select: "name" },
       })
       .sort({ date: -1 })
@@ -100,7 +100,7 @@ const getAttendance = asyncHandler(async (req, res) => {
   const records = await Attendance.find(filter)
     .populate({
       path: "employee",
-      select: "firstName lastName employeeId department",
+      select: "firstName lastName employeeId department avatar",
       populate: { path: "department", select: "name" },
     })
     .sort({ date: -1 })
@@ -158,7 +158,7 @@ const markAttendance = asyncHandler(async (req, res) => {
     { upsert: true, new: true },
   ).populate({
     path: "employee",
-    select: "firstName lastName employeeId department",
+    select: "firstName lastName employeeId department avatar",
     populate: { path: "department", select: "name" },
   });
 
@@ -221,7 +221,7 @@ const updateAttendance = asyncHandler(async (req, res) => {
 
   await record.populate({
     path: "employee",
-    select: "firstName lastName employeeId department",
+    select: "firstName lastName employeeId department avatar",
     populate: { path: "department", select: "name" },
   });
 
