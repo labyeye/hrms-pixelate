@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StyleSheet, View } from 'react-native';
 import { Home, Users, Clock, Calendar, Grid } from 'lucide-react-native';
 import { C } from '../theme';
+import { useAuth } from '../contexts/AuthContext';
 
 import DashboardScreen from '../screens/DashboardScreen';
 import EmployeesScreen from '../screens/EmployeesScreen';
@@ -79,6 +80,9 @@ const TAB_ICONS: Record<string, any> = {
 };
 
 export default function MainNavigator() {
+  const { user } = useAuth();
+  const isEmployee = user?.role === 'employee';
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => {
@@ -102,11 +106,13 @@ export default function MainNavigator() {
         component={DashboardScreen}
         options={{ tabBarLabel: 'Home' }}
       />
-      <Tab.Screen
-        name="Employees"
-        component={EmployeesScreen}
-        options={{ tabBarLabel: 'Employee' }}
-      />
+      {!isEmployee && (
+        <Tab.Screen
+          name="Employees"
+          component={EmployeesScreen}
+          options={{ tabBarLabel: 'Employee' }}
+        />
+      )}
       <Tab.Screen
         name="Attendance"
         component={AttendanceScreen}

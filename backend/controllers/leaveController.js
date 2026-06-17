@@ -32,9 +32,16 @@ const getLeaves = asyncHandler(async (req, res) => {
   const { status, employeeId, leaveType, year, department } = req.query;
 
   if (req.user.role === "employee") {
-    const selfEmp = await Employee.findOne({ user: req.user._id }).select(
-      "_id",
-    );
+    let selfEmp = await Employee.findOne({ user: req.user._id }).select("_id");
+    if (!selfEmp && req.user.email && req.user.company) {
+      selfEmp = await Employee.findOne({
+        email: req.user.email.toLowerCase(),
+        company: req.user.company,
+      }).select("_id");
+      if (selfEmp) {
+        await Employee.findByIdAndUpdate(selfEmp._id, { user: req.user._id });
+      }
+    }
     if (!selfEmp) return res.json({ success: true, data: [], total: 0 });
     const filter = { company: req.user.company, employee: selfEmp._id };
     if (status && LEAVE_STATUS.includes(status)) filter.status = status;
@@ -140,6 +147,15 @@ const createLeave = asyncHandler(async (req, res) => {
   let emp;
   if (req.user.role === "employee") {
     emp = await Employee.findOne({ user: req.user._id });
+    if (!emp && req.user.email && req.user.company) {
+      emp = await Employee.findOne({
+        email: req.user.email.toLowerCase(),
+        company: req.user.company,
+      });
+      if (emp) {
+        await Employee.findByIdAndUpdate(emp._id, { user: req.user._id });
+      }
+    }
     if (!emp) {
       res.status(404);
       throw new Error("Employee record not found for your account");
@@ -425,9 +441,16 @@ const deleteLeave = asyncHandler(async (req, res) => {
 
   // Employees can only delete their own pending leaves
   if (req.user.role === "employee") {
-    const selfEmp = await Employee.findOne({ user: req.user._id }).select(
-      "_id",
-    );
+    let selfEmp = await Employee.findOne({ user: req.user._id }).select("_id");
+    if (!selfEmp && req.user.email && req.user.company) {
+      selfEmp = await Employee.findOne({
+        email: req.user.email.toLowerCase(),
+        company: req.user.company,
+      }).select("_id");
+      if (selfEmp) {
+        await Employee.findByIdAndUpdate(selfEmp._id, { user: req.user._id });
+      }
+    }
     if (!selfEmp) {
       res.status(404);
       throw new Error("Employee record not found");

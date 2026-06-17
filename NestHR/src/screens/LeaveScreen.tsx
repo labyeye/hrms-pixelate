@@ -23,10 +23,11 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
-  User,
-  ChevronDown,
+  Pencil,
+  Trash2,
 } from 'lucide-react-native';
 import { leaveAPI } from '../api/api';
+import { useAuth } from '../contexts/AuthContext';
 import { LeaveRequest } from '../types/hrms';
 import { C } from '../theme';
 
@@ -48,6 +49,8 @@ const LEAVE_TYPES = [
 ];
 
 export default function LeaveScreen() {
+  const { user } = useAuth();
+  const isEmployee = user?.role === 'employee';
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -55,6 +58,14 @@ export default function LeaveScreen() {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
+    leaveType: 'annual',
+    startDate: '',
+    endDate: '',
+    reason: '',
+  });
+  const [editLeave, setEditLeave] = useState<LeaveRequest | null>(null);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editForm, setEditForm] = useState({
     leaveType: 'annual',
     startDate: '',
     endDate: '',
@@ -126,6 +137,54 @@ export default function LeaveScreen() {
         },
       ],
     );
+  };
+
+  const openEdit = (leave: LeaveRequest) => {
+    setEditLeave(leave);
+    setEditForm({
+      leaveType: leave.leaveType || 'annual',
+      startDate: leave.startDate ? leave.startDate.split('T')[0] : '',
+      endDate: leave.endDate ? leave.endDate.split('T')[0] : '',
+      reason: leave.reason || '',
+    });
+    setShowEditForm(true);
+  };
+
+  const handleUpdate = async () => {
+    if (!editLeave) return;
+    if (!editForm.startDate || !editForm.endDate || !editForm.reason.trim()) {
+      Alert.alert('Validation', 'Start date, end date and reason are required');
+      return;
+    }
+    setSaving(true);
+    try {
+      await leaveAPI.updateStatus(editLeave._id, editForm);
+      setShowEditForm(false);
+      setEditLeave(null);
+      await load();
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = (leave: LeaveRequest) => {
+    Alert.alert('Cancel Leave', 'Cancel this leave request?', [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Yes, Cancel',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await leaveAPI.delete(leave._id);
+            await load();
+          } catch (e: any) {
+            Alert.alert('Error', e.message);
+          }
+        },
+      },
+    ]);
   };
 
   const counts = { pending: 0, approved: 0, rejected: 0 };
@@ -340,7 +399,7 @@ export default function LeaveScreen() {
                   </Text>
                 )}
 
-                {item.status === 'pending' && (
+                {item.status === 'pending' && !isEmployee && (
                   <View style={styles.actionRow}>
                     <TouchableOpacity
                       style={styles.approveBtn}
@@ -358,11 +417,107 @@ export default function LeaveScreen() {
                     </TouchableOpacity>
                   </View>
                 )}
+                {item.status === 'pending' && isEmployee && (
+                  <View style={styles.actionRow}>
+                    <TouchableOpacity
+                      style={styles.approveBtn}
+                      onPress={() => openEdit(item)}
+                    >
+                      <Pencil size={13} color={C.white} />
+                      <Text style={styles.actionBtnText}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.rejectBtn}
+                      onPress={() => handleDelete(item)}
+                    >
+                      <Trash2 size={13} color={C.white} />
+                      <Text style={styles.actionBtnText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
             );
           }}
         />
       )}
+
+      {/* Edit Leave Modal (employee only) */}
+      <Modal
+        visible={showEditForm}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <SafeAreaView style={styles.safe} edges={['top']}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Edit Leave Request</Text>
+            <TouchableOpacity onPress={() => { setShowEditForm(false); setEditLeave(null); }}>
+              <X size={22} color={C.black} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            contentContainerStyle={{ padding: 20, gap: 16 }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View>
+              <Text style={styles.fieldLabel}>Leave Type</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
+                {LEAVE_TYPES.map(t => (
+                  <TouchableOpacity
+                    key={t}
+                    style={[styles.selChip, editForm.leaveType === t && styles.selChipActive]}
+                    onPress={() => setEditForm(p => ({ ...p, leaveType: t }))}
+                  >
+                    <Text style={[styles.selChipText, editForm.leaveType === t && { color: C.white }]}>
+                      {t.toUpperCase()}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.fieldLabel}>Start Date *</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  value={editForm.startDate}
+                  onChangeText={v => setEditForm(p => ({ ...p, startDate: v }))}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={C.textLight}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.fieldLabel}>End Date *</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  value={editForm.endDate}
+                  onChangeText={v => setEditForm(p => ({ ...p, endDate: v }))}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={C.textLight}
+                />
+              </View>
+            </View>
+            <View>
+              <Text style={styles.fieldLabel}>Reason *</Text>
+              <TextInput
+                style={[styles.fieldInput, { minHeight: 100 }]}
+                value={editForm.reason}
+                onChangeText={v => setEditForm(p => ({ ...p, reason: v }))}
+                placeholder="Explain your reason…"
+                placeholderTextColor={C.textLight}
+                multiline
+              />
+            </View>
+            <TouchableOpacity style={styles.submitBtn} onPress={handleUpdate} disabled={saving}>
+              {saving ? (
+                <ActivityIndicator color={C.white} />
+              ) : (
+                <Text style={styles.submitBtnText}>Update Leave Request</Text>
+              )}
+            </TouchableOpacity>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
 
       {/* Apply Leave Modal */}
       <Modal

@@ -82,9 +82,25 @@ const getEmployee = asyncHandler(async (req, res) => {
 });
 
 const getMyEmployee = asyncHandler(async (req, res) => {
-  const employee = await Employee.findOne({ user: req.user._id })
+  let employee = await Employee.findOne({ user: req.user._id })
     .populate("department", "name code shiftStartTime shiftEndTime")
     .populate("reportingTo", "firstName lastName designation");
+
+  // Fallback: match by email within the same company if user field isn't linked
+  if (!employee && req.user.email && req.user.company) {
+    employee = await Employee.findOne({
+      email: req.user.email.toLowerCase(),
+      company: req.user.company,
+    })
+      .populate("department", "name code shiftStartTime shiftEndTime")
+      .populate("reportingTo", "firstName lastName designation");
+
+    // Auto-link: update the user field so future lookups are instant
+    if (employee) {
+      await Employee.findByIdAndUpdate(employee._id, { user: req.user._id });
+    }
+  }
+
   if (!employee) {
     res.status(404);
     throw new Error("No employee record linked to your account");

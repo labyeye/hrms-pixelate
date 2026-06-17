@@ -132,8 +132,11 @@ const MENU_ITEMS = [
   },
 ];
 
+const EMPLOYEE_MENU_KEYS = new Set(['Payroll', 'Holidays', 'Notifications']);
+
 export default function MoreScreen({ navigation }: any) {
   const { user, logout } = useAuth();
+  const isEmployee = user?.role === 'employee';
   const [unreadCount, setUnreadCount] = useState(0);
 
   useFocusEffect(
@@ -207,14 +210,16 @@ export default function MoreScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.menuCard}>
-          {MENU_ITEMS.map((item, i) => {
+          {MENU_ITEMS.filter(item => !isEmployee || EMPLOYEE_MENU_KEYS.has(item.key)).map((item, i, arr) => {
             const Icon = item.icon;
+            const label = isEmployee && item.key === 'Payroll' ? 'My Payslips' : item.label;
+            const desc = isEmployee && item.key === 'Payroll' ? 'View your salary payslips' : item.desc;
             return (
               <TouchableOpacity
                 key={item.key}
                 style={[
                   styles.menuRow,
-                  i < MENU_ITEMS.length - 1 && styles.menuBorder,
+                  i < arr.length - 1 && styles.menuBorder,
                 ]}
                 onPress={() => navigation.navigate(item.key)}
                 activeOpacity={0.7}
@@ -223,8 +228,8 @@ export default function MoreScreen({ navigation }: any) {
                   <Icon size={18} color={C.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.menuLabel}>{item.label}</Text>
-                  <Text style={styles.menuDesc}>{item.desc}</Text>
+                  <Text style={styles.menuLabel}>{label}</Text>
+                  <Text style={styles.menuDesc}>{desc}</Text>
                 </View>
                 <ChevronRight size={16} color="#D1D5DB" />
               </TouchableOpacity>

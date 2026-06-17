@@ -507,10 +507,19 @@ const bulkMarkPaid = asyncHandler(async (req, res) => {
 });
 
 const getMyPayrolls = asyncHandler(async (req, res) => {
-  const emp = await Employee.findOne({
+  let emp = await Employee.findOne({
     user: req.user._id,
     company: req.user.company,
   });
+  if (!emp && req.user.email && req.user.company) {
+    emp = await Employee.findOne({
+      email: req.user.email.toLowerCase(),
+      company: req.user.company,
+    });
+    if (emp) {
+      await Employee.findByIdAndUpdate(emp._id, { user: req.user._id });
+    }
+  }
   if (!emp) return res.json({ success: true, data: [] });
 
   const { month, year } = req.query;

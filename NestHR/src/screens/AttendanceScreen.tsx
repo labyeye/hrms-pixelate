@@ -28,6 +28,7 @@ import {
   Pencil,
 } from 'lucide-react-native';
 import { attendanceAPI, employeeAPI } from '../api/api';
+import { useAuth } from '../contexts/AuthContext';
 import { AttendanceRecord } from '../types/hrms';
 import { C } from '../theme';
 
@@ -62,6 +63,8 @@ function isoToTime(iso: string | undefined): string {
 }
 
 export default function AttendanceScreen() {
+  const { user } = useAuth();
+  const isEmployee = user?.role === 'employee';
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -213,10 +216,12 @@ export default function AttendanceScreen() {
           <Clock size={20} color={C.primary} />
           <Text style={styles.headerTitle}>Attendance</Text>
         </View>
-        <TouchableOpacity style={styles.addBtn} onPress={openNew}>
-          <CheckCircle2 size={14} color={C.white} />
-          <Text style={styles.addBtnText}>Mark</Text>
-        </TouchableOpacity>
+        {!isEmployee && (
+          <TouchableOpacity style={styles.addBtn} onPress={openNew}>
+            <CheckCircle2 size={14} color={C.white} />
+            <Text style={styles.addBtnText}>Mark</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.dateRow}>
@@ -288,21 +293,23 @@ export default function AttendanceScreen() {
         })}
       </ScrollView>
 
-      <View style={styles.searchWrap}>
-        <Search size={15} color={C.textMuted} />
-        <TextInput
-          style={styles.searchInput}
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Search by employee…"
-          placeholderTextColor={C.textLight}
-        />
-        {search.length > 0 && (
-          <TouchableOpacity onPress={() => setSearch('')}>
-            <X size={14} color={C.textMuted} />
-          </TouchableOpacity>
-        )}
-      </View>
+      {!isEmployee && (
+        <View style={styles.searchWrap}>
+          <Search size={15} color={C.textMuted} />
+          <TextInput
+            style={styles.searchInput}
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search by employee…"
+            placeholderTextColor={C.textLight}
+          />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch('')}>
+              <X size={14} color={C.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
 
       {loading ? (
         <View style={styles.loader}>
@@ -417,13 +424,15 @@ export default function AttendanceScreen() {
                         {item.status.replace('_', ' ').toUpperCase()}
                       </Text>
                     </View>
-                    <TouchableOpacity
-                      style={styles.editBtn}
-                      onPress={() => openEdit(item)}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
-                      <Pencil size={14} color={C.primary} />
-                    </TouchableOpacity>
+                    {!isEmployee && (
+                      <TouchableOpacity
+                        style={styles.editBtn}
+                        onPress={() => openEdit(item)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Pencil size={14} color={C.primary} />
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </View>
                 {(ciTime || coTime || workHours || overtime > 0) && (
@@ -475,7 +484,7 @@ export default function AttendanceScreen() {
         />
       )}
 
-      <Modal
+      {!isEmployee && <Modal
         visible={showModal}
         animationType="slide"
         presentationStyle="pageSheet"
@@ -621,7 +630,7 @@ export default function AttendanceScreen() {
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
-      </Modal>
+      </Modal>}
     </SafeAreaView>
   );
 }

@@ -15,7 +15,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   IndianRupee,
   Search,
-  CheckCircle2,
   ChevronRight,
   X,
   Zap,
@@ -25,6 +24,7 @@ import {
 import { TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { payrollAPI } from '../api/api';
+import { useAuth } from '../contexts/AuthContext';
 import { Payroll } from '../types/hrms';
 import { C } from '../theme';
 
@@ -37,6 +37,8 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
 
 export default function PayrollScreen() {
   const navigation = useNavigation<any>();
+  const { user } = useAuth();
+  const isEmployee = user?.role === 'employee';
   const [payrolls, setPayrolls] = useState<Payroll[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -50,14 +52,14 @@ export default function PayrollScreen() {
 
   const load = useCallback(async () => {
     try {
-      const res = await payrollAPI.getAll();
+      const res = isEmployee ? await payrollAPI.getMy() : await payrollAPI.getAll();
       setPayrolls(res.data || []);
     } catch (e: any) {
       Alert.alert('Error', e.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isEmployee]);
 
   useEffect(() => {
     load();
@@ -159,18 +161,18 @@ export default function PayrollScreen() {
             <ChevronLeft size={22} color={C.black} />
           </TouchableOpacity>
           <IndianRupee size={20} color={C.primary} />
-          <Text style={styles.headerTitle}>Payroll</Text>
+          <Text style={styles.headerTitle}>{isEmployee ? 'My Payslips' : 'Payroll'}</Text>
         </View>
-        <TouchableOpacity
-          style={styles.genBtn}
-          onPress={() => setShowGenModal(true)}
-        >
-          <Zap size={14} color={C.white} />
-          <Text style={styles.genBtnText}>Generate</Text>
-        </TouchableOpacity>
+        {!isEmployee && (
+          <TouchableOpacity
+            style={styles.genBtn}
+            onPress={() => setShowGenModal(true)}
+          >
+            <Zap size={14} color={C.white} />
+            <Text style={styles.genBtnText}>Generate</Text>
+          </TouchableOpacity>
+        )}
       </View>
-
-      {/* Search */}
 
       {/* Summary cards */}
       <View style={styles.summaryRow}>
@@ -191,21 +193,23 @@ export default function PayrollScreen() {
           <Text style={styles.summaryVal}>{payrolls.length}</Text>
         </View>
       </View>
-      <View style={styles.searchWrap}>
-        <Search size={15} color={C.textMuted} />
-        <TextInput
-          style={styles.searchInput}
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Search by employee name…"
-          placeholderTextColor={C.textLight}
-        />
-        {search.length > 0 && (
-          <TouchableOpacity onPress={() => setSearch('')}>
-            <X size={14} color={C.textMuted} />
-          </TouchableOpacity>
-        )}
-      </View>
+      {!isEmployee && (
+        <View style={styles.searchWrap}>
+          <Search size={15} color={C.textMuted} />
+          <TextInput
+            style={styles.searchInput}
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search by employee name…"
+            placeholderTextColor={C.textLight}
+          />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch('')}>
+              <X size={14} color={C.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
 
       {/* Status filters */}
       <ScrollView
@@ -283,10 +287,10 @@ export default function PayrollScreen() {
                   </View>
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={styles.empName}>
-                      {emp ? `${emp.firstName} ${emp.lastName}` : 'Employee'}
+                      {isEmployee ? (user?.name || 'My Payslip') : (emp ? `${emp.firstName} ${emp.lastName}` : 'Employee')}
                     </Text>
                     <Text style={styles.empSub}>
-                      {emp?.designation || 'N/A'} · {period}
+                      {isEmployee ? period : `${emp?.designation || 'N/A'} · ${period}`}
                     </Text>
                     {(item as any).absentDays > 0 && (
                       <Text style={[styles.empSub, { color: C.danger }]}>
@@ -339,7 +343,7 @@ export default function PayrollScreen() {
                   </View>
                 </View>
 
-                {item.status === 'draft' && (
+                {!isEmployee && item.status === 'draft' && (
                   <TouchableOpacity
                     style={styles.processBtn}
                     onPress={() => handleProcess(item)}
@@ -348,7 +352,7 @@ export default function PayrollScreen() {
                     <Text style={styles.processBtnText}>Process Payroll</Text>
                   </TouchableOpacity>
                 )}
-                {item.status === 'processed' && (
+                {!isEmployee && item.status === 'processed' && (
                   <TouchableOpacity
                     style={styles.paidBtn}
                     onPress={() => handleMarkPaid(item)}
@@ -363,7 +367,7 @@ export default function PayrollScreen() {
         />
       )}
 
-      <Modal
+      {!isEmployee && <Modal
         visible={showGenModal}
         animationType="slide"
         presentationStyle="pageSheet"
@@ -437,7 +441,7 @@ export default function PayrollScreen() {
             </Text>
           </ScrollView>
         </SafeAreaView>
-      </Modal>
+      </Modal>}
 
       {/* Detail Modal */}
       <Modal

@@ -36,9 +36,16 @@ const getAttendance = asyncHandler(async (req, res) => {
   const { month, year, employeeId, department } = req.query;
 
   if (req.user.role === "employee") {
-    const selfEmp = await Employee.findOne({ user: req.user._id }).select(
-      "_id",
-    );
+    let selfEmp = await Employee.findOne({ user: req.user._id }).select("_id");
+    if (!selfEmp && req.user.email && req.user.company) {
+      selfEmp = await Employee.findOne({
+        email: req.user.email.toLowerCase(),
+        company: req.user.company,
+      }).select("_id");
+      if (selfEmp) {
+        await Employee.findByIdAndUpdate(selfEmp._id, { user: req.user._id });
+      }
+    }
     if (!selfEmp) return res.json({ success: true, data: [], total: 0 });
     const filter = { employee: selfEmp._id };
     if (month && year) {
