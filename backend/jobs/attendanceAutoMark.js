@@ -13,7 +13,7 @@ function nowIST() {
 function todayISTMidnight() {
   const ist = nowIST();
   return new Date(
-    Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), ist.getUTCDate())
+    Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), ist.getUTCDate()),
   );
 }
 
@@ -47,7 +47,9 @@ async function runAutoMark() {
   if (!employees.length) return;
 
   // Load all unique shifts
-  const shiftIds = [...new Set(employees.map((e) => e.shift?.toString()).filter(Boolean))];
+  const shiftIds = [
+    ...new Set(employees.map((e) => e.shift?.toString()).filter(Boolean)),
+  ];
   const shifts = await Shift.find({ _id: { $in: shiftIds } }).lean();
   const shiftMap = Object.fromEntries(shifts.map((s) => [s._id.toString(), s]));
 
@@ -117,7 +119,9 @@ function startAttendanceAutoMarkJob() {
   // Run at 11:30 PM IST every day
   // IST 23:30 = UTC 18:00 (UTC+5:30)
   cron.schedule("0 18 * * *", runAutoMark, { timezone: "UTC" });
-  console.log("[AutoMark] Scheduled attendance auto-mark job at 23:30 IST daily");
+  console.log(
+    "[AutoMark] Scheduled attendance auto-mark job at 23:30 IST daily",
+  );
 }
 
 module.exports = { startAttendanceAutoMarkJob, runAutoMark };

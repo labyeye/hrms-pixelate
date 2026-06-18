@@ -210,10 +210,16 @@ export default function MoreScreen({ navigation }: any) {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.menuCard}>
-          {MENU_ITEMS.filter(item => !isEmployee || EMPLOYEE_MENU_KEYS.has(item.key)).map((item, i, arr) => {
+          {MENU_ITEMS.filter(
+            item => !isEmployee || EMPLOYEE_MENU_KEYS.has(item.key),
+          ).map((item, i, arr) => {
             const Icon = item.icon;
-            const label = isEmployee && item.key === 'Payroll' ? 'My Payslips' : item.label;
-            const desc = isEmployee && item.key === 'Payroll' ? 'View your salary payslips' : item.desc;
+            const label =
+              isEmployee && item.key === 'Payroll' ? 'My Payslips' : item.label;
+            const desc =
+              isEmployee && item.key === 'Payroll'
+                ? 'View your salary payslips'
+                : item.desc;
             return (
               <TouchableOpacity
                 key={item.key}

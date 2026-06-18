@@ -755,7 +755,12 @@ export default function PayrollPage() {
                 </button>
                 <button
                   onClick={() => {
-                    if (!confirm(`Force reprocess will DELETE existing payroll for ${month}/${year} (not paid) and recalculate with latest deduction rules. Continue?`)) return;
+                    if (
+                      !confirm(
+                        `Force reprocess will DELETE existing payroll for ${month}/${year} (not paid) and recalculate with latest deduction rules. Continue?`,
+                      )
+                    )
+                      return;
                     handleProcess(true);
                   }}
                   disabled={processing}

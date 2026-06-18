@@ -484,153 +484,155 @@ export default function AttendanceScreen() {
         />
       )}
 
-      {!isEmployee && <Modal
-        visible={showModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
-        <SafeAreaView style={styles.safe} edges={['top']}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>
-              {editRecord ? 'Edit Attendance' : 'Mark Attendance'}
-            </Text>
-            <TouchableOpacity onPress={closeModal}>
-              <X size={22} color={C.black} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            contentContainerStyle={{ padding: 20, gap: 16 }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {editRecord ? (
-              <View style={styles.editInfoBox}>
-                <Text style={styles.editInfoLabel}>Employee</Text>
-                <Text style={styles.editInfoValue}>
-                  {(editRecord.employee as any)?.firstName}{' '}
-                  {(editRecord.employee as any)?.lastName}
-                </Text>
-              </View>
-            ) : (
+      {!isEmployee && (
+        <Modal
+          visible={showModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+        >
+          <SafeAreaView style={styles.safe} edges={['top']}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {editRecord ? 'Edit Attendance' : 'Mark Attendance'}
+              </Text>
+              <TouchableOpacity onPress={closeModal}>
+                <X size={22} color={C.black} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              contentContainerStyle={{ padding: 20, gap: 16 }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {editRecord ? (
+                <View style={styles.editInfoBox}>
+                  <Text style={styles.editInfoLabel}>Employee</Text>
+                  <Text style={styles.editInfoValue}>
+                    {(editRecord.employee as any)?.firstName}{' '}
+                    {(editRecord.employee as any)?.lastName}
+                  </Text>
+                </View>
+              ) : (
+                <View>
+                  <Text style={styles.fieldLabel}>Employee *</Text>
+                  <ScrollView style={{ maxHeight: 180 }} nestedScrollEnabled>
+                    {employees.map(e => (
+                      <TouchableOpacity
+                        key={e._id}
+                        style={[
+                          styles.empOption,
+                          selectedEmpId === e._id && styles.empOptionActive,
+                        ]}
+                        onPress={() => setSelectedEmpId(e._id)}
+                      >
+                        <Text
+                          style={[
+                            styles.empOptionName,
+                            selectedEmpId === e._id && { color: C.white },
+                          ]}
+                        >
+                          {e.firstName} {e.lastName}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.empOptionId,
+                            selectedEmpId === e._id && { color: '#93C5FD' },
+                          ]}
+                        >
+                          {e.employeeId}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
               <View>
-                <Text style={styles.fieldLabel}>Employee *</Text>
-                <ScrollView style={{ maxHeight: 180 }} nestedScrollEnabled>
-                  {employees.map(e => (
+                <Text style={styles.fieldLabel}>Status *</Text>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    gap: 8,
+                    marginTop: 6,
+                  }}
+                >
+                  {Object.keys(STATUS_CONFIG).map(s => (
                     <TouchableOpacity
-                      key={e._id}
+                      key={s}
                       style={[
-                        styles.empOption,
-                        selectedEmpId === e._id && styles.empOptionActive,
+                        styles.selChip,
+                        form.status === s && styles.selChipActive,
                       ]}
-                      onPress={() => setSelectedEmpId(e._id)}
+                      onPress={() => setForm(p => ({ ...p, status: s }))}
                     >
                       <Text
                         style={[
-                          styles.empOptionName,
-                          selectedEmpId === e._id && { color: C.white },
+                          styles.selChipText,
+                          form.status === s && { color: C.white },
                         ]}
                       >
-                        {e.firstName} {e.lastName}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.empOptionId,
-                          selectedEmpId === e._id && { color: '#93C5FD' },
-                        ]}
-                      >
-                        {e.employeeId}
+                        {s.replace('_', ' ').toUpperCase()}
                       </Text>
                     </TouchableOpacity>
                   ))}
-                </ScrollView>
+                </View>
               </View>
-            )}
 
-            <View>
-              <Text style={styles.fieldLabel}>Status *</Text>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  flexWrap: 'wrap',
-                  gap: 8,
-                  marginTop: 6,
-                }}
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>Check In</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={form.checkIn}
+                    onChangeText={v => setForm(p => ({ ...p, checkIn: v }))}
+                    placeholder="09:00"
+                    placeholderTextColor={C.textLight}
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>Check Out</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={form.checkOut}
+                    onChangeText={v => setForm(p => ({ ...p, checkOut: v }))}
+                    placeholder="18:00"
+                    placeholderTextColor={C.textLight}
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+
+              <View>
+                <Text style={styles.fieldLabel}>Notes</Text>
+                <TextInput
+                  style={[styles.fieldInput, { minHeight: 80 }]}
+                  value={form.notes}
+                  onChangeText={v => setForm(p => ({ ...p, notes: v }))}
+                  placeholder="Optional…"
+                  placeholderTextColor={C.textLight}
+                  multiline
+                />
+              </View>
+
+              <TouchableOpacity
+                style={styles.submitBtn}
+                onPress={handleSave}
+                disabled={saving}
               >
-                {Object.keys(STATUS_CONFIG).map(s => (
-                  <TouchableOpacity
-                    key={s}
-                    style={[
-                      styles.selChip,
-                      form.status === s && styles.selChipActive,
-                    ]}
-                    onPress={() => setForm(p => ({ ...p, status: s }))}
-                  >
-                    <Text
-                      style={[
-                        styles.selChipText,
-                        form.status === s && { color: C.white },
-                      ]}
-                    >
-                      {s.replace('_', ' ').toUpperCase()}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>Check In</Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  value={form.checkIn}
-                  onChangeText={v => setForm(p => ({ ...p, checkIn: v }))}
-                  placeholder="09:00"
-                  placeholderTextColor={C.textLight}
-                  keyboardType="numeric"
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>Check Out</Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  value={form.checkOut}
-                  onChangeText={v => setForm(p => ({ ...p, checkOut: v }))}
-                  placeholder="18:00"
-                  placeholderTextColor={C.textLight}
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
-
-            <View>
-              <Text style={styles.fieldLabel}>Notes</Text>
-              <TextInput
-                style={[styles.fieldInput, { minHeight: 80 }]}
-                value={form.notes}
-                onChangeText={v => setForm(p => ({ ...p, notes: v }))}
-                placeholder="Optional…"
-                placeholderTextColor={C.textLight}
-                multiline
-              />
-            </View>
-
-            <TouchableOpacity
-              style={styles.submitBtn}
-              onPress={handleSave}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator color={C.white} />
-              ) : (
-                <Text style={styles.submitBtnText}>
-                  {editRecord ? 'Update Attendance' : 'Save Attendance'}
-                </Text>
-              )}
-            </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>}
+                {saving ? (
+                  <ActivityIndicator color={C.white} />
+                ) : (
+                  <Text style={styles.submitBtnText}>
+                    {editRecord ? 'Update Attendance' : 'Save Attendance'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }

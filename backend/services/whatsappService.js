@@ -386,7 +386,9 @@ async function sendAttendanceStatus(
       [firstName, d, statusLabel],
       s.whatsappLang || "en",
     );
-    console.log(`[WA-DEBUG] ✅ Attendance status (${statusLabel}) sent to ${phone}`);
+    console.log(
+      `[WA-DEBUG] ✅ Attendance status (${statusLabel}) sent to ${phone}`,
+    );
   } catch (err) {
     console.error("[WhatsApp] sendAttendanceStatus:", err.message);
   }

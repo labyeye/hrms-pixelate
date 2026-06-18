@@ -12,7 +12,11 @@ const router = express.Router();
 router.route("/").get(protect, getLeaves).post(protect, createLeave);
 router
   .route("/:id")
-  .patch(protect, authorize("employee", "super_admin", "admin", "hr_manager"), updateLeave)
+  .patch(
+    protect,
+    authorize("employee", "super_admin", "admin", "hr_manager"),
+    updateLeave,
+  )
   .put(
     protect,
     authorize("super_admin", "admin", "hr_manager"),

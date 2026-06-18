@@ -486,7 +486,13 @@ const markPaid = asyncHandler(async (req, res) => {
         },
         req.user.company,
       );
-    } catch {}
+    } catch (err) {
+      console.error("[Payroll] WA sendSalaryPaid failed:", err.message);
+    }
+  } else {
+    console.warn(
+      `[Payroll] No phone for employee ${payroll.employee?._id} — WA skipped`,
+    );
   }
 
   res.json({ success: true, data: payroll });
@@ -496,13 +502,58 @@ const bulkMarkPaid = asyncHandler(async (req, res) => {
   const { month, year } = req.body;
   const m = parseInt(month),
     y = parseInt(year);
-  const result = await Payroll.updateMany(
-    { company: req.user.company, month: m, year: y, status: "processed" },
-    { $set: { status: "paid", paidAt: new Date() } },
+
+  const payrolls = await Payroll.find({
+    company: req.user.company,
+    month: m,
+    year: y,
+    status: "processed",
+  }).populate("employee", "firstName lastName phone");
+
+  if (!payrolls.length) {
+    return res.json({ success: true, message: "0 payrolls marked as paid" });
+  }
+
+  const paidAt = new Date();
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  const period = `${months[m - 1]} ${y}`;
+
+  await Payroll.updateMany(
+    { _id: { $in: payrolls.map((p) => p._id) } },
+    { $set: { status: "paid", paidAt } },
   );
+
+  // Fire WA notifications for each employee (non-blocking)
+  for (const payroll of payrolls) {
+    if (payroll.employee?.phone) {
+      sendSalaryPaid(
+        payroll.employee.phone,
+        {
+          firstName: payroll.employee.firstName,
+          period,
+          netSalary: payroll.netSalary,
+        },
+        req.user.company,
+      ).catch(() => {});
+    }
+  }
+
   res.json({
     success: true,
-    message: `${result.modifiedCount} payrolls marked as paid`,
+    message: `${payrolls.length} payrolls marked as paid`,
   });
 });
 

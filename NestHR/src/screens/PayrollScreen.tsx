@@ -52,7 +52,9 @@ export default function PayrollScreen() {
 
   const load = useCallback(async () => {
     try {
-      const res = isEmployee ? await payrollAPI.getMy() : await payrollAPI.getAll();
+      const res = isEmployee
+        ? await payrollAPI.getMy()
+        : await payrollAPI.getAll();
       setPayrolls(res.data || []);
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -125,7 +127,11 @@ export default function PayrollScreen() {
         'This will DELETE existing payroll records for this month (except paid) and recalculate. Continue?',
         [
           { text: 'Cancel', style: 'cancel' },
-          { text: 'Yes, Reprocess', style: 'destructive', onPress: () => doGenerate(true) },
+          {
+            text: 'Yes, Reprocess',
+            style: 'destructive',
+            onPress: () => doGenerate(true),
+          },
         ],
       );
       return;
@@ -161,7 +167,9 @@ export default function PayrollScreen() {
             <ChevronLeft size={22} color={C.black} />
           </TouchableOpacity>
           <IndianRupee size={20} color={C.primary} />
-          <Text style={styles.headerTitle}>{isEmployee ? 'My Payslips' : 'Payroll'}</Text>
+          <Text style={styles.headerTitle}>
+            {isEmployee ? 'My Payslips' : 'Payroll'}
+          </Text>
         </View>
         {!isEmployee && (
           <TouchableOpacity
@@ -287,14 +295,21 @@ export default function PayrollScreen() {
                   </View>
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={styles.empName}>
-                      {isEmployee ? (user?.name || 'My Payslip') : (emp ? `${emp.firstName} ${emp.lastName}` : 'Employee')}
+                      {isEmployee
+                        ? user?.name || 'My Payslip'
+                        : emp
+                          ? `${emp.firstName} ${emp.lastName}`
+                          : 'Employee'}
                     </Text>
                     <Text style={styles.empSub}>
-                      {isEmployee ? period : `${emp?.designation || 'N/A'} · ${period}`}
+                      {isEmployee
+                        ? period
+                        : `${emp?.designation || 'N/A'} · ${period}`}
                     </Text>
                     {(item as any).absentDays > 0 && (
                       <Text style={[styles.empSub, { color: C.danger }]}>
-                        {(item as any).absentDays} absent · -₹{((item as any).absentDeduction || 0).toLocaleString()}
+                        {(item as any).absentDays} absent · -₹
+                        {((item as any).absentDeduction || 0).toLocaleString()}
                       </Text>
                     )}
                   </View>
@@ -367,81 +382,95 @@ export default function PayrollScreen() {
         />
       )}
 
-      {!isEmployee && <Modal
-        visible={showGenModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
-        <SafeAreaView style={styles.safe} edges={['top']}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Generate Payroll</Text>
-            <TouchableOpacity onPress={() => setShowGenModal(false)}>
-              <X size={22} color={C.black} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            contentContainerStyle={{ padding: 20, gap: 16 }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.genNote}>
-              <Text style={styles.genNoteText}>
-                This will generate payroll for all active employees for the
-                selected month.
-              </Text>
+      {!isEmployee && (
+        <Modal
+          visible={showGenModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+        >
+          <SafeAreaView style={styles.safe} edges={['top']}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Generate Payroll</Text>
+              <TouchableOpacity onPress={() => setShowGenModal(false)}>
+                <X size={22} color={C.black} />
+              </TouchableOpacity>
             </View>
-            <View>
-              <Text style={styles.fieldLabel}>Month (1–12)</Text>
-              <TextInput
-                style={styles.fieldInput}
-                value={genMonth}
-                onChangeText={setGenMonth}
-                keyboardType="numeric"
-                placeholder="e.g. 6"
-                placeholderTextColor={C.textLight}
-              />
-            </View>
-            <View>
-              <Text style={styles.fieldLabel}>Year</Text>
-              <TextInput
-                style={styles.fieldInput}
-                value={genYear}
-                onChangeText={setGenYear}
-                keyboardType="numeric"
-                placeholder="e.g. 2026"
-                placeholderTextColor={C.textLight}
-              />
-            </View>
-            <TouchableOpacity
-              style={styles.genSubmitBtn}
-              onPress={() => handleGenerate(false)}
-              disabled={generating}
+            <ScrollView
+              contentContainerStyle={{ padding: 20, gap: 16 }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
             >
-              {generating ? (
-                <ActivityIndicator color={C.white} />
-              ) : (
+              <View style={styles.genNote}>
+                <Text style={styles.genNoteText}>
+                  This will generate payroll for all active employees for the
+                  selected month.
+                </Text>
+              </View>
+              <View>
+                <Text style={styles.fieldLabel}>Month (1–12)</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  value={genMonth}
+                  onChangeText={setGenMonth}
+                  keyboardType="numeric"
+                  placeholder="e.g. 6"
+                  placeholderTextColor={C.textLight}
+                />
+              </View>
+              <View>
+                <Text style={styles.fieldLabel}>Year</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  value={genYear}
+                  onChangeText={setGenYear}
+                  keyboardType="numeric"
+                  placeholder="e.g. 2026"
+                  placeholderTextColor={C.textLight}
+                />
+              </View>
+              <TouchableOpacity
+                style={styles.genSubmitBtn}
+                onPress={() => handleGenerate(false)}
+                disabled={generating}
+              >
+                {generating ? (
+                  <ActivityIndicator color={C.white} />
+                ) : (
+                  <>
+                    <Zap size={14} color={C.white} />
+                    <Text style={styles.genSubmitBtnText}>
+                      Generate Payroll
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.genSubmitBtn,
+                  { backgroundColor: C.danger, marginTop: 0 },
+                ]}
+                onPress={() => handleGenerate(true)}
+                disabled={generating}
+              >
                 <>
                   <Zap size={14} color={C.white} />
-                  <Text style={styles.genSubmitBtnText}>Generate Payroll</Text>
+                  <Text style={styles.genSubmitBtnText}>Force Reprocess</Text>
                 </>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.genSubmitBtn, { backgroundColor: C.danger, marginTop: 0 }]}
-              onPress={() => handleGenerate(true)}
-              disabled={generating}
-            >
-              <>
-                <Zap size={14} color={C.white} />
-                <Text style={styles.genSubmitBtnText}>Force Reprocess</Text>
-              </>
-            </TouchableOpacity>
-            <Text style={{ fontSize: 11, color: C.textMuted, textAlign: 'center' }}>
-              Force Reprocess deletes and recalculates existing payroll (not paid ones)
-            </Text>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>}
+              </TouchableOpacity>
+              <Text
+                style={{
+                  fontSize: 11,
+                  color: C.textMuted,
+                  textAlign: 'center',
+                }}
+              >
+                Force Reprocess deletes and recalculates existing payroll (not
+                paid ones)
+              </Text>
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
+      )}
 
       {/* Detail Modal */}
       <Modal

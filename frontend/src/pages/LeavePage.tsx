@@ -607,9 +607,7 @@ export default function LeavePage() {
                       {isAdmin && leave.status === "pending" && (
                         <>
                           <button
-                            onClick={() =>
-                              handleStatus(leave._id, "approved")
-                            }
+                            onClick={() => handleStatus(leave._id, "approved")}
                             className="p-1.5 border-2 border-transparent hover:border-black hover:bg-[#024BAB]/10 transition-colors"
                             title="Approve"
                           >

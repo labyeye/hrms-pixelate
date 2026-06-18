@@ -180,7 +180,12 @@ const markAttendance = asyncHandler(async (req, res) => {
   });
 
   // Send WA notification for actionable statuses (not holiday/weekend/on_leave)
-  await notifyAttendanceStatus(record.employee, d, computedStatus, req.user.company);
+  await notifyAttendanceStatus(
+    record.employee,
+    d,
+    computedStatus,
+    req.user.company,
+  );
 
   res.json({ success: true, data: record });
 });
@@ -245,7 +250,12 @@ const updateAttendance = asyncHandler(async (req, res) => {
     populate: { path: "department", select: "name" },
   });
 
-  await notifyAttendanceStatus(record.employee, record.date, record.status, req.user.company);
+  await notifyAttendanceStatus(
+    record.employee,
+    record.date,
+    record.status,
+    req.user.company,
+  );
 
   res.json({ success: true, data: record });
 });

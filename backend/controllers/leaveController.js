@@ -511,7 +511,11 @@ const deleteLeave = asyncHandler(async (req, res) => {
       }
     } catch {}
 
-    return res.json({ success: true, message: "Approved leave cancelled", data: leave });
+    return res.json({
+      success: true,
+      message: "Approved leave cancelled",
+      data: leave,
+    });
   }
 
   await leave.deleteOne();

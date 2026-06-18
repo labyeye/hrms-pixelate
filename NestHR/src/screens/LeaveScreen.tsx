@@ -456,7 +456,12 @@ export default function LeaveScreen() {
         <SafeAreaView style={styles.safe} edges={['top']}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Edit Leave Request</Text>
-            <TouchableOpacity onPress={() => { setShowEditForm(false); setEditLeave(null); }}>
+            <TouchableOpacity
+              onPress={() => {
+                setShowEditForm(false);
+                setEditLeave(null);
+              }}
+            >
               <X size={22} color={C.black} />
             </TouchableOpacity>
           </View>
@@ -467,14 +472,29 @@ export default function LeaveScreen() {
           >
             <View>
               <Text style={styles.fieldLabel}>Leave Type</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  gap: 8,
+                  marginTop: 6,
+                }}
+              >
                 {LEAVE_TYPES.map(t => (
                   <TouchableOpacity
                     key={t}
-                    style={[styles.selChip, editForm.leaveType === t && styles.selChipActive]}
+                    style={[
+                      styles.selChip,
+                      editForm.leaveType === t && styles.selChipActive,
+                    ]}
                     onPress={() => setEditForm(p => ({ ...p, leaveType: t }))}
                   >
-                    <Text style={[styles.selChipText, editForm.leaveType === t && { color: C.white }]}>
+                    <Text
+                      style={[
+                        styles.selChipText,
+                        editForm.leaveType === t && { color: C.white },
+                      ]}
+                    >
                       {t.toUpperCase()}
                     </Text>
                   </TouchableOpacity>
@@ -514,7 +534,11 @@ export default function LeaveScreen() {
                 multiline
               />
             </View>
-            <TouchableOpacity style={styles.submitBtn} onPress={handleUpdate} disabled={saving}>
+            <TouchableOpacity
+              style={styles.submitBtn}
+              onPress={handleUpdate}
+              disabled={saving}
+            >
               {saving ? (
                 <ActivityIndicator color={C.white} />
               ) : (
