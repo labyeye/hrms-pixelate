@@ -115,9 +115,15 @@ export const leaveAPI = {
   },
   create: (body: object) =>
     request("/leaves", { method: "POST", body: JSON.stringify(body) }),
+  update: (id: string, body: object) =>
+    request(`/leaves/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   updateStatus: (id: string, body: object) =>
     request(`/leaves/${id}`, { method: "PUT", body: JSON.stringify(body) }),
-  delete: (id: string) => request(`/leaves/${id}`, { method: "DELETE" }),
+  delete: (id: string, body?: object) =>
+    request(`/leaves/${id}`, {
+      method: "DELETE",
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    }),
 };
 
 export const payrollAPI = {

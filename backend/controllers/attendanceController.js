@@ -4,6 +4,16 @@ const Employee = require("../models/Employee");
 const Shift = require("../models/Shift");
 const { isHolidayDate } = require("./holidayController");
 const { safePagination } = require("../middleware/validate");
+const { sendAttendanceStatus } = require("../services/whatsappService");
+
+async function notifyAttendanceStatus(emp, date, status, companyId) {
+  if (!emp?.phone) return;
+  await sendAttendanceStatus(
+    emp.phone,
+    { firstName: emp.firstName, date, status },
+    companyId,
+  );
+}
 
 const GRACE_MINUTES = 15;
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000; // UTC+5:30
@@ -165,9 +175,12 @@ const markAttendance = asyncHandler(async (req, res) => {
     { upsert: true, new: true },
   ).populate({
     path: "employee",
-    select: "firstName lastName employeeId designation department avatar",
+    select: "firstName lastName employeeId designation department avatar phone",
     populate: { path: "department", select: "name" },
   });
+
+  // Send WA notification for actionable statuses (not holiday/weekend/on_leave)
+  await notifyAttendanceStatus(record.employee, d, computedStatus, req.user.company);
 
   res.json({ success: true, data: record });
 });
@@ -228,9 +241,11 @@ const updateAttendance = asyncHandler(async (req, res) => {
 
   await record.populate({
     path: "employee",
-    select: "firstName lastName employeeId designation department avatar",
+    select: "firstName lastName employeeId designation department avatar phone",
     populate: { path: "department", select: "name" },
   });
+
+  await notifyAttendanceStatus(record.employee, record.date, record.status, req.user.company);
 
   res.json({ success: true, data: record });
 });

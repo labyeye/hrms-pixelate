@@ -363,26 +363,38 @@ const updateLeaveStatus = asyncHandler(async (req, res) => {
   res.json({ success: true, data: leave });
 });
 
-// Employee edits their own PENDING leave before approval
+// Edit a leave — employee can only edit own pending; admins can edit any
 const updateLeave = asyncHandler(async (req, res) => {
-  const selfEmp = await Employee.findOne({ user: req.user._id });
-  if (!selfEmp) {
-    res.status(404);
-    throw new Error("Employee record not found");
+  const isAdmin = ["super_admin", "admin", "hr_manager"].includes(
+    req.user.role,
+  );
+
+  let leave;
+  if (isAdmin) {
+    leave = await Leave.findOne({
+      _id: req.params.id,
+      company: req.user.company,
+    });
+  } else {
+    const selfEmp = await Employee.findOne({ user: req.user._id });
+    if (!selfEmp) {
+      res.status(404);
+      throw new Error("Employee record not found");
+    }
+    leave = await Leave.findOne({
+      _id: req.params.id,
+      company: req.user.company,
+      employee: selfEmp._id,
+    });
+    if (leave && leave.status !== "pending") {
+      res.status(400);
+      throw new Error("Only pending leave requests can be edited");
+    }
   }
 
-  const leave = await Leave.findOne({
-    _id: req.params.id,
-    company: req.user.company,
-    employee: selfEmp._id,
-  });
   if (!leave) {
     res.status(404);
     throw new Error("Leave not found");
-  }
-  if (leave.status !== "pending") {
-    res.status(400);
-    throw new Error("Only pending leave requests can be edited");
   }
 
   const {
@@ -415,10 +427,9 @@ const updateLeave = asyncHandler(async (req, res) => {
       res.status(400);
       throw new Error("Invalid days value");
     }
-    // Check overlap (exclude current leave)
     const overlap = await Leave.findOne({
       _id: { $ne: leave._id },
-      employee: selfEmp._id,
+      employee: leave.employee,
       status: { $in: ["pending", "approved"] },
       startDate: { $lte: end },
       endDate: { $gte: start },
@@ -437,10 +448,13 @@ const updateLeave = asyncHandler(async (req, res) => {
 });
 
 const deleteLeave = asyncHandler(async (req, res) => {
+  const { cancellationReason } = req.body || {};
+  const isAdmin = ["super_admin", "admin", "hr_manager"].includes(
+    req.user.role,
+  );
   const filter = { _id: req.params.id, company: req.user.company };
 
-  // Employees can only delete their own pending leaves
-  if (req.user.role === "employee") {
+  if (!isAdmin) {
     let selfEmp = await Employee.findOne({ user: req.user._id }).select("_id");
     if (!selfEmp && req.user.email && req.user.company) {
       selfEmp = await Employee.findOne({
@@ -458,15 +472,46 @@ const deleteLeave = asyncHandler(async (req, res) => {
     filter.employee = selfEmp._id;
   }
 
-  const leave = await Leave.findOne(filter);
+  const leave = await Leave.findOne(filter).populate({
+    path: "employee",
+    select: "firstName lastName phone",
+  });
   if (!leave) {
     res.status(404);
     throw new Error("Leave not found");
   }
 
-  if (req.user.role === "employee" && leave.status !== "pending") {
+  if (!isAdmin && leave.status !== "pending") {
     res.status(400);
     throw new Error("Only pending leave requests can be withdrawn");
+  }
+
+  // When cancelling an approved leave, mark as cancelled and notify employee
+  if (leave.status === "approved") {
+    if (!cancellationReason || !cancellationReason.trim()) {
+      res.status(400);
+      throw new Error("A reason is required to cancel an approved leave");
+    }
+    leave.status = "cancelled";
+    leave.rejectionReason = cancellationReason.trim().slice(0, 500);
+    await leave.save();
+
+    try {
+      if (leave.employee?.phone) {
+        // Reuse neshr_leave_rejected template: params [firstName, leaveType, reason]
+        await sendLeaveRejected(
+          leave.employee.phone,
+          {
+            firstName: leave.employee.firstName,
+            leaveType: leave.leaveType,
+            reason: `Cancelled — ${cancellationReason}`,
+          },
+          req.user.company,
+        );
+      }
+    } catch {}
+
+    return res.json({ success: true, message: "Approved leave cancelled", data: leave });
   }
 
   await leave.deleteOne();

@@ -349,6 +349,49 @@ async function sendSalaryPaid(
   }
 }
 
+// ─── Attendance Status Notification (single template for all statuses) ────────
+
+const ATTENDANCE_STATUS_LABELS = {
+  present: "Present",
+  absent: "Absent",
+  late: "Late",
+  half_day: "Half Day",
+};
+
+/**
+ * Template: neshr_attendance_status  (ONE template handles all 4 statuses)
+ * Body:  Hi {{1}}, your attendance for {{2}} has been marked as *{{3}}*.
+ *
+ * Params: [firstName, date (DD/MM/YYYY), statusLabel]
+ * statusLabel is one of: Present | Absent | Late | Half Day
+ *
+ * Triggered on: markAttendance and updateAttendance for statuses
+ * present / late / absent / half_day.
+ * Holiday, weekend, on_leave do NOT trigger this notification.
+ */
+async function sendAttendanceStatus(
+  phone,
+  { firstName, date, status },
+  companyId,
+) {
+  const statusLabel = ATTENDANCE_STATUS_LABELS[status];
+  if (!statusLabel) return; // skip holiday / weekend / on_leave
+  try {
+    const s = await getCompanySetting("whatsappNotifyCheckIn", companyId);
+    if (!s) return;
+    const d = new Date(date).toLocaleDateString("en-IN");
+    await sendTemplate(
+      phone,
+      "neshr_attendance_status",
+      [firstName, d, statusLabel],
+      s.whatsappLang || "en",
+    );
+    console.log(`[WA-DEBUG] ✅ Attendance status (${statusLabel}) sent to ${phone}`);
+  } catch (err) {
+    console.error("[WhatsApp] sendAttendanceStatus:", err.message);
+  }
+}
+
 // ─── NestHR Billing (no per-company gate) ────────────────────────────────────
 
 /**
@@ -391,6 +434,7 @@ module.exports = {
   sendLeaveApproved,
   sendLeaveRejected,
   sendLeaveAppliedHR,
+  sendAttendanceStatus,
   sendSalaryPaid,
   sendSubscriptionWA,
 };

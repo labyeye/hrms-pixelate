@@ -15,6 +15,8 @@ import {
   Search,
   ArrowUp,
   ArrowDown,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { ActionModal } from "@/components/ui/ActionModal";
 
@@ -65,24 +67,55 @@ const EMPTY_FORM: LeaveForm = {
   isHalfDay: false,
 };
 
+function toDateInputValue(dateStr: string) {
+  if (!dateStr) return "";
+  return new Date(dateStr).toISOString().slice(0, 10);
+}
+
 export default function LeavePage() {
   const { user } = useAuth();
   const isEmployee = user?.role === "employee";
+  const isAdmin = ["super_admin", "admin", "hr_manager"].includes(
+    user?.role ?? "",
+  );
 
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [myEmployeeId, setMyEmployeeId] = useState("");
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
+
+  // Create modal
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState<LeaveForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+
+  // Edit modal
+  const [editLeave, setEditLeave] = useState<LeaveRequest | null>(null);
+  const [editForm, setEditForm] = useState<LeaveForm>(EMPTY_FORM);
+  const [editSaving, setEditSaving] = useState(false);
+
+  // Rejection reason modal
+  const [rejectModal, setRejectModal] = useState<{
+    show: boolean;
+    leaveId: string;
+    reason: string;
+  }>({ show: false, leaveId: "", reason: "" });
+
+  // Cancellation reason modal (for cancelling approved leave)
+  const [cancelModal, setCancelModal] = useState<{
+    show: boolean;
+    leaveId: string;
+    reason: string;
+  }>({ show: false, leaveId: "", reason: "" });
+
   const [actionModal, setActionModal] = useState<{
     show: boolean;
     type: "success" | "error";
     title: string;
     message: string;
   }>({ show: false, type: "success", title: "", message: "" });
+
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<"startDate" | "days" | "employee">(
     "startDate",
@@ -140,11 +173,108 @@ export default function LeavePage() {
     setSaving(false);
   };
 
-  const handleStatus = async (id: string, status: string) => {
+  const openEdit = (leave: LeaveRequest) => {
+    setEditLeave(leave);
+    setEditForm({
+      employee: (leave.employee as any)?._id ?? "",
+      leaveType: leave.leaveType,
+      startDate: toDateInputValue(leave.startDate),
+      endDate: toDateInputValue(leave.endDate),
+      days: String(leave.days),
+      reason: leave.reason ?? "",
+      isHalfDay: leave.isHalfDay ?? false,
+    });
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editLeave) return;
+    setEditSaving(true);
     try {
-      await leaveAPI.updateStatus(id, { status });
+      await leaveAPI.update(editLeave._id, {
+        ...editForm,
+        days: Number(editForm.days),
+      });
+      setActionModal({
+        show: true,
+        type: "success",
+        title: "Leave Updated",
+        message: "Leave request has been updated.",
+      });
+      setEditLeave(null);
       load();
-    } catch {}
+    } catch (err: any) {
+      setActionModal({
+        show: true,
+        type: "error",
+        title: "Error",
+        message: err.message || "Failed to update leave request.",
+      });
+    }
+    setEditSaving(false);
+  };
+
+  const handleStatus = async (
+    id: string,
+    status: string,
+    extra?: Record<string, string>,
+  ) => {
+    try {
+      await leaveAPI.updateStatus(id, { status, ...extra });
+      load();
+    } catch (err: any) {
+      setActionModal({
+        show: true,
+        type: "error",
+        title: "Error",
+        message: err.message || "Action failed.",
+      });
+    }
+  };
+
+  const handleDelete = async (leave: LeaveRequest) => {
+    if (leave.status === "approved") {
+      // Must prompt for cancellation reason
+      setCancelModal({ show: true, leaveId: leave._id, reason: "" });
+      return;
+    }
+    try {
+      await leaveAPI.delete(leave._id);
+      load();
+    } catch (err: any) {
+      setActionModal({
+        show: true,
+        type: "error",
+        title: "Error",
+        message: err.message || "Failed to delete leave.",
+      });
+    }
+  };
+
+  const confirmReject = async () => {
+    if (!rejectModal.reason.trim()) return;
+    await handleStatus(rejectModal.leaveId, "rejected", {
+      rejectionReason: rejectModal.reason,
+    });
+    setRejectModal({ show: false, leaveId: "", reason: "" });
+  };
+
+  const confirmCancel = async () => {
+    if (!cancelModal.reason.trim()) return;
+    try {
+      await leaveAPI.delete(cancelModal.leaveId, {
+        cancellationReason: cancelModal.reason,
+      });
+      setCancelModal({ show: false, leaveId: "", reason: "" });
+      load();
+    } catch (err: any) {
+      setActionModal({
+        show: true,
+        type: "error",
+        title: "Error",
+        message: err.message || "Failed to cancel leave.",
+      });
+    }
   };
 
   const summary = {
@@ -172,6 +302,110 @@ export default function LeavePage() {
       }
       return sortDir === "asc" ? cmp : -cmp;
     });
+
+  const LeaveFormFields = ({
+    f,
+    setF,
+    showEmployee,
+  }: {
+    f: LeaveForm;
+    setF: (v: LeaveForm) => void;
+    showEmployee: boolean;
+  }) => (
+    <>
+      {showEmployee && (
+        <div>
+          <label className="block text-xs font-bold text-black mb-1">
+            Employee
+          </label>
+          <select
+            value={f.employee}
+            onChange={(e) => setF({ ...f, employee: e.target.value })}
+            className="border-2 w-full px-3 py-2 text-sm"
+            required
+          >
+            <option value="">Select employee</option>
+            {employees.map((e) => (
+              <option key={e._id} value={e._id}>
+                {e.firstName} {e.lastName}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      <div>
+        <label className="block text-xs font-bold text-black mb-1">
+          Leave Type
+        </label>
+        <select
+          required
+          value={f.leaveType}
+          onChange={(e) => setF({ ...f, leaveType: e.target.value })}
+          className="border-2 w-full px-3 py-2 text-sm"
+        >
+          {Object.entries(TYPE_LABELS).map(([v, l]) => (
+            <option key={v} value={v}>
+              {l}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-bold text-black mb-1">
+            Start Date
+          </label>
+          <input
+            type="date"
+            value={f.startDate}
+            onChange={(e) => setF({ ...f, startDate: e.target.value })}
+            className="border-2 w-full px-3 py-2 text-sm"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-black mb-1">
+            End Date
+          </label>
+          <input
+            type="date"
+            value={f.endDate}
+            onChange={(e) => setF({ ...f, endDate: e.target.value })}
+            className="border-2 w-full px-3 py-2 text-sm"
+            required
+          />
+        </div>
+      </div>
+      <div>
+        <label className="block text-xs font-bold text-black mb-1">
+          Number of Days
+        </label>
+        <input
+          type="number"
+          min="0.5"
+          max="30"
+          step="0.5"
+          value={f.days}
+          onChange={(e) => setF({ ...f, days: e.target.value })}
+          className="border-2 w-full px-3 py-2 text-sm"
+          required
+        />
+      </div>
+      <div>
+        <label className="block text-xs font-bold text-black mb-1">
+          Reason
+        </label>
+        <textarea
+          value={f.reason}
+          onChange={(e) => setF({ ...f, reason: e.target.value })}
+          className="border-2 w-full px-3 py-2 text-sm resize-none"
+          rows={3}
+          required
+          placeholder="Reason for leave..."
+        />
+      </div>
+    </>
+  );
 
   return (
     <AppLayout title="Leave Management">
@@ -368,32 +602,73 @@ export default function LeavePage() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    {leave.status === "pending" &&
-                      (isEmployee ? (
-                        <button
-                          onClick={() => handleStatus(leave._id, "cancelled")}
-                          className="text-xs font-bold border-2 border-black px-2 py-1 hover:bg-red-50 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      ) : (
-                        <div className="flex gap-1">
+                    <div className="flex gap-1 flex-wrap">
+                      {/* Approve / Reject — admin only, pending leaves */}
+                      {isAdmin && leave.status === "pending" && (
+                        <>
                           <button
-                            onClick={() => handleStatus(leave._id, "approved")}
+                            onClick={() =>
+                              handleStatus(leave._id, "approved")
+                            }
                             className="p-1.5 border-2 border-transparent hover:border-black hover:bg-[#024BAB]/10 transition-colors"
                             title="Approve"
                           >
                             <CheckCircle className="w-3.5 h-3.5 text-[#024BAB]" />
                           </button>
                           <button
-                            onClick={() => handleStatus(leave._id, "rejected")}
+                            onClick={() =>
+                              setRejectModal({
+                                show: true,
+                                leaveId: leave._id,
+                                reason: "",
+                              })
+                            }
                             className="p-1.5 border-2 border-transparent hover:border-black hover:bg-red-50 transition-colors"
                             title="Reject"
                           >
                             <XCircle className="w-3.5 h-3.5 text-red-600" />
                           </button>
-                        </div>
-                      ))}
+                        </>
+                      )}
+
+                      {/* Edit — admin can edit any; employee can edit own pending */}
+                      {(isAdmin ||
+                        (isEmployee && leave.status === "pending")) && (
+                        <button
+                          onClick={() => openEdit(leave)}
+                          className="p-1.5 border-2 border-transparent hover:border-black hover:bg-yellow-50 transition-colors"
+                          title="Edit"
+                        >
+                          <Pencil className="w-3.5 h-3.5 text-yellow-600" />
+                        </button>
+                      )}
+
+                      {/* Delete / Cancel — admin any; employee own pending */}
+                      {(isAdmin ||
+                        (isEmployee && leave.status === "pending")) && (
+                        <button
+                          onClick={() => handleDelete(leave)}
+                          className="p-1.5 border-2 border-transparent hover:border-black hover:bg-red-50 transition-colors"
+                          title={
+                            leave.status === "approved"
+                              ? "Cancel (approved)"
+                              : "Delete"
+                          }
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                        </button>
+                      )}
+
+                      {/* Employee cancel pending */}
+                      {isEmployee && leave.status === "pending" && (
+                        <button
+                          onClick={() => handleStatus(leave._id, "cancelled")}
+                          className="text-xs font-bold border-2 border-black px-2 py-1 hover:bg-red-50 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -402,7 +677,7 @@ export default function LeavePage() {
         </div>
       )}
 
-      {}
+      {/* Create Leave Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 bg-white w-full max-w-md">
@@ -435,106 +710,11 @@ export default function LeavePage() {
               }}
               className="p-5 space-y-4"
             >
-              {!isEmployee && (
-                <div>
-                  <label className="block text-xs font-bold text-black mb-1">
-                    Employee
-                  </label>
-                  <select
-                    value={form.employee}
-                    onChange={(e) =>
-                      setForm({ ...form, employee: e.target.value })
-                    }
-                    className="border-2 w-full px-3 py-2 text-sm"
-                    required
-                  >
-                    <option value="">Select employee</option>
-                    {employees.map((e) => (
-                      <option key={e._id} value={e._id}>
-                        {e.firstName} {e.lastName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Leave Type
-                </label>
-                <select
-                  required
-                  value={form.leaveType}
-                  onChange={(e) =>
-                    setForm({ ...form, leaveType: e.target.value })
-                  }
-                  className="border-2 w-full px-3 py-2 text-sm"
-                >
-                  {Object.entries(TYPE_LABELS).map(([v, l]) => (
-                    <option key={v} value={v}>
-                      {l}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-black mb-1">
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    value={form.startDate}
-                    onChange={(e) =>
-                      setForm({ ...form, startDate: e.target.value })
-                    }
-                    className="border-2 w-full px-3 py-2 text-sm"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-black mb-1">
-                    End Date
-                  </label>
-                  <input
-                    type="date"
-                    value={form.endDate}
-                    onChange={(e) =>
-                      setForm({ ...form, endDate: e.target.value })
-                    }
-                    className="border-2 w-full px-3 py-2 text-sm"
-                    required
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Number of Days
-                </label>
-                <input
-                  type="number"
-                  min="0.5"
-                  max="30"
-                  step="0.5"
-                  value={form.days}
-                  onChange={(e) => setForm({ ...form, days: e.target.value })}
-                  className="border-2 w-full px-3 py-2 text-sm"
-                  title="Number of days must be between 0.5 and 30"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Reason
-                </label>
-                <textarea
-                  value={form.reason}
-                  onChange={(e) => setForm({ ...form, reason: e.target.value })}
-                  className="border-2 w-full px-3 py-2 text-sm resize-none"
-                  rows={3}
-                  required
-                  placeholder="Reason for leave..."
-                />
-              </div>
+              <LeaveFormFields
+                f={form}
+                setF={setForm}
+                showEmployee={!isEmployee}
+              />
               <div className="flex gap-3">
                 <button
                   type="submit"
@@ -552,6 +732,145 @@ export default function LeavePage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Leave Modal */}
+      {editLeave && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="border-2 bg-white w-full max-w-md">
+            <div className="flex items-center justify-between p-5 border-b-2 border-black">
+              <h3 className="font-display font-bold text-lg">Edit Leave</h3>
+              <button onClick={() => setEditLeave(null)}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleEdit} className="p-5 space-y-4">
+              <LeaveFormFields
+                f={editForm}
+                setF={setEditForm}
+                showEmployee={false}
+              />
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={editSaving}
+                  className="border-2 bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold flex-1"
+                >
+                  {editSaving ? "Saving..." : "Save Changes"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditLeave(null)}
+                  className="border-2 bg-white text-black px-4 py-2.5 text-sm font-bold"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Rejection Reason Modal */}
+      {rejectModal.show && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="border-2 bg-white w-full max-w-sm">
+            <div className="flex items-center justify-between p-5 border-b-2 border-black">
+              <h3 className="font-display font-bold text-lg">Reject Leave</h3>
+              <button
+                onClick={() =>
+                  setRejectModal({ show: false, leaveId: "", reason: "" })
+                }
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Please provide a reason for rejection. This will be sent to the
+                employee via WhatsApp.
+              </p>
+              <textarea
+                value={rejectModal.reason}
+                onChange={(e) =>
+                  setRejectModal({ ...rejectModal, reason: e.target.value })
+                }
+                className="border-2 w-full px-3 py-2 text-sm resize-none"
+                rows={3}
+                placeholder="Rejection reason..."
+              />
+              <div className="flex gap-3">
+                <button
+                  onClick={confirmReject}
+                  disabled={!rejectModal.reason.trim()}
+                  className="border-2 bg-red-600 text-white px-6 py-2.5 text-sm font-bold flex-1 disabled:opacity-40"
+                >
+                  Reject Leave
+                </button>
+                <button
+                  onClick={() =>
+                    setRejectModal({ show: false, leaveId: "", reason: "" })
+                  }
+                  className="border-2 bg-white text-black px-4 py-2.5 text-sm font-bold"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancellation Reason Modal (for approved leaves) */}
+      {cancelModal.show && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="border-2 bg-white w-full max-w-sm">
+            <div className="flex items-center justify-between p-5 border-b-2 border-black">
+              <h3 className="font-display font-bold text-lg">
+                Cancel Approved Leave
+              </h3>
+              <button
+                onClick={() =>
+                  setCancelModal({ show: false, leaveId: "", reason: "" })
+                }
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-sm text-muted-foreground">
+                This leave is already approved. Provide a reason for
+                cancellation — the employee will be notified via WhatsApp.
+              </p>
+              <textarea
+                value={cancelModal.reason}
+                onChange={(e) =>
+                  setCancelModal({ ...cancelModal, reason: e.target.value })
+                }
+                className="border-2 w-full px-3 py-2 text-sm resize-none"
+                rows={3}
+                placeholder="Cancellation reason..."
+              />
+              <div className="flex gap-3">
+                <button
+                  onClick={confirmCancel}
+                  disabled={!cancelModal.reason.trim()}
+                  className="border-2 bg-red-600 text-white px-6 py-2.5 text-sm font-bold flex-1 disabled:opacity-40"
+                >
+                  Cancel Leave
+                </button>
+                <button
+                  onClick={() =>
+                    setCancelModal({ show: false, leaveId: "", reason: "" })
+                  }
+                  className="border-2 bg-white text-black px-4 py-2.5 text-sm font-bold"
+                >
+                  Go Back
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -106,6 +106,8 @@ export interface LeaveRequest {
   approvedBy?: { name: string };
   approvedAt?: string;
   rejectionReason?: string;
+  isHalfDay?: boolean;
+  halfDayType?: "first_half" | "second_half";
   createdAt: string;
 }
 
