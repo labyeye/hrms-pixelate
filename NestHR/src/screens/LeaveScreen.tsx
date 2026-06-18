@@ -39,13 +39,13 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> =
   };
 
 const LEAVE_TYPES = [
-  'annual',
-  'sick',
   'casual',
+  'sick',
+  'earned',
   'maternity',
   'paternity',
   'unpaid',
-  'other',
+  'compensatory',
 ];
 
 export default function LeaveScreen() {
@@ -58,7 +58,7 @@ export default function LeaveScreen() {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    leaveType: 'annual',
+    leaveType: 'casual',
     startDate: '',
     endDate: '',
     reason: '',
@@ -66,7 +66,7 @@ export default function LeaveScreen() {
   const [editLeave, setEditLeave] = useState<LeaveRequest | null>(null);
   const [showEditForm, setShowEditForm] = useState(false);
   const [editForm, setEditForm] = useState({
-    leaveType: 'annual',
+    leaveType: 'casual',
     startDate: '',
     endDate: '',
     reason: '',
@@ -103,9 +103,12 @@ export default function LeaveScreen() {
     }
     setSaving(true);
     try {
-      await leaveAPI.create(form);
+      const start = new Date(form.startDate);
+      const end = new Date(form.endDate);
+      const days = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+      await leaveAPI.create({ ...form, days });
       setShowForm(false);
-      setForm({ leaveType: 'annual', startDate: '', endDate: '', reason: '' });
+      setForm({ leaveType: 'casual', startDate: '', endDate: '', reason: '' });
       await load();
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -142,7 +145,7 @@ export default function LeaveScreen() {
   const openEdit = (leave: LeaveRequest) => {
     setEditLeave(leave);
     setEditForm({
-      leaveType: leave.leaveType || 'annual',
+      leaveType: leave.leaveType || 'casual',
       startDate: leave.startDate ? leave.startDate.split('T')[0] : '',
       endDate: leave.endDate ? leave.endDate.split('T')[0] : '',
       reason: leave.reason || '',
@@ -158,7 +161,10 @@ export default function LeaveScreen() {
     }
     setSaving(true);
     try {
-      await leaveAPI.updateStatus(editLeave._id, editForm);
+      const start = new Date(editForm.startDate);
+      const end = new Date(editForm.endDate);
+      const days = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+      await leaveAPI.update(editLeave._id, { ...editForm, days });
       setShowEditForm(false);
       setEditLeave(null);
       await load();

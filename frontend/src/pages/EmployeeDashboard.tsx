@@ -195,7 +195,7 @@ export default function EmployeeDashboard() {
             .then((r) => r.success && setLeaves(r.data))
             .catch(() => {}),
           payrollAPI
-            .getAll({ employeeId: emp._id, limit: "6" })
+            .getMy({ limit: "6" })
             .then((r) => r.success && setPayrolls(r.data))
             .catch(() => {}),
           performanceAPI
