@@ -45,6 +45,7 @@ app.use(morgan("dev"));
 app.use(express.json({ limit: "5mb" }));
 
 app.use("/iclock", require("./routes/admsRoutes"));
+app.use("/internal/stats", require("./routes/statsRoutes"));
 
 const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
