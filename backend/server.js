@@ -9,6 +9,9 @@ const errorHandler = require("./middleware/errorHandler");
 
 connectDB();
 
+const { startAttendanceAutoMarkJob } = require("./jobs/attendanceAutoMark");
+startAttendanceAutoMarkJob();
+
 const app = express();
 
 app.set("trust proxy", 1);

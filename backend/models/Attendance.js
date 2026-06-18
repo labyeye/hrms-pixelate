@@ -29,7 +29,7 @@ const attendanceSchema = new mongoose.Schema(
     markedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     verifyMode: {
       type: String,
-      enum: ["fingerprint", "card", "face", "password", "manual"],
+      enum: ["fingerprint", "card", "face", "password", "manual", "auto"],
       default: "manual",
     },
   },

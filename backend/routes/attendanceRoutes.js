@@ -6,6 +6,7 @@ const {
   bulkMarkAttendance,
   getMonthSummary,
 } = require("../controllers/attendanceController");
+const { runAutoMark } = require("../jobs/attendanceAutoMark");
 const { protect, authorize } = require("../middleware/auth");
 const router = express.Router();
 
@@ -28,6 +29,16 @@ router.post(
   protect,
   authorize("super_admin", "hr_manager", "hr_executive"),
   bulkMarkAttendance,
+);
+
+router.post(
+  "/auto-mark",
+  protect,
+  authorize("super_admin", "hr_manager"),
+  async (req, res) => {
+    await runAutoMark();
+    res.json({ success: true, message: "Auto-mark job completed" });
+  },
 );
 
 module.exports = router;
