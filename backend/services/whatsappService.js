@@ -114,6 +114,7 @@ async function sendCheckIn(
     const t = new Date(time).toLocaleTimeString("en-IN", {
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: "Asia/Kolkata",
     });
     await sendTemplate(
       phone,
@@ -145,6 +146,7 @@ async function sendCheckOut(
     const t = new Date(time).toLocaleTimeString("en-IN", {
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: "Asia/Kolkata",
     });
     const hrs = workHours ? `${Number(workHours).toFixed(1)}h` : "-";
     await sendTemplate(
@@ -279,6 +281,7 @@ async function sendCheckInHR(
     const t = new Date(time).toLocaleTimeString("en-IN", {
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: "Asia/Kolkata",
     });
     await sendTemplate(
       phone,
@@ -306,6 +309,7 @@ async function sendCheckOutHR(
     const t = new Date(time).toLocaleTimeString("en-IN", {
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: "Asia/Kolkata",
     });
     const hrs = workHours ? `${Number(workHours).toFixed(1)}h` : "-";
     await sendTemplate(
