@@ -12,7 +12,11 @@ function nowIST() {
 
 function toISTMidnight(istDate) {
   return new Date(
-    Date.UTC(istDate.getUTCFullYear(), istDate.getUTCMonth(), istDate.getUTCDate()),
+    Date.UTC(
+      istDate.getUTCFullYear(),
+      istDate.getUTCMonth(),
+      istDate.getUTCDate(),
+    ),
   );
 }
 
@@ -39,9 +43,15 @@ async function processDate(targetDate, istMinutesNow) {
 
   const employees = await Employee.find({
     shift: { $exists: true, $ne: null },
-    $or: [{ status: "active" }, { status: { $exists: false } }, { status: null }],
+    $or: [
+      { status: "active" },
+      { status: { $exists: false } },
+      { status: null },
+    ],
   })
-    .select("_id company shift otEnabled")
+    .select(
+      "_id company shift otEnabled workScheduleType customWorkDays workDaysPerWeek",
+    )
     .lean();
 
   if (!employees.length) return;
@@ -72,6 +82,21 @@ async function processDate(targetDate, istMinutesNow) {
       const endMins = shiftEndMinutes(shift);
       const cutoffMins = endMins + 60; // 1 hour after shift end
 
+      // For custom schedule employees: only process on their selected working days
+      if (emp.workScheduleType === "custom") {
+        const targetDayOfWeek = targetDate.getUTCDay(); // 0=Sun,1=Mon,...,6=Sat
+        const workingDays = emp.customWorkDays || [];
+        if (!workingDays.includes(targetDayOfWeek)) continue; // not a working day for this employee
+      } else {
+        // Standard schedule: skip weekends based on workDaysPerWeek
+        const targetDayOfWeek = targetDate.getUTCDay();
+        const days = emp.workDaysPerWeek || 6;
+        // 5 days = Mon-Fri (skip Sat=6, Sun=0), 6 days = Mon-Sat (skip Sun=0), 7 = all
+        if (days === 5 && (targetDayOfWeek === 0 || targetDayOfWeek === 6))
+          continue;
+        if (days === 6 && targetDayOfWeek === 0) continue;
+      }
+
       // For today: skip if we haven't reached 1 hour past shift end yet
       if (isToday && istMinutesNow < cutoffMins) continue;
 
@@ -84,14 +109,20 @@ async function processDate(targetDate, istMinutesNow) {
       if (!existing || !existing.checkIn) {
         if (existing) {
           // Record exists but no checkIn — update it
-          if (!["absent", "on_leave", "holiday", "weekend"].includes(existing.status)) {
+          if (
+            !["absent", "on_leave", "holiday", "weekend"].includes(
+              existing.status,
+            )
+          ) {
             existing.status = "absent";
             existing.workHours = 0;
             existing.notes =
               (existing.notes ? existing.notes + " | " : "") +
               "Auto-marked absent: no check-in recorded";
             await existing.save();
-            console.log(`[AutoMark] Marked absent (updated): ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`);
+            console.log(
+              `[AutoMark] Marked absent (updated): ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`,
+            );
           }
         } else {
           await Attendance.create({
@@ -102,7 +133,9 @@ async function processDate(targetDate, istMinutesNow) {
             verifyMode: "auto",
             notes: "Auto-marked absent: no check-in recorded",
           });
-          console.log(`[AutoMark] Marked absent: ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`);
+          console.log(
+            `[AutoMark] Marked absent: ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`,
+          );
         }
         continue;
       }
@@ -111,17 +144,25 @@ async function processDate(targetDate, istMinutesNow) {
       if (existing.checkIn && !existing.checkOut) {
         // If overtime is enabled for this employee, skip — they may be working late
         if (emp.otEnabled) {
-          console.log(`[AutoMark] Skipping no-checkout for ${emp._id}: OT enabled`);
+          console.log(
+            `[AutoMark] Skipping no-checkout for ${emp._id}: OT enabled`,
+          );
           continue;
         }
 
-        if (!["on_leave", "holiday", "weekend", "absent"].includes(existing.status)) {
+        if (
+          !["on_leave", "holiday", "weekend", "absent"].includes(
+            existing.status,
+          )
+        ) {
           existing.status = "half_day";
           existing.notes =
             (existing.notes ? existing.notes + " | " : "") +
             "Auto-marked half day: no check-out recorded";
           await existing.save();
-          console.log(`[AutoMark] Marked half_day (no checkout): ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`);
+          console.log(
+            `[AutoMark] Marked half_day (no checkout): ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`,
+          );
         }
         continue;
       }
@@ -132,13 +173,18 @@ async function processDate(targetDate, istMinutesNow) {
         const cinMins = checkInMinutes(existing.checkIn);
         const lateThreshold = startMins + 120; // 2 hours after shift start
 
-        if (cinMins > lateThreshold && ["present", "late"].includes(existing.status)) {
+        if (
+          cinMins > lateThreshold &&
+          ["present", "late"].includes(existing.status)
+        ) {
           existing.status = "half_day";
           existing.notes =
             (existing.notes ? existing.notes + " | " : "") +
-            `Auto-marked half day: checked in ${Math.round((cinMins - startMins) / 60 * 10) / 10}h late`;
+            `Auto-marked half day: checked in ${Math.round(((cinMins - startMins) / 60) * 10) / 10}h late`;
           await existing.save();
-          console.log(`[AutoMark] Marked half_day (late check-in): ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`);
+          console.log(
+            `[AutoMark] Marked half_day (late check-in): ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`,
+          );
         }
       }
     }
@@ -158,10 +204,14 @@ async function runAutoMark() {
 
   const todayDate = toISTMidnight(istNow);
 
-  console.log(`[AutoMark] Processing yesterday: ${yesterdayDate.toISOString().slice(0, 10)}`);
+  console.log(
+    `[AutoMark] Processing yesterday: ${yesterdayDate.toISOString().slice(0, 10)}`,
+  );
   await processDate(yesterdayDate, 1440);
 
-  console.log(`[AutoMark] Processing today: ${todayDate.toISOString().slice(0, 10)}`);
+  console.log(
+    `[AutoMark] Processing today: ${todayDate.toISOString().slice(0, 10)}`,
+  );
   await processDate(todayDate, istMinutes);
 
   console.log("[AutoMark] Done.");
@@ -170,7 +220,9 @@ async function runAutoMark() {
 function startAttendanceAutoMarkJob() {
   // Run every hour — if server restarts, next tick catches missed days
   cron.schedule("0 * * * *", runAutoMark, { timezone: "UTC" });
-  console.log("[AutoMark] Scheduled attendance auto-mark job (runs every hour)");
+  console.log(
+    "[AutoMark] Scheduled attendance auto-mark job (runs every hour)",
+  );
 
   // Run once on startup to catch anything missed while server was down
   runAutoMark().catch((err) =>

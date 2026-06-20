@@ -14,7 +14,12 @@ const Payroll = require("../models/Payroll");
 function statsGuard(req, res, next) {
   const secret = process.env.STATS_SECRET;
   if (!secret) {
-    return res.status(503).json({ success: false, message: "Stats endpoint not configured (STATS_SECRET missing)" });
+    return res
+      .status(503)
+      .json({
+        success: false,
+        message: "Stats endpoint not configured (STATS_SECRET missing)",
+      });
   }
   const provided = req.query.key || req.headers["x-stats-key"];
   if (provided !== secret) {
@@ -26,10 +31,10 @@ function statsGuard(req, res, next) {
 router.get("/", statsGuard, async (req, res) => {
   try {
     const now = new Date();
-    const in7Days  = new Date(now.getTime() + 7  * 24 * 3600 * 1000);
+    const in7Days = new Date(now.getTime() + 7 * 24 * 3600 * 1000);
     const in30Days = new Date(now.getTime() + 30 * 24 * 3600 * 1000);
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 3600 * 1000);
-    const sevenDaysAgo  = new Date(now.getTime() - 7  * 24 * 3600 * 1000);
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 3600 * 1000);
 
     // ── 1. Tenant counts ──────────────────────────────────────────────────────
     const [
@@ -64,31 +69,50 @@ router.get("/", statsGuard, async (req, res) => {
       Subscription.countDocuments({ isTrial: true }),
       Subscription.countDocuments({ status: "cancelled" }),
       Subscription.countDocuments({ status: "pending_renewal" }),
-      Subscription.countDocuments({ status: "active", renewalDate: { $gte: now, $lte: in7Days } }),
-      Subscription.countDocuments({ status: "active", renewalDate: { $gte: now, $lte: in30Days } }),
-      Subscription.countDocuments({ renewalDate: { $lt: now }, status: { $nin: ["cancelled"] } }),
+      Subscription.countDocuments({
+        status: "active",
+        renewalDate: { $gte: now, $lte: in7Days },
+      }),
+      Subscription.countDocuments({
+        status: "active",
+        renewalDate: { $gte: now, $lte: in30Days },
+      }),
+      Subscription.countDocuments({
+        renewalDate: { $lt: now },
+        status: { $nin: ["cancelled"] },
+      }),
     ]);
 
     // Plan breakdown
     const planBreakdown = await Subscription.aggregate([
       { $match: { status: { $nin: ["cancelled"] } } },
-      { $group: { _id: { plan: "$plan", billingCycle: "$billingCycle" }, count: { $sum: 1 } } },
+      {
+        $group: {
+          _id: { plan: "$plan", billingCycle: "$billingCycle" },
+          count: { $sum: 1 },
+        },
+      },
       { $sort: { "_id.plan": 1 } },
     ]);
 
     // ── 3. Revenue stats ──────────────────────────────────────────────────────
     const revenueAgg = await Invoice.aggregate([
       { $match: { status: "paid" } },
-      { $group: {
-        _id: "$billingCycle",
-        total: { $sum: "$amount" },
-        count: { $sum: 1 },
-      }},
+      {
+        $group: {
+          _id: "$billingCycle",
+          total: { $sum: "$amount" },
+          count: { $sum: 1 },
+        },
+      },
     ]);
     const revenueByBilling = {};
-    for (const r of revenueAgg) revenueByBilling[r._id] = { total: r.total, count: r.count };
+    for (const r of revenueAgg)
+      revenueByBilling[r._id] = { total: r.total, count: r.count };
 
-    const totalRevenue = (revenueByBilling.monthly?.total || 0) + (revenueByBilling.yearly?.total || 0);
+    const totalRevenue =
+      (revenueByBilling.monthly?.total || 0) +
+      (revenueByBilling.yearly?.total || 0);
 
     // MRR: sum of active monthly subscriptions
     const mrrAgg = await Subscription.aggregate([
@@ -120,12 +144,14 @@ router.get("/", statsGuard, async (req, res) => {
     const employeesPerCompany = await Employee.aggregate([
       { $match: { status: "active" } },
       { $group: { _id: "$company", count: { $sum: 1 } } },
-      { $group: {
-        _id: null,
-        avg: { $avg: "$count" },
-        max: { $max: "$count" },
-        min: { $min: "$count" },
-      }},
+      {
+        $group: {
+          _id: null,
+          avg: { $avg: "$count" },
+          max: { $max: "$count" },
+          min: { $min: "$count" },
+        },
+      },
     ]);
 
     // ── 5. Activity stats (last 30 days) ──────────────────────────────────────
@@ -139,7 +165,9 @@ router.get("/", statsGuard, async (req, res) => {
     const companies = await Company.find()
       .populate("subscription")
       .sort({ createdAt: -1 })
-      .select("name email phone industry city state status lastLogin createdAt subscription")
+      .select(
+        "name email phone industry city state status lastLogin createdAt subscription",
+      )
       .lean();
 
     // Employee count per company (active only)
@@ -186,8 +214,10 @@ router.get("/", statsGuard, async (req, res) => {
               amountPaid: sub.amountPaid,
               paymentStatus: sub.paymentStatus,
               autoRenew: sub.autoRenew,
-              expiringIn7Days: sub.renewalDate <= in7Days && sub.renewalDate >= now,
-              expiringIn30Days: sub.renewalDate <= in30Days && sub.renewalDate >= now,
+              expiringIn7Days:
+                sub.renewalDate <= in7Days && sub.renewalDate >= now,
+              expiringIn30Days:
+                sub.renewalDate <= in30Days && sub.renewalDate >= now,
               isExpired: sub.renewalDate < now && sub.status !== "cancelled",
             }
           : null,
@@ -195,9 +225,11 @@ router.get("/", statsGuard, async (req, res) => {
     });
 
     // ── 7. Expiring soon lists ────────────────────────────────────────────────
-    const expiringTenants = tenants.filter((t) => t.subscription?.expiringIn30Days);
-    const expiredTenants  = tenants.filter((t) => t.subscription?.isExpired);
-    const trialTenants    = tenants.filter((t) => t.subscription?.isTrial);
+    const expiringTenants = tenants.filter(
+      (t) => t.subscription?.expiringIn30Days,
+    );
+    const expiredTenants = tenants.filter((t) => t.subscription?.isExpired);
+    const trialTenants = tenants.filter((t) => t.subscription?.isTrial);
 
     // ── 8. Compose response ───────────────────────────────────────────────────
     res.json({
@@ -232,7 +264,8 @@ router.get("/", statsGuard, async (req, res) => {
         employees: {
           total: totalEmployees,
           active: activeEmployees,
-          avgPerTenant: Math.round((employeesPerCompany[0]?.avg || 0) * 10) / 10,
+          avgPerTenant:
+            Math.round((employeesPerCompany[0]?.avg || 0) * 10) / 10,
           maxInOneTenant: employeesPerCompany[0]?.max || 0,
         },
         activity: {
@@ -247,12 +280,14 @@ router.get("/", statsGuard, async (req, res) => {
         })),
       },
       alerts: {
-        expiringIn7Days: expiringTenants.filter((t) => t.subscription?.expiringIn7Days).map((t) => ({
-          name: t.name,
-          email: t.email,
-          plan: t.subscription?.plan,
-          renewalDate: t.subscription?.renewalDate,
-        })),
+        expiringIn7Days: expiringTenants
+          .filter((t) => t.subscription?.expiringIn7Days)
+          .map((t) => ({
+            name: t.name,
+            email: t.email,
+            plan: t.subscription?.plan,
+            renewalDate: t.subscription?.renewalDate,
+          })),
         expiringIn30Days: expiringTenants.map((t) => ({
           name: t.name,
           email: t.email,

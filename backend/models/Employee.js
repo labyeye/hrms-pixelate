@@ -50,7 +50,13 @@ const employeeSchema = new mongoose.Schema(
     advanceBalance: { type: Number, default: 0 },
     otRate: { type: Number, default: 0 },
     otEnabled: { type: Boolean, default: false },
-    workDaysPerWeek: { type: Number, enum: [5, 6, 7], default: 6 },
+    workDaysPerWeek: { type: Number, default: 6 },
+    workScheduleType: {
+      type: String,
+      enum: ["standard", "custom"],
+      default: "standard",
+    },
+    customWorkDays: { type: [Number], default: [] }, // 0=Sun,1=Mon,...,6=Sat
     biometricUserId: { type: String, default: "" },
     rfidCard: { type: String, default: "" },
     faceDescriptor: { type: [Number], default: [] },

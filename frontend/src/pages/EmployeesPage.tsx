@@ -98,6 +98,8 @@ interface EmployeeFormData {
   esicNumber: string;
   pfNumber: string;
   workDaysPerWeek: string;
+  workScheduleType: string;
+  customWorkDays: number[];
   otRate: string;
   otEnabled: boolean;
   shift: string;
@@ -131,6 +133,8 @@ const EMPTY_FORM: EmployeeFormData = {
   esicNumber: "",
   pfNumber: "",
   workDaysPerWeek: "6",
+  workScheduleType: "standard",
+  customWorkDays: [],
   otRate: "",
   otEnabled: false,
   shift: "",
@@ -276,6 +280,8 @@ export default function EmployeesPage() {
       esicNumber: (emp as any).esicNumber || "",
       pfNumber: (emp as any).pfNumber || "",
       workDaysPerWeek: String((emp as any).workDaysPerWeek || 6),
+      workScheduleType: (emp as any).workScheduleType || "standard",
+      customWorkDays: (emp as any).customWorkDays || [],
       otRate: String((emp as any).otRate || ""),
       otEnabled: (emp as any).otEnabled === true,
       shift: (emp as any).shift?._id || (emp as any).shift || "",
@@ -292,7 +298,13 @@ export default function EmployeesPage() {
       const payload = {
         ...form,
         salary: Number(form.salary) || 0,
-        workDaysPerWeek: Number(form.workDaysPerWeek) || 6,
+        workDaysPerWeek:
+          form.workScheduleType === "custom"
+            ? form.customWorkDays.length
+            : Number(form.workDaysPerWeek) || 6,
+        workScheduleType: form.workScheduleType,
+        customWorkDays:
+          form.workScheduleType === "custom" ? form.customWorkDays : [],
         otRate: Number(form.otRate) || 0,
       };
       if (editEmp) {
@@ -1426,7 +1438,7 @@ export default function EmployeesPage() {
                         How many days per week does this employee work? Used to
                         calculate monthly working days for payroll.
                       </p>
-                      <div className="flex gap-3">
+                      <div className="flex gap-3 flex-wrap">
                         {[
                           { val: "5", label: "5 Days", sub: "Mon – Fri" },
                           { val: "6", label: "6 Days", sub: "Mon – Sat" },
@@ -1436,11 +1448,17 @@ export default function EmployeesPage() {
                             key={val}
                             type="button"
                             onClick={() =>
-                              setForm({ ...form, workDaysPerWeek: val })
+                              setForm({
+                                ...form,
+                                workDaysPerWeek: val,
+                                workScheduleType: "standard",
+                                customWorkDays: [],
+                              })
                             }
                             className={cn(
                               "flex-1 py-5 border-2 border-black text-sm font-bold transition-colors",
-                              form.workDaysPerWeek === val
+                              form.workScheduleType === "standard" &&
+                                form.workDaysPerWeek === val
                                 ? "bg-[#024BAB] text-white"
                                 : "bg-white text-black hover:bg-[#024BAB]/5",
                             )}
@@ -1453,7 +1471,81 @@ export default function EmployeesPage() {
                             </div>
                           </button>
                         ))}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setForm({
+                              ...form,
+                              workScheduleType: "custom",
+                              customWorkDays: form.customWorkDays.length
+                                ? form.customWorkDays
+                                : [],
+                            })
+                          }
+                          className={cn(
+                            "flex-1 py-5 border-2 border-black text-sm font-bold transition-colors",
+                            form.workScheduleType === "custom"
+                              ? "bg-[#024BAB] text-white"
+                              : "bg-white text-black hover:bg-[#024BAB]/5",
+                          )}
+                        >
+                          <div className="text-xl font-black mb-1">Custom</div>
+                          <div className="text-xs font-normal opacity-70">
+                            Pick days
+                          </div>
+                        </button>
                       </div>
+                      {form.workScheduleType === "custom" && (
+                        <div className="mt-4">
+                          <p className="text-xs text-gray-500 mb-3">
+                            Select the days this employee works:
+                          </p>
+                          <div className="flex gap-2 flex-wrap">
+                            {[
+                              { day: 1, label: "Mon" },
+                              { day: 2, label: "Tue" },
+                              { day: 3, label: "Wed" },
+                              { day: 4, label: "Thu" },
+                              { day: 5, label: "Fri" },
+                              { day: 6, label: "Sat" },
+                              { day: 0, label: "Sun" },
+                            ].map(({ day, label }) => {
+                              const selected =
+                                form.customWorkDays.includes(day);
+                              return (
+                                <button
+                                  key={day}
+                                  type="button"
+                                  onClick={() => {
+                                    const days = selected
+                                      ? form.customWorkDays.filter(
+                                          (d) => d !== day,
+                                        )
+                                      : [...form.customWorkDays, day];
+                                    setForm({ ...form, customWorkDays: days });
+                                  }}
+                                  className={cn(
+                                    "w-12 h-12 border-2 border-black text-xs font-bold transition-colors",
+                                    selected
+                                      ? "bg-[#024BAB] text-white"
+                                      : "bg-white text-black hover:bg-[#024BAB]/5",
+                                  )}
+                                >
+                                  {label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {form.customWorkDays.length > 0 && (
+                            <p className="text-xs text-[#024BAB] font-bold mt-2">
+                              {form.customWorkDays.length} day
+                              {form.customWorkDays.length > 1 ? "s" : ""}{" "}
+                              selected — attendance will only be tracked on
+                              these days
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div className="border-t-2 border-black pt-5">
