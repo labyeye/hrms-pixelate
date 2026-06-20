@@ -557,9 +557,17 @@ export default function LeavePage() {
                 >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[10px] font-bold text-white">
-                        {(leave.employee as any)?.firstName?.[0]?.toUpperCase()}
-                      </div>
+                      {(leave.employee as any)?.avatar ? (
+                        <img
+                          src={(leave.employee as any).avatar}
+                          alt={(leave.employee as any)?.firstName}
+                          className="w-7 h-7 border-2 border-black object-cover shrink-0"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                          {(leave.employee as any)?.firstName?.[0]?.toUpperCase()}
+                        </div>
+                      )}
                       <div>
                         <p className="font-bold text-black text-xs">
                           {(leave.employee as any)?.firstName}{" "}

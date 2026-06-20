@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -28,7 +28,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { useAuth } from '../contexts/AuthContext';
-import { authAPI } from '../api/api';
+import { authAPI, employeeAPI } from '../api/api';
 import { C } from '../theme';
 
 export default function ProfileScreen() {
@@ -41,6 +41,16 @@ export default function ProfileScreen() {
   const [avatarUri, setAvatarUri] = useState<string | null>(
     (user as any)?.avatar || null,
   );
+
+  useEffect(() => {
+    employeeAPI.getMe()
+      .then(res => {
+        const emp = res?.data || res;
+        const uri = emp?.avatar || (user as any)?.avatar || null;
+        if (uri) setAvatarUri(uri);
+      })
+      .catch(() => {});
+  }, []);
   const [saving, setSaving] = useState(false);
 
   const [currentPw, setCurrentPw] = useState('');

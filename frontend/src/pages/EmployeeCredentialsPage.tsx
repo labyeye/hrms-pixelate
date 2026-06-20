@@ -378,7 +378,7 @@ export default function EmployeeCredentialsPage() {
                         <img
                           src={emp.avatar}
                           alt="Profile"
-                          className="w-8 h-8 object-cover border-2 border-black rounded"
+                          className="w-8 h-8 object-cover border-2 border-black rounded-full"
                         />
                       ) : (
                         <div className="w-8 h-8 bg-[#024BAB] border-2 border-black flex items-center justify-center text-xs font-bold text-white shrink-0">

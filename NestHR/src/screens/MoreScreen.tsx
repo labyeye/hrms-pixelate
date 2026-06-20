@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { localNotificationsAPI } from '../api/api';
+import { localNotificationsAPI, employeeAPI } from '../api/api';
 import {
   IndianRupee,
   Briefcase,
@@ -138,6 +138,15 @@ export default function MoreScreen({ navigation }: any) {
   const { user, logout } = useAuth();
   const isEmployee = user?.role === 'employee';
   const [unreadCount, setUnreadCount] = useState(0);
+  const [empProfile, setEmpProfile] = useState<any>(null);
+
+  useEffect(() => {
+    if (isEmployee) {
+      employeeAPI.getMe().then(res => setEmpProfile(res?.data || res)).catch(() => {});
+    }
+  }, [isEmployee]);
+
+  const avatarUri = empProfile?.avatar || user?.avatar;
 
   useFocusEffect(
     useCallback(() => {
@@ -175,8 +184,8 @@ export default function MoreScreen({ navigation }: any) {
         onPress={() => navigation.navigate('Profile')}
         activeOpacity={0.8}
       >
-        {user?.avatar ? (
-          <Image source={{ uri: user.avatar }} style={styles.userAvatarPhoto} />
+        {avatarUri ? (
+          <Image source={{ uri: avatarUri }} style={styles.userAvatarPhoto} />
         ) : (
           <View style={styles.userAvatar}>
             <Text style={styles.userAvatarText}>

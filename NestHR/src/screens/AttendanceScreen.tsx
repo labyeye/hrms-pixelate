@@ -92,12 +92,16 @@ export default function AttendanceScreen() {
         setRecords([]);
       }
       try {
-        const res = await attendanceAPI.getAll({ date: dateFilter });
-        const all: AttendanceRecord[] = res.data || [];
-        const forDate = all.filter(r => {
-          const d = r.date ? r.date.split('T')[0] : '';
-          return d === dateFilter;
+        const d = new Date(dateFilter + 'T00:00:00');
+        const res = await attendanceAPI.getAll({
+          month: String(d.getMonth() + 1),
+          year: String(d.getFullYear()),
+          limit: '200',
         });
+        const all: AttendanceRecord[] = res.data || [];
+        const forDate = all.filter(r =>
+          r.date ? toDateStr(new Date(r.date)) === dateFilter : false,
+        );
         setRecords(forDate);
       } catch (e: any) {
         Alert.alert('Error', e.message);
@@ -290,48 +294,50 @@ export default function AttendanceScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.summaryBar}
-        contentContainerStyle={styles.summaryContent}
-      >
-        {Object.entries(summary).map(([status, count]) => {
-          const active = statusFilter === status;
-          const cfg = STATUS_CONFIG[status];
-          return (
-            <TouchableOpacity
-              key={status}
-              style={[
-                styles.summaryPill,
-                {
-                  backgroundColor: active ? cfg.color : cfg.bg,
-                  borderColor: cfg.color,
-                },
-              ]}
-              onPress={() => setStatusFilter(p => (p === status ? '' : status))}
-              activeOpacity={0.8}
-            >
-              <Text
+      {!isEmployee && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.summaryBar}
+          contentContainerStyle={styles.summaryContent}
+        >
+          {Object.entries(summary).map(([status, count]) => {
+            const active = statusFilter === status;
+            const cfg = STATUS_CONFIG[status];
+            return (
+              <TouchableOpacity
+                key={status}
                 style={[
-                  styles.summaryCount,
-                  { color: active ? C.white : cfg.color },
+                  styles.summaryPill,
+                  {
+                    backgroundColor: active ? cfg.color : cfg.bg,
+                    borderColor: cfg.color,
+                  },
                 ]}
+                onPress={() => setStatusFilter(p => (p === status ? '' : status))}
+                activeOpacity={0.8}
               >
-                {count}
-              </Text>
-              <Text
-                style={[
-                  styles.summaryStatus,
-                  { color: active ? C.white : cfg.color },
-                ]}
-              >
-                {status.replace('_', ' ')}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+                <Text
+                  style={[
+                    styles.summaryCount,
+                    { color: active ? C.white : cfg.color },
+                  ]}
+                >
+                  {count}
+                </Text>
+                <Text
+                  style={[
+                    styles.summaryStatus,
+                    { color: active ? C.white : cfg.color },
+                  ]}
+                >
+                  {status.replace('_', ' ')}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      )}
 
       {!isEmployee && (
         <View style={styles.searchWrap}>

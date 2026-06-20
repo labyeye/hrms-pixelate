@@ -683,9 +683,17 @@ export default function DashboardPage() {
               {recentHires.slice(0, 5).map((emp: any) => (
                 <Link key={emp._id} to="/employees">
                   <div className="flex items-center gap-3 p-2.5 border-2 border-transparent hover:border-black hover: transition-all">
-                    <div className="w-8 h-8 bg-[#024BAB] border-2 border-black flex items-center justify-center text-xs font-bold text-white shrink-0">
-                      {emp.firstName?.[0]?.toUpperCase()}
-                    </div>
+                    {emp.avatar ? (
+                      <img
+                        src={emp.avatar}
+                        alt={emp.firstName}
+                        className="w-8 h-8 border-2 border-black object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 bg-[#024BAB] border-2 border-black flex items-center justify-center text-xs font-bold text-white shrink-0">
+                        {emp.firstName?.[0]?.toUpperCase()}
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-black truncate">
                         {emp.firstName} {emp.lastName}
@@ -729,9 +737,17 @@ export default function DashboardPage() {
               {pendingLeaveList.slice(0, 5).map((leave: any) => (
                 <Link key={leave._id} to="/leave">
                   <div className="flex items-center gap-3 p-2.5 border-2 border-transparent hover:border-black hover: transition-all">
-                    <div className="w-8 h-8 bg-[#FA731C] border-2 border-black flex items-center justify-center text-xs font-bold text-white shrink-0">
-                      {leave.employee?.firstName?.[0]?.toUpperCase()}
-                    </div>
+                    {leave.employee?.avatar ? (
+                      <img
+                        src={leave.employee.avatar}
+                        alt={leave.employee?.firstName}
+                        className="w-8 h-8 border-2 border-black object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 bg-[#FA731C] border-2 border-black flex items-center justify-center text-xs font-bold text-white shrink-0">
+                        {leave.employee?.firstName?.[0]?.toUpperCase()}
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-black truncate">
                         {leave.employee?.firstName} {leave.employee?.lastName}

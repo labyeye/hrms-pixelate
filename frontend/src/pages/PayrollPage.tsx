@@ -422,9 +422,17 @@ export default function PayrollPage() {
                   {}
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[10px] font-bold text-white shrink-0">
-                        {(p.employee as any)?.firstName?.[0]?.toUpperCase()}
-                      </div>
+                      {(p.employee as any)?.avatar ? (
+                        <img
+                          src={(p.employee as any).avatar}
+                          alt={(p.employee as any)?.firstName}
+                          className="w-7 h-7 border-2 border-black object-cover shrink-0"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                          {(p.employee as any)?.firstName?.[0]?.toUpperCase()}
+                        </div>
+                      )}
                       <div>
                         <p className="font-bold text-black text-xs">
                           {(p.employee as any)?.firstName}{" "}
@@ -702,9 +710,17 @@ export default function PayrollPage() {
                           className="w-4 h-4 cursor-pointer"
                         />
                         <div className="flex items-center gap-2 flex-1">
-                          <div className="w-6 h-6 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[9px] font-bold text-white">
-                            {emp.firstName?.[0]?.toUpperCase()}
-                          </div>
+                          {emp.avatar ? (
+                            <img
+                              src={emp.avatar}
+                              alt={emp.firstName}
+                              className="w-6 h-6 border-2 border-black object-cover shrink-0"
+                            />
+                          ) : (
+                            <div className="w-6 h-6 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[9px] font-bold text-white shrink-0">
+                              {emp.firstName?.[0]?.toUpperCase()}
+                            </div>
+                          )}
                           <div>
                             <p className="text-xs font-bold text-black">
                               {emp.firstName} {emp.lastName}

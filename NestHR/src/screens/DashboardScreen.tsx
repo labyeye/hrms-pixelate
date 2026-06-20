@@ -9,6 +9,8 @@ import {
   RefreshControl,
   Image,
   Dimensions,
+  Modal,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -25,6 +27,9 @@ import {
   Calendar,
   AlertCircle,
   LogIn,
+  Camera,
+  Trash2,
+  X,
 } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -33,7 +38,9 @@ import {
   employeeAPI,
   attendanceAPI,
   payrollAPI,
+  authAPI,
 } from '../api/api';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { C } from '../theme';
 
 const CARD_WIDTH = (Dimensions.get('window').width - 32 - 10) / 2;
@@ -257,14 +264,16 @@ function AdminDashboard({ navigation }: any) {
 
 // ─── Employee Dashboard ───────────────────────────────────────────────────────
 
-const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+function localDateStr(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 function fmtTime(iso: string) {
-  const d = new Date(new Date(iso).getTime() + IST_OFFSET);
-  const h = d.getUTCHours(),
-    m = d.getUTCMinutes();
+  const d = new Date(iso);
+  let h = d.getHours(), m = d.getMinutes();
+  const ampm = h < 12 ? 'AM' : 'PM';
   const hh = h % 12 || 12;
-  return `${hh}:${m.toString().padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+  return `${hh}:${m.toString().padStart(2, '0')} ${ampm}`;
 }
 
 const STATUS_COLOR: Record<string, string> = {
@@ -276,33 +285,29 @@ const STATUS_COLOR: Record<string, string> = {
   holiday: '#0891B2',
 };
 
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+const TAB_DAYS = [
+  { label: 'Today', offset: 0 },
+  { label: 'Yesterday', offset: 1 },
+  { label: '2 Days Ago', offset: 2 },
+];
+
 function EmployeeDashboard({ navigation }: any) {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [empProfile, setEmpProfile] = useState<any>(null);
   const [myAttendance, setMyAttendance] = useState<any[]>([]);
   const [latestPayroll, setLatestPayroll] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [activeTab, setActiveTab] = useState(0);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [photoSaving, setPhotoSaving] = useState(false);
 
   const now = new Date();
   const month = now.getMonth() + 1;
   const year = now.getFullYear();
-
-  const MONTHS = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
 
   const loadUnread = useCallback(async () => {
     const all = await localNotificationsAPI.getAll();
@@ -313,13 +318,11 @@ function EmployeeDashboard({ navigation }: any) {
     try {
       const [profileRes, attRes, payRes] = await Promise.allSettled([
         employeeAPI.getMe(),
-        attendanceAPI.getAll({ month: String(month), year: String(year) }),
+        attendanceAPI.getAll({ month: String(month), year: String(year), limit: '200' }),
         payrollAPI.getMy(),
       ]);
-
       if (profileRes.status === 'fulfilled') {
-        const emp = profileRes.value?.data || profileRes.value;
-        setEmpProfile(emp);
+        setEmpProfile(profileRes.value?.data || profileRes.value);
       }
       if (attRes.status === 'fulfilled') {
         setMyAttendance(attRes.value?.data || []);
@@ -334,12 +337,8 @@ function EmployeeDashboard({ navigation }: any) {
     }
   }, [month, year]);
 
-  useEffect(() => {
-    loadUnread();
-  }, [loadUnread]);
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { loadUnread(); }, [loadUnread]);
+  useEffect(() => { load(); }, [load]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -354,11 +353,66 @@ function EmployeeDashboard({ navigation }: any) {
     return 'Good Evening';
   };
 
-  // Today's record
-  const todayStr = now.toISOString().split('T')[0];
-  const todayRecord = myAttendance.find(
-    a => new Date(a.date).toISOString().split('T')[0] === todayStr,
-  );
+  const avatarUri = empProfile?.avatar || user?.avatar;
+
+  const savePhoto = async (uri: string) => {
+    setPhotoSaving(true);
+    try {
+      await authAPI.updateProfile({ avatar: uri });
+      updateUser({ avatar: uri });
+      setEmpProfile((p: any) => ({ ...p, avatar: uri }));
+      setShowPhotoModal(false);
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setPhotoSaving(false);
+    }
+  };
+
+  const handlePickPhoto = () => {
+    Alert.alert('Update Photo', 'Choose source', [
+      {
+        text: 'Camera',
+        onPress: () =>
+          launchCamera({ mediaType: 'photo', quality: 0.7, includeBase64: true }, r => {
+            if (r.assets?.[0]?.base64)
+              savePhoto(`data:image/jpeg;base64,${r.assets[0].base64}`);
+          }),
+      },
+      {
+        text: 'Gallery',
+        onPress: () =>
+          launchImageLibrary({ mediaType: 'photo', quality: 0.7, includeBase64: true }, r => {
+            if (r.assets?.[0]?.base64)
+              savePhoto(`data:image/jpeg;base64,${r.assets[0].base64}`);
+          }),
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const handleRemovePhoto = () => {
+    Alert.alert('Remove Photo', 'Remove your profile photo?', [
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          setPhotoSaving(true);
+          try {
+            await authAPI.updateProfile({ avatar: '' });
+            updateUser({ avatar: undefined });
+            setEmpProfile((p: any) => ({ ...p, avatar: undefined }));
+            setShowPhotoModal(false);
+          } catch (e: any) {
+            Alert.alert('Error', e.message);
+          } finally {
+            setPhotoSaving(false);
+          }
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
 
   // Month stats
   const presentDays = myAttendance.filter(
@@ -367,20 +421,31 @@ function EmployeeDashboard({ navigation }: any) {
   const absentDays = myAttendance.filter(a => a.status === 'absent').length;
   const lateDays = myAttendance.filter(a => a.status === 'late').length;
   const totalMarked = presentDays + absentDays;
-  const attPct =
-    totalMarked > 0 ? Math.round((presentDays / totalMarked) * 100) : 100;
+  const attPct = totalMarked > 0 ? Math.round((presentDays / totalMarked) * 100) : 100;
 
-  const recent = [...myAttendance]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5);
+  // Record for each tab day
+  const recordFor = (offset: number) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() - offset);
+    const ds = localDateStr(d);
+    return myAttendance.find(a => localDateStr(new Date(a.date)) === ds);
+  };
+
+  const tabDate = (offset: number) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() - offset);
+    return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+  };
+
+  const activeRecord = recordFor(activeTab);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerAvatarWrap}>
-          {user?.avatar ? (
-            <Image source={{ uri: user.avatar }} style={styles.headerAvatar} />
+          {avatarUri ? (
+            <Image source={{ uri: avatarUri }} style={styles.headerAvatar} />
           ) : (
             <View style={[styles.headerAvatar, styles.headerAvatarFallback]}>
               <Text style={styles.headerAvatarText}>
@@ -401,9 +466,7 @@ function EmployeeDashboard({ navigation }: any) {
           ) : null}
         </View>
         <TouchableOpacity
-          onPress={() =>
-            navigation.navigate('More', { screen: 'Notifications' })
-          }
+          onPress={() => navigation.navigate('More', { screen: 'Notifications' })}
           style={styles.bellBtn}
         >
           <Bell size={25} color={C.black} />
@@ -425,39 +488,32 @@ function EmployeeDashboard({ navigation }: any) {
         <ScrollView
           contentContainerStyle={styles.scroll}
           refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={C.primary}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} />
           }
           showsVerticalScrollIndicator={false}
         >
           {/* Profile banner */}
           <View style={styles.profileBanner}>
             <View style={styles.profileBannerLeft}>
-              {user?.avatar ? (
-                <Image
-                  source={{ uri: user.avatar }}
-                  style={styles.profileBannerAvatar}
-                />
-              ) : (
-                <View
-                  style={[
-                    styles.profileBannerAvatar,
-                    styles.profileBannerAvatarFb,
-                  ]}
-                >
-                  <Text style={styles.profileBannerAvatarText}>
-                    {(user?.name || 'U')
-                      .split(' ')
-                      .map((n: string) => n[0])
-                      .join('')
-                      .toUpperCase()
-                      .slice(0, 2)}
-                  </Text>
+              <TouchableOpacity onPress={() => setShowPhotoModal(true)} activeOpacity={0.8}>
+                {avatarUri ? (
+                  <Image source={{ uri: avatarUri }} style={styles.profileBannerAvatar} />
+                ) : (
+                  <View style={[styles.profileBannerAvatar, styles.profileBannerAvatarFb]}>
+                    <Text style={styles.profileBannerAvatarText}>
+                      {(user?.name || 'U')
+                        .split(' ')
+                        .map((n: string) => n[0])
+                        .join('')
+                        .toUpperCase()
+                        .slice(0, 2)}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.photoEditBadge}>
+                  <Camera size={10} color={C.white} />
                 </View>
-              )}
+              </TouchableOpacity>
               <View style={{ flex: 1 }}>
                 <Text style={styles.profileBannerName}>{user?.name}</Text>
                 <Text style={styles.profileBannerRole}>
@@ -468,9 +524,7 @@ function EmployeeDashboard({ navigation }: any) {
                     'Employee'}
                 </Text>
                 {empProfile?.employeeId ? (
-                  <Text style={styles.profileBannerEmpId}>
-                    {empProfile.employeeId}
-                  </Text>
+                  <Text style={styles.profileBannerEmpId}>{empProfile.employeeId}</Text>
                 ) : null}
               </View>
             </View>
@@ -484,19 +538,13 @@ function EmployeeDashboard({ navigation }: any) {
                 </Text>
                 <Text style={styles.profileBannerStatLabel}>Monthly CTC</Text>
               </View>
-              <View
-                style={[
-                  styles.profileBannerStat,
-                  { borderLeftWidth: 1, borderLeftColor: '#E5E7EB' },
-                ]}
-              >
+              <View style={[styles.profileBannerStat, { borderLeftWidth: 1, borderLeftColor: '#E5E7EB' }]}>
                 <Calendar size={12} color={C.success} />
                 <Text style={styles.profileBannerStatVal}>
                   {empProfile?.joinDate
-                    ? new Date(empProfile.joinDate).toLocaleDateString(
-                        'en-IN',
-                        { day: '2-digit', month: 'short', year: 'numeric' },
-                      )
+                    ? new Date(empProfile.joinDate).toLocaleDateString('en-IN', {
+                        day: '2-digit', month: 'short', year: 'numeric',
+                      })
                     : '—'}
                 </Text>
                 <Text style={styles.profileBannerStatLabel}>Joined</Text>
@@ -504,108 +552,88 @@ function EmployeeDashboard({ navigation }: any) {
             </View>
           </View>
 
-          {/* Today's status */}
-          <Text
-            style={styles.sectionLabel}
-          >{`Today — ${now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}`}</Text>
-          <View style={styles.todayCard}>
-            {todayRecord ? (
-              <View style={styles.todayRow}>
-                <View
-                  style={[
-                    styles.todayStatusBadge,
-                    {
-                      backgroundColor:
-                        STATUS_COLOR[todayRecord.status] || C.textMuted,
-                    },
-                  ]}
-                >
-                  <Text style={styles.todayStatusText}>
-                    {todayRecord.status.replace('_', ' ').toUpperCase()}
+          {/* 3-Day Attendance Tabs */}
+          <Text style={styles.sectionLabel}>Attendance</Text>
+          <View style={styles.tabBar}>
+            {TAB_DAYS.map((t, i) => (
+              <TouchableOpacity
+                key={t.label}
+                style={[styles.tabBtn, activeTab === i && styles.tabBtnActive]}
+                onPress={() => setActiveTab(i)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.tabBtnText, activeTab === i && styles.tabBtnTextActive]}>
+                  {t.label}
+                </Text>
+                <Text style={[styles.tabBtnDate, activeTab === i && styles.tabBtnDateActive]}>
+                  {tabDate(t.offset)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={styles.attDayCard}>
+            {activeRecord ? (
+              <>
+                <View style={[
+                  styles.attDayStatusBadge,
+                  { backgroundColor: STATUS_COLOR[activeRecord.status] || C.textMuted },
+                ]}>
+                  <Text style={styles.attDayStatusText}>
+                    {activeRecord.status.replace(/_/g, ' ').toUpperCase()}
                   </Text>
                 </View>
-                <View style={styles.todayTimes}>
-                  <View style={styles.todayTimeItem}>
-                    <LogIn size={13} color={C.success} />
-                    <Text style={styles.todayTimeLabel}>Check In</Text>
-                    <Text style={styles.todayTimeVal}>
-                      {todayRecord.checkIn ? fmtTime(todayRecord.checkIn) : '—'}
+                <View style={styles.attDayRow}>
+                  <View style={styles.attDayItem}>
+                    <LogIn size={16} color={C.success} />
+                    <Text style={styles.attDayItemLabel}>Check In</Text>
+                    <Text style={styles.attDayItemVal}>
+                      {activeRecord.checkIn ? fmtTime(activeRecord.checkIn) : '—'}
                     </Text>
                   </View>
-                  <View style={styles.todayTimeItem}>
-                    <LogIn
-                      size={13}
-                      color={C.danger}
-                      style={{ transform: [{ scaleX: -1 }] }}
-                    />
-                    <Text style={styles.todayTimeLabel}>Check Out</Text>
-                    <Text style={styles.todayTimeVal}>
-                      {todayRecord.checkOut
-                        ? fmtTime(todayRecord.checkOut)
-                        : '—'}
+                  <View style={styles.attDayDivider} />
+                  <View style={styles.attDayItem}>
+                    <LogIn size={16} color={C.danger} style={{ transform: [{ scaleX: -1 }] }} />
+                    <Text style={styles.attDayItemLabel}>Check Out</Text>
+                    <Text style={styles.attDayItemVal}>
+                      {activeRecord.checkOut ? fmtTime(activeRecord.checkOut) : '—'}
                     </Text>
                   </View>
-                  {todayRecord.workHours > 0 && (
-                    <View style={styles.todayTimeItem}>
-                      <Clock size={13} color={C.primary} />
-                      <Text style={styles.todayTimeLabel}>Hours</Text>
-                      <Text style={styles.todayTimeVal}>
-                        {todayRecord.workHours.toFixed(2)}h
-                      </Text>
-                    </View>
-                  )}
+                  <View style={styles.attDayDivider} />
+                  <View style={styles.attDayItem}>
+                    <Clock size={16} color={C.primary} />
+                    <Text style={styles.attDayItemLabel}>Hours</Text>
+                    <Text style={styles.attDayItemVal}>
+                      {activeRecord.workHours > 0 ? `${activeRecord.workHours.toFixed(1)}h` : '—'}
+                    </Text>
+                  </View>
                 </View>
-              </View>
+              </>
             ) : (
-              <View style={styles.todayAbsent}>
-                <AlertCircle size={22} color={C.textMuted} />
-                <Text style={styles.todayAbsentText}>
-                  No attendance marked today
-                </Text>
+              <View style={styles.attDayEmpty}>
+                <AlertCircle size={28} color={C.textMuted} />
+                <Text style={styles.attDayEmptyText}>No attendance record</Text>
+                <Text style={styles.attDayEmptyDate}>{tabDate(activeTab)}</Text>
               </View>
             )}
           </View>
 
           {/* This month stats */}
-          <Text
-            style={styles.sectionLabel}
-          >{`${MONTHS[month - 1]} ${year} — Attendance`}</Text>
+          <Text style={styles.sectionLabel}>{`${MONTHS[month - 1]} ${year} — Attendance`}</Text>
           <View style={styles.monthStats}>
             {[
-              {
-                label: 'Present',
-                val: presentDays,
-                color: C.success,
-                icon: CheckCircle2,
-              },
-              {
-                label: 'Absent',
-                val: absentDays,
-                color: C.danger,
-                icon: CalendarOff,
-              },
+              { label: 'Present', val: presentDays, color: C.success, icon: CheckCircle2 },
+              { label: 'Absent', val: absentDays, color: C.danger, icon: CalendarOff },
               { label: 'Late', val: lateDays, color: C.warning, icon: Clock },
-              {
-                label: 'Att %',
-                val: `${attPct}%`,
-                color: C.primary,
-                icon: TrendingUp,
-              },
+              { label: 'Att %', val: `${attPct}%`, color: C.primary, icon: TrendingUp },
             ].map(item => {
               const Icon = item.icon;
               return (
                 <View key={item.label} style={styles.monthStatCard}>
-                  <View
-                    style={[
-                      styles.monthStatIcon,
-                      { backgroundColor: item.color },
-                    ]}
-                  >
+                  <View style={[styles.monthStatIcon, { backgroundColor: item.color }]}>
                     <Icon size={14} color={C.white} />
                   </View>
-                  <Text style={[styles.monthStatVal, { color: item.color }]}>
-                    {item.val}
-                  </Text>
+                  <Text style={[styles.monthStatVal, { color: item.color }]}>{item.val}</Text>
                   <Text style={styles.monthStatLabel}>{item.label}</Text>
                 </View>
               );
@@ -618,76 +646,22 @@ function EmployeeDashboard({ navigation }: any) {
               <Text style={styles.sectionLabel}>Latest Payslip</Text>
               <TouchableOpacity
                 style={styles.payslipCard}
-                onPress={() =>
-                  navigation.navigate('More', { screen: 'Payroll' })
-                }
+                onPress={() => navigation.navigate('More', { screen: 'Payroll' })}
                 activeOpacity={0.8}
               >
                 <View style={styles.payslipLeft}>
                   <IndianRupee size={20} color={C.primary} />
                   <View>
                     <Text style={styles.payslipMonth}>
-                      {MONTHS[(latestPayroll.month || 1) - 1]}{' '}
-                      {latestPayroll.year}
+                      {MONTHS[(latestPayroll.month || 1) - 1]} {latestPayroll.year}
                     </Text>
-                    <Text style={styles.payslipStatus}>
-                      {latestPayroll.status?.toUpperCase()}
-                    </Text>
+                    <Text style={styles.payslipStatus}>{latestPayroll.status?.toUpperCase()}</Text>
                   </View>
                 </View>
                 <Text style={styles.payslipNet}>
                   ₹{(latestPayroll.netSalary || 0).toLocaleString()}
                 </Text>
               </TouchableOpacity>
-            </>
-          )}
-
-          {/* Recent attendance */}
-          {recent.length > 0 && (
-            <>
-              <Text style={styles.sectionLabel}>Recent Attendance</Text>
-              <View style={styles.card}>
-                {recent.map((a, i) => (
-                  <View
-                    key={a._id}
-                    style={[styles.attRow, i > 0 && styles.attBorder]}
-                  >
-                    <Text style={styles.attDate}>
-                      {new Date(a.date).toLocaleDateString('en-IN', {
-                        day: 'numeric',
-                        month: 'short',
-                        weekday: 'short',
-                      })}
-                    </Text>
-                    <View
-                      style={[
-                        styles.attBadge,
-                        {
-                          backgroundColor:
-                            (STATUS_COLOR[a.status] || C.textMuted) + '22',
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.attBadgeText,
-                          { color: STATUS_COLOR[a.status] || C.textMuted },
-                        ]}
-                      >
-                        {a.status.replace('_', ' ').toUpperCase()}
-                      </Text>
-                    </View>
-                    <View style={styles.attTimes}>
-                      <Text style={styles.attTime}>
-                        {a.checkIn ? fmtTime(a.checkIn) : '—'}
-                      </Text>
-                      <Text style={[styles.attTime, { color: C.textMuted }]}>
-                        {a.checkOut ? fmtTime(a.checkOut) : '—'}
-                      </Text>
-                    </View>
-                  </View>
-                ))}
-              </View>
             </>
           )}
 
@@ -711,6 +685,53 @@ function EmployeeDashboard({ navigation }: any) {
           </View>
         </ScrollView>
       )}
+
+      {/* Photo Modal */}
+      <Modal visible={showPhotoModal} transparent animationType="fade">
+        <View style={styles.photoOverlay}>
+          <TouchableOpacity style={styles.photoOverlayClose} onPress={() => setShowPhotoModal(false)}>
+            <X size={24} color={C.white} />
+          </TouchableOpacity>
+
+          <View style={styles.photoModalBox}>
+            {avatarUri ? (
+              <Image
+                source={{ uri: avatarUri }}
+                style={styles.photoModalImg}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={styles.photoModalPlaceholder}>
+                <Text style={styles.photoModalInitials}>
+                  {(user?.name || 'U')
+                    .split(' ')
+                    .map((n: string) => n[0])
+                    .join('')
+                    .toUpperCase()
+                    .slice(0, 2)}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {photoSaving ? (
+            <ActivityIndicator color={C.white} style={{ marginTop: 24 }} />
+          ) : (
+            <View style={styles.photoModalBtns}>
+              <TouchableOpacity style={styles.photoModalEditBtn} onPress={handlePickPhoto}>
+                <Camera size={18} color={C.white} />
+                <Text style={styles.photoModalBtnText}>Edit Photo</Text>
+              </TouchableOpacity>
+              {!!avatarUri && (
+                <TouchableOpacity style={styles.photoModalRemoveBtn} onPress={handleRemovePhoto}>
+                  <Trash2 size={18} color={C.white} />
+                  <Text style={styles.photoModalBtnText}>Remove</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -993,6 +1014,59 @@ const styles = StyleSheet.create({
   attTimes: { flex: 1, alignItems: 'flex-end' },
   attTime: { fontSize: 11, fontWeight: '600', color: C.black },
 
+  // Employee: 3-day tabs
+  tabBar: {
+    flexDirection: 'row',
+    borderWidth: 2,
+    borderColor: C.black,
+    backgroundColor: C.white,
+    marginBottom: 0,
+  },
+  tabBtn: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderRightWidth: 1,
+    borderRightColor: C.black,
+  },
+  tabBtnActive: { backgroundColor: C.primary },
+  tabBtnText: { fontSize: 11, fontWeight: '700', color: C.black, textTransform: 'uppercase' },
+  tabBtnTextActive: { color: C.white },
+  tabBtnDate: { fontSize: 10, color: C.textMuted, fontWeight: '500', marginTop: 2 },
+  tabBtnDateActive: { color: '#93C5FD' },
+
+  // Employee: Attendance day card
+  attDayCard: {
+    backgroundColor: C.white,
+    borderWidth: 2,
+    borderTopWidth: 0,
+    borderColor: C.black,
+    padding: 20,
+    marginBottom: 4,
+    minHeight: 110,
+  },
+  attDayStatusBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    marginBottom: 16,
+  },
+  attDayStatusText: { color: C.white, fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
+  attDayRow: { flexDirection: 'row', alignItems: 'center' },
+  attDayItem: { flex: 1, alignItems: 'center', gap: 5 },
+  attDayItemLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: C.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  attDayItemVal: { fontSize: 15, fontWeight: '700', color: C.black },
+  attDayDivider: { width: 1, height: 48, backgroundColor: '#E5E7EB' },
+  attDayEmpty: { alignItems: 'center', gap: 6, paddingVertical: 10 },
+  attDayEmptyText: { fontSize: 13, fontWeight: '700', color: C.textMuted },
+  attDayEmptyDate: { fontSize: 11, color: C.textLight, fontWeight: '500' },
+
   // Employee: Quick actions
   quickActions: { flexDirection: 'row', gap: 10, marginBottom: 4 },
   quickActionBtn: {
@@ -1011,4 +1085,73 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
   },
+
+  // Photo edit badge on avatar
+  photoEditBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: C.primary,
+    borderWidth: 2,
+    borderColor: C.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Photo modal
+  photoOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.88)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  photoOverlayClose: {
+    position: 'absolute',
+    top: 52,
+    right: 20,
+    padding: 8,
+  },
+  photoModalBox: {
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    overflow: 'hidden',
+    borderWidth: 3,
+    borderColor: C.white,
+    marginBottom: 36,
+  },
+  photoModalImg: { width: '100%', height: '100%' },
+  photoModalPlaceholder: {
+    flex: 1,
+    backgroundColor: C.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoModalInitials: { fontSize: 72, fontWeight: '700', color: C.white },
+  photoModalBtns: { flexDirection: 'row', gap: 16 },
+  photoModalEditBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: C.primary,
+    borderWidth: 2,
+    borderColor: C.white,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  photoModalRemoveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: C.danger,
+    borderWidth: 2,
+    borderColor: C.white,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  photoModalBtnText: { color: C.white, fontSize: 13, fontWeight: '700' },
 });

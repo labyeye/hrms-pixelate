@@ -342,9 +342,17 @@ export default function LoansPage() {
                 >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[10px] font-bold text-white shrink-0">
-                        {loan.employee.firstName[0]}
-                      </div>
+                      {loan.employee.avatar ? (
+                        <img
+                          src={loan.employee.avatar}
+                          alt={loan.employee.firstName}
+                          className="w-7 h-7 border-2 border-black object-cover shrink-0"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                          {loan.employee.firstName[0]}
+                        </div>
+                      )}
                       <div>
                         <p className="font-bold text-xs text-black">
                           {loan.employee.firstName} {loan.employee.lastName}

@@ -708,9 +708,17 @@ export default function AttendancePage() {
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[10px] font-bold text-white shrink-0">
-                          {(rec.employee as any)?.firstName?.[0]?.toUpperCase()}
-                        </div>
+                        {(rec.employee as any)?.avatar ? (
+                          <img
+                            src={(rec.employee as any).avatar}
+                            alt={(rec.employee as any)?.firstName}
+                            className="w-7 h-7 border-2 border-black object-cover shrink-0"
+                          />
+                        ) : (
+                          <div className="w-7 h-7 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                            {(rec.employee as any)?.firstName?.[0]?.toUpperCase()}
+                          </div>
+                        )}
                         <span className="font-bold text-black text-xs">
                           {(rec.employee as any)?.firstName}{" "}
                           {(rec.employee as any)?.lastName}

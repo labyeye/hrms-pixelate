@@ -10,40 +10,75 @@ export const getToken = async (): Promise<string | null> =>
 export const setToken = (t: string) => storage.setItem(TOKEN_KEY, t);
 export const removeToken = () => storage.removeItem(TOKEN_KEY);
 
+const TIMEOUT_MS = 15_000;
+const GET_RETRIES = 2;
+
 async function request<T = any>(
   endpoint: string,
   options: RequestInit = {},
+  _retries = GET_RETRIES,
 ): Promise<T> {
   const token = await getToken();
   const isGet = !options.method || options.method === 'GET';
   // Cache-bust GET requests so server never sends 304 (ETag match returns no body)
   const url = isGet
-    ? `${BASE_URL}${endpoint}${endpoint.includes('?') ? '&' : '?'}_t=${Date.now()}`
+    ? `${BASE_URL}${endpoint}${
+        endpoint.includes('?') ? '&' : '?'
+      }_t=${Date.now()}`
     : `${BASE_URL}${endpoint}`;
 
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'no-cache, no-store',
-      Pragma: 'no-cache',
-      'If-None-Match': '',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
-    },
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-  const text = await res.text();
-  const data = text ? JSON.parse(text) : {};
+  try {
+    const res = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store',
+        Pragma: 'no-cache',
+        'If-None-Match': '',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options.headers || {}),
+      },
+    });
+    clearTimeout(timer);
 
-  if (!res.ok) {
-    const err: any = new Error(
-      data.message || `Request failed (${res.status})`,
-    );
-    err.status = res.status;
+    const text = await res.text();
+    const data = text ? JSON.parse(text) : {};
+
+    if (!res.ok) {
+      const err: any = new Error(
+        data.message || `Request failed (${res.status})`,
+      );
+      err.status = res.status;
+      throw err;
+    }
+    return data;
+  } catch (err: any) {
+    clearTimeout(timer);
+
+    const isNetworkErr =
+      err.name === 'AbortError' || err.message === 'Network request failed';
+
+    // Retry GET requests on transient network errors (stale keep-alive,
+    // cell-tower switch, brief dropout). Never retry mutations.
+    if (isGet && isNetworkErr && _retries > 0) {
+      await new Promise(r => setTimeout(r, 1000));
+      return request(endpoint, options, _retries - 1);
+    }
+
+    if (err.name === 'AbortError') {
+      throw new Error('Request timed out. Please check your connection.');
+    }
+    if (err.message === 'Network request failed') {
+      throw new Error(
+        'Network error. Please check your connection and try again.',
+      );
+    }
     throw err;
   }
-  return data;
 }
 
 function qs(params?: Record<string, string>) {
