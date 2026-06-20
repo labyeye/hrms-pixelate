@@ -891,7 +891,7 @@ const styles = StyleSheet.create({
   },
   profileBannerStatVal: { fontSize: 13, fontWeight: '700', color: C.black },
   profileBannerStatLabel: {
-    fontSize: 10,
+    fontSize: 12,
     color: C.textMuted,
     fontWeight: '500',
     textTransform: 'uppercase',
@@ -920,7 +920,7 @@ const styles = StyleSheet.create({
   todayTimes: { flexDirection: 'row', gap: 20 },
   todayTimeItem: { gap: 2, alignItems: 'center' },
   todayTimeLabel: {
-    fontSize: 10,
+    fontSize: 12,
     color: C.textMuted,
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -950,7 +950,7 @@ const styles = StyleSheet.create({
   },
   monthStatVal: { fontSize: 22, fontWeight: '700' },
   monthStatLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: C.black,
     textTransform: 'uppercase',
@@ -971,7 +971,7 @@ const styles = StyleSheet.create({
   payslipLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   payslipMonth: { fontSize: 15, fontWeight: '700', color: C.black },
   payslipStatus: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: C.success,
     marginTop: 2,

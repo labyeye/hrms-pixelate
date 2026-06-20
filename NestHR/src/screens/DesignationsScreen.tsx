@@ -439,7 +439,7 @@ const s = StyleSheet.create({
   },
   modalTitle: { fontSize: 20, fontWeight: '700', color: C.black },
   fieldLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     color: C.black,

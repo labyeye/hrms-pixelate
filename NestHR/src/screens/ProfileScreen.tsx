@@ -393,7 +393,7 @@ const s = StyleSheet.create({
     paddingVertical: 4,
   },
   roleText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: C.white,
     letterSpacing: 1,

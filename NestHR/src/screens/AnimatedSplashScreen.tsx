@@ -107,7 +107,7 @@ export default function AnimatedSplashScreen({ onDone }: Props) {
           <View style={styles.iconCircle}>
             <Users size={32} color="#ffffff" strokeWidth={2} />
           </View>
-          <Text style={styles.iconLabel}>People</Text>
+          <Text style={styles.iconLabel}>Employee</Text>
         </Animated.View>
 
         <Animated.View

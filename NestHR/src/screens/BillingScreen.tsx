@@ -586,7 +586,7 @@ const s = StyleSheet.create({
   priceRow: { flexDirection: 'row', alignItems: 'center' },
   price: { fontSize: 20, fontWeight: '900', color: C.black },
   priceCycle: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
     color: C.textMuted,
     marginTop: 2,

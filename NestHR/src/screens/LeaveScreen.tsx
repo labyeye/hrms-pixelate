@@ -702,7 +702,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: C.black,
   },
-  chipText: { fontSize: 10, fontWeight: '700', color: C.black },
+  chipText: { fontSize: 12, fontWeight: '700', color: C.black },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 14, fontWeight: '700', color: C.textMuted },
@@ -719,7 +719,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   typeTag: { borderWidth: 2, paddingHorizontal: 8, paddingVertical: 3 },
-  typeTagText: { fontSize: 10, fontWeight: '700' },
+  typeTagText: { fontSize: 12, fontWeight: '700' },
   statusTag: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -827,7 +827,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: { fontSize: 20, fontWeight: '700', color: C.black },
   fieldLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     color: C.black,

@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
   fieldBorder: { borderTopWidth: 1, borderTopColor: '#F3F4F6' },
   fieldIconWrap: { width: 28, alignItems: 'center' },
   fieldLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     color: C.textMuted,

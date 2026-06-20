@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
   },
   userName: { fontSize: 15, fontWeight: '700', color: C.black },
   userRole: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: C.textMuted,
     letterSpacing: 0.5,

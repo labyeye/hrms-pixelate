@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   },
   field: { marginBottom: 16 },
   label: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     color: C.black,

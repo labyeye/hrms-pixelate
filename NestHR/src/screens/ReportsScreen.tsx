@@ -11,8 +11,6 @@ import {
   Share,
   Alert,
   Dimensions,
-  Platform,
-  Image,
 } from 'react-native';
 import RNPrint from 'react-native-print';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -907,7 +905,9 @@ function ReportModal({
     const trRows = rows
       .map(
         (r, i) =>
-          `<tr style="background:${i % 2 === 0 ? '#fff' : '#f8faff'}">${r.map(c => `<td>${c}</td>`).join('')}</tr>`,
+          `<tr style="background:${i % 2 === 0 ? '#fff' : '#f8faff'}">${r
+            .map(c => `<td>${c}</td>`)
+            .join('')}</tr>`,
       )
       .join('');
     const html = `<html><head><style>
@@ -1172,9 +1172,6 @@ export default function ReportsScreen() {
         >
           <ChevronLeft size={22} color={C.black} />
         </TouchableOpacity>
-        <Text style={s.logoText}>
-          Nest<Text style={{ color: C.primary }}>HR</Text>
-        </Text>
         <BarChart2 size={20} color={C.primary} />
         <Text style={s.headerTitle}>Reports</Text>
         <View style={s.countBadge}>
@@ -1216,7 +1213,13 @@ export default function ReportsScreen() {
       <FlatList
         data={visible}
         keyExtractor={item => item.id}
-        contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 32 }}
+        style={{ flex: 1 }}
+  contentContainerStyle={{
+    padding: 16,
+    gap: 10,
+    paddingBottom: 32,
+    flexGrow: 1,
+  }}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => {
           const Icon = item.icon;
@@ -1288,21 +1291,21 @@ const s = StyleSheet.create({
     borderWidth: 2,
     borderColor: C.black,
   },
-  countText: { color: C.white, fontSize: 10, fontWeight: '700' },
+  countText: { color: C.white, fontSize: 12, fontWeight: '700' },
   catBar: {
-    maxHeight: 50,
+    height: 60, // ya remove maxHeight
     backgroundColor: C.white,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
-    paddingVertical: 8,
   },
   catChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 5,
     borderWidth: 2,
+    marginBottom: 10,
+    marginTop: 10,
     borderColor: C.black,
     backgroundColor: C.white,
     minWidth: 90,
+    justifyContent: 'center',
     flexShrink: 0,
     alignItems: 'center',
   },
@@ -1311,6 +1314,7 @@ const s = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
     color: C.black,
+    textAlign: 'center',
   },
   card: {
     backgroundColor: C.white,
@@ -1366,7 +1370,7 @@ const ms = StyleSheet.create({
     padding: 14,
   },
   filterLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     color: C.textMuted,

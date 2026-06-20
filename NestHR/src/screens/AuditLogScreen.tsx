@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   metaText: { fontSize: 12, fontWeight: '700', color: '#111', flex: 1 },
   metaEmail: { fontSize: 11, color: '#6B7280', flexShrink: 1 },
   entityTag: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     color: '#024BAB',
     backgroundColor: '#EFF6FF',

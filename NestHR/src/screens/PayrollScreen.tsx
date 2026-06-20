@@ -658,7 +658,7 @@ const styles = StyleSheet.create({
   },
   chipActive: { backgroundColor: C.primary },
   chipText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: C.black,
     textTransform: 'uppercase',
@@ -770,7 +770,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   detailSectionLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     color: C.black,
     textTransform: 'uppercase',
@@ -802,7 +802,7 @@ const styles = StyleSheet.create({
   },
   genNoteText: { fontSize: 13, fontWeight: '500', color: C.black },
   fieldLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     color: C.black,

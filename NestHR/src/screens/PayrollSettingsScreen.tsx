@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   fieldLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     color: '#6B7280',

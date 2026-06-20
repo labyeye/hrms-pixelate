@@ -2422,12 +2422,12 @@ function AnalyticsTab({ departments }: { departments: any[] }) {
                   />
                   <XAxis
                     dataKey="name"
-                    tick={{ fontSize: 10, fontWeight: 700 }}
+                    tick={{ fontSize: 12, fontWeight: 700 }}
                     tickLine={false}
                     axisLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 10 }}
+                    tick={{ fontSize: 12 }}
                     tickLine={false}
                     axisLine={false}
                     width={24}
@@ -2661,12 +2661,12 @@ function AnalyticsTab({ departments }: { departments: any[] }) {
                 />
                 <XAxis
                   dataKey="name"
-                  tick={{ fontSize: 10, fontWeight: 700 }}
+                  tick={{ fontSize: 12, fontWeight: 700 }}
                   tickLine={false}
                   axisLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 10 }}
+                  tick={{ fontSize: 12 }}
                   tickLine={false}
                   axisLine={false}
                   width={50}

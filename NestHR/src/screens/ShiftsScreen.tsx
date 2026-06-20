@@ -366,7 +366,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  pillText: { fontSize: 10, fontWeight: '700', color: C.black },
+  pillText: { fontSize: 12, fontWeight: '700', color: C.black },
   iconBtn: {
     width: 30,
     height: 30,
@@ -386,7 +386,7 @@ const s = StyleSheet.create({
   },
   modalTitle: { fontSize: 20, fontWeight: '700', color: C.black },
   fieldLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     color: C.black,

@@ -42,7 +42,7 @@ export const S = StyleSheet.create({
   h2: { fontSize: 18, fontWeight: '700', color: C.black },
   h3: { fontSize: 15, fontWeight: '700', color: C.black },
   label: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: C.black,
     textTransform: 'uppercase',
@@ -147,7 +147,7 @@ export const S = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
-  badgeText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
+  badgeText: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
 
   // Divider
   divider: { height: 2, backgroundColor: C.black, marginVertical: 12 },

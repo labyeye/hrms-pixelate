@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: C.black,
   },
-  countText: { color: C.white, fontSize: 10, fontWeight: '700' },
+  countText: { color: C.white, fontSize: 12, fontWeight: '700' },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  codeText: { fontSize: 10, fontWeight: '700', color: C.primary },
+  codeText: { fontSize: 12, fontWeight: '700', color: C.primary },
   deptDesc: { fontSize: 11, color: C.textMuted, lineHeight: 16, marginTop: 4 },
   cardActions: { flexDirection: 'row', gap: 6, marginLeft: 8 },
   editBtn: {
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: { fontSize: 20, fontWeight: '700', color: C.black },
   fieldLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     color: C.black,

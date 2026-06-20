@@ -31,6 +31,7 @@ import { attendanceAPI, employeeAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import { AttendanceRecord } from '../types/hrms';
 import { C } from '../theme';
+import { TimePickerField } from '../components/common/DatePickerField';
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> =
   {
@@ -39,6 +40,7 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> =
     late: { color: C.warning, bg: '#FFF7ED', icon: AlertCircle },
     half_day: { color: C.secondary, bg: '#FFF7ED', icon: AlertCircle },
     on_leave: { color: C.primary, bg: '#EFF6FF', icon: Calendar },
+    not_checked_in: { color: '#9CA3AF', bg: '#F3F4F6', icon: Clock },
   };
 
 function toDateStr(d: Date) {
@@ -133,6 +135,26 @@ export default function AttendanceScreen() {
     setShowModal(true);
   };
 
+  const openMarkForEmp = (empId: string) => {
+    setEditRecord(null);
+    setSelectedEmpId(empId);
+    setForm({ status: 'present', checkIn: '', checkOut: '', notes: '' });
+    setShowModal(true);
+  };
+
+  const markAbsent = async (empId: string) => {
+    try {
+      await attendanceAPI.mark({
+        employee: empId,
+        date: dateFilter,
+        status: 'absent',
+      });
+      await load();
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    }
+  };
+
   const openEdit = (record: AttendanceRecord) => {
     setEditRecord(record);
     const emp = record.employee as any;
@@ -151,7 +173,25 @@ export default function AttendanceScreen() {
     setEditRecord(null);
   };
 
-  const filtered = records.filter(r => {
+  const mergedRows = isEmployee
+    ? records
+    : (() => {
+        const recordByEmpId = new Map(
+          records.map(r => [(r.employee as any)?._id, r]),
+        );
+        return employees.map(
+          emp =>
+            recordByEmpId.get(emp._id) ||
+            ({
+              _id: `v_${emp._id}`,
+              employee: emp,
+              date: dateFilter,
+              status: 'not_checked_in',
+            } as any as AttendanceRecord),
+        );
+      })();
+
+  const filtered = mergedRows.filter(r => {
     const emp = r.employee as any;
     const name = emp
       ? `${emp.firstName || ''} ${emp.lastName || ''}`.toLowerCase()
@@ -205,7 +245,7 @@ export default function AttendanceScreen() {
   Object.keys(STATUS_CONFIG).forEach(s => {
     summary[s] = 0;
   });
-  records.forEach(r => {
+  mergedRows.forEach(r => {
     if (r.status in summary) summary[r.status]++;
   });
 
@@ -421,18 +461,40 @@ export default function AttendanceScreen() {
                       <Text
                         style={[styles.statusTagText, { color: cfg.color }]}
                       >
-                        {item.status.replace('_', ' ').toUpperCase()}
+                        {item.status.replace(/_/g, ' ').toUpperCase()}
                       </Text>
                     </View>
-                    {!isEmployee && (
-                      <TouchableOpacity
-                        style={styles.editBtn}
-                        onPress={() => openEdit(item)}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <Pencil size={14} color={C.primary} />
-                      </TouchableOpacity>
-                    )}
+                    {!isEmployee &&
+                      (item._id.startsWith('v_') ? (
+                        <View style={{ flexDirection: 'row', gap: 6 }}>
+                          <TouchableOpacity
+                            style={styles.absentBtn}
+                            onPress={() =>
+                              markAbsent((item.employee as any)?._id)
+                            }
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          >
+                            <XCircle size={13} color={C.white} />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.markBtn}
+                            onPress={() =>
+                              openMarkForEmp((item.employee as any)?._id)
+                            }
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          >
+                            <CheckCircle2 size={13} color={C.white} />
+                          </TouchableOpacity>
+                        </View>
+                      ) : (
+                        <TouchableOpacity
+                          style={styles.editBtn}
+                          onPress={() => openEdit(item)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <Pencil size={14} color={C.primary} />
+                        </TouchableOpacity>
+                      ))}
                   </View>
                 </View>
                 {(ciTime || coTime || workHours || overtime > 0) && (
@@ -557,49 +619,43 @@ export default function AttendanceScreen() {
                     marginTop: 6,
                   }}
                 >
-                  {Object.keys(STATUS_CONFIG).map(s => (
-                    <TouchableOpacity
-                      key={s}
-                      style={[
-                        styles.selChip,
-                        form.status === s && styles.selChipActive,
-                      ]}
-                      onPress={() => setForm(p => ({ ...p, status: s }))}
-                    >
-                      <Text
+                  {Object.keys(STATUS_CONFIG)
+                    .filter(s => s !== 'not_checked_in')
+                    .map(s => (
+                      <TouchableOpacity
+                        key={s}
                         style={[
-                          styles.selChipText,
-                          form.status === s && { color: C.white },
+                          styles.selChip,
+                          form.status === s && styles.selChipActive,
                         ]}
+                        onPress={() => setForm(p => ({ ...p, status: s }))}
                       >
-                        {s.replace('_', ' ').toUpperCase()}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                        <Text
+                          style={[
+                            styles.selChipText,
+                            form.status === s && { color: C.white },
+                          ]}
+                        >
+                          {s.replace(/_/g, ' ').toUpperCase()}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
                 </View>
               </View>
 
               <View style={{ flexDirection: 'row', gap: 12 }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.fieldLabel}>Check In</Text>
-                  <TextInput
-                    style={styles.fieldInput}
+                  <TimePickerField
+                    label="Check In"
                     value={form.checkIn}
-                    onChangeText={v => setForm(p => ({ ...p, checkIn: v }))}
-                    placeholder="09:00"
-                    placeholderTextColor={C.textLight}
-                    keyboardType="numeric"
+                    onChange={v => setForm(p => ({ ...p, checkIn: v }))}
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.fieldLabel}>Check Out</Text>
-                  <TextInput
-                    style={styles.fieldInput}
+                  <TimePickerField
+                    label="Check Out"
                     value={form.checkOut}
-                    onChangeText={v => setForm(p => ({ ...p, checkOut: v }))}
-                    placeholder="18:00"
-                    placeholderTextColor={C.textLight}
-                    keyboardType="numeric"
+                    onChange={v => setForm(p => ({ ...p, checkOut: v }))}
                   />
                 </View>
               </View>
@@ -707,7 +763,7 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   } as any,
   summaryStatus: {
-    fontSize: 8,
+    fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
@@ -778,6 +834,18 @@ const styles = StyleSheet.create({
     padding: 6,
     backgroundColor: '#EFF6FF',
   },
+  markBtn: {
+    borderWidth: 2,
+    borderColor: C.primary,
+    padding: 6,
+    backgroundColor: C.primary,
+  },
+  absentBtn: {
+    borderWidth: 2,
+    borderColor: C.danger,
+    padding: 6,
+    backgroundColor: C.danger,
+  },
   timeRow: { flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' },
   timePill: {
     flexDirection: 'row',
@@ -813,7 +881,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   editInfoLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     color: C.primary,
@@ -821,7 +889,7 @@ const styles = StyleSheet.create({
   },
   editInfoValue: { fontSize: 15, fontWeight: '700', color: C.black },
   fieldLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     color: C.black,

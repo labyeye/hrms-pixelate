@@ -346,7 +346,7 @@ const s = StyleSheet.create({
   empName: { fontSize: 14, fontWeight: '700', color: C.black },
   empSub: { fontSize: 11, color: C.textMuted, fontWeight: '500' },
   empId: {
-    fontSize: 10,
+    fontSize: 12,
     color: C.textLight,
     fontFamily: 'monospace',
     marginTop: 1,
@@ -386,7 +386,7 @@ const s = StyleSheet.create({
     padding: 14,
   },
   fieldLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     color: C.black,

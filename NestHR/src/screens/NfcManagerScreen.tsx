@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
   },
   cardChipText: { fontSize: 11, fontWeight: '700', color: C.primary },
   cardChipLabel: { fontSize: 11, color: '#6B7280' },
-  cardChipDev: { fontSize: 10, color: '#9CA3AF' },
+  cardChipDev: { fontSize: 12, color: '#9CA3AF' },
   empty: { alignItems: 'center', paddingVertical: 60, gap: 8 },
   emptyText: { fontSize: 14, fontWeight: '700', color: '#6B7280' },
   overlay: {
@@ -625,7 +625,7 @@ const styles = StyleSheet.create({
   },
   field: { marginBottom: 14 },
   fieldLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     color: '#6B7280',

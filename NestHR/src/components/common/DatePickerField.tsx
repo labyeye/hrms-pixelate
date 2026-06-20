@@ -3,14 +3,49 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Platform,
   StyleSheet,
   Modal,
 } from 'react-native';
-import DateTimePicker, {
-  DateTimePickerEvent,
-} from '@react-native-community/datetimepicker';
+import { ChevronUp, ChevronDown } from 'lucide-react-native';
 import { C } from '../../theme';
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// Reusable up/down spinner column
+function SpinCol({
+  label,
+  value,
+  min,
+  max,
+  onChange,
+  format,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (v: number) => void;
+  format?: (v: number) => string;
+}) {
+  const inc = () => onChange(value >= max ? min : value + 1);
+  const dec = () => onChange(value <= min ? max : value - 1);
+  return (
+    <View style={s.col}>
+      <TouchableOpacity onPress={inc} style={s.arrow} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <ChevronUp size={22} color={C.primary} />
+      </TouchableOpacity>
+      <View style={s.valBox}>
+        <Text style={s.valText}>{format ? format(value) : String(value).padStart(2, '0')}</Text>
+      </View>
+      <TouchableOpacity onPress={dec} style={s.arrow} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <ChevronDown size={22} color={C.primary} />
+      </TouchableOpacity>
+      <Text style={s.colLabel}>{label}</Text>
+    </View>
+  );
+}
+
+// ─── DATE PICKER ────────────────────────────────────────────────────────────────
 
 interface DatePickerFieldProps {
   label: string;
@@ -21,88 +56,77 @@ interface DatePickerFieldProps {
   minimumDate?: Date;
 }
 
-export function DatePickerField({
-  label,
-  value,
-  onChange,
-  required,
-  maximumDate,
-  minimumDate,
-}: DatePickerFieldProps) {
-  const [show, setShow] = useState(false);
-
-  const parsed = value ? new Date(value) : new Date();
+export function DatePickerField({ label, value, onChange }: DatePickerFieldProps) {
+  const now = new Date();
+  const parsed = value ? new Date(value + 'T00:00:00') : now;
   const isValid = !!value && !isNaN(parsed.getTime());
 
-  const handleChange = (_: DateTimePickerEvent, selected?: Date) => {
-    if (Platform.OS === 'android') setShow(false);
-    if (selected) {
-      const y = selected.getFullYear();
-      const m = String(selected.getMonth() + 1).padStart(2, '0');
-      const d = String(selected.getDate()).padStart(2, '0');
-      onChange(`${y}-${m}-${d}`);
-    }
+  const [show, setShow] = useState(false);
+  const [day, setDay] = useState(isValid ? parsed.getDate() : now.getDate());
+  const [month, setMonth] = useState(isValid ? parsed.getMonth() + 1 : now.getMonth() + 1);
+  const [year, setYear] = useState(isValid ? parsed.getFullYear() : now.getFullYear());
+
+  const openPicker = () => {
+    const d = isValid ? parsed : now;
+    setDay(d.getDate());
+    setMonth(d.getMonth() + 1);
+    setYear(d.getFullYear());
+    setShow(true);
+  };
+
+  const handleDone = () => {
+    const maxDay = new Date(year, month, 0).getDate();
+    const safeDay = Math.min(day, maxDay);
+    const str = `${year}-${String(month).padStart(2, '0')}-${String(safeDay).padStart(2, '0')}`;
+    onChange(str);
+    setShow(false);
   };
 
   const displayValue = isValid
     ? parsed.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
     : `Select ${label.replace(' *', '')}`;
 
-  if (Platform.OS === 'android') {
-    return (
-      <View>
-        <Text style={styles.label}>{label}</Text>
-        <TouchableOpacity style={styles.input} onPress={() => setShow(true)}>
-          <Text style={[styles.inputText, !isValid && styles.placeholder]}>
-            {displayValue}
-          </Text>
-        </TouchableOpacity>
-        {show && (
-          <DateTimePicker
-            value={isValid ? parsed : new Date()}
-            mode="date"
-            display="default"
-            onChange={handleChange}
-            maximumDate={maximumDate}
-            minimumDate={minimumDate}
-          />
-        )}
-      </View>
-    );
-  }
-
-  // iOS — show inline in a modal
   return (
     <View>
-      <Text style={styles.label}>{label}</Text>
-      <TouchableOpacity style={styles.input} onPress={() => setShow(true)}>
-        <Text style={[styles.inputText, !isValid && styles.placeholder]}>
-          {displayValue}
-        </Text>
+      <Text style={s.label}>{label}</Text>
+      <TouchableOpacity style={s.input} onPress={openPicker} activeOpacity={0.8}>
+        <Text style={[s.inputText, !isValid && s.placeholder]}>{displayValue}</Text>
       </TouchableOpacity>
+
       <Modal visible={show} transparent animationType="slide">
-        <View style={styles.iosOverlay}>
-          <View style={styles.iosSheet}>
-            <View style={styles.iosHeader}>
+        <View style={s.overlay}>
+          <View style={s.sheet}>
+            <View style={s.sheetHeader}>
               <TouchableOpacity onPress={() => setShow(false)}>
-                <Text style={styles.iosDone}>Done</Text>
+                <Text style={s.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={s.sheetTitle}>{label.replace(' *', '')}</Text>
+              <TouchableOpacity onPress={handleDone}>
+                <Text style={s.doneText}>Done</Text>
               </TouchableOpacity>
             </View>
-            <DateTimePicker
-              value={isValid ? parsed : new Date()}
-              mode="date"
-              display="spinner"
-              onChange={handleChange}
-              maximumDate={maximumDate}
-              minimumDate={minimumDate}
-              style={{ width: '100%' }}
-            />
+            <View style={s.spinRow}>
+              <SpinCol label="Day" value={day} min={1} max={new Date(year, month, 0).getDate()} onChange={setDay} />
+              <View style={s.sep} />
+              <SpinCol
+                label="Month"
+                value={month}
+                min={1}
+                max={12}
+                onChange={setMonth}
+                format={v => MONTHS[v - 1]}
+              />
+              <View style={s.sep} />
+              <SpinCol label="Year" value={year} min={1950} max={2100} onChange={setYear} format={v => String(v)} />
+            </View>
           </View>
         </View>
       </Modal>
     </View>
   );
 }
+
+// ─── TIME PICKER ────────────────────────────────────────────────────────────────
 
 interface TimePickerFieldProps {
   label: string;
@@ -111,70 +135,57 @@ interface TimePickerFieldProps {
 }
 
 export function TimePickerField({ label, value, onChange }: TimePickerFieldProps) {
+  const parts = (value || '09:00').split(':').map(Number);
   const [show, setShow] = useState(false);
+  const [hour, setHour] = useState(parts[0] || 9);
+  const [minute, setMinute] = useState(parts[1] || 0);
 
-  const toDate = (hhmm: string) => {
-    const [h, m] = (hhmm || '09:00').split(':').map(Number);
-    const d = new Date();
-    d.setHours(h, m, 0, 0);
-    return d;
+  const openPicker = () => {
+    const p = (value || '09:00').split(':').map(Number);
+    setHour(p[0] || 9);
+    setMinute(p[1] || 0);
+    setShow(true);
   };
 
-  const handleChange = (_: DateTimePickerEvent, selected?: Date) => {
-    if (Platform.OS === 'android') setShow(false);
-    if (selected) {
-      const h = String(selected.getHours()).padStart(2, '0');
-      const m = String(selected.getMinutes()).padStart(2, '0');
-      onChange(`${h}:${m}`);
-    }
+  const handleDone = () => {
+    onChange(`${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
+    setShow(false);
   };
-
-  if (Platform.OS === 'android') {
-    return (
-      <View>
-        <Text style={styles.label}>{label}</Text>
-        <TouchableOpacity style={styles.input} onPress={() => setShow(true)}>
-          <Text style={[styles.inputText, !value && styles.placeholder]}>
-            {value || `Select ${label.replace(' *', '')}`}
-          </Text>
-        </TouchableOpacity>
-        {show && (
-          <DateTimePicker
-            value={toDate(value)}
-            mode="time"
-            is24Hour
-            display="default"
-            onChange={handleChange}
-          />
-        )}
-      </View>
-    );
-  }
 
   return (
     <View>
-      <Text style={styles.label}>{label}</Text>
-      <TouchableOpacity style={styles.input} onPress={() => setShow(true)}>
-        <Text style={[styles.inputText, !value && styles.placeholder]}>
+      <Text style={s.label}>{label}</Text>
+      <TouchableOpacity style={s.input} onPress={openPicker} activeOpacity={0.8}>
+        <Text style={[s.inputText, !value && s.placeholder]}>
           {value || `Select ${label.replace(' *', '')}`}
         </Text>
       </TouchableOpacity>
+
       <Modal visible={show} transparent animationType="slide">
-        <View style={styles.iosOverlay}>
-          <View style={styles.iosSheet}>
-            <View style={styles.iosHeader}>
+        <View style={s.overlay}>
+          <View style={s.sheet}>
+            <View style={s.sheetHeader}>
               <TouchableOpacity onPress={() => setShow(false)}>
-                <Text style={styles.iosDone}>Done</Text>
+                <Text style={s.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={s.sheetTitle}>{label.replace(' *', '')}</Text>
+              <TouchableOpacity onPress={handleDone}>
+                <Text style={s.doneText}>Done</Text>
               </TouchableOpacity>
             </View>
-            <DateTimePicker
-              value={toDate(value)}
-              mode="time"
-              is24Hour
-              display="spinner"
-              onChange={handleChange}
-              style={{ width: '100%' }}
-            />
+            <View style={s.spinRow}>
+              <SpinCol label="Hour" value={hour} min={0} max={23} onChange={setHour} />
+              <View style={s.timeSep}>
+                <Text style={s.timeColon}>:</Text>
+              </View>
+              <SpinCol
+                label="Minute"
+                value={minute}
+                min={0}
+                max={59}
+                onChange={setMinute}
+              />
+            </View>
           </View>
         </View>
       </Modal>
@@ -182,53 +193,118 @@ export function TimePickerField({ label, value, onChange }: TimePickerFieldProps
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   label: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: C.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 6,
-    marginTop: 12,
   },
   input: {
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#000',
     paddingHorizontal: 12,
     paddingVertical: 13,
     backgroundColor: '#fff',
   },
   inputText: {
     fontSize: 14,
-    color: C.text,
+    color: C.black,
     fontWeight: '500',
   },
   placeholder: {
     color: C.textLight,
   },
-  iosOverlay: {
+  overlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
-  iosSheet: {
+  sheet: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingBottom: 30,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 36,
   },
-  iosHeader: {
+  sheetHeader: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    padding: 16,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
-  iosDone: {
+  sheetTitle: {
     fontSize: 16,
     fontWeight: '700',
+    color: C.black,
+  },
+  cancelText: {
+    fontSize: 15,
+    color: C.textMuted,
+    fontWeight: '500',
+  },
+  doneText: {
+    fontSize: 15,
     color: C.primary,
+    fontWeight: '700',
+  },
+  spinRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  col: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 8,
+  },
+  arrow: {
+    padding: 6,
+  },
+  valBox: {
+    borderWidth: 2,
+    borderColor: C.primary,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: '#EFF6FF',
+    minWidth: 72,
+    alignItems: 'center',
+  },
+  valText: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: C.primary,
+  },
+  colLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: C.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  sep: {
+    width: 1,
+    height: 100,
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: 4,
+  },
+  timeSep: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  timeColon: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: C.black,
+    marginBottom: 24,
   },
 });

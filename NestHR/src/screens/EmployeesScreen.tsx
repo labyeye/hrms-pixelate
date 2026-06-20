@@ -1054,7 +1054,7 @@ export default function EmployeesScreen() {
                     >
                       <Text
                         style={{
-                          fontSize: 10,
+                          fontSize: 12,
                           fontWeight: '700',
                           color: C.textMuted,
                           textTransform: 'uppercase',
@@ -1118,7 +1118,7 @@ export default function EmployeesScreen() {
                     >
                       <Text
                         style={{
-                          fontSize: 10,
+                          fontSize: 12,
                           fontWeight: '700',
                           color: C.textMuted,
                           textTransform: 'uppercase',
@@ -1530,7 +1530,7 @@ export default function EmployeesScreen() {
                           >
                             <Text
                               style={{
-                                fontSize: 10,
+                                fontSize: 12,
                                 fontWeight: '700',
                                 color: C.black,
                               }}
@@ -1605,7 +1605,7 @@ export default function EmployeesScreen() {
                           >
                             <Text
                               style={{
-                                fontSize: 10,
+                                fontSize: 12,
                                 fontWeight: '700',
                                 color:
                                   r.status === 'paid' ? C.success : C.warning,
@@ -1791,8 +1791,8 @@ export default function EmployeesScreen() {
                 </View>
 
                 <View style={{ flexDirection: 'row', gap: 12 }}>
-                  <View style={{ flex: 1 }}>
-                    {F('First Name *', 'firstName', { placeholder: 'John' })}
+                  <View style={{ flex: 1,  }}>
+                    {F('First Name *', 'firstName', { placeholder: 'John' },)}
                   </View>
                   <View style={{ flex: 1 }}>
                     {F('Last Name *', 'lastName', { placeholder: 'Doe' })}
@@ -2111,7 +2111,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: C.black,
   },
-  countText: { color: C.white, fontSize: 10, fontWeight: '700' },
+  countText: { color: C.white, fontSize: 12, fontWeight: '700' },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2255,7 +2255,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     alignSelf: 'flex-start',
   },
-  loanBadgeText: { fontSize: 10, fontWeight: '700', color: C.danger },
+  loanBadgeText: { fontSize: 12, fontWeight: '700', color: C.danger },
   // Modal
   modalHeader: {
     flexDirection: 'row',
@@ -2284,7 +2284,7 @@ const styles = StyleSheet.create({
   },
   tabItemActive: { borderBottomColor: C.primary },
   tabText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: C.textMuted,
     textTransform: 'uppercase',
@@ -2325,7 +2325,7 @@ const styles = StyleSheet.create({
   photoEditText: { color: C.white, fontSize: 7, fontWeight: '700' },
   photoHint: { fontSize: 11, color: C.black, fontWeight: '500', marginTop: 8 },
   fieldLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     color: C.black,

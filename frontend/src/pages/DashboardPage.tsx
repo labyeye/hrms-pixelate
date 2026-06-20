@@ -450,12 +450,12 @@ export default function DashboardPage() {
                 />
                 <XAxis
                   dataKey="label"
-                  tick={{ fontSize: 10, fontWeight: 700 }}
+                  tick={{ fontSize: 12, fontWeight: 700 }}
                   tickLine={false}
                   axisLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 10 }}
+                  tick={{ fontSize: 12 }}
                   tickLine={false}
                   axisLine={false}
                   width={24}
@@ -509,12 +509,12 @@ export default function DashboardPage() {
                 />
                 <XAxis
                   dataKey="label"
-                  tick={{ fontSize: 10, fontWeight: 700 }}
+                  tick={{ fontSize: 12, fontWeight: 700 }}
                   tickLine={false}
                   axisLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 10 }}
+                  tick={{ fontSize: 12 }}
                   tickLine={false}
                   axisLine={false}
                   width={24}
@@ -563,12 +563,12 @@ export default function DashboardPage() {
                   />
                   <XAxis
                     dataKey="name"
-                    tick={{ fontSize: 10, fontWeight: 700 }}
+                    tick={{ fontSize: 12, fontWeight: 700 }}
                     tickLine={false}
                     axisLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 10 }}
+                    tick={{ fontSize: 12 }}
                     tickLine={false}
                     axisLine={false}
                     width={24}

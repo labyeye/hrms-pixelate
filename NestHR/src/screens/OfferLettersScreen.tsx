@@ -375,7 +375,7 @@ const s = StyleSheet.create({
   },
   cardName: { fontSize: 14, fontWeight: '700', color: C.black },
   cardSub: { fontSize: 11, color: C.primary, fontWeight: '700' },
-  cardDate: { fontSize: 10, color: C.textMuted, marginTop: 2 },
+  cardDate: { fontSize: 12, color: C.textMuted, marginTop: 2 },
   viewBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -402,7 +402,7 @@ const s = StyleSheet.create({
   },
   modalTitle: { fontSize: 20, fontWeight: '700', color: C.black },
   fieldLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     color: C.black,

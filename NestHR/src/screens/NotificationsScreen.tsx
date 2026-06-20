@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 5,
   },
-  badgeText: { color: C.white, fontSize: 10, fontWeight: '700' },
+  badgeText: { color: C.white, fontSize: 12, fontWeight: '700' },
   headerActions: { flexDirection: 'row', gap: 4 },
   actionBtn: {
     padding: 8,
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   notifTitle: { fontSize: 13, fontWeight: '600', color: '#6B7280', flex: 1 },
   notifTitleUnread: { color: C.black, fontWeight: '700' },
   notifTime: {
-    fontSize: 10,
+    fontSize: 12,
     color: '#9CA3AF',
     fontWeight: '500',
     marginLeft: 8,

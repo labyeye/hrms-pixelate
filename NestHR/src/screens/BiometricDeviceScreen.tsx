@@ -1010,7 +1010,7 @@ export default function BiometricDeviceScreen() {
                             }}
                           >
                             <AlertTriangle size={11} color="#9CA3AF" />
-                            <Text style={{ fontSize: 10, color: '#9CA3AF' }}>
+                            <Text style={{ fontSize: 12, color: '#9CA3AF' }}>
                               Set ID
                             </Text>
                           </View>
@@ -1435,7 +1435,7 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 18, fontWeight: '700', color: C.black },
   field: { marginBottom: 14 },
   fieldLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     color: '#6B7280',
@@ -1588,7 +1588,7 @@ const admsS = StyleSheet.create({
   empRowBorder: { borderTopWidth: 1, borderTopColor: '#F3F4F6' },
   empName: { fontSize: 12, fontWeight: '700', color: C.black },
   empId: {
-    fontSize: 10,
+    fontSize: 12,
     color: '#6B7280',
     fontFamily: 'monospace',
     marginTop: 1,
@@ -1615,7 +1615,7 @@ const admsS = StyleSheet.create({
   idChipSet: { borderColor: C.success, backgroundColor: '#F0FDF4' },
   idChipUnset: { borderColor: '#D1D5DB', borderStyle: 'dashed' },
   rfidChipSet: { borderColor: C.primary, backgroundColor: '#EFF6FF' },
-  idChipText: { fontSize: 10, fontWeight: '700' },
+  idChipText: { fontSize: 12, fontWeight: '700' },
   actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1626,7 +1626,7 @@ const admsS = StyleSheet.create({
     paddingVertical: 5,
     backgroundColor: C.white,
   },
-  actionBtnText: { fontSize: 10, fontWeight: '700', color: C.black },
+  actionBtnText: { fontSize: 12, fontWeight: '700', color: C.black },
   cmdHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1661,7 +1661,7 @@ const admsS = StyleSheet.create({
     textTransform: 'uppercase',
   },
   cmdEmp: { fontSize: 11, color: '#6B7280', marginTop: 1 },
-  cmdTime: { fontSize: 10, color: '#9CA3AF', marginTop: 2 },
+  cmdTime: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
   cmdStatus: {
     borderWidth: 2,
     paddingHorizontal: 7,

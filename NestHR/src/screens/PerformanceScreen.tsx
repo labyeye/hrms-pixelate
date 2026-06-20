@@ -458,7 +458,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
   },
   chipActive: { backgroundColor: C.primary },
-  chipText: { fontSize: 10, fontWeight: '700', color: C.black },
+  chipText: { fontSize: 12, fontWeight: '700', color: C.black },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 14, fontWeight: '700', color: C.textMuted },
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: { fontSize: 20, fontWeight: '700', color: C.black },
   fieldLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     color: C.black,

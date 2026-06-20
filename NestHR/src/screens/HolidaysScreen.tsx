@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
-  countText: { fontSize: 10, fontWeight: '700', color: C.success },
+  countText: { fontSize: 12, fontWeight: '700', color: C.success },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: { fontSize: 20, fontWeight: '700', color: C.black },
   fieldLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     color: C.black,

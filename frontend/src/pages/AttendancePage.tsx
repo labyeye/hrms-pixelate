@@ -75,6 +75,7 @@ const STATUS_COLORS: Record<string, string> = {
   on_leave: "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB] px-2 py-0.5",
   holiday: "bg-[#A855F7]/10 text-[#A855F7] border-[#A855F7] px-2 py-0.5",
   weekend: "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
+  not_checked_in: "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
 };
 
 const STATUS_ICONS: Record<string, React.ElementType> = {
@@ -83,6 +84,7 @@ const STATUS_ICONS: Record<string, React.ElementType> = {
   half_day: AlertCircle,
   late: Clock,
   on_leave: Calendar,
+  not_checked_in: Clock,
 };
 
 const MONTHS = [
@@ -156,6 +158,35 @@ export default function AttendancePage() {
     const d = new Date(iso);
     const pad = (n: number) => String(n).padStart(2, "0");
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const markAbsentSingle = async (empId: string) => {
+    try {
+      await attendanceAPI.mark({
+        employee: empId,
+        date: selectedDate || new Date().toISOString().split("T")[0],
+        status: "absent",
+        verifyMode: "manual",
+      });
+      load();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const openMarkForEmployee = (empId: string) => {
+    setMarkForm({
+      employee: empId,
+      date: selectedDate || new Date().toISOString().split("T")[0],
+      status: "present",
+      checkIn: "",
+      checkOut: "",
+      overtime: "",
+      notes: "",
+      verifyMode: "manual",
+    });
+    setEditingId(null);
+    setMarkModal(true);
   };
 
   const openEdit = (rec: AttendanceRecord) => {
@@ -286,9 +317,37 @@ export default function AttendancePage() {
       : records.filter((r) => r.status === activeFilter)
     : records;
 
-  const displayedRecords = selectedDate
-    ? baseRecords.filter((r) => toLocalDateStr(r.date) === selectedDate)
-    : baseRecords;
+  let displayedRecords: any[];
+  if (selectedDate && !isEmployee && employees.length > 0) {
+    const dateRecords = records.filter(
+      (r) => toLocalDateStr(r.date) === selectedDate,
+    );
+    const recordByEmpId = new Map(
+      dateRecords.map((r) => [(r.employee as any)?._id, r]),
+    );
+    displayedRecords = employees.map(
+      (emp) =>
+        recordByEmpId.get(emp._id) || {
+          _id: `v_${emp._id}`,
+          employee: emp,
+          date: selectedDate,
+          status: "not_checked_in",
+        },
+    );
+    if (activeFilter && activeFilter !== "early_leaving") {
+      displayedRecords = displayedRecords.filter(
+        (r) => r.status === activeFilter,
+      );
+    } else if (activeFilter === "early_leaving") {
+      displayedRecords = displayedRecords.filter(
+        (r) => (r as any).earlyLeaving,
+      );
+    }
+  } else {
+    displayedRecords = selectedDate
+      ? baseRecords.filter((r) => toLocalDateStr(r.date) === selectedDate)
+      : baseRecords;
+  }
 
   return (
     <AppLayout title="Attendance">
@@ -721,13 +780,36 @@ export default function AttendancePage() {
                     </td>
                     {!isEmployee && (
                       <td className="px-4 py-3">
-                        <button
-                          onClick={() => openEdit(rec)}
-                          title="Edit attendance"
-                          className="p-1.5 border-2 border-black hover:bg-[#024BAB] hover:text-white transition-colors"
-                        >
-                          <Pencil className="w-3 h-3" />
-                        </button>
+                        {rec._id.startsWith("v_") ? (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() =>
+                                markAbsentSingle((rec.employee as any)?._id)
+                              }
+                              title="Mark absent"
+                              className="p-1.5 border-2 border-[#EF4444] bg-[#EF4444] text-white hover:bg-[#dc2626] transition-colors"
+                            >
+                              <XCircle className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={() =>
+                                openMarkForEmployee((rec.employee as any)?._id)
+                              }
+                              title="Mark attendance"
+                              className="p-1.5 border-2 border-[#024BAB] bg-[#024BAB] text-white hover:bg-[#0136a0] transition-colors"
+                            >
+                              <Clock className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => openEdit(rec)}
+                            title="Edit attendance"
+                            className="p-1.5 border-2 border-black hover:bg-[#024BAB] hover:text-white transition-colors"
+                          >
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                        )}
                       </td>
                     )}
                   </tr>
