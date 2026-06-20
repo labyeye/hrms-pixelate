@@ -10,50 +10,48 @@ function nowIST() {
   return new Date(Date.now() + IST_OFFSET_MS);
 }
 
-function todayISTMidnight() {
-  const ist = nowIST();
+function toISTMidnight(istDate) {
   return new Date(
-    Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), ist.getUTCDate()),
+    Date.UTC(istDate.getUTCFullYear(), istDate.getUTCMonth(), istDate.getUTCDate()),
   );
 }
 
-// Returns shift end time as total minutes from midnight
 function shiftEndMinutes(shift) {
   const [h, m] = shift.endTime.split(":").map(Number);
   return h * 60 + m;
 }
 
-// Returns shift start time as total minutes from midnight
 function shiftStartMinutes(shift) {
   const [h, m] = shift.startTime.split(":").map(Number);
   return h * 60 + m;
 }
 
-async function runAutoMark() {
-  console.log("[AutoMark] Running attendance auto-mark job...");
+// Get check-in time as minutes from midnight (IST)
+function checkInMinutes(checkInDate) {
+  const ist = new Date(checkInDate.getTime() + IST_OFFSET_MS);
+  return ist.getUTCHours() * 60 + ist.getUTCMinutes();
+}
 
+async function processDate(targetDate, istMinutesNow) {
   const istNow = nowIST();
-  const istMinutes = istNow.getUTCHours() * 60 + istNow.getUTCMinutes();
-  const todayDate = todayISTMidnight();
+  const todayMidnight = toISTMidnight(istNow);
+  const isToday = targetDate.getTime() === todayMidnight.getTime();
 
-  // Get all active employees that have a shift assigned
   const employees = await Employee.find({
     shift: { $exists: true, $ne: null },
-    status: { $in: ["active", undefined, null] },
+    $or: [{ status: "active" }, { status: { $exists: false } }, { status: null }],
   })
-    .select("_id company shift")
+    .select("_id company shift otEnabled")
     .lean();
 
   if (!employees.length) return;
 
-  // Load all unique shifts
   const shiftIds = [
     ...new Set(employees.map((e) => e.shift?.toString()).filter(Boolean)),
   ];
   const shifts = await Shift.find({ _id: { $in: shiftIds } }).lean();
   const shiftMap = Object.fromEntries(shifts.map((s) => [s._id.toString(), s]));
 
-  // Group employees by company to check holidays per company
   const byCompany = {};
   for (const emp of employees) {
     const cid = emp.company?.toString();
@@ -63,64 +61,120 @@ async function runAutoMark() {
   }
 
   for (const [companyId, companyEmps] of Object.entries(byCompany)) {
-    const isHoliday = await isHolidayDate(companyId, todayDate);
-    if (isHoliday) continue; // Don't auto-mark on holidays
+    const isHoliday = await isHolidayDate(companyId, targetDate);
+    if (isHoliday) continue;
 
     for (const emp of companyEmps) {
       const shift = shiftMap[emp.shift?.toString()];
       if (!shift) continue;
 
-      const endMins = shiftEndMinutes(shift);
       const startMins = shiftStartMinutes(shift);
+      const endMins = shiftEndMinutes(shift);
+      const cutoffMins = endMins + 60; // 1 hour after shift end
 
-      // Only run auto-mark after shift end time has passed (at least 1 hour after shift end)
-      const cutoffMins = endMins + 60;
-      if (istMinutes < cutoffMins) continue;
-
-      // Also enforce: must be at least 1 hour after shift START before marking absent
-      // (gives them until shiftStart+60 to punch in and get "late" instead of absent)
-      if (istMinutes < startMins + 60) continue;
+      // For today: skip if we haven't reached 1 hour past shift end yet
+      if (isToday && istMinutesNow < cutoffMins) continue;
 
       const existing = await Attendance.findOne({
         employee: emp._id,
-        date: todayDate,
+        date: targetDate,
       });
 
-      if (!existing) {
-        // No record at all → absent
-        await Attendance.create({
-          employee: emp._id,
-          date: todayDate,
-          status: "absent",
-          workHours: 0,
-          verifyMode: "auto",
-          notes: "Auto-marked absent: no check-in recorded",
-        });
-        console.log(`[AutoMark] Marked absent: ${emp._id}`);
-      } else if (existing.checkIn && !existing.checkOut) {
-        // Checked in but never checked out → half day
-        if (["present", "late"].includes(existing.status)) {
+      // ── Case 1: No check-in at all → Absent ─────────────────────────────
+      if (!existing || !existing.checkIn) {
+        if (existing) {
+          // Record exists but no checkIn — update it
+          if (!["absent", "on_leave", "holiday", "weekend"].includes(existing.status)) {
+            existing.status = "absent";
+            existing.workHours = 0;
+            existing.notes =
+              (existing.notes ? existing.notes + " | " : "") +
+              "Auto-marked absent: no check-in recorded";
+            await existing.save();
+            console.log(`[AutoMark] Marked absent (updated): ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`);
+          }
+        } else {
+          await Attendance.create({
+            employee: emp._id,
+            date: targetDate,
+            status: "absent",
+            workHours: 0,
+            verifyMode: "auto",
+            notes: "Auto-marked absent: no check-in recorded",
+          });
+          console.log(`[AutoMark] Marked absent: ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`);
+        }
+        continue;
+      }
+
+      // ── Case 2: Has check-in but no check-out ───────────────────────────
+      if (existing.checkIn && !existing.checkOut) {
+        // If overtime is enabled for this employee, skip — they may be working late
+        if (emp.otEnabled) {
+          console.log(`[AutoMark] Skipping no-checkout for ${emp._id}: OT enabled`);
+          continue;
+        }
+
+        if (!["on_leave", "holiday", "weekend", "absent"].includes(existing.status)) {
           existing.status = "half_day";
           existing.notes =
             (existing.notes ? existing.notes + " | " : "") +
             "Auto-marked half day: no check-out recorded";
           await existing.save();
-          console.log(`[AutoMark] Marked half_day: ${emp._id}`);
+          console.log(`[AutoMark] Marked half_day (no checkout): ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`);
+        }
+        continue;
+      }
+
+      // ── Case 3: Has both check-in and check-out ─────────────────────────
+      // If check-in was more than 2 hours late → half day
+      if (existing.checkIn && existing.checkOut) {
+        const cinMins = checkInMinutes(existing.checkIn);
+        const lateThreshold = startMins + 120; // 2 hours after shift start
+
+        if (cinMins > lateThreshold && ["present", "late"].includes(existing.status)) {
+          existing.status = "half_day";
+          existing.notes =
+            (existing.notes ? existing.notes + " | " : "") +
+            `Auto-marked half day: checked in ${Math.round((cinMins - startMins) / 60 * 10) / 10}h late`;
+          await existing.save();
+          console.log(`[AutoMark] Marked half_day (late check-in): ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`);
         }
       }
-      // If already absent/leave/holiday/half_day → skip
     }
   }
+}
+
+async function runAutoMark() {
+  console.log("[AutoMark] Running attendance auto-mark job...");
+
+  const istNow = nowIST();
+  const istMinutes = istNow.getUTCHours() * 60 + istNow.getUTCMinutes();
+
+  // Always process yesterday (day is fully over, no time restriction)
+  const yesterdayIST = new Date(istNow);
+  yesterdayIST.setUTCDate(yesterdayIST.getUTCDate() - 1);
+  const yesterdayDate = toISTMidnight(yesterdayIST);
+
+  const todayDate = toISTMidnight(istNow);
+
+  console.log(`[AutoMark] Processing yesterday: ${yesterdayDate.toISOString().slice(0, 10)}`);
+  await processDate(yesterdayDate, 1440);
+
+  console.log(`[AutoMark] Processing today: ${todayDate.toISOString().slice(0, 10)}`);
+  await processDate(todayDate, istMinutes);
 
   console.log("[AutoMark] Done.");
 }
 
 function startAttendanceAutoMarkJob() {
-  // Run at 11:30 PM IST every day
-  // IST 23:30 = UTC 18:00 (UTC+5:30)
-  cron.schedule("0 18 * * *", runAutoMark, { timezone: "UTC" });
-  console.log(
-    "[AutoMark] Scheduled attendance auto-mark job at 23:30 IST daily",
+  // Run every hour — if server restarts, next tick catches missed days
+  cron.schedule("0 * * * *", runAutoMark, { timezone: "UTC" });
+  console.log("[AutoMark] Scheduled attendance auto-mark job (runs every hour)");
+
+  // Run once on startup to catch anything missed while server was down
+  runAutoMark().catch((err) =>
+    console.error("[AutoMark] Startup run failed:", err),
   );
 }
 
