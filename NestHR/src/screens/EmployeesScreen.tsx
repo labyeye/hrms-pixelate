@@ -16,6 +16,7 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { DatePickerField } from '../components/common/DatePickerField';
 import {
   Search,
   Plus,
@@ -1257,18 +1258,11 @@ export default function EmployeesScreen() {
                         />
                       </View>
                     )}
-                    <View>
-                      <Text style={styles.fieldLabel}>Date *</Text>
-                      <TextInput
-                        style={styles.fieldInput}
-                        placeholder="YYYY-MM-DD"
-                        placeholderTextColor={C.textLight}
-                        value={actionForm.date || ''}
-                        onChangeText={v =>
-                          setActionForm((p: any) => ({ ...p, date: v }))
-                        }
-                      />
-                    </View>
+                    <DatePickerField
+                      label="Date *"
+                      value={actionForm.date || ''}
+                      onChange={v => setActionForm((p: any) => ({ ...p, date: v }))}
+                    />
                     <View>
                       <Text style={styles.fieldLabel}>Remark</Text>
                       <TextInput
@@ -1816,9 +1810,11 @@ export default function EmployeesScreen() {
                 {F('Designation', 'designation', {
                   placeholder: 'e.g. Software Engineer',
                 })}
-                {F('Joining Date', 'joiningDate', {
-                  placeholder: 'YYYY-MM-DD',
-                })}
+                <DatePickerField
+                  label="Joining Date"
+                  value={form.joiningDate}
+                  onChange={v => setForm(p => ({ ...p, joiningDate: v }))}
+                />
                 {Select(
                   'Gender',
                   'gender',
@@ -2010,9 +2006,12 @@ export default function EmployeesScreen() {
             {/* ── Tab 4: Other Info ── */}
             {activeTab === 3 && (
               <>
-                {F('Date of Birth', 'dateOfBirth', {
-                  placeholder: 'YYYY-MM-DD',
-                })}
+                <DatePickerField
+                  label="Date of Birth"
+                  value={form.dateOfBirth}
+                  onChange={v => setForm(p => ({ ...p, dateOfBirth: v }))}
+                  maximumDate={new Date()}
+                />
                 {F('Emergency Contact', 'emergencyContact', {
                   placeholder: 'Name & phone number',
                 })}

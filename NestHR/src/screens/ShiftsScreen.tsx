@@ -13,6 +13,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { TimePickerField } from '../components/common/DatePickerField';
 import {
   Clock,
   Plus,
@@ -248,10 +249,18 @@ export default function ShiftsScreen() {
             {F('Shift Name *', 'name', { placeholder: 'e.g. Morning Shift' })}
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <View style={{ flex: 1 }}>
-                {F('Start Time *', 'startTime', { placeholder: '09:00' })}
+                <TimePickerField
+                  label="Start Time *"
+                  value={form.startTime}
+                  onChange={v => setForm(p => ({ ...p, startTime: v }))}
+                />
               </View>
               <View style={{ flex: 1 }}>
-                {F('End Time *', 'endTime', { placeholder: '18:00' })}
+                <TimePickerField
+                  label="End Time *"
+                  value={form.endTime}
+                  onChange={v => setForm(p => ({ ...p, endTime: v }))}
+                />
               </View>
             </View>
             <View style={{ flexDirection: 'row', gap: 12 }}>

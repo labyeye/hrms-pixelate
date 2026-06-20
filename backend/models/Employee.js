@@ -20,7 +20,7 @@ const employeeSchema = new mongoose.Schema(
       enum: ["full_time", "part_time", "contract", "intern"],
       default: "full_time",
     },
-    joinDate: { type: Date, required: true },
+    joinDate: { type: Date, required: false },
     exitDate: { type: Date },
     status: {
       type: String,

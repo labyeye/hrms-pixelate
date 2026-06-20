@@ -13,6 +13,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { DatePickerField } from '../components/common/DatePickerField';
 import {
   FileText,
   Plus,
@@ -285,9 +286,11 @@ export default function OfferLettersScreen() {
             {F('Department', 'department', { placeholder: 'e.g. Engineering' })}
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <View style={{ flex: 1 }}>
-                {F('Joining Date', 'joiningDate', {
-                  placeholder: 'DD/MM/YYYY',
-                })}
+                <DatePickerField
+                  label="Joining Date"
+                  value={form.joiningDate}
+                  onChange={v => setForm((p: any) => ({ ...p, joiningDate: v }))}
+                />
               </View>
               <View style={{ flex: 1 }}>
                 {F('Monthly CTC (₹)', 'ctc', {

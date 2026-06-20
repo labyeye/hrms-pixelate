@@ -14,6 +14,7 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { DatePickerField } from '../components/common/DatePickerField';
 import {
   Calendar,
   Plus,
@@ -503,23 +504,17 @@ export default function LeaveScreen() {
             </View>
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>Start Date *</Text>
-                <TextInput
-                  style={styles.fieldInput}
+                <DatePickerField
+                  label="Start Date *"
                   value={editForm.startDate}
-                  onChangeText={v => setEditForm(p => ({ ...p, startDate: v }))}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={C.textLight}
+                  onChange={v => setEditForm(p => ({ ...p, startDate: v }))}
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>End Date *</Text>
-                <TextInput
-                  style={styles.fieldInput}
+                <DatePickerField
+                  label="End Date *"
                   value={editForm.endDate}
-                  onChangeText={v => setEditForm(p => ({ ...p, endDate: v }))}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={C.textLight}
+                  onChange={v => setEditForm(p => ({ ...p, endDate: v }))}
                 />
               </View>
             </View>
@@ -600,23 +595,17 @@ export default function LeaveScreen() {
             </View>
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>Start Date *</Text>
-                <TextInput
-                  style={styles.fieldInput}
+                <DatePickerField
+                  label="Start Date *"
                   value={form.startDate}
-                  onChangeText={v => setForm(p => ({ ...p, startDate: v }))}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={C.textLight}
+                  onChange={v => setForm(p => ({ ...p, startDate: v }))}
                 />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>End Date *</Text>
-                <TextInput
-                  style={styles.fieldInput}
+                <DatePickerField
+                  label="End Date *"
                   value={form.endDate}
-                  onChangeText={v => setForm(p => ({ ...p, endDate: v }))}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={C.textLight}
+                  onChange={v => setForm(p => ({ ...p, endDate: v }))}
                 />
               </View>
             </View>
