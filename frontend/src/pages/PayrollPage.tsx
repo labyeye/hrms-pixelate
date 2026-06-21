@@ -440,7 +440,7 @@ export default function PayrollPage() {
                         </p>
                         <p className="text-[10px] text-muted-foreground">
                           {p.totalWorkHours != null
-                            ? `${p.totalWorkHours}h worked`
+                            ? `${Number(p.totalWorkHours).toFixed(2)}h worked`
                             : `${p.presentDays}/${p.workingDays} days`}
                         </p>
                         <p className="text-[10px] text-muted-foreground">
@@ -471,7 +471,7 @@ export default function PayrollPage() {
                     )}
                     {(p.overtimeHours ?? 0) > 0 && (
                       <p className="text-[10px] text-muted-foreground">
-                        {p.overtimeHours}h
+                        {Number(p.overtimeHours).toFixed(2)}h
                       </p>
                     )}
                   </td>

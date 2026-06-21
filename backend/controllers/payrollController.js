@@ -197,13 +197,14 @@ const processPayroll = asyncHandler(async (req, res) => {
         continue;
       }
 
-      const dateMS = new Date(a.date).getTime();
-      const shiftStartUTC = new Date(
-        dateMS + (shiftH * 60 + shiftM) * 60000 - IST_OFFSET_MS,
-      );
-      const shiftEndUTC = new Date(
-        dateMS + (shiftEndH * 60 + shiftEndM) * 60000 - IST_OFFSET_MS,
-      );
+      // Reconstruct IST midnight from the attendance date regardless of whether it
+      // was stored as IST midnight (18:30 UTC) or UTC midnight (00:00 UTC).
+      const istDate = new Date(new Date(a.date).getTime() + IST_OFFSET_MS);
+      const istMidnight =
+        Date.UTC(istDate.getUTCFullYear(), istDate.getUTCMonth(), istDate.getUTCDate()) -
+        IST_OFFSET_MS;
+      const shiftStartUTC = new Date(istMidnight + (shiftH * 60 + shiftM) * 60_000);
+      const shiftEndUTC   = new Date(istMidnight + (shiftEndH * 60 + shiftEndM) * 60_000);
 
       if (a.checkIn && a.checkOut) {
         const rawIn = new Date(a.checkIn).getTime();
@@ -219,13 +220,10 @@ const processPayroll = asyncHandler(async (req, res) => {
         totalWorkHours += fullHours;
         presentDays++;
 
-        // Auto-calculate OT: if checkout is after shift end and OT is enabled,
-        // count those extra minutes as overtime (use manual a.overtime if set).
+        // Always recalculate OT fresh from actual punch times — never trust the stored
+        // a.overtime field (it may be stale from a previous buggy auto-calculation).
         if (otEnabled && rawOut > shiftEndMs) {
-          const autoOT = (rawOut - shiftEndMs) / 3_600_000;
-          attendanceOTHours += (a.overtime > 0) ? a.overtime : autoOT;
-        } else if (a.overtime > 0) {
-          attendanceOTHours += a.overtime;
+          attendanceOTHours += (rawOut - shiftEndMs) / 3_600_000;
         }
 
         if (a.status === "late") {
