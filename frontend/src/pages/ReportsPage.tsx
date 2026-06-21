@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { buildReportHTML } from "@/lib/reportPrintHTML";
+import { buildReportHTML, ReportCompany } from "@/lib/reportPrintHTML";
 import * as XLSX from "xlsx";
 import {
   BarChart,
@@ -21,6 +21,7 @@ import {
   payrollAPI,
   departmentAPI,
   leaveAPI,
+  settingsAPI,
 } from "@/services/api";
 import { cn, formatDate, formatCurrency } from "@/lib/utils";
 import {
@@ -350,10 +351,16 @@ function exportXLSX(rows: string[][], filename: string) {
   XLSX.writeFile(wb, filename.replace(".csv", ".xlsx"));
 }
 
-function printReport(title: string, period: string, headers: string[], rows: string[][]) {
+function printReport(
+  title: string,
+  period: string,
+  headers: string[],
+  rows: string[][],
+  opts: { company?: ReportCompany; reportCategory?: string; generatedFor?: string } = {},
+) {
   const win = window.open("", "_blank");
   if (!win) return;
-  win.document.write(buildReportHTML(title, period, headers, rows));
+  win.document.write(buildReportHTML(title, period, headers, rows, opts));
   win.document.close();
 }
 
@@ -543,7 +550,7 @@ function ReportTable({
   );
 }
 
-function PayReportGen({ departments }: { departments: any[] }) {
+function PayReportGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -620,6 +627,7 @@ function PayReportGen({ departments }: { departments: any[] }) {
                 `${MONTHS[+month - 1]} ${year}`,
                 headers,
                 rows,
+                { company, reportCategory: "Payroll" },
               )
             }
             className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white hover:bg-gray-50"
@@ -661,7 +669,7 @@ function PayReportGen({ departments }: { departments: any[] }) {
   );
 }
 
-function SalaryRegisterGen({ departments }: { departments: any[] }) {
+function SalaryRegisterGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -745,6 +753,7 @@ function SalaryRegisterGen({ departments }: { departments: any[] }) {
                 `${MONTHS[+month - 1]} ${year}`,
                 headers,
                 rows,
+                { company, reportCategory: "Payroll" },
               )
             }
             className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white"
@@ -803,7 +812,7 @@ function SalaryRegisterGen({ departments }: { departments: any[] }) {
   );
 }
 
-function NetSalaryGen({ departments }: { departments: any[] }) {
+function NetSalaryGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -885,7 +894,7 @@ function NetSalaryGen({ departments }: { departments: any[] }) {
   );
 }
 
-function SalarySlipGen({ departments }: { departments: any[] }) {
+function SalarySlipGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -912,31 +921,93 @@ function SalarySlipGen({ departments }: { departments: any[] }) {
     const emp = p.employee || {};
     const win = window.open("", "_blank");
     if (!win) return;
-    win.document
-      .write(`<html><head><title>Salary Slip</title><style>body{font-family:sans-serif;font-size:12px;margin:20px;max-width:700px}h2{font-size:18px;border-bottom:2px solid black;padding-bottom:8px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}.row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee}.label{color:#555}.amount{font-weight:bold}.total{font-weight:bold;font-size:14px;background:#f0f6ff;padding:8px}.section{margin-top:16px;font-weight:bold;font-size:13px;border-bottom:1px solid black;margin-bottom:8px}</style></head><body>
-    <h2>Salary Slip — ${MONTHS[+month - 1]} ${year}</h2>
-    <div class="grid">
-      <div><b>Employee:</b> ${emp.firstName} ${emp.lastName}</div>
-      <div><b>Emp ID:</b> ${emp.employeeId || "—"}</div>
-      <div><b>Department:</b> ${emp.department?.name || "—"}</div>
-      <div><b>Designation:</b> ${emp.designation || "—"}</div>
+    const companyName = company?.name || "NestHR";
+    const companyLogo = company?.logo || "";
+    const empName = `${emp.firstName || ""} ${emp.lastName || ""}`.trim();
+    const now = new Date().toLocaleString("en-IN", {
+      day: "2-digit", month: "short", year: "numeric",
+      hour: "2-digit", minute: "2-digit", hour12: true,
+    });
+    win.document.write(`<!DOCTYPE html>
+<html><head><title>Salary Slip</title><style>
+  @page { size: A4; margin: 15mm 15mm 22mm; @bottom-right { content: "Page " counter(page); font-size: 9px; color: #6B7280; } }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 12px; color: #111; max-width: 700px; margin: auto; }
+  .report-header { display: flex; align-items: stretch; justify-content: space-between; gap: 16px; border-bottom: 3px solid #024BAB; padding-bottom: 12px; margin-bottom: 18px; }
+  .header-company { display: flex; align-items: center; gap: 10px; }
+  .header-company img { height: 44px; width: auto; object-fit: contain; }
+  .company-name { font-size: 17px; font-weight: 900; color: #024BAB; }
+  .company-sub { font-size: 9px; color: #9CA3AF; margin-top: 2px; }
+  .header-center { flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .report-badge { display: inline-block; background: #EFF6FF; color: #024BAB; border: 1px solid #BFDBFE; border-radius: 3px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 7px; margin-bottom: 4px; }
+  .report-title { font-size: 15px; font-weight: 700; color: #111; }
+  .report-period { font-size: 11px; color: #6B7280; margin-top: 3px; }
+  .header-right { text-align: right; display: flex; flex-direction: column; justify-content: center; min-width: 160px; }
+  .gen-label { font-size: 8px; text-transform: uppercase; letter-spacing: 0.5px; color: #9CA3AF; margin-bottom: 2px; }
+  .gen-date { font-size: 11px; font-weight: 700; color: #111; }
+  .gen-for { font-size: 10px; color: #6B7280; margin-top: 3px; }
+  .emp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: #F8FAFF; border: 1px solid #E5E7EB; padding: 10px 12px; margin-bottom: 16px; font-size: 12px; }
+  .row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #F3F4F6; }
+  .row:last-child { border-bottom: none; }
+  .lbl { color: #6B7280; }
+  .amt { font-weight: 700; }
+  .section { margin-top: 14px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #024BAB; border-bottom: 2px solid #024BAB; padding-bottom: 4px; margin-bottom: 6px; }
+  .total { font-weight: 700; font-size: 13px; background: #EFF6FF; padding: 7px 0; }
+  .net { font-weight: 900; font-size: 14px; background: #DCFCE7; color: #15803D; padding: 8px 0; }
+  .footer-bar { margin-top: 20px; border-top: 1px solid #E5E7EB; padding-top: 6px; display: flex; justify-content: space-between; font-size: 9px; color: #9CA3AF; }
+</style></head><body>
+  <div class="report-header">
+    <div class="header-company">
+      ${companyLogo ? `<img src="${companyLogo}" alt="${companyName}" />` : ""}
+      <div>
+        <div class="company-name">${companyName}</div>
+        <div class="company-sub">Human Resource Management System</div>
+      </div>
     </div>
-    <div class="section">Earnings</div>
-    <div class="row"><span class="label">Basic Salary</span><span class="amount">₹${(p.basicSalary || 0).toLocaleString()}</span></div>
-    <div class="row"><span class="label">HRA</span><span class="amount">₹${(p.hra || 0).toLocaleString()}</span></div>
-    <div class="row"><span class="label">DA</span><span class="amount">₹${(p.da || 0).toLocaleString()}</span></div>
-    <div class="row"><span class="label">TA</span><span class="amount">₹${(p.ta || 0).toLocaleString()}</span></div>
-    <div class="row"><span class="label">Medical Allowance</span><span class="amount">₹${(p.medicalAllowance || 0).toLocaleString()}</span></div>
-    <div class="row total"><span>Gross Salary</span><span>₹${(p.grossSalary || 0).toLocaleString()}</span></div>
-    <div class="section">Deductions</div>
-    <div class="row"><span class="label">Provident Fund</span><span class="amount">₹${(p.pf || 0).toLocaleString()}</span></div>
-    <div class="row"><span class="label">ESI</span><span class="amount">₹${(p.esi || 0).toLocaleString()}</span></div>
-    <div class="row"><span class="label">TDS</span><span class="amount">₹${(p.tds || 0).toLocaleString()}</span></div>
-    <div class="row total"><span>Total Deductions</span><span>₹${(p.totalDeductions || 0).toLocaleString()}</span></div>
-    <div class="row total" style="background:#e8f5e9"><span>NET PAY</span><span>₹${(p.netSalary || 0).toLocaleString()}</span></div>
-    </body></html>`);
+    <div class="header-center">
+      <span class="report-badge">Payroll</span>
+      <div class="report-title">Salary Slip</div>
+      <div class="report-period">${MONTHS[+month - 1]} ${year}</div>
+    </div>
+    <div class="header-right">
+      <div class="gen-label">Report Generated</div>
+      <div class="gen-date">${now}</div>
+      <div class="gen-for">For: <b>${empName}</b></div>
+    </div>
+  </div>
+
+  <div class="emp-grid">
+    <div><span style="color:#6B7280;">Employee: </span><b>${empName}</b></div>
+    <div><span style="color:#6B7280;">Emp ID: </span><b>${emp.employeeId || "—"}</b></div>
+    <div><span style="color:#6B7280;">Department: </span><b>${emp.department?.name || "—"}</b></div>
+    <div><span style="color:#6B7280;">Designation: </span><b>${emp.designation || "—"}</b></div>
+  </div>
+
+  <div class="section">Earnings</div>
+  <div class="row"><span class="lbl">Basic Salary</span><span class="amt">₹${(p.basicSalary || 0).toLocaleString("en-IN")}</span></div>
+  <div class="row"><span class="lbl">HRA</span><span class="amt">₹${(p.hra || 0).toLocaleString("en-IN")}</span></div>
+  <div class="row"><span class="lbl">DA</span><span class="amt">₹${(p.da || 0).toLocaleString("en-IN")}</span></div>
+  <div class="row"><span class="lbl">TA</span><span class="amt">₹${(p.ta || 0).toLocaleString("en-IN")}</span></div>
+  <div class="row"><span class="lbl">Medical Allowance</span><span class="amt">₹${(p.medicalAllowance || 0).toLocaleString("en-IN")}</span></div>
+  ${(p.allowances || []).map((a: any) => `<div class="row"><span class="lbl">${a.label}</span><span class="amt">₹${Number(a.amount || 0).toLocaleString("en-IN")}</span></div>`).join("")}
+  <div class="row total"><span>Gross Salary</span><span>₹${(p.grossSalary || 0).toLocaleString("en-IN")}</span></div>
+
+  <div class="section">Deductions</div>
+  <div class="row"><span class="lbl">Provident Fund (PF)</span><span class="amt">₹${(p.pf || 0).toLocaleString("en-IN")}</span></div>
+  <div class="row"><span class="lbl">ESI</span><span class="amt">₹${(p.esi || 0).toLocaleString("en-IN")}</span></div>
+  <div class="row"><span class="lbl">TDS</span><span class="amt">₹${(p.tds || 0).toLocaleString("en-IN")}</span></div>
+  ${(p.deductions || []).map((d: any) => `<div class="row"><span class="lbl">${d.label}</span><span class="amt">₹${Number(d.amount || 0).toLocaleString("en-IN")}</span></div>`).join("")}
+  <div class="row total"><span>Total Deductions</span><span>₹${(p.totalDeductions || 0).toLocaleString("en-IN")}</span></div>
+
+  <div class="row net"><span>NET PAY</span><span>₹${(p.netSalary || 0).toLocaleString("en-IN")}</span></div>
+
+  <div class="footer-bar">
+    <span>${companyName} — Confidential</span>
+    <span>Salary Slip · ${MONTHS[+month - 1]} ${year}</span>
+  </div>
+  <script>window.onload = function() { window.print(); }</script>
+</body></html>`);
     win.document.close();
-    win.print();
   }
 
   return (
@@ -1104,7 +1175,7 @@ function SalarySlipGen({ departments }: { departments: any[] }) {
   );
 }
 
-function PFRegisterGen({ departments }: { departments: any[] }) {
+function PFRegisterGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -1186,7 +1257,7 @@ function PFRegisterGen({ departments }: { departments: any[] }) {
   );
 }
 
-function ESICRegisterGen({ departments }: { departments: any[] }) {
+function ESICRegisterGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -1268,7 +1339,7 @@ function ESICRegisterGen({ departments }: { departments: any[] }) {
   );
 }
 
-function BankUploadGen({ departments }: { departments: any[] }) {
+function BankUploadGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -1348,7 +1419,7 @@ function BankUploadGen({ departments }: { departments: any[] }) {
   );
 }
 
-function AbsentLeaveSummaryGen({ departments }: { departments: any[] }) {
+function AbsentLeaveSummaryGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -1471,7 +1542,7 @@ function AbsentLeaveSummaryGen({ departments }: { departments: any[] }) {
   );
 }
 
-function LateComingGen({ departments }: { departments: any[] }) {
+function LateComingGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -1578,7 +1649,7 @@ function LateComingGen({ departments }: { departments: any[] }) {
   );
 }
 
-function DesignationSummaryGen({ departments }: { departments: any[] }) {
+function DesignationSummaryGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -1651,7 +1722,7 @@ function DesignationSummaryGen({ departments }: { departments: any[] }) {
   );
 }
 
-function AttendanceReportGen({ departments }: { departments: any[] }) {
+function AttendanceReportGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -1737,6 +1808,7 @@ function AttendanceReportGen({ departments }: { departments: any[] }) {
                 `${MONTHS[+month - 1]} ${year}`,
                 headers,
                 rows,
+                { company, reportCategory: "Attendance" },
               )
             }
             className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white"
@@ -1767,7 +1839,7 @@ function AttendanceReportGen({ departments }: { departments: any[] }) {
   );
 }
 
-function AttendanceInOutGen({ departments }: { departments: any[] }) {
+function AttendanceInOutGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -1870,7 +1942,7 @@ function AttendanceInOutGen({ departments }: { departments: any[] }) {
   );
 }
 
-function AttendanceSummaryGen({ departments }: { departments: any[] }) {
+function AttendanceSummaryGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -1992,7 +2064,7 @@ function AttendanceSummaryGen({ departments }: { departments: any[] }) {
   );
 }
 
-function LeaveReportGen({ departments }: { departments: any[] }) {
+function LeaveReportGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
   const now = new Date();
   const [year, setYear] = useState(String(now.getFullYear()));
   const [leaveType, setLeaveType] = useState("all");
@@ -2094,7 +2166,7 @@ function LeaveReportGen({ departments }: { departments: any[] }) {
   );
 }
 
-function MissPunchGen({ departments }: { departments: any[] }) {
+function MissPunchGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -2191,7 +2263,7 @@ function MissPunchGen({ departments }: { departments: any[] }) {
   );
 }
 
-function EmployeeDirectoryGen({ departments }: { departments: any[] }) {
+function EmployeeDirectoryGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
   const [dept, setDept] = useState("all");
   const [status, setStatus] = useState("all");
   const [data, setData] = useState<any[]>([]);
@@ -2259,7 +2331,7 @@ function EmployeeDirectoryGen({ departments }: { departments: any[] }) {
         </NbSelect>
         <div className="ml-auto flex gap-2">
           <button
-            onClick={() => printReport("Employee Directory", new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" }), headers, rows)}
+            onClick={() => printReport("Employee Directory", new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" }), headers, rows, { company, reportCategory: "Employee" })}
             className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white"
           >
             <Printer className="w-4 h-4" /> Print
@@ -2292,7 +2364,7 @@ const EMP_REPORT_TYPES = [
   { id: "profile", label: "Employee Profile", desc: "Full profile — personal, employment, bank details" },
 ];
 
-function EmployeeReportGen({ departments: _departments }: { departments: any[] }) {
+function EmployeeReportGen({ departments: _departments, company }: { departments: any[]; company: ReportCompany }) {
   const now = new Date();
   const [employees, setEmployees] = useState<any[]>([]);
   const [search, setSearch] = useState("");
@@ -2449,12 +2521,20 @@ function EmployeeReportGen({ departments: _departments }: { departments: any[] }
                     isSelected ? "border-[#024BAB] bg-[#024BAB]/5" : "border-black/20 bg-white hover:border-black",
                   )}
                 >
-                  <span
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[10px] font-black flex-shrink-0"
-                    style={{ backgroundColor: bg }}
-                  >
-                    {getInitials(name)}
-                  </span>
+                  {emp.avatar ? (
+                    <img
+                      src={emp.avatar}
+                      alt={name}
+                      className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-black/10"
+                    />
+                  ) : (
+                    <span
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[10px] font-black flex-shrink-0"
+                      style={{ backgroundColor: bg }}
+                    >
+                      {getInitials(name)}
+                    </span>
+                  )}
                   <div className="min-w-0">
                     <p className="text-xs font-black text-black truncate">{name}</p>
                     <p className="text-[10px] text-muted-foreground truncate">{emp.department?.name || emp.designation}</p>
@@ -2470,12 +2550,20 @@ function EmployeeReportGen({ departments: _departments }: { departments: any[] }
       {selectedEmp && (
         <div className="border-2 border-black bg-white p-5">
           <div className="flex items-center gap-3 mb-4">
-            <span
-              className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-black"
-              style={{ backgroundColor: color }}
-            >
-              {initials}
-            </span>
+            {selectedEmp?.avatar ? (
+              <img
+                src={selectedEmp.avatar}
+                alt={empName}
+                className="w-10 h-10 rounded-full object-cover border border-black/10 flex-shrink-0"
+              />
+            ) : (
+              <span
+                className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-black"
+                style={{ backgroundColor: color }}
+              >
+                {initials}
+              </span>
+            )}
             <div>
               <p className="font-black text-black">{empName}</p>
               <p className="text-xs text-muted-foreground">{selectedEmp.employeeId} · {selectedEmp.department?.name} · {selectedEmp.designation}</p>
@@ -2529,7 +2617,7 @@ function EmployeeReportGen({ departments: _departments }: { departments: any[] }
             {generated && rows.length > 0 && (
               <>
                 <button
-                  onClick={() => printReport(`${EMP_REPORT_TYPES.find(r => r.id === reportType)?.label} — ${empName}`, period, headers, rows)}
+                  onClick={() => printReport(`${EMP_REPORT_TYPES.find(r => r.id === reportType)?.label} — ${empName}`, period, headers, rows, { company, reportCategory: "Employee", generatedFor: empName })}
                   className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white hover:bg-gray-50"
                 >
                   <Printer className="w-4 h-4" /> Print
@@ -2577,7 +2665,7 @@ function ComingSoonGen() {
 
 const REPORT_COMPONENT: Record<
   string,
-  React.ComponentType<{ departments: any[] }>
+  React.ComponentType<{ departments: any[]; company: ReportCompany }>
 > = {
   "pay-report": PayReportGen,
   "salary-register": SalaryRegisterGen,
@@ -2616,7 +2704,7 @@ const CHART_COLORS = [
   "#FFD60A",
 ];
 
-function AnalyticsTab({ departments }: { departments: any[] }) {
+function AnalyticsTab({ departments, company }: { departments: any[]; company: ReportCompany }) {
   const now = new Date();
   const [attTab, setAttTab] = useState("headcount");
   const [employees, setEmployees] = useState<any[]>([]);
@@ -3155,6 +3243,7 @@ function AnalyticsTab({ departments }: { departments: any[] }) {
 
 export default function ReportsPage() {
   const [departments, setDepartments] = useState<any[]>([]);
+  const [company, setCompany] = useState<ReportCompany>({ name: "NestHR" });
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState<Category | "all">("all");
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -3164,6 +3253,17 @@ export default function ReportsPage() {
     departmentAPI
       .getAll()
       .then((r) => r.success && setDepartments(r.data))
+      .catch(() => {});
+    settingsAPI
+      .get()
+      .then((r) => {
+        if (r.success && r.data) {
+          setCompany({
+            name: r.data.companyName || "NestHR",
+            logo: r.data.logoUrl || undefined,
+          });
+        }
+      })
       .catch(() => {});
   }, []);
 
@@ -3233,7 +3333,7 @@ export default function ReportsPage() {
       </div>
 
       {}
-      {pageMode === "analytics" && <AnalyticsTab departments={departments} />}
+      {pageMode === "analytics" && <AnalyticsTab departments={departments} company={company} />}
 
       {}
       {pageMode === "catalog" && (
@@ -3262,7 +3362,7 @@ export default function ReportsPage() {
                 </button>
               </div>
               <div className="border-2 bg-white p-5">
-                <ActiveComponent departments={departments} />
+                <ActiveComponent departments={departments} company={company} />
               </div>
             </div>
           )}

@@ -1,5 +1,10 @@
 import { NESTHR_LOGO_B64 } from "./nesthrLogoB64";
 
+export interface ReportCompany {
+  name: string;
+  logo?: string; // base64 or URL
+}
+
 const STATUS_STYLES: Record<string, string> = {
   present: "background:#DCFCE7;color:#15803D;border:1px solid #86EFAC;",
   late: "background:#FFF7ED;color:#C2410C;border:1px solid #FED7AA;",
@@ -80,7 +85,14 @@ export function buildReportHTML(
   period: string,
   headers: string[],
   rows: string[][],
+  opts: {
+    company?: ReportCompany;
+    reportCategory?: string; // e.g. "Payroll" | "Attendance" | "Employee"
+    generatedFor?: string;   // employee name or "All Employees"
+  } = {},
 ): string {
+  const { company, reportCategory = "", generatedFor = "" } = opts;
+
   const nameColIdx = headers.findIndex((h) =>
     ["employee", "name", "employee name"].includes(h.toLowerCase()),
   );
@@ -113,13 +125,25 @@ export function buildReportHTML(
     )
     .join("");
 
-  const now = new Date().toLocaleDateString("en-IN", {
+  const now = new Date().toLocaleString("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    hour12: true,
   });
+
+  const companyLogo = company?.logo || NESTHR_LOGO_B64;
+  const companyName = company?.name || "NestHR";
+
+  const categoryBadge = reportCategory
+    ? `<span style="display:inline-block;background:#EFF6FF;color:#024BAB;border:1px solid #BFDBFE;border-radius:3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;padding:2px 7px;margin-bottom:4px;">${reportCategory}</span>`
+    : "";
+
+  const generatedForLine = generatedFor
+    ? `<div style="font-size:10px;color:#6B7280;margin-top:3px;">Employee: <b style="color:#111;">${generatedFor}</b></div>`
+    : "";
 
   return `<!DOCTYPE html>
 <html>
@@ -129,7 +153,7 @@ export function buildReportHTML(
   <style>
     @page {
       size: A4 landscape;
-      margin: 15mm 12mm 20mm;
+      margin: 15mm 12mm 22mm;
       @bottom-right {
         content: "Page " counter(page) " of " counter(pages);
         font-size: 9px;
@@ -138,33 +162,102 @@ export function buildReportHTML(
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Arial, sans-serif; font-size: 12px; color: #111; }
-    .header {
+
+    /* ── Print header ── */
+    .report-header {
       display: flex;
-      align-items: flex-start;
+      align-items: stretch;
       justify-content: space-between;
+      gap: 16px;
       border-bottom: 3px solid #024BAB;
-      padding-bottom: 10px;
+      padding-bottom: 12px;
       margin-bottom: 14px;
     }
-    .header-left { display: flex; align-items: center; gap: 12px; }
-    .logo { height: 40px; }
-    .brand { font-size: 11px; color: #6B7280; line-height: 1.4; }
-    .brand b { font-size: 18px; color: #024BAB; display: block; font-weight: 900; }
-    .report-meta { text-align: right; }
-    .report-title { font-size: 16px; font-weight: 700; color: #024BAB; }
-    .report-period { font-size: 11px; color: #6B7280; margin-top: 2px; }
-    .report-generated { font-size: 9px; color: #9CA3AF; margin-top: 2px; }
-    .stats-bar {
+    /* Left: company logo + name */
+    .header-company {
       display: flex;
-      gap: 12px;
-      margin-bottom: 12px;
-      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
     }
+    .header-company img {
+      height: 44px;
+      width: auto;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+    .company-name {
+      font-size: 17px;
+      font-weight: 900;
+      color: #024BAB;
+      line-height: 1.2;
+    }
+    .company-sub {
+      font-size: 9px;
+      color: #9CA3AF;
+      margin-top: 2px;
+    }
+    /* Center: report type + name */
+    .header-center {
+      flex: 1;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .report-type-badge {
+      margin-bottom: 3px;
+    }
+    .report-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #111;
+      line-height: 1.3;
+    }
+    .report-period {
+      font-size: 11px;
+      color: #6B7280;
+      margin-top: 3px;
+    }
+    /* Right: generated date + for whom */
+    .header-right {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 160px;
+    }
+    .generated-label {
+      font-size: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #9CA3AF;
+      margin-bottom: 2px;
+    }
+    .generated-date {
+      font-size: 11px;
+      font-weight: 700;
+      color: #111;
+    }
+    .generated-for {
+      font-size: 10px;
+      color: #6B7280;
+      margin-top: 3px;
+    }
+    .generated-for b { color: #111; }
+
+    /* ── Stats bar ── */
+    .stats-bar { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
     .stat { border-left: 3px solid #024BAB; padding: 4px 10px; }
     .stat-val { font-size: 16px; font-weight: 700; color: #024BAB; }
     .stat-label { font-size: 9px; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* ── Table ── */
     table { border-collapse: collapse; width: 100%; table-layout: auto; }
     thead { display: table-header-group; }
+
+    /* ── Footer (non-print only; page numbers via @page) ── */
     .footer-bar {
       margin-top: 14px;
       border-top: 1px solid #E5E7EB;
@@ -182,18 +275,28 @@ export function buildReportHTML(
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="header-left">
-      <img src="${NESTHR_LOGO_B64}" class="logo" alt="NestHR" />
-      <div class="brand">
-        <b>NestHR</b>
-        Human Resource Management System
+  <div class="report-header">
+    <!-- Left: Company -->
+    <div class="header-company">
+      <img src="${companyLogo}" alt="${companyName}" />
+      <div>
+        <div class="company-name">${companyName}</div>
+        <div class="company-sub">Human Resource Management System</div>
       </div>
     </div>
-    <div class="report-meta">
+
+    <!-- Center: Report type + name -->
+    <div class="header-center">
+      ${categoryBadge}
       <div class="report-title">${title}</div>
       <div class="report-period">${period}</div>
-      <div class="report-generated">Generated: ${now}</div>
+    </div>
+
+    <!-- Right: Generated date + for whom -->
+    <div class="header-right">
+      <div class="generated-label">Report Generated</div>
+      <div class="generated-date">${now}</div>
+      ${generatedFor ? `<div class="generated-for">For: <b>${generatedFor}</b></div>` : ""}
     </div>
   </div>
 
@@ -212,7 +315,7 @@ export function buildReportHTML(
   </table>
 
   <div class="footer-bar">
-    <span>NestHR — Confidential HR Report</span>
+    <span>${companyName} — Confidential HR Report</span>
     <span>${title} · ${period}</span>
   </div>
 
