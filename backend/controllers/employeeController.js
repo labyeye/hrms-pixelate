@@ -252,6 +252,11 @@ const updateEmployee = [
       "biometricUserId",
       "shift",
       "shiftName",
+      "workDaysPerWeek",
+      "workScheduleType",
+      "customWorkDays",
+      "otEnabled",
+      "otRate",
     ];
 
     // Fields that hold ObjectId references — empty string must become undefined,

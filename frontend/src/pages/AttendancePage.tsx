@@ -30,6 +30,19 @@ import {
 
 const DAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+function isWeekendForEmployee(dateStr: string, emp: any): boolean {
+  const date = new Date(dateStr + "T00:00:00");
+  const day = date.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+  if (emp.workScheduleType === "custom") {
+    const working: number[] = emp.customWorkDays || [];
+    return !working.includes(day);
+  }
+  const days = emp.workDaysPerWeek ?? 6;
+  if (days === 5) return day === 0 || day === 6;
+  if (days === 6) return day === 0;
+  return false;
+}
+
 // Use LOCAL date so IST midnight stored as UTC doesn't shift the day
 const toLocalDateStr = (isoStr: string) => {
   const d = new Date(isoStr);
@@ -160,6 +173,18 @@ export default function AttendancePage() {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   };
 
+  // Returns datetime-local string pre-filled with the given date.
+  // Uses current time if the date is today, otherwise 09:00.
+  const defaultCheckIn = (dateStr: string): string => {
+    const today = new Date().toISOString().split("T")[0];
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const time = dateStr === today
+      ? `${pad(now.getHours())}:${pad(now.getMinutes())}`
+      : "09:00";
+    return `${dateStr}T${time}`;
+  };
+
   const markAbsentSingle = async (empId: string) => {
     try {
       await attendanceAPI.mark({
@@ -175,11 +200,12 @@ export default function AttendancePage() {
   };
 
   const openMarkForEmployee = (empId: string) => {
+    const date = selectedDate || new Date().toISOString().split("T")[0];
     setMarkForm({
       employee: empId,
-      date: selectedDate || new Date().toISOString().split("T")[0],
+      date,
       status: "present",
-      checkIn: "",
+      checkIn: defaultCheckIn(date),
       checkOut: "",
       overtime: "",
       notes: "",
@@ -193,7 +219,7 @@ export default function AttendancePage() {
     const emp = rec.employee as any;
     setMarkForm({
       employee: emp?._id ?? "",
-      date: new Date(rec.date).toISOString().split("T")[0],
+      date: toLocalDateStr(rec.date),
       status: rec.status,
       checkIn: toLocalInput(rec.checkIn as any),
       checkOut: toLocalInput(rec.checkOut as any),
@@ -214,12 +240,18 @@ export default function AttendancePage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const payload = {
+      const payload: Record<string, any> = {
         ...markForm,
         checkIn: localToISO(markForm.checkIn),
         checkOut: localToISO(markForm.checkOut),
-        overtime: markForm.overtime ? parseFloat(markForm.overtime) : 0,
       };
+      // Only send overtime when user explicitly entered a value; omitting it lets
+      // the backend auto-calculate OT from checkout time vs shift end.
+      if (markForm.overtime !== "") {
+        payload.overtime = parseFloat(markForm.overtime) || 0;
+      } else {
+        delete payload.overtime;
+      }
       if (editingId) {
         await attendanceAPI.update(editingId, payload);
       } else {
@@ -325,15 +357,17 @@ export default function AttendancePage() {
     const recordByEmpId = new Map(
       dateRecords.map((r) => [(r.employee as any)?._id, r]),
     );
-    displayedRecords = employees.map(
-      (emp) =>
-        recordByEmpId.get(emp._id) || {
-          _id: `v_${emp._id}`,
-          employee: emp,
-          date: selectedDate,
-          status: "not_checked_in",
-        },
-    );
+    displayedRecords = employees.map((emp) => {
+      const existing = recordByEmpId.get(emp._id);
+      if (existing) return existing;
+      const weekend = isWeekendForEmployee(selectedDate, emp);
+      return {
+        _id: `v_${emp._id}`,
+        employee: emp,
+        date: selectedDate,
+        status: weekend ? "weekend" : "not_checked_in",
+      };
+    });
     if (activeFilter && activeFilter !== "early_leaving") {
       displayedRecords = displayedRecords.filter(
         (r) => r.status === activeFilter,
@@ -390,7 +424,11 @@ export default function AttendancePage() {
         </div>
         {!isEmployee && (
           <button
-            onClick={() => setMarkModal(true)}
+            onClick={() => {
+              const date = selectedDate || new Date().toISOString().split("T")[0];
+              setMarkForm(f => ({ ...f, date, checkIn: defaultCheckIn(date) }));
+              setMarkModal(true);
+            }}
             className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5"
           >
             <Clock className="w-4 h-4" /> Mark Attendance
@@ -626,10 +664,14 @@ export default function AttendancePage() {
         employees.length > 0 &&
         (() => {
           const recordedEmpIds = new Set(
-            displayedRecords.map((r) => (r.employee as any)?._id),
+            displayedRecords
+              .filter((r) => r.status !== "not_checked_in" && r.status !== "weekend")
+              .map((r) => (r.employee as any)?._id),
           );
           const unrecorded = employees.filter(
-            (e) => !recordedEmpIds.has(e._id),
+            (e) =>
+              !recordedEmpIds.has(e._id) &&
+              !isWeekendForEmployee(selectedDate, e),
           );
           if (unrecorded.length === 0) return null;
           return (
@@ -712,10 +754,10 @@ export default function AttendancePage() {
                           <img
                             src={(rec.employee as any).avatar}
                             alt={(rec.employee as any)?.firstName}
-                            className="w-7 h-7 border-2 border-black object-cover shrink-0"
+                            className="w-7 h-7 border-2 border-black object-cover shrink-0 rounded-full"
                           />
                         ) : (
-                          <div className="w-7 h-7 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                          <div className="w-7 h-7 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[10px] font-bold text-white shrink-0 rounded-full">
                             {(rec.employee as any)?.firstName?.[0]?.toUpperCase()}
                           </div>
                         )}
@@ -783,12 +825,15 @@ export default function AttendancePage() {
                         )}
                       >
                         <Icon className="w-3 h-3" />{" "}
-                        {rec.status.replace("_", " ")}
+                        {rec.status === "weekend"
+                          ? new Date(rec.date + "T00:00:00").toLocaleDateString("en-IN", { weekday: "long" })
+                          : rec.status.replace("_", " ")}
                       </span>
                     </td>
                     {!isEmployee && (
                       <td className="px-4 py-3">
                         {rec._id.startsWith("v_") ? (
+                          rec.status === "weekend" ? null : (
                           <div className="flex items-center gap-1">
                             <button
                               onClick={() =>
@@ -809,6 +854,7 @@ export default function AttendancePage() {
                               <Clock className="w-3 h-3" />
                             </button>
                           </div>
+                          )
                         ) : (
                           <button
                             onClick={() => openEdit(rec)}
@@ -874,9 +920,14 @@ export default function AttendancePage() {
                 <input
                   type="date"
                   value={markForm.date}
-                  onChange={(e) =>
-                    setMarkForm({ ...markForm, date: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const d = e.target.value;
+                    setMarkForm(f => ({
+                      ...f,
+                      date: d,
+                      checkIn: f.checkIn ? defaultCheckIn(d) : "",
+                    }));
+                  }}
                   className="border-2 w-full px-3 py-2 text-sm"
                   required
                 />

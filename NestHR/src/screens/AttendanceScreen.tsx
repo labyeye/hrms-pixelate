@@ -41,7 +41,22 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> =
     half_day: { color: C.secondary, bg: '#FFF7ED', icon: AlertCircle },
     on_leave: { color: C.primary, bg: '#EFF6FF', icon: Calendar },
     not_checked_in: { color: '#9CA3AF', bg: '#F3F4F6', icon: Clock },
+    weekend: { color: '#9CA3AF', bg: '#F3F4F6', icon: Calendar },
+    holiday: { color: '#A855F7', bg: '#FAF5FF', icon: Calendar },
   };
+
+function isWeekendForEmployee(dateStr: string, emp: any): boolean {
+  const date = new Date(dateStr + 'T00:00:00');
+  const day = date.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+  if (emp.workScheduleType === 'custom') {
+    const working: number[] = emp.customWorkDays || [];
+    return !working.includes(day);
+  }
+  const days = emp.workDaysPerWeek ?? 6;
+  if (days === 5) return day === 0 || day === 6;
+  if (days === 6) return day === 0;
+  return false;
+}
 
 function toDateStr(d: Date) {
   const y = d.getFullYear();
@@ -183,16 +198,17 @@ export default function AttendanceScreen() {
         const recordByEmpId = new Map(
           records.map(r => [(r.employee as any)?._id, r]),
         );
-        return employees.map(
-          emp =>
-            recordByEmpId.get(emp._id) ||
-            ({
-              _id: `v_${emp._id}`,
-              employee: emp,
-              date: dateFilter,
-              status: 'not_checked_in',
-            } as any as AttendanceRecord),
-        );
+        return employees.map(emp => {
+          const existing = recordByEmpId.get(emp._id);
+          if (existing) return existing;
+          const weekend = isWeekendForEmployee(dateFilter, emp);
+          return {
+            _id: `v_${emp._id}`,
+            employee: emp,
+            date: dateFilter,
+            status: weekend ? 'weekend' : 'not_checked_in',
+          } as any as AttendanceRecord;
+        });
       })();
 
   const filtered = mergedRows.filter(r => {
@@ -467,11 +483,14 @@ export default function AttendanceScreen() {
                       <Text
                         style={[styles.statusTagText, { color: cfg.color }]}
                       >
-                        {item.status.replace(/_/g, ' ').toUpperCase()}
+                        {item.status === 'weekend'
+                          ? new Date(dateFilter + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'long' }).toUpperCase()
+                          : item.status.replace(/_/g, ' ').toUpperCase()}
                       </Text>
                     </View>
                     {!isEmployee &&
                       (item._id.startsWith('v_') ? (
+                        item.status === 'weekend' ? null : (
                         <View style={{ flexDirection: 'row', gap: 6 }}>
                           <TouchableOpacity
                             style={styles.absentBtn}
@@ -492,6 +511,7 @@ export default function AttendanceScreen() {
                             <CheckCircle2 size={13} color={C.white} />
                           </TouchableOpacity>
                         </View>
+                        )
                       ) : (
                         <TouchableOpacity
                           style={styles.editBtn}

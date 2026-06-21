@@ -169,9 +169,11 @@ async function processDate(targetDate, istMinutesNow) {
 
       // ── Case 3: Has both check-in and check-out ─────────────────────────
       // If check-in was more than 2 hours late → half day
+      // Also auto-calculate OT hours if employee has OT enabled
       if (existing.checkIn && existing.checkOut) {
         const cinMins = checkInMinutes(existing.checkIn);
         const lateThreshold = startMins + 120; // 2 hours after shift start
+        let changed = false;
 
         if (
           cinMins > lateThreshold &&
@@ -181,11 +183,28 @@ async function processDate(targetDate, istMinutesNow) {
           existing.notes =
             (existing.notes ? existing.notes + " | " : "") +
             `Auto-marked half day: checked in ${Math.round(((cinMins - startMins) / 60) * 10) / 10}h late`;
-          await existing.save();
+          changed = true;
           console.log(
             `[AutoMark] Marked half_day (late check-in): ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`,
           );
         }
+
+        // Auto-calculate OT hours: checkout time beyond shift end
+        if (emp.otEnabled && shift.endTime) {
+          const endMins = shiftEndMinutes(shift);
+          const coIST = new Date(existing.checkOut.getTime() + IST_OFFSET_MS);
+          const coMins = coIST.getUTCHours() * 60 + coIST.getUTCMinutes();
+          if (coMins > endMins) {
+            const autoOT = parseFloat(((coMins - endMins) / 60).toFixed(2));
+            // Only update if meaningfully different from stored value
+            if (Math.abs((existing.overtime || 0) - autoOT) >= 0.01) {
+              existing.overtime = autoOT;
+              changed = true;
+            }
+          }
+        }
+
+        if (changed) await existing.save();
       }
     }
   }

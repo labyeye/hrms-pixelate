@@ -18,6 +18,40 @@ async function notifyAttendanceStatus(emp, date, status, companyId) {
 const GRACE_MINUTES = 15;
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000; // UTC+5:30
 
+// Returns auto-calculated OT hours based on checkout vs shift end.
+// Returns 0 if OT is not enabled or checkout doesn't exceed shift end.
+async function calcOTHours(emp, checkOutISO) {
+  if (!emp.otEnabled) return 0;
+  if (!checkOutISO) return 0;
+
+  const shift = emp.shift
+    ? await Shift.findById(emp.shift).select("endTime")
+    : null;
+
+  const endTimeStr = shift?.endTime;
+  if (!endTimeStr) return 0;
+
+  const [endH, endM] = endTimeStr.split(":").map(Number);
+
+  // Build shift-end as UTC from attendance date portion of checkOut.
+  // Use Date.UTC() so the result is always UTC midnight regardless of server timezone —
+  // new Date(y, m, d) uses local timezone which double-counts IST offset on IST servers.
+  const checkOutUTC = new Date(checkOutISO).getTime();
+  const checkOutDate = new Date(checkOutISO);
+  const utcMidnight = Date.UTC(
+    checkOutDate.getUTCFullYear(),
+    checkOutDate.getUTCMonth(),
+    checkOutDate.getUTCDate(),
+  );
+  const istMidnight = utcMidnight - IST_OFFSET_MS;
+  const shiftEndUTC = istMidnight + (endH * 60 + endM) * 60000;
+
+  const otMs = checkOutUTC - shiftEndUTC;
+  if (otMs <= 0) return 0;
+
+  return parseFloat((otMs / 3_600_000).toFixed(2));
+}
+
 async function resolveStatus(employeeId, checkIn, requestedStatus) {
   // Only auto-promote present → late; never override an explicit absent/leave/etc.
   if (!checkIn || requestedStatus !== "present") return requestedStatus;
@@ -155,8 +189,10 @@ const markAttendance = asyncHandler(async (req, res) => {
     : await resolveStatus(employee, checkIn, status);
 
   let workHours = 0;
+  let autoOT = 0;
   if (checkIn && checkOut && !holiday) {
     workHours = (new Date(checkOut) - new Date(checkIn)) / 3600000;
+    autoOT = await calcOTHours(emp, checkOut);
   }
 
   const record = await Attendance.findOneAndUpdate(
@@ -168,6 +204,7 @@ const markAttendance = asyncHandler(async (req, res) => {
       checkIn: holiday ? undefined : checkIn,
       checkOut: holiday ? undefined : checkOut,
       workHours,
+      overtime: autoOT,
       verifyMode: verifyMode || "manual",
       notes: holiday ? `Holiday: ${holiday.name}` : notes || undefined,
       markedBy: req.user._id,
@@ -206,17 +243,16 @@ const updateAttendance = asyncHandler(async (req, res) => {
     throw new Error("Attendance record not found");
   }
 
-  if (date) {
-    const d = new Date(date);
-    d.setHours(0, 0, 0, 0);
-    record.date = d;
-  }
+  // Load employee with shift for OT calculation
+  const empForOT = await Employee.findById(record.employee._id).populate("shift", "endTime").select("otEnabled shift");
+
+  // Note: record.date is intentionally not updated — it's part of the unique compound
+  // index (employee + date) and changing it would cause duplicate key errors.
   if (checkIn !== undefined)
     record.checkIn = checkIn ? new Date(checkIn) : undefined;
   if (checkOut !== undefined)
     record.checkOut = checkOut ? new Date(checkOut) : undefined;
   if (notes !== undefined) record.notes = notes;
-  if (overtime !== undefined) record.overtime = parseFloat(overtime) || 0;
   if (verifyMode !== undefined) record.verifyMode = verifyMode;
 
   // If admin picked an explicit non-present status, honour it.
@@ -239,6 +275,14 @@ const updateAttendance = asyncHandler(async (req, res) => {
     record.workHours = parseFloat(
       ((record.checkOut - record.checkIn) / 3_600_000).toFixed(2),
     );
+    // If overtime was manually provided, honour it; otherwise auto-calculate from shift end
+    if (overtime !== undefined) {
+      record.overtime = parseFloat(overtime) || 0;
+    } else if (empForOT) {
+      record.overtime = await calcOTHours(empForOT, record.checkOut.toISOString());
+    }
+  } else if (overtime !== undefined) {
+    record.overtime = parseFloat(overtime) || 0;
   }
 
   record.markedBy = req.user._id;

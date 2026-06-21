@@ -8,10 +8,12 @@ import {
   ActivityIndicator,
   Modal,
   ScrollView,
+  TextInput,
   Share,
   Alert,
   Dimensions,
 } from 'react-native';
+import { NESTHR_LOGO_B64 } from '../assets/nesthrLogoB64';
 import RNPrint from 'react-native-print';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -31,6 +33,8 @@ import {
   Download,
   ChevronRight,
   ChevronLeft,
+  Search,
+  User,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import {
@@ -229,6 +233,15 @@ const REPORTS: ReportDef[] = [
     category: 'employee',
     icon: Users,
     color: '#7C3AED',
+  },
+  {
+    id: 'employee-report',
+    label: 'Employee Report',
+    desc: 'Select an employee and report type — attendance, salary slip, leave, or profile.',
+    category: 'employee',
+    icon: FileText,
+    color: '#024BAB',
+    needsMonth: true,
   },
 ];
 
@@ -832,9 +845,98 @@ async function generateReport(
         ]),
       };
     }
+    case 'employee-report':
+      return { headers: [], rows: [] };
     default:
       return { headers: [], rows: [] };
   }
+}
+
+async function generateEmployeeReport(
+  subType: string,
+  empId: string,
+  month: string,
+  year: string,
+): Promise<{ headers: string[]; rows: string[][] }> {
+  switch (subType) {
+    case 'attendance': {
+      const r = await attendanceAPI.getAll({ employeeId: empId, month, year, limit: '60' });
+      const data: any[] = (r.data || []).sort(
+        (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+      );
+      return {
+        headers: ['Date', 'Status', 'Check In', 'Check Out', 'Hours'],
+        rows: data.map((rec: any) => {
+          const hours =
+            rec.checkIn && rec.checkOut
+              ? ((new Date(rec.checkOut).getTime() - new Date(rec.checkIn).getTime()) / 3600000).toFixed(1) + 'h'
+              : '—';
+          return [
+            fmtDate(rec.date),
+            (rec.status || '').toUpperCase().replace('_', ' '),
+            fmt(rec.checkIn),
+            fmt(rec.checkOut),
+            hours,
+          ];
+        }),
+      };
+    }
+    case 'salary-slip': {
+      const r = await payrollAPI.getAll({ employeeId: empId, month, year });
+      const data: any[] = r.data || [];
+      const p = data[0];
+      if (!p) return { headers: ['Component', 'Amount'], rows: [] };
+      return {
+        headers: ['Component', 'Amount'],
+        rows: [
+          ['Basic Salary', fmtCur(p.basicSalary || 0)],
+          ['HRA', fmtCur(p.hra || 0)],
+          ['DA', fmtCur(p.da || 0)],
+          ['TA', fmtCur(p.ta || 0)],
+          ['Medical Allowance', fmtCur(p.medicalAllowance || 0)],
+          ['Gross Salary', fmtCur(p.grossSalary || 0)],
+          ['PF (Deduction)', `- ${fmtCur(p.pf || 0)}`],
+          ['ESI (Deduction)', `- ${fmtCur(p.esi || 0)}`],
+          ['TDS (Deduction)', `- ${fmtCur(p.tds || 0)}`],
+          ['Total Deductions', `- ${fmtCur(p.totalDeductions || 0)}`],
+          ['NET PAY', fmtCur(p.netSalary || 0)],
+        ],
+      };
+    }
+    case 'leave': {
+      const r = await leaveAPI.getAll({ employeeId: empId, year, limit: '200' });
+      const data: any[] = r.data || [];
+      return {
+        headers: ['From', 'To', 'Days', 'Type', 'Reason', 'Status'],
+        rows: data.map((l: any) => [
+          fmtDate(l.startDate),
+          fmtDate(l.endDate),
+          String(l.days || 0),
+          l.leaveType ? l.leaveType.charAt(0).toUpperCase() + l.leaveType.slice(1) : '—',
+          l.reason || '—',
+          (l.status || '').toUpperCase(),
+        ]),
+      };
+    }
+    default:
+      return { headers: [], rows: [] };
+  }
+}
+
+const EMP_REPORT_SUB_TYPES = [
+  { id: 'attendance', label: 'Attendance', desc: 'Monthly attendance — daily status & times' },
+  { id: 'salary-slip', label: 'Salary Slip', desc: 'Earnings, deductions & net pay' },
+  { id: 'leave', label: 'Leave Report', desc: 'Yearly leave history & approval' },
+];
+
+const AVATAR_PALETTE_M = ['#024BAB','#00C48C','#FA731C','#7C3AED','#0891B2','#DC2626'];
+function avatarBgM(name: string) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
+  return AVATAR_PALETTE_M[Math.abs(h) % AVATAR_PALETTE_M.length];
+}
+function initialsM(name: string) {
+  return name.split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
 }
 
 // ── Report Detail Modal ─────────────────────────────────────────────────────────
@@ -857,6 +959,14 @@ function ReportModal({
   const [loading, setLoading] = useState(false);
   const [generated, setGenerated] = useState(false);
 
+  // Employee report sub-state
+  const isEmpReport = report?.id === 'employee-report';
+  const [empSearch, setEmpSearch] = useState('');
+  const [allEmployees, setAllEmployees] = useState<any[]>([]);
+  const [empLoading, setEmpLoading] = useState(false);
+  const [selectedEmp, setSelectedEmp] = useState<any>(null);
+  const [empSubType, setEmpSubType] = useState('attendance');
+
   const loadDepts = useCallback(async () => {
     try {
       const r = await departmentAPI.getAll();
@@ -864,20 +974,37 @@ function ReportModal({
     } catch {}
   }, []);
 
+  const loadEmployees = useCallback(async () => {
+    setEmpLoading(true);
+    try {
+      const r = await employeeAPI.getAll({ status: 'active', limit: '500' });
+      setAllEmployees(r.data || []);
+    } catch {}
+    setEmpLoading(false);
+  }, []);
+
   useEffect(() => {
     if (visible && report?.needsDept) loadDepts();
+    if (visible && isEmpReport) loadEmployees();
     if (visible) {
       setHeaders([]);
       setRows([]);
       setGenerated(false);
+      setSelectedEmp(null);
+      setEmpSearch('');
     }
-  }, [visible, report, loadDepts]);
+  }, [visible, report, loadDepts, isEmpReport, loadEmployees]);
 
   const handleGenerate = async () => {
     if (!report) return;
     setLoading(true);
     try {
-      const result = await generateReport(report.id, month, year, dept);
+      let result: { headers: string[]; rows: string[][] };
+      if (isEmpReport && selectedEmp) {
+        result = await generateEmployeeReport(empSubType, selectedEmp._id, month, year);
+      } else {
+        result = await generateReport(report.id, month, year, dept);
+      }
       setHeaders(result.headers);
       setRows(result.rows);
       setGenerated(true);
@@ -901,25 +1028,104 @@ function ReportModal({
     if (!headers.length) return;
     const label = report?.label || 'Report';
     const period = `${MONTHS[+month - 1]} ${year}`;
-    const thCells = headers.map(h => `<th>${h}</th>`).join('');
-    const trRows = rows
-      .map(
-        (r, i) =>
-          `<tr style="background:${i % 2 === 0 ? '#fff' : '#f8faff'}">${r
-            .map(c => `<td>${c}</td>`)
-            .join('')}</tr>`,
-      )
-      .join('');
-    const html = `<html><head><style>
-      body{font-family:Arial,sans-serif;font-size:11px;margin:20px}
-      h2{font-size:16px;border-bottom:2px solid #024BAB;padding-bottom:6px;color:#024BAB}
-      p{font-size:11px;color:#6b7280;margin:4px 0 12px}
-      table{border-collapse:collapse;width:100%}
-      th{background:#024BAB;color:#fff;padding:6px 8px;text-align:left;font-size:10px;text-transform:uppercase}
-      td{padding:5px 8px;border-bottom:1px solid #e5e7eb;font-size:11px}
+
+    const STATUS_COLORS: Record<string, string> = {
+      present: 'background:#DCFCE7;color:#15803D;border:1px solid #86EFAC',
+      late: 'background:#FFF7ED;color:#C2410C;border:1px solid #FED7AA',
+      absent: 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA',
+      'half day': 'background:#FEFCE8;color:#A16207;border:1px solid #FDE68A',
+      'half_day': 'background:#FEFCE8;color:#A16207;border:1px solid #FDE68A',
+      'on leave': 'background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE',
+      'on_leave': 'background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE',
+      leave: 'background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE',
+      holiday: 'background:#FAF5FF;color:#7C3AED;border:1px solid #DDD6FE',
+      weekend: 'background:#F9FAFB;color:#6B7280;border:1px solid #E5E7EB',
+      paid: 'background:#DCFCE7;color:#15803D;border:1px solid #86EFAC',
+      pending: 'background:#FFF7ED;color:#C2410C;border:1px solid #FED7AA',
+      approved: 'background:#DCFCE7;color:#15803D;border:1px solid #86EFAC',
+      rejected: 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA',
+      cancelled: 'background:#F9FAFB;color:#6B7280;border:1px solid #E5E7EB',
+      active: 'background:#DCFCE7;color:#15803D;border:1px solid #86EFAC',
+      inactive: 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA',
+      terminated: 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA',
+      missing: 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA',
+    };
+    const AVATAR_PALETTE = ['#024BAB','#00C48C','#FA731C','#7C3AED','#0891B2','#DC2626'];
+    function avatarBg(name: string) {
+      let h = 0;
+      for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
+      return AVATAR_PALETTE[Math.abs(h) % AVATAR_PALETTE.length];
+    }
+    function initials(name: string) {
+      return name.split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
+    }
+
+    const nameColIdx = headers.findIndex(h => ['employee','name','employee name'].includes(h.toLowerCase()));
+    const statusColIdx = headers.findIndex(h => ['status','payment status'].includes(h.toLowerCase()));
+
+    const thCells = headers.map(h =>
+      `<th style="background:#024BAB;color:#fff;padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;">${h}</th>`
+    ).join('');
+
+    const trRows = rows.map((row, i) =>
+      `<tr style="background:${i % 2 === 0 ? '#fff' : '#F8FAFF'}">
+        ${row.map((cell, ci) => {
+          let content = cell;
+          if (ci === statusColIdx) {
+            const key = cell.toLowerCase().trim();
+            const style = STATUS_COLORS[key];
+            if (style) content = `<span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;text-transform:uppercase;${style}">${cell}</span>`;
+          } else if (ci === nameColIdx && cell && cell !== '—') {
+            const bg = avatarBg(cell);
+            const ini = initials(cell);
+            content = `<span style="display:inline-flex;align-items:center;gap:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:${bg};color:#fff;font-size:9px;font-weight:700;flex-shrink:0;">${ini}</span><span>${cell}</span></span>`;
+          }
+          return `<td style="padding:7px 10px;border-bottom:1px solid #E5E7EB;font-size:11px;white-space:nowrap;vertical-align:middle;">${content}</td>`;
+        }).join('')}
+      </tr>`
+    ).join('');
+
+    const now = new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${label}</title>
+    <style>
+      @page { size: A4 landscape; margin: 15mm 12mm 20mm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font-size:9px;color:#6B7280; } }
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:Arial,sans-serif;font-size:12px;color:#111}
+      .hdr{display:flex;align-items:flex-start;justify-content:space-between;border-bottom:3px solid #024BAB;padding-bottom:10px;margin-bottom:14px}
+      .hdr-l{display:flex;align-items:center;gap:12px}
+      .logo{height:38px}
+      .brand{font-size:11px;color:#6B7280;line-height:1.4}
+      .brand b{font-size:18px;color:#024BAB;display:block;font-weight:900}
+      .meta{text-align:right}
+      .meta-title{font-size:16px;font-weight:700;color:#024BAB}
+      .meta-period{font-size:11px;color:#6B7280;margin-top:2px}
+      .meta-gen{font-size:9px;color:#9CA3AF;margin-top:2px}
+      .stat{border-left:3px solid #024BAB;padding:4px 10px;margin-bottom:12px;display:inline-block}
+      .stat-v{font-size:16px;font-weight:700;color:#024BAB}
+      .stat-l{font-size:9px;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.5px}
+      table{border-collapse:collapse;width:100%;table-layout:auto}
+      thead{display:table-header-group}
+      tr{page-break-inside:avoid}
+      .footer{margin-top:14px;border-top:1px solid #E5E7EB;padding-top:6px;display:flex;justify-content:space-between;font-size:9px;color:#9CA3AF}
     </style></head><body>
-      <h2>${label}</h2><p>${period} · ${rows.length} records</p>
-      <table><thead><tr>${thCells}</tr></thead><tbody>${trRows}</tbody></table>
+      <div class="hdr">
+        <div class="hdr-l">
+          <img src="${NESTHR_LOGO_B64}" class="logo" alt="NestHR"/>
+          <div class="brand"><b>NestHR</b>Human Resource Management System</div>
+        </div>
+        <div class="meta">
+          <div class="meta-title">${label}</div>
+          <div class="meta-period">${period}</div>
+          <div class="meta-gen">Generated: ${now}</div>
+        </div>
+      </div>
+      <div class="stat"><div class="stat-v">${rows.length}</div><div class="stat-l">Total Records</div></div>
+      <table>
+        <thead><tr>${thCells}</tr></thead>
+        <tbody>${trRows}</tbody>
+      </table>
+      <div class="footer"><span>NestHR — Confidential HR Report</span><span>${label} · ${period}</span></div>
     </body></html>`;
     try {
       await RNPrint.print({ html });
@@ -959,8 +1165,83 @@ function ReportModal({
           showsVerticalScrollIndicator={false}
           stickyHeaderIndices={[]}
         >
-          {/* Filters */}
-          <View style={ms.filterBlock}>
+          {/* Employee picker — only for employee-report */}
+          {isEmpReport && (
+            <View style={ms.filterBlock}>
+              <Text style={ms.filterLabel}>Step 1 — Select Employee</Text>
+              <View style={ms.searchRow}>
+                <Search size={14} color={C.textMuted} />
+                <TextInput
+                  style={ms.searchInput}
+                  placeholder="Search by name or ID..."
+                  placeholderTextColor={C.textMuted}
+                  value={empSearch}
+                  onChangeText={setEmpSearch}
+                />
+              </View>
+              {empLoading ? (
+                <ActivityIndicator color={C.primary} style={{ marginVertical: 12 }} />
+              ) : (
+                <ScrollView style={{ maxHeight: 200 }} showsVerticalScrollIndicator={false}>
+                  {allEmployees
+                    .filter(e => {
+                      const q = empSearch.toLowerCase();
+                      return !q ||
+                        `${e.firstName} ${e.lastName}`.toLowerCase().includes(q) ||
+                        (e.employeeId || '').toLowerCase().includes(q);
+                    })
+                    .map(emp => {
+                      const name = `${emp.firstName} ${emp.lastName}`;
+                      const bg = avatarBgM(name);
+                      const ini = initialsM(name);
+                      const isSelected = selectedEmp?._id === emp._id;
+                      return (
+                        <TouchableOpacity
+                          key={emp._id}
+                          style={[ms.empRow, isSelected && ms.empRowSelected]}
+                          onPress={() => { setSelectedEmp(emp); setGenerated(false); }}
+                        >
+                          <View style={[ms.empAvatar, { backgroundColor: bg }]}>
+                            <Text style={ms.empAvatarText}>{ini}</Text>
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={[ms.empName, isSelected && { color: C.white }]}>{name}</Text>
+                            <Text style={[ms.empSub, isSelected && { color: C.white + 'cc' }]}>
+                              {emp.employeeId} · {emp.department?.name || emp.designation}
+                            </Text>
+                          </View>
+                          {isSelected && <User size={14} color={C.white} />}
+                        </TouchableOpacity>
+                      );
+                    })}
+                </ScrollView>
+              )}
+
+              {selectedEmp && (
+                <>
+                  <Text style={[ms.filterLabel, { marginTop: 14 }]}>Step 2 — Report Type</Text>
+                  <View style={{ gap: 8 }}>
+                    {EMP_REPORT_SUB_TYPES.map(sub => {
+                      const active = empSubType === sub.id;
+                      return (
+                        <TouchableOpacity
+                          key={sub.id}
+                          style={[ms.subTypeBtn, active && { backgroundColor: C.primary, borderColor: C.primary }]}
+                          onPress={() => { setEmpSubType(sub.id); setGenerated(false); }}
+                        >
+                          <Text style={[ms.subTypeBtnLabel, active && { color: C.white }]}>{sub.label}</Text>
+                          <Text style={[ms.subTypeBtnDesc, active && { color: C.white + 'cc' }]}>{sub.desc}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
+            </View>
+          )}
+
+          {/* Filters — hidden for employee-report (uses picker above) */}
+          {!isEmpReport && (<View style={ms.filterBlock}>
             {needsMonth && (
               <>
                 <Text style={ms.filterLabel}>Month</Text>
@@ -1061,13 +1342,13 @@ function ReportModal({
                 </ScrollView>
               </>
             )}
-          </View>
+          </View>)}
 
           {/* Generate button */}
           <TouchableOpacity
-            style={[ms.genBtn, { backgroundColor: report.color }]}
+            style={[ms.genBtn, { backgroundColor: report.color, opacity: (isEmpReport && !selectedEmp) ? 0.4 : 1 }]}
             onPress={handleGenerate}
-            disabled={loading}
+            disabled={loading || (isEmpReport && !selectedEmp)}
           >
             {loading ? (
               <ActivityIndicator color={C.white} />
@@ -1444,5 +1725,77 @@ const ms = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: C.black,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 8,
+    marginBottom: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '500',
+    color: C.black,
+    padding: 0,
+  },
+  empRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: C.black + '22',
+    marginBottom: 6,
+    backgroundColor: C.white,
+  },
+  empRowSelected: {
+    backgroundColor: C.primary,
+    borderColor: C.primary,
+  },
+  empAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  empAvatarText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: C.white,
+  },
+  empName: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: C.black,
+  },
+  empSub: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: C.textMuted,
+    marginTop: 1,
+  },
+  subTypeBtn: {
+    borderWidth: 2,
+    borderColor: C.black,
+    padding: 10,
+    backgroundColor: C.white,
+  },
+  subTypeBtnLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: C.black,
+  },
+  subTypeBtnDesc: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: C.textMuted,
+    marginTop: 2,
   },
 });

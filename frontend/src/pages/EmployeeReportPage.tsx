@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
+import { buildReportHTML } from "@/lib/reportPrintHTML";
 import { employeeAPI, attendanceAPI, payrollAPI } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -138,39 +139,25 @@ export default function EmployeeReportPage() {
   const total = records.length - holidays;
 
   const handlePrint = () => {
-    const rows = records
+    const headers = ["Date", "Status", "Check In", "Check Out", "Hours"];
+    const tableRows = records
       .filter((r) => r.status !== "weekend" && r.status !== "holiday")
-      .map(
-        (r) => `<tr>
-        <td>${new Date(r.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", weekday: "short" })}</td>
-        <td>${statusLabel(r.status)}</td>
-        <td>${fmt(r.checkIn)}</td>
-        <td>${fmt(r.checkOut)}</td>
-      </tr>`,
-      )
-      .join("");
+      .map((r) => {
+        const hours =
+          r.checkIn && r.checkOut
+            ? ((new Date(r.checkOut).getTime() - new Date(r.checkIn).getTime()) / 3600000).toFixed(1) + "h"
+            : "—";
+        return [
+          new Date(r.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", weekday: "short" }),
+          statusLabel(r.status).toUpperCase(),
+          fmt(r.checkIn),
+          fmt(r.checkOut),
+          hours,
+        ];
+      });
     const win = window.open("", "_blank");
     if (!win) return;
-    win.document
-      .write(`<html><head><title>Attendance Report — ${MONTHS[month - 1]} ${year}</title>
-      <style>body{font-family:Arial,sans-serif;font-size:12px;padding:24px}h2{font-size:16px}
-      table{width:100%;border-collapse:collapse;margin-top:12px}
-      th,td{border:1px solid #ccc;padding:7px 10px;text-align:left}
-      th{background:#f0f6ff;font-size:11px;text-transform:uppercase}
-      .summary{display:flex;gap:20px;margin-bottom:16px}
-      .s{padding:8px 14px;border:1px solid #ccc;font-size:12px}
-      @media print{button{display:none}}</style></head>
-      <body><h2>Attendance Report — ${MONTHS[month - 1]} ${year}</h2>
-      <div class="summary">
-        <div class="s">Present: <b>${present}</b></div>
-        <div class="s">Absent: <b>${absent}</b></div>
-        <div class="s">Late: <b>${late}</b></div>
-        <div class="s">Half Day: <b>${halfDay}</b></div>
-        ${payroll ? `<div class="s">Net Pay: <b>₹${Math.round(payroll.netSalary).toLocaleString("en-IN")}</b></div>` : ""}
-      </div>
-      <table><thead><tr><th>Date</th><th>Status</th><th>Check In</th><th>Check Out</th></tr></thead>
-      <tbody>${rows}</tbody></table>
-      <button onclick="window.print()">Print</button></body></html>`);
+    win.document.write(buildReportHTML(`Attendance Report`, `${MONTHS[month - 1]} ${year}`, headers, tableRows));
     win.document.close();
   };
 

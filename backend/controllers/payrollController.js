@@ -48,7 +48,7 @@ const getPayrolls = asyncHandler(async (req, res) => {
   const payrolls = await Payroll.find(filter)
     .populate({
       path: "employee",
-      select: "firstName lastName employeeId designation phone",
+      select: "firstName lastName employeeId designation phone avatar",
       populate: { path: "department", select: "name" },
     })
     .sort({ year: -1, month: -1 })
@@ -162,6 +162,8 @@ const processPayroll = asyncHandler(async (req, res) => {
 
     // Hours-based payroll: earnedSalary = totalHoursWorked × hourlyRate
     const otEnabled = emp.otEnabled === true;
+    // otRate is a multiplier (e.g. 1.5 = time-and-a-half). Default 1x if not set.
+    const otMultiplier = emp.otRate && emp.otRate > 0 ? emp.otRate : 1;
     const shiftTotalMins = shiftEndH * 60 + shiftEndM - (shiftH * 60 + shiftM);
     const shiftHoursPerDay = shiftTotalMins > 0 ? shiftTotalMins / 60 : 8;
     const hourlyRate = dailyRate / shiftHoursPerDay;
@@ -206,20 +208,25 @@ const processPayroll = asyncHandler(async (req, res) => {
       if (a.checkIn && a.checkOut) {
         const rawIn = new Date(a.checkIn).getTime();
         const rawOut = new Date(a.checkOut).getTime();
+        const shiftEndMs = shiftEndUTC.getTime();
 
-        // For late employees: credit from shift start so late hours show in lateDeductionAmount
-        // rather than silently reducing earnedBasic.
+        // Credit from shift start (not actual check-in) so late deduction
+        // shows as an explicit line item rather than silently reducing earnedBasic.
         const effectiveFrom = shiftStartUTC.getTime();
-        const effectiveOut = otEnabled
-          ? rawOut
-          : Math.min(rawOut, shiftEndUTC.getTime());
-
-        const fullHours = Math.max(
-          0,
-          (effectiveOut - effectiveFrom) / 3_600_000,
-        );
+        // Regular hours capped at shift end; OT tracked separately below.
+        const effectiveOut = Math.min(rawOut, shiftEndMs);
+        const fullHours = Math.max(0, (effectiveOut - effectiveFrom) / 3_600_000);
         totalWorkHours += fullHours;
         presentDays++;
+
+        // Auto-calculate OT: if checkout is after shift end and OT is enabled,
+        // count those extra minutes as overtime (use manual a.overtime if set).
+        if (otEnabled && rawOut > shiftEndMs) {
+          const autoOT = (rawOut - shiftEndMs) / 3_600_000;
+          attendanceOTHours += (a.overtime > 0) ? a.overtime : autoOT;
+        } else if (a.overtime > 0) {
+          attendanceOTHours += a.overtime;
+        }
 
         if (a.status === "late") {
           lateCount++;
@@ -234,6 +241,7 @@ const processPayroll = asyncHandler(async (req, res) => {
         // Checked in but no checkout — credit full shift hours; track late hours.
         totalWorkHours += shiftHoursPerDay;
         presentDays++;
+        if (a.overtime > 0) attendanceOTHours += a.overtime;
 
         if (a.status === "late") {
           lateCount++;
@@ -249,9 +257,8 @@ const processPayroll = asyncHandler(async (req, res) => {
         totalWorkHours += shiftHoursPerDay;
         presentDays++;
         if (a.status === "late") lateCount++;
+        if (a.overtime > 0) attendanceOTHours += a.overtime;
       }
-
-      if (a.overtime && a.overtime > 0) attendanceOTHours += a.overtime;
     }
 
     // Absent deduction: 1 full daily rate per explicitly absent-marked day.
@@ -320,8 +327,8 @@ const processPayroll = asyncHandler(async (req, res) => {
     const loanUpdates = [];
 
     const shiftHours = shiftTotalMins > 0 ? shiftTotalMins / 60 : 8;
-    const otHourlyRate = dailyRate / shiftHours;
-    const attendanceOTPay = attendanceOTHours * otHourlyRate;
+    const otHourlyRate = (dailyRate / shiftHours) * otMultiplier;
+    const attendanceOTPay = parseFloat((attendanceOTHours * otHourlyRate).toFixed(2));
     const grossSalary =
       earnedSalary + totalAllowances + totalOT + attendanceOTPay;
     const preDeductions =

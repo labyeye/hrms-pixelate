@@ -426,10 +426,10 @@ export default function PayrollPage() {
                         <img
                           src={(p.employee as any).avatar}
                           alt={(p.employee as any)?.firstName}
-                          className="w-7 h-7 border-2 border-black object-cover shrink-0"
+                          className="w-7 h-7 border-2 border-black object-cover shrink-0 rounded-full"
                         />
                       ) : (
-                        <div className="w-7 h-7 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                        <div className="w-7 h-7 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[10px] font-bold text-white shrink-0 rounded-full">
                           {(p.employee as any)?.firstName?.[0]?.toUpperCase()}
                         </div>
                       )}

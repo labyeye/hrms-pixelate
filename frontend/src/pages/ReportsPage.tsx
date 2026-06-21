@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { buildReportHTML } from "@/lib/reportPrintHTML";
 import * as XLSX from "xlsx";
 import {
   BarChart,
@@ -317,6 +318,14 @@ const REPORTS: ReportDef[] = [
     icon: Users,
     available: true,
   },
+  {
+    id: "employee-report",
+    name: "Employee Report",
+    desc: "Select an employee and report type — attendance, salary slip, leave, or full profile.",
+    category: "employee",
+    icon: FileText,
+    available: true,
+  },
 ];
 
 function exportCSV(rows: string[][], filename: string) {
@@ -341,16 +350,11 @@ function exportXLSX(rows: string[][], filename: string) {
   XLSX.writeFile(wb, filename.replace(".csv", ".xlsx"));
 }
 
-function printSection(id: string, title: string) {
-  const el = document.getElementById(id);
-  if (!el) return;
+function printReport(title: string, period: string, headers: string[], rows: string[][]) {
   const win = window.open("", "_blank");
   if (!win) return;
-  win.document.write(
-    `<html><head><title>${title}</title><style>body{font-family:sans-serif;font-size:12px;margin:20px}h2{font-size:16px;margin-bottom:12px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:6px 10px;text-align:left}th{background:#f0f6ff;font-weight:bold}tr:nth-child(even){background:#f9f9f9}</style></head><body><h2>${title}</h2>${el.innerHTML}</body></html>`,
-  );
+  win.document.write(buildReportHTML(title, period, headers, rows));
   win.document.close();
-  win.print();
 }
 
 function NbSelect({
@@ -418,6 +422,63 @@ function LoadingState() {
   );
 }
 
+const STATUS_BADGE: Record<string, string> = {
+  present: "bg-green-100 text-green-700 border border-green-300",
+  late: "bg-orange-100 text-orange-700 border border-orange-300",
+  absent: "bg-red-100 text-red-700 border border-red-300",
+  half_day: "bg-yellow-100 text-yellow-700 border border-yellow-300",
+  "half day": "bg-yellow-100 text-yellow-700 border border-yellow-300",
+  on_leave: "bg-blue-100 text-blue-700 border border-blue-300",
+  "on leave": "bg-blue-100 text-blue-700 border border-blue-300",
+  leave: "bg-blue-100 text-blue-700 border border-blue-300",
+  holiday: "bg-purple-100 text-purple-700 border border-purple-300",
+  weekend: "bg-gray-100 text-gray-500 border border-gray-200",
+  paid: "bg-green-100 text-green-700 border border-green-300",
+  pending: "bg-orange-100 text-orange-700 border border-orange-300",
+  approved: "bg-green-100 text-green-700 border border-green-300",
+  rejected: "bg-red-100 text-red-700 border border-red-300",
+  cancelled: "bg-gray-100 text-gray-500 border border-gray-200",
+  active: "bg-green-100 text-green-700 border border-green-300",
+  inactive: "bg-red-100 text-red-700 border border-red-300",
+  terminated: "bg-red-100 text-red-700 border border-red-300",
+  missing: "bg-red-100 text-red-700 border border-red-300",
+  neft: "bg-blue-100 text-blue-700 border border-blue-300",
+};
+
+const AVATAR_PALETTE = ["#024BAB", "#00C48C", "#FA731C", "#7C3AED", "#0891B2", "#DC2626"];
+function getAvatarColor(name: string) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
+  return AVATAR_PALETTE[Math.abs(h) % AVATAR_PALETTE.length];
+}
+function getInitials(name: string) {
+  return name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
+}
+
+function StatusCell({ val }: { val: string }) {
+  const key = val.toLowerCase().trim();
+  const cls = STATUS_BADGE[key];
+  if (cls) return <span className={cn("px-2 py-0.5 text-[10px] font-black uppercase rounded", cls)}>{val}</span>;
+  return <span>{val}</span>;
+}
+
+function NameCell({ name }: { name: string }) {
+  if (!name || name === "—") return <span>{name}</span>;
+  const color = getAvatarColor(name);
+  const initials = getInitials(name);
+  return (
+    <span className="flex items-center gap-2">
+      <span
+        className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-black flex-shrink-0"
+        style={{ backgroundColor: color }}
+      >
+        {initials}
+      </span>
+      <span>{name}</span>
+    </span>
+  );
+}
+
 function ReportTable({
   id,
   headers,
@@ -427,6 +488,13 @@ function ReportTable({
   headers: string[];
   rows: string[][];
 }) {
+  const nameColIdx = headers.findIndex((h) =>
+    ["employee", "name", "employee name"].includes(h.toLowerCase()),
+  );
+  const statusColIdx = headers.findIndex((h) =>
+    ["status", "payment status"].includes(h.toLowerCase()),
+  );
+
   return (
     <div className="border-2 bg-white overflow-hidden">
       <div id={id} className="overflow-auto">
@@ -457,7 +525,13 @@ function ReportTable({
                     key={j}
                     className="px-4 py-2.5 text-sm text-black whitespace-nowrap"
                   >
-                    {cell}
+                    {j === nameColIdx ? (
+                      <NameCell name={cell} />
+                    ) : j === statusColIdx ? (
+                      <StatusCell val={cell} />
+                    ) : (
+                      cell
+                    )}
                   </td>
                 ))}
               </tr>
@@ -541,9 +615,11 @@ function PayReportGen({ departments }: { departments: any[] }) {
         <div className="ml-auto flex gap-2">
           <button
             onClick={() =>
-              printSection(
-                "pay-tbl",
-                `Pay Report — ${MONTHS[+month - 1]} ${year}`,
+              printReport(
+                "Pay Report",
+                `${MONTHS[+month - 1]} ${year}`,
+                headers,
+                rows,
               )
             }
             className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white hover:bg-gray-50"
@@ -664,9 +740,11 @@ function SalaryRegisterGen({ departments }: { departments: any[] }) {
         <div className="ml-auto flex gap-2">
           <button
             onClick={() =>
-              printSection(
-                "sal-reg-tbl",
-                `Salary Register — ${MONTHS[+month - 1]} ${year}`,
+              printReport(
+                "Salary Register",
+                `${MONTHS[+month - 1]} ${year}`,
+                headers,
+                rows,
               )
             }
             className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white"
@@ -1654,9 +1732,11 @@ function AttendanceReportGen({ departments }: { departments: any[] }) {
         <div className="ml-auto flex gap-2">
           <button
             onClick={() =>
-              printSection(
-                "att-rpt-tbl",
-                `Employee Attendance Report — ${MONTHS[+month - 1]} ${year}`,
+              printReport(
+                "Employee Attendance Report",
+                `${MONTHS[+month - 1]} ${year}`,
+                headers,
+                rows,
               )
             }
             className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white"
@@ -2179,7 +2259,7 @@ function EmployeeDirectoryGen({ departments }: { departments: any[] }) {
         </NbSelect>
         <div className="ml-auto flex gap-2">
           <button
-            onClick={() => printSection("emp-dir-tbl", "Employee Directory")}
+            onClick={() => printReport("Employee Directory", new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" }), headers, rows)}
             className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white"
           >
             <Printer className="w-4 h-4" /> Print
@@ -2200,6 +2280,278 @@ function EmployeeDirectoryGen({ departments }: { departments: any[] }) {
         <EmptyState msg="No employees match the filters" />
       ) : (
         <ReportTable id="emp-dir-tbl" headers={headers} rows={rows} />
+      )}
+    </div>
+  );
+}
+
+const EMP_REPORT_TYPES = [
+  { id: "attendance", label: "Attendance Report", desc: "Monthly attendance — daily status, check-in/out times" },
+  { id: "salary-slip", label: "Salary Slip", desc: "Monthly salary slip with earnings, deductions, net pay" },
+  { id: "leave", label: "Leave Report", desc: "Yearly leave history — types, dates, approval status" },
+  { id: "profile", label: "Employee Profile", desc: "Full profile — personal, employment, bank details" },
+];
+
+function EmployeeReportGen({ departments: _departments }: { departments: any[] }) {
+  const now = new Date();
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [search, setSearch] = useState("");
+  const [selectedEmp, setSelectedEmp] = useState<any>(null);
+  const [reportType, setReportType] = useState<string | null>(null);
+  const [month, setMonth] = useState(String(now.getMonth() + 1));
+  const [year, setYear] = useState(String(now.getFullYear()));
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [empLoading, setEmpLoading] = useState(true);
+  const [generated, setGenerated] = useState(false);
+
+  useEffect(() => {
+    employeeAPI.getAll({ limit: "500", status: "active" }).then((r) => {
+      if (r.success) setEmployees(r.data);
+      setEmpLoading(false);
+    }).catch(() => setEmpLoading(false));
+  }, []);
+
+  const filtered = employees.filter((e) => {
+    const q = search.toLowerCase();
+    return (
+      !q ||
+      `${e.firstName} ${e.lastName}`.toLowerCase().includes(q) ||
+      (e.employeeId || "").toLowerCase().includes(q) ||
+      (e.department?.name || "").toLowerCase().includes(q)
+    );
+  });
+
+  async function generate() {
+    if (!selectedEmp || !reportType) return;
+    setLoading(true);
+    setGenerated(false);
+    try {
+      if (reportType === "attendance") {
+        const r = await attendanceAPI.getAll({ employeeId: selectedEmp._id, month, year, limit: "60" });
+        setData(r.data || []);
+      } else if (reportType === "salary-slip") {
+        const r = await payrollAPI.getAll({ employeeId: selectedEmp._id, month, year });
+        setData(r.data || []);
+      } else if (reportType === "leave") {
+        const r = await leaveAPI.getAll({ employeeId: selectedEmp._id, year, limit: "200" });
+        setData(r.data || []);
+      } else if (reportType === "profile") {
+        setData([selectedEmp]);
+      }
+    } catch {}
+    setLoading(false);
+    setGenerated(true);
+  }
+
+  function getHeaders() {
+    if (reportType === "attendance") return ["Date", "Status", "Check In", "Check Out", "Work Hours"];
+    if (reportType === "salary-slip") return ["Component", "Amount"];
+    if (reportType === "leave") return ["From", "To", "Days", "Type", "Reason", "Status"];
+    if (reportType === "profile") return ["Field", "Value"];
+    return [];
+  }
+
+  function getRows(): string[][] {
+    if (reportType === "attendance") {
+      return data.map((r) => [
+        new Date(r.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", weekday: "short" }),
+        (r.status || "").toUpperCase().replace("_", " "),
+        r.checkIn ? new Date(r.checkIn).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "—",
+        r.checkOut ? new Date(r.checkOut).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "—",
+        r.workHours ? `${r.workHours}h` : "—",
+      ]);
+    }
+    if (reportType === "salary-slip" && data[0]) {
+      const p = data[0];
+      return [
+        ["Basic Salary", formatCurrency(p.basicSalary || 0)],
+        ["HRA", formatCurrency(p.hra || 0)],
+        ["DA", formatCurrency(p.da || 0)],
+        ["TA", formatCurrency(p.ta || 0)],
+        ["Medical Allowance", formatCurrency(p.medicalAllowance || 0)],
+        ["Gross Salary", formatCurrency(p.grossSalary || 0)],
+        ["PF (Deduction)", `- ${formatCurrency(p.pf || 0)}`],
+        ["ESI (Deduction)", `- ${formatCurrency(p.esi || 0)}`],
+        ["TDS (Deduction)", `- ${formatCurrency(p.tds || 0)}`],
+        ["Total Deductions", `- ${formatCurrency(p.totalDeductions || 0)}`],
+        ["NET PAY", formatCurrency(p.netSalary || 0)],
+      ];
+    }
+    if (reportType === "leave") {
+      return data.map((l) => [
+        formatDate(l.startDate),
+        formatDate(l.endDate),
+        String(l.days || 0),
+        (l.leaveType || "").charAt(0).toUpperCase() + (l.leaveType || "").slice(1),
+        l.reason || "—",
+        (l.status || "").toUpperCase(),
+      ]);
+    }
+    if (reportType === "profile" && data[0]) {
+      const e = data[0];
+      return [
+        ["Employee ID", e.employeeId || "—"],
+        ["Full Name", `${e.firstName} ${e.lastName}`],
+        ["Email", e.email || "—"],
+        ["Phone", e.phone || "—"],
+        ["Department", e.department?.name || "—"],
+        ["Designation", e.designation || "—"],
+        ["Employment Type", (e.employmentType || "").replace("_", " ")],
+        ["Join Date", formatDate(e.joinDate)],
+        ["Salary (p.a.)", formatCurrency(e.salary || 0)],
+        ["Status", (e.status || "").toUpperCase()],
+        ["Bank Name", e.bankName || "—"],
+        ["Account No.", e.bankAccount || "—"],
+        ["IFSC", e.ifsc || "—"],
+        ["PF Number", e.pfNumber || "—"],
+        ["ESIC Number", e.esicNumber || "—"],
+      ];
+    }
+    return [];
+  }
+
+  const headers = getHeaders();
+  const rows = getRows();
+  const period = reportType === "leave" ? `Year ${year}` : `${MONTHS[+month - 1]} ${year}`;
+  const empName = selectedEmp ? `${selectedEmp.firstName} ${selectedEmp.lastName}` : "";
+  const color = selectedEmp ? getAvatarColor(empName) : "#024BAB";
+  const initials = selectedEmp ? getInitials(empName) : "";
+
+  return (
+    <div className="space-y-5">
+      {/* Step 1: Select Employee */}
+      <div className="border-2 border-black bg-white p-5">
+        <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-3">Step 1 — Select Employee</p>
+        <div className="relative mb-3">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by name, ID or department..."
+            className="w-full border-2 border-black pl-9 pr-4 py-2 text-sm font-medium bg-white focus:outline-none"
+          />
+        </div>
+        {empLoading ? (
+          <LoadingState />
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-64 overflow-y-auto">
+            {filtered.map((emp) => {
+              const name = `${emp.firstName} ${emp.lastName}`;
+              const isSelected = selectedEmp?._id === emp._id;
+              const bg = getAvatarColor(name);
+              return (
+                <button
+                  key={emp._id}
+                  onClick={() => { setSelectedEmp(emp); setGenerated(false); setData([]); }}
+                  className={cn(
+                    "flex items-center gap-2 border-2 p-2.5 text-left transition-all",
+                    isSelected ? "border-[#024BAB] bg-[#024BAB]/5" : "border-black/20 bg-white hover:border-black",
+                  )}
+                >
+                  <span
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[10px] font-black flex-shrink-0"
+                    style={{ backgroundColor: bg }}
+                  >
+                    {getInitials(name)}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-xs font-black text-black truncate">{name}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{emp.department?.name || emp.designation}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Step 2: Select Report Type */}
+      {selectedEmp && (
+        <div className="border-2 border-black bg-white p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <span
+              className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-black"
+              style={{ backgroundColor: color }}
+            >
+              {initials}
+            </span>
+            <div>
+              <p className="font-black text-black">{empName}</p>
+              <p className="text-xs text-muted-foreground">{selectedEmp.employeeId} · {selectedEmp.department?.name} · {selectedEmp.designation}</p>
+            </div>
+            <button onClick={() => { setSelectedEmp(null); setReportType(null); setGenerated(false); }} className="ml-auto border-2 border-black p-1 bg-white hover:bg-gray-50">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-3">Step 2 — Select Report Type</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {EMP_REPORT_TYPES.map((rt) => (
+              <button
+                key={rt.id}
+                onClick={() => { setReportType(rt.id); setGenerated(false); setData([]); }}
+                className={cn(
+                  "border-2 p-3 text-left transition-all",
+                  reportType === rt.id ? "border-[#024BAB] bg-[#024BAB] text-white" : "border-black bg-white hover:border-[#024BAB]",
+                )}
+              >
+                <p className={cn("text-xs font-black", reportType === rt.id ? "text-white" : "text-black")}>{rt.label}</p>
+                <p className={cn("text-[10px] mt-0.5", reportType === rt.id ? "text-white/70" : "text-muted-foreground")}>{rt.desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Step 3: Period + Generate */}
+      {selectedEmp && reportType && (
+        <div className="border-2 border-black bg-white p-5 space-y-4">
+          <p className="text-xs font-black uppercase tracking-wider text-[#024BAB]">Step 3 — Select Period & Generate</p>
+          <div className="flex flex-wrap gap-3 items-center">
+            {reportType !== "leave" && reportType !== "profile" && (
+              <NbSelect value={month} onChange={setMonth} className="w-32">
+                {MONTHS.map((m, i) => <option key={m} value={String(i + 1)}>{m}</option>)}
+              </NbSelect>
+            )}
+            {reportType !== "profile" && (
+              <NbSelect value={year} onChange={setYear} className="w-28">
+                {YEARS.map((y) => <option key={y} value={String(y)}>{y}</option>)}
+              </NbSelect>
+            )}
+            <button
+              onClick={generate}
+              disabled={loading}
+              className="flex items-center gap-2 border-2 border-black px-4 py-2 text-sm font-black bg-[#024BAB] text-white disabled:opacity-50"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+              Generate
+            </button>
+            {generated && rows.length > 0 && (
+              <>
+                <button
+                  onClick={() => printReport(`${EMP_REPORT_TYPES.find(r => r.id === reportType)?.label} — ${empName}`, period, headers, rows)}
+                  className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white hover:bg-gray-50"
+                >
+                  <Printer className="w-4 h-4" /> Print
+                </button>
+                <button
+                  onClick={() => exportCSV([headers, ...rows], `${reportType}_${empName.replace(" ", "_")}_${period}.csv`)}
+                  className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#00C48C] text-white"
+                >
+                  <Download className="w-4 h-4" /> CSV
+                </button>
+              </>
+            )}
+          </div>
+
+          {generated && (
+            rows.length === 0 ? (
+              <EmptyState msg="No data for the selected period" />
+            ) : (
+              <ReportTable id="emp-rpt-tbl" headers={headers} rows={rows} />
+            )
+          )}
+        </div>
       )}
     </div>
   );
@@ -2243,6 +2595,7 @@ const REPORT_COMPONENT: Record<
   "leave-report": LeaveReportGen,
   "miss-punch": MissPunchGen,
   "employee-directory": EmployeeDirectoryGen,
+  "employee-report": EmployeeReportGen,
 };
 
 const CATEGORY_META: Record<
