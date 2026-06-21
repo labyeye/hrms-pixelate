@@ -405,8 +405,66 @@ async function sendAttendanceStatus(
  * Body:  {{1}} is your NestHR login OTP. It expires in 10 minutes. Do not share this code.
  */
 async function sendPhoneOtp(phone, { otp }) {
+  const accessToken = process.env.META_WA_TOKEN;
+  const phoneNumberId = process.env.META_WA_PHONE_ID;
+  if (!accessToken || !phoneNumberId) {
+    console.warn("[WA-DEBUG] ABORT: META_WA_TOKEN or META_WA_PHONE_ID not set");
+    return;
+  }
+
+  let toNumber = phone.replace(/^\+/, "").replace(/\s/g, "");
+  if (/^[6-9]\d{9}$/.test(toNumber)) toNumber = "91" + toNumber;
+
+  // Authentication templates require body + button components with the OTP
+  const body = JSON.stringify({
+    messaging_product: "whatsapp",
+    to: toNumber,
+    type: "template",
+    template: {
+      name: "neshr_otp",
+      language: { code: "en" },
+      components: [
+        {
+          type: "body",
+          parameters: [{ type: "text", text: String(otp) }],
+        },
+        {
+          type: "button",
+          sub_type: "url",
+          index: "0",
+          parameters: [{ type: "text", text: String(otp) }],
+        },
+      ],
+    },
+  });
+
   try {
-    await sendTemplate(phone, "neshr_otp", [otp]);
+    await new Promise((resolve, reject) => {
+      const req = require("https").request(
+        {
+          hostname: "graph.facebook.com",
+          path: `/v20.0/${phoneNumberId}/messages`,
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Content-Length": Buffer.byteLength(body),
+            Authorization: `Bearer ${accessToken}`,
+          },
+        },
+        (res) => {
+          let data = "";
+          res.on("data", (chunk) => (data += chunk));
+          res.on("end", () => {
+            if (res.statusCode >= 200 && res.statusCode < 300)
+              resolve(JSON.parse(data));
+            else reject(new Error(`Meta API ${res.statusCode}: ${data}`));
+          });
+        },
+      );
+      req.on("error", reject);
+      req.write(body);
+      req.end();
+    });
     console.log(`[WA-DEBUG] ✅ OTP sent to ${phone}`);
   } catch (err) {
     console.error(`[WA-DEBUG] ❌ OTP FAILED to ${phone}:`, err.message);
