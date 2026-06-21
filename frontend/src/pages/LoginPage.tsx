@@ -11,6 +11,7 @@ import {
   IndianRupee,
   BarChart2,
   ShieldCheck,
+  Smartphone,
 } from "lucide-react";
 import nesthrlogo from "../../assets/logo.png";
 import { authAPI } from "@/services/api";
@@ -28,6 +29,13 @@ export default function LoginPage() {
   const [needs2FA, setNeeds2FA] = useState(false);
   const [pending2FAUserId, setPending2FAUserId] = useState("");
   const [tfaCode, setTfaCode] = useState("");
+
+  // Phone OTP state
+  const [loginMode, setLoginMode] = useState<"email" | "phone">("email");
+  const [phone, setPhone] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +66,36 @@ export default function LoginPage() {
       setError(err.message || "Invalid code. Try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setOtpLoading(true);
+    try {
+      await authAPI.sendPhoneOtp(phone.trim());
+      setOtpSent(true);
+    } catch (err: any) {
+      setError(err.message || "Failed to send OTP. Please try again.");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setOtpLoading(true);
+    try {
+      const res = await authAPI.verifyPhoneOtp(phone.trim(), otp.trim());
+      const { token, ...userData } = res.data;
+      completeLogin(userData, token);
+      navigate("/");
+    } catch (err: any) {
+      setError(err.message || "Invalid or expired OTP.");
+    } finally {
+      setOtpLoading(false);
     }
   };
 
@@ -127,6 +165,7 @@ export default function LoginPage() {
           </div>
 
           {needs2FA ? (
+            /* ── 2FA verification ──────────────────────────────────── */
             <>
               <div className="mb-8">
                 <div className="flex items-center gap-3 mb-2">
@@ -197,7 +236,104 @@ export default function LoginPage() {
                 </button>
               </form>
             </>
+          ) : loginMode === "phone" ? (
+            /* ── Phone OTP login ──────────────────────────────────── */
+            <>
+              <div className="mb-8">
+                <div className="flex items-center gap-3 mb-2">
+                  <Smartphone className="w-7 h-7 text-[#024BAB]" />
+                  <h2 className="text-2xl font-display font-black text-black">
+                    {otpSent ? "Enter OTP" : "Phone Login"}
+                  </h2>
+                </div>
+                <p className="text-sm text-gray-500 font-medium">
+                  {otpSent
+                    ? "We sent a 6-digit OTP to your WhatsApp."
+                    : "We'll send a one-time password to your WhatsApp."}
+                </p>
+              </div>
+
+              {error && (
+                <div className="flex items-center gap-2 bg-red-50 border-2 border-red-400 text-red-600 text-sm px-3 py-2.5 mb-5">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span className="font-medium">{error}</span>
+                </div>
+              )}
+
+              {!otpSent ? (
+                <form onSubmit={handleSendOtp} className="space-y-5">
+                  <div>
+                    <label className="block text-xs font-black text-black uppercase tracking-wider mb-1.5">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => { setPhone(e.target.value); setError(""); }}
+                      placeholder="+91 98765 43210"
+                      className="w-full px-4 py-3 border-2 border-black text-sm font-medium bg-white focus:outline-none focus:border-[#024BAB] transition-colors"
+                      required
+                      autoFocus
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={otpLoading || !phone.trim()}
+                    className="w-full bg-[#024BAB] text-white py-3.5 text-sm font-black border-2 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#0a0a0a] transition-all flex items-center justify-center gap-2"
+                  >
+                    {otpLoading ? (
+                      <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Sending...</>
+                    ) : (
+                      <>Send OTP on WhatsApp <ArrowRight className="w-4 h-4" /></>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setLoginMode("email"); setError(""); setPhone(""); }}
+                    className="w-full py-2 text-xs font-black text-gray-500 hover:text-black transition-colors"
+                  >
+                    ← Sign in with Email
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyOtp} className="space-y-5">
+                  <div>
+                    <label className="block text-xs font-black text-black uppercase tracking-wider mb-1.5">
+                      WhatsApp OTP
+                    </label>
+                    <input
+                      type="text"
+                      value={otp}
+                      onChange={(e) => { setOtp(e.target.value.replace(/\D/g, "").slice(0, 6)); setError(""); }}
+                      placeholder="000000"
+                      className="w-full px-4 py-3 border-2 border-black text-lg font-black tracking-[0.5em] text-center bg-white focus:outline-none focus:border-[#024BAB] transition-colors"
+                      autoFocus
+                      maxLength={6}
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={otpLoading || otp.length < 6}
+                    className="w-full bg-[#024BAB] text-white py-3.5 text-sm font-black border-2 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#0a0a0a] transition-all flex items-center justify-center gap-2"
+                  >
+                    {otpLoading ? (
+                      <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Verifying...</>
+                    ) : (
+                      <>Verify OTP <ArrowRight className="w-4 h-4" /></>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setOtpSent(false); setOtp(""); setError(""); }}
+                    className="w-full py-2 text-xs font-black text-gray-500 hover:text-black transition-colors"
+                  >
+                    ← Change number / Resend
+                  </button>
+                </form>
+              )}
+            </>
           ) : (
+            /* ── Email / password login ───────────────────────────── */
             <>
               {}
               <div className="mb-8">
@@ -300,7 +436,18 @@ export default function LoginPage() {
               </form>
 
               {}
-              <div className="mt-8 pt-6 border-t-2 border-black/10 text-center">
+              <div className="mt-6 text-center">
+                <button
+                  type="button"
+                  onClick={() => { setLoginMode("phone"); setError(""); }}
+                  className="inline-flex items-center gap-1.5 text-xs font-black text-[#024BAB] hover:underline"
+                >
+                  <Smartphone className="w-3.5 h-3.5" /> Login with Phone OTP (WhatsApp)
+                </button>
+              </div>
+
+              {}
+              <div className="mt-6 pt-6 border-t-2 border-black/10 text-center">
                 <p className="text-xs text-gray-500">
                   New to NestHR?{" "}
                   <Link

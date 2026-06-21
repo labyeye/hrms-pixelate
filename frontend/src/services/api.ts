@@ -63,6 +63,16 @@ export const authAPI = {
       method: "POST",
       body: JSON.stringify({ userId, token }),
     }),
+  sendPhoneOtp: (phone: string) =>
+    request("/auth/otp/send", {
+      method: "POST",
+      body: JSON.stringify({ phone }),
+    }),
+  verifyPhoneOtp: (phone: string, otp: string) =>
+    request("/auth/otp/verify", {
+      method: "POST",
+      body: JSON.stringify({ phone, otp }),
+    }),
 };
 
 export const dashboardAPI = {

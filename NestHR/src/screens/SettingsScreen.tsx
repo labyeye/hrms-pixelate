@@ -24,6 +24,7 @@ import {
   Shield,
   Palette,
   ChevronLeft,
+  DollarSign,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { settingsAPI } from '../api/api';
@@ -279,6 +280,32 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Payroll Settings */}
+        <View>
+          <View style={styles.sectionHeader}>
+            <DollarSign size={14} color={C.primary} />
+            <Text style={styles.sectionTitle}>Payroll Settings</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => navigation.navigate('PayrollSettings')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.navRow}>
+              <View style={styles.navRowLeft}>
+                <View style={styles.navIconWrap}>
+                  <DollarSign size={16} color={C.primary} />
+                </View>
+                <View>
+                  <Text style={styles.navRowLabel}>Payroll Configuration</Text>
+                  <Text style={styles.navRowDesc}>Shift timings, late rules & deductions</Text>
+                </View>
+              </View>
+              <ChevronRight size={16} color={C.textMuted} />
+            </View>
+          </TouchableOpacity>
+        </View>
+
         {/* Notifications placeholder */}
         <View>
           <View style={styles.sectionHeader}>
@@ -387,4 +414,23 @@ const styles = StyleSheet.create({
   },
   toggleLabel: { fontSize: 13, fontWeight: '700', color: C.black },
   toggleDesc: { fontSize: 11, color: C.textMuted, marginTop: 2 },
+  navRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  navRowLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  navIconWrap: {
+    width: 32,
+    height: 32,
+    backgroundColor: '#EEF2FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: C.black,
+  },
+  navRowLabel: { fontSize: 13, fontWeight: '700', color: C.black },
+  navRowDesc: { fontSize: 11, color: C.textMuted, marginTop: 2 },
 });

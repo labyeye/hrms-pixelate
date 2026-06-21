@@ -21,6 +21,7 @@ interface AuthContextType {
     email: string;
     password: string;
   }) => Promise<{ success: boolean; error?: string }>;
+  loginWithToken: (userData: any, token: string) => Promise<void>;
   logout: () => void;
   updateUser: (data: Partial<User>) => void;
 }
@@ -100,6 +101,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  const loginWithToken = useCallback(async (userData: any, token: string) => {
+    await setToken(token);
+    setUser(mapUser(userData));
+  }, []);
+
   const logout = useCallback(async () => {
     await removeToken();
     setUser(null);
@@ -117,6 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         login,
         register,
+        loginWithToken,
         logout,
         updateUser,
       }}

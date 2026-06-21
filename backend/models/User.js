@@ -30,6 +30,8 @@ const userSchema = new mongoose.Schema(
     twoFactorEnabled: { type: Boolean, default: false },
     twoFactorBackupCodes: [{ type: String }],
     pendingTwoFactor: { type: Boolean, default: false },
+    phoneOtp: { type: String },
+    phoneOtpExpire: { type: Date },
   },
   { timestamps: true },
 );

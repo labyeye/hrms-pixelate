@@ -98,6 +98,10 @@ export const authAPI = {
   getMe: () => request('/auth/me'),
   updateProfile: (body: object) =>
     request('/auth/profile', { method: 'PUT', body: JSON.stringify(body) }),
+  sendPhoneOtp: (phone: string) =>
+    request('/auth/otp/send', { method: 'POST', body: JSON.stringify({ phone }) }),
+  verifyPhoneOtp: (phone: string, otp: string) =>
+    request('/auth/otp/verify', { method: 'POST', body: JSON.stringify({ phone, otp }) }),
 };
 
 export const dashboardAPI = {

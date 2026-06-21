@@ -398,6 +398,22 @@ async function sendAttendanceStatus(
   }
 }
 
+// ─── Phone OTP Login (no per-company gate) ───────────────────────────────────
+
+/**
+ * Template: neshr_otp
+ * Body:  {{1}} is your NestHR login OTP. It expires in 10 minutes. Do not share this code.
+ */
+async function sendPhoneOtp(phone, { otp }) {
+  try {
+    await sendTemplate(phone, "neshr_otp", [otp]);
+    console.log(`[WA-DEBUG] ✅ OTP sent to ${phone}`);
+  } catch (err) {
+    console.error(`[WA-DEBUG] ❌ OTP FAILED to ${phone}:`, err.message);
+    throw err;
+  }
+}
+
 // ─── NestHR Billing (no per-company gate) ────────────────────────────────────
 
 /**
@@ -432,6 +448,7 @@ async function sendSubscriptionWA(
 }
 
 module.exports = {
+  sendPhoneOtp,
   sendCheckIn,
   sendCheckOut,
   sendCheckInHR,

@@ -10,6 +10,8 @@ const {
   confirm2FA,
   disable2FA,
   verify2FA,
+  sendOtp,
+  verifyOtp,
 } = require("../controllers/authController");
 const { protect } = require("../middleware/auth");
 const router = express.Router();
@@ -21,6 +23,9 @@ router.put("/profile", protect, updateProfile);
 
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);
+
+router.post("/otp/send", sendOtp);
+router.post("/otp/verify", verifyOtp);
 
 router.post("/2fa/setup", protect, setup2FA);
 router.post("/2fa/confirm", protect, confirm2FA);

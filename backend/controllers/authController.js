@@ -7,6 +7,7 @@ const Subscription = require("../models/Subscription");
 const generateToken = require("../utils/generateToken");
 const { validateBody } = require("../middleware/validate");
 const { sendPasswordResetEmail } = require("../services/notificationService");
+const { sendPhoneOtp } = require("../services/whatsappService");
 
 const registerSchema = {
   name: { required: true, type: "string", minLength: 2, maxLength: 80 },
@@ -423,6 +424,102 @@ const verify2FA = asyncHandler(async (req, res) => {
   });
 });
 
+// Phone OTP — step 1: send OTP to WhatsApp
+const sendOtp = asyncHandler(async (req, res) => {
+  const { phone } = req.body;
+  if (!phone) {
+    res.status(400);
+    throw new Error("Phone number is required");
+  }
+
+  const normalised = phone.replace(/\s/g, "");
+  const user = await User.findOne({ phone: { $regex: new RegExp(normalised.replace(/^\+91/, "").slice(-10) + "$") } });
+  if (!user) {
+    // Return generic success to avoid user enumeration
+    return res.json({ success: true, message: "If that phone number is registered, an OTP has been sent." });
+  }
+
+  if (user.status === "inactive") {
+    res.status(403);
+    throw new Error("Your account has been deactivated. Please contact HR.");
+  }
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  user.phoneOtp = crypto.createHash("sha256").update(otp).digest("hex");
+  user.phoneOtpExpire = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+  await user.save();
+
+  await sendPhoneOtp(normalised, { otp });
+
+  res.json({ success: true, message: "If that phone number is registered, an OTP has been sent." });
+});
+
+// Phone OTP — step 2: verify OTP and return JWT
+const verifyOtp = asyncHandler(async (req, res) => {
+  const { phone, otp } = req.body;
+  if (!phone || !otp) {
+    res.status(400);
+    throw new Error("Phone and OTP are required");
+  }
+
+  const normalised = phone.replace(/\s/g, "");
+  const hashed = crypto.createHash("sha256").update(otp.trim()).digest("hex");
+
+  const user = await User.findOne({
+    phone: { $regex: new RegExp(normalised.replace(/^\+91/, "").slice(-10) + "$") },
+    phoneOtp: hashed,
+    phoneOtpExpire: { $gt: new Date() },
+  }).populate({
+    path: "company",
+    select: "name email phone status subscription industry website",
+    populate: {
+      path: "subscription",
+      select: "status plan paymentStatus billingCycle monthlyPrice yearlyPrice maxEmployees currentEmployeeCount renewalDate isTrial trialEndDate",
+    },
+  });
+
+  if (!user) {
+    res.status(401);
+    throw new Error("Invalid or expired OTP");
+  }
+
+  if (user.company && user.role !== "super_admin") {
+    const subscription = await Subscription.findOne({
+      company: user.company._id,
+      status: { $in: ["active", "pending_renewal"] },
+    });
+    if (!subscription || subscription.paymentStatus !== "completed") {
+      res.status(403);
+      throw new Error("No active subscription. Please contact your administrator.");
+    }
+    if (subscription.isTrial && subscription.trialEndDate && subscription.trialEndDate < new Date()) {
+      res.status(403);
+      throw new Error("Your 2-month free trial has expired. Please subscribe to continue.");
+    }
+  }
+
+  user.phoneOtp = undefined;
+  user.phoneOtpExpire = undefined;
+  user.lastLogin = new Date();
+  await user.save();
+
+  res.json({
+    success: true,
+    data: {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      avatar: user.avatar,
+      phone: user.phone,
+      status: user.status,
+      department: user.department,
+      company: user.company,
+      token: generateToken(user._id),
+    },
+  });
+});
+
 module.exports = {
   register,
   login,
@@ -434,4 +531,6 @@ module.exports = {
   confirm2FA,
   disable2FA,
   verify2FA,
+  sendOtp,
+  verifyOtp,
 };
