@@ -6,6 +6,7 @@ const {
   getSubscription,
   getInvoices,
   createOrder,
+  validateOfferCode,
   verifyPayment,
   verifyRazorpayPayment,
   verifyHdfcPayment,
@@ -14,6 +15,7 @@ const {
 router.get("/plans", getPlans);
 router.get("/subscription", protect, getSubscription);
 router.get("/invoices", protect, getInvoices);
+router.post("/validate-offer", protect, validateOfferCode);
 router.post("/create-order", protect, createOrder);
 router.post("/verify-payment", protect, verifyPayment);
 router.post("/verify-razorpay", protect, verifyRazorpayPayment);

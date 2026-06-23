@@ -1,7 +1,20 @@
 const express = require("express");
 const router = express.Router();
-const { getCrmInvoices } = require("../controllers/crmController");
+const {
+  getCrmInvoices,
+  getCrmOffers,
+  getCrmOfferById,
+  createCrmOffer,
+  updateCrmOffer,
+  deleteCrmOffer,
+} = require("../controllers/crmController");
 
 router.get("/invoices", getCrmInvoices);
+
+router.get("/offers", getCrmOffers);
+router.get("/offers/:id", getCrmOfferById);
+router.post("/offers", createCrmOffer);
+router.patch("/offers/:id", updateCrmOffer);
+router.delete("/offers/:id", deleteCrmOffer);
 
 module.exports = router;

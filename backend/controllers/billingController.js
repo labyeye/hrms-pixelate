@@ -4,6 +4,7 @@ const Plan = require("../models/Plan");
 const Subscription = require("../models/Subscription");
 const Invoice = require("../models/Invoice");
 const User = require("../models/User");
+const OfferCode = require("../models/OfferCode");
 const hdfcPayment = require("../services/hdfcPaymentService");
 const razorpayService = require("../services/razorpayService");
 const { sendPaymentConfirmations } = require("../services/notificationService");
@@ -45,11 +46,42 @@ const getInvoices = asyncHandler(async (req, res) => {
   res.json({ success: true, data: invoices });
 });
 
+const validateOfferCode = asyncHandler(async (req, res) => {
+  const { code } = req.body;
+  if (!code) {
+    res.status(400);
+    throw new Error("Offer code is required");
+  }
+
+  const offer = await OfferCode.findOne({ code: code.toUpperCase().trim() });
+  if (!offer || !offer.isActive) {
+    return res.status(404).json({ success: false, message: "Invalid or expired offer code" });
+  }
+  if (offer.expiresAt && offer.expiresAt < new Date()) {
+    return res.status(400).json({ success: false, message: "This offer code has expired" });
+  }
+  if (offer.usedCount >= offer.maxUses) {
+    return res.status(400).json({ success: false, message: "This offer code has reached its usage limit" });
+  }
+
+  res.json({
+    success: true,
+    message: `Offer code applied! You will get ${offer.bonusMonths} bonus month(s) added to your subscription.`,
+    data: {
+      code: offer.code,
+      bonusMonths: offer.bonusMonths,
+      description: offer.description,
+      remainingUses: offer.maxUses - offer.usedCount,
+    },
+  });
+});
+
 const createOrder = asyncHandler(async (req, res) => {
   const {
     plan: planId,
     billingCycle = "monthly",
     gateway = "razorpay",
+    offerCode,
   } = req.body;
 
   if (!planId || !["starter", "professional", "enterprise"].includes(planId)) {
@@ -77,6 +109,25 @@ const createOrder = asyncHandler(async (req, res) => {
   if (!company) {
     res.status(404);
     throw new Error("Company not found. Complete company setup first.");
+  }
+
+  // Validate offer code if provided
+  let validatedOffer = null;
+  if (offerCode) {
+    const offer = await OfferCode.findOne({ code: offerCode.toUpperCase().trim() });
+    if (!offer || !offer.isActive) {
+      res.status(400);
+      throw new Error("Invalid or expired offer code");
+    }
+    if (offer.expiresAt && offer.expiresAt < new Date()) {
+      res.status(400);
+      throw new Error("This offer code has expired");
+    }
+    if (offer.usedCount >= offer.maxUses) {
+      res.status(400);
+      throw new Error("This offer code has reached its usage limit");
+    }
+    validatedOffer = offer;
   }
 
   const amountRupees =
@@ -112,6 +163,8 @@ const createOrder = asyncHandler(async (req, res) => {
         paymentMethod: "razorpay",
         amountPaid: 0,
         razorpayOrderId: result.orderId,
+        offerCode: validatedOffer ? validatedOffer.code : null,
+        offerBonusMonths: validatedOffer ? validatedOffer.bonusMonths : 0,
       },
       { upsert: true, new: true },
     );
@@ -128,6 +181,8 @@ const createOrder = asyncHandler(async (req, res) => {
       userName: req.user.name,
       userEmail: req.user.email,
       userPhone: req.user.phone || company.phone || "",
+      offerApplied: !!validatedOffer,
+      bonusMonths: validatedOffer ? validatedOffer.bonusMonths : 0,
     };
   } else {
     const orderId = hdfcPayment.generateOrderId();
@@ -164,6 +219,8 @@ const createOrder = asyncHandler(async (req, res) => {
         paymentMethod: "hdfc_smartgateway",
         amountPaid: 0,
         hdfcOrderId: orderId,
+        offerCode: validatedOffer ? validatedOffer.code : null,
+        offerBonusMonths: validatedOffer ? validatedOffer.bonusMonths : 0,
       },
       { upsert: true, new: true },
     );
@@ -176,6 +233,8 @@ const createOrder = asyncHandler(async (req, res) => {
       currency: "INR",
       plan: planId,
       billingCycle,
+      offerApplied: !!validatedOffer,
+      bonusMonths: validatedOffer ? validatedOffer.bonusMonths : 0,
     };
   }
 
@@ -275,11 +334,27 @@ async function _activateSubscription({ lookup, update, invoiceExtra, res }) {
     renewalDate.setMonth(renewalDate.getMonth() + 1);
   }
 
+  // Apply bonus months from offer code if present
+  const bonusMonths = subscription.offerBonusMonths || 0;
+  if (bonusMonths > 0) {
+    renewalDate.setMonth(renewalDate.getMonth() + bonusMonths);
+  }
+
   const updatedSub = await Subscription.findByIdAndUpdate(
     subscription._id,
     { startDate, renewalDate, status: "active", amountPaid, ...update },
     { new: true },
   );
+
+  // Record offer code usage (invoiceNumber assigned just below)
+  let offerCodeDoc = null;
+  if (subscription.offerCode) {
+    offerCodeDoc = await OfferCode.findOneAndUpdate(
+      { code: subscription.offerCode },
+      { $inc: { usedCount: 1 } },
+      { new: true },
+    );
+  }
 
   await Company.findByIdAndUpdate(company._id, {
     status: "active",
@@ -287,7 +362,7 @@ async function _activateSubscription({ lookup, update, invoiceExtra, res }) {
   });
 
   const invoiceCount = await Invoice.countDocuments();
-  const invoiceNumber = `KHT/HR/${String(invoiceCount + 1).padStart(4, "0")}`;
+  const invoiceNumber = `KHT/HR/${String(invoiceCount + 1).padStart(3, "0")}`;
   await Invoice.create({
     company: company._id,
     subscription: updatedSub._id,
@@ -299,6 +374,21 @@ async function _activateSubscription({ lookup, update, invoiceExtra, res }) {
     paidAt: new Date(),
     ...invoiceExtra,
   });
+
+  // Add invoice number to offer usage log
+  if (offerCodeDoc) {
+    await OfferCode.findByIdAndUpdate(offerCodeDoc._id, {
+      $push: {
+        usages: {
+          company: company._id,
+          companyName: company.name,
+          userEmail: company.email,
+          invoiceNumber,
+          usedAt: new Date(),
+        },
+      },
+    });
+  }
 
   const user = await User.findById(company.createdBy);
   const dashboardUrl = process.env.FRONTEND_URL
@@ -327,6 +417,11 @@ async function _activateSubscription({ lookup, update, invoiceExtra, res }) {
       amount: amountPaid,
       renewalDate,
       invoiceNumber,
+      offerApplied: bonusMonths > 0,
+      bonusMonths: bonusMonths > 0 ? bonusMonths : undefined,
+      offerMessage: bonusMonths > 0
+        ? `Congratulations! ${bonusMonths} bonus month(s) added to your subscription.`
+        : undefined,
     },
   });
 }
@@ -343,6 +438,7 @@ module.exports = {
   getSubscription,
   getInvoices,
   createOrder,
+  validateOfferCode,
   verifyPayment,
   verifyRazorpayPayment,
   verifyHdfcPayment,

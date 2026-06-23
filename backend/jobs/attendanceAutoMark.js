@@ -2,6 +2,7 @@ const cron = require("node-cron");
 const Attendance = require("../models/Attendance");
 const Employee = require("../models/Employee");
 const Shift = require("../models/Shift");
+const Leave = require("../models/Leave");
 const { isHolidayDate } = require("../controllers/holidayController");
 
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
@@ -105,36 +106,47 @@ async function processDate(targetDate, istMinutesNow) {
         date: targetDate,
       });
 
-      // ── Case 1: No check-in at all → Absent ─────────────────────────────
+      // ── Case 1: No check-in at all → check leave, then mark Absent ────────
       if (!existing || !existing.checkIn) {
+        // Don't overwrite an already-correct on_leave/holiday/weekend record
+        if (existing && ["on_leave", "holiday", "weekend"].includes(existing.status)) {
+          continue;
+        }
+
+        // Check if employee has an approved leave covering this date
+        const approvedLeave = await Leave.findOne({
+          employee: emp._id,
+          status: "approved",
+          startDate: { $lte: targetDate },
+          endDate: { $gte: targetDate },
+        }).select("leaveType").lean();
+
+        const newStatus = approvedLeave ? "on_leave" : "absent";
+        const newNotes = approvedLeave
+          ? `On approved leave: ${approvedLeave.leaveType}`
+          : "Auto-marked absent: no check-in recorded";
+
         if (existing) {
-          // Record exists but no checkIn — update it
-          if (
-            !["absent", "on_leave", "holiday", "weekend"].includes(
-              existing.status,
-            )
-          ) {
-            existing.status = "absent";
+          if (existing.status !== newStatus) {
+            existing.status = newStatus;
             existing.workHours = 0;
-            existing.notes =
-              (existing.notes ? existing.notes + " | " : "") +
-              "Auto-marked absent: no check-in recorded";
+            existing.notes = (existing.notes ? existing.notes + " | " : "") + newNotes;
             await existing.save();
             console.log(
-              `[AutoMark] Marked absent (updated): ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`,
+              `[AutoMark] Marked ${newStatus} (updated): ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`,
             );
           }
         } else {
           await Attendance.create({
             employee: emp._id,
             date: targetDate,
-            status: "absent",
+            status: newStatus,
             workHours: 0,
             verifyMode: "auto",
-            notes: "Auto-marked absent: no check-in recorded",
+            notes: newNotes,
           });
           console.log(
-            `[AutoMark] Marked absent: ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`,
+            `[AutoMark] Marked ${newStatus}: ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`,
           );
         }
         continue;

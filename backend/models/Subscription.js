@@ -40,6 +40,8 @@ const subscriptionSchema = new mongoose.Schema(
     hdfcBankRefNo: { type: String },
     razorpayOrderId: { type: String, index: true },
     razorpayPaymentId: { type: String },
+    offerCode: { type: String, default: null },
+    offerBonusMonths: { type: Number, default: 0 },
   },
   { timestamps: true },
 );

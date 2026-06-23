@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const Leave = require("../models/Leave");
+const Attendance = require("../models/Attendance");
 const Employee = require("../models/Employee");
 const User = require("../models/User");
 const Company = require("../models/Company");
@@ -15,6 +16,44 @@ const {
   sendLeaveAppliedEmail,
 } = require("../services/notificationService");
 const { logAudit } = require("../utils/auditLogger");
+
+// Upsert attendance as on_leave for each day in the leave range (skip days that already have a check-in)
+async function syncLeaveAttendance(leave) {
+  const start = new Date(leave.startDate);
+  const end = new Date(leave.endDate);
+  start.setUTCHours(0, 0, 0, 0);
+  end.setUTCHours(0, 0, 0, 0);
+
+  for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+    const dayDate = new Date(d);
+    await Attendance.findOneAndUpdate(
+      { employee: leave.employee._id ?? leave.employee, date: dayDate, checkIn: { $exists: false } },
+      {
+        $set: { status: "on_leave", workHours: 0, notes: `Leave approved: ${leave.leaveType}` },
+        $setOnInsert: { employee: leave.employee._id ?? leave.employee, date: dayDate, verifyMode: "manual" },
+      },
+      { upsert: true },
+    );
+  }
+}
+
+// Revert on_leave attendance records back to absent when a leave is revoked
+async function revertLeaveAttendance(leave) {
+  const start = new Date(leave.startDate);
+  const end = new Date(leave.endDate);
+  start.setUTCHours(0, 0, 0, 0);
+  end.setUTCHours(0, 0, 0, 0);
+
+  await Attendance.updateMany(
+    {
+      employee: leave.employee._id ?? leave.employee,
+      date: { $gte: start, $lte: end },
+      status: "on_leave",
+      checkIn: { $exists: false },
+    },
+    { $set: { status: "absent", notes: `Leave ${leave.status}: attendance reverted` } },
+  );
+}
 
 const LEAVE_TYPES = [
   "casual",
@@ -299,6 +338,7 @@ const updateLeaveStatus = asyncHandler(async (req, res) => {
     throw new Error("Leave not found");
   }
 
+  const previousStatus = leave.status;
   leave.status = status;
   if (status === "approved") {
     leave.approvedBy = req.user._id;
@@ -310,6 +350,20 @@ const updateLeaveStatus = asyncHandler(async (req, res) => {
     }
   }
   await leave.save();
+
+  // Sync attendance records based on status transition
+  try {
+    if (status === "approved") {
+      await syncLeaveAttendance(leave);
+    } else if (
+      previousStatus === "approved" &&
+      (status === "rejected" || status === "cancelled")
+    ) {
+      await revertLeaveAttendance(leave);
+    }
+  } catch (err) {
+    console.error("[LeaveSync] Attendance sync failed:", err.message);
+  }
 
   try {
     if (leave.employee?.phone) {
