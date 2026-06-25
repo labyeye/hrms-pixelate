@@ -20,7 +20,10 @@ router.post(
   authorize("super_admin", "admin", "hr_manager"),
   (req, res, next) => {
     logoMulter(req, res, (err) => {
-      if (err) { res.status(400); return next(err); }
+      if (err) {
+        res.status(400);
+        return next(err);
+      }
       next();
     });
   },

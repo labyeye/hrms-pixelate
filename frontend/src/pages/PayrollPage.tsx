@@ -89,7 +89,15 @@ function toIndianWords(n: number): string {
 
 async function printPayslip(
   p: Payroll,
-  co = { name: "", address: "", logo: "", chequeTemplate: "", chequeLogoX: 10, chequeLogoY: 20, chequeLogoSize: 60 },
+  co = {
+    name: "",
+    address: "",
+    logo: "",
+    chequeTemplate: "",
+    chequeLogoX: 10,
+    chequeLogoY: 20,
+    chequeLogoSize: 60,
+  },
 ) {
   const emp = p.employee as any;
   const net = Math.round(p.netSalary || 0);
@@ -210,10 +218,17 @@ async function printPayslip(
       logoImg.crossOrigin = "anonymous";
       logoImg.onload = () => {
         const drawW = co.chequeLogoSize * RENDER_SCALE;
-        const drawH = logoImg.naturalHeight > 0
-          ? (logoImg.naturalHeight / logoImg.naturalWidth) * drawW
-          : drawW;
-        ctx.drawImage(logoImg, co.chequeLogoX * RENDER_SCALE, co.chequeLogoY * RENDER_SCALE, drawW, drawH);
+        const drawH =
+          logoImg.naturalHeight > 0
+            ? (logoImg.naturalHeight / logoImg.naturalWidth) * drawW
+            : drawW;
+        ctx.drawImage(
+          logoImg,
+          co.chequeLogoX * RENDER_SCALE,
+          co.chequeLogoY * RENDER_SCALE,
+          drawW,
+          drawH,
+        );
         resolve();
       };
       logoImg.onerror = () => resolve();
@@ -221,13 +236,21 @@ async function printPayslip(
     });
   }
   drawValues(ctx, RENDER_SCALE);
-  const naturalW = viewport.width  / RENDER_SCALE;
+  const naturalW = viewport.width / RENDER_SCALE;
   const naturalH = viewport.height / RENDER_SCALE;
   const imgData = canvas.toDataURL("image/png");
   const orientation = naturalW > naturalH ? "landscape" : "portrait";
-  const pdf = new jsPDF({ orientation, unit: "pt", format: [naturalW, naturalH] });
+  const pdf = new jsPDF({
+    orientation,
+    unit: "pt",
+    format: [naturalW, naturalH],
+  });
   pdf.addImage(imgData, "PNG", 0, 0, naturalW, naturalH);
-  const empName = `${(p.employee as any)?.firstName ?? ""}_${(p.employee as any)?.lastName ?? ""}`.replace(/\s+/g, "_");
+  const empName =
+    `${(p.employee as any)?.firstName ?? ""}_${(p.employee as any)?.lastName ?? ""}`.replace(
+      /\s+/g,
+      "_",
+    );
   pdf.save(`Payslip_${empName}_${p.month}_${p.year}.pdf`);
 }
 
@@ -288,21 +311,37 @@ export default function PayrollPage() {
     chequeLogoX: number;
     chequeLogoY: number;
     chequeLogoSize: number; // width in pts; height auto from aspect ratio
-  }>({ name: "", address: "", logo: "", chequeTemplate: "", chequeLogoX: 10, chequeLogoY: 20, chequeLogoSize: 60 });
+  }>({
+    name: "",
+    address: "",
+    logo: "",
+    chequeTemplate: "",
+    chequeLogoX: 10,
+    chequeLogoY: 20,
+    chequeLogoSize: 60,
+  });
   const [logoSettingsOpen, setLogoSettingsOpen] = useState(false);
   const [logoSettingsSaving, setLogoSettingsSaving] = useState(false);
-  const [paidModal, setPaidModal] = useState<{ show: boolean; payrollId: string | null; isBulk: boolean }>({ show: false, payrollId: null, isBulk: false });
+  const [paidModal, setPaidModal] = useState<{
+    show: boolean;
+    payrollId: string | null;
+    isBulk: boolean;
+  }>({ show: false, payrollId: null, isBulk: false });
   const [paymentMode, setPaymentMode] = useState("bank_transfer");
 
-  const SERVER_ROOT = (import.meta.env.VITE_API_URL as string)?.replace(/\/api$/, "") ?? "";
+  const SERVER_ROOT =
+    (import.meta.env.VITE_API_URL as string)?.replace(/\/api$/, "") ?? "";
 
   useEffect(() => {
     settingsAPI
       .get()
       .then((r) => {
         if (r?.data) {
-          const rawLogo: string = r.data.logoUrl || r.data.logo || r.data.companyLogo || "";
-          const logoUrl = rawLogo.startsWith("/uploads/") ? `${SERVER_ROOT}${rawLogo}` : rawLogo;
+          const rawLogo: string =
+            r.data.logoUrl || r.data.logo || r.data.companyLogo || "";
+          const logoUrl = rawLogo.startsWith("/uploads/")
+            ? `${SERVER_ROOT}${rawLogo}`
+            : rawLogo;
           setCompany({
             name: r.data.companyName || r.data.name || "",
             address: r.data.companyAddress || r.data.address || "",
@@ -424,7 +463,12 @@ export default function PayrollPage() {
       }
       load();
     } catch (err: any) {
-      setActionModal({ show: true, type: "error", title: "Error", message: err.message });
+      setActionModal({
+        show: true,
+        type: "error",
+        title: "Error",
+        message: err.message,
+      });
     } finally {
       setPaidModal({ show: false, payrollId: null, isBulk: false });
     }
@@ -516,7 +560,9 @@ export default function PayrollPage() {
               setPaymentMode("bank_transfer");
               setPaidModal({ show: true, payrollId: null, isBulk: true });
             }}
-            disabled={payrolls.filter((p) => p.status === "processed").length === 0}
+            disabled={
+              payrolls.filter((p) => p.status === "processed").length === 0
+            }
             className="border-2 bg-[#00C48C] text-white px-4 py-2 text-sm flex items-center gap-1.5 disabled:opacity-40"
           >
             <CheckCircle className="w-4 h-4" /> Bulk Mark Paid
@@ -611,7 +657,9 @@ export default function PayrollPage() {
             onClick={() => setLogoSettingsOpen((v) => !v)}
           >
             <span>Cheque Logo Position</span>
-            <span className="text-muted-foreground">{logoSettingsOpen ? "▲" : "▼"}</span>
+            <span className="text-muted-foreground">
+              {logoSettingsOpen ? "▲" : "▼"}
+            </span>
           </button>
           {logoSettingsOpen && (
             <div className="px-4 pb-4 border-t-2 border-black">
@@ -628,12 +676,17 @@ export default function PayrollPage() {
                     { label: "Size (width pts)", key: "chequeLogoSize" },
                   ].map(({ label, key }) => (
                     <div key={key} className="space-y-1">
-                      <label className="block text-xs font-bold text-black uppercase tracking-wider">{label}</label>
+                      <label className="block text-xs font-bold text-black uppercase tracking-wider">
+                        {label}
+                      </label>
                       <input
                         type="number"
                         value={(company as any)[key]}
                         onChange={(e) =>
-                          setCompany((prev) => ({ ...prev, [key]: Number(e.target.value) }))
+                          setCompany((prev) => ({
+                            ...prev,
+                            [key]: Number(e.target.value),
+                          }))
                         }
                         className="w-24 px-2 py-1 border-2 border-black text-xs font-mono focus:outline-none focus:border-[#024BAB]"
                       />
@@ -659,7 +712,10 @@ export default function PayrollPage() {
                   </button>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">Height is auto-calculated from the logo's aspect ratio. Print a test payslip to fine-tune.</p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Height is auto-calculated from the logo's aspect ratio. Print a
+                test payslip to fine-tune.
+              </p>
             </div>
           )}
         </div>
@@ -1318,7 +1374,11 @@ export default function PayrollPage() {
               <h3 className="font-display font-bold text-base">
                 {paidModal.isBulk ? "Bulk Mark as Paid" : "Mark as Paid"}
               </h3>
-              <button onClick={() => setPaidModal({ show: false, payrollId: null, isBulk: false })}>
+              <button
+                onClick={() =>
+                  setPaidModal({ show: false, payrollId: null, isBulk: false })
+                }
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1351,7 +1411,13 @@ export default function PayrollPage() {
                   <CheckCircle className="w-4 h-4" /> Confirm & Mark Paid
                 </button>
                 <button
-                  onClick={() => setPaidModal({ show: false, payrollId: null, isBulk: false })}
+                  onClick={() =>
+                    setPaidModal({
+                      show: false,
+                      payrollId: null,
+                      isBulk: false,
+                    })
+                  }
                   className="px-4 py-2 border-2 border-black text-sm font-bold bg-white"
                 >
                   Cancel

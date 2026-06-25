@@ -269,7 +269,10 @@ export default function LoginPage() {
                     <input
                       type="tel"
                       value={phone}
-                      onChange={(e) => { setPhone(e.target.value); setError(""); }}
+                      onChange={(e) => {
+                        setPhone(e.target.value);
+                        setError("");
+                      }}
                       placeholder="+91 98765 43210"
                       className="w-full px-4 py-3 border-2 border-black text-sm font-medium bg-white focus:outline-none focus:border-[#024BAB] transition-colors"
                       required
@@ -282,14 +285,23 @@ export default function LoginPage() {
                     className="w-full bg-[#024BAB] text-white py-3.5 text-sm font-black border-2 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#0a0a0a] transition-all flex items-center justify-center gap-2"
                   >
                     {otpLoading ? (
-                      <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Sending...</>
+                      <>
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />{" "}
+                        Sending...
+                      </>
                     ) : (
-                      <>Send OTP on WhatsApp <ArrowRight className="w-4 h-4" /></>
+                      <>
+                        Send OTP on WhatsApp <ArrowRight className="w-4 h-4" />
+                      </>
                     )}
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setLoginMode("email"); setError(""); setPhone(""); }}
+                    onClick={() => {
+                      setLoginMode("email");
+                      setError("");
+                      setPhone("");
+                    }}
                     className="w-full py-2 text-xs font-black text-gray-500 hover:text-black transition-colors"
                   >
                     ← Sign in with Email
@@ -304,7 +316,10 @@ export default function LoginPage() {
                     <input
                       type="text"
                       value={otp}
-                      onChange={(e) => { setOtp(e.target.value.replace(/\D/g, "").slice(0, 6)); setError(""); }}
+                      onChange={(e) => {
+                        setOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
+                        setError("");
+                      }}
                       placeholder="000000"
                       className="w-full px-4 py-3 border-2 border-black text-lg font-black tracking-[0.5em] text-center bg-white focus:outline-none focus:border-[#024BAB] transition-colors"
                       autoFocus
@@ -317,14 +332,23 @@ export default function LoginPage() {
                     className="w-full bg-[#024BAB] text-white py-3.5 text-sm font-black border-2 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#0a0a0a] transition-all flex items-center justify-center gap-2"
                   >
                     {otpLoading ? (
-                      <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Verifying...</>
+                      <>
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />{" "}
+                        Verifying...
+                      </>
                     ) : (
-                      <>Verify OTP <ArrowRight className="w-4 h-4" /></>
+                      <>
+                        Verify OTP <ArrowRight className="w-4 h-4" />
+                      </>
                     )}
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setOtpSent(false); setOtp(""); setError(""); }}
+                    onClick={() => {
+                      setOtpSent(false);
+                      setOtp("");
+                      setError("");
+                    }}
                     className="w-full py-2 text-xs font-black text-gray-500 hover:text-black transition-colors"
                   >
                     ← Change number / Resend
@@ -439,10 +463,14 @@ export default function LoginPage() {
               <div className="mt-6 text-center">
                 <button
                   type="button"
-                  onClick={() => { setLoginMode("phone"); setError(""); }}
+                  onClick={() => {
+                    setLoginMode("phone");
+                    setError("");
+                  }}
                   className="inline-flex items-center gap-1.5 text-xs font-black text-[#024BAB] hover:underline"
                 >
-                  <Smartphone className="w-3.5 h-3.5" /> Login with Phone OTP (WhatsApp)
+                  <Smartphone className="w-3.5 h-3.5" /> Login with Phone OTP
+                  (WhatsApp)
                 </button>
               </div>
 

@@ -13,7 +13,13 @@ const usageSchema = new mongoose.Schema(
 
 const offerCodeSchema = new mongoose.Schema(
   {
-    code: { type: String, required: true, unique: true, uppercase: true, trim: true },
+    code: {
+      type: String,
+      required: true,
+      unique: true,
+      uppercase: true,
+      trim: true,
+    },
     description: { type: String, default: "" },
     bonusMonths: { type: Number, required: true, default: 2, min: 1 },
     maxUses: { type: Number, required: true, default: 200 },

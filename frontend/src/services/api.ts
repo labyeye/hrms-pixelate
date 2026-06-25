@@ -101,11 +101,14 @@ export const employeeAPI = {
       method: "POST",
       body: JSON.stringify({ employees }),
     }),
-  uploadDocuments: (id: string, files: { aadhaarDoc?: File; panDoc?: File; resumeDoc?: File }) => {
+  uploadDocuments: (
+    id: string,
+    files: { aadhaarDoc?: File; panDoc?: File; resumeDoc?: File },
+  ) => {
     const form = new FormData();
     if (files.aadhaarDoc) form.append("aadhaarDoc", files.aadhaarDoc);
-    if (files.panDoc)     form.append("panDoc",     files.panDoc);
-    if (files.resumeDoc)  form.append("resumeDoc",  files.resumeDoc);
+    if (files.panDoc) form.append("panDoc", files.panDoc);
+    if (files.resumeDoc) form.append("resumeDoc", files.resumeDoc);
     const token = getToken();
     return fetch(`${BASE_URL}/employees/${id}/documents`, {
       method: "POST",
@@ -164,7 +167,10 @@ export const payrollAPI = {
   update: (id: string, body: object) =>
     request(`/payroll/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   markPaid: (id: string, paymentMode?: string) =>
-    request(`/payroll/${id}/paid`, { method: "PUT", body: JSON.stringify({ paymentMode }) }),
+    request(`/payroll/${id}/paid`, {
+      method: "PUT",
+      body: JSON.stringify({ paymentMode }),
+    }),
   bulkMarkPaid: (month: number, year: number, paymentMode?: string) =>
     request("/payroll/bulk-paid", {
       method: "POST",
@@ -595,8 +601,12 @@ export const auditAPI = {
 export const supportAPI = {
   getAll: () => request("/support"),
   getOne: (id: string) => request(`/support/${id}`),
-  create: (body: { subject: string; issueType: string; priority: string; description: string }) =>
-    request("/support", { method: "POST", body: JSON.stringify(body) }),
+  create: (body: {
+    subject: string;
+    issueType: string;
+    priority: string;
+    description: string;
+  }) => request("/support", { method: "POST", body: JSON.stringify(body) }),
 };
 
 export const documentAPI = {
@@ -604,8 +614,13 @@ export const documentAPI = {
     const q = params ? "?" + new URLSearchParams(params).toString() : "";
     return request(`/documents${q}`);
   },
-  upload: (body: { employeeId?: string; name: string; docType: string; mimeType: string; fileData: string }) =>
-    request("/documents", { method: "POST", body: JSON.stringify(body) }),
+  upload: (body: {
+    employeeId?: string;
+    name: string;
+    docType: string;
+    mimeType: string;
+    fileData: string;
+  }) => request("/documents", { method: "POST", body: JSON.stringify(body) }),
   download: (id: string) => request(`/documents/${id}/download`),
   delete: (id: string) => request(`/documents/${id}`, { method: "DELETE" }),
 };

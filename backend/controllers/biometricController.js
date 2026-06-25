@@ -33,9 +33,6 @@ function buildSetUserCmd(employee) {
   const card = (employee.rfidCard || "").replace(/[^\x20-\x7E]/g, "");
 
   const cmd = `DATA UPDATE USERINFO PIN=${uid}\tName=${name}\tPri=0\tPasswd=\tCard=${card}\tGrp=1\tTZ=0\tVerify=0\t`;
-  console.log(
-    `[ADMS] buildSetUserCmd uid=${uid} name="${name}" cmd="${cmd.replace(/\t/g, "\\t")}"`,
-  );
   return cmd;
 }
 

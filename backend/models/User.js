@@ -32,6 +32,8 @@ const userSchema = new mongoose.Schema(
     pendingTwoFactor: { type: Boolean, default: false },
     phoneOtp: { type: String },
     phoneOtpExpire: { type: Date },
+    twoFactorFailedAttempts: { type: Number, default: 0 },
+    twoFactorLockUntil: { type: Date },
   },
   { timestamps: true },
 );

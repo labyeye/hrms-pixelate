@@ -179,9 +179,10 @@ export default function AttendancePage() {
     const today = new Date().toISOString().split("T")[0];
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
-    const time = dateStr === today
-      ? `${pad(now.getHours())}:${pad(now.getMinutes())}`
-      : "09:00";
+    const time =
+      dateStr === today
+        ? `${pad(now.getHours())}:${pad(now.getMinutes())}`
+        : "09:00";
     return `${dateStr}T${time}`;
   };
 
@@ -425,8 +426,13 @@ export default function AttendancePage() {
         {!isEmployee && (
           <button
             onClick={() => {
-              const date = selectedDate || new Date().toISOString().split("T")[0];
-              setMarkForm(f => ({ ...f, date, checkIn: defaultCheckIn(date) }));
+              const date =
+                selectedDate || new Date().toISOString().split("T")[0];
+              setMarkForm((f) => ({
+                ...f,
+                date,
+                checkIn: defaultCheckIn(date),
+              }));
               setMarkModal(true);
             }}
             className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5"
@@ -665,7 +671,9 @@ export default function AttendancePage() {
         (() => {
           const recordedEmpIds = new Set(
             displayedRecords
-              .filter((r) => r.status !== "not_checked_in" && r.status !== "weekend")
+              .filter(
+                (r) => r.status !== "not_checked_in" && r.status !== "weekend",
+              )
               .map((r) => (r.employee as any)?._id),
           );
           const unrecorded = employees.filter(
@@ -758,7 +766,9 @@ export default function AttendancePage() {
                           />
                         ) : (
                           <div className="w-7 h-7 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[10px] font-bold text-white shrink-0 rounded-full">
-                            {(rec.employee as any)?.firstName?.[0]?.toUpperCase()}
+                            {(
+                              rec.employee as any
+                            )?.firstName?.[0]?.toUpperCase()}
                           </div>
                         )}
                         <span className="font-bold text-black text-xs">
@@ -826,7 +836,10 @@ export default function AttendancePage() {
                       >
                         <Icon className="w-3 h-3" />{" "}
                         {rec.status === "weekend"
-                          ? new Date(rec.date + "T00:00:00").toLocaleDateString("en-IN", { weekday: "long" })
+                          ? new Date(rec.date + "T00:00:00").toLocaleDateString(
+                              "en-IN",
+                              { weekday: "long" },
+                            )
                           : rec.status.replace("_", " ")}
                       </span>
                     </td>
@@ -834,26 +847,28 @@ export default function AttendancePage() {
                       <td className="px-4 py-3">
                         {rec._id.startsWith("v_") ? (
                           rec.status === "weekend" ? null : (
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() =>
-                                markAbsentSingle((rec.employee as any)?._id)
-                              }
-                              title="Mark absent"
-                              className="p-1.5 border-2 border-[#EF4444] bg-[#EF4444] text-white hover:bg-[#dc2626] transition-colors"
-                            >
-                              <XCircle className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() =>
-                                openMarkForEmployee((rec.employee as any)?._id)
-                              }
-                              title="Mark attendance"
-                              className="p-1.5 border-2 border-[#024BAB] bg-[#024BAB] text-white hover:bg-[#0136a0] transition-colors"
-                            >
-                              <Clock className="w-3 h-3" />
-                            </button>
-                          </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() =>
+                                  markAbsentSingle((rec.employee as any)?._id)
+                                }
+                                title="Mark absent"
+                                className="p-1.5 border-2 border-[#EF4444] bg-[#EF4444] text-white hover:bg-[#dc2626] transition-colors"
+                              >
+                                <XCircle className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={() =>
+                                  openMarkForEmployee(
+                                    (rec.employee as any)?._id,
+                                  )
+                                }
+                                title="Mark attendance"
+                                className="p-1.5 border-2 border-[#024BAB] bg-[#024BAB] text-white hover:bg-[#0136a0] transition-colors"
+                              >
+                                <Clock className="w-3 h-3" />
+                              </button>
+                            </div>
                           )
                         ) : (
                           <button
@@ -922,7 +937,7 @@ export default function AttendancePage() {
                   value={markForm.date}
                   onChange={(e) => {
                     const d = e.target.value;
-                    setMarkForm(f => ({
+                    setMarkForm((f) => ({
                       ...f,
                       date: d,
                       checkIn: f.checkIn ? defaultCheckIn(d) : "",

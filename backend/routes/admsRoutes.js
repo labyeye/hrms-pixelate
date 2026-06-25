@@ -70,36 +70,23 @@ function mapVerifyMode(verifyType) {
 }
 
 async function notifyCheckIn(employee, locationName, time, companyId) {
-  console.log(
-    `[WA-DEBUG] notifyCheckIn called — emp=${employee.firstName} phone=${employee.phone || "MISSING"} companyId=${companyId}`,
-  );
   try {
     const empFullName = `${employee.firstName} ${employee.lastName}`;
     const hrUsers = await User.find({
       company: companyId,
       role: { $in: ["super_admin", "hr_manager"] },
     }).select("phone name");
-    console.log(
-      `[WA-DEBUG] HR users found: ${hrUsers.length} — phones: ${hrUsers.map((h) => h.phone || "MISSING").join(", ")}`,
-    );
 
     if (employee.phone) {
-      console.log(`[WA-DEBUG] Sending check-in WA to staff: ${employee.phone}`);
       await sendCheckIn(
         employee.phone,
         { firstName: employee.firstName, locationName, time },
         companyId,
       );
-      console.log(`[WA-DEBUG] Staff check-in WA sent OK`);
-    } else {
-      console.warn(
-        `[WA-DEBUG] SKIP staff check-in WA — employee.phone is empty`,
-      );
     }
 
     for (const hr of hrUsers) {
       if (hr.phone) {
-        console.log(`[WA-DEBUG] Sending check-in WA to HR/admin: ${hr.phone}`);
         await sendCheckInHR(
           hr.phone,
           {
@@ -110,74 +97,40 @@ async function notifyCheckIn(employee, locationName, time, companyId) {
           },
           companyId,
         );
-      } else {
-        console.warn(
-          `[WA-DEBUG] SKIP HR check-in WA — hr.phone is empty for user ${hr._id}`,
-        );
       }
     }
   } catch (err) {
-    console.error("[WA-DEBUG] notifyCheckIn ERROR:", err.message);
+    console.error("[WA] notifyCheckIn failed:", err.message);
   }
 }
 
-async function notifyCheckOut(
-  employee,
-  locationName,
-  time,
-  workHours,
-  companyId,
-) {
-  console.log(
-    `[WA-DEBUG] notifyCheckOut called — emp=${employee.firstName} phone=${employee.phone || "MISSING"} companyId=${companyId}`,
-  );
+async function notifyCheckOut(employee, locationName, time, workHours, companyId) {
   try {
     const empFullName = `${employee.firstName} ${employee.lastName}`;
     const hrUsers = await User.find({
       company: companyId,
       role: { $in: ["super_admin", "hr_manager"] },
     }).select("phone name");
-    console.log(
-      `[WA-DEBUG] HR users found: ${hrUsers.length} — phones: ${hrUsers.map((h) => h.phone || "MISSING").join(", ")}`,
-    );
 
     if (employee.phone) {
-      console.log(
-        `[WA-DEBUG] Sending check-out WA to staff: ${employee.phone}`,
-      );
       await sendCheckOut(
         employee.phone,
         { firstName: employee.firstName, locationName, time, workHours },
         companyId,
       );
-    } else {
-      console.warn(
-        `[WA-DEBUG] SKIP staff check-out WA — employee.phone is empty`,
-      );
     }
 
     for (const hr of hrUsers) {
       if (hr.phone) {
-        console.log(`[WA-DEBUG] Sending check-out WA to HR/admin: ${hr.phone}`);
         await sendCheckOutHR(
           hr.phone,
-          {
-            empName: empFullName,
-            empId: employee.employeeId,
-            locationName,
-            time,
-            workHours,
-          },
+          { empName: empFullName, empId: employee.employeeId, locationName, time, workHours },
           companyId,
-        );
-      } else {
-        console.warn(
-          `[WA-DEBUG] SKIP HR check-out WA — hr.phone is empty for user ${hr._id}`,
         );
       }
     }
   } catch (err) {
-    console.error("[WA-DEBUG] notifyCheckOut ERROR:", err.message);
+    console.error("[WA] notifyCheckOut failed:", err.message);
   }
 }
 
@@ -191,25 +144,13 @@ async function processLog(
     ...(companyId ? { company: companyId } : {}),
     status: { $ne: "terminated" },
   });
-  if (!employee) {
-    console.log(
-      `[ADMS] No employee found for biometricUserId=${userId} company=${companyId}`,
-    );
-    return;
-  }
+  if (!employee) return;
 
   const punchTime = new Date(datetime.replace(" ", "T") + "+05:30");
-  if (isNaN(punchTime.getTime())) {
-    console.log(`[ADMS] Invalid datetime for userId=${userId}: "${datetime}"`);
-    return;
-  }
+  if (isNaN(punchTime.getTime())) return;
 
   const datePart = datetime.split(" ")[0];
   const dayStart = new Date(datePart + "T00:00:00.000Z");
-
-  console.log(
-    `[ADMS] Punch: emp=${employee.firstName} ${employee.lastName} uid=${userId} time=${punchTime.toISOString()} punchState=${punchState}`,
-  );
 
   const existing = await Attendance.findOne({
     employee: employee._id,
@@ -228,19 +169,11 @@ async function processLog(
       checkIn: punchTime,
       verifyMode,
     });
-    console.log(
-      `[ADMS] Created attendance checkIn=${punchTime.toISOString()} status=${status} verifyMode=${verifyMode} for ${employee.firstName}`,
-    );
     await notifyCheckIn(employee, loc, punchTime, companyId);
     return;
   }
 
-  if (existing.checkOut) {
-    console.log(
-      `[ADMS] Attendance locked (already checked out) for ${employee.firstName} ${employee.lastName}`,
-    );
-    return;
-  }
+  if (existing.checkOut) return;
 
   const upd = {};
   let logType = null;
@@ -267,9 +200,6 @@ async function processLog(
     }
     if (!upd.status) upd.status = existing.status || "present";
     await Attendance.updateOne({ _id: existing._id }, { $set: upd });
-    console.log(
-      `[ADMS] Updated attendance for ${employee.firstName}: checkIn=${ci?.toISOString()} checkOut=${co?.toISOString()} status=${upd.status}`,
-    );
     if (logType === "check_in") {
       await notifyCheckIn(employee, loc, upd.checkIn, companyId);
     } else if (logType === "check_out") {
@@ -351,9 +281,6 @@ router.post(
     if (table === "BIODATA") {
       try {
         const device = knownDevice;
-        console.log(
-          `[ADMS] BIODATA from SN=${SN} body="${body.slice(0, 200)}"`,
-        );
 
         if (device) {
           // Parse PIN= from the body to identify employee
@@ -373,13 +300,6 @@ router.post(
               employee.deviceFaceTemplate = Buffer.from(body).toString("hex");
               employee.deviceFaceEnrolledAt = new Date();
               await employee.save();
-              console.log(
-                `[ADMS] BIODATA: stored face template for emp ${employee.firstName} ${employee.lastName} (PIN=${pin})`,
-              );
-            } else {
-              console.warn(
-                `[ADMS] BIODATA: no employee found for PIN=${pin} company=${device.company}`,
-              );
             }
           }
         }
@@ -397,10 +317,7 @@ router.post(
       const device = knownDevice;
       const companyId = device?.company || null;
 
-      console.log(`[ADMS] ATTLOG from SN=${SN} stamp=${stamp}`);
-      console.log(`[ADMS] Raw body:\n${body}`);
       const logs = parseAttLog(body);
-      console.log(`[ADMS] Parsed logs:`, JSON.stringify(logs));
 
       let devLocationName = "Office";
       if (device?.location) {
@@ -450,9 +367,6 @@ router.get(["/getrequest", "/getrequest.aspx"], async (req, res) => {
       return res.send("OK");
     }
 
-    console.log(
-      `[ADMS] getrequest: SN=${SN} → C:${cmd.cmdId}:${cmd.command.replace(/\t/g, "\\t")}`,
-    );
     res.send(`C:${cmd.cmdId}:${cmd.command}\n`);
   } catch (err) {
     console.error("[ADMS] getrequest error:", err.message);
@@ -473,9 +387,6 @@ router.post(
       const bodyIdMatch = body.match(/\bID=(\d+)/);
       const cmdId = ID || (bodyIdMatch ? bodyIdMatch[1] : null);
 
-      console.log(
-        `[ADMS] devicecmd SN=${SN} ID=${cmdId} body="${body.trim()}"`,
-      );
 
       const device = SN ? await resolveDevice(SN) : null;
       if (cmdId) {

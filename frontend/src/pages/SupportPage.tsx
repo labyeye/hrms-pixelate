@@ -29,7 +29,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, TicketCheck, Clock, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import {
+  Plus,
+  TicketCheck,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+} from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 const ISSUE_TYPES = [
@@ -57,11 +64,34 @@ const PRIORITIES = [
   { value: "critical", label: "Critical" },
 ];
 
-const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode }> = {
-  open: { label: "Open", variant: "secondary", icon: <Clock className="h-3 w-3" /> },
-  in_progress: { label: "In Progress", variant: "default", icon: <AlertCircle className="h-3 w-3" /> },
-  resolved: { label: "Resolved", variant: "outline", icon: <CheckCircle2 className="h-3 w-3" /> },
-  closed: { label: "Closed", variant: "destructive", icon: <XCircle className="h-3 w-3" /> },
+const STATUS_CONFIG: Record<
+  string,
+  {
+    label: string;
+    variant: "default" | "secondary" | "destructive" | "outline";
+    icon: React.ReactNode;
+  }
+> = {
+  open: {
+    label: "Open",
+    variant: "secondary",
+    icon: <Clock className="h-3 w-3" />,
+  },
+  in_progress: {
+    label: "In Progress",
+    variant: "default",
+    icon: <AlertCircle className="h-3 w-3" />,
+  },
+  resolved: {
+    label: "Resolved",
+    variant: "outline",
+    icon: <CheckCircle2 className="h-3 w-3" />,
+  },
+  closed: {
+    label: "Closed",
+    variant: "destructive",
+    icon: <XCircle className="h-3 w-3" />,
+  },
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -112,29 +142,44 @@ export default function SupportPage() {
     }
   };
 
-  useEffect(() => { fetchTickets(); }, []);
+  useEffect(() => {
+    fetchTickets();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.subject.trim() || !form.issueType || !form.description.trim()) {
-      toast({ title: "Please fill all required fields", variant: "destructive" });
+      toast({
+        title: "Please fill all required fields",
+        variant: "destructive",
+      });
       return;
     }
     setSubmitting(true);
     try {
       await supportAPI.create(form);
       toast({ title: "Ticket submitted successfully" });
-      setForm({ subject: "", issueType: "", priority: "medium", description: "" });
+      setForm({
+        subject: "",
+        issueType: "",
+        priority: "medium",
+        description: "",
+      });
       setDialogOpen(false);
       fetchTickets();
     } catch (err: any) {
-      toast({ title: err.message || "Failed to submit ticket", variant: "destructive" });
+      toast({
+        title: err.message || "Failed to submit ticket",
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
     }
   };
 
-  const isAdmin = ["super_admin", "hr_manager", "hr_executive"].includes(user?.role || "");
+  const isAdmin = ["super_admin", "hr_manager", "hr_executive"].includes(
+    user?.role || "",
+  );
 
   const statusCounts = {
     open: tickets.filter((t) => t.status === "open").length,
@@ -171,7 +216,9 @@ export default function SupportPage() {
                     id="subject"
                     placeholder="Brief summary of the issue"
                     value={form.subject}
-                    onChange={(e) => setForm({ ...form, subject: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, subject: e.target.value })
+                    }
                     maxLength={200}
                   />
                 </div>
@@ -220,7 +267,9 @@ export default function SupportPage() {
                     placeholder="Describe the issue in detail — steps to reproduce, error messages, affected employees, etc."
                     rows={5}
                     value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, description: e.target.value })
+                    }
                     maxLength={2000}
                   />
                   <p className="text-xs text-muted-foreground text-right">
@@ -228,7 +277,11 @@ export default function SupportPage() {
                   </p>
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
-                  <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setDialogOpen(false)}
+                  >
                     Cancel
                   </Button>
                   <Button type="submit" disabled={submitting}>
@@ -249,7 +302,9 @@ export default function SupportPage() {
                 <CardContent className="pt-4 pb-4">
                   <div className="flex items-center gap-2">
                     <span className="text-muted-foreground">{cfg.icon}</span>
-                    <span className="text-sm text-muted-foreground capitalize">{cfg.label}</span>
+                    <span className="text-sm text-muted-foreground capitalize">
+                      {cfg.label}
+                    </span>
                   </div>
                   <p className="text-2xl font-bold mt-1">{count}</p>
                 </CardContent>
@@ -260,13 +315,17 @@ export default function SupportPage() {
 
         {/* Ticket list */}
         {loading ? (
-          <div className="text-center py-12 text-muted-foreground">Loading tickets...</div>
+          <div className="text-center py-12 text-muted-foreground">
+            Loading tickets...
+          </div>
         ) : tickets.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-16">
               <TicketCheck className="h-10 w-10 text-muted-foreground mb-3" />
               <p className="font-medium">No support tickets yet</p>
-              <p className="text-sm text-muted-foreground">Create a ticket to report an issue</p>
+              <p className="text-sm text-muted-foreground">
+                Create a ticket to report an issue
+              </p>
             </CardContent>
           </Card>
         ) : (
@@ -292,21 +351,32 @@ export default function SupportPage() {
                             {ticket.priority}
                           </span>
                           <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                            {ISSUE_TYPES.find((t) => t.value === ticket.issueType)?.label || ticket.issueType}
+                            {ISSUE_TYPES.find(
+                              (t) => t.value === ticket.issueType,
+                            )?.label || ticket.issueType}
                           </span>
                         </div>
-                        <p className="font-medium mt-1 truncate">{ticket.subject}</p>
+                        <p className="font-medium mt-1 truncate">
+                          {ticket.subject}
+                        </p>
                         <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">
                           {ticket.description}
                         </p>
                         <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                           {isAdmin && (
-                            <span>By {ticket.submittedBy?.name || ticket.submittedBy?.email}</span>
+                            <span>
+                              By{" "}
+                              {ticket.submittedBy?.name ||
+                                ticket.submittedBy?.email}
+                            </span>
                           )}
                           <span>{formatDate(ticket.createdAt)}</span>
                         </div>
                       </div>
-                      <Badge variant={cfg.variant} className="flex items-center gap-1 shrink-0">
+                      <Badge
+                        variant={cfg.variant}
+                        className="flex items-center gap-1 shrink-0"
+                      >
                         {cfg.icon}
                         {cfg.label}
                       </Badge>
@@ -320,7 +390,10 @@ export default function SupportPage() {
       </div>
 
       {/* Ticket detail dialog */}
-      <Dialog open={!!selectedTicket} onOpenChange={(open) => !open && setSelectedTicket(null)}>
+      <Dialog
+        open={!!selectedTicket}
+        onOpenChange={(open) => !open && setSelectedTicket(null)}
+      >
         <DialogContent className="max-w-lg">
           {selectedTicket && (
             <>
@@ -329,49 +402,72 @@ export default function SupportPage() {
                   <span className="text-sm font-mono text-muted-foreground">
                     {selectedTicket.ticketNumber}
                   </span>
-                  <Badge variant={STATUS_CONFIG[selectedTicket.status]?.variant || "secondary"}>
-                    {STATUS_CONFIG[selectedTicket.status]?.label || selectedTicket.status}
+                  <Badge
+                    variant={
+                      STATUS_CONFIG[selectedTicket.status]?.variant ||
+                      "secondary"
+                    }
+                  >
+                    {STATUS_CONFIG[selectedTicket.status]?.label ||
+                      selectedTicket.status}
                   </Badge>
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-4 mt-2">
                 <div>
-                  <p className="font-semibold text-lg">{selectedTicket.subject}</p>
+                  <p className="font-semibold text-lg">
+                    {selectedTicket.subject}
+                  </p>
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-muted-foreground">Issue Type</p>
                     <p className="font-medium">
-                      {ISSUE_TYPES.find((t) => t.value === selectedTicket.issueType)?.label}
+                      {
+                        ISSUE_TYPES.find(
+                          (t) => t.value === selectedTicket.issueType,
+                        )?.label
+                      }
                     </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Priority</p>
-                    <p className={`font-medium capitalize ${PRIORITY_COLORS[selectedTicket.priority]?.split(" ")[0]}`}>
+                    <p
+                      className={`font-medium capitalize ${PRIORITY_COLORS[selectedTicket.priority]?.split(" ")[0]}`}
+                    >
                       {selectedTicket.priority}
                     </p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Submitted</p>
-                    <p className="font-medium">{formatDate(selectedTicket.createdAt)}</p>
+                    <p className="font-medium">
+                      {formatDate(selectedTicket.createdAt)}
+                    </p>
                   </div>
                   {isAdmin && (
                     <div>
                       <p className="text-muted-foreground">Submitted By</p>
                       <p className="font-medium">
-                        {selectedTicket.submittedBy?.name || selectedTicket.submittedBy?.email}
+                        {selectedTicket.submittedBy?.name ||
+                          selectedTicket.submittedBy?.email}
                       </p>
                     </div>
                   )}
                 </div>
                 <div>
                   <p className="text-muted-foreground text-sm">Description</p>
-                  <p className="mt-1 text-sm whitespace-pre-wrap">{selectedTicket.description}</p>
+                  <p className="mt-1 text-sm whitespace-pre-wrap">
+                    {selectedTicket.description}
+                  </p>
                 </div>
                 {selectedTicket.resolvedNote && (
                   <div className="bg-green-50 border border-green-200 rounded-md p-3">
-                    <p className="text-xs font-medium text-green-700 mb-1">Resolution Note</p>
-                    <p className="text-sm text-green-800">{selectedTicket.resolvedNote}</p>
+                    <p className="text-xs font-medium text-green-700 mb-1">
+                      Resolution Note
+                    </p>
+                    <p className="text-sm text-green-800">
+                      {selectedTicket.resolvedNote}
+                    </p>
                   </div>
                 )}
               </div>

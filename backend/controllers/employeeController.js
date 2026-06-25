@@ -11,6 +11,7 @@ const {
   validateMongoId,
 } = require("../middleware/validate");
 const { logAudit } = require("../utils/auditLogger");
+const { validateMagicBytes } = require("../middleware/upload");
 
 const createSchema = {
   firstName: { required: true, type: "string", minLength: 1, maxLength: 80 },
@@ -260,19 +261,55 @@ const updateEmployee = [
     }
 
     const allowed = [
-      "firstName", "lastName", "designation", "phone", "department",
-      "employmentType", "salary", "bankAccount", "accountHolderName",
-      "ifscCode", "bankName", "panNumber", "aadharNumber",
-      "uanNumber", "esicNumber", "address", "emergencyContact",
-      "gender", "dateOfBirth", "reportingTo", "avatar", "status", "exitDate",
-      "biometricUserId", "shift", "shiftName", "workDaysPerWeek",
-      "workScheduleType", "customWorkDays", "otEnabled", "otRate",
+      "firstName",
+      "lastName",
+      "designation",
+      "phone",
+      "department",
+      "employmentType",
+      "salary",
+      "bankAccount",
+      "accountHolderName",
+      "ifscCode",
+      "bankName",
+      "panNumber",
+      "aadharNumber",
+      "uanNumber",
+      "esicNumber",
+      "address",
+      "emergencyContact",
+      "gender",
+      "dateOfBirth",
+      "reportingTo",
+      "avatar",
+      "status",
+      "exitDate",
+      "biometricUserId",
+      "shift",
+      "shiftName",
+      "workDaysPerWeek",
+      "workScheduleType",
+      "customWorkDays",
+      "otEnabled",
+      "otRate",
       // Personal details
-      "fatherName", "motherName", "spouseName", "maritalStatus",
-      "bloodGroup", "nationality", "religion", "personalEmail",
-      "alternatePhone", "permanentAddress", "city", "state", "pincode",
+      "fatherName",
+      "motherName",
+      "spouseName",
+      "maritalStatus",
+      "bloodGroup",
+      "nationality",
+      "religion",
+      "personalEmail",
+      "alternatePhone",
+      "permanentAddress",
+      "city",
+      "state",
+      "pincode",
       // Professional background
-      "qualification", "totalExperience", "previousCompany",
+      "qualification",
+      "totalExperience",
+      "previousCompany",
     ];
 
     // Fields that hold ObjectId references — empty string must become undefined,
@@ -483,32 +520,35 @@ const uploadEmployeeDocuments = asyncHandler(async (req, res) => {
     _id: req.params.id,
     company: req.user.company,
   });
-  if (!employee) { res.status(404); throw new Error("Employee not found"); }
+  if (!employee) {
+    res.status(404);
+    throw new Error("Employee not found");
+  }
 
   const files = req.files || {};
   const saveDoc = async (field, empField) => {
     if (!files[field]?.[0]) return;
+    await validateMagicBytes(files[field][0].path); // throws + deletes file if invalid
     if (employee[empField]) {
       const old = path.join(__dirname, "../", employee[empField]);
       if (fs.existsSync(old)) fs.unlinkSync(old);
     }
-    employee[empField] = path.relative(
-      path.join(__dirname, "../"),
-      files[field][0].path,
-    ).replace(/\\/g, "/");
+    employee[empField] = path
+      .relative(path.join(__dirname, "../"), files[field][0].path)
+      .replace(/\\/g, "/");
   };
 
   await saveDoc("aadhaarDoc", "aadhaarDoc");
-  await saveDoc("panDoc",     "panDoc");
-  await saveDoc("resumeDoc",  "resumeDoc");
+  await saveDoc("panDoc", "panDoc");
+  await saveDoc("resumeDoc", "resumeDoc");
 
   await employee.save();
   res.json({
     success: true,
     data: {
       aadhaarDoc: employee.aadhaarDoc || null,
-      panDoc:     employee.panDoc     || null,
-      resumeDoc:  employee.resumeDoc  || null,
+      panDoc: employee.panDoc || null,
+      resumeDoc: employee.resumeDoc || null,
     },
   });
 });
@@ -519,15 +559,25 @@ const downloadEmployeeDocument = asyncHandler(async (req, res) => {
     _id: req.params.id,
     company: req.user.company,
   });
-  if (!employee) { res.status(404); throw new Error("Employee not found"); }
+  if (!employee) {
+    res.status(404);
+    throw new Error("Employee not found");
+  }
 
   const { type } = req.params;
-  const docPath = type === "aadhaar" ? employee.aadhaarDoc
-               : type === "pan"     ? employee.panDoc
-               : type === "resume"  ? employee.resumeDoc
-               : null;
+  const docPath =
+    type === "aadhaar"
+      ? employee.aadhaarDoc
+      : type === "pan"
+        ? employee.panDoc
+        : type === "resume"
+          ? employee.resumeDoc
+          : null;
 
-  if (!docPath) { res.status(404); throw new Error("Document not found"); }
+  if (!docPath) {
+    res.status(404);
+    throw new Error("Document not found");
+  }
 
   const uploadsRoot = path.resolve(__dirname, "../uploads");
   const abs = path.resolve(__dirname, "../", docPath);
@@ -537,7 +587,10 @@ const downloadEmployeeDocument = asyncHandler(async (req, res) => {
     throw new Error("Access denied");
   }
 
-  if (!fs.existsSync(abs)) { res.status(404); throw new Error("File missing on server"); }
+  if (!fs.existsSync(abs)) {
+    res.status(404);
+    throw new Error("File missing on server");
+  }
 
   res.download(abs);
 });

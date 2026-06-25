@@ -364,7 +364,11 @@ function printReport(
   period: string,
   headers: string[],
   rows: string[][],
-  opts: { company?: ReportCompany; reportCategory?: string; generatedFor?: string } = {},
+  opts: {
+    company?: ReportCompany;
+    reportCategory?: string;
+    generatedFor?: string;
+  } = {},
 ) {
   const win = window.open("", "_blank");
   if (!win) return;
@@ -460,20 +464,43 @@ const STATUS_BADGE: Record<string, string> = {
   neft: "bg-blue-100 text-blue-700 border border-blue-300",
 };
 
-const AVATAR_PALETTE = ["#024BAB", "#00C48C", "#FA731C", "#7C3AED", "#0891B2", "#DC2626"];
+const AVATAR_PALETTE = [
+  "#024BAB",
+  "#00C48C",
+  "#FA731C",
+  "#7C3AED",
+  "#0891B2",
+  "#DC2626",
+];
 function getAvatarColor(name: string) {
   let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
+  for (let i = 0; i < name.length; i++)
+    h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
   return AVATAR_PALETTE[Math.abs(h) % AVATAR_PALETTE.length];
 }
 function getInitials(name: string) {
-  return name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
 }
 
 function StatusCell({ val }: { val: string }) {
   const key = val.toLowerCase().trim();
   const cls = STATUS_BADGE[key];
-  if (cls) return <span className={cn("px-2 py-0.5 text-[10px] font-black uppercase rounded", cls)}>{val}</span>;
+  if (cls)
+    return (
+      <span
+        className={cn(
+          "px-2 py-0.5 text-[10px] font-black uppercase rounded",
+          cls,
+        )}
+      >
+        {val}
+      </span>
+    );
   return <span>{val}</span>;
 }
 
@@ -558,7 +585,13 @@ function ReportTable({
   );
 }
 
-function PayReportGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
+function PayReportGen({
+  departments,
+  company,
+}: {
+  departments: any[];
+  company: ReportCompany;
+}) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -677,7 +710,13 @@ function PayReportGen({ departments, company }: { departments: any[]; company: R
   );
 }
 
-function SalaryRegisterGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
+function SalaryRegisterGen({
+  departments,
+  company,
+}: {
+  departments: any[];
+  company: ReportCompany;
+}) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -820,7 +859,13 @@ function SalaryRegisterGen({ departments, company }: { departments: any[]; compa
   );
 }
 
-function NetSalaryGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
+function NetSalaryGen({
+  departments,
+  company,
+}: {
+  departments: any[];
+  company: ReportCompany;
+}) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -902,7 +947,13 @@ function NetSalaryGen({ departments, company }: { departments: any[]; company: R
   );
 }
 
-function SalarySlipGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
+function SalarySlipGen({
+  departments,
+  company,
+}: {
+  departments: any[];
+  company: ReportCompany;
+}) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -933,8 +984,12 @@ function SalarySlipGen({ departments, company }: { departments: any[]; company: 
     const companyLogo = company?.logo || "";
     const empName = `${emp.firstName || ""} ${emp.lastName || ""}`.trim();
     const now = new Date().toLocaleString("en-IN", {
-      day: "2-digit", month: "short", year: "numeric",
-      hour: "2-digit", minute: "2-digit", hour12: true,
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
     });
     win.document.write(`<!DOCTYPE html>
 <html><head><title>Salary Slip</title><style>
@@ -1183,7 +1238,13 @@ function SalarySlipGen({ departments, company }: { departments: any[]; company: 
   );
 }
 
-function PFRegisterGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
+function PFRegisterGen({
+  departments,
+  company,
+}: {
+  departments: any[];
+  company: ReportCompany;
+}) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -1265,7 +1326,13 @@ function PFRegisterGen({ departments, company }: { departments: any[]; company: 
   );
 }
 
-function ESICRegisterGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
+function ESICRegisterGen({
+  departments,
+  company,
+}: {
+  departments: any[];
+  company: ReportCompany;
+}) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -1347,7 +1414,13 @@ function ESICRegisterGen({ departments, company }: { departments: any[]; company
   );
 }
 
-function BankUploadGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
+function BankUploadGen({
+  departments,
+  company,
+}: {
+  departments: any[];
+  company: ReportCompany;
+}) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -1427,7 +1500,13 @@ function BankUploadGen({ departments, company }: { departments: any[]; company: 
   );
 }
 
-function AbsentLeaveSummaryGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
+function AbsentLeaveSummaryGen({
+  departments,
+  company,
+}: {
+  departments: any[];
+  company: ReportCompany;
+}) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -1550,7 +1629,13 @@ function AbsentLeaveSummaryGen({ departments, company }: { departments: any[]; c
   );
 }
 
-function LateComingGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
+function LateComingGen({
+  departments,
+  company,
+}: {
+  departments: any[];
+  company: ReportCompany;
+}) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -1657,7 +1742,13 @@ function LateComingGen({ departments, company }: { departments: any[]; company: 
   );
 }
 
-function DesignationSummaryGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
+function DesignationSummaryGen({
+  departments,
+  company,
+}: {
+  departments: any[];
+  company: ReportCompany;
+}) {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -1730,7 +1821,13 @@ function DesignationSummaryGen({ departments, company }: { departments: any[]; c
   );
 }
 
-function AttendanceReportGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
+function AttendanceReportGen({
+  departments,
+  company,
+}: {
+  departments: any[];
+  company: ReportCompany;
+}) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -1847,7 +1944,13 @@ function AttendanceReportGen({ departments, company }: { departments: any[]; com
   );
 }
 
-function AttendanceInOutGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
+function AttendanceInOutGen({
+  departments,
+  company,
+}: {
+  departments: any[];
+  company: ReportCompany;
+}) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -1950,7 +2053,13 @@ function AttendanceInOutGen({ departments, company }: { departments: any[]; comp
   );
 }
 
-function AttendanceSummaryGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
+function AttendanceSummaryGen({
+  departments,
+  company,
+}: {
+  departments: any[];
+  company: ReportCompany;
+}) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -2072,7 +2181,13 @@ function AttendanceSummaryGen({ departments, company }: { departments: any[]; co
   );
 }
 
-function LeaveReportGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
+function LeaveReportGen({
+  departments,
+  company,
+}: {
+  departments: any[];
+  company: ReportCompany;
+}) {
   const now = new Date();
   const [year, setYear] = useState(String(now.getFullYear()));
   const [leaveType, setLeaveType] = useState("all");
@@ -2174,7 +2289,13 @@ function LeaveReportGen({ departments, company }: { departments: any[]; company:
   );
 }
 
-function MissPunchGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
+function MissPunchGen({
+  departments,
+  company,
+}: {
+  departments: any[];
+  company: ReportCompany;
+}) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
@@ -2271,7 +2392,13 @@ function MissPunchGen({ departments, company }: { departments: any[]; company: R
   );
 }
 
-function EmployeeDirectoryGen({ departments, company }: { departments: any[]; company: ReportCompany }) {
+function EmployeeDirectoryGen({
+  departments,
+  company,
+}: {
+  departments: any[];
+  company: ReportCompany;
+}) {
   const [dept, setDept] = useState("all");
   const [status, setStatus] = useState("all");
   const [data, setData] = useState<any[]>([]);
@@ -2339,7 +2466,18 @@ function EmployeeDirectoryGen({ departments, company }: { departments: any[]; co
         </NbSelect>
         <div className="ml-auto flex gap-2">
           <button
-            onClick={() => printReport("Employee Directory", new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" }), headers, rows, { company, reportCategory: "Employee" })}
+            onClick={() =>
+              printReport(
+                "Employee Directory",
+                new Date().toLocaleDateString("en-IN", {
+                  month: "long",
+                  year: "numeric",
+                }),
+                headers,
+                rows,
+                { company, reportCategory: "Employee" },
+              )
+            }
             className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white"
           >
             <Printer className="w-4 h-4" /> Print
@@ -2366,13 +2504,35 @@ function EmployeeDirectoryGen({ departments, company }: { departments: any[]; co
 }
 
 const EMP_REPORT_TYPES = [
-  { id: "attendance", label: "Attendance Report", desc: "Monthly attendance — daily status, check-in/out times" },
-  { id: "salary-slip", label: "Salary Slip", desc: "Monthly salary slip with earnings, deductions, net pay" },
-  { id: "leave", label: "Leave Report", desc: "Yearly leave history — types, dates, approval status" },
-  { id: "profile", label: "Employee Profile", desc: "Full profile — personal, employment, bank details" },
+  {
+    id: "attendance",
+    label: "Attendance Report",
+    desc: "Monthly attendance — daily status, check-in/out times",
+  },
+  {
+    id: "salary-slip",
+    label: "Salary Slip",
+    desc: "Monthly salary slip with earnings, deductions, net pay",
+  },
+  {
+    id: "leave",
+    label: "Leave Report",
+    desc: "Yearly leave history — types, dates, approval status",
+  },
+  {
+    id: "profile",
+    label: "Employee Profile",
+    desc: "Full profile — personal, employment, bank details",
+  },
 ];
 
-function EmployeeReportGen({ departments: _departments, company }: { departments: any[]; company: ReportCompany }) {
+function EmployeeReportGen({
+  departments: _departments,
+  company,
+}: {
+  departments: any[];
+  company: ReportCompany;
+}) {
   const now = new Date();
   const [employees, setEmployees] = useState<any[]>([]);
   const [search, setSearch] = useState("");
@@ -2386,10 +2546,13 @@ function EmployeeReportGen({ departments: _departments, company }: { departments
   const [generated, setGenerated] = useState(false);
 
   useEffect(() => {
-    employeeAPI.getAll({ limit: "500", status: "active" }).then((r) => {
-      if (r.success) setEmployees(r.data);
-      setEmpLoading(false);
-    }).catch(() => setEmpLoading(false));
+    employeeAPI
+      .getAll({ limit: "500", status: "active" })
+      .then((r) => {
+        if (r.success) setEmployees(r.data);
+        setEmpLoading(false);
+      })
+      .catch(() => setEmpLoading(false));
   }, []);
 
   const filtered = employees.filter((e) => {
@@ -2408,13 +2571,26 @@ function EmployeeReportGen({ departments: _departments, company }: { departments
     setGenerated(false);
     try {
       if (reportType === "attendance") {
-        const r = await attendanceAPI.getAll({ employeeId: selectedEmp._id, month, year, limit: "60" });
+        const r = await attendanceAPI.getAll({
+          employeeId: selectedEmp._id,
+          month,
+          year,
+          limit: "60",
+        });
         setData(r.data || []);
       } else if (reportType === "salary-slip") {
-        const r = await payrollAPI.getAll({ employeeId: selectedEmp._id, month, year });
+        const r = await payrollAPI.getAll({
+          employeeId: selectedEmp._id,
+          month,
+          year,
+        });
         setData(r.data || []);
       } else if (reportType === "leave") {
-        const r = await leaveAPI.getAll({ employeeId: selectedEmp._id, year, limit: "200" });
+        const r = await leaveAPI.getAll({
+          employeeId: selectedEmp._id,
+          year,
+          limit: "200",
+        });
         setData(r.data || []);
       } else if (reportType === "profile") {
         setData([selectedEmp]);
@@ -2425,9 +2601,11 @@ function EmployeeReportGen({ departments: _departments, company }: { departments
   }
 
   function getHeaders() {
-    if (reportType === "attendance") return ["Date", "Status", "Check In", "Check Out", "Work Hours"];
+    if (reportType === "attendance")
+      return ["Date", "Status", "Check In", "Check Out", "Work Hours"];
     if (reportType === "salary-slip") return ["Component", "Amount"];
-    if (reportType === "leave") return ["From", "To", "Days", "Type", "Reason", "Status"];
+    if (reportType === "leave")
+      return ["From", "To", "Days", "Type", "Reason", "Status"];
     if (reportType === "profile") return ["Field", "Value"];
     return [];
   }
@@ -2435,10 +2613,24 @@ function EmployeeReportGen({ departments: _departments, company }: { departments
   function getRows(): string[][] {
     if (reportType === "attendance") {
       return data.map((r) => [
-        new Date(r.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", weekday: "short" }),
+        new Date(r.date).toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          weekday: "short",
+        }),
         (r.status || "").toUpperCase().replace("_", " "),
-        r.checkIn ? new Date(r.checkIn).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "—",
-        r.checkOut ? new Date(r.checkOut).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "—",
+        r.checkIn
+          ? new Date(r.checkIn).toLocaleTimeString("en-IN", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "—",
+        r.checkOut
+          ? new Date(r.checkOut).toLocaleTimeString("en-IN", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "—",
         r.workHours ? `${r.workHours}h` : "—",
       ]);
     }
@@ -2463,7 +2655,8 @@ function EmployeeReportGen({ departments: _departments, company }: { departments
         formatDate(l.startDate),
         formatDate(l.endDate),
         String(l.days || 0),
-        (l.leaveType || "").charAt(0).toUpperCase() + (l.leaveType || "").slice(1),
+        (l.leaveType || "").charAt(0).toUpperCase() +
+          (l.leaveType || "").slice(1),
         l.reason || "—",
         (l.status || "").toUpperCase(),
       ]);
@@ -2493,8 +2686,11 @@ function EmployeeReportGen({ departments: _departments, company }: { departments
 
   const headers = getHeaders();
   const rows = getRows();
-  const period = reportType === "leave" ? `Year ${year}` : `${MONTHS[+month - 1]} ${year}`;
-  const empName = selectedEmp ? `${selectedEmp.firstName} ${selectedEmp.lastName}` : "";
+  const period =
+    reportType === "leave" ? `Year ${year}` : `${MONTHS[+month - 1]} ${year}`;
+  const empName = selectedEmp
+    ? `${selectedEmp.firstName} ${selectedEmp.lastName}`
+    : "";
   const color = selectedEmp ? getAvatarColor(empName) : "#024BAB";
   const initials = selectedEmp ? getInitials(empName) : "";
 
@@ -2502,7 +2698,9 @@ function EmployeeReportGen({ departments: _departments, company }: { departments
     <div className="space-y-5">
       {/* Step 1: Select Employee */}
       <div className="border-2 border-black bg-white p-5">
-        <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-3">Step 1 — Select Employee</p>
+        <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-3">
+          Step 1 — Select Employee
+        </p>
         <div className="relative mb-3">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
@@ -2523,10 +2721,16 @@ function EmployeeReportGen({ departments: _departments, company }: { departments
               return (
                 <button
                   key={emp._id}
-                  onClick={() => { setSelectedEmp(emp); setGenerated(false); setData([]); }}
+                  onClick={() => {
+                    setSelectedEmp(emp);
+                    setGenerated(false);
+                    setData([]);
+                  }}
                   className={cn(
                     "flex items-center gap-2 border-2 p-2.5 text-left transition-all",
-                    isSelected ? "border-[#024BAB] bg-[#024BAB]/5" : "border-black/20 bg-white hover:border-black",
+                    isSelected
+                      ? "border-[#024BAB] bg-[#024BAB]/5"
+                      : "border-black/20 bg-white hover:border-black",
                   )}
                 >
                   {emp.avatar ? (
@@ -2544,8 +2748,12 @@ function EmployeeReportGen({ departments: _departments, company }: { departments
                     </span>
                   )}
                   <div className="min-w-0">
-                    <p className="text-xs font-black text-black truncate">{name}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">{emp.department?.name || emp.designation}</p>
+                    <p className="text-xs font-black text-black truncate">
+                      {name}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      {emp.department?.name || emp.designation}
+                    </p>
                   </div>
                 </button>
               );
@@ -2574,25 +2782,59 @@ function EmployeeReportGen({ departments: _departments, company }: { departments
             )}
             <div>
               <p className="font-black text-black">{empName}</p>
-              <p className="text-xs text-muted-foreground">{selectedEmp.employeeId} · {selectedEmp.department?.name} · {selectedEmp.designation}</p>
+              <p className="text-xs text-muted-foreground">
+                {selectedEmp.employeeId} · {selectedEmp.department?.name} ·{" "}
+                {selectedEmp.designation}
+              </p>
             </div>
-            <button onClick={() => { setSelectedEmp(null); setReportType(null); setGenerated(false); }} className="ml-auto border-2 border-black p-1 bg-white hover:bg-gray-50">
+            <button
+              onClick={() => {
+                setSelectedEmp(null);
+                setReportType(null);
+                setGenerated(false);
+              }}
+              className="ml-auto border-2 border-black p-1 bg-white hover:bg-gray-50"
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
-          <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-3">Step 2 — Select Report Type</p>
+          <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-3">
+            Step 2 — Select Report Type
+          </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {EMP_REPORT_TYPES.map((rt) => (
               <button
                 key={rt.id}
-                onClick={() => { setReportType(rt.id); setGenerated(false); setData([]); }}
+                onClick={() => {
+                  setReportType(rt.id);
+                  setGenerated(false);
+                  setData([]);
+                }}
                 className={cn(
                   "border-2 p-3 text-left transition-all",
-                  reportType === rt.id ? "border-[#024BAB] bg-[#024BAB] text-white" : "border-black bg-white hover:border-[#024BAB]",
+                  reportType === rt.id
+                    ? "border-[#024BAB] bg-[#024BAB] text-white"
+                    : "border-black bg-white hover:border-[#024BAB]",
                 )}
               >
-                <p className={cn("text-xs font-black", reportType === rt.id ? "text-white" : "text-black")}>{rt.label}</p>
-                <p className={cn("text-[10px] mt-0.5", reportType === rt.id ? "text-white/70" : "text-muted-foreground")}>{rt.desc}</p>
+                <p
+                  className={cn(
+                    "text-xs font-black",
+                    reportType === rt.id ? "text-white" : "text-black",
+                  )}
+                >
+                  {rt.label}
+                </p>
+                <p
+                  className={cn(
+                    "text-[10px] mt-0.5",
+                    reportType === rt.id
+                      ? "text-white/70"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  {rt.desc}
+                </p>
               </button>
             ))}
           </div>
@@ -2602,16 +2844,26 @@ function EmployeeReportGen({ departments: _departments, company }: { departments
       {/* Step 3: Period + Generate */}
       {selectedEmp && reportType && (
         <div className="border-2 border-black bg-white p-5 space-y-4">
-          <p className="text-xs font-black uppercase tracking-wider text-[#024BAB]">Step 3 — Select Period & Generate</p>
+          <p className="text-xs font-black uppercase tracking-wider text-[#024BAB]">
+            Step 3 — Select Period & Generate
+          </p>
           <div className="flex flex-wrap gap-3 items-center">
             {reportType !== "leave" && reportType !== "profile" && (
               <NbSelect value={month} onChange={setMonth} className="w-32">
-                {MONTHS.map((m, i) => <option key={m} value={String(i + 1)}>{m}</option>)}
+                {MONTHS.map((m, i) => (
+                  <option key={m} value={String(i + 1)}>
+                    {m}
+                  </option>
+                ))}
               </NbSelect>
             )}
             {reportType !== "profile" && (
               <NbSelect value={year} onChange={setYear} className="w-28">
-                {YEARS.map((y) => <option key={y} value={String(y)}>{y}</option>)}
+                {YEARS.map((y) => (
+                  <option key={y} value={String(y)}>
+                    {y}
+                  </option>
+                ))}
               </NbSelect>
             )}
             <button
@@ -2619,19 +2871,40 @@ function EmployeeReportGen({ departments: _departments, company }: { departments
               disabled={loading}
               className="flex items-center gap-2 border-2 border-black px-4 py-2 text-sm font-black bg-[#024BAB] text-white disabled:opacity-50"
             >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <FileText className="w-4 h-4" />
+              )}
               Generate
             </button>
             {generated && rows.length > 0 && (
               <>
                 <button
-                  onClick={() => printReport(`${EMP_REPORT_TYPES.find(r => r.id === reportType)?.label} — ${empName}`, period, headers, rows, { company, reportCategory: "Employee", generatedFor: empName })}
+                  onClick={() =>
+                    printReport(
+                      `${EMP_REPORT_TYPES.find((r) => r.id === reportType)?.label} — ${empName}`,
+                      period,
+                      headers,
+                      rows,
+                      {
+                        company,
+                        reportCategory: "Employee",
+                        generatedFor: empName,
+                      },
+                    )
+                  }
                   className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white hover:bg-gray-50"
                 >
                   <Printer className="w-4 h-4" /> Print
                 </button>
                 <button
-                  onClick={() => exportCSV([headers, ...rows], `${reportType}_${empName.replace(" ", "_")}_${period}.csv`)}
+                  onClick={() =>
+                    exportCSV(
+                      [headers, ...rows],
+                      `${reportType}_${empName.replace(" ", "_")}_${period}.csv`,
+                    )
+                  }
                   className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#00C48C] text-white"
                 >
                   <Download className="w-4 h-4" /> CSV
@@ -2640,13 +2913,12 @@ function EmployeeReportGen({ departments: _departments, company }: { departments
             )}
           </div>
 
-          {generated && (
-            rows.length === 0 ? (
+          {generated &&
+            (rows.length === 0 ? (
               <EmptyState msg="No data for the selected period" />
             ) : (
               <ReportTable id="emp-rpt-tbl" headers={headers} rows={rows} />
-            )
-          )}
+            ))}
         </div>
       )}
     </div>
@@ -2671,14 +2943,22 @@ function ComingSoonGen() {
   );
 }
 
-function TallyExportGen({ departments: _d, company: _c }: { departments: any[]; company: ReportCompany }) {
+function TallyExportGen({
+  departments: _d,
+  company: _c,
+}: {
+  departments: any[];
+  company: ReportCompany;
+}) {
   const now = new Date();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { load(); }, [month, year]);
+  useEffect(() => {
+    load();
+  }, [month, year]);
   async function load() {
     setLoading(true);
     try {
@@ -2689,11 +2969,28 @@ function TallyExportGen({ departments: _d, company: _c }: { departments: any[]; 
   }
 
   const headers = [
-    "Employee Name", "Employee ID", "Designation", "Department",
-    "Basic Salary", "Earned Basic", "Allowances", "Overtime Pay", "Gross Salary",
-    "Absent Deduction", "Late Deduction", "Half Day Deduction", "Penalty",
-    "Loan / Advance EMI", "Total Deductions", "Net Salary",
-    "Working Days", "Days Present", "Leave Days", "Absent Days", "Hours Worked", "Status",
+    "Employee Name",
+    "Employee ID",
+    "Designation",
+    "Department",
+    "Basic Salary",
+    "Earned Basic",
+    "Allowances",
+    "Overtime Pay",
+    "Gross Salary",
+    "Absent Deduction",
+    "Late Deduction",
+    "Half Day Deduction",
+    "Penalty",
+    "Loan / Advance EMI",
+    "Total Deductions",
+    "Net Salary",
+    "Working Days",
+    "Days Present",
+    "Leave Days",
+    "Absent Days",
+    "Hours Worked",
+    "Status",
   ];
   const rows = data.map((p) => {
     const emp = p.employee || {};
@@ -2726,26 +3023,45 @@ function TallyExportGen({ departments: _d, company: _c }: { departments: any[]; 
   return (
     <div className="space-y-4">
       <div className="border-2 bg-[#F0FDF4] border-green-300 p-4 text-sm text-green-800 font-medium">
-        Export monthly payroll as CSV and import directly into Tally ERP via <b>Gateway of Tally → Import → Vouchers</b>.
+        Export monthly payroll as CSV and import directly into Tally ERP via{" "}
+        <b>Gateway of Tally → Import → Vouchers</b>.
       </div>
       <div className="flex flex-wrap gap-3">
         <NbSelect value={month} onChange={setMonth} className="w-32">
-          {MONTHS.map((m, i) => <option key={m} value={String(i + 1)}>{m}</option>)}
+          {MONTHS.map((m, i) => (
+            <option key={m} value={String(i + 1)}>
+              {m}
+            </option>
+          ))}
         </NbSelect>
         <NbSelect value={year} onChange={setYear} className="w-28">
-          {YEARS.map((y) => <option key={y} value={String(y)}>{y}</option>)}
+          {YEARS.map((y) => (
+            <option key={y} value={String(y)}>
+              {y}
+            </option>
+          ))}
         </NbSelect>
         <div className="ml-auto flex gap-2">
           <button
             disabled={data.length === 0}
-            onClick={() => exportCSV([headers, ...rows], `Payroll_${MONTHS[+month - 1]}_${year}_Tally.csv`)}
+            onClick={() =>
+              exportCSV(
+                [headers, ...rows],
+                `Payroll_${MONTHS[+month - 1]}_${year}_Tally.csv`,
+              )
+            }
             className="flex items-center gap-2 border-2 border-black px-4 py-2 text-sm font-bold bg-[#16A34A] text-white disabled:opacity-40"
           >
             <Download className="w-4 h-4" /> Download CSV
           </button>
           <button
             disabled={data.length === 0}
-            onClick={() => exportXLSX([headers, ...rows], `Payroll_${MONTHS[+month - 1]}_${year}_Tally.xlsx`)}
+            onClick={() =>
+              exportXLSX(
+                [headers, ...rows],
+                `Payroll_${MONTHS[+month - 1]}_${year}_Tally.xlsx`,
+              )
+            }
             className="flex items-center gap-2 border-2 border-black px-4 py-2 text-sm font-bold bg-[#00C48C] text-white disabled:opacity-40"
           >
             <Download className="w-4 h-4" /> Download Excel
@@ -2805,7 +3121,13 @@ const CHART_COLORS = [
   "#FFD60A",
 ];
 
-function AnalyticsTab({ departments, company }: { departments: any[]; company: ReportCompany }) {
+function AnalyticsTab({
+  departments,
+  company,
+}: {
+  departments: any[];
+  company: ReportCompany;
+}) {
   const now = new Date();
   const [attTab, setAttTab] = useState("headcount");
   const [employees, setEmployees] = useState<any[]>([]);
@@ -3434,7 +3756,9 @@ export default function ReportsPage() {
       </div>
 
       {}
-      {pageMode === "analytics" && <AnalyticsTab departments={departments} company={company} />}
+      {pageMode === "analytics" && (
+        <AnalyticsTab departments={departments} company={company} />
+      )}
 
       {}
       {pageMode === "catalog" && (

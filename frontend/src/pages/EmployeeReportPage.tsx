@@ -145,10 +145,18 @@ export default function EmployeeReportPage() {
       .map((r) => {
         const hours =
           r.checkIn && r.checkOut
-            ? ((new Date(r.checkOut).getTime() - new Date(r.checkIn).getTime()) / 3600000).toFixed(1) + "h"
+            ? (
+                (new Date(r.checkOut).getTime() -
+                  new Date(r.checkIn).getTime()) /
+                3600000
+              ).toFixed(1) + "h"
             : "—";
         return [
-          new Date(r.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", weekday: "short" }),
+          new Date(r.date).toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            weekday: "short",
+          }),
           statusLabel(r.status).toUpperCase(),
           fmt(r.checkIn),
           fmt(r.checkOut),
@@ -157,7 +165,14 @@ export default function EmployeeReportPage() {
       });
     const win = window.open("", "_blank");
     if (!win) return;
-    win.document.write(buildReportHTML(`Attendance Report`, `${MONTHS[month - 1]} ${year}`, headers, tableRows));
+    win.document.write(
+      buildReportHTML(
+        `Attendance Report`,
+        `${MONTHS[month - 1]} ${year}`,
+        headers,
+        tableRows,
+      ),
+    );
     win.document.close();
   };
 

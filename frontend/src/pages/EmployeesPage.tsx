@@ -195,7 +195,10 @@ export default function EmployeesPage() {
   const [formTab, setFormTab] = useState(0);
   const [editEmp, setEditEmp] = useState<Employee | null>(null);
   const [form, setForm] = useState<EmployeeFormData>(EMPTY_FORM);
-  const [docFiles, setDocFiles] = useState<{ aadhaarDoc?: File; panDoc?: File }>({});
+  const [docFiles, setDocFiles] = useState<{
+    aadhaarDoc?: File;
+    panDoc?: File;
+  }>({});
   const [saving, setSaving] = useState(false);
   const [viewEmp, setViewEmp] = useState<Employee | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -1889,7 +1892,9 @@ export default function EmployeesPage() {
                           </label>
                           <textarea
                             value={form.address}
-                            onChange={(e) => setForm({ ...form, address: e.target.value })}
+                            onChange={(e) =>
+                              setForm({ ...form, address: e.target.value })
+                            }
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 resize-none"
                             rows={2}
                             placeholder="Current residential address"
@@ -1897,37 +1902,71 @@ export default function EmployeesPage() {
                         </div>
                         <div className="col-span-2">
                           <label className="block text-xs font-bold text-black mb-1">
-                            Permanent Address <span className="text-gray-400 font-normal">(if different)</span>
+                            Permanent Address{" "}
+                            <span className="text-gray-400 font-normal">
+                              (if different)
+                            </span>
                           </label>
                           <textarea
                             value={form.permanentAddress}
-                            onChange={(e) => setForm({ ...form, permanentAddress: e.target.value })}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                permanentAddress: e.target.value,
+                              })
+                            }
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 resize-none"
                             rows={2}
                             placeholder="Permanent address"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-black mb-1">City</label>
-                          <input type="text" value={form.city}
-                            onChange={(e) => setForm({ ...form, city: e.target.value })}
+                          <label className="block text-xs font-bold text-black mb-1">
+                            City
+                          </label>
+                          <input
+                            type="text"
+                            value={form.city}
+                            onChange={(e) =>
+                              setForm({ ...form, city: e.target.value })
+                            }
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="City" />
+                            placeholder="City"
+                          />
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-black mb-1">State</label>
-                          <input type="text" value={form.state}
-                            onChange={(e) => setForm({ ...form, state: e.target.value })}
+                          <label className="block text-xs font-bold text-black mb-1">
+                            State
+                          </label>
+                          <input
+                            type="text"
+                            value={form.state}
+                            onChange={(e) =>
+                              setForm({ ...form, state: e.target.value })
+                            }
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="State" />
+                            placeholder="State"
+                          />
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-black mb-1">Pincode</label>
-                          <input type="text" value={form.pincode}
-                            onChange={(e) => setForm({ ...form, pincode: e.target.value.replace(/\D/g,"").slice(0,6) })}
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Pincode
+                          </label>
+                          <input
+                            type="text"
+                            value={form.pincode}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                pincode: e.target.value
+                                  .replace(/\D/g, "")
+                                  .slice(0, 6),
+                              })
+                            }
                             maxLength={6}
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="6-digit pincode" />
+                            placeholder="6-digit pincode"
+                          />
                         </div>
                       </div>
                     </div>
@@ -1939,24 +1978,47 @@ export default function EmployeesPage() {
                       </p>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-xs font-bold text-black mb-1">Father's Name</label>
-                          <input type="text" value={form.fatherName}
-                            onChange={(e) => setForm({ ...form, fatherName: e.target.value })}
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Father's Name
+                          </label>
+                          <input
+                            type="text"
+                            value={form.fatherName}
+                            onChange={(e) =>
+                              setForm({ ...form, fatherName: e.target.value })
+                            }
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="Father's full name" />
+                            placeholder="Father's full name"
+                          />
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-black mb-1">Mother's Name</label>
-                          <input type="text" value={form.motherName}
-                            onChange={(e) => setForm({ ...form, motherName: e.target.value })}
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Mother's Name
+                          </label>
+                          <input
+                            type="text"
+                            value={form.motherName}
+                            onChange={(e) =>
+                              setForm({ ...form, motherName: e.target.value })
+                            }
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="Mother's full name" />
+                            placeholder="Mother's full name"
+                          />
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-black mb-1">Marital Status</label>
-                          <select value={form.maritalStatus}
-                            onChange={(e) => setForm({ ...form, maritalStatus: e.target.value })}
-                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 bg-white">
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Marital Status
+                          </label>
+                          <select
+                            value={form.maritalStatus}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                maritalStatus: e.target.value,
+                              })
+                            }
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 bg-white"
+                          >
                             <option value="">Select</option>
                             <option value="single">Single</option>
                             <option value="married">Married</option>
@@ -1966,52 +2028,112 @@ export default function EmployeesPage() {
                         </div>
                         {form.maritalStatus === "married" && (
                           <div>
-                            <label className="block text-xs font-bold text-black mb-1">Spouse Name</label>
-                            <input type="text" value={form.spouseName}
-                              onChange={(e) => setForm({ ...form, spouseName: e.target.value })}
+                            <label className="block text-xs font-bold text-black mb-1">
+                              Spouse Name
+                            </label>
+                            <input
+                              type="text"
+                              value={form.spouseName}
+                              onChange={(e) =>
+                                setForm({ ...form, spouseName: e.target.value })
+                              }
                               className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                              placeholder="Spouse's full name" />
+                              placeholder="Spouse's full name"
+                            />
                           </div>
                         )}
                         <div>
-                          <label className="block text-xs font-bold text-black mb-1">Blood Group</label>
-                          <select value={form.bloodGroup}
-                            onChange={(e) => setForm({ ...form, bloodGroup: e.target.value })}
-                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 bg-white">
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Blood Group
+                          </label>
+                          <select
+                            value={form.bloodGroup}
+                            onChange={(e) =>
+                              setForm({ ...form, bloodGroup: e.target.value })
+                            }
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 bg-white"
+                          >
                             <option value="">Select</option>
-                            {["A+","A-","B+","B-","AB+","AB-","O+","O-"].map((g) => (
-                              <option key={g} value={g}>{g}</option>
+                            {[
+                              "A+",
+                              "A-",
+                              "B+",
+                              "B-",
+                              "AB+",
+                              "AB-",
+                              "O+",
+                              "O-",
+                            ].map((g) => (
+                              <option key={g} value={g}>
+                                {g}
+                              </option>
                             ))}
                           </select>
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-black mb-1">Nationality</label>
-                          <input type="text" value={form.nationality}
-                            onChange={(e) => setForm({ ...form, nationality: e.target.value })}
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Nationality
+                          </label>
+                          <input
+                            type="text"
+                            value={form.nationality}
+                            onChange={(e) =>
+                              setForm({ ...form, nationality: e.target.value })
+                            }
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="Indian" />
+                            placeholder="Indian"
+                          />
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-black mb-1">Religion</label>
-                          <input type="text" value={form.religion}
-                            onChange={(e) => setForm({ ...form, religion: e.target.value })}
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Religion
+                          </label>
+                          <input
+                            type="text"
+                            value={form.religion}
+                            onChange={(e) =>
+                              setForm({ ...form, religion: e.target.value })
+                            }
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="Optional" />
+                            placeholder="Optional"
+                          />
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-black mb-1">Personal Email</label>
-                          <input type="email" value={form.personalEmail}
-                            onChange={(e) => setForm({ ...form, personalEmail: e.target.value })}
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Personal Email
+                          </label>
+                          <input
+                            type="email"
+                            value={form.personalEmail}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                personalEmail: e.target.value,
+                              })
+                            }
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="personal@gmail.com" />
+                            placeholder="personal@gmail.com"
+                          />
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-black mb-1">Alternate Phone</label>
-                          <input type="tel" value={form.alternatePhone}
-                            onChange={(e) => setForm({ ...form, alternatePhone: e.target.value.replace(/\D/g,"").slice(0,10) })}
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Alternate Phone
+                          </label>
+                          <input
+                            type="tel"
+                            value={form.alternatePhone}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                alternatePhone: e.target.value
+                                  .replace(/\D/g, "")
+                                  .slice(0, 10),
+                              })
+                            }
                             maxLength={10}
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="Alternate 10-digit number" />
+                            placeholder="Alternate 10-digit number"
+                          />
                         </div>
                       </div>
                     </div>
@@ -2023,25 +2145,55 @@ export default function EmployeesPage() {
                       </p>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-xs font-bold text-black mb-1">Highest Qualification</label>
-                          <input type="text" value={form.qualification}
-                            onChange={(e) => setForm({ ...form, qualification: e.target.value })}
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Highest Qualification
+                          </label>
+                          <input
+                            type="text"
+                            value={form.qualification}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                qualification: e.target.value,
+                              })
+                            }
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="e.g. B.Com, MBA, 12th Pass" />
+                            placeholder="e.g. B.Com, MBA, 12th Pass"
+                          />
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-black mb-1">Total Experience</label>
-                          <input type="text" value={form.totalExperience}
-                            onChange={(e) => setForm({ ...form, totalExperience: e.target.value })}
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Total Experience
+                          </label>
+                          <input
+                            type="text"
+                            value={form.totalExperience}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                totalExperience: e.target.value,
+                              })
+                            }
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="e.g. 3 years 2 months" />
+                            placeholder="e.g. 3 years 2 months"
+                          />
                         </div>
                         <div className="col-span-2">
-                          <label className="block text-xs font-bold text-black mb-1">Previous Company</label>
-                          <input type="text" value={form.previousCompany}
-                            onChange={(e) => setForm({ ...form, previousCompany: e.target.value })}
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Previous Company
+                          </label>
+                          <input
+                            type="text"
+                            value={form.previousCompany}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                previousCompany: e.target.value,
+                              })
+                            }
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="Previous employer name" />
+                            placeholder="Previous employer name"
+                          />
                         </div>
                       </div>
                     </div>
@@ -2060,7 +2212,12 @@ export default function EmployeesPage() {
                             type="text"
                             value={form.panNumber}
                             onChange={(e) =>
-                              setForm({ ...form, panNumber: e.target.value.toUpperCase().slice(0, 10) })
+                              setForm({
+                                ...form,
+                                panNumber: e.target.value
+                                  .toUpperCase()
+                                  .slice(0, 10),
+                              })
                             }
                             maxLength={10}
                             pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}"
@@ -2073,7 +2230,10 @@ export default function EmployeesPage() {
                         {/* PAN Document upload */}
                         <div>
                           <label className="block text-xs font-bold text-black mb-1">
-                            PAN Document <span className="text-gray-400 font-normal">(optional, PDF/JPG/PNG, max 5MB)</span>
+                            PAN Document{" "}
+                            <span className="text-gray-400 font-normal">
+                              (optional, PDF/JPG/PNG, max 5MB)
+                            </span>
                           </label>
                           <div className="flex items-center gap-2">
                             <label className="cursor-pointer flex-1">
@@ -2083,34 +2243,54 @@ export default function EmployeesPage() {
                                 className="hidden"
                                 onChange={(e) => {
                                   const f = e.target.files?.[0];
-                                  if (f) setDocFiles((prev) => ({ ...prev, panDoc: f }));
+                                  if (f)
+                                    setDocFiles((prev) => ({
+                                      ...prev,
+                                      panDoc: f,
+                                    }));
                                 }}
                               />
                               <div className="border-2 border-dashed border-gray-300 hover:border-[#024BAB] px-3 py-2 text-xs text-gray-500 hover:text-[#024BAB] transition-colors text-center">
                                 {docFiles.panDoc
                                   ? docFiles.panDoc.name
                                   : editEmp && (editEmp as any).panDoc
-                                  ? "✅ Uploaded — click to replace"
-                                  : "Click to upload PAN document"}
+                                    ? "✅ Uploaded — click to replace"
+                                    : "Click to upload PAN document"}
                               </div>
                             </label>
-                            {(docFiles.panDoc || (editEmp && (editEmp as any).panDoc)) && (
+                            {(docFiles.panDoc ||
+                              (editEmp && (editEmp as any).panDoc)) && (
                               <div className="flex gap-1">
                                 {docFiles.panDoc && (
                                   <button
                                     type="button"
-                                    onClick={() => setDocFiles((prev) => { const n = {...prev}; delete n.panDoc; return n; })}
+                                    onClick={() =>
+                                      setDocFiles((prev) => {
+                                        const n = { ...prev };
+                                        delete n.panDoc;
+                                        return n;
+                                      })
+                                    }
                                     className="text-red-500 text-xs border border-red-300 px-1.5 py-1 hover:bg-red-50"
-                                  >✕</button>
+                                  >
+                                    ✕
+                                  </button>
                                 )}
-                                {editEmp && (editEmp as any).panDoc && !docFiles.panDoc && (
-                                  <a
-                                    href={employeeAPI.getDocumentUrl(editEmp._id, "pan")}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-[#024BAB] text-xs border border-[#024BAB] px-1.5 py-1 hover:bg-[#024BAB]/10"
-                                  >View</a>
-                                )}
+                                {editEmp &&
+                                  (editEmp as any).panDoc &&
+                                  !docFiles.panDoc && (
+                                    <a
+                                      href={employeeAPI.getDocumentUrl(
+                                        editEmp._id,
+                                        "pan",
+                                      )}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-[#024BAB] text-xs border border-[#024BAB] px-1.5 py-1 hover:bg-[#024BAB]/10"
+                                    >
+                                      View
+                                    </a>
+                                  )}
                               </div>
                             )}
                           </div>
@@ -2125,7 +2305,12 @@ export default function EmployeesPage() {
                             type="text"
                             value={form.aadharNumber}
                             onChange={(e) =>
-                              setForm({ ...form, aadharNumber: e.target.value.replace(/\D/g, "").slice(0, 12) })
+                              setForm({
+                                ...form,
+                                aadharNumber: e.target.value
+                                  .replace(/\D/g, "")
+                                  .slice(0, 12),
+                              })
                             }
                             maxLength={12}
                             pattern="\d{12}"
@@ -2138,7 +2323,10 @@ export default function EmployeesPage() {
                         {/* Aadhaar Document upload */}
                         <div>
                           <label className="block text-xs font-bold text-black mb-1">
-                            Aadhaar Document <span className="text-gray-400 font-normal">(optional, PDF/JPG/PNG, max 5MB)</span>
+                            Aadhaar Document{" "}
+                            <span className="text-gray-400 font-normal">
+                              (optional, PDF/JPG/PNG, max 5MB)
+                            </span>
                           </label>
                           <div className="flex items-center gap-2">
                             <label className="cursor-pointer flex-1">
@@ -2148,34 +2336,54 @@ export default function EmployeesPage() {
                                 className="hidden"
                                 onChange={(e) => {
                                   const f = e.target.files?.[0];
-                                  if (f) setDocFiles((prev) => ({ ...prev, aadhaarDoc: f }));
+                                  if (f)
+                                    setDocFiles((prev) => ({
+                                      ...prev,
+                                      aadhaarDoc: f,
+                                    }));
                                 }}
                               />
                               <div className="border-2 border-dashed border-gray-300 hover:border-[#024BAB] px-3 py-2 text-xs text-gray-500 hover:text-[#024BAB] transition-colors text-center">
                                 {docFiles.aadhaarDoc
                                   ? docFiles.aadhaarDoc.name
                                   : editEmp && (editEmp as any).aadhaarDoc
-                                  ? "✅ Uploaded — click to replace"
-                                  : "Click to upload Aadhaar document"}
+                                    ? "✅ Uploaded — click to replace"
+                                    : "Click to upload Aadhaar document"}
                               </div>
                             </label>
-                            {(docFiles.aadhaarDoc || (editEmp && (editEmp as any).aadhaarDoc)) && (
+                            {(docFiles.aadhaarDoc ||
+                              (editEmp && (editEmp as any).aadhaarDoc)) && (
                               <div className="flex gap-1">
                                 {docFiles.aadhaarDoc && (
                                   <button
                                     type="button"
-                                    onClick={() => setDocFiles((prev) => { const n = {...prev}; delete n.aadhaarDoc; return n; })}
+                                    onClick={() =>
+                                      setDocFiles((prev) => {
+                                        const n = { ...prev };
+                                        delete n.aadhaarDoc;
+                                        return n;
+                                      })
+                                    }
                                     className="text-red-500 text-xs border border-red-300 px-1.5 py-1 hover:bg-red-50"
-                                  >✕</button>
+                                  >
+                                    ✕
+                                  </button>
                                 )}
-                                {editEmp && (editEmp as any).aadhaarDoc && !docFiles.aadhaarDoc && (
-                                  <a
-                                    href={employeeAPI.getDocumentUrl(editEmp._id, "aadhaar")}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-[#024BAB] text-xs border border-[#024BAB] px-1.5 py-1 hover:bg-[#024BAB]/10"
-                                  >View</a>
-                                )}
+                                {editEmp &&
+                                  (editEmp as any).aadhaarDoc &&
+                                  !docFiles.aadhaarDoc && (
+                                    <a
+                                      href={employeeAPI.getDocumentUrl(
+                                        editEmp._id,
+                                        "aadhaar",
+                                      )}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-[#024BAB] text-xs border border-[#024BAB] px-1.5 py-1 hover:bg-[#024BAB]/10"
+                                    >
+                                      View
+                                    </a>
+                                  )}
                               </div>
                             )}
                           </div>
@@ -2184,7 +2392,10 @@ export default function EmployeesPage() {
                         {/* Resume upload — full width */}
                         <div className="col-span-2">
                           <label className="block text-xs font-bold text-black mb-1">
-                            Resume / CV <span className="text-gray-400 font-normal">(optional, PDF/DOC, max 5MB)</span>
+                            Resume / CV{" "}
+                            <span className="text-gray-400 font-normal">
+                              (optional, PDF/DOC, max 5MB)
+                            </span>
                           </label>
                           <div className="flex items-center gap-2">
                             <label className="cursor-pointer flex-1">
@@ -2194,33 +2405,54 @@ export default function EmployeesPage() {
                                 className="hidden"
                                 onChange={(e) => {
                                   const f = e.target.files?.[0];
-                                  if (f) setDocFiles((prev) => ({ ...prev, resumeDoc: f }));
+                                  if (f)
+                                    setDocFiles((prev) => ({
+                                      ...prev,
+                                      resumeDoc: f,
+                                    }));
                                 }}
                               />
                               <div className="border-2 border-dashed border-gray-300 hover:border-[#024BAB] px-3 py-2 text-xs text-gray-500 hover:text-[#024BAB] transition-colors text-center">
                                 {docFiles.resumeDoc
                                   ? docFiles.resumeDoc.name
                                   : editEmp && (editEmp as any).resumeDoc
-                                  ? "✅ Uploaded — click to replace"
-                                  : "Click to upload Resume / CV"}
+                                    ? "✅ Uploaded — click to replace"
+                                    : "Click to upload Resume / CV"}
                               </div>
                             </label>
-                            {(docFiles.resumeDoc || (editEmp && (editEmp as any).resumeDoc)) && (
+                            {(docFiles.resumeDoc ||
+                              (editEmp && (editEmp as any).resumeDoc)) && (
                               <div className="flex gap-1">
                                 {docFiles.resumeDoc && (
-                                  <button type="button"
-                                    onClick={() => setDocFiles((prev) => { const n = {...prev}; delete n.resumeDoc; return n; })}
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setDocFiles((prev) => {
+                                        const n = { ...prev };
+                                        delete n.resumeDoc;
+                                        return n;
+                                      })
+                                    }
                                     className="text-red-500 text-xs border border-red-300 px-1.5 py-1 hover:bg-red-50"
-                                  >✕</button>
+                                  >
+                                    ✕
+                                  </button>
                                 )}
-                                {editEmp && (editEmp as any).resumeDoc && !docFiles.resumeDoc && (
-                                  <a
-                                    href={employeeAPI.getDocumentUrl(editEmp._id, "resume")}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-[#024BAB] text-xs border border-[#024BAB] px-1.5 py-1 hover:bg-[#024BAB]/10"
-                                  >View</a>
-                                )}
+                                {editEmp &&
+                                  (editEmp as any).resumeDoc &&
+                                  !docFiles.resumeDoc && (
+                                    <a
+                                      href={employeeAPI.getDocumentUrl(
+                                        editEmp._id,
+                                        "resume",
+                                      )}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-[#024BAB] text-xs border border-[#024BAB] px-1.5 py-1 hover:bg-[#024BAB]/10"
+                                    >
+                                      View
+                                    </a>
+                                  )}
                               </div>
                             )}
                           </div>
@@ -2703,18 +2935,36 @@ export default function EmployeesPage() {
                     ["Alt Phone", (viewEmp as any).alternatePhone || "—"],
                     ["Personal Email", (viewEmp as any).personalEmail || "—"],
                     ["Gender", viewEmp.gender || "—"],
-                    ["Date of Birth", (viewEmp as any).dateOfBirth ? formatDate((viewEmp as any).dateOfBirth) : "—"],
+                    [
+                      "Date of Birth",
+                      (viewEmp as any).dateOfBirth
+                        ? formatDate((viewEmp as any).dateOfBirth)
+                        : "—",
+                    ],
                     ["Blood Group", (viewEmp as any).bloodGroup || "—"],
                     ["Marital Status", (viewEmp as any).maritalStatus || "—"],
                     ["Father", (viewEmp as any).fatherName || "—"],
                     ["Mother", (viewEmp as any).motherName || "—"],
-                    ...(((viewEmp as any).maritalStatus === "married") ? [["Spouse", (viewEmp as any).spouseName || "—"]] : []),
+                    ...((viewEmp as any).maritalStatus === "married"
+                      ? [["Spouse", (viewEmp as any).spouseName || "—"]]
+                      : []),
                     ["Nationality", (viewEmp as any).nationality || "—"],
                     ["Religion", (viewEmp as any).religion || "—"],
-                    ["Emergency Contact", (viewEmp as any).emergencyContact || "—"],
+                    [
+                      "Emergency Contact",
+                      (viewEmp as any).emergencyContact || "—",
+                    ],
                     ["Current Address", (viewEmp as any).address || "—"],
-                    ["Permanent Address", (viewEmp as any).permanentAddress || "—"],
-                    ["City / State", [(viewEmp as any).city, (viewEmp as any).state].filter(Boolean).join(", ") || "—"],
+                    [
+                      "Permanent Address",
+                      (viewEmp as any).permanentAddress || "—",
+                    ],
+                    [
+                      "City / State",
+                      [(viewEmp as any).city, (viewEmp as any).state]
+                        .filter(Boolean)
+                        .join(", ") || "—",
+                    ],
                     ["Pincode", (viewEmp as any).pincode || "—"],
                   ].map(([label, value]) => (
                     <div
@@ -2768,23 +3018,43 @@ export default function EmployeesPage() {
                   ))}
 
                   {/* Document links */}
-                  {((viewEmp as any).panDoc || (viewEmp as any).aadhaarDoc || (viewEmp as any).resumeDoc) && (
+                  {((viewEmp as any).panDoc ||
+                    (viewEmp as any).aadhaarDoc ||
+                    (viewEmp as any).resumeDoc) && (
                     <div className="pt-2 flex flex-wrap gap-2">
                       {(viewEmp as any).panDoc && (
-                        <a href={employeeAPI.getDocumentUrl(viewEmp._id, "pan")} target="_blank" rel="noreferrer"
-                          className="text-[10px] font-black border-2 border-[#024BAB] text-[#024BAB] px-2 py-1 hover:bg-[#024BAB]/10">
+                        <a
+                          href={employeeAPI.getDocumentUrl(viewEmp._id, "pan")}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[10px] font-black border-2 border-[#024BAB] text-[#024BAB] px-2 py-1 hover:bg-[#024BAB]/10"
+                        >
                           📄 PAN Doc
                         </a>
                       )}
                       {(viewEmp as any).aadhaarDoc && (
-                        <a href={employeeAPI.getDocumentUrl(viewEmp._id, "aadhaar")} target="_blank" rel="noreferrer"
-                          className="text-[10px] font-black border-2 border-[#024BAB] text-[#024BAB] px-2 py-1 hover:bg-[#024BAB]/10">
+                        <a
+                          href={employeeAPI.getDocumentUrl(
+                            viewEmp._id,
+                            "aadhaar",
+                          )}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[10px] font-black border-2 border-[#024BAB] text-[#024BAB] px-2 py-1 hover:bg-[#024BAB]/10"
+                        >
                           📄 Aadhaar Doc
                         </a>
                       )}
                       {(viewEmp as any).resumeDoc && (
-                        <a href={employeeAPI.getDocumentUrl(viewEmp._id, "resume")} target="_blank" rel="noreferrer"
-                          className="text-[10px] font-black border-2 border-[#00C48C] text-[#00C48C] px-2 py-1 hover:bg-[#00C48C]/10">
+                        <a
+                          href={employeeAPI.getDocumentUrl(
+                            viewEmp._id,
+                            "resume",
+                          )}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[10px] font-black border-2 border-[#00C48C] text-[#00C48C] px-2 py-1 hover:bg-[#00C48C]/10"
+                        >
                           📄 Resume
                         </a>
                       )}
@@ -2794,22 +3064,35 @@ export default function EmployeesPage() {
               </div>
 
               {/* Professional Background */}
-              {((viewEmp as any).qualification || (viewEmp as any).totalExperience || (viewEmp as any).previousCompany) && (
+              {((viewEmp as any).qualification ||
+                (viewEmp as any).totalExperience ||
+                (viewEmp as any).previousCompany) && (
                 <div className="border-2 border-black bg-white">
                   <div className="flex items-center gap-2 px-4 py-3 border-b-2 border-black bg-[#024BAB]/5">
-                    <span className="text-xs font-black uppercase tracking-wider text-black">Professional Background</span>
+                    <span className="text-xs font-black uppercase tracking-wider text-black">
+                      Professional Background
+                    </span>
                   </div>
                   <div className="p-4 space-y-2">
                     {[
                       ["Qualification", (viewEmp as any).qualification],
                       ["Experience", (viewEmp as any).totalExperience],
                       ["Previous Company", (viewEmp as any).previousCompany],
-                    ].filter(([, v]) => v).map(([label, value]) => (
-                      <div key={label as string} className="flex items-start justify-between gap-2 border-b border-black/10 pb-2 last:border-0 last:pb-0">
-                        <span className="text-[10px] font-black text-muted-foreground uppercase shrink-0">{label}</span>
-                        <span className="text-xs font-bold text-black text-right">{value}</span>
-                      </div>
-                    ))}
+                    ]
+                      .filter(([, v]) => v)
+                      .map(([label, value]) => (
+                        <div
+                          key={label as string}
+                          className="flex items-start justify-between gap-2 border-b border-black/10 pb-2 last:border-0 last:pb-0"
+                        >
+                          <span className="text-[10px] font-black text-muted-foreground uppercase shrink-0">
+                            {label}
+                          </span>
+                          <span className="text-xs font-bold text-black text-right">
+                            {value}
+                          </span>
+                        </div>
+                      ))}
                   </div>
                 </div>
               )}

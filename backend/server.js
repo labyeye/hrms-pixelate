@@ -1,4 +1,16 @@
 require("dotenv").config();
+
+const REQUIRED_ENV = ["JWT_SECRET", "MONGO_URI"];
+const missing = REQUIRED_ENV.filter((k) => !process.env[k]);
+if (missing.length) {
+  console.error(`[FATAL] Missing required env vars: ${missing.join(", ")}`);
+  process.exit(1);
+}
+if (process.env.NODE_ENV === "production" && !process.env.ALLOWED_ORIGINS) {
+  console.error("[FATAL] ALLOWED_ORIGINS must be set in production");
+  process.exit(1);
+}
+
 const express = require("express");
 const path = require("path");
 const cors = require("cors");
@@ -6,6 +18,7 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 const rateLimit = require("express-rate-limit");
 const connectDB = require("./config/db");
+const timeout = require("connect-timeout");
 const errorHandler = require("./middleware/errorHandler");
 
 connectDB();
@@ -19,7 +32,18 @@ app.set("trust proxy", 1);
 
 app.use(
   helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:", "blob:"],
+        connectSrc: ["'self'"],
+        frameSrc: ["'none'"],
+        objectSrc: ["'none'"],
+      },
+    },
     hsts: { maxAge: 31536000, includeSubDomains: true },
   }),
 );
@@ -42,6 +66,7 @@ app.use(
     credentials: true,
   }),
 );
+app.use(timeout("30s"));
 app.use(morgan("dev"));
 app.use(express.json({ limit: "5mb" }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));

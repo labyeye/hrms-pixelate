@@ -4,8 +4,12 @@ const Setting = require("../models/Setting");
 
 // ─── Internal: upload a buffer to Meta Media API → returns media_id ──────────
 
-async function uploadMediaToMeta(buffer, filename = "payslip.pdf", mimetype = "application/pdf") {
-  const accessToken  = process.env.META_WA_TOKEN;
+async function uploadMediaToMeta(
+  buffer,
+  filename = "payslip.pdf",
+  mimetype = "application/pdf",
+) {
+  const accessToken = process.env.META_WA_TOKEN;
   const phoneNumberId = process.env.META_WA_PHONE_ID;
   if (!accessToken || !phoneNumberId) return null;
 
@@ -20,7 +24,10 @@ async function uploadMediaToMeta(buffer, filename = "payslip.pdf", mimetype = "a
         hostname: "graph.facebook.com",
         path: `/v20.0/${phoneNumberId}/media`,
         method: "POST",
-        headers: { ...form.getHeaders(), Authorization: `Bearer ${accessToken}` },
+        headers: {
+          ...form.getHeaders(),
+          Authorization: `Bearer ${accessToken}`,
+        },
       },
       (res) => {
         let data = "";
@@ -28,13 +35,22 @@ async function uploadMediaToMeta(buffer, filename = "payslip.pdf", mimetype = "a
         res.on("end", () => {
           try {
             const json = JSON.parse(data);
-            if (res.statusCode >= 200 && res.statusCode < 300) resolve(json.id || null);
-            else { console.error("[WA-DEBUG] Media upload failed:", data); resolve(null); }
-          } catch { resolve(null); }
+            if (res.statusCode >= 200 && res.statusCode < 300)
+              resolve(json.id || null);
+            else {
+              console.error("[WA-DEBUG] Media upload failed:", data);
+              resolve(null);
+            }
+          } catch {
+            resolve(null);
+          }
         });
       },
     );
-    req.on("error", (e) => { console.error("[WA-DEBUG] Media upload error:", e.message); resolve(null); });
+    req.on("error", (e) => {
+      console.error("[WA-DEBUG] Media upload error:", e.message);
+      resolve(null);
+    });
     form.pipe(req);
   });
 }
@@ -42,7 +58,13 @@ async function uploadMediaToMeta(buffer, filename = "payslip.pdf", mimetype = "a
 // ─── Internal: send a Meta template message ──────────────────────────────────
 
 // extraComponents: optional array of button/header components to append
-async function sendTemplate(phone, templateName, params, lang = "en", extraComponents = []) {
+async function sendTemplate(
+  phone,
+  templateName,
+  params,
+  lang = "en",
+  extraComponents = [],
+) {
   const accessToken = process.env.META_WA_TOKEN;
   const phoneNumberId = process.env.META_WA_PHONE_ID;
   console.log(
@@ -412,12 +434,29 @@ async function sendCheckOutHR(
  */
 async function sendSalaryPaid(
   phone,
-  { firstName, period, basicSalary, allowances, otPay, grossSalary, totalDeductions, netSalary, presentDays, workingDays, paymentMode, paidOn },
+  {
+    firstName,
+    period,
+    basicSalary,
+    allowances,
+    otPay,
+    grossSalary,
+    totalDeductions,
+    netSalary,
+    presentDays,
+    workingDays,
+    paymentMode,
+    paidOn,
+  },
   companyId,
   pdfBuffer = null,
 ) {
   const fmtINR = (n) =>
-    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n || 0);
+    new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
+    }).format(n || 0);
   try {
     const s = await getCompanySetting("whatsappNotifyPayroll", companyId);
     if (!s) return;
@@ -432,22 +471,40 @@ async function sendSalaryPaid(
       if (mediaId) {
         extraComponents.push({
           type: "header",
-          parameters: [{
-            type: "document",
-            document: { id: mediaId, filename: `Payslip_${period.replace(/\s/g, "_")}.pdf` },
-          }],
+          parameters: [
+            {
+              type: "document",
+              document: {
+                id: mediaId,
+                filename: `Payslip_${period.replace(/\s/g, "_")}.pdf`,
+              },
+            },
+          ],
         });
       }
     }
 
     extraComponents.push(
-      { type: "button", sub_type: "quick_reply", index: "0",
-        parameters: [{ type: "payload", payload: "PAYSLIP_RECEIVED" }] },
-      { type: "button", sub_type: "quick_reply", index: "1",
-        parameters: [{ type: "payload", payload: "PAYSLIP_NOT_RECEIVED" }] },
+      {
+        type: "button",
+        sub_type: "quick_reply",
+        index: "0",
+        parameters: [{ type: "payload", payload: "PAYSLIP_RECEIVED" }],
+      },
+      {
+        type: "button",
+        sub_type: "quick_reply",
+        index: "1",
+        parameters: [{ type: "payload", payload: "PAYSLIP_NOT_RECEIVED" }],
+      },
     );
 
-    const MODE_LABELS = { bank_transfer: "Bank Transfer", cash: "Cash", upi: "UPI", cheque: "Cheque" };
+    const MODE_LABELS = {
+      bank_transfer: "Bank Transfer",
+      cash: "Cash",
+      upi: "UPI",
+      cheque: "Cheque",
+    };
     const modeLabel = MODE_LABELS[paymentMode] || "Bank Transfer";
     const paidOnStr = paidOn
       ? new Date(paidOn).toLocaleDateString("en-IN")

@@ -14,12 +14,10 @@ const Payroll = require("../models/Payroll");
 function statsGuard(req, res, next) {
   const secret = process.env.STATS_SECRET;
   if (!secret) {
-    return res
-      .status(503)
-      .json({
-        success: false,
-        message: "Stats endpoint not configured (STATS_SECRET missing)",
-      });
+    return res.status(503).json({
+      success: false,
+      message: "Stats endpoint not configured (STATS_SECRET missing)",
+    });
   }
   const provided = req.query.key || req.headers["x-stats-key"];
   if (provided !== secret) {

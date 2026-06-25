@@ -3,9 +3,11 @@ const errorHandler = (err, req, res, next) => {
 
   if (process.env.NODE_ENV !== "test") {
     console.error(
-      `[${new Date().toISOString()}] ${req.method} ${req.originalUrl} — ${err.message}`,
+      `[${new Date().toISOString()}] ${req.method} ${req.originalUrl} — ${status} ${err.message}`,
     );
-    if (status === 500) console.error(err.stack);
+    if (status === 500 && process.env.NODE_ENV !== "production") {
+      console.error(err.stack);
+    }
   }
 
   let message = err.message || "An unexpected error occurred";

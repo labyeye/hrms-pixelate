@@ -21,11 +21,18 @@ const employeeDocumentSchema = new mongoose.Schema(
     docType: {
       type: String,
       required: true,
-      enum: ["id_proof", "certificate", "contract", "resume", "offer_letter", "other"],
+      enum: [
+        "id_proof",
+        "certificate",
+        "contract",
+        "resume",
+        "offer_letter",
+        "other",
+      ],
     },
     mimeType: { type: String, required: true },
     sizeBytes: { type: Number, required: true },
-    fileData: { type: String, required: true }, // base64
+    filePath: { type: String, required: true }, // relative path under /uploads/employee-docs/
   },
   { timestamps: true },
 );

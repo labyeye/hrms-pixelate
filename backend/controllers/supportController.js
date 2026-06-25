@@ -56,13 +56,22 @@ exports.createTicket = asyncHandler(async (req, res) => {
   const { subject, issueType, priority, description } = req.body;
 
   if (!subject || !subject.trim())
-    return res.status(400).json({ success: false, message: "Subject is required" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Subject is required" });
   if (!issueType)
-    return res.status(400).json({ success: false, message: "Issue type is required" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Issue type is required" });
   if (!description || !description.trim())
-    return res.status(400).json({ success: false, message: "Description is required" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Description is required" });
   if (description.length > 2000)
-    return res.status(400).json({ success: false, message: "Description too long (max 2000 chars)" });
+    return res.status(400).json({
+      success: false,
+      message: "Description too long (max 2000 chars)",
+    });
 
   const company = await Company.findById(req.user.company);
 
@@ -110,7 +119,10 @@ exports.getTicket = asyncHandler(async (req, res) => {
     company: req.user.company,
   }).populate("submittedBy", "name email");
 
-  if (!ticket) return res.status(404).json({ success: false, message: "Ticket not found" });
+  if (!ticket)
+    return res
+      .status(404)
+      .json({ success: false, message: "Ticket not found" });
   res.json({ success: true, data: ticket });
 });
 
@@ -133,6 +145,9 @@ exports.updateTicketStatus = asyncHandler(async (req, res) => {
     { new: true },
   );
 
-  if (!ticket) return res.status(404).json({ success: false, message: "Ticket not found" });
+  if (!ticket)
+    return res
+      .status(404)
+      .json({ success: false, message: "Ticket not found" });
   res.json({ success: true, data: ticket });
 });

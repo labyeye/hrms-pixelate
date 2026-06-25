@@ -1,26 +1,62 @@
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const { fromFile } = require("file-type");
+
+// Allowed MIME types matched against actual file magic bytes
+const ALLOWED_MAGIC_MIME = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+]);
+
+async function validateMagicBytes(filePath) {
+  const result = await fromFile(filePath);
+  // result is undefined for plain text files — reject those too
+  if (!result || !ALLOWED_MAGIC_MIME.has(result.mime)) {
+    fs.unlinkSync(filePath);
+    throw new Error(
+      "File content does not match allowed types (PDF, JPG, PNG, WEBP)",
+    );
+  }
+}
+
+module.exports.validateMagicBytes = validateMagicBytes;
 
 const UPLOAD_BASE = path.join(__dirname, "../uploads");
 
 // Ensure upload dirs exist on startup
-["employee-aadhaar", "employee-pan", "employee-resume", "company-logos"].forEach((dir) => {
+[
+  "employee-aadhaar",
+  "employee-pan",
+  "employee-resume",
+  "company-logos",
+  "employee-docs",
+].forEach((dir) => {
   const p = path.join(UPLOAD_BASE, dir);
   if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
 });
 
-const ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+const ALLOWED_MIME = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+];
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 
 const employeeDocStorage = multer.diskStorage({
   destination(req, file, cb) {
     const folderMap = {
       aadhaarDoc: "employee-aadhaar",
-      panDoc:     "employee-pan",
-      resumeDoc:  "employee-resume",
+      panDoc: "employee-pan",
+      resumeDoc: "employee-resume",
     };
-    cb(null, path.join(UPLOAD_BASE, folderMap[file.fieldname] || "employee-resume"));
+    cb(
+      null,
+      path.join(UPLOAD_BASE, folderMap[file.fieldname] || "employee-resume"),
+    );
   },
   filename(req, file, cb) {
     const ext = path.extname(file.originalname).toLowerCase() || ".pdf";
@@ -40,8 +76,8 @@ const uploadEmployeeDocs = multer({
   limits: { fileSize: MAX_SIZE },
 }).fields([
   { name: "aadhaarDoc", maxCount: 1 },
-  { name: "panDoc",     maxCount: 1 },
-  { name: "resumeDoc",  maxCount: 1 },
+  { name: "panDoc", maxCount: 1 },
+  { name: "resumeDoc", maxCount: 1 },
 ]);
 
 const companyLogoStorage = multer.diskStorage({
@@ -64,4 +100,27 @@ const uploadCompanyLogo = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
 }).single("logo");
 
-module.exports = { uploadEmployeeDocs, uploadCompanyLogo };
+// Document vault — generic file upload to disk
+const documentVaultStorage = multer.diskStorage({
+  destination(_req, _file, cb) {
+    cb(null, path.join(UPLOAD_BASE, "employee-docs"));
+  },
+  filename(_req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase() || ".bin";
+    const safe = `${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`;
+    cb(null, safe);
+  },
+});
+
+const uploadDocumentVault = multer({
+  storage: documentVaultStorage,
+  fileFilter,
+  limits: { fileSize: MAX_SIZE },
+}).single("file");
+
+module.exports = {
+  uploadEmployeeDocs,
+  uploadCompanyLogo,
+  uploadDocumentVault,
+  validateMagicBytes,
+};

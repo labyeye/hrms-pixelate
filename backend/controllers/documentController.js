@@ -1,34 +1,40 @@
+const path = require("path");
+const fs = require("fs");
 const asyncHandler = require("express-async-handler");
 const EmployeeDocument = require("../models/EmployeeDocument");
 const Employee = require("../models/Employee");
+const { validateMagicBytes } = require("../middleware/upload");
 
-const MAX_SIZE_BYTES = 4 * 1024 * 1024; // 4 MB
+const UPLOADS_ROOT = path.resolve(__dirname, "../uploads/employee-docs");
 
 const uploadDocument = asyncHandler(async (req, res) => {
-  const { employeeId, name, docType, mimeType, fileData } = req.body;
-
-  if (!employeeId || !name || !docType || !mimeType || !fileData) {
+  if (!req.file) {
     res.status(400);
-    throw new Error("employeeId, name, docType, mimeType and fileData are required");
+    throw new Error("No file uploaded");
   }
+
+  const { employeeId, name, docType } = req.body;
+  if (!employeeId || !name || !docType) {
+    fs.unlinkSync(req.file.path);
+    res.status(400);
+    throw new Error("employeeId, name and docType are required");
+  }
+
+  await validateMagicBytes(req.file.path);
 
   const employee = await Employee.findOne({
     _id: employeeId,
     company: req.user.company,
   });
   if (!employee) {
+    fs.unlinkSync(req.file.path);
     res.status(404);
     throw new Error("Employee not found");
   }
 
-  // Strip data URI prefix if present
-  const base64 = fileData.includes(",") ? fileData.split(",")[1] : fileData;
-  const sizeBytes = Math.round((base64.length * 3) / 4);
-
-  if (sizeBytes > MAX_SIZE_BYTES) {
-    res.status(400);
-    throw new Error("File too large. Maximum size is 4 MB.");
-  }
+  const relativePath = path
+    .relative(path.resolve(__dirname, "../"), req.file.path)
+    .replace(/\\/g, "/");
 
   const doc = await EmployeeDocument.create({
     company: req.user.company,
@@ -36,9 +42,9 @@ const uploadDocument = asyncHandler(async (req, res) => {
     uploadedBy: req.user._id,
     name,
     docType,
-    mimeType,
-    sizeBytes,
-    fileData: base64,
+    mimeType: req.file.mimetype,
+    sizeBytes: req.file.size,
+    filePath: relativePath,
   });
 
   res.status(201).json({
@@ -56,11 +62,9 @@ const uploadDocument = asyncHandler(async (req, res) => {
 
 const getDocuments = asyncHandler(async (req, res) => {
   const { employeeId } = req.query;
-
   const filter = { company: req.user.company };
 
   if (req.user.role === "employee") {
-    // Employees can only see their own documents
     const emp = await Employee.findOne({
       user: req.user._id,
       company: req.user.company,
@@ -72,7 +76,7 @@ const getDocuments = asyncHandler(async (req, res) => {
   }
 
   const docs = await EmployeeDocument.find(filter)
-    .select("-fileData")
+    .select("-filePath")
     .populate("employee", "firstName lastName employeeId")
     .populate("uploadedBy", "name email")
     .sort({ createdAt: -1 });
@@ -99,15 +103,20 @@ const downloadDocument = asyncHandler(async (req, res) => {
     throw new Error("Access denied");
   }
 
-  res.json({
-    success: true,
-    data: {
-      _id: doc._id,
-      name: doc.name,
-      mimeType: doc.mimeType,
-      fileData: doc.fileData,
-    },
-  });
+  const abs = path.resolve(__dirname, "../", doc.filePath);
+
+  // Path traversal guard
+  if (!abs.startsWith(UPLOADS_ROOT + path.sep) && abs !== UPLOADS_ROOT) {
+    res.status(403);
+    throw new Error("Access denied");
+  }
+
+  if (!fs.existsSync(abs)) {
+    res.status(404);
+    throw new Error("File missing on server");
+  }
+
+  res.download(abs, doc.name);
 });
 
 const deleteDocument = asyncHandler(async (req, res) => {
@@ -119,8 +128,20 @@ const deleteDocument = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Document not found");
   }
+
+  // Delete file from disk
+  if (doc.filePath) {
+    const abs = path.resolve(__dirname, "../", doc.filePath);
+    if (fs.existsSync(abs)) fs.unlinkSync(abs);
+  }
+
   await doc.deleteOne();
   res.json({ success: true, message: "Document deleted" });
 });
 
-module.exports = { uploadDocument, getDocuments, downloadDocument, deleteDocument };
+module.exports = {
+  uploadDocument,
+  getDocuments,
+  downloadDocument,
+  deleteDocument,
+};

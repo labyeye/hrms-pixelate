@@ -38,7 +38,10 @@ const {
 const deviceRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 60,
-  message: { success: false, message: "Too many requests from this device, try again later." },
+  message: {
+    success: false,
+    message: "Too many requests from this device, try again later.",
+  },
   standardHeaders: true,
   legacyHeaders: false,
 });

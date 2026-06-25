@@ -55,13 +55,20 @@ const validateOfferCode = asyncHandler(async (req, res) => {
 
   const offer = await OfferCode.findOne({ code: code.toUpperCase().trim() });
   if (!offer || !offer.isActive) {
-    return res.status(404).json({ success: false, message: "Invalid or expired offer code" });
+    return res
+      .status(404)
+      .json({ success: false, message: "Invalid or expired offer code" });
   }
   if (offer.expiresAt && offer.expiresAt < new Date()) {
-    return res.status(400).json({ success: false, message: "This offer code has expired" });
+    return res
+      .status(400)
+      .json({ success: false, message: "This offer code has expired" });
   }
   if (offer.usedCount >= offer.maxUses) {
-    return res.status(400).json({ success: false, message: "This offer code has reached its usage limit" });
+    return res.status(400).json({
+      success: false,
+      message: "This offer code has reached its usage limit",
+    });
   }
 
   res.json({
@@ -114,7 +121,9 @@ const createOrder = asyncHandler(async (req, res) => {
   // Validate offer code if provided
   let validatedOffer = null;
   if (offerCode) {
-    const offer = await OfferCode.findOne({ code: offerCode.toUpperCase().trim() });
+    const offer = await OfferCode.findOne({
+      code: offerCode.toUpperCase().trim(),
+    });
     if (!offer || !offer.isActive) {
       res.status(400);
       throw new Error("Invalid or expired offer code");
@@ -419,9 +428,10 @@ async function _activateSubscription({ lookup, update, invoiceExtra, res }) {
       invoiceNumber,
       offerApplied: bonusMonths > 0,
       bonusMonths: bonusMonths > 0 ? bonusMonths : undefined,
-      offerMessage: bonusMonths > 0
-        ? `Congratulations! ${bonusMonths} bonus month(s) added to your subscription.`
-        : undefined,
+      offerMessage:
+        bonusMonths > 0
+          ? `Congratulations! ${bonusMonths} bonus month(s) added to your subscription.`
+          : undefined,
     },
   });
 }

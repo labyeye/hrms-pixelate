@@ -21,7 +21,10 @@ const router = express.Router();
 const sensitiveLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
-  message: { success: false, message: "Too many attempts, please try again later." },
+  message: {
+    success: false,
+    message: "Too many attempts, please try again later.",
+  },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -34,8 +37,8 @@ router.put("/profile", protect, updateProfile);
 router.post("/forgot-password", sensitiveLimit, forgotPassword);
 router.post("/reset-password/:token", sensitiveLimit, resetPassword);
 
-router.post("/otp/send", sendOtp);
-router.post("/otp/verify", verifyOtp);
+router.post("/otp/send", sensitiveLimit, sendOtp);
+router.post("/otp/verify", sensitiveLimit, verifyOtp);
 
 router.post("/2fa/setup", protect, setup2FA);
 router.post("/2fa/confirm", protect, confirm2FA);

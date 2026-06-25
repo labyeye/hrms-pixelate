@@ -27,7 +27,11 @@ async function syncLeaveAttendance(leave) {
   for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
     const dayDate = new Date(d);
     await Attendance.findOneAndUpdate(
-      { employee: leave.employee._id ?? leave.employee, date: dayDate, checkIn: { $exists: false } },
+      {
+        employee: leave.employee._id ?? leave.employee,
+        date: dayDate,
+        checkIn: { $exists: false },
+      },
       {
         $set: {
           status: "on_leave",
@@ -35,7 +39,11 @@ async function syncLeaveAttendance(leave) {
           notes: `Leave approved: ${leave.leaveType}`,
           leaveDeductSalary: leave.deductSalary !== false, // store for payroll reference
         },
-        $setOnInsert: { employee: leave.employee._id ?? leave.employee, date: dayDate, verifyMode: "manual" },
+        $setOnInsert: {
+          employee: leave.employee._id ?? leave.employee,
+          date: dayDate,
+          verifyMode: "manual",
+        },
       },
       { upsert: true },
     );
@@ -56,7 +64,12 @@ async function revertLeaveAttendance(leave) {
       status: "on_leave",
       checkIn: { $exists: false },
     },
-    { $set: { status: "absent", notes: `Leave ${leave.status}: attendance reverted` } },
+    {
+      $set: {
+        status: "absent",
+        notes: `Leave ${leave.status}: attendance reverted`,
+      },
+    },
   );
 }
 

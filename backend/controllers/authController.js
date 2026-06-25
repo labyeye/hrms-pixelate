@@ -387,6 +387,14 @@ const verify2FA = asyncHandler(async (req, res) => {
     throw new Error("Invalid request");
   }
 
+  // Lockout check — 10 failed attempts locks for 30 minutes
+  if (user.twoFactorLockUntil && user.twoFactorLockUntil > new Date()) {
+    res.status(429);
+    throw new Error(
+      "Account temporarily locked due to too many failed 2FA attempts. Try again later.",
+    );
+  }
+
   const isBackup = user.twoFactorBackupCodes.includes(token);
   const isTotp = speakeasy.totp.verify({
     secret: user.twoFactorSecret,
@@ -396,16 +404,26 @@ const verify2FA = asyncHandler(async (req, res) => {
   });
 
   if (!isTotp && !isBackup) {
+    user.twoFactorFailedAttempts = (user.twoFactorFailedAttempts || 0) + 1;
+    if (user.twoFactorFailedAttempts >= 10) {
+      user.twoFactorLockUntil = new Date(Date.now() + 30 * 60 * 1000);
+      user.twoFactorFailedAttempts = 0;
+    }
+    await user.save();
     res.status(401);
     throw new Error("Invalid authentication code");
   }
+
+  // Reset failure counter on success
+  user.twoFactorFailedAttempts = 0;
+  user.twoFactorLockUntil = undefined;
 
   if (isBackup) {
     user.twoFactorBackupCodes = user.twoFactorBackupCodes.filter(
       (c) => c !== token,
     );
-    await user.save();
   }
+  await user.save();
 
   res.json({
     success: true,
@@ -432,11 +450,14 @@ const sendOtp = asyncHandler(async (req, res) => {
     throw new Error("Phone number is required");
   }
 
-  const normalised = phone.replace(/\s/g, "");
-  const user = await User.findOne({ phone: { $regex: new RegExp(normalised.replace(/^\+91/, "").slice(-10) + "$") } });
+  const normalised = phone.replace(/\s/g, "").replace(/^\+91/, "").slice(-10);
+  const user = await User.findOne({ phone: { $in: [normalised, `+91${normalised}`, `91${normalised}`] } });
   if (!user) {
     // Return generic success to avoid user enumeration
-    return res.json({ success: true, message: "If that phone number is registered, an OTP has been sent." });
+    return res.json({
+      success: true,
+      message: "If that phone number is registered, an OTP has been sent.",
+    });
   }
 
   if (user.status === "inactive") {
@@ -451,7 +472,10 @@ const sendOtp = asyncHandler(async (req, res) => {
 
   await sendPhoneOtp(normalised, { otp });
 
-  res.json({ success: true, message: "If that phone number is registered, an OTP has been sent." });
+  res.json({
+    success: true,
+    message: "If that phone number is registered, an OTP has been sent.",
+  });
 });
 
 // Phone OTP — step 2: verify OTP and return JWT
@@ -466,7 +490,9 @@ const verifyOtp = asyncHandler(async (req, res) => {
   const hashed = crypto.createHash("sha256").update(otp.trim()).digest("hex");
 
   const user = await User.findOne({
-    phone: { $regex: new RegExp(normalised.replace(/^\+91/, "").slice(-10) + "$") },
+    phone: {
+      $regex: new RegExp(normalised.replace(/^\+91/, "").slice(-10) + "$"),
+    },
     phoneOtp: hashed,
     phoneOtpExpire: { $gt: new Date() },
   }).populate({
@@ -474,7 +500,8 @@ const verifyOtp = asyncHandler(async (req, res) => {
     select: "name email phone status subscription industry website",
     populate: {
       path: "subscription",
-      select: "status plan paymentStatus billingCycle monthlyPrice yearlyPrice maxEmployees currentEmployeeCount renewalDate isTrial trialEndDate",
+      select:
+        "status plan paymentStatus billingCycle monthlyPrice yearlyPrice maxEmployees currentEmployeeCount renewalDate isTrial trialEndDate",
     },
   });
 
@@ -490,11 +517,19 @@ const verifyOtp = asyncHandler(async (req, res) => {
     });
     if (!subscription || subscription.paymentStatus !== "completed") {
       res.status(403);
-      throw new Error("No active subscription. Please contact your administrator.");
+      throw new Error(
+        "No active subscription. Please contact your administrator.",
+      );
     }
-    if (subscription.isTrial && subscription.trialEndDate && subscription.trialEndDate < new Date()) {
+    if (
+      subscription.isTrial &&
+      subscription.trialEndDate &&
+      subscription.trialEndDate < new Date()
+    ) {
       res.status(403);
-      throw new Error("Your 2-month free trial has expired. Please subscribe to continue.");
+      throw new Error(
+        "Your 2-month free trial has expired. Please subscribe to continue.",
+      );
     }
   }
 

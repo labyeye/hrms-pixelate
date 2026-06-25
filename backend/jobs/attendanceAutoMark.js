@@ -109,7 +109,10 @@ async function processDate(targetDate, istMinutesNow) {
       // ── Case 1: No check-in at all → check leave, then mark Absent ────────
       if (!existing || !existing.checkIn) {
         // Don't overwrite an already-correct on_leave/holiday/weekend record
-        if (existing && ["on_leave", "holiday", "weekend"].includes(existing.status)) {
+        if (
+          existing &&
+          ["on_leave", "holiday", "weekend"].includes(existing.status)
+        ) {
           continue;
         }
 
@@ -119,7 +122,9 @@ async function processDate(targetDate, istMinutesNow) {
           status: "approved",
           startDate: { $lte: targetDate },
           endDate: { $gte: targetDate },
-        }).select("leaveType deductSalary").lean();
+        })
+          .select("leaveType deductSalary")
+          .lean();
 
         const newStatus = approvedLeave ? "on_leave" : "absent";
         const newNotes = approvedLeave
@@ -130,8 +135,10 @@ async function processDate(targetDate, istMinutesNow) {
           if (existing.status !== newStatus) {
             existing.status = newStatus;
             existing.workHours = 0;
-            existing.notes = (existing.notes ? existing.notes + " | " : "") + newNotes;
-            if (approvedLeave) existing.leaveDeductSalary = approvedLeave.deductSalary !== false;
+            existing.notes =
+              (existing.notes ? existing.notes + " | " : "") + newNotes;
+            if (approvedLeave)
+              existing.leaveDeductSalary = approvedLeave.deductSalary !== false;
             await existing.save();
             console.log(
               `[AutoMark] Marked ${newStatus} (updated): ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`,
@@ -145,7 +152,9 @@ async function processDate(targetDate, istMinutesNow) {
             workHours: 0,
             verifyMode: "auto",
             notes: newNotes,
-            ...(approvedLeave ? { leaveDeductSalary: approvedLeave.deductSalary !== false } : {}),
+            ...(approvedLeave
+              ? { leaveDeductSalary: approvedLeave.deductSalary !== false }
+              : {}),
           });
           console.log(
             `[AutoMark] Marked ${newStatus}: ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`,

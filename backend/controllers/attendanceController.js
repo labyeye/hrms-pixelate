@@ -244,7 +244,9 @@ const updateAttendance = asyncHandler(async (req, res) => {
   }
 
   // Load employee with shift for OT calculation
-  const empForOT = await Employee.findById(record.employee._id).populate("shift", "endTime").select("otEnabled shift");
+  const empForOT = await Employee.findById(record.employee._id)
+    .populate("shift", "endTime")
+    .select("otEnabled shift");
 
   // Note: record.date is intentionally not updated — it's part of the unique compound
   // index (employee + date) and changing it would cause duplicate key errors.
@@ -279,7 +281,10 @@ const updateAttendance = asyncHandler(async (req, res) => {
     if (overtime !== undefined) {
       record.overtime = parseFloat(overtime) || 0;
     } else if (empForOT) {
-      record.overtime = await calcOTHours(empForOT, record.checkOut.toISOString());
+      record.overtime = await calcOTHours(
+        empForOT,
+        record.checkOut.toISOString(),
+      );
     }
   } else if (overtime !== undefined) {
     record.overtime = parseFloat(overtime) || 0;

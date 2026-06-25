@@ -88,7 +88,7 @@ export function buildReportHTML(
   opts: {
     company?: ReportCompany;
     reportCategory?: string; // e.g. "Payroll" | "Attendance" | "Employee"
-    generatedFor?: string;   // employee name or "All Employees"
+    generatedFor?: string; // employee name or "All Employees"
   } = {},
 ): string {
   const { company, reportCategory = "", generatedFor = "" } = opts;
