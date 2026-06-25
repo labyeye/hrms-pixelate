@@ -38,7 +38,11 @@ router.get("/", (req, res) => {
 // Incoming Webhook
 // ─────────────────────────────────────────────────────────────
 //
-router.post("/", express.json(), async (req, res) => {
+router.post("/",  async (req, res) => {
+   console.log("\n🔥🔥🔥 WHATSAPP WEBHOOK HIT 🔥🔥🔥");
+  console.log("Time:", new Date().toISOString());
+  console.log("Headers:", JSON.stringify(req.headers, null, 2));
+  console.log("Body:", JSON.stringify(req.body, null, 2));
   res.sendStatus(200);
 
   console.log("\n================ WEBHOOK RECEIVED ================");
