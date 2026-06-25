@@ -121,7 +121,7 @@ async function generatePayslipPdf(payroll, employee, company) {
   // POS coordinates are CSS px from the frontend (1:1 with PDF pts for this template).
   // Canvas origin is top-left; pdf-lib origin is bottom-left → y_pdf = ph - cssY
   const dt = (text, x, cssY, size = 11, bold = false) => {
-    chequePage.drawText(String(text), {
+    chequePage.drawText(String(text).replace(/[\r\n]+/g, " "), {
       x,
       y: ph - cssY,
       size,
@@ -132,7 +132,7 @@ async function generatePayslipPdf(payroll, employee, company) {
 
   // Word-wrap matching frontend wrapText(pos, value, maxWidth=300, lineHeight=14)
   const dtWrap = (text, x, cssY, size, maxWidth, lineHeight) => {
-    const words = String(text).split(" ");
+    const words = String(text).replace(/[\r\n]+/g, " ").split(" ");
     let line = "";
     let y = cssY;
     for (const word of words) {
