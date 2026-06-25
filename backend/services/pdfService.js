@@ -96,57 +96,56 @@ async function generatePayslipPdf(payroll, employee, company) {
   const today = new Date();
   const dd = String(today.getDate()).padStart(2, "0");
   const mm = String(today.getMonth() + 1).padStart(2, "0");
-  const yy = String(today.getFullYear()).slice(2);
+  const yyyy = String(today.getFullYear()); // 4-digit year, matching frontend
   const lastDay = new Date(payroll.year, payroll.month, 0).getDate();
   const fromDate = `01/${String(payroll.month).padStart(2, "0")}/${payroll.year}`;
   const toDate = `${lastDay}/${String(payroll.month).padStart(2, "0")}/${payroll.year}`;
-  const period = `${MONTHS[payroll.month - 1]} ${payroll.year}`;
   const empName =
     `${employee.firstName || ""} ${employee.lastName || ""}`.trim();
 
-  // ── Page 1: Cheque template overlay ──────────────────────────────────────
   let pdfDoc;
   if (fs.existsSync(CHEQUE_PATH)) {
     const templateBytes = fs.readFileSync(CHEQUE_PATH);
     pdfDoc = await PDFDocument.load(templateBytes);
   } else {
     pdfDoc = await PDFDocument.create();
-    pdfDoc.addPage([794, 430]);
+    pdfDoc.addPage([576, 263.25]);
   }
 
   const [chequePage] = pdfDoc.getPages();
-  const { width: pw, height: ph } = chequePage.getSize();
-  const sx = pw / 794; // scale x (CSS px → PDF pts)
-  const sy = ph / 430; // scale y
+  const { height: ph } = chequePage.getSize();
 
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-  // Draw text at CSS-pixel coordinates (origin top-left in CSS → bottom-left in PDF)
-  const dt = (text, left, top, size = 9, bold = false) => {
+  // POS coordinates are CSS px from the frontend (1:1 with PDF pts for this template).
+  // Canvas origin is top-left; pdf-lib origin is bottom-left → y_pdf = ph - pos.y
+  const dt = (text, x, y, size = 11, bold = false) => {
     chequePage.drawText(String(text), {
-      x: left * sx,
-      y: ph - top * sy - size * sy,
-      size: size * Math.min(sx, sy),
+      x,
+      y: ph - y,
+      size,
       font: bold ? boldFont : font,
       color: rgb(0, 0, 0),
     });
   };
 
-  // Same POS map as PayrollPage.tsx
-  dt(company.name || "", 168, 38, 11, true);
-  dt(company.address || "", 168, 58, 9, false);
-  dt(dd, 695, 30, 10, true);
-  dt(mm, 727, 30, 10, true);
-  dt(yy, 756, 30, 10, true);
-  dt(empName, 173, 196, 10, true);
-  dt(employee.employeeId || "", 528, 196, 10, true);
-  dt(employee.designation || "", 690, 196, 10, true);
-  dt(toIndianWords(net), 75, 258, 9, false);
-  dt(fmtNum(net), 738, 252, 12, true);
-  dt(fromDate, 478, 318, 10, true);
-  dt(toDate, 638, 318, 10, true);
-  dt(fmtNum(net), 748, 318, 11, true);
+  // Mirror of PayrollPage.tsx POS map exactly
+  dt(company.name || "", 75, 30, 13, true);
+  dt(company.address || "", 75, 48, 11, false);
+
+  // Date: DDMMYYYY — one character per box (same as frontend dateChars)
+  const dateStr = dd + mm + yyyy;
+  const dateCharX = [430, 445, 460, 475, 491, 507, 523, 538];
+  dateCharX.forEach((x, i) => dt(dateStr[i] ?? "", x, 36, 11, false));
+
+  dt(empName, 100, 120, 11, false);
+  dt(employee.employeeId || "—", 320, 120, 11, false);
+  dt(employee.designation || "—", 435, 120, 11, false);
+  dt(toIndianWords(net), 115, 145, 11, false);
+  dt(fmtNum(net), 440, 150, 13, true);
+  dt(fromDate, 250, 174, 11, false);
+  dt(toDate, 340, 174, 11, false);
 
   return await pdfDoc.save();
 }
