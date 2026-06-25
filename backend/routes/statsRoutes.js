@@ -10,13 +10,13 @@ const Attendance = require("../models/Attendance");
 const Payroll = require("../models/Payroll");
 
 // Simple secret-key guard — no JWT, but not wide-open either.
-// Set STATS_SECRET in .env. Pass as ?key=<secret> or X-Stats-Key header.
+// Set CRM_API_SECRET in .env. Pass as ?key=<secret> or X-Stats-Key header.
 function statsGuard(req, res, next) {
-  const secret = process.env.STATS_SECRET;
+  const secret = process.env.CRM_API_SECRET;
   if (!secret) {
     return res.status(503).json({
       success: false,
-      message: "Stats endpoint not configured (STATS_SECRET missing)",
+      message: "Stats endpoint not configured (CRM_API_SECRET missing)",
     });
   }
   const provided = req.query.key || req.headers["x-stats-key"];

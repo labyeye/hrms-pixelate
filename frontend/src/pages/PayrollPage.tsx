@@ -429,8 +429,10 @@ export default function PayrollPage() {
     id: string,
     status: "received" | "not_received",
   ) => {
+    console.log("[Payroll] markSlipReceived →", id, status);
     try {
       const res = await payrollAPI.markSlipReceived(id, status);
+      console.log("[Payroll] markSlipReceived response →", res);
       if (res.success) {
         setPayrolls((prev) =>
           prev.map((p) =>
@@ -445,6 +447,7 @@ export default function PayrollPage() {
         );
       }
     } catch (e: any) {
+      console.error("[Payroll] markSlipReceived error →", e.message);
       alert(e.message);
     }
   };
