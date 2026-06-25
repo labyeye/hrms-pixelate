@@ -1,78 +1,184 @@
 const express = require("express");
 const router = express.Router();
+
 const Employee = require("../models/Employee");
 const Payroll = require("../models/Payroll");
 
-const VERIFY_TOKEN = process.env.META_WA_VERIFY_TOKEN || "nesthr_verify_token";
+const VERIFY_TOKEN =
+  process.env.META_WA_VERIFY_TOKEN || "nesthr_verify_token";
 
-// ── Webhook verification (Meta sends a GET to confirm the endpoint) ─────────
+//
+// ─────────────────────────────────────────────────────────────
+// Webhook Verification
+// ─────────────────────────────────────────────────────────────
+//
 router.get("/", (req, res) => {
-  const { "hub.mode": mode, "hub.verify_token": token, "hub.challenge": challenge } = req.query;
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+
+  console.log("[WA-Webhook] Verification Request");
+  console.log({
+    mode,
+    token,
+    expected: VERIFY_TOKEN,
+  });
+
   if (mode === "subscribe" && token === VERIFY_TOKEN) {
-    console.log("[WA-Webhook] ✅ Verified");
+    console.log("[WA-Webhook] ✅ Verification successful");
     return res.status(200).send(challenge);
   }
+
   console.warn("[WA-Webhook] ❌ Verification failed");
-  res.sendStatus(403);
+  return res.sendStatus(403);
 });
 
-// ── Incoming message / button reply handler ──────────────────────────────────
+//
+// ─────────────────────────────────────────────────────────────
+// Incoming Webhook
+// ─────────────────────────────────────────────────────────────
+//
 router.post("/", express.json(), async (req, res) => {
-  // Acknowledge immediately so Meta doesn't retry
   res.sendStatus(200);
+
+  console.log("\n================ WEBHOOK RECEIVED ================");
+  console.log(JSON.stringify(req.body, null, 2));
+  console.log("=================================================\n");
 
   try {
     const entry = req.body?.entry?.[0];
-    const changes = entry?.changes?.[0]?.value;
-    const messages = changes?.messages;
-    if (!messages?.length) return;
+    const value = entry?.changes?.[0]?.value;
+
+    if (!value) {
+      console.log("[WA] No value object");
+      return;
+    }
+
+    //
+    // Status updates (sent, delivered, read)
+    //
+    if (value.statuses) {
+      console.log("[WA] Status Event");
+      console.log(JSON.stringify(value.statuses, null, 2));
+    }
+
+    //
+    // Incoming messages
+    //
+    const messages = value.messages;
+
+    if (!messages || !messages.length) {
+      console.log("[WA] No incoming messages");
+      return;
+    }
 
     for (const msg of messages) {
-      // Only handle quick-reply button responses
-      if (msg.type !== "button") continue;
+      console.log("\n----------- Incoming Message -----------");
+      console.log(JSON.stringify(msg, null, 2));
+      console.log("----------------------------------------");
 
-      const payload = msg.button?.payload;
-      const fromPhone = msg.from; // E.164 without +, e.g. "919876543210"
+      const fromPhone = msg.from;
 
-      console.log(`[WA-Webhook] Button reply from=${fromPhone} payload=${payload}`);
+      let payload = null;
 
-      if (payload !== "PAYSLIP_RECEIVED" && payload !== "PAYSLIP_NOT_RECEIVED") continue;
+      //
+      // OLD FORMAT
+      //
+      if (msg.type === "button") {
+        payload = msg.button?.payload;
+      }
 
-      const slipStatus = payload === "PAYSLIP_RECEIVED" ? "received" : "not_received";
+      //
+      // NEW FORMAT
+      //
+      if (
+        msg.type === "interactive" &&
+        msg.interactive?.type === "button_reply"
+      ) {
+        payload = msg.interactive.button_reply.id;
+      }
 
-      // Normalise phone: strip leading 91 for 10-digit match or keep full
-      const phoneLast10 = fromPhone.replace(/^91/, "").slice(-10);
+      //
+      // Text message
+      //
+      if (msg.type === "text") {
+        console.log("[WA] Text:", msg.text?.body);
+      }
 
-      const employee = await Employee.findOne({
-        phone: { $in: [fromPhone, phoneLast10, `+${fromPhone}`] },
-      }).select("_id company");
-
-      if (!employee) {
-        console.warn(`[WA-Webhook] No employee found for phone=${fromPhone}`);
+      if (!payload) {
+        console.log("[WA] No button payload found.");
         continue;
       }
 
-      // Find the most recent paid payroll for this employee
+      console.log(
+        `[WA] Button Clicked -> Phone=${fromPhone} Payload=${payload}`
+      );
+
+      if (
+        payload !== "PAYSLIP_RECEIVED" &&
+        payload !== "PAYSLIP_NOT_RECEIVED"
+      ) {
+        console.log("[WA] Unknown payload");
+        continue;
+      }
+
+      const slipStatus =
+        payload === "PAYSLIP_RECEIVED"
+          ? "received"
+          : "not_received";
+
+      const phone10 = fromPhone.replace(/^91/, "").slice(-10);
+
+      const employee = await Employee.findOne({
+        phone: {
+          $in: [
+            fromPhone,
+            phone10,
+            `+${fromPhone}`,
+            `91${phone10}`,
+            `+91${phone10}`,
+          ],
+        },
+      }).select("_id company phone");
+
+      if (!employee) {
+        console.log(
+          `[WA] Employee not found for ${fromPhone}`
+        );
+        continue;
+      }
+
+      console.log(
+        `[WA] Employee Found ${employee._id}`
+      );
+
       const payroll = await Payroll.findOne({
         employee: employee._id,
         company: employee.company,
         status: "paid",
         slipReceived: null,
-      }).sort({ year: -1, month: -1 });
+      }).sort({
+        year: -1,
+        month: -1,
+      });
 
       if (!payroll) {
-        console.warn(`[WA-Webhook] No pending payroll for employee=${employee._id}`);
+        console.log("[WA] No pending payroll found");
         continue;
       }
 
       payroll.slipReceived = slipStatus;
       payroll.slipReceivedAt = new Date();
+
       await payroll.save();
 
-      console.log(`[WA-Webhook] ✅ payroll=${payroll._id} slipReceived=${slipStatus} (via WhatsApp reply from ${fromPhone})`);
+      console.log(
+        `✅ Payroll Updated (${payroll._id}) -> ${slipStatus}`
+      );
     }
   } catch (err) {
-    console.error("[WA-Webhook] Error:", err.message);
+    console.error("[WA-Webhook ERROR]");
+    console.error(err);
   }
 });
 
