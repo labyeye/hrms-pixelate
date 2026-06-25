@@ -86,6 +86,7 @@ const authRateLimit = rateLimit({
 const apiRateLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 5000 });
 
 app.use("/api/whatsapp-webhook", require("./routes/whatsappWebhookRoutes"));
+app.use("/api/hrms/whatsapp-webhook", require("./routes/whatsappWebhookRoutes"));
 app.use("/api/company", require("./routes/companyRoutes"));
 
 app.use("/api/auth", authRateLimit, require("./routes/authRoutes"));
