@@ -119,20 +119,38 @@ async function generatePayslipPdf(payroll, employee, company) {
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
   // POS coordinates are CSS px from the frontend (1:1 with PDF pts for this template).
-  // Canvas origin is top-left; pdf-lib origin is bottom-left → y_pdf = ph - pos.y
-  const dt = (text, x, y, size = 11, bold = false) => {
+  // Canvas origin is top-left; pdf-lib origin is bottom-left → y_pdf = ph - cssY
+  const dt = (text, x, cssY, size = 11, bold = false) => {
     chequePage.drawText(String(text), {
       x,
-      y: ph - y,
+      y: ph - cssY,
       size,
       font: bold ? boldFont : font,
       color: rgb(0, 0, 0),
     });
   };
 
+  // Word-wrap matching frontend wrapText(pos, value, maxWidth=300, lineHeight=14)
+  const dtWrap = (text, x, cssY, size, maxWidth, lineHeight) => {
+    const words = String(text).split(" ");
+    let line = "";
+    let y = cssY;
+    for (const word of words) {
+      const test = line ? line + " " + word : word;
+      if (font.widthOfTextAtSize(test, size) > maxWidth && line) {
+        dt(line, x, y, size, false);
+        line = word;
+        y += lineHeight;
+      } else {
+        line = test;
+      }
+    }
+    if (line) dt(line, x, y, size, false);
+  };
+
   // Mirror of PayrollPage.tsx POS map exactly
   dt(company.name || "", 75, 30, 13, true);
-  dt(company.address || "", 75, 48, 11, false);
+  dtWrap(company.address || "", 75, 48, 11, 300, 14);
 
   // Date: DDMMYYYY — one character per box (same as frontend dateChars)
   const dateStr = dd + mm + yyyy;
@@ -143,7 +161,7 @@ async function generatePayslipPdf(payroll, employee, company) {
   dt(employee.employeeId || "—", 320, 120, 11, false);
   dt(employee.designation || "—", 435, 120, 11, false);
   dt(toIndianWords(net), 115, 145, 11, false);
-  dt(fmtNum(net), 440, 150, 13, true);
+  dt(net.toLocaleString("en-IN"), 440, 150, 13, true);
   dt(fromDate, 250, 174, 11, false);
   dt(toDate, 340, 174, 11, false);
 
