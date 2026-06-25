@@ -1,9 +1,48 @@
 const https = require("https");
+const FormData = require("form-data");
 const Setting = require("../models/Setting");
+
+// ─── Internal: upload a buffer to Meta Media API → returns media_id ──────────
+
+async function uploadMediaToMeta(buffer, filename = "payslip.pdf", mimetype = "application/pdf") {
+  const accessToken  = process.env.META_WA_TOKEN;
+  const phoneNumberId = process.env.META_WA_PHONE_ID;
+  if (!accessToken || !phoneNumberId) return null;
+
+  const form = new FormData();
+  form.append("messaging_product", "whatsapp");
+  form.append("file", buffer, { filename, contentType: mimetype });
+  form.append("type", mimetype);
+
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      {
+        hostname: "graph.facebook.com",
+        path: `/v20.0/${phoneNumberId}/media`,
+        method: "POST",
+        headers: form.getHeaders(),
+      },
+      (res) => {
+        let data = "";
+        res.on("data", (c) => (data += c));
+        res.on("end", () => {
+          try {
+            const json = JSON.parse(data);
+            if (res.statusCode >= 200 && res.statusCode < 300) resolve(json.id || null);
+            else { console.error("[WA-DEBUG] Media upload failed:", data); resolve(null); }
+          } catch { resolve(null); }
+        });
+      },
+    );
+    req.on("error", (e) => { console.error("[WA-DEBUG] Media upload error:", e.message); resolve(null); });
+    form.pipe(req);
+  });
+}
 
 // ─── Internal: send a Meta template message ──────────────────────────────────
 
-async function sendTemplate(phone, templateName, params, lang = "en") {
+// extraComponents: optional array of button/header components to append
+async function sendTemplate(phone, templateName, params, lang = "en", extraComponents = []) {
   const accessToken = process.env.META_WA_TOKEN;
   const phoneNumberId = process.env.META_WA_PHONE_ID;
   console.log(
@@ -19,6 +58,15 @@ async function sendTemplate(phone, templateName, params, lang = "en") {
   let toNumber = phone.replace(/^\+/, "").replace(/\s/g, "");
   // Auto-add India country code for bare 10-digit numbers
   if (/^[6-9]\d{9}$/.test(toNumber)) toNumber = "91" + toNumber;
+
+  const components = [
+    {
+      type: "body",
+      parameters: params.map((v) => ({ type: "text", text: String(v) })),
+    },
+    ...extraComponents,
+  ];
+
   const body = JSON.stringify({
     messaging_product: "whatsapp",
     to: toNumber,
@@ -26,12 +74,7 @@ async function sendTemplate(phone, templateName, params, lang = "en") {
     template: {
       name: templateName,
       language: { code: lang },
-      components: [
-        {
-          type: "body",
-          parameters: params.map((v) => ({ type: "text", text: String(v) })),
-        },
-      ],
+      components,
     },
   });
 
@@ -326,28 +369,111 @@ async function sendCheckOutHR(
 // ─── Payroll ──────────────────────────────────────────────────────────────────
 
 /**
- * Template: neshr_salary_paid
- * Body:  Hi {{1}}, your salary for {{2}} of {{3}} has been processed and credited to your bank account.
+ * ════════════════════════════════════════════════════════════════
+ *  META TEMPLATE — neshr_salary_paid
+ *  Category : UTILITY   |  Language : English (en)
+ * ════════════════════════════════════════════════════════════════
+ *
+ *  HEADER  → Type: DOCUMENT  (PDF payslip attached at send time)
+ *
+ *  BODY:
+ *    Hi {{1}}, your salary for *{{2}}* has been credited! 🎉
+ *
+ *    💰 *Salary Breakdown*
+ *    ━━━━━━━━━━━━━━━━━━━━━
+ *    Basic Salary  : {{3}}
+ *    Allowances    : {{4}}
+ *    Overtime      : {{5}}
+ *    Gross Salary  : {{6}}
+ *    ━━━━━━━━━━━━━━━━━━━━━
+ *    Deductions    : -{{7}}
+ *    *Net Pay      : {{8}}*
+ *    ━━━━━━━━━━━━━━━━━━━━━
+ *    📅 Present : {{9}} / {{10}} days
+ *    💳 Mode    : {{11}}
+ *    🗓 Paid On : {{12}}
+ *
+ *  FOOTER:
+ *    NestHR — Pixelate Nest
+ *
+ *  BUTTONS (2 Quick Reply):
+ *    [0] Quick Reply → "✅ Received"
+ *    [1] Quick Reply → "❌ Not Received"
+ *
+ * ════════════════════════════════════════════════════════════════
+ *  VARIABLE MAP (12 body params)
+ *    {{1}}  firstName        {{2}}  period
+ *    {{3}}  basicSalary      {{4}}  allowances
+ *    {{5}}  otPay            {{6}}  grossSalary
+ *    {{7}}  totalDeductions  {{8}}  netSalary
+ *    {{9}}  presentDays      {{10}} workingDays
+ *    {{11}} paymentMode      {{12}} paidOn (DD/MM/YYYY)
+ * ════════════════════════════════════════════════════════════════
  */
 async function sendSalaryPaid(
   phone,
-  { firstName, period, netSalary },
+  { firstName, period, basicSalary, allowances, otPay, grossSalary, totalDeductions, netSalary, presentDays, workingDays, paymentMode, paidOn },
   companyId,
+  pdfBuffer = null,
 ) {
+  const fmtINR = (n) =>
+    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n || 0);
   try {
     const s = await getCompanySetting("whatsappNotifyPayroll", companyId);
     if (!s) return;
-    const amt = new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    }).format(netSalary);
+
+    const extraComponents = [];
+
+    if (pdfBuffer) {
+      const mediaId = await uploadMediaToMeta(
+        Buffer.from(pdfBuffer),
+        `payslip_${period.replace(/\s/g, "_")}.pdf`,
+      );
+      if (mediaId) {
+        extraComponents.push({
+          type: "header",
+          parameters: [{
+            type: "document",
+            document: { id: mediaId, filename: `Payslip_${period.replace(/\s/g, "_")}.pdf` },
+          }],
+        });
+      }
+    }
+
+    extraComponents.push(
+      { type: "button", sub_type: "quick_reply", index: "0",
+        parameters: [{ type: "payload", payload: "PAYSLIP_RECEIVED" }] },
+      { type: "button", sub_type: "quick_reply", index: "1",
+        parameters: [{ type: "payload", payload: "PAYSLIP_NOT_RECEIVED" }] },
+    );
+
+    const MODE_LABELS = { bank_transfer: "Bank Transfer", cash: "Cash", upi: "UPI", cheque: "Cheque" };
+    const modeLabel = MODE_LABELS[paymentMode] || "Bank Transfer";
+    const paidOnStr = paidOn
+      ? new Date(paidOn).toLocaleDateString("en-IN")
+      : new Date().toLocaleDateString("en-IN");
+
     await sendTemplate(
       phone,
       "neshr_salary_paid",
-      [firstName, period, amt],
+      [
+        firstName,
+        period,
+        fmtINR(basicSalary),
+        fmtINR(allowances),
+        fmtINR(otPay),
+        fmtINR(grossSalary),
+        fmtINR(totalDeductions),
+        fmtINR(netSalary),
+        String(presentDays || 0),
+        String(workingDays || 0),
+        modeLabel,
+        paidOnStr,
+      ],
       s.whatsappLang || "en",
+      extraComponents,
     );
+    console.log(`[WA-DEBUG] ✅ Salary paid notification sent to ${phone}`);
   } catch (err) {
     console.error("[WhatsApp] sendSalaryPaid:", err.message);
   }

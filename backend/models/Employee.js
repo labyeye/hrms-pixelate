@@ -32,12 +32,43 @@ const employeeSchema = new mongoose.Schema(
     accountHolderName: { type: String },
     ifscCode: { type: String },
     panNumber: { type: String },
+    panDoc: { type: String },
     aadharNumber: { type: String },
-    address: { type: String },
+    aadhaarDoc: { type: String },
+    resumeDoc: { type: String }, // uploads/employee-resume/...
+    // ── Personal Details ─────────────────────────────────────────────────────
+    fatherName: { type: String },
+    motherName: { type: String },
+    spouseName: { type: String },
+    maritalStatus: {
+      type: String,
+      enum: ["single", "married", "divorced", "widowed"],
+    },
+    bloodGroup: {
+      type: String,
+      enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
+    },
+    nationality: { type: String, default: "Indian" },
+    religion: { type: String },
+    personalEmail: { type: String },
+    alternatePhone: { type: String },
+
+    // ── Address ───────────────────────────────────────────────────────────────
+    address: { type: String }, // current address
+    permanentAddress: { type: String },
+    city: { type: String },
+    state: { type: String },
+    pincode: { type: String },
+
     emergencyContact: { type: String },
     avatar: { type: String },
     gender: { type: String, enum: ["male", "female", "other"] },
     dateOfBirth: { type: Date },
+
+    // ── Professional Background ───────────────────────────────────────────────
+    qualification: { type: String },
+    totalExperience: { type: String }, // e.g. "3 years 2 months"
+    previousCompany: { type: String },
     reportingTo: { type: mongoose.Schema.Types.ObjectId, ref: "Employee" },
     branch: { type: mongoose.Schema.Types.ObjectId, ref: "Branch" },
     shift: { type: mongoose.Schema.Types.ObjectId, ref: "Shift" },

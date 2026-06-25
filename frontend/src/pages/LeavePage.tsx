@@ -109,6 +109,16 @@ export default function LeavePage() {
     reason: string;
   }>({ show: false, leaveId: "", reason: "" });
 
+  // Approve modal — with salary deduction option
+  const [approveModal, setApproveModal] = useState<{
+    show: boolean;
+    leaveId: string;
+    leaveType: string;
+    days: number;
+    empName: string;
+    deductSalary: boolean;
+  }>({ show: false, leaveId: "", leaveType: "", days: 0, empName: "", deductSalary: false });
+
   const [actionModal, setActionModal] = useState<{
     show: boolean;
     type: "success" | "error";
@@ -249,6 +259,13 @@ export default function LeavePage() {
         message: err.message || "Failed to delete leave.",
       });
     }
+  };
+
+  const confirmApprove = async () => {
+    await handleStatus(approveModal.leaveId, "approved", {
+      deductSalary: String(approveModal.deductSalary),
+    });
+    setApproveModal({ show: false, leaveId: "", leaveType: "", days: 0, empName: "", deductSalary: false });
   };
 
   const confirmReject = async () => {
@@ -600,14 +617,21 @@ export default function LeavePage() {
                     {leave.reason}
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={cn(
-                        "border-2 text-[10px] capitalize",
-                        STATUS_COLORS[leave.status],
+                    <div className="flex flex-col gap-1">
+                      <span className={cn("border-2 text-[10px] capitalize", STATUS_COLORS[leave.status])}>
+                        {leave.status}
+                      </span>
+                      {leave.status === "approved" && (
+                        <span className={cn(
+                          "border text-[9px] px-1.5 py-0.5 font-bold",
+                          (leave as any).deductSalary
+                            ? "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C]"
+                            : "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]",
+                        )}>
+                          {(leave as any).deductSalary ? "Unpaid" : "Paid"}
+                        </span>
                       )}
-                    >
-                      {leave.status}
-                    </span>
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1 flex-wrap">
@@ -615,7 +639,14 @@ export default function LeavePage() {
                       {isAdmin && leave.status === "pending" && (
                         <>
                           <button
-                            onClick={() => handleStatus(leave._id, "approved")}
+                            onClick={() => setApproveModal({
+                              show: true,
+                              leaveId: leave._id,
+                              leaveType: leave.leaveType,
+                              days: leave.days,
+                              empName: `${(leave.employee as any)?.firstName ?? ""} ${(leave.employee as any)?.lastName ?? ""}`,
+                              deductSalary: leave.leaveType === "unpaid",
+                            })}
                             className="p-1.5 border-2 border-transparent hover:border-black hover:bg-[#024BAB]/10 transition-colors"
                             title="Approve"
                           >
@@ -775,6 +806,72 @@ export default function LeavePage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Approve Leave Modal — with salary deduction option */}
+      {approveModal.show && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="border-2 bg-white w-full max-w-sm">
+            <div className="flex items-center justify-between p-5 border-b-2 border-black">
+              <h3 className="font-display font-bold text-lg">Approve Leave</h3>
+              <button onClick={() => setApproveModal({ show: false, leaveId: "", leaveType: "", days: 0, empName: "", deductSalary: false })}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-sm text-black font-medium">
+                Approving <strong>{approveModal.days}d {approveModal.leaveType}</strong> leave for <strong>{approveModal.empName}</strong>.
+              </p>
+              <div className="border-2 border-black p-4 space-y-3">
+                <p className="text-xs font-bold text-black uppercase tracking-wider">Salary Deduction</p>
+                <p className="text-xs text-muted-foreground">Should salary be deducted for these leave days?</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setApproveModal((m) => ({ ...m, deductSalary: false }))}
+                    className={cn(
+                      "flex-1 py-2.5 text-sm font-bold border-2 transition-colors",
+                      !approveModal.deductSalary
+                        ? "bg-[#00C48C] text-white border-black"
+                        : "bg-white text-black border-black hover:bg-[#00C48C]/10",
+                    )}
+                  >
+                    ✓ Paid Leave
+                  </button>
+                  <button
+                    onClick={() => setApproveModal((m) => ({ ...m, deductSalary: true }))}
+                    className={cn(
+                      "flex-1 py-2.5 text-sm font-bold border-2 transition-colors",
+                      approveModal.deductSalary
+                        ? "bg-[#FA731C] text-white border-black"
+                        : "bg-white text-black border-black hover:bg-[#FA731C]/10",
+                    )}
+                  >
+                    ✗ Unpaid (Deduct)
+                  </button>
+                </div>
+                <p className={cn("text-xs font-semibold", approveModal.deductSalary ? "text-[#FA731C]" : "text-[#00C48C]")}>
+                  {approveModal.deductSalary
+                    ? "Salary will be deducted for these leave days."
+                    : "Salary will NOT be deducted — employee gets full pay."}
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={confirmApprove}
+                  className="border-2 bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold flex-1"
+                >
+                  Confirm Approve
+                </button>
+                <button
+                  onClick={() => setApproveModal({ show: false, leaveId: "", leaveType: "", days: 0, empName: "", deductSalary: false })}
+                  className="border-2 bg-white text-black px-4 py-2.5 text-sm font-bold"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

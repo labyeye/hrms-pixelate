@@ -64,6 +64,11 @@ export default function LeaveScreen() {
     endDate: '',
     reason: '',
   });
+  const [approveModal, setApproveModal] = useState<{
+    visible: boolean;
+    leave: LeaveRequest | null;
+    deductSalary: boolean;
+  }>({ visible: false, leave: null, deductSalary: false });
   const [editLeave, setEditLeave] = useState<LeaveRequest | null>(null);
   const [showEditForm, setShowEditForm] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -118,29 +123,49 @@ export default function LeaveScreen() {
     }
   };
 
-  const handleAction = (
+  const handleAction = async (
     leave: LeaveRequest,
     action: 'approved' | 'rejected',
+    deductSalary?: boolean,
   ) => {
-    Alert.alert(
-      `${action === 'approved' ? 'Approve' : 'Reject'} Leave`,
-      `Are you sure?`,
-      [
+    if (action === 'rejected') {
+      Alert.alert('Reject Leave', 'Are you sure?', [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: action === 'approved' ? 'Approve' : 'Reject',
-          style: action === 'rejected' ? 'destructive' : 'default',
+          text: 'Reject',
+          style: 'destructive',
           onPress: async () => {
             try {
-              await leaveAPI.updateStatus(leave._id, { status: action });
+              await leaveAPI.updateStatus(leave._id, { status: 'rejected' });
               await load();
             } catch (e: any) {
               Alert.alert('Error', e.message);
             }
           },
         },
-      ],
-    );
+      ]);
+      return;
+    }
+    // For approval: show deductSalary modal
+    setApproveModal({
+      visible: true,
+      leave,
+      deductSalary: deductSalary ?? leave.leaveType === 'unpaid',
+    });
+  };
+
+  const confirmApprove = async () => {
+    if (!approveModal.leave) return;
+    try {
+      await leaveAPI.updateStatus(approveModal.leave._id, {
+        status: 'approved',
+        deductSalary: approveModal.deductSalary,
+      });
+      setApproveModal({ visible: false, leave: null, deductSalary: false });
+      await load();
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    }
   };
 
   const openEdit = (leave: LeaveRequest) => {
@@ -447,6 +472,110 @@ export default function LeaveScreen() {
           }}
         />
       )}
+
+      {/* Approve Leave Modal (paid vs unpaid) */}
+      <Modal
+        visible={approveModal.visible}
+        transparent
+        animationType="fade"
+        onRequestClose={() =>
+          setApproveModal({ visible: false, leave: null, deductSalary: false })
+        }
+      >
+        <View style={styles.overlay}>
+          <View style={styles.approveModalBox}>
+            <Text style={styles.approveModalTitle}>Approve Leave</Text>
+            {approveModal.leave && (
+              <Text style={styles.approveModalSub}>
+                {(approveModal.leave.employee as any)?.firstName}{' '}
+                {(approveModal.leave.employee as any)?.lastName} ·{' '}
+                {approveModal.leave.leaveType?.toUpperCase()} ·{' '}
+                {approveModal.leave.days ?? '?'}d
+              </Text>
+            )}
+            <Text style={styles.approveModalLabel}>Salary Treatment</Text>
+            <View style={styles.toggleRow}>
+              <TouchableOpacity
+                style={[
+                  styles.toggleOpt,
+                  !approveModal.deductSalary && styles.toggleOptActive,
+                  { borderColor: '#00a36c' },
+                  !approveModal.deductSalary && { backgroundColor: '#00a36c' },
+                ]}
+                onPress={() =>
+                  setApproveModal(p => ({ ...p, deductSalary: false }))
+                }
+              >
+                <Text
+                  style={[
+                    styles.toggleOptText,
+                    !approveModal.deductSalary && { color: C.white },
+                  ]}
+                >
+                  Paid Leave
+                </Text>
+                <Text
+                  style={[
+                    styles.toggleOptSub,
+                    !approveModal.deductSalary && { color: C.white },
+                  ]}
+                >
+                  No deduction
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.toggleOpt,
+                  approveModal.deductSalary && styles.toggleOptActive,
+                  { borderColor: '#EA580C' },
+                  approveModal.deductSalary && { backgroundColor: '#EA580C' },
+                ]}
+                onPress={() =>
+                  setApproveModal(p => ({ ...p, deductSalary: true }))
+                }
+              >
+                <Text
+                  style={[
+                    styles.toggleOptText,
+                    approveModal.deductSalary && { color: C.white },
+                  ]}
+                >
+                  Unpaid Leave
+                </Text>
+                <Text
+                  style={[
+                    styles.toggleOptSub,
+                    approveModal.deductSalary && { color: C.white },
+                  ]}
+                >
+                  Deduct salary
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.approveModalActions}>
+              <TouchableOpacity
+                style={styles.approveModalCancel}
+                onPress={() =>
+                  setApproveModal({
+                    visible: false,
+                    leave: null,
+                    deductSalary: false,
+                  })
+                }
+              >
+                <Text style={styles.approveModalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.approveModalConfirm}
+                onPress={confirmApprove}
+              >
+                <Check size={14} color={C.white} />
+                <Text style={styles.approveModalConfirmText}>Approve</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Edit Leave Modal (employee only) */}
       <Modal
@@ -864,6 +993,72 @@ const styles = StyleSheet.create({
     color: C.white,
     fontWeight: '700',
     fontSize: 14,
+    textTransform: 'uppercase',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  approveModalBox: {
+    backgroundColor: C.white,
+    borderWidth: 2,
+    borderColor: C.black,
+    padding: 20,
+    width: '100%',
+    maxWidth: 380,
+  },
+  approveModalTitle: { fontSize: 18, fontWeight: '700', color: C.black },
+  approveModalSub: {
+    fontSize: 12,
+    color: C.textMuted,
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  approveModalLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    color: C.black,
+    marginBottom: 8,
+    letterSpacing: 0.5,
+  },
+  toggleRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  toggleOpt: {
+    flex: 1,
+    borderWidth: 2,
+    padding: 12,
+    alignItems: 'center',
+  },
+  toggleOptActive: {},
+  toggleOptText: { fontSize: 13, fontWeight: '700', color: C.black },
+  toggleOptSub: { fontSize: 10, color: C.textMuted, marginTop: 2 },
+  approveModalActions: { flexDirection: 'row', gap: 10 },
+  approveModalCancel: {
+    flex: 1,
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  approveModalCancelText: { fontSize: 13, fontWeight: '700', color: C.black },
+  approveModalConfirm: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: 6,
+    backgroundColor: C.success,
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  approveModalConfirmText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: C.white,
     textTransform: 'uppercase',
   },
 });

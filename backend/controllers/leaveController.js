@@ -29,7 +29,12 @@ async function syncLeaveAttendance(leave) {
     await Attendance.findOneAndUpdate(
       { employee: leave.employee._id ?? leave.employee, date: dayDate, checkIn: { $exists: false } },
       {
-        $set: { status: "on_leave", workHours: 0, notes: `Leave approved: ${leave.leaveType}` },
+        $set: {
+          status: "on_leave",
+          workHours: 0,
+          notes: `Leave approved: ${leave.leaveType}`,
+          leaveDeductSalary: leave.deductSalary !== false, // store for payroll reference
+        },
         $setOnInsert: { employee: leave.employee._id ?? leave.employee, date: dayDate, verifyMode: "manual" },
       },
       { upsert: true },
@@ -318,7 +323,7 @@ const createLeave = asyncHandler(async (req, res) => {
 });
 
 const updateLeaveStatus = asyncHandler(async (req, res) => {
-  const { status, rejectionReason } = req.body;
+  const { status, rejectionReason, deductSalary } = req.body;
 
   if (!status || !LEAVE_STATUS.includes(status)) {
     res.status(400);
@@ -343,6 +348,13 @@ const updateLeaveStatus = asyncHandler(async (req, res) => {
   if (status === "approved") {
     leave.approvedBy = req.user._id;
     leave.approvedAt = new Date();
+    // deductSalary: true = unpaid (deduct from salary), false = paid leave
+    if (deductSalary !== undefined) {
+      leave.deductSalary = !!deductSalary;
+    } else {
+      // Default: unpaid leave type always deducts; others don't
+      leave.deductSalary = leave.leaveType === "unpaid";
+    }
   }
   if (status === "rejected") {
     if (rejectionReason && typeof rejectionReason === "string") {

@@ -21,6 +21,8 @@ import {
   Banknote,
   LogOut,
   Shield,
+  LifeBuoy,
+  FolderOpen,
 } from "lucide-react";
 
 export interface NavItem {
@@ -79,6 +81,12 @@ const allGroups: NavGroup[] = [
         href: "/employee-credentials",
         icon: Lock,
         roles: ["super_admin", "hr_manager"],
+      },
+      {
+        title: "Documents",
+        href: "/documents",
+        icon: FolderOpen,
+        roles: ["super_admin", "hr_manager", "hr_executive", "employee"],
       },
     ],
   },
@@ -201,6 +209,12 @@ const allGroups: NavGroup[] = [
         href: "/audit-log",
         icon: Shield,
         roles: ["super_admin", "hr_manager"],
+      },
+      {
+        title: "Support",
+        href: "/support",
+        icon: LifeBuoy,
+        roles: ["super_admin", "hr_manager", "hr_executive", "department_head", "employee"],
       },
     ],
   },

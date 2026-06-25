@@ -10,6 +10,7 @@ import {
   Alert,
   ScrollView,
   Modal,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -20,10 +21,12 @@ import {
   Zap,
   BadgeCheck,
   ChevronLeft,
+  Share2,
+  Eye,
 } from 'lucide-react-native';
 import { TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { payrollAPI } from '../api/api';
+import { payrollAPI, payrollPreviewAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import { Payroll } from '../types/hrms';
 import { C } from '../theme';
@@ -49,6 +52,9 @@ export default function PayrollScreen() {
   const [genMonth, setGenMonth] = useState(String(new Date().getMonth() + 1));
   const [genYear, setGenYear] = useState(String(new Date().getFullYear()));
   const [generating, setGenerating] = useState(false);
+  const [previewData, setPreviewData] = useState<any[]>([]);
+  const [previewStep, setPreviewStep] = useState<'form' | 'preview'>('form');
+  const [loadingPreview, setLoadingPreview] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -139,6 +145,103 @@ export default function PayrollScreen() {
     doGenerate(false);
   };
 
+  const handleSharePayslip = async (payroll: any) => {
+    const emp = payroll.employee as any;
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const period = payroll.month && payroll.year ? `${months[(payroll.month||1)-1]} ${payroll.year}` : '—';
+    const name = isEmployee ? (user?.name || 'Employee') : (emp ? `${emp.firstName} ${emp.lastName}` : 'Employee');
+    const text = [
+      `━━━━━━━━━━━━━━━━━━━━`,
+      `SALARY SLIP — ${period}`,
+      `━━━━━━━━━━━━━━━━━━━━`,
+      `Employee : ${name}`,
+      `Designation: ${emp?.designation || '—'}`,
+      ``,
+      `EARNINGS`,
+      `Basic Salary   : ₹${(payroll.basicSalary||0).toLocaleString()}`,
+      `Earned Basic   : ₹${(payroll.earnedBasic||0).toLocaleString()}`,
+      `Allowances     : ₹${(payroll.otherAllowances||0).toLocaleString()}`,
+      `Overtime       : ₹${(payroll.otPay||0).toLocaleString()}`,
+      `Gross Salary   : ₹${(payroll.grossSalary||0).toLocaleString()}`,
+      ``,
+      `DEDUCTIONS`,
+      `Absent (${payroll.absentDays||0}d): -₹${(payroll.absentDeduction||0).toLocaleString()}`,
+      `Late           : -₹${(payroll.lateDeductionAmount||0).toLocaleString()}`,
+      `Half Day       : -₹${(payroll.halfDayDeduction||0).toLocaleString()}`,
+      `Penalty        : -₹${(payroll.penaltyAmount||0).toLocaleString()}`,
+      `Loan EMI       : -₹${(payroll.loanDeduction||0).toLocaleString()}`,
+      `Total Deductions: -₹${(payroll.totalDeductions||0).toLocaleString()}`,
+      ``,
+      `━━━━━━━━━━━━━━━━━━━━`,
+      `NET PAY : ₹${(payroll.netSalary||0).toLocaleString()}`,
+      `━━━━━━━━━━━━━━━━━━━━`,
+      `Days: ${payroll.presentDays||0}/${payroll.workingDays||0} present`,
+      `Status: ${(payroll.status||'').toUpperCase()}`,
+    ].join('\n');
+    await Share.share({ message: text, title: `Payslip — ${period}` });
+  };
+
+  const handleTallyExport = async () => {
+    if (payrolls.length === 0) {
+      Alert.alert('No Data', 'No payroll records to export.');
+      return;
+    }
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const header = 'Employee Name,Employee ID,Designation,Department,Basic Salary,Earned Basic,Allowances,Overtime,Gross Salary,Absent Deduction,Late Deduction,Half Day Deduction,Penalty,Loan EMI,Total Deductions,Net Salary,Working Days,Days Present,Leave Days,Absent Days,Hours Worked,Status';
+    const rows = payrolls.map(p => {
+      const emp = p.employee as any;
+      const name = `${emp?.firstName || ''} ${emp?.lastName || ''}`.trim();
+      return [
+        name,
+        emp?.employeeId || '',
+        emp?.designation || '',
+        (emp?.department as any)?.name || '',
+        p.basicSalary || 0,
+        (p as any).earnedBasic ?? p.basicSalary ?? 0,
+        (p as any).otherAllowances || 0,
+        (p as any).otPay || 0,
+        p.grossSalary || 0,
+        (p as any).absentDeduction || 0,
+        (p as any).lateDeductionAmount || 0,
+        (p as any).halfDayDeduction || 0,
+        (p as any).penaltyAmount || 0,
+        (p as any).loanDeduction || 0,
+        p.totalDeductions || 0,
+        p.netSalary || 0,
+        (p as any).workingDays || 0,
+        (p as any).presentDays || 0,
+        (p as any).leaveDays || 0,
+        (p as any).absentDays || 0,
+        Number((p as any).totalWorkHours ?? 0).toFixed(2),
+        p.status || '',
+      ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
+    });
+    const csv = [header, ...rows].join('\n');
+    const period = payrolls[0] && (payrolls[0] as any).month
+      ? `${months[((payrolls[0] as any).month||1)-1]}_${(payrolls[0] as any).year}`
+      : 'Export';
+    await Share.share({
+      message: csv,
+      title: `Payroll_${period}_Tally.csv`,
+    });
+  };
+
+  const handlePreviewPayroll = async () => {
+    setLoadingPreview(true);
+    try {
+      const res = await payrollPreviewAPI.preview({
+        month: parseInt(genMonth),
+        year: parseInt(genYear),
+      });
+      setPreviewData(res.data || []);
+      setPreviewStep('preview');
+    } catch (e: any) {
+      Alert.alert('Preview Error', e.message);
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
+
   const doGenerate = async (force: boolean) => {
     setGenerating(true);
     try {
@@ -172,13 +275,24 @@ export default function PayrollScreen() {
           </Text>
         </View>
         {!isEmployee && (
-          <TouchableOpacity
-            style={styles.genBtn}
-            onPress={() => setShowGenModal(true)}
-          >
-            <Zap size={14} color={C.white} />
-            <Text style={styles.genBtnText}>Generate</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {payrolls.length > 0 && (
+              <TouchableOpacity
+                style={[styles.genBtn, { backgroundColor: '#16A34A' }]}
+                onPress={handleTallyExport}
+              >
+                <Share2 size={13} color={C.white} />
+                <Text style={styles.genBtnText}>Tally</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={styles.genBtn}
+              onPress={() => setShowGenModal(true)}
+            >
+              <Zap size={14} color={C.white} />
+              <Text style={styles.genBtnText}>Generate</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
 
@@ -390,8 +504,10 @@ export default function PayrollScreen() {
         >
           <SafeAreaView style={styles.safe} edges={['top']}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Generate Payroll</Text>
-              <TouchableOpacity onPress={() => setShowGenModal(false)}>
+              <Text style={styles.modalTitle}>
+                {previewStep === 'preview' ? 'Payroll Preview' : 'Generate Payroll'}
+              </Text>
+              <TouchableOpacity onPress={() => { setShowGenModal(false); setPreviewStep('form'); setPreviewData([]); }}>
                 <X size={22} color={C.black} />
               </TouchableOpacity>
             </View>
@@ -400,73 +516,124 @@ export default function PayrollScreen() {
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
-              <View style={styles.genNote}>
-                <Text style={styles.genNoteText}>
-                  This will generate payroll for all active employees for the
-                  selected month.
-                </Text>
-              </View>
-              <View>
-                <Text style={styles.fieldLabel}>Month (1–12)</Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  value={genMonth}
-                  onChangeText={setGenMonth}
-                  keyboardType="numeric"
-                  placeholder="e.g. 6"
-                  placeholderTextColor={C.textLight}
-                />
-              </View>
-              <View>
-                <Text style={styles.fieldLabel}>Year</Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  value={genYear}
-                  onChangeText={setGenYear}
-                  keyboardType="numeric"
-                  placeholder="e.g. 2026"
-                  placeholderTextColor={C.textLight}
-                />
-              </View>
-              <TouchableOpacity
-                style={styles.genSubmitBtn}
-                onPress={() => handleGenerate(false)}
-                disabled={generating}
-              >
-                {generating ? (
-                  <ActivityIndicator color={C.white} />
-                ) : (
-                  <>
-                    <Zap size={14} color={C.white} />
-                    <Text style={styles.genSubmitBtnText}>
-                      Generate Payroll
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.genSubmitBtn,
-                  { backgroundColor: C.danger, marginTop: 0 },
-                ]}
-                onPress={() => handleGenerate(true)}
-                disabled={generating}
-              >
+              {previewStep === 'form' ? (
                 <>
-                  <Zap size={14} color={C.white} />
-                  <Text style={styles.genSubmitBtnText}>Force Reprocess</Text>
+                  <View style={styles.genNote}>
+                    <Text style={styles.genNoteText}>
+                      Preview payroll calculations before processing, or generate directly.
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={styles.fieldLabel}>Month (1–12)</Text>
+                    <TextInput
+                      style={styles.fieldInput}
+                      value={genMonth}
+                      onChangeText={setGenMonth}
+                      keyboardType="numeric"
+                      placeholder="e.g. 6"
+                      placeholderTextColor={C.textLight}
+                    />
+                  </View>
+                  <View>
+                    <Text style={styles.fieldLabel}>Year</Text>
+                    <TextInput
+                      style={styles.fieldInput}
+                      value={genYear}
+                      onChangeText={setGenYear}
+                      keyboardType="numeric"
+                      placeholder="e.g. 2026"
+                      placeholderTextColor={C.textLight}
+                    />
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.genSubmitBtn, { backgroundColor: C.primary }]}
+                    onPress={handlePreviewPayroll}
+                    disabled={loadingPreview}
+                  >
+                    {loadingPreview ? (
+                      <ActivityIndicator color={C.white} />
+                    ) : (
+                      <>
+                        <Eye size={14} color={C.white} />
+                        <Text style={styles.genSubmitBtnText}>Preview First</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.genSubmitBtn}
+                    onPress={() => handleGenerate(false)}
+                    disabled={generating}
+                  >
+                    {generating ? (
+                      <ActivityIndicator color={C.white} />
+                    ) : (
+                      <>
+                        <Zap size={14} color={C.white} />
+                        <Text style={styles.genSubmitBtnText}>Generate Directly</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.genSubmitBtn, { backgroundColor: C.danger, marginTop: 0 }]}
+                    onPress={() => handleGenerate(true)}
+                    disabled={generating}
+                  >
+                    <>
+                      <Zap size={14} color={C.white} />
+                      <Text style={styles.genSubmitBtnText}>Force Reprocess</Text>
+                    </>
+                  </TouchableOpacity>
+                  <Text style={{ fontSize: 11, color: C.textMuted, textAlign: 'center' }}>
+                    Force Reprocess deletes and recalculates existing payroll (not paid ones)
+                  </Text>
                 </>
-              </TouchableOpacity>
-              <Text
-                style={{
-                  fontSize: 11,
-                  color: C.textMuted,
-                  textAlign: 'center',
-                }}
-              >
-                Force Reprocess deletes and recalculates existing payroll (not
-                paid ones)
-              </Text>
+              ) : (
+                <>
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: C.textMuted }}>
+                    {previewData.length} employee{previewData.length !== 1 ? 's' : ''} · {genMonth}/{genYear}
+                  </Text>
+                  {previewData.map(p => (
+                    <View key={p.employee._id} style={styles.previewRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>
+                          {p.employee.firstName} {p.employee.lastName}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: C.textMuted }}>
+                          {p.presentDays}/{p.workingDays} days · {p.alreadyProcessed ? '⚠ Already exists' : '✓ New'}
+                        </Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: C.success }}>
+                          ₹{(p.netSalary || 0).toLocaleString()}
+                        </Text>
+                        <Text style={{ fontSize: 10, color: C.danger }}>
+                          -{(p.totalDeductions || 0).toLocaleString()} ded
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                  <TouchableOpacity
+                    style={[styles.genSubmitBtn, { backgroundColor: '#000' }]}
+                    onPress={() => { setPreviewStep('form'); setPreviewData([]); }}
+                  >
+                    <Text style={styles.genSubmitBtnText}>← Back</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.genSubmitBtn}
+                    onPress={() => handleGenerate(false)}
+                    disabled={generating}
+                  >
+                    {generating ? (
+                      <ActivityIndicator color={C.white} />
+                    ) : (
+                      <>
+                        <Zap size={14} color={C.white} />
+                        <Text style={styles.genSubmitBtnText}>Confirm & Generate</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </>
+              )}
             </ScrollView>
           </SafeAreaView>
         </Modal>
@@ -598,6 +765,13 @@ export default function PayrollScreen() {
                   </View>
                 );
               })}
+              <TouchableOpacity
+                style={styles.shareBtn}
+                onPress={() => handleSharePayslip(selected)}
+              >
+                <Share2 size={15} color={C.white} />
+                <Text style={styles.processBtnText}>Share Payslip</Text>
+              </TouchableOpacity>
             </ScrollView>
           </SafeAreaView>
         )}
@@ -835,5 +1009,24 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 14,
     textTransform: 'uppercase',
+  },
+  shareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: C.primary,
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingVertical: 12,
+    marginTop: 16,
+  },
+  previewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: C.black,
+    padding: 12,
+    backgroundColor: C.white,
   },
 });

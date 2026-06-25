@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -507,6 +507,120 @@ function TwoFactorPanel() {
   );
 }
 
+// ─── Logo crop modal ──────────────────────────────────────────────────────────
+function CropModal({ file, onConfirm, onCancel }: { file: File; onConfirm: (blob: Blob) => void; onCancel: () => void }) {
+  const [imgSrc, setImgSrc] = useState("");
+  const imgRef = useRef<HTMLImageElement>(null);
+  const drag = useRef<{ type: "move"|"nw"|"ne"|"se"|"sw"; sx: number; sy: number; sb: { x:number;y:number;w:number;h:number } } | null>(null);
+  const [box, setBox] = useState({ x: 20, y: 20, w: 200, h: 150 });
+
+  useEffect(() => {
+    const reader = new FileReader();
+    reader.onload = (e) => setImgSrc(e.target?.result as string);
+    reader.readAsDataURL(file);
+  }, [file]);
+
+  const onImgLoad = () => {
+    const el = imgRef.current;
+    if (!el) return;
+    const { width, height } = el.getBoundingClientRect();
+    const pad = 16;
+    setBox({ x: pad, y: pad, w: width - pad * 2, h: height - pad * 2 });
+  };
+
+  const startDrag = useCallback((e: React.MouseEvent, type: "move"|"nw"|"ne"|"se"|"sw") => {
+    e.preventDefault();
+    e.stopPropagation();
+    drag.current = { type, sx: e.clientX, sy: e.clientY, sb: { ...box } };
+  }, [box]);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!drag.current || !imgRef.current) return;
+      const { type, sx, sy, sb } = drag.current;
+      const dx = e.clientX - sx, dy = e.clientY - sy;
+      const { width: mw, height: mh } = imgRef.current.getBoundingClientRect();
+      setBox(() => {
+        let { x, y, w, h } = sb;
+        if (type === "move") {
+          x = Math.max(0, Math.min(x + dx, mw - w));
+          y = Math.max(0, Math.min(y + dy, mh - h));
+        } else if (type === "se") {
+          w = Math.max(20, Math.min(w + dx, mw - x));
+          h = Math.max(20, Math.min(h + dy, mh - y));
+        } else if (type === "sw") {
+          const nx = Math.max(0, Math.min(x + dx, x + w - 20));
+          w = w - (nx - x); x = nx;
+          h = Math.max(20, Math.min(h + dy, mh - y));
+        } else if (type === "ne") {
+          w = Math.max(20, Math.min(w + dx, mw - x));
+          const ny = Math.max(0, Math.min(y + dy, y + h - 20));
+          h = h - (ny - y); y = ny;
+        } else if (type === "nw") {
+          const nx = Math.max(0, Math.min(x + dx, x + w - 20));
+          const ny = Math.max(0, Math.min(y + dy, y + h - 20));
+          w = w - (nx - x); h = h - (ny - y); x = nx; y = ny;
+        }
+        return { x, y, w, h };
+      });
+    };
+    const onUp = () => { drag.current = null; };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+  }, []);
+
+  const confirm = () => {
+    const el = imgRef.current;
+    if (!el) return;
+    const { width: dw, height: dh } = el.getBoundingClientRect();
+    const sx = el.naturalWidth / dw, sy = el.naturalHeight / dh;
+    const canvas = document.createElement("canvas");
+    const cw = Math.round(box.w * sx), ch = Math.round(box.h * sy);
+    canvas.width = cw; canvas.height = ch;
+    canvas.getContext("2d")!.drawImage(el, Math.round(box.x * sx), Math.round(box.y * sy), cw, ch, 0, 0, cw, ch);
+    canvas.toBlob((b) => b && onConfirm(b), "image/png");
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+      <div className="bg-white border-2 border-black p-4 max-w-2xl w-full">
+        <div className="text-xs font-bold text-black uppercase tracking-wider mb-3">Crop Logo — drag box to select area</div>
+        <div className="relative inline-block select-none overflow-hidden border border-gray-300">
+          <img ref={imgRef} src={imgSrc} alt="crop" onLoad={onImgLoad} className="block max-w-full max-h-[380px]" draggable={false} />
+          {imgSrc && (
+            <>
+              {/* dark overlay everywhere except the box — achieved with box-shadow trick */}
+              <div
+                className="absolute border-2 border-white cursor-move"
+                style={{ left: box.x, top: box.y, width: box.w, height: box.h, boxShadow: "0 0 0 9999px rgba(0,0,0,0.45)" }}
+                onMouseDown={(e) => startDrag(e, "move")}
+              >
+                {(["nw","ne","se","sw"] as const).map((c) => (
+                  <div
+                    key={c}
+                    className="absolute w-3 h-3 bg-white border border-black"
+                    style={{
+                      ...(c.includes("n") ? { top: -5 } : { bottom: -5 }),
+                      ...(c.includes("w") ? { left: -5 } : { right: -5 }),
+                      cursor: `${c}-resize`,
+                    }}
+                    onMouseDown={(e) => startDrag(e, c)}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+        <div className="flex gap-2 mt-4 justify-end">
+          <button onClick={onCancel} className="px-4 py-2 border-2 border-black text-xs font-bold hover:bg-gray-100">Cancel</button>
+          <button onClick={confirm} className="px-4 py-2 bg-[#024BAB] text-white border-2 border-black text-xs font-bold hover:bg-[#024BAB]/80">Crop & Upload</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
@@ -515,6 +629,10 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [chequeTemplatePreview, setChequeTemplatePreview] = useState<string | null>(null);
   const [permissions, setPermissions] =
     useState<ResourcePermissions[]>(INITIAL_PERMISSIONS);
   const [actionModal, setActionModal] = useState<{
@@ -702,35 +820,54 @@ export default function SettingsPage() {
     setSettings((prev: any) => ({ ...prev, [name]: value }));
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChequeTemplateUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (!file.type.startsWith("image/")) {
-      toast({
-        title: "Error",
-        description: "Please upload a valid image file",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Please upload a valid image file", variant: "destructive" });
       return;
     }
-
     if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "Error",
-        description: "File size must be less than 5MB",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "File size must be less than 5MB", variant: "destructive" });
       return;
     }
-
     const reader = new FileReader();
     reader.onload = (event) => {
       const base64 = event.target?.result as string;
-      setLogoPreview(base64);
-      setSettings((prev: any) => ({ ...prev, logoUrl: base64 }));
+      setChequeTemplatePreview(base64);
+      setSettings((prev: any) => ({ ...prev, payrollChequeTemplate: base64 }));
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Error", description: "Please upload a valid image file", variant: "destructive" });
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: "Error", description: "File size must be less than 10MB", variant: "destructive" });
+      return;
+    }
+    setCropFile(file);
+    if (logoInputRef.current) logoInputRef.current.value = "";
+  };
+
+  const handleCropConfirm = async (blob: Blob) => {
+    setCropFile(null);
+    setLogoUploading(true);
+    try {
+      const croppedFile = new File([blob], "logo.png", { type: "image/png" });
+      const res = await settingsAPI.uploadLogo(croppedFile);
+      setSettings((prev: any) => ({ ...prev, logoUrl: res.logoUrl }));
+      toast({ title: "Logo uploaded", description: "Company logo saved to server." });
+    } catch (err: any) {
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } finally {
+      setLogoUploading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -983,66 +1120,90 @@ export default function SettingsPage() {
                     <label className="block text-xs font-bold text-black uppercase tracking-wider mb-3">
                       Company Logo
                     </label>
-                    <div className="flex gap-4">
-                      {}
+                    <div className="flex gap-4 items-start">
                       <div className="flex-1">
                         <input
+                          ref={logoInputRef}
                           type="file"
                           accept="image/*"
                           onChange={handleLogoUpload}
                           className="hidden"
                           id="logo-upload"
+                          disabled={logoUploading}
                         />
                         <label
                           htmlFor="logo-upload"
-                          className="block w-full px-4 py-3 border-2 border-dashed border-black hover:bg-[#024BAB]/5 transition-colors cursor-pointer text-center"
+                          className={`block w-full px-4 py-3 border-2 border-dashed border-black hover:bg-[#024BAB]/5 transition-colors cursor-pointer text-center ${logoUploading ? "opacity-50 cursor-not-allowed" : ""}`}
                         >
                           <div className="text-xs font-bold text-black">
-                            Click to upload logo
+                            {logoUploading ? "Uploading…" : "Click to upload logo"}
                           </div>
                           <div className="text-xs text-muted-foreground mt-1">
-                            PNG, JPG, GIF up to 5MB
+                            PNG, JPG up to 10MB — you can crop before uploading
                           </div>
                         </label>
                       </div>
-
-                      {}
-                      {(logoPreview || settings?.logoUrl) &&
-                        !logoPreview?.startsWith("data:") && (
-                          <div className="flex items-center gap-2">
-                            <img
-                              src={logoPreview || settings?.logoUrl}
-                              alt="Logo preview"
-                              className="w-24 h-24 object-contain border-2 border-black bg-white p-2"
-                            />
-                            <button
-                              onClick={() => {
-                                setLogoPreview(null);
-                                setSettings((prev: any) => ({
-                                  ...prev,
-                                  logoUrl: "",
-                                }));
-                              }}
-                              className="px-2 py-1 bg-[#EF4444] text-white text-xs font-bold border-2 border-black hover:bg-[#DC2626]"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          </div>
-                        )}
-                      {logoPreview?.startsWith("data:") && (
+                      {settings?.logoUrl && (
                         <div className="flex items-center gap-2">
                           <img
-                            src={logoPreview}
-                            alt="Logo preview"
+                            src={`${import.meta.env.VITE_API_URL?.replace(/\/api$/, "")}${settings.logoUrl}`}
+                            alt="Company logo"
                             className="w-24 h-24 object-contain border-2 border-black bg-white p-2"
                           />
                           <button
+                            onClick={() => setSettings((prev: any) => ({ ...prev, logoUrl: "" }))}
+                            className="px-2 py-1 bg-[#EF4444] text-white text-xs font-bold border-2 border-black hover:bg-[#DC2626]"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">Logo position &amp; size on the cheque can be configured in the Payroll page.</p>
+                  </div>
+                  {/* Crop modal */}
+                  {cropFile && (
+                    <CropModal
+                      file={cropFile}
+                      onConfirm={handleCropConfirm}
+                      onCancel={() => setCropFile(null)}
+                    />
+                  )}
+
+                  {/* Payroll Cheque Template */}
+                  <div className="border-t-2 border-black pt-4 mt-4">
+                    <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1">
+                      Payroll Cheque Template
+                    </label>
+                    <p className="text-xs text-muted-foreground mb-3">Upload the cheque/payslip background image (PNG or JPG). This will be used as the background when printing payslips.</p>
+                    <div className="flex gap-4">
+                      <div className="flex-1">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleChequeTemplateUpload}
+                          className="hidden"
+                          id="cheque-template-upload"
+                        />
+                        <label
+                          htmlFor="cheque-template-upload"
+                          className="block w-full px-4 py-3 border-2 border-dashed border-black hover:bg-[#024BAB]/5 transition-colors cursor-pointer text-center"
+                        >
+                          <div className="text-xs font-bold text-black">Click to upload cheque template</div>
+                          <div className="text-xs text-muted-foreground mt-1">PNG, JPG up to 5MB</div>
+                        </label>
+                      </div>
+                      {(chequeTemplatePreview || settings?.payrollChequeTemplate) && (
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={chequeTemplatePreview || settings?.payrollChequeTemplate}
+                            alt="Cheque template preview"
+                            className="h-24 object-contain border-2 border-black bg-white p-1"
+                          />
+                          <button
                             onClick={() => {
-                              setLogoPreview(null);
-                              setSettings((prev: any) => ({
-                                ...prev,
-                                logoUrl: "",
-                              }));
+                              setChequeTemplatePreview(null);
+                              setSettings((prev: any) => ({ ...prev, payrollChequeTemplate: "" }));
                             }}
                             className="px-2 py-1 bg-[#EF4444] text-white text-xs font-bold border-2 border-black hover:bg-[#DC2626]"
                           >

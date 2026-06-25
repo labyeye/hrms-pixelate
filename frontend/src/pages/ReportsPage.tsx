@@ -158,6 +158,14 @@ const REPORTS: ReportDef[] = [
     available: true,
   },
   {
+    id: "tally-export",
+    name: "Tally Export",
+    desc: "Export monthly payroll data as CSV for direct import into Tally ERP.",
+    category: "payroll",
+    icon: Download,
+    available: true,
+  },
+  {
     id: "pt-register",
     name: "PT Register Report",
     desc: "Professional Tax register for all employees.",
@@ -2663,10 +2671,103 @@ function ComingSoonGen() {
   );
 }
 
+function TallyExportGen({ departments: _d, company: _c }: { departments: any[]; company: ReportCompany }) {
+  const now = new Date();
+  const [month, setMonth] = useState(String(now.getMonth() + 1));
+  const [year, setYear] = useState(String(now.getFullYear()));
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => { load(); }, [month, year]);
+  async function load() {
+    setLoading(true);
+    try {
+      const r = await payrollAPI.getAll({ month, year, limit: "500" });
+      if (r.success) setData(r.data);
+    } catch {}
+    setLoading(false);
+  }
+
+  const headers = [
+    "Employee Name", "Employee ID", "Designation", "Department",
+    "Basic Salary", "Earned Basic", "Allowances", "Overtime Pay", "Gross Salary",
+    "Absent Deduction", "Late Deduction", "Half Day Deduction", "Penalty",
+    "Loan / Advance EMI", "Total Deductions", "Net Salary",
+    "Working Days", "Days Present", "Leave Days", "Absent Days", "Hours Worked", "Status",
+  ];
+  const rows = data.map((p) => {
+    const emp = p.employee || {};
+    return [
+      `${emp.firstName || ""} ${emp.lastName || ""}`.trim(),
+      emp.employeeId || "",
+      emp.designation || "",
+      emp.department?.name || "",
+      p.basicSalary || 0,
+      p.earnedBasic ?? p.basicSalary ?? 0,
+      p.otherAllowances || 0,
+      p.otPay || 0,
+      p.grossSalary || 0,
+      p.absentDeduction || 0,
+      p.lateDeductionAmount || 0,
+      p.halfDayDeduction || 0,
+      p.penaltyAmount || 0,
+      p.loanDeduction || 0,
+      p.totalDeductions || 0,
+      p.netSalary || 0,
+      p.workingDays || 0,
+      p.presentDays || 0,
+      p.leaveDays || 0,
+      p.absentDays || 0,
+      Number(p.totalWorkHours ?? 0).toFixed(2),
+      p.status || "",
+    ].map(String);
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="border-2 bg-[#F0FDF4] border-green-300 p-4 text-sm text-green-800 font-medium">
+        Export monthly payroll as CSV and import directly into Tally ERP via <b>Gateway of Tally → Import → Vouchers</b>.
+      </div>
+      <div className="flex flex-wrap gap-3">
+        <NbSelect value={month} onChange={setMonth} className="w-32">
+          {MONTHS.map((m, i) => <option key={m} value={String(i + 1)}>{m}</option>)}
+        </NbSelect>
+        <NbSelect value={year} onChange={setYear} className="w-28">
+          {YEARS.map((y) => <option key={y} value={String(y)}>{y}</option>)}
+        </NbSelect>
+        <div className="ml-auto flex gap-2">
+          <button
+            disabled={data.length === 0}
+            onClick={() => exportCSV([headers, ...rows], `Payroll_${MONTHS[+month - 1]}_${year}_Tally.csv`)}
+            className="flex items-center gap-2 border-2 border-black px-4 py-2 text-sm font-bold bg-[#16A34A] text-white disabled:opacity-40"
+          >
+            <Download className="w-4 h-4" /> Download CSV
+          </button>
+          <button
+            disabled={data.length === 0}
+            onClick={() => exportXLSX([headers, ...rows], `Payroll_${MONTHS[+month - 1]}_${year}_Tally.xlsx`)}
+            className="flex items-center gap-2 border-2 border-black px-4 py-2 text-sm font-bold bg-[#00C48C] text-white disabled:opacity-40"
+          >
+            <Download className="w-4 h-4" /> Download Excel
+          </button>
+        </div>
+      </div>
+      {loading ? (
+        <LoadingState />
+      ) : data.length === 0 ? (
+        <EmptyState msg="No payroll records for this period" />
+      ) : (
+        <ReportTable id="tally-tbl" headers={headers} rows={rows} />
+      )}
+    </div>
+  );
+}
+
 const REPORT_COMPONENT: Record<
   string,
   React.ComponentType<{ departments: any[]; company: ReportCompany }>
 > = {
+  "tally-export": TallyExportGen,
   "pay-report": PayReportGen,
   "salary-register": SalaryRegisterGen,
   "net-salary": NetSalaryGen,

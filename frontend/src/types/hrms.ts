@@ -139,6 +139,8 @@ export interface Payroll {
   status: "draft" | "processed" | "paid";
   paidAt?: string;
   remarks?: string;
+  slipReceived?: "received" | "not_received" | null;
+  slipReceivedAt?: string;
 }
 
 export interface Job {

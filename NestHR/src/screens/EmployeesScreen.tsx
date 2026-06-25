@@ -101,12 +101,30 @@ const EMPTY_FORM = {
   dateOfBirth: '',
   emergencyContact: '',
   address: '',
+  permanentAddress: '',
+  city: '',
+  state: '',
+  pincode: '',
   panNumber: '',
   aadharNumber: '',
   accountHolderName: '',
   bankAccountNumber: '',
   ifscCode: '',
   bankName: '',
+  // Personal Details
+  fatherName: '',
+  motherName: '',
+  spouseName: '',
+  maritalStatus: '',
+  bloodGroup: '',
+  nationality: 'Indian',
+  religion: '',
+  personalEmail: '',
+  alternatePhone: '',
+  // Professional Background
+  qualification: '',
+  totalExperience: '',
+  previousCompany: '',
 };
 
 const TABS = ['Basic Info', 'Attendance', 'Salary', 'Other Info'];
@@ -254,10 +272,26 @@ export default function EmployeesScreen() {
       address: (emp as any).address || '',
       panNumber: (emp as any).panNumber || '',
       aadharNumber: (emp as any).aadharNumber || '',
+      permanentAddress: (emp as any).permanentAddress || '',
+      city: (emp as any).city || '',
+      state: (emp as any).state || '',
+      pincode: (emp as any).pincode || '',
       accountHolderName: (emp as any).accountHolderName || '',
       bankAccountNumber: (emp as any).bankAccountNumber || '',
       ifscCode: (emp as any).ifscCode || '',
       bankName: (emp as any).bankName || '',
+      fatherName: (emp as any).fatherName || '',
+      motherName: (emp as any).motherName || '',
+      spouseName: (emp as any).spouseName || '',
+      maritalStatus: (emp as any).maritalStatus || '',
+      bloodGroup: (emp as any).bloodGroup || '',
+      nationality: (emp as any).nationality || 'Indian',
+      religion: (emp as any).religion || '',
+      personalEmail: (emp as any).personalEmail || '',
+      alternatePhone: (emp as any).alternatePhone || '',
+      qualification: (emp as any).qualification || '',
+      totalExperience: (emp as any).totalExperience || '',
+      previousCompany: (emp as any).previousCompany || '',
     });
     setAvatarUri((emp as any).avatar || null);
     setActiveTab(0);
@@ -1021,6 +1055,8 @@ export default function EmployeesScreen() {
                     [
                       ['Email', detailEmp.email || '—'],
                       ['Phone', (detailEmp as any).phone || '—'],
+                      ['Alternate Phone', (detailEmp as any).alternatePhone || '—'],
+                      ['Personal Email', (detailEmp as any).personalEmail || '—'],
                       ['Gender', (detailEmp as any).gender || '—'],
                       [
                         'Date of Birth',
@@ -1039,6 +1075,10 @@ export default function EmployeesScreen() {
                         (detailEmp as any).emergencyContact || '—',
                       ],
                       ['Address', (detailEmp as any).address || '—'],
+                      ['Permanent Address', (detailEmp as any).permanentAddress || '—'],
+                      ['City', (detailEmp as any).city || '—'],
+                      ['State', (detailEmp as any).state || '—'],
+                      ['Pincode', (detailEmp as any).pincode || '—'],
                     ] as [string, string][]
                   ).map(([label, value], i, arr) => (
                     <View
@@ -1141,6 +1181,80 @@ export default function EmployeesScreen() {
                     </View>
                   ))}
                 </View>
+
+                {/* Personal Details */}
+                <View style={styles.infoSection}>
+                  <View style={styles.infoSectionHeader}>
+                    <Users size={14} color={C.primary} />
+                    <Text style={styles.infoSectionTitle}>Personal Details</Text>
+                  </View>
+                  {(
+                    [
+                      ['Father', (detailEmp as any).fatherName || '—'],
+                      ['Mother', (detailEmp as any).motherName || '—'],
+                      ['Spouse', (detailEmp as any).spouseName || '—'],
+                      ['Marital Status', (detailEmp as any).maritalStatus || '—'],
+                      ['Blood Group', (detailEmp as any).bloodGroup || '—'],
+                      ['Nationality', (detailEmp as any).nationality || '—'],
+                      ['Religion', (detailEmp as any).religion || '—'],
+                    ] as [string, string][]
+                  ).filter(([, v]) => v && v !== '—').map(([label, value], i, arr) => (
+                    <View
+                      key={label}
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        paddingVertical: 9,
+                        paddingHorizontal: 14,
+                        borderBottomWidth: i < arr.length - 1 ? 1 : 0,
+                        borderBottomColor: '#F3F4F6',
+                      }}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: C.textMuted, textTransform: 'uppercase' }}>
+                        {label}
+                      </Text>
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: C.black, textAlign: 'right', flex: 1, marginLeft: 12 }}>
+                        {value}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Professional Background */}
+                {((detailEmp as any).qualification || (detailEmp as any).totalExperience || (detailEmp as any).previousCompany) && (
+                  <View style={styles.infoSection}>
+                    <View style={styles.infoSectionHeader}>
+                      <Briefcase size={14} color={C.primary} />
+                      <Text style={styles.infoSectionTitle}>Professional Background</Text>
+                    </View>
+                    {(
+                      [
+                        ['Qualification', (detailEmp as any).qualification || '—'],
+                        ['Experience', (detailEmp as any).totalExperience || '—'],
+                        ['Previous Company', (detailEmp as any).previousCompany || '—'],
+                      ] as [string, string][]
+                    ).filter(([, v]) => v && v !== '—').map(([label, value], i, arr) => (
+                      <View
+                        key={label}
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          paddingVertical: 9,
+                          paddingHorizontal: 14,
+                          borderBottomWidth: i < arr.length - 1 ? 1 : 0,
+                          borderBottomColor: '#F3F4F6',
+                        }}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: C.textMuted, textTransform: 'uppercase' }}>
+                          {label}
+                        </Text>
+                        <Text style={{ fontSize: 12, fontWeight: '600', color: C.black, textAlign: 'right', flex: 1, marginLeft: 12 }}>
+                          {value}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
 
                 {/* Edit profile button */}
                 <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -2015,9 +2129,25 @@ export default function EmployeesScreen() {
                 {F('Emergency Contact', 'emergencyContact', {
                   placeholder: 'Name & phone number',
                 })}
-                {F('Address', 'address', {
+                {F('Current Address', 'address', {
                   placeholder: 'Full residential address',
                   multiline: true,
+                })}
+                {F('Permanent Address', 'permanentAddress', {
+                  placeholder: 'Permanent address (if different)',
+                  multiline: true,
+                })}
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <View style={{ flex: 1 }}>
+                    {F('City', 'city', { placeholder: 'e.g. Mumbai' })}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    {F('State', 'state', { placeholder: 'e.g. Maharashtra' })}
+                  </View>
+                </View>
+                {F('Pincode', 'pincode', {
+                  placeholder: '6-digit pincode',
+                  keyboardType: 'numeric',
                 })}
                 {F('PAN Number', 'panNumber', {
                   placeholder: 'ABCDE1234F',
@@ -2027,6 +2157,61 @@ export default function EmployeesScreen() {
                   placeholder: '12-digit Aadhar',
                   keyboardType: 'numeric',
                 })}
+
+                <View style={styles.sectionDivider}>
+                  <Text style={styles.sectionDividerText}>Personal Details</Text>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <View style={{ flex: 1 }}>
+                    {F('Father Name', 'fatherName', { placeholder: "Father's name" })}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    {F('Mother Name', 'motherName', { placeholder: "Mother's name" })}
+                  </View>
+                </View>
+                {Select('Marital Status', 'maritalStatus', [
+                  { value: 'single', label: 'Single' },
+                  { value: 'married', label: 'Married' },
+                  { value: 'divorced', label: 'Divorced' },
+                  { value: 'widowed', label: 'Widowed' },
+                ])}
+                {form.maritalStatus === 'married' &&
+                  F('Spouse Name', 'spouseName', { placeholder: "Spouse's name" })}
+                {Select('Blood Group', 'bloodGroup', [
+                  { value: 'A+', label: 'A+' },
+                  { value: 'A-', label: 'A-' },
+                  { value: 'B+', label: 'B+' },
+                  { value: 'B-', label: 'B-' },
+                  { value: 'O+', label: 'O+' },
+                  { value: 'O-', label: 'O-' },
+                  { value: 'AB+', label: 'AB+' },
+                  { value: 'AB-', label: 'AB-' },
+                ])}
+                {F('Nationality', 'nationality', { placeholder: 'e.g. Indian' })}
+                {F('Religion', 'religion', { placeholder: 'e.g. Hindu' })}
+                {F('Personal Email', 'personalEmail', {
+                  placeholder: 'personal@email.com',
+                  keyboardType: 'email-address',
+                  autoCapitalize: 'none',
+                })}
+                {F('Alternate Phone', 'alternatePhone', {
+                  placeholder: 'Alternate contact number',
+                  keyboardType: 'phone-pad',
+                })}
+
+                <View style={styles.sectionDivider}>
+                  <Text style={styles.sectionDividerText}>Professional Background</Text>
+                </View>
+                {F('Qualification', 'qualification', {
+                  placeholder: 'e.g. B.Tech, MBA',
+                })}
+                {F('Total Experience', 'totalExperience', {
+                  placeholder: 'e.g. 3 years',
+                })}
+                {F('Previous Company', 'previousCompany', {
+                  placeholder: 'Last employer name',
+                })}
+
                 <View style={styles.sectionDivider}>
                   <Text style={styles.sectionDividerText}>Bank Details</Text>
                 </View>

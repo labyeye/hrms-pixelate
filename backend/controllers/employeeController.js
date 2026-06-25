@@ -1,4 +1,6 @@
 const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
 const asyncHandler = require("express-async-handler");
 const Employee = require("../models/Employee");
 const User = require("../models/User");
@@ -130,6 +132,10 @@ const createEmployee = [
       uanNumber,
       esicNumber,
       address,
+      permanentAddress,
+      city,
+      state,
+      pincode,
       emergencyContact,
       gender,
       dateOfBirth,
@@ -137,6 +143,18 @@ const createEmployee = [
       avatar,
       shift,
       shiftName,
+      fatherName,
+      motherName,
+      spouseName,
+      maritalStatus,
+      bloodGroup,
+      nationality,
+      religion,
+      personalEmail,
+      alternatePhone,
+      qualification,
+      totalExperience,
+      previousCompany,
     } = req.body;
 
     const normalizedEmail = email.toLowerCase().trim();
@@ -196,6 +214,10 @@ const createEmployee = [
       uanNumber: uanNumber || undefined,
       esicNumber: esicNumber || undefined,
       address: address || undefined,
+      permanentAddress: permanentAddress || undefined,
+      city: city || undefined,
+      state: state || undefined,
+      pincode: pincode || undefined,
       emergencyContact: emergencyContact || undefined,
       gender: gender || undefined,
       dateOfBirth: dateOfBirth || undefined,
@@ -203,6 +225,18 @@ const createEmployee = [
       avatar: avatar || undefined,
       shift: shift || undefined,
       shiftName: shiftName || "General",
+      fatherName: fatherName || undefined,
+      motherName: motherName || undefined,
+      spouseName: spouseName || undefined,
+      maritalStatus: maritalStatus || undefined,
+      bloodGroup: bloodGroup || undefined,
+      nationality: nationality || undefined,
+      religion: religion || undefined,
+      personalEmail: personalEmail || undefined,
+      alternatePhone: alternatePhone || undefined,
+      qualification: qualification || undefined,
+      totalExperience: totalExperience || undefined,
+      previousCompany: previousCompany || undefined,
     });
 
     await logAudit(req, "employee_created", "Employee", employee._id, {
@@ -226,37 +260,19 @@ const updateEmployee = [
     }
 
     const allowed = [
-      "firstName",
-      "lastName",
-      "designation",
-      "phone",
-      "department",
-      "employmentType",
-      "salary",
-      "bankAccount",
-      "accountHolderName",
-      "ifscCode",
-      "bankName",
-      "panNumber",
-      "aadharNumber",
-      "uanNumber",
-      "esicNumber",
-      "address",
-      "emergencyContact",
-      "gender",
-      "dateOfBirth",
-      "reportingTo",
-      "avatar",
-      "status",
-      "exitDate",
-      "biometricUserId",
-      "shift",
-      "shiftName",
-      "workDaysPerWeek",
-      "workScheduleType",
-      "customWorkDays",
-      "otEnabled",
-      "otRate",
+      "firstName", "lastName", "designation", "phone", "department",
+      "employmentType", "salary", "bankAccount", "accountHolderName",
+      "ifscCode", "bankName", "panNumber", "aadharNumber",
+      "uanNumber", "esicNumber", "address", "emergencyContact",
+      "gender", "dateOfBirth", "reportingTo", "avatar", "status", "exitDate",
+      "biometricUserId", "shift", "shiftName", "workDaysPerWeek",
+      "workScheduleType", "customWorkDays", "otEnabled", "otRate",
+      // Personal details
+      "fatherName", "motherName", "spouseName", "maritalStatus",
+      "bloodGroup", "nationality", "religion", "personalEmail",
+      "alternatePhone", "permanentAddress", "city", "state", "pincode",
+      // Professional background
+      "qualification", "totalExperience", "previousCompany",
     ];
 
     // Fields that hold ObjectId references — empty string must become undefined,
@@ -461,6 +477,64 @@ const bulkImportEmployees = asyncHandler(async (req, res) => {
   res.json({ success: true, imported, failed, results });
 });
 
+// POST /employees/:id/documents  (multipart via multer)
+const uploadEmployeeDocuments = asyncHandler(async (req, res) => {
+  const employee = await Employee.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!employee) { res.status(404); throw new Error("Employee not found"); }
+
+  const files = req.files || {};
+  const saveDoc = async (field, empField) => {
+    if (!files[field]?.[0]) return;
+    if (employee[empField]) {
+      const old = path.join(__dirname, "../", employee[empField]);
+      if (fs.existsSync(old)) fs.unlinkSync(old);
+    }
+    employee[empField] = path.relative(
+      path.join(__dirname, "../"),
+      files[field][0].path,
+    ).replace(/\\/g, "/");
+  };
+
+  await saveDoc("aadhaarDoc", "aadhaarDoc");
+  await saveDoc("panDoc",     "panDoc");
+  await saveDoc("resumeDoc",  "resumeDoc");
+
+  await employee.save();
+  res.json({
+    success: true,
+    data: {
+      aadhaarDoc: employee.aadhaarDoc || null,
+      panDoc:     employee.panDoc     || null,
+      resumeDoc:  employee.resumeDoc  || null,
+    },
+  });
+});
+
+// GET /employees/:id/documents/:type  — protected file download
+const downloadEmployeeDocument = asyncHandler(async (req, res) => {
+  const employee = await Employee.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!employee) { res.status(404); throw new Error("Employee not found"); }
+
+  const { type } = req.params;
+  const docPath = type === "aadhaar" ? employee.aadhaarDoc
+               : type === "pan"     ? employee.panDoc
+               : type === "resume"  ? employee.resumeDoc
+               : null;
+
+  if (!docPath) { res.status(404); throw new Error("Document not found"); }
+
+  const abs = path.join(__dirname, "../", docPath);
+  if (!fs.existsSync(abs)) { res.status(404); throw new Error("File missing on server"); }
+
+  res.download(abs);
+});
+
 module.exports = {
   getEmployees,
   getEmployee,
@@ -470,4 +544,6 @@ module.exports = {
   deleteEmployee,
   resetEmployeePassword,
   bulkImportEmployees,
+  uploadEmployeeDocuments,
+  downloadEmployeeDocument,
 };

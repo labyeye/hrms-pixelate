@@ -32,6 +32,8 @@ import NfcManagerScreen from '../screens/NfcManagerScreen';
 import PayrollSettingsScreen from '../screens/PayrollSettingsScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import AuditLogScreen from '../screens/AuditLogScreen';
+import SupportScreen from '../screens/SupportScreen';
+import DocumentsScreen from '../screens/DocumentsScreen';
 
 const Tab = createBottomTabNavigator();
 const MoreStack = createNativeStackNavigator();
@@ -67,6 +69,8 @@ function MoreNavigator() {
       />
       <MoreStack.Screen name="Notifications" component={NotificationsScreen} />
       <MoreStack.Screen name="AuditLog" component={AuditLogScreen} />
+      <MoreStack.Screen name="Support" component={SupportScreen} />
+      <MoreStack.Screen name="Documents" component={DocumentsScreen} />
     </MoreStack.Navigator>
   );
 }

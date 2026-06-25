@@ -29,6 +29,8 @@ import {
   Bell,
   ShieldAlert,
   Shield,
+  LifeBuoy,
+  FolderOpen,
 } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { C } from '../theme';
@@ -75,6 +77,12 @@ const MENU_ITEMS = [
     label: 'Reports',
     icon: BarChart2,
     desc: 'Analytics & export data',
+  },
+  {
+    key: 'Documents',
+    label: 'Document Vault',
+    icon: FolderOpen,
+    desc: 'Employee documents & files',
   },
   {
     key: 'Credentials',
@@ -130,9 +138,15 @@ const MENU_ITEMS = [
     icon: CreditCard,
     desc: 'Subscription & invoices',
   },
+  {
+    key: 'Support',
+    label: 'Support',
+    icon: LifeBuoy,
+    desc: 'Report issues & track tickets',
+  },
 ];
 
-const EMPLOYEE_MENU_KEYS = new Set(['Payroll', 'Holidays', 'Notifications']);
+const EMPLOYEE_MENU_KEYS = new Set(['Payroll', 'Holidays', 'Notifications', 'Support']);
 
 export default function MoreScreen({ navigation }: any) {
   const { user, logout } = useAuth();

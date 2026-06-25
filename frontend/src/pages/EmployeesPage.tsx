@@ -88,6 +88,10 @@ interface EmployeeFormData {
   panNumber: string;
   aadharNumber: string;
   address: string;
+  permanentAddress: string;
+  city: string;
+  state: string;
+  pincode: string;
   dateOfBirth: string;
   emergencyContact: string;
   bankAccount: string;
@@ -104,6 +108,20 @@ interface EmployeeFormData {
   otEnabled: boolean;
   shift: string;
   shiftName: string;
+  // Personal details
+  fatherName: string;
+  motherName: string;
+  spouseName: string;
+  maritalStatus: string;
+  bloodGroup: string;
+  nationality: string;
+  religion: string;
+  personalEmail: string;
+  alternatePhone: string;
+  // Professional background
+  qualification: string;
+  totalExperience: string;
+  previousCompany: string;
 }
 
 const EMPTY_FORM: EmployeeFormData = {
@@ -123,6 +141,10 @@ const EMPTY_FORM: EmployeeFormData = {
   panNumber: "",
   aadharNumber: "",
   address: "",
+  permanentAddress: "",
+  city: "",
+  state: "",
+  pincode: "",
   dateOfBirth: "",
   emergencyContact: "",
   bankAccount: "",
@@ -139,6 +161,18 @@ const EMPTY_FORM: EmployeeFormData = {
   otEnabled: false,
   shift: "",
   shiftName: "",
+  fatherName: "",
+  motherName: "",
+  spouseName: "",
+  maritalStatus: "",
+  bloodGroup: "",
+  nationality: "Indian",
+  religion: "",
+  personalEmail: "",
+  alternatePhone: "",
+  qualification: "",
+  totalExperience: "",
+  previousCompany: "",
 };
 
 export default function EmployeesPage() {
@@ -161,6 +195,7 @@ export default function EmployeesPage() {
   const [formTab, setFormTab] = useState(0);
   const [editEmp, setEditEmp] = useState<Employee | null>(null);
   const [form, setForm] = useState<EmployeeFormData>(EMPTY_FORM);
+  const [docFiles, setDocFiles] = useState<{ aadhaarDoc?: File; panDoc?: File }>({});
   const [saving, setSaving] = useState(false);
   const [viewEmp, setViewEmp] = useState<Employee | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -245,6 +280,7 @@ export default function EmployeesPage() {
   const openAdd = () => {
     setEditEmp(null);
     setForm(EMPTY_FORM);
+    setDocFiles({});
     setAvatarPreview(null);
     setFormTab(0);
     setShowModal(true);
@@ -286,7 +322,24 @@ export default function EmployeesPage() {
       otEnabled: (emp as any).otEnabled === true,
       shift: (emp as any).shift?._id || (emp as any).shift || "",
       shiftName: (emp as any).shiftName || "",
+      permanentAddress: (emp as any).permanentAddress || "",
+      city: (emp as any).city || "",
+      state: (emp as any).state || "",
+      pincode: (emp as any).pincode || "",
+      fatherName: (emp as any).fatherName || "",
+      motherName: (emp as any).motherName || "",
+      spouseName: (emp as any).spouseName || "",
+      maritalStatus: (emp as any).maritalStatus || "",
+      bloodGroup: (emp as any).bloodGroup || "",
+      nationality: (emp as any).nationality || "Indian",
+      religion: (emp as any).religion || "",
+      personalEmail: (emp as any).personalEmail || "",
+      alternatePhone: (emp as any).alternatePhone || "",
+      qualification: (emp as any).qualification || "",
+      totalExperience: (emp as any).totalExperience || "",
+      previousCompany: (emp as any).previousCompany || "",
     });
+    setDocFiles({});
     setFormTab(0);
     setShowModal(true);
   };
@@ -307,11 +360,20 @@ export default function EmployeesPage() {
           form.workScheduleType === "custom" ? form.customWorkDays : [],
         otRate: Number(form.otRate) || 0,
       };
+      let savedId = editEmp?._id;
       if (editEmp) {
         await employeeAPI.update(editEmp._id, payload);
       } else {
-        await employeeAPI.create(payload);
+        const res = await employeeAPI.create(payload);
+        savedId = res.data?._id;
       }
+
+      // Upload documents if any were selected
+      if (savedId && (docFiles.aadhaarDoc || docFiles.panDoc)) {
+        await employeeAPI.uploadDocuments(savedId, docFiles).catch(() => {});
+        setDocFiles({});
+      }
+
       setActionModal({
         show: true,
         type: "success",
@@ -1823,17 +1885,163 @@ export default function EmployeesPage() {
                         </div>
                         <div className="col-span-2">
                           <label className="block text-xs font-bold text-black mb-1">
-                            Address
+                            Current Address
                           </label>
                           <textarea
                             value={form.address}
-                            onChange={(e) =>
-                              setForm({ ...form, address: e.target.value })
-                            }
+                            onChange={(e) => setForm({ ...form, address: e.target.value })}
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 resize-none"
                             rows={2}
-                            placeholder="Full residential address"
+                            placeholder="Current residential address"
                           />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Permanent Address <span className="text-gray-400 font-normal">(if different)</span>
+                          </label>
+                          <textarea
+                            value={form.permanentAddress}
+                            onChange={(e) => setForm({ ...form, permanentAddress: e.target.value })}
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 resize-none"
+                            rows={2}
+                            placeholder="Permanent address"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">City</label>
+                          <input type="text" value={form.city}
+                            onChange={(e) => setForm({ ...form, city: e.target.value })}
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="City" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">State</label>
+                          <input type="text" value={form.state}
+                            onChange={(e) => setForm({ ...form, state: e.target.value })}
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="State" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">Pincode</label>
+                          <input type="text" value={form.pincode}
+                            onChange={(e) => setForm({ ...form, pincode: e.target.value.replace(/\D/g,"").slice(0,6) })}
+                            maxLength={6}
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="6-digit pincode" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ── Personal Details ─────────────────────────── */}
+                    <div className="border-t-2 border-black pt-5">
+                      <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-4">
+                        Personal Details
+                      </p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">Father's Name</label>
+                          <input type="text" value={form.fatherName}
+                            onChange={(e) => setForm({ ...form, fatherName: e.target.value })}
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="Father's full name" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">Mother's Name</label>
+                          <input type="text" value={form.motherName}
+                            onChange={(e) => setForm({ ...form, motherName: e.target.value })}
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="Mother's full name" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">Marital Status</label>
+                          <select value={form.maritalStatus}
+                            onChange={(e) => setForm({ ...form, maritalStatus: e.target.value })}
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 bg-white">
+                            <option value="">Select</option>
+                            <option value="single">Single</option>
+                            <option value="married">Married</option>
+                            <option value="divorced">Divorced</option>
+                            <option value="widowed">Widowed</option>
+                          </select>
+                        </div>
+                        {form.maritalStatus === "married" && (
+                          <div>
+                            <label className="block text-xs font-bold text-black mb-1">Spouse Name</label>
+                            <input type="text" value={form.spouseName}
+                              onChange={(e) => setForm({ ...form, spouseName: e.target.value })}
+                              className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                              placeholder="Spouse's full name" />
+                          </div>
+                        )}
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">Blood Group</label>
+                          <select value={form.bloodGroup}
+                            onChange={(e) => setForm({ ...form, bloodGroup: e.target.value })}
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 bg-white">
+                            <option value="">Select</option>
+                            {["A+","A-","B+","B-","AB+","AB-","O+","O-"].map((g) => (
+                              <option key={g} value={g}>{g}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">Nationality</label>
+                          <input type="text" value={form.nationality}
+                            onChange={(e) => setForm({ ...form, nationality: e.target.value })}
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="Indian" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">Religion</label>
+                          <input type="text" value={form.religion}
+                            onChange={(e) => setForm({ ...form, religion: e.target.value })}
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="Optional" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">Personal Email</label>
+                          <input type="email" value={form.personalEmail}
+                            onChange={(e) => setForm({ ...form, personalEmail: e.target.value })}
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="personal@gmail.com" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">Alternate Phone</label>
+                          <input type="tel" value={form.alternatePhone}
+                            onChange={(e) => setForm({ ...form, alternatePhone: e.target.value.replace(/\D/g,"").slice(0,10) })}
+                            maxLength={10}
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="Alternate 10-digit number" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ── Professional Background ───────────────────── */}
+                    <div className="border-t-2 border-black pt-5">
+                      <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-4">
+                        Professional Background
+                      </p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">Highest Qualification</label>
+                          <input type="text" value={form.qualification}
+                            onChange={(e) => setForm({ ...form, qualification: e.target.value })}
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="e.g. B.Com, MBA, 12th Pass" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">Total Experience</label>
+                          <input type="text" value={form.totalExperience}
+                            onChange={(e) => setForm({ ...form, totalExperience: e.target.value })}
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="e.g. 3 years 2 months" />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-xs font-bold text-black mb-1">Previous Company</label>
+                          <input type="text" value={form.previousCompany}
+                            onChange={(e) => setForm({ ...form, previousCompany: e.target.value })}
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                            placeholder="Previous employer name" />
                         </div>
                       </div>
                     </div>
@@ -1843,6 +2051,7 @@ export default function EmployeesPage() {
                         Identity Documents
                       </p>
                       <div className="grid grid-cols-2 gap-4">
+                        {/* PAN Number */}
                         <div>
                           <label className="block text-xs font-bold text-black mb-1">
                             PAN Number
@@ -1851,21 +2060,63 @@ export default function EmployeesPage() {
                             type="text"
                             value={form.panNumber}
                             onChange={(e) =>
-                              setForm({
-                                ...form,
-                                panNumber: e.target.value
-                                  .toUpperCase()
-                                  .slice(0, 10),
-                              })
+                              setForm({ ...form, panNumber: e.target.value.toUpperCase().slice(0, 10) })
                             }
                             maxLength={10}
-                            minLength={10}
                             pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}"
                             title="PAN format: 5 letters + 4 digits + 1 letter (e.g. ABCDE1234F)"
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 uppercase"
                             placeholder="ABCDE1234F"
                           />
                         </div>
+
+                        {/* PAN Document upload */}
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">
+                            PAN Document <span className="text-gray-400 font-normal">(optional, PDF/JPG/PNG, max 5MB)</span>
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <label className="cursor-pointer flex-1">
+                              <input
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  if (f) setDocFiles((prev) => ({ ...prev, panDoc: f }));
+                                }}
+                              />
+                              <div className="border-2 border-dashed border-gray-300 hover:border-[#024BAB] px-3 py-2 text-xs text-gray-500 hover:text-[#024BAB] transition-colors text-center">
+                                {docFiles.panDoc
+                                  ? docFiles.panDoc.name
+                                  : editEmp && (editEmp as any).panDoc
+                                  ? "✅ Uploaded — click to replace"
+                                  : "Click to upload PAN document"}
+                              </div>
+                            </label>
+                            {(docFiles.panDoc || (editEmp && (editEmp as any).panDoc)) && (
+                              <div className="flex gap-1">
+                                {docFiles.panDoc && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setDocFiles((prev) => { const n = {...prev}; delete n.panDoc; return n; })}
+                                    className="text-red-500 text-xs border border-red-300 px-1.5 py-1 hover:bg-red-50"
+                                  >✕</button>
+                                )}
+                                {editEmp && (editEmp as any).panDoc && !docFiles.panDoc && (
+                                  <a
+                                    href={employeeAPI.getDocumentUrl(editEmp._id, "pan")}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-[#024BAB] text-xs border border-[#024BAB] px-1.5 py-1 hover:bg-[#024BAB]/10"
+                                  >View</a>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Aadhaar Number */}
                         <div>
                           <label className="block text-xs font-bold text-black mb-1">
                             Aadhar Number
@@ -1874,20 +2125,105 @@ export default function EmployeesPage() {
                             type="text"
                             value={form.aadharNumber}
                             onChange={(e) =>
-                              setForm({
-                                ...form,
-                                aadharNumber: e.target.value
-                                  .replace(/\D/g, "")
-                                  .slice(0, 12),
-                              })
+                              setForm({ ...form, aadharNumber: e.target.value.replace(/\D/g, "").slice(0, 12) })
                             }
                             maxLength={12}
-                            minLength={12}
                             pattern="\d{12}"
                             title="Aadhar must be exactly 12 digits"
                             className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
                             placeholder="12-digit Aadhar number"
                           />
+                        </div>
+
+                        {/* Aadhaar Document upload */}
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Aadhaar Document <span className="text-gray-400 font-normal">(optional, PDF/JPG/PNG, max 5MB)</span>
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <label className="cursor-pointer flex-1">
+                              <input
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  if (f) setDocFiles((prev) => ({ ...prev, aadhaarDoc: f }));
+                                }}
+                              />
+                              <div className="border-2 border-dashed border-gray-300 hover:border-[#024BAB] px-3 py-2 text-xs text-gray-500 hover:text-[#024BAB] transition-colors text-center">
+                                {docFiles.aadhaarDoc
+                                  ? docFiles.aadhaarDoc.name
+                                  : editEmp && (editEmp as any).aadhaarDoc
+                                  ? "✅ Uploaded — click to replace"
+                                  : "Click to upload Aadhaar document"}
+                              </div>
+                            </label>
+                            {(docFiles.aadhaarDoc || (editEmp && (editEmp as any).aadhaarDoc)) && (
+                              <div className="flex gap-1">
+                                {docFiles.aadhaarDoc && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setDocFiles((prev) => { const n = {...prev}; delete n.aadhaarDoc; return n; })}
+                                    className="text-red-500 text-xs border border-red-300 px-1.5 py-1 hover:bg-red-50"
+                                  >✕</button>
+                                )}
+                                {editEmp && (editEmp as any).aadhaarDoc && !docFiles.aadhaarDoc && (
+                                  <a
+                                    href={employeeAPI.getDocumentUrl(editEmp._id, "aadhaar")}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-[#024BAB] text-xs border border-[#024BAB] px-1.5 py-1 hover:bg-[#024BAB]/10"
+                                  >View</a>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Resume upload — full width */}
+                        <div className="col-span-2">
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Resume / CV <span className="text-gray-400 font-normal">(optional, PDF/DOC, max 5MB)</span>
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <label className="cursor-pointer flex-1">
+                              <input
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  if (f) setDocFiles((prev) => ({ ...prev, resumeDoc: f }));
+                                }}
+                              />
+                              <div className="border-2 border-dashed border-gray-300 hover:border-[#024BAB] px-3 py-2 text-xs text-gray-500 hover:text-[#024BAB] transition-colors text-center">
+                                {docFiles.resumeDoc
+                                  ? docFiles.resumeDoc.name
+                                  : editEmp && (editEmp as any).resumeDoc
+                                  ? "✅ Uploaded — click to replace"
+                                  : "Click to upload Resume / CV"}
+                              </div>
+                            </label>
+                            {(docFiles.resumeDoc || (editEmp && (editEmp as any).resumeDoc)) && (
+                              <div className="flex gap-1">
+                                {docFiles.resumeDoc && (
+                                  <button type="button"
+                                    onClick={() => setDocFiles((prev) => { const n = {...prev}; delete n.resumeDoc; return n; })}
+                                    className="text-red-500 text-xs border border-red-300 px-1.5 py-1 hover:bg-red-50"
+                                  >✕</button>
+                                )}
+                                {editEmp && (editEmp as any).resumeDoc && !docFiles.resumeDoc && (
+                                  <a
+                                    href={employeeAPI.getDocumentUrl(editEmp._id, "resume")}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-[#024BAB] text-xs border border-[#024BAB] px-1.5 py-1 hover:bg-[#024BAB]/10"
+                                  >View</a>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -2364,21 +2700,25 @@ export default function EmployeesPage() {
                   {[
                     ["Email", viewEmp.email],
                     ["Phone", viewEmp.phone || "—"],
+                    ["Alt Phone", (viewEmp as any).alternatePhone || "—"],
+                    ["Personal Email", (viewEmp as any).personalEmail || "—"],
                     ["Gender", viewEmp.gender || "—"],
-                    [
-                      "Date of Birth",
-                      (viewEmp as any).dateOfBirth
-                        ? formatDate((viewEmp as any).dateOfBirth)
-                        : "—",
-                    ],
-                    [
-                      "Emergency Contact",
-                      (viewEmp as any).emergencyContact || "—",
-                    ],
-                    ["Address", (viewEmp as any).address || "—"],
+                    ["Date of Birth", (viewEmp as any).dateOfBirth ? formatDate((viewEmp as any).dateOfBirth) : "—"],
+                    ["Blood Group", (viewEmp as any).bloodGroup || "—"],
+                    ["Marital Status", (viewEmp as any).maritalStatus || "—"],
+                    ["Father", (viewEmp as any).fatherName || "—"],
+                    ["Mother", (viewEmp as any).motherName || "—"],
+                    ...(((viewEmp as any).maritalStatus === "married") ? [["Spouse", (viewEmp as any).spouseName || "—"]] : []),
+                    ["Nationality", (viewEmp as any).nationality || "—"],
+                    ["Religion", (viewEmp as any).religion || "—"],
+                    ["Emergency Contact", (viewEmp as any).emergencyContact || "—"],
+                    ["Current Address", (viewEmp as any).address || "—"],
+                    ["Permanent Address", (viewEmp as any).permanentAddress || "—"],
+                    ["City / State", [(viewEmp as any).city, (viewEmp as any).state].filter(Boolean).join(", ") || "—"],
+                    ["Pincode", (viewEmp as any).pincode || "—"],
                   ].map(([label, value]) => (
                     <div
-                      key={label}
+                      key={label as string}
                       className="flex items-start justify-between gap-2 border-b border-black/10 pb-2 last:border-0 last:pb-0"
                     >
                       <span className="text-[10px] font-black text-muted-foreground uppercase shrink-0">
@@ -2426,8 +2766,53 @@ export default function EmployeesPage() {
                       </span>
                     </div>
                   ))}
+
+                  {/* Document links */}
+                  {((viewEmp as any).panDoc || (viewEmp as any).aadhaarDoc || (viewEmp as any).resumeDoc) && (
+                    <div className="pt-2 flex flex-wrap gap-2">
+                      {(viewEmp as any).panDoc && (
+                        <a href={employeeAPI.getDocumentUrl(viewEmp._id, "pan")} target="_blank" rel="noreferrer"
+                          className="text-[10px] font-black border-2 border-[#024BAB] text-[#024BAB] px-2 py-1 hover:bg-[#024BAB]/10">
+                          📄 PAN Doc
+                        </a>
+                      )}
+                      {(viewEmp as any).aadhaarDoc && (
+                        <a href={employeeAPI.getDocumentUrl(viewEmp._id, "aadhaar")} target="_blank" rel="noreferrer"
+                          className="text-[10px] font-black border-2 border-[#024BAB] text-[#024BAB] px-2 py-1 hover:bg-[#024BAB]/10">
+                          📄 Aadhaar Doc
+                        </a>
+                      )}
+                      {(viewEmp as any).resumeDoc && (
+                        <a href={employeeAPI.getDocumentUrl(viewEmp._id, "resume")} target="_blank" rel="noreferrer"
+                          className="text-[10px] font-black border-2 border-[#00C48C] text-[#00C48C] px-2 py-1 hover:bg-[#00C48C]/10">
+                          📄 Resume
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
+
+              {/* Professional Background */}
+              {((viewEmp as any).qualification || (viewEmp as any).totalExperience || (viewEmp as any).previousCompany) && (
+                <div className="border-2 border-black bg-white">
+                  <div className="flex items-center gap-2 px-4 py-3 border-b-2 border-black bg-[#024BAB]/5">
+                    <span className="text-xs font-black uppercase tracking-wider text-black">Professional Background</span>
+                  </div>
+                  <div className="p-4 space-y-2">
+                    {[
+                      ["Qualification", (viewEmp as any).qualification],
+                      ["Experience", (viewEmp as any).totalExperience],
+                      ["Previous Company", (viewEmp as any).previousCompany],
+                    ].filter(([, v]) => v).map(([label, value]) => (
+                      <div key={label as string} className="flex items-start justify-between gap-2 border-b border-black/10 pb-2 last:border-0 last:pb-0">
+                        <span className="text-[10px] font-black text-muted-foreground uppercase shrink-0">{label}</span>
+                        <span className="text-xs font-bold text-black text-right">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

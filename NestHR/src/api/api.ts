@@ -466,6 +466,24 @@ export const auditAPI = {
   getLogs: (params?: Record<string, string>) => request(`/audit${qs(params)}`),
 };
 
+export const supportAPI = {
+  getAll: () => request('/support'),
+  getOne: (id: string) => request(`/support/${id}`),
+  create: (body: { subject: string; issueType: string; priority: string; description: string }) =>
+    request('/support', { method: 'POST', body: JSON.stringify(body) }),
+};
+
+export const documentAPI = {
+  getAll: (params?: Record<string, string>) =>
+    request(`/documents${qs(params)}`),
+  delete: (id: string) => request(`/documents/${id}`, { method: 'DELETE' }),
+};
+
+export const payrollPreviewAPI = {
+  preview: (body: { month: number; year: number; employeeIds?: string[] }) =>
+    request('/payroll/preview', { method: 'POST', body: JSON.stringify(body) }),
+};
+
 // ── Local notification store ──────────────────────────────────────────────────
 export interface LocalNotification {
   id: string;

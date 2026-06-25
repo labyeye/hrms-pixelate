@@ -37,6 +37,8 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ExitManagementPage from "./pages/ExitManagementPage";
 import AuditLogPage from "./pages/AuditLogPage";
+import SupportPage from "./pages/SupportPage";
+import DocumentVaultPage from "./pages/DocumentVaultPage";
 import nesthrlogo from "../assets/nesthr.png";
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
@@ -329,6 +331,22 @@ function AppRoutes() {
         }
       />
       {}
+      <Route
+        path="/support"
+        element={
+          <ProtectedRoute>
+            <SupportPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/documents"
+        element={
+          <ProtectedRoute>
+            <DocumentVaultPage />
+          </ProtectedRoute>
+        }
+      />
       <Route path="/device/:token" element={<BiometricDevicePage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>

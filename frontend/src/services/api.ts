@@ -101,6 +101,20 @@ export const employeeAPI = {
       method: "POST",
       body: JSON.stringify({ employees }),
     }),
+  uploadDocuments: (id: string, files: { aadhaarDoc?: File; panDoc?: File; resumeDoc?: File }) => {
+    const form = new FormData();
+    if (files.aadhaarDoc) form.append("aadhaarDoc", files.aadhaarDoc);
+    if (files.panDoc)     form.append("panDoc",     files.panDoc);
+    if (files.resumeDoc)  form.append("resumeDoc",  files.resumeDoc);
+    const token = getToken();
+    return fetch(`${BASE_URL}/employees/${id}/documents`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    }).then((r) => r.json());
+  },
+  getDocumentUrl: (id: string, type: "aadhaar" | "pan" | "resume") =>
+    `${BASE_URL}/employees/${id}/documents/${type}`,
 };
 
 export const attendanceAPI = {
@@ -149,11 +163,17 @@ export const payrollAPI = {
     request("/payroll/process", { method: "POST", body: JSON.stringify(body) }),
   update: (id: string, body: object) =>
     request(`/payroll/${id}`, { method: "PUT", body: JSON.stringify(body) }),
-  markPaid: (id: string) => request(`/payroll/${id}/paid`, { method: "PUT" }),
-  bulkMarkPaid: (month: number, year: number) =>
+  markPaid: (id: string, paymentMode?: string) =>
+    request(`/payroll/${id}/paid`, { method: "PUT", body: JSON.stringify({ paymentMode }) }),
+  bulkMarkPaid: (month: number, year: number, paymentMode?: string) =>
     request("/payroll/bulk-paid", {
       method: "POST",
-      body: JSON.stringify({ month, year }),
+      body: JSON.stringify({ month, year, paymentMode }),
+    }),
+  markSlipReceived: (id: string, status: "received" | "not_received") =>
+    request(`/payroll/${id}/slip-received`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
     }),
 };
 
@@ -214,6 +234,20 @@ export const settingsAPI = {
       method: "PUT",
       body: JSON.stringify(settings),
     }),
+  uploadLogo: (file: File) => {
+    const token = getToken();
+    const form = new FormData();
+    form.append("logo", file);
+    return fetch(`${BASE_URL}/settings/logo`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    }).then(async (res) => {
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Upload failed");
+      return data as { success: boolean; logoUrl: string; data: any };
+    });
+  },
 };
 
 export const billingAPI = {
@@ -556,4 +590,27 @@ export const auditAPI = {
     const q = params ? "?" + new URLSearchParams(params).toString() : "";
     return request(`/audit${q}`);
   },
+};
+
+export const supportAPI = {
+  getAll: () => request("/support"),
+  getOne: (id: string) => request(`/support/${id}`),
+  create: (body: { subject: string; issueType: string; priority: string; description: string }) =>
+    request("/support", { method: "POST", body: JSON.stringify(body) }),
+};
+
+export const documentAPI = {
+  getAll: (params?: Record<string, string>) => {
+    const q = params ? "?" + new URLSearchParams(params).toString() : "";
+    return request(`/documents${q}`);
+  },
+  upload: (body: { employeeId?: string; name: string; docType: string; mimeType: string; fileData: string }) =>
+    request("/documents", { method: "POST", body: JSON.stringify(body) }),
+  download: (id: string) => request(`/documents/${id}/download`),
+  delete: (id: string) => request(`/documents/${id}`, { method: "DELETE" }),
+};
+
+export const payrollPreviewAPI = {
+  preview: (body: { month: number; year: number; employeeIds?: string[] }) =>
+    request("/payroll/preview", { method: "POST", body: JSON.stringify(body) }),
 };

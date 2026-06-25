@@ -3,9 +3,11 @@ const {
   getPayrolls,
   getMyPayrolls,
   processPayroll,
+  previewPayroll,
   updatePayroll,
   markPaid,
   bulkMarkPaid,
+  markSlipReceived,
 } = require("../controllers/payrollController");
 const { protect, authorize } = require("../middleware/auth");
 const router = express.Router();
@@ -16,6 +18,12 @@ router.get(
   protect,
   authorize("super_admin", "hr_manager", "hr_executive"),
   getPayrolls,
+);
+router.post(
+  "/preview",
+  protect,
+  authorize("super_admin", "hr_manager"),
+  previewPayroll,
 );
 router.post(
   "/process",
@@ -40,6 +48,12 @@ router.post(
   protect,
   authorize("super_admin", "hr_manager"),
   bulkMarkPaid,
+);
+router.patch(
+  "/:id/slip-received",
+  protect,
+  authorize("super_admin", "hr_manager", "hr_executive"),
+  markSlipReceived,
 );
 
 module.exports = router;

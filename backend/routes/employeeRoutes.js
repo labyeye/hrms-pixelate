@@ -8,8 +8,11 @@ const {
   deleteEmployee,
   resetEmployeePassword,
   bulkImportEmployees,
+  uploadEmployeeDocuments,
+  downloadEmployeeDocument,
 } = require("../controllers/employeeController");
 const { protect, authorize } = require("../middleware/auth");
+const { uploadEmployeeDocs } = require("../middleware/upload");
 const router = express.Router();
 
 router.get("/me", protect, getMyEmployee);
@@ -44,6 +47,21 @@ router.post(
   protect,
   authorize("super_admin", "hr_manager", "hr_executive"),
   resetEmployeePassword,
+);
+
+router.post(
+  "/:id/documents",
+  protect,
+  authorize("super_admin", "hr_manager", "hr_executive"),
+  uploadEmployeeDocs,
+  uploadEmployeeDocuments,
+);
+
+router.get(
+  "/:id/documents/:type",
+  protect,
+  authorize("super_admin", "hr_manager", "hr_executive"),
+  downloadEmployeeDocument,
 );
 
 module.exports = router;

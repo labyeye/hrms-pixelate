@@ -39,6 +39,7 @@ const leaveSchema = new mongoose.Schema(
     rejectionReason: { type: String },
     isHalfDay: { type: Boolean, default: false },
     halfDayType: { type: String, enum: ["first_half", "second_half"] },
+    deductSalary: { type: Boolean, default: true }, // true = unpaid (deduct), false = paid leave (no deduction)
   },
   { timestamps: true },
 );

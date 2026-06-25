@@ -7,6 +7,8 @@ const Transaction = require("../models/Transaction");
 const Loan = require("../models/Loan");
 const { safePagination } = require("../middleware/validate");
 const { sendSalaryPaid } = require("../services/whatsappService");
+const { generatePayslipPdf } = require("../services/pdfService");
+const Setting = require("../models/Setting");
 
 const PAYROLL_STATUS = ["processed", "paid", "cancelled"];
 
@@ -181,6 +183,14 @@ const processPayroll = asyncHandler(async (req, res) => {
       if (a.status === "holiday" || a.status === "weekend") continue;
       if (a.status === "on_leave") {
         leaveDays++;
+        // If salary should be deducted for this leave (unpaid), count as absent
+        if (a.leaveDeductSalary !== false) {
+          absentCount++;
+        } else {
+          // Paid leave: count as present with full shift hours
+          presentDays++;
+          totalWorkHours += shiftHoursPerDay;
+        }
         continue;
       }
       if (a.status === "absent") {
@@ -414,7 +424,9 @@ const processPayroll = asyncHandler(async (req, res) => {
     }
   }
 
-  if (payrolls.length) await Payroll.insertMany(payrolls);
+  if (payrolls.length) {
+    await Payroll.insertMany(payrolls);
+  }
   res.json({ success: true, message: `${payrolls.length} payrolls processed` });
 });
 
@@ -452,10 +464,12 @@ const updatePayroll = asyncHandler(async (req, res) => {
 });
 
 const markPaid = asyncHandler(async (req, res) => {
+  const { paymentMode } = req.body;
+
   const payroll = await Payroll.findOne({
     _id: req.params.id,
     company: req.user.company,
-  }).populate("employee", "firstName lastName phone");
+  }).populate("employee", "firstName lastName employeeId designation phone salary");
   if (!payroll) {
     res.status(404);
     throw new Error("Payroll not found");
@@ -463,48 +477,54 @@ const markPaid = asyncHandler(async (req, res) => {
 
   payroll.status = "paid";
   payroll.paidAt = new Date();
+  if (paymentMode) payroll.paymentMode = paymentMode;
   await payroll.save();
 
   if (payroll.employee?.phone) {
-    try {
-      const months = [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-      ];
-      const period = `${months[(payroll.month || 1) - 1]} ${payroll.year}`;
-      await sendSalaryPaid(
-        payroll.employee.phone,
-        {
-          firstName: payroll.employee.firstName,
-          period,
-          netSalary: payroll.netSalary,
-        },
-        req.user.company,
-      );
-    } catch (err) {
-      console.error("[Payroll] WA sendSalaryPaid failed:", err.message);
-    }
+    (async () => {
+      try {
+        const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        const period = `${months[(payroll.month || 1) - 1]} ${payroll.year}`;
+        const companySetting = await Setting.findOne({ company: req.user.company })
+          .select("companyName companyAddress logo").lean();
+        const companyInfo = {
+          name:    companySetting?.companyName    || "",
+          address: companySetting?.companyAddress || "",
+          logo:    companySetting?.logo           || "",
+        };
+        const pdfBuffer = await generatePayslipPdf(payroll.toObject(), payroll.employee, companyInfo);
+        await sendSalaryPaid(
+          payroll.employee.phone,
+          {
+            firstName: payroll.employee.firstName,
+            period,
+            basicSalary:      payroll.basicSalary,
+            allowances:       payroll.otherAllowances || 0,
+            otPay:            payroll.otPay || 0,
+            grossSalary:      payroll.grossSalary,
+            totalDeductions:  payroll.totalDeductions,
+            netSalary:        payroll.netSalary,
+            presentDays:      payroll.presentDays,
+            workingDays:      payroll.workingDays,
+            paymentMode:      paymentMode || "Bank Transfer",
+            paidOn:           payroll.paidAt,
+          },
+          req.user.company,
+          pdfBuffer,
+        );
+      } catch (err) {
+        console.error("[Payroll] WA sendSalaryPaid failed:", err.message);
+      }
+    })();
   } else {
-    console.warn(
-      `[Payroll] No phone for employee ${payroll.employee?._id} — WA skipped`,
-    );
+    console.warn(`[Payroll] No phone for employee ${payroll.employee?._id} — WA skipped`);
   }
 
   res.json({ success: true, data: payroll });
 });
 
 const bulkMarkPaid = asyncHandler(async (req, res) => {
-  const { month, year } = req.body;
+  const { month, year, paymentMode } = req.body;
   const m = parseInt(month),
     y = parseInt(year);
 
@@ -513,48 +533,62 @@ const bulkMarkPaid = asyncHandler(async (req, res) => {
     month: m,
     year: y,
     status: "processed",
-  }).populate("employee", "firstName lastName phone");
+  }).populate("employee", "firstName lastName employeeId designation phone salary");
 
   if (!payrolls.length) {
     return res.json({ success: true, message: "0 payrolls marked as paid" });
   }
 
   const paidAt = new Date();
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const period = `${months[m - 1]} ${y}`;
 
   await Payroll.updateMany(
     { _id: { $in: payrolls.map((p) => p._id) } },
-    { $set: { status: "paid", paidAt } },
+    { $set: { status: "paid", paidAt, ...(paymentMode ? { paymentMode } : {}) } },
   );
 
-  // Fire WA notifications for each employee (non-blocking)
-  for (const payroll of payrolls) {
-    if (payroll.employee?.phone) {
-      sendSalaryPaid(
-        payroll.employee.phone,
-        {
-          firstName: payroll.employee.firstName,
-          period,
-          netSalary: payroll.netSalary,
-        },
-        req.user.company,
-      ).catch(() => {});
+  // Fire WA notifications with PDF (non-blocking)
+  (async () => {
+    try {
+      const companySetting = await Setting.findOne({ company: req.user.company })
+        .select("companyName companyAddress logo").lean();
+      const companyInfo = {
+        name:    companySetting?.companyName    || "",
+        address: companySetting?.companyAddress || "",
+        logo:    companySetting?.logo           || "",
+      };
+      for (const payroll of payrolls) {
+        if (!payroll.employee?.phone) continue;
+        try {
+          const pdfBuffer = await generatePayslipPdf(payroll.toObject(), payroll.employee, companyInfo);
+          await sendSalaryPaid(
+            payroll.employee.phone,
+            {
+              firstName:       payroll.employee.firstName,
+              period,
+              basicSalary:     payroll.basicSalary,
+              allowances:      payroll.otherAllowances || 0,
+              otPay:           payroll.otPay || 0,
+              grossSalary:     payroll.grossSalary,
+              totalDeductions: payroll.totalDeductions,
+              netSalary:       payroll.netSalary,
+              presentDays:     payroll.presentDays,
+              workingDays:     payroll.workingDays,
+              paymentMode:     paymentMode || "Bank Transfer",
+              paidOn:          paidAt,
+            },
+            req.user.company,
+            pdfBuffer,
+          );
+        } catch (err) {
+          console.error(`[Payroll] WA bulk notify failed for ${payroll.employee._id}:`, err.message);
+        }
+      }
+    } catch (err) {
+      console.error("[Payroll] WA bulk notify setup failed:", err.message);
     }
-  }
+  })();
 
   res.json({
     success: true,
@@ -587,11 +621,222 @@ const getMyPayrolls = asyncHandler(async (req, res) => {
   res.json({ success: true, data: payrolls });
 });
 
+const previewPayroll = asyncHandler(async (req, res) => {
+  const { month, year, employeeIds } = req.body;
+  const m = parseInt(month),
+    y = parseInt(year);
+  if (isNaN(m) || m < 1 || m > 12 || isNaN(y) || y < 2000 || y > 2100) {
+    res.status(400);
+    throw new Error("Valid month (1-12) and year are required");
+  }
+
+  const empFilter = { company: req.user.company, status: "active" };
+  if (Array.isArray(employeeIds) && employeeIds.length > 0) {
+    empFilter._id = { $in: employeeIds };
+  }
+  const employees = await Employee.find(empFilter).populate("shift");
+  const deductionRule = await DeductionRule.findOne({ company: req.user.company });
+
+  const startDate = new Date(y, m - 1, 1);
+  const endDate = new Date(y, m, 0);
+
+  const previews = [];
+
+  for (const emp of employees) {
+    const attendances = await Attendance.find({
+      employee: emp._id,
+      date: { $gte: startDate, $lte: endDate },
+    });
+
+    if (attendances.length === 0) continue;
+
+    const workDaysPerWeek = emp.workDaysPerWeek ?? 6;
+    const workingDays = getWorkingDays(y, m, workDaysPerWeek);
+    const salary = emp.salary ?? 0;
+    const dailyRate = workingDays > 0 ? salary / workingDays : 0;
+
+    const empShift = emp.shift;
+    let shiftH, shiftM, shiftEndH, shiftEndM;
+    if (empShift?.startTime) {
+      const s = parseTime(empShift.startTime);
+      shiftH = s.hour; shiftM = s.minute;
+    } else {
+      shiftH = deductionRule?.shiftStartHour ?? 9;
+      shiftM = deductionRule?.shiftStartMinute ?? 0;
+    }
+    if (empShift?.endTime) {
+      const e = parseTime(empShift.endTime);
+      shiftEndH = e.hour; shiftEndM = e.minute;
+    } else {
+      shiftEndH = deductionRule?.shiftEndHour ?? 18;
+      shiftEndM = deductionRule?.shiftEndMinute ?? 0;
+    }
+
+    const otEnabled = emp.otEnabled === true;
+    const otMultiplier = emp.otRate && emp.otRate > 0 ? emp.otRate : 1;
+    const shiftTotalMins = shiftEndH * 60 + shiftEndM - (shiftH * 60 + shiftM);
+    const shiftHoursPerDay = shiftTotalMins > 0 ? shiftTotalMins / 60 : 8;
+    const hourlyRate = dailyRate / shiftHoursPerDay;
+
+    let presentDays = 0, leaveDays = 0, halfDayCount = 0, lateCount = 0,
+      lateHoursLost = 0, absentCount = 0, totalWorkHours = 0, attendanceOTHours = 0;
+
+    for (const a of attendances) {
+      if (a.status === "holiday" || a.status === "weekend") continue;
+      if (a.status === "on_leave") {
+        leaveDays++;
+        if (a.leaveDeductSalary !== false) { absentCount++; } else { presentDays++; totalWorkHours += shiftHoursPerDay; }
+        continue;
+      }
+      if (a.status === "absent") { absentCount++; continue; }
+      if (a.status === "half_day") {
+        halfDayCount++; presentDays++;
+        totalWorkHours += shiftHoursPerDay;
+        if (a.overtime > 0) attendanceOTHours += a.overtime;
+        continue;
+      }
+      const istDate = new Date(new Date(a.date).getTime() + IST_OFFSET_MS);
+      const istMidnight = Date.UTC(istDate.getUTCFullYear(), istDate.getUTCMonth(), istDate.getUTCDate()) - IST_OFFSET_MS;
+      const shiftStartUTC = new Date(istMidnight + (shiftH * 60 + shiftM) * 60_000);
+      const shiftEndUTC = new Date(istMidnight + (shiftEndH * 60 + shiftEndM) * 60_000);
+
+      if (a.checkIn && a.checkOut) {
+        const rawIn = new Date(a.checkIn).getTime();
+        const rawOut = new Date(a.checkOut).getTime();
+        const shiftEndMs = shiftEndUTC.getTime();
+        const effectiveFrom = shiftStartUTC.getTime();
+        const effectiveOut = Math.min(rawOut, shiftEndMs);
+        totalWorkHours += Math.max(0, (effectiveOut - effectiveFrom) / 3_600_000);
+        presentDays++;
+        if (otEnabled && rawOut > shiftEndMs) attendanceOTHours += (rawOut - shiftEndMs) / 3_600_000;
+        if (a.status === "late") {
+          lateCount++;
+          lateHoursLost += Math.max(0, (rawIn - shiftStartUTC.getTime()) / 3_600_000);
+        }
+      } else if (a.checkIn) {
+        totalWorkHours += shiftHoursPerDay;
+        presentDays++;
+        if (a.overtime > 0) attendanceOTHours += a.overtime;
+        if (a.status === "late") {
+          lateCount++;
+          lateHoursLost += Math.max(0, (new Date(a.checkIn).getTime() - shiftStartUTC.getTime()) / 3_600_000);
+        }
+      } else if (["present", "late"].includes(a.status)) {
+        totalWorkHours += shiftHoursPerDay;
+        presentDays++;
+        if (a.status === "late") lateCount++;
+        if (a.overtime > 0) attendanceOTHours += a.overtime;
+      }
+    }
+
+    const absentDeduction = parseFloat((absentCount * dailyRate).toFixed(2));
+    const hoursEarned = Math.max(0, parseFloat((totalWorkHours * hourlyRate).toFixed(2)));
+    const earnedSalary = parseFloat((hoursEarned + absentDeduction).toFixed(2));
+    const halfDayDeduction = parseFloat((halfDayCount * dailyRate * 0.5).toFixed(2));
+    let lateDeduction = parseFloat((lateHoursLost * hourlyRate).toFixed(2));
+    if (deductionRule && lateCount > 0 && deductionRule.lateDeductionAmount > 0) {
+      const ruleFine = deductionRule.lateDeductionType === "percent"
+        ? lateCount * dailyRate * (deductionRule.lateDeductionAmount / 100)
+        : lateCount * deductionRule.lateDeductionAmount;
+      lateDeduction += parseFloat(ruleFine.toFixed(2));
+    }
+
+    const txMonthStart = new Date(y, m - 1, 1);
+    const txMonthEnd = new Date(y, m, 0, 23, 59, 59);
+    const pendingTx = await Transaction.find({
+      employee: emp._id, company: req.user.company,
+      status: "pending", date: { $gte: txMonthStart, $lte: txMonthEnd },
+    });
+    let totalAllowances = 0, totalPenalties = 0, totalOT = 0, totalOTHours = 0;
+    for (const tx of pendingTx) {
+      if (tx.type === "allowance") totalAllowances += tx.amount;
+      else if (tx.type === "penalty") totalPenalties += tx.amount;
+      else if (tx.type === "overtime") { totalOT += tx.amount; totalOTHours += tx.hours || 0; }
+    }
+
+    const activeLoans = await Loan.find({ employee: emp._id, company: req.user.company, status: "active" });
+    let loanDeduction = 0;
+    const shiftHours = shiftTotalMins > 0 ? shiftTotalMins / 60 : 8;
+    const otHourlyRate = (dailyRate / shiftHours) * otMultiplier;
+    const attendanceOTPay = parseFloat((attendanceOTHours * otHourlyRate).toFixed(2));
+    const grossSalary = earnedSalary + totalAllowances + totalOT + attendanceOTPay;
+    const preDeductions = lateDeduction + halfDayDeduction + absentDeduction + totalPenalties;
+    let salaryAfterDeductions = Math.max(0, grossSalary - preDeductions);
+    for (const loan of activeLoans) {
+      if (loan.remainingBalance <= 0) continue;
+      const emi = Math.min(loan.monthlyEmi || loan.remainingBalance, loan.remainingBalance, salaryAfterDeductions);
+      if (emi <= 0) continue;
+      loanDeduction += emi;
+      salaryAfterDeductions -= emi;
+    }
+    const totalDeductions = preDeductions + loanDeduction;
+    const netSalary = Math.max(0, grossSalary - totalDeductions);
+    const alreadyProcessed = !!(await Payroll.findOne({ employee: emp._id, month: m, year: y }));
+
+    previews.push({
+      employee: {
+        _id: emp._id,
+        firstName: emp.firstName,
+        lastName: emp.lastName,
+        employeeId: emp.employeeId,
+        designation: emp.designation,
+      },
+      month: m,
+      year: y,
+      basicSalary: salary,
+      earnedBasic: earnedSalary,
+      totalWorkHours: parseFloat(totalWorkHours.toFixed(2)),
+      hourlyRate: parseFloat(hourlyRate.toFixed(4)),
+      otherAllowances: totalAllowances,
+      otPay: attendanceOTPay + totalOT,
+      grossSalary,
+      lateDeductionAmount: lateDeduction,
+      halfDayDeduction,
+      absentDays: absentCount,
+      absentDeduction,
+      penaltyAmount: totalPenalties,
+      loanDeduction,
+      totalDeductions,
+      netSalary,
+      workingDays,
+      presentDays,
+      leaveDays,
+      overtimeHours: parseFloat((attendanceOTHours + totalOTHours).toFixed(2)),
+      alreadyProcessed,
+    });
+  }
+
+  res.json({ success: true, data: previews });
+});
+
+const markSlipReceived = asyncHandler(async (req, res) => {
+  const { status } = req.body; // "received" | "not_received"
+  if (!["received", "not_received"].includes(status)) {
+    res.status(400);
+    throw new Error("status must be 'received' or 'not_received'");
+  }
+  const payroll = await Payroll.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!payroll) {
+    res.status(404);
+    throw new Error("Payroll not found");
+  }
+  payroll.slipReceived = status;
+  payroll.slipReceivedAt = new Date();
+  payroll.slipReceivedBy = req.user._id;
+  await payroll.save();
+  res.json({ success: true, data: payroll });
+});
+
 module.exports = {
   getPayrolls,
   getMyPayrolls,
   processPayroll,
+  previewPayroll,
   updatePayroll,
   markPaid,
   bulkMarkPaid,
+  markSlipReceived,
 };

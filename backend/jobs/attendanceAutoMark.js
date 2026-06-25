@@ -119,7 +119,7 @@ async function processDate(targetDate, istMinutesNow) {
           status: "approved",
           startDate: { $lte: targetDate },
           endDate: { $gte: targetDate },
-        }).select("leaveType").lean();
+        }).select("leaveType deductSalary").lean();
 
         const newStatus = approvedLeave ? "on_leave" : "absent";
         const newNotes = approvedLeave
@@ -131,6 +131,7 @@ async function processDate(targetDate, istMinutesNow) {
             existing.status = newStatus;
             existing.workHours = 0;
             existing.notes = (existing.notes ? existing.notes + " | " : "") + newNotes;
+            if (approvedLeave) existing.leaveDeductSalary = approvedLeave.deductSalary !== false;
             await existing.save();
             console.log(
               `[AutoMark] Marked ${newStatus} (updated): ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`,
@@ -144,6 +145,7 @@ async function processDate(targetDate, istMinutesNow) {
             workHours: 0,
             verifyMode: "auto",
             notes: newNotes,
+            ...(approvedLeave ? { leaveDeductSalary: approvedLeave.deductSalary !== false } : {}),
           });
           console.log(
             `[AutoMark] Marked ${newStatus}: ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`,

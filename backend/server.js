@@ -1,5 +1,6 @@
 require("dotenv").config();
 const express = require("express");
+const path = require("path");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
@@ -43,6 +44,7 @@ app.use(
 );
 app.use(morgan("dev"));
 app.use(express.json({ limit: "5mb" }));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use("/iclock", require("./routes/admsRoutes"));
 app.use("/internal/stats", require("./routes/statsRoutes"));
@@ -88,6 +90,8 @@ app.use("/api/exit", require("./routes/exitRoutes"));
 app.use("/api/audit", require("./routes/auditRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
 app.use("/api/crm", require("./routes/crmRoutes"));
+app.use("/api/support", require("./routes/supportRoutes"));
+app.use("/api/documents", require("./routes/documentRoutes"));
 
 app.get("/api/health", (req, res) =>
   res.json({ status: "ok", service: "HRMS API" }),

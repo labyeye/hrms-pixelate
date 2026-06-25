@@ -51,6 +51,18 @@ const payrollSchema = new mongoose.Schema(
     paidAt: { type: Date },
     processedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     remarks: { type: String },
+    slipReceived: {
+      type: String,
+      enum: ["received", "not_received", null],
+      default: null,
+    },
+    slipReceivedAt: { type: Date },
+    slipReceivedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    paymentMode: {
+      type: String,
+      enum: ["cash", "bank_transfer", "cheque", "upi", null],
+      default: null,
+    },
   },
   { timestamps: true },
 );
