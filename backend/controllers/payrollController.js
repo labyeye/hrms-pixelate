@@ -949,6 +949,9 @@ const previewPayroll = asyncHandler(async (req, res) => {
 
 const markSlipReceived = asyncHandler(async (req, res) => {
   const { status } = req.body; // "received" | "not_received"
+  console.log(
+    `[Payroll] markSlipReceived → id=${req.params.id} status=${status} user=${req.user._id}`,
+  );
   if (!["received", "not_received"].includes(status)) {
     res.status(400);
     throw new Error("status must be 'received' or 'not_received'");
@@ -958,6 +961,9 @@ const markSlipReceived = asyncHandler(async (req, res) => {
     company: req.user.company,
   });
   if (!payroll) {
+    console.warn(
+      `[Payroll] markSlipReceived → payroll ${req.params.id} not found`,
+    );
     res.status(404);
     throw new Error("Payroll not found");
   }
@@ -965,6 +971,9 @@ const markSlipReceived = asyncHandler(async (req, res) => {
   payroll.slipReceivedAt = new Date();
   payroll.slipReceivedBy = req.user._id;
   await payroll.save();
+  console.log(
+    `[Payroll] markSlipReceived ✅ → payroll=${payroll._id} slipReceived=${status}`,
+  );
   res.json({ success: true, data: payroll });
 });
 
