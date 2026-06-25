@@ -20,7 +20,7 @@ async function uploadMediaToMeta(buffer, filename = "payslip.pdf", mimetype = "a
         hostname: "graph.facebook.com",
         path: `/v20.0/${phoneNumberId}/media`,
         method: "POST",
-        headers: form.getHeaders(),
+        headers: { ...form.getHeaders(), Authorization: `Bearer ${accessToken}` },
       },
       (res) => {
         let data = "";

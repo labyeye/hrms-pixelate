@@ -529,7 +529,14 @@ const downloadEmployeeDocument = asyncHandler(async (req, res) => {
 
   if (!docPath) { res.status(404); throw new Error("Document not found"); }
 
-  const abs = path.join(__dirname, "../", docPath);
+  const uploadsRoot = path.resolve(__dirname, "../uploads");
+  const abs = path.resolve(__dirname, "../", docPath);
+
+  if (!abs.startsWith(uploadsRoot + path.sep) && abs !== uploadsRoot) {
+    res.status(403);
+    throw new Error("Access denied");
+  }
+
   if (!fs.existsSync(abs)) { res.status(404); throw new Error("File missing on server"); }
 
   res.download(abs);

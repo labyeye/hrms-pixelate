@@ -1,4 +1,5 @@
 const express = require("express");
+const rateLimit = require("express-rate-limit");
 const {
   register,
   login,
@@ -16,13 +17,22 @@ const {
 const { protect } = require("../middleware/auth");
 const router = express.Router();
 
+// Strict limiter for sensitive unauthenticated auth endpoints
+const sensitiveLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { success: false, message: "Too many attempts, please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 router.post("/register", register);
 router.post("/login", login);
 router.get("/me", protect, getMe);
 router.put("/profile", protect, updateProfile);
 
-router.post("/forgot-password", forgotPassword);
-router.post("/reset-password/:token", resetPassword);
+router.post("/forgot-password", sensitiveLimit, forgotPassword);
+router.post("/reset-password/:token", sensitiveLimit, resetPassword);
 
 router.post("/otp/send", sendOtp);
 router.post("/otp/verify", verifyOtp);

@@ -299,15 +299,17 @@ router.get(["/cdata", "/cdata.aspx"], async (req, res) => {
   const { SN } = req.query;
   res.set("Content-Type", "text/plain");
 
-  let attlogStamp = "None";
-  if (SN) {
-    const device = await BiometricDevice.findOneAndUpdate(
-      { serialNumber: SN },
-      { lastSeenAt: new Date() },
-      { new: true },
-    ).catch(() => null);
-    if (device?.attlogStamp) attlogStamp = device.attlogStamp;
-  }
+  if (!SN) return res.status(400).send("ERROR: SN required");
+
+  const device = await BiometricDevice.findOneAndUpdate(
+    { serialNumber: SN },
+    { lastSeenAt: new Date() },
+    { new: true },
+  ).catch(() => null);
+
+  if (!device) return res.status(403).send("ERROR: Unrecognised device");
+
+  const attlogStamp = device.attlogStamp || "None";
 
   res.send(
     [
@@ -341,10 +343,14 @@ router.post(
     const body = req.body;
     if (!body || typeof body !== "string") return res.send("OK");
 
+    if (!SN) return res.status(400).send("ERROR: SN required");
+    const knownDevice = await resolveDevice(SN);
+    if (!knownDevice) return res.status(403).send("ERROR: Unrecognised device");
+
     // Handle face/finger bio template upload from device after ENROLL_BIO command
     if (table === "BIODATA") {
       try {
-        const device = await resolveDevice(SN);
+        const device = knownDevice;
         console.log(
           `[ADMS] BIODATA from SN=${SN} body="${body.slice(0, 200)}"`,
         );
@@ -388,7 +394,7 @@ router.post(
     const stamp = parseInt(req.query.Stamp || "0", 10) || 0;
 
     try {
-      const device = await resolveDevice(SN);
+      const device = knownDevice;
       const companyId = device?.company || null;
 
       console.log(`[ADMS] ATTLOG from SN=${SN} stamp=${stamp}`);
@@ -428,16 +434,10 @@ router.get(["/getrequest", "/getrequest.aspx"], async (req, res) => {
   res.set("Content-Type", "text/plain");
 
   try {
-    if (!SN) {
-      console.warn("[ADMS] getrequest: no SN in query");
-      return res.send("OK");
-    }
+    if (!SN) return res.status(400).send("ERROR: SN required");
 
     const device = await resolveDevice(SN);
-    if (!device) {
-      console.warn(`[ADMS] getrequest: unknown device SN=${SN}`);
-      return res.send("OK");
-    }
+    if (!device) return res.status(403).send("ERROR: Unrecognised device");
 
     const cmd = await BiometricCommand.findOneAndUpdate(
       { device: device._id, status: "pending" },
@@ -477,8 +477,8 @@ router.post(
         `[ADMS] devicecmd SN=${SN} ID=${cmdId} body="${body.trim()}"`,
       );
 
+      const device = SN ? await resolveDevice(SN) : null;
       if (cmdId) {
-        const device = await resolveDevice(SN);
         if (device) {
           const returnMatch = body.match(/Return=(\d+)/);
           const returnCode = returnMatch ? returnMatch[1] : "0";

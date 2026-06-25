@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const rateLimit = require("express-rate-limit");
 const { protect, authorize } = require("../middleware/auth");
 const {
   getLocations,
@@ -33,11 +34,20 @@ const {
   pushFaceTemplateToDevice,
 } = require("../controllers/biometricController");
 
-router.post("/register", registerDevice);
-router.get("/device/:token", getDeviceInfo);
-router.post("/record", recordBiometric);
-router.get("/device/:token/employees", getDeviceEmployees);
-router.post("/device-face-enroll", enrollFaceFromDevice);
+// Rate limiter for unauthenticated device-facing endpoints — prevents token brute-force
+const deviceRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  message: { success: false, message: "Too many requests from this device, try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.post("/register", deviceRateLimit, registerDevice);
+router.get("/device/:token", deviceRateLimit, getDeviceInfo);
+router.post("/record", deviceRateLimit, recordBiometric);
+router.get("/device/:token/employees", deviceRateLimit, getDeviceEmployees);
+router.post("/device-face-enroll", deviceRateLimit, enrollFaceFromDevice);
 
 router.use(protect);
 
