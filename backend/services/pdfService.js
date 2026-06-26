@@ -186,10 +186,13 @@ async function generatePayslipPdf(payroll, employee, company) {
       let logoBytes;
       if (company.logo.startsWith("http://") || company.logo.startsWith("https://")) {
         logoBytes = await fetchBuffer(company.logo);
-      } else if (company.logo.startsWith("/")) {
-        const absPath = path.join(__dirname, "../../frontend/public", company.logo);
+      } else if (company.logo.startsWith("/uploads/")) {
+        // Logo stored as /uploads/... → served from backend/uploads/
+        const absPath = path.join(__dirname, "..", company.logo);
         if (fs.existsSync(absPath)) {
           logoBytes = fs.readFileSync(absPath);
+        } else {
+          console.warn("[pdfService] Logo file not found at:", absPath);
         }
       } else if (company.logo.startsWith("data:")) {
         const base64 = company.logo.split(",")[1];
