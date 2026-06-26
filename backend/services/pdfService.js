@@ -1,6 +1,8 @@
 const { PDFDocument, rgb, StandardFonts } = require("pdf-lib");
 const fs = require("fs");
 const path = require("path");
+const https = require("https");
+const http = require("http");
 
 const CHEQUE_PATH = path.join(
   __dirname,
@@ -91,12 +93,25 @@ function toIndianWords(n) {
   return "Rupees " + r.trim() + " Only";
 }
 
+function fetchBuffer(url) {
+  return new Promise((resolve, reject) => {
+    const client = url.startsWith("https") ? https : http;
+    client.get(url, (res) => {
+      const chunks = [];
+      res.on("data", (c) => chunks.push(c));
+      res.on("end", () => resolve(Buffer.concat(chunks)));
+      res.on("error", reject);
+    }).on("error", reject);
+  });
+}
+
 async function generatePayslipPdf(payroll, employee, company) {
   const net = Math.round(payroll.netSalary || 0);
-  const today = new Date();
-  const dd = String(today.getDate()).padStart(2, "0");
-  const mm = String(today.getMonth() + 1).padStart(2, "0");
-  const yyyy = String(today.getFullYear()); // 4-digit year, matching frontend
+  // Use IST (UTC+5:30) to avoid UTC date being one day behind for India
+  const nowIST = new Date(new Date().getTime() + 5.5 * 60 * 60 * 1000);
+  const dd = String(nowIST.getUTCDate()).padStart(2, "0");
+  const mm = String(nowIST.getUTCMonth() + 1).padStart(2, "0");
+  const yyyy = String(nowIST.getUTCFullYear()); // 4-digit year, matching frontend
   const lastDay = new Date(payroll.year, payroll.month, 0).getDate();
   const fromDate = `01/${String(payroll.month).padStart(2, "0")}/${payroll.year}`;
   const toDate = `${lastDay}/${String(payroll.month).padStart(2, "0")}/${payroll.year}`;
@@ -164,6 +179,47 @@ async function generatePayslipPdf(payroll, employee, company) {
   dt(net.toLocaleString("en-IN"), 440, 150, 13, true);
   dt(fromDate, 250, 174, 11, false);
   dt(toDate, 340, 174, 11, false);
+
+  // Embed company logo if provided (matches frontend canvas logo drawing)
+  if (company.logo) {
+    try {
+      let logoBytes;
+      if (company.logo.startsWith("http://") || company.logo.startsWith("https://")) {
+        logoBytes = await fetchBuffer(company.logo);
+      } else if (company.logo.startsWith("/")) {
+        const absPath = path.join(__dirname, "../../frontend/public", company.logo);
+        if (fs.existsSync(absPath)) {
+          logoBytes = fs.readFileSync(absPath);
+        }
+      } else if (company.logo.startsWith("data:")) {
+        const base64 = company.logo.split(",")[1];
+        logoBytes = Buffer.from(base64, "base64");
+      }
+      if (logoBytes) {
+        const logoX = company.chequeLogoX ?? 10;
+        const logoY = company.chequeLogoY ?? 20;
+        const logoW = company.chequeLogoW ?? 60;
+        let embeddedLogo;
+        const sig = logoBytes.slice(0, 4);
+        if (sig[0] === 0x89 && sig[1] === 0x50) {
+          embeddedLogo = await pdfDoc.embedPng(logoBytes);
+        } else {
+          embeddedLogo = await pdfDoc.embedJpg(logoBytes);
+        }
+        const { width: iw, height: ih } = embeddedLogo.scale(1);
+        const drawW = logoW;
+        const drawH = iw > 0 ? (ih / iw) * drawW : drawW;
+        chequePage.drawImage(embeddedLogo, {
+          x: logoX,
+          y: ph - logoY - drawH,
+          width: drawW,
+          height: drawH,
+        });
+      }
+    } catch (logoErr) {
+      console.warn("[pdfService] Logo embed failed:", logoErr.message);
+    }
+  }
 
   return await pdfDoc.save();
 }

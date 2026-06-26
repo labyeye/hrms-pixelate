@@ -516,12 +516,15 @@ const markPaid = asyncHandler(async (req, res) => {
         const companySetting = await Setting.findOne({
           company: req.user.company,
         })
-          .select("companyName companyAddress logo")
+          .select("companyName companyAddress logo chequeLogoX chequeLogoY chequeLogoW")
           .lean();
         const companyInfo = {
           name: companySetting?.companyName || "",
           address: companySetting?.companyAddress || "",
           logo: companySetting?.logo || "",
+          chequeLogoX: companySetting?.chequeLogoX ?? 10,
+          chequeLogoY: companySetting?.chequeLogoY ?? 20,
+          chequeLogoW: companySetting?.chequeLogoW ?? 60,
         };
         const pdfBuffer = await generatePayslipPdf(
           payroll.toObject(),

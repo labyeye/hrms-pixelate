@@ -506,9 +506,11 @@ async function sendSalaryPaid(
       cheque: "Cheque",
     };
     const modeLabel = MODE_LABELS[paymentMode] || "Bank Transfer";
-    const paidOnStr = paidOn
-      ? new Date(paidOn).toLocaleDateString("en-IN")
-      : new Date().toLocaleDateString("en-IN");
+    const toISTDateStr = (d) => {
+      const ist = new Date(new Date(d).getTime() + 5.5 * 60 * 60 * 1000);
+      return `${String(ist.getUTCDate()).padStart(2, "0")}/${String(ist.getUTCMonth() + 1).padStart(2, "0")}/${ist.getUTCFullYear()}`;
+    };
+    const paidOnStr = paidOn ? toISTDateStr(paidOn) : toISTDateStr(new Date());
 
     await sendTemplate(
       phone,
