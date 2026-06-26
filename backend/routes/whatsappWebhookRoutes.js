@@ -156,18 +156,20 @@ router.post("/",  async (req, res) => {
         `[WA] Employee Found ${employee._id}`
       );
 
+      // Allow updating from "not_received" → "received" (employee clicked wrong button).
+      // Only block if already confirmed as "received".
       const payroll = await Payroll.findOne({
         employee: employee._id,
         company: employee.company,
         status: "paid",
-        slipReceived: null,
+        slipReceived: { $in: [null, "not_received"] },
       }).sort({
         year: -1,
         month: -1,
       });
 
       if (!payroll) {
-        console.log("[WA] No pending payroll found");
+        console.log("[WA] No updatable payroll found (already confirmed received)");
         continue;
       }
 
