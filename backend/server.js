@@ -106,7 +106,6 @@ app.use("/api/biometric", require("./routes/biometricRoutes"));
 app.use("/api/holidays", require("./routes/holidayRoutes"));
 app.use("/api/payroll-config", require("./routes/payrollConfigRoutes"));
 app.use("/api/loans", require("./routes/loanRoutes"));
-app.use("/api/branches", require("./routes/branchRoutes"));
 app.use("/api/shifts", require("./routes/shiftRoutes"));
 app.use("/api/salary-heads", require("./routes/salaryHeadRoutes"));
 app.use("/api/designations", require("./routes/designationRoutes"));

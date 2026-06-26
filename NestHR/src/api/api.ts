@@ -103,6 +103,18 @@ export const authAPI = {
     request('/auth/otp/send', { method: 'POST', body: JSON.stringify({ phone }) }),
   verifyPhoneOtp: (phone: string, otp: string) =>
     request('/auth/otp/verify', { method: 'POST', body: JSON.stringify({ phone, otp }) }),
+  setup2FA: () => request('/auth/2fa/setup', { method: 'POST', body: JSON.stringify({}) }),
+  confirm2FA: (token: string) =>
+    request('/auth/2fa/confirm', { method: 'POST', body: JSON.stringify({ token }) }),
+  disable2FA: (token: string) =>
+    request('/auth/2fa/disable', { method: 'POST', body: JSON.stringify({ token }) }),
+  verify2FA: (token: string) =>
+    request('/auth/2fa/verify', { method: 'POST', body: JSON.stringify({ token }) }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
 };
 
 export const dashboardAPI = {
@@ -159,6 +171,8 @@ export const payrollAPI = {
   update: (id: string, body: object) =>
     request(`/payroll/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   markPaid: (id: string) => request(`/payroll/${id}/paid`, { method: 'PUT' }),
+  markSlipReceived: (id: string) =>
+    request(`/payroll/${id}/slip-received`, { method: 'PATCH', body: JSON.stringify({}) }),
   bulkMarkPaid: (month: number, year: number) =>
     request('/payroll/bulk-paid', {
       method: 'POST',
@@ -461,6 +475,43 @@ export const transactionAPI = {
     request(`/transactions${qs(params)}`),
   create: (body: object) =>
     request('/transactions', { method: 'POST', body: JSON.stringify(body) }),
+  delete: (id: string) => request(`/transactions/${id}`, { method: 'DELETE' }),
+};
+
+export const exitAPI = {
+  getAll: (params?: Record<string, string>) => request(`/exit${qs(params)}`),
+  create: (body: object) =>
+    request('/exit', { method: 'POST', body: JSON.stringify(body) }),
+  update: (id: string, body: object) =>
+    request(`/exit/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  delete: (id: string) => request(`/exit/${id}`, { method: 'DELETE' }),
+};
+
+export const offerLetterAPI = {
+  getAll: (params?: Record<string, string>) =>
+    request(`/offer-letters${qs(params)}`),
+  create: (body: object) =>
+    request('/offer-letters', { method: 'POST', body: JSON.stringify(body) }),
+  update: (id: string, body: object) =>
+    request(`/offer-letters/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  delete: (id: string) => request(`/offer-letters/${id}`, { method: 'DELETE' }),
+};
+
+export const paymentMethodAPI = {
+  getAll: () => request('/payment-methods'),
+  create: (body: object) =>
+    request('/payment-methods', { method: 'POST', body: JSON.stringify(body) }),
+  update: (id: string, body: object) =>
+    request(`/payment-methods/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+  delete: (id: string) =>
+    request(`/payment-methods/${id}`, { method: 'DELETE' }),
+  getDefault: () => request('/payment-methods/default'),
 };
 
 export const auditAPI = {
@@ -478,6 +529,30 @@ export const documentAPI = {
   getAll: (params?: Record<string, string>) =>
     request(`/documents${qs(params)}`),
   delete: (id: string) => request(`/documents/${id}`, { method: 'DELETE' }),
+  upload: async (formData: FormData) => {
+    const token = await getToken();
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30_000);
+    try {
+      const res = await fetch(`${BASE_URL}/documents`, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          'Cache-Control': 'no-cache',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: formData,
+      });
+      clearTimeout(timer);
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : {};
+      if (!res.ok) throw new Error(data.message || `Upload failed (${res.status})`);
+      return data;
+    } catch (err: any) {
+      clearTimeout(timer);
+      throw err;
+    }
+  },
 };
 
 export const payrollPreviewAPI = {

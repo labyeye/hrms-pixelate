@@ -70,7 +70,6 @@ const employeeSchema = new mongoose.Schema(
     totalExperience: { type: String }, // e.g. "3 years 2 months"
     previousCompany: { type: String },
     reportingTo: { type: mongoose.Schema.Types.ObjectId, ref: "Employee" },
-    branch: { type: mongoose.Schema.Types.ObjectId, ref: "Branch" },
     shift: { type: mongoose.Schema.Types.ObjectId, ref: "Shift" },
     shiftName: { type: String, default: "General" },
     pfNumber: { type: String, default: "" },

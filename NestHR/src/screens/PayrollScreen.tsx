@@ -23,10 +23,12 @@ import {
   ChevronLeft,
   Share2,
   Eye,
+  CheckCircle2,
 } from 'lucide-react-native';
 import { TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { payrollAPI, payrollPreviewAPI } from '../api/api';
+
 import { useAuth } from '../contexts/AuthContext';
 import { Payroll } from '../types/hrms';
 import { C } from '../theme';
@@ -772,6 +774,34 @@ export default function PayrollScreen() {
                 <Share2 size={15} color={C.white} />
                 <Text style={styles.processBtnText}>Share Payslip</Text>
               </TouchableOpacity>
+
+              {/* Mark Slip Received — HR only, on paid payrolls */}
+              {!isEmployee && (selected as any).status === 'paid' && (
+                (selected as any).slipReceivedAt ? (
+                  <View style={styles.slipReceivedBadge}>
+                    <CheckCircle2 size={15} color={C.success} />
+                    <Text style={styles.slipReceivedText}>
+                      Slip acknowledged · {new Date((selected as any).slipReceivedAt).toLocaleDateString('en-IN')}
+                    </Text>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.slipBtn}
+                    onPress={async () => {
+                      try {
+                        await payrollAPI.markSlipReceived((selected as any)._id);
+                        setSelected(null);
+                        load();
+                      } catch (e: any) {
+                        Alert.alert('Error', e.message);
+                      }
+                    }}
+                  >
+                    <CheckCircle2 size={15} color={C.white} />
+                    <Text style={styles.processBtnText}>Mark Slip Received</Text>
+                  </TouchableOpacity>
+                )
+              )}
             </ScrollView>
           </SafeAreaView>
         )}
@@ -1021,6 +1051,30 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginTop: 16,
   },
+  slipBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: C.success,
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingVertical: 12,
+    marginTop: 10,
+  },
+  slipReceivedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 2,
+    borderColor: C.success,
+    backgroundColor: '#F0FDF4',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginTop: 10,
+    justifyContent: 'center',
+  },
+  slipReceivedText: { fontSize: 12, fontWeight: '700', color: C.success },
   previewRow: {
     flexDirection: 'row',
     alignItems: 'center',

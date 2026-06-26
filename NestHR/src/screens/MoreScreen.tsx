@@ -20,7 +20,7 @@ import {
   BarChart2,
   Settings,
   ChevronRight,
-  LogOut,
+  LogOut as LogOutIcon,
   Grid,
   KeyRound,
   Settings2,
@@ -31,6 +31,8 @@ import {
   Shield,
   LifeBuoy,
   FolderOpen,
+  DoorOpen,
+  MapPin,
 } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { C } from '../theme';
@@ -144,6 +146,18 @@ const MENU_ITEMS = [
     icon: LifeBuoy,
     desc: 'Report issues & track tickets',
   },
+  {
+    key: 'ExitManagement',
+    label: 'Exit Management',
+    icon: DoorOpen,
+    desc: 'Offboarding, FnF & clearance',
+  },
+  {
+    key: 'Branches',
+    label: 'Branches',
+    icon: MapPin,
+    desc: 'Manage office locations & branches',
+  },
 ];
 
 const EMPLOYEE_MENU_KEYS = new Set(['Payroll', 'Holidays', 'Notifications', 'Support']);
@@ -223,7 +237,7 @@ export default function MoreScreen({ navigation }: any) {
           <Text style={styles.profileBtnText}>Edit</Text>
         </View>
         <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
-          <LogOut size={16} color={C.danger} />
+          <LogOutIcon size={16} color={C.danger} />
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
       </TouchableOpacity>
