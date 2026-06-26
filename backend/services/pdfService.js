@@ -129,16 +129,23 @@ async function generatePayslipPdf(payroll, employee, company) {
 
   const [chequePage] = pdfDoc.getPages();
   const { height: ph } = chequePage.getSize();
+  // MediaBox may have a non-zero y origin (this template has y≈7.71).
+  // pdfjs accounts for this when rendering on canvas; pdf-lib getSize() does not.
+  // Top of visible page in PDF coords = mediaBox.y + mediaBox.height.
+  const mediaBox = chequePage.getMediaBox();
+  const pageTop = mediaBox.y + mediaBox.height; // ≈ 270.96 for this template
 
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
   // POS coordinates are CSS px from the frontend (1:1 with PDF pts for this template).
-  // Canvas origin is top-left; pdf-lib origin is bottom-left → y_pdf = ph - cssY
+  // Canvas origin is top-left; pdf-lib origin is bottom-left.
+  // Must use pageTop (mediaBox.y + height) not just height, because this template's
+  // MediaBox has a non-zero y origin (~7.71 pts) that pdfjs accounts for automatically.
   const dt = (text, x, cssY, size = 11, bold = false) => {
     chequePage.drawText(String(text).replace(/[\r\n]+/g, " "), {
       x,
-      y: ph - cssY,
+      y: pageTop - cssY,
       size,
       font: bold ? boldFont : font,
       color: rgb(0, 0, 0),
@@ -214,7 +221,7 @@ async function generatePayslipPdf(payroll, employee, company) {
         const drawH = iw > 0 ? (ih / iw) * drawW : drawW;
         chequePage.drawImage(embeddedLogo, {
           x: logoX,
-          y: ph - logoY - drawH,
+          y: pageTop - logoY - drawH,
           width: drawW,
           height: drawH,
         });

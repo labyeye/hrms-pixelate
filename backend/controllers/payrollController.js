@@ -612,12 +612,15 @@ const bulkMarkPaid = asyncHandler(async (req, res) => {
       const companySetting = await Setting.findOne({
         company: req.user.company,
       })
-        .select("companyName companyAddress logo")
+        .select("companyName companyAddress logoUrl chequeLogoX chequeLogoY chequeLogoW")
         .lean();
       const companyInfo = {
         name: companySetting?.companyName || "",
         address: companySetting?.companyAddress || "",
-        logo: companySetting?.logo || "",
+        logo: companySetting?.logoUrl || "",
+        chequeLogoX: companySetting?.chequeLogoX ?? 10,
+        chequeLogoY: companySetting?.chequeLogoY ?? 20,
+        chequeLogoW: companySetting?.chequeLogoW ?? 60,
       };
       for (const payroll of payrolls) {
         if (!payroll.employee?.phone) continue;
