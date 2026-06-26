@@ -1,5 +1,6 @@
 const Invoice = require("../models/Invoice");
 const OfferCode = require("../models/OfferCode");
+const Attendance = require("../models/Attendance");
 
 const crmAuth = (req, res) => {
   const apiKey = req.headers["x-api-key"];
@@ -138,6 +139,46 @@ exports.updateCrmOffer = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Offer not found" });
     res.json({ success: true, offer });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// GET /api/crm/attendance — attendance records with optional filters: date, companyId, status
+exports.getCrmAttendance = async (req, res) => {
+  if (!crmAuth(req, res)) return;
+  try {
+    const filter = {};
+
+    if (req.query.date) {
+      const day = new Date(req.query.date);
+      const next = new Date(day);
+      next.setDate(next.getDate() + 1);
+      filter.date = { $gte: day, $lt: next };
+    }
+
+    if (req.query.from || req.query.to) {
+      filter.date = {};
+      if (req.query.from) filter.date.$gte = new Date(req.query.from);
+      if (req.query.to) filter.date.$lte = new Date(req.query.to);
+    }
+
+    if (req.query.status) filter.status = req.query.status;
+
+    const records = await Attendance.find(filter)
+      .populate("employee", "firstName lastName email employeeId company")
+      .sort({ date: -1 })
+      .lean();
+
+    // optionally filter by company after populate
+    const companyId = req.query.companyId;
+    const result = companyId
+      ? records.filter(
+          (r) => r.employee?.company?.toString() === companyId,
+        )
+      : records;
+
+    res.json({ success: true, total: result.length, attendance: result });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

@@ -7,9 +7,11 @@ const {
   createCrmOffer,
   updateCrmOffer,
   deleteCrmOffer,
+  getCrmAttendance,
 } = require("../controllers/crmController");
 
 router.get("/invoices", getCrmInvoices);
+router.get("/attendance", getCrmAttendance);
 
 router.get("/offers", getCrmOffers);
 router.get("/offers/:id", getCrmOfferById);

@@ -40,6 +40,7 @@ import AuditLogPage from "./pages/AuditLogPage";
 import SupportPage from "./pages/SupportPage";
 import DocumentVaultPage from "./pages/DocumentVaultPage";
 import nesthrlogo from "../assets/nesthr.png";
+import PageTransition from "@/components/layout/PageTransition";
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
 });
@@ -96,6 +97,7 @@ function AppRoutes() {
   if (isLoading) return <LoadingScreen />;
 
   return (
+    <PageTransition>
     <Routes>
       <Route
         path="/login"
@@ -350,6 +352,7 @@ function AppRoutes() {
       <Route path="/device/:token" element={<BiometricDevicePage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </PageTransition>
   );
 }
 
