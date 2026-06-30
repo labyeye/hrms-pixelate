@@ -118,6 +118,9 @@ app.use("/api/admin", require("./routes/adminRoutes"));
 app.use("/api/crm", require("./routes/crmRoutes"));
 app.use("/api/support", require("./routes/supportRoutes"));
 app.use("/api/documents", require("./routes/documentRoutes"));
+app.use("/api/announcements", require("./routes/announcementRoutes"));
+app.use("/api/assets", require("./routes/assetRoutes"));
+app.use("/api/attendance-corrections", require("./routes/attendanceCorrectionRoutes"));
 
 app.get("/api/health", (req, res) =>
   res.json({ status: "ok", service: "HRMS API" }),

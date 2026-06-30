@@ -14,7 +14,7 @@ router.get("/", protect, getDocuments);
 router.post(
   "/",
   protect,
-  authorize("super_admin", "hr_manager", "hr_executive"),
+  authorize("super_admin", "hr_manager", "hr_executive", "employee"),
   uploadDocumentVault,
   uploadDocument,
 );
@@ -22,7 +22,7 @@ router.get("/:id/download", protect, downloadDocument);
 router.delete(
   "/:id",
   protect,
-  authorize("super_admin", "hr_manager"),
+  authorize("super_admin", "hr_manager", "employee"),
   deleteDocument,
 );
 

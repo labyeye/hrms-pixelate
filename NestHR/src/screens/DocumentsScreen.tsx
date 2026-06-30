@@ -11,6 +11,8 @@ import {
   TextInput,
   ScrollView,
   ActivityIndicator,
+  Image,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -24,20 +26,25 @@ import {
   Plus,
   ChevronDown,
   Image as ImageIcon,
+  Share2,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { documentAPI, employeeAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import { C } from '../theme';
+import { DatePickerField } from '../components/common/DatePickerField';
 
 const DOC_TYPES = [
-  { value: 'id_proof', label: 'ID Proof' },
-  { value: 'certificate', label: 'Certificate' },
-  { value: 'contract', label: 'Contract' },
+  { value: 'pan', label: 'PAN Card' },
+  { value: 'aadhaar', label: 'Aadhaar Card' },
   { value: 'resume', label: 'Resume' },
   { value: 'offer_letter', label: 'Offer Letter' },
-  { value: 'other', label: 'Other' },
+  { value: 'appointment_letter', label: 'Appointment Letter' },
+  { value: 'salary_slip', label: 'Salary Slip' },
+  { value: 'relieving_letter', label: 'Relieving Letter' },
+  { value: 'certificate', label: 'Certificate' },
+  { value: 'other', label: 'Other Document' },
 ];
 
 function formatBytes(bytes: number) {
@@ -59,10 +66,11 @@ export default function DocumentsScreen() {
   const [showUpload, setShowUpload] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [pickedFile, setPickedFile] = useState<any>(null);
-  const [uploadForm, setUploadForm] = useState({ name: '', docType: 'other', employeeId: '' });
+  const [uploadForm, setUploadForm] = useState({ name: '', docType: 'other', employeeId: '', expiryDate: '' });
   const [showDocTypePicker, setShowDocTypePicker] = useState(false);
   const [showEmpPicker, setShowEmpPicker] = useState(false);
   const [filterEmp, setFilterEmp] = useState('');
+  const [previewDoc, setPreviewDoc] = useState<any>(null);
 
   const load = useCallback(async () => {
     try {
@@ -145,11 +153,14 @@ export default function DocumentsScreen() {
       if (!isEmployee && uploadForm.employeeId) {
         formData.append('employee', uploadForm.employeeId);
       }
+      if (uploadForm.expiryDate) {
+        formData.append('expiryDate', uploadForm.expiryDate);
+      }
 
       await documentAPI.upload(formData);
       setShowUpload(false);
       setPickedFile(null);
-      setUploadForm({ name: '', docType: 'other', employeeId: '' });
+      setUploadForm({ name: '', docType: 'other', employeeId: '', expiryDate: '' });
       load();
     } catch (e: any) {
       Alert.alert('Upload Failed', e.message);
@@ -159,7 +170,7 @@ export default function DocumentsScreen() {
   };
 
   const renderItem = ({ item }: { item: any }) => (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={() => setPreviewDoc(item)} activeOpacity={0.85}>
       <View style={styles.cardLeft}>
         <View style={styles.iconBox}>
           <FileText size={18} color={C.primary} />
@@ -178,19 +189,35 @@ export default function DocumentsScreen() {
           <Text style={styles.docDate}>
             {new Date(item.createdAt).toLocaleDateString('en-IN')}
           </Text>
+          {item.expiryDate && (
+            <Text style={[styles.docDate, { color: new Date(item.expiryDate) < new Date() ? C.danger : C.textMuted }]}>
+              Expires: {new Date(item.expiryDate).toLocaleDateString('en-IN')}
+            </Text>
+          )}
         </View>
       </View>
       <View style={styles.cardActions}>
-        {!isEmployee && (
-          <TouchableOpacity
-            style={[styles.actionBtn, styles.deleteBtn]}
-            onPress={() => handleDelete(item._id, item.name)}
-          >
-            <Trash2 size={14} color={C.danger} />
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={[styles.actionBtn, { borderColor: C.primary }]}
+          onPress={() => {
+            const url = item.url || item.fileUrl || item.filePath;
+            if (url) {
+              Share.share({ url, title: item.name, message: item.name });
+            } else {
+              Alert.alert('Share', 'No shareable link available for this document.');
+            }
+          }}
+        >
+          <Share2 size={14} color={C.primary} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.actionBtn, styles.deleteBtn]}
+          onPress={() => handleDelete(item._id, item.name)}
+        >
+          <Trash2 size={14} color={C.danger} />
+        </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -203,7 +230,7 @@ export default function DocumentsScreen() {
         <View style={{ flex: 1 }} />
         <TouchableOpacity
           style={styles.addBtn}
-          onPress={() => { setPickedFile(null); setUploadForm({ name: '', docType: 'other', employeeId: '' }); setShowUpload(true); }}
+          onPress={() => { setPickedFile(null); setUploadForm({ name: '', docType: 'other', employeeId: '', expiryDate: '' }); setShowUpload(true); }}
         >
           <Plus size={14} color={C.white} />
           <Text style={styles.addBtnText}>Upload</Text>
@@ -309,6 +336,12 @@ export default function DocumentsScreen() {
               </TouchableOpacity>
             </View>
 
+            <DatePickerField
+              label="Expiry Date (optional)"
+              value={uploadForm.expiryDate}
+              onChange={v => setUploadForm(p => ({ ...p, expiryDate: v }))}
+            />
+
             {!isEmployee && employees.length > 0 && (
               <View>
                 <Text style={styles.fieldLabel}>Employee (optional)</Text>
@@ -389,6 +422,37 @@ export default function DocumentsScreen() {
               ))}
             </ScrollView>
           </View>
+        </View>
+      </Modal>
+
+      {/* Image Preview Modal */}
+      <Modal visible={!!previewDoc} animationType="fade" statusBarTranslucent>
+        <View style={{ flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }}>
+          <TouchableOpacity
+            style={{ position: 'absolute', top: 50, right: 20, zIndex: 10, padding: 10 }}
+            onPress={() => setPreviewDoc(null)}
+          >
+            <X size={28} color="#fff" />
+          </TouchableOpacity>
+          {previewDoc && (
+            <>
+              <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700', position: 'absolute', top: 52, left: 20, right: 60 }} numberOfLines={1}>
+                {previewDoc.name}
+              </Text>
+              {(previewDoc.url || previewDoc.fileUrl || previewDoc.filePath) ? (
+                <Image
+                  source={{ uri: previewDoc.url || previewDoc.fileUrl || previewDoc.filePath }}
+                  style={{ width: '90%', height: '70%' }}
+                  resizeMode="contain"
+                />
+              ) : (
+                <View style={{ alignItems: 'center', gap: 12 }}>
+                  <FileText size={60} color="#fff" />
+                  <Text style={{ color: '#aaa', fontSize: 13 }}>Preview not available for this file type</Text>
+                </View>
+              )}
+            </>
+          )}
         </View>
       </Modal>
     </SafeAreaView>

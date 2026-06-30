@@ -81,6 +81,9 @@ const LEAVE_TYPES = [
   "paternity",
   "unpaid",
   "compensatory",
+  "hourly",
+  "wfh",
+  "outdoor_duty",
 ];
 const LEAVE_STATUS = ["pending", "approved", "rejected", "cancelled"];
 
@@ -276,6 +279,8 @@ const createLeave = asyncHandler(async (req, res) => {
     reason: reason.trim(),
     isHalfDay: !!isHalfDay,
     halfDayType: isHalfDay ? halfDayType : undefined,
+    startHour: req.body.startHour,
+    endHour: req.body.endHour,
   });
 
   try {
@@ -493,6 +498,8 @@ const updateLeave = asyncHandler(async (req, res) => {
     leave.isHalfDay = !!isHalfDay;
     leave.halfDayType = isHalfDay ? halfDayType : undefined;
   }
+  if (req.body.startHour !== undefined) leave.startHour = req.body.startHour;
+  if (req.body.endHour !== undefined) leave.endHour = req.body.endHour;
 
   if (startDate && endDate && days) {
     const start = new Date(startDate);

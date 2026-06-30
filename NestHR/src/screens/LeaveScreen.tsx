@@ -14,7 +14,7 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { DatePickerField } from '../components/common/DatePickerField';
+import { DatePickerField, TimePickerField } from '../components/common/DatePickerField';
 import {
   Calendar,
   Plus,
@@ -47,6 +47,9 @@ const LEAVE_TYPES = [
   'paternity',
   'unpaid',
   'compensatory',
+  'hourly',
+  'wfh',
+  'outdoor_duty',
 ];
 
 export default function LeaveScreen() {
@@ -56,6 +59,7 @@ export default function LeaveScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
+  const [leaveTypeFilter, setLeaveTypeFilter] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -63,12 +67,20 @@ export default function LeaveScreen() {
     startDate: '',
     endDate: '',
     reason: '',
+    startHour: '',
+    endHour: '',
   });
   const [approveModal, setApproveModal] = useState<{
     visible: boolean;
     leave: LeaveRequest | null;
     deductSalary: boolean;
-  }>({ visible: false, leave: null, deductSalary: false });
+    comment: string;
+  }>({ visible: false, leave: null, deductSalary: false, comment: '' });
+  const [rejectModal, setRejectModal] = useState<{
+    visible: boolean;
+    leave: LeaveRequest | null;
+    comment: string;
+  }>({ visible: false, leave: null, comment: '' });
   const [editLeave, setEditLeave] = useState<LeaveRequest | null>(null);
   const [showEditForm, setShowEditForm] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -76,6 +88,8 @@ export default function LeaveScreen() {
     startDate: '',
     endDate: '',
     reason: '',
+    startHour: '',
+    endHour: '',
   });
 
   const load = useCallback(async () => {
@@ -92,29 +106,53 @@ export default function LeaveScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await load();
     setRefreshing(false);
   };
 
-  const filtered = statusFilter
-    ? leaves.filter(l => l.status === statusFilter)
-    : leaves;
+  // Change 1: filter by both status and leave type
+  const filtered = leaves.filter(l => {
+    if (statusFilter && l.status !== statusFilter) return false;
+    if (leaveTypeFilter && l.leaveType !== leaveTypeFilter) return false;
+    return true;
+  });
+
+  // Change 2: leave usage per type (for employee balance strip)
+  const leaveUsage = LEAVE_TYPES.reduce((acc, t) => {
+    const approved = leaves.filter(l => l.leaveType === t && l.status === 'approved');
+    const days = approved.reduce((s, l) => s + (l.days || 0), 0);
+    acc[t] = days;
+    return acc;
+  }, {} as Record<string, number>);
 
   const handleApply = async () => {
-    if (!form.startDate || !form.endDate || !form.reason.trim()) {
-      Alert.alert('Validation', 'Start date, end date and reason are required');
-      return;
+    const isHourly = form.leaveType === 'hourly';
+    if (isHourly) {
+      if (!form.startDate || !form.startHour || !form.endHour || !form.reason.trim()) {
+        Alert.alert('Validation', 'Date, start hour, end hour and reason are required');
+        return;
+      }
+    } else {
+      if (!form.startDate || !form.endDate || !form.reason.trim()) {
+        Alert.alert('Validation', 'Start date, end date and reason are required');
+        return;
+      }
     }
     setSaving(true);
     try {
       const start = new Date(form.startDate);
-      const end = new Date(form.endDate);
-      const days = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
-      await leaveAPI.create({ ...form, days });
+      const end = isHourly ? start : new Date(form.endDate);
+      const days = isHourly ? 0.125 : Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+      await leaveAPI.create({
+        ...form,
+        endDate: isHourly ? form.startDate : form.endDate,
+        days,
+      });
       setShowForm(false);
-      setForm({ leaveType: 'casual', startDate: '', endDate: '', reason: '' });
+      setForm({ leaveType: 'casual', startDate: '', endDate: '', reason: '', startHour: '', endHour: '' });
       await load();
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -129,21 +167,8 @@ export default function LeaveScreen() {
     deductSalary?: boolean,
   ) => {
     if (action === 'rejected') {
-      Alert.alert('Reject Leave', 'Are you sure?', [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reject',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await leaveAPI.updateStatus(leave._id, { status: 'rejected' });
-              await load();
-            } catch (e: any) {
-              Alert.alert('Error', e.message);
-            }
-          },
-        },
-      ]);
+      // Change 4: open reject modal instead of Alert
+      setRejectModal({ visible: true, leave, comment: '' });
       return;
     }
     // For approval: show deductSalary modal
@@ -151,17 +176,38 @@ export default function LeaveScreen() {
       visible: true,
       leave,
       deductSalary: deductSalary ?? leave.leaveType === 'unpaid',
+      comment: '',
     });
   };
 
   const confirmApprove = async () => {
     if (!approveModal.leave) return;
     try {
+      // Change 3: pass comment to updateStatus
       await leaveAPI.updateStatus(approveModal.leave._id, {
         status: 'approved',
         deductSalary: approveModal.deductSalary,
+        comment: approveModal.comment || undefined,
       });
-      setApproveModal({ visible: false, leave: null, deductSalary: false });
+      setApproveModal({ visible: false, leave: null, deductSalary: false, comment: '' });
+      await load();
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    }
+  };
+
+  const confirmReject = async () => {
+    if (!rejectModal.leave) return;
+    if (!rejectModal.comment.trim()) {
+      Alert.alert('Required', 'Please provide a rejection reason');
+      return;
+    }
+    try {
+      await leaveAPI.updateStatus(rejectModal.leave._id, {
+        status: 'rejected',
+        comment: rejectModal.comment,
+      });
+      setRejectModal({ visible: false, leave: null, comment: '' });
       await load();
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -175,22 +221,36 @@ export default function LeaveScreen() {
       startDate: leave.startDate ? leave.startDate.split('T')[0] : '',
       endDate: leave.endDate ? leave.endDate.split('T')[0] : '',
       reason: leave.reason || '',
+      startHour: (leave as any).startHour || '',
+      endHour: (leave as any).endHour || '',
     });
     setShowEditForm(true);
   };
 
   const handleUpdate = async () => {
     if (!editLeave) return;
-    if (!editForm.startDate || !editForm.endDate || !editForm.reason.trim()) {
-      Alert.alert('Validation', 'Start date, end date and reason are required');
-      return;
+    const isHourly = editForm.leaveType === 'hourly';
+    if (isHourly) {
+      if (!editForm.startDate || !editForm.startHour || !editForm.endHour || !editForm.reason.trim()) {
+        Alert.alert('Validation', 'Date, start hour, end hour and reason are required');
+        return;
+      }
+    } else {
+      if (!editForm.startDate || !editForm.endDate || !editForm.reason.trim()) {
+        Alert.alert('Validation', 'Start date, end date and reason are required');
+        return;
+      }
     }
     setSaving(true);
     try {
       const start = new Date(editForm.startDate);
-      const end = new Date(editForm.endDate);
-      const days = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
-      await leaveAPI.update(editLeave._id, { ...editForm, days });
+      const end = isHourly ? start : new Date(editForm.endDate);
+      const days = isHourly ? 0.125 : Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+      await leaveAPI.update(editLeave._id, {
+        ...editForm,
+        endDate: isHourly ? editForm.startDate : editForm.endDate,
+        days,
+      });
       setShowEditForm(false);
       setEditLeave(null);
       await load();
@@ -292,7 +352,34 @@ export default function LeaveScreen() {
         ))}
       </View>
 
-      {/* Filter chips */}
+      {/* Change 2: Leave balance strip (employee only) */}
+      {isEmployee && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.balanceStrip}
+          contentContainerStyle={{ gap: 8, paddingHorizontal: 16 }}
+        >
+          {LEAVE_TYPES.map(t => {
+            const used = leaveUsage[t] ?? 0;
+            return (
+              <View key={t} style={styles.balanceCard}>
+                <Text style={styles.balanceType}>{t.toUpperCase()}</Text>
+                <Text
+                  style={[
+                    styles.balanceDays,
+                    { color: used > 0 ? C.primary : C.textMuted },
+                  ]}
+                >
+                  {used > 0 ? `${used}d used` : '0d'}
+                </Text>
+              </View>
+            );
+          })}
+        </ScrollView>
+      )}
+
+      {/* Change 1: Functional filter chips */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -303,9 +390,25 @@ export default function LeaveScreen() {
           { key: '', label: 'All' },
           ...LEAVE_TYPES.map(t => ({ key: t, label: t })),
         ].map(f => (
-          <View key={f.key} style={styles.chip}>
-            <Text style={styles.chipText}>{f.label.toUpperCase()}</Text>
-          </View>
+          <TouchableOpacity
+            key={f.key}
+            style={[
+              styles.chip,
+              leaveTypeFilter === f.key && styles.chipActive,
+            ]}
+            onPress={() =>
+              setLeaveTypeFilter(p => (p === f.key ? '' : f.key))
+            }
+          >
+            <Text
+              style={[
+                styles.chipText,
+                leaveTypeFilter === f.key && styles.chipTextActive,
+              ]}
+            >
+              {f.label.toUpperCase()}
+            </Text>
+          </TouchableOpacity>
         ))}
       </ScrollView>
 
@@ -431,6 +534,13 @@ export default function LeaveScreen() {
                   </Text>
                 )}
 
+                {/* Change 4: show comment on card */}
+                {(item as any).comment && (
+                  <Text style={styles.commentText}>
+                    "{(item as any).comment}"
+                  </Text>
+                )}
+
                 {item.status === 'pending' && !isEmployee && (
                   <View style={styles.actionRow}>
                     <TouchableOpacity
@@ -473,13 +583,13 @@ export default function LeaveScreen() {
         />
       )}
 
-      {/* Approve Leave Modal (paid vs unpaid) */}
+      {/* Change 3: Approve Leave Modal with comment */}
       <Modal
         visible={approveModal.visible}
         transparent
         animationType="fade"
         onRequestClose={() =>
-          setApproveModal({ visible: false, leave: null, deductSalary: false })
+          setApproveModal({ visible: false, leave: null, deductSalary: false, comment: '' })
         }
       >
         <View style={styles.overlay}>
@@ -552,6 +662,15 @@ export default function LeaveScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
+            <Text style={styles.approveModalLabel}>Comment (optional)</Text>
+            <TextInput
+              style={styles.commentInput}
+              value={approveModal.comment}
+              onChangeText={v => setApproveModal(p => ({ ...p, comment: v }))}
+              placeholder="Add a note for the employee..."
+              placeholderTextColor={C.textLight}
+              multiline
+            />
             <View style={styles.approveModalActions}>
               <TouchableOpacity
                 style={styles.approveModalCancel}
@@ -560,6 +679,7 @@ export default function LeaveScreen() {
                     visible: false,
                     leave: null,
                     deductSalary: false,
+                    comment: '',
                   })
                 }
               >
@@ -571,6 +691,55 @@ export default function LeaveScreen() {
               >
                 <Check size={14} color={C.white} />
                 <Text style={styles.approveModalConfirmText}>Approve</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Change 4: Reject Leave Modal */}
+      <Modal
+        visible={rejectModal.visible}
+        transparent
+        animationType="fade"
+        onRequestClose={() =>
+          setRejectModal({ visible: false, leave: null, comment: '' })
+        }
+      >
+        <View style={styles.overlay}>
+          <View style={styles.approveModalBox}>
+            <Text style={styles.approveModalTitle}>Reject Leave</Text>
+            {rejectModal.leave && (
+              <Text style={styles.approveModalSub}>
+                {(rejectModal.leave.employee as any)?.firstName}{' '}
+                {(rejectModal.leave.employee as any)?.lastName} ·{' '}
+                {rejectModal.leave.leaveType?.toUpperCase()}
+              </Text>
+            )}
+            <Text style={styles.approveModalLabel}>Reason for rejection</Text>
+            <TextInput
+              style={styles.commentInput}
+              value={rejectModal.comment}
+              onChangeText={v => setRejectModal(p => ({ ...p, comment: v }))}
+              placeholder="Reason for rejection..."
+              placeholderTextColor={C.textLight}
+              multiline
+            />
+            <View style={styles.approveModalActions}>
+              <TouchableOpacity
+                style={styles.approveModalCancel}
+                onPress={() =>
+                  setRejectModal({ visible: false, leave: null, comment: '' })
+                }
+              >
+                <Text style={styles.approveModalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.approveModalConfirm, { backgroundColor: C.danger }]}
+                onPress={confirmReject}
+              >
+                <X size={14} color={C.white} />
+                <Text style={styles.approveModalConfirmText}>Reject</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -631,22 +800,51 @@ export default function LeaveScreen() {
                 ))}
               </View>
             </View>
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <View style={{ flex: 1 }}>
+            {editForm.leaveType === 'hourly' ? (
+              <View>
                 <DatePickerField
-                  label="Start Date *"
+                  label="Date *"
                   value={editForm.startDate}
                   onChange={v => setEditForm(p => ({ ...p, startDate: v }))}
                 />
               </View>
-              <View style={{ flex: 1 }}>
-                <DatePickerField
-                  label="End Date *"
-                  value={editForm.endDate}
-                  onChange={v => setEditForm(p => ({ ...p, endDate: v }))}
-                />
+            ) : (
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <DatePickerField
+                    label="Start Date *"
+                    value={editForm.startDate}
+                    onChange={v => setEditForm(p => ({ ...p, startDate: v }))}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <DatePickerField
+                    label="End Date *"
+                    value={editForm.endDate}
+                    onChange={v => setEditForm(p => ({ ...p, endDate: v }))}
+                  />
+                </View>
               </View>
-            </View>
+            )}
+
+            {editForm.leaveType === 'hourly' && (
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <TimePickerField
+                    label="Start Time *"
+                    value={editForm.startHour}
+                    onChange={v => setEditForm(p => ({ ...p, startHour: v }))}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <TimePickerField
+                    label="End Time *"
+                    value={editForm.endHour}
+                    onChange={v => setEditForm(p => ({ ...p, endHour: v }))}
+                  />
+                </View>
+              </View>
+            )}
             <View>
               <Text style={styles.fieldLabel}>Reason *</Text>
               <TextInput
@@ -722,22 +920,51 @@ export default function LeaveScreen() {
                 ))}
               </View>
             </View>
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <View style={{ flex: 1 }}>
+            {form.leaveType === 'hourly' ? (
+              <View>
                 <DatePickerField
-                  label="Start Date *"
+                  label="Date *"
                   value={form.startDate}
                   onChange={v => setForm(p => ({ ...p, startDate: v }))}
                 />
               </View>
-              <View style={{ flex: 1 }}>
-                <DatePickerField
-                  label="End Date *"
-                  value={form.endDate}
-                  onChange={v => setForm(p => ({ ...p, endDate: v }))}
-                />
+            ) : (
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <DatePickerField
+                    label="Start Date *"
+                    value={form.startDate}
+                    onChange={v => setForm(p => ({ ...p, startDate: v }))}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <DatePickerField
+                    label="End Date *"
+                    value={form.endDate}
+                    onChange={v => setForm(p => ({ ...p, endDate: v }))}
+                  />
+                </View>
               </View>
-            </View>
+            )}
+
+            {form.leaveType === 'hourly' && (
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <TimePickerField
+                    label="Start Time *"
+                    value={form.startHour}
+                    onChange={v => setForm(p => ({ ...p, startHour: v }))}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <TimePickerField
+                    label="End Time *"
+                    value={form.endHour}
+                    onChange={v => setForm(p => ({ ...p, endHour: v }))}
+                  />
+                </View>
+              </View>
+            )}
             <View>
               <Text style={styles.fieldLabel}>Reason *</Text>
               <TextInput
@@ -818,6 +1045,33 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginTop: 2,
   },
+  // Leave balance strip
+  balanceStrip: {
+    maxHeight: 52,
+    backgroundColor: C.white,
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
+    paddingVertical: 8,
+  },
+  balanceCard: {
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    alignItems: 'center',
+    minWidth: 72,
+  },
+  balanceType: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: C.black,
+    textTransform: 'uppercase',
+  },
+  balanceDays: {
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 2,
+  },
   filterBar: {
     maxHeight: 48,
     backgroundColor: C.white,
@@ -831,7 +1085,12 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: C.black,
   },
+  chipActive: {
+    backgroundColor: C.primary,
+    borderColor: C.primary,
+  },
   chipText: { fontSize: 12, fontWeight: '700', color: C.black },
+  chipTextActive: { color: C.white },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 14, fontWeight: '700', color: C.textMuted },
@@ -908,6 +1167,27 @@ const styles = StyleSheet.create({
     color: C.textMuted,
     fontStyle: 'italic',
     marginTop: 6,
+  },
+  commentInput: {
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 13,
+    color: C.black,
+    backgroundColor: C.white,
+    minHeight: 60,
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  commentText: {
+    fontSize: 11,
+    color: C.textMuted,
+    fontStyle: 'italic',
+    marginTop: 6,
+    paddingLeft: 8,
+    borderLeftWidth: 2,
+    borderLeftColor: '#E5E7EB',
   },
   actionRow: {
     flexDirection: 'row',

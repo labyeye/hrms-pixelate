@@ -298,6 +298,7 @@ function EmployeeDashboard({ navigation }: any) {
   const [empProfile, setEmpProfile] = useState<any>(null);
   const [myAttendance, setMyAttendance] = useState<any[]>([]);
   const [latestPayroll, setLatestPayroll] = useState<any>(null);
+  const [essStats, setEssStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -316,10 +317,11 @@ function EmployeeDashboard({ navigation }: any) {
 
   const load = useCallback(async () => {
     try {
-      const [profileRes, attRes, payRes] = await Promise.allSettled([
+      const [profileRes, attRes, payRes, essRes] = await Promise.allSettled([
         employeeAPI.getMe(),
         attendanceAPI.getAll({ month: String(month), year: String(year), limit: '200' }),
         payrollAPI.getMy(),
+        dashboardAPI.getEmployeeStats(),
       ]);
       if (profileRes.status === 'fulfilled') {
         setEmpProfile(profileRes.value?.data || profileRes.value);
@@ -330,6 +332,9 @@ function EmployeeDashboard({ navigation }: any) {
       if (payRes.status === 'fulfilled') {
         const pays = payRes.value?.data || [];
         setLatestPayroll(pays[0] || null);
+      }
+      if (essRes.status === 'fulfilled') {
+        setEssStats(essRes.value?.data || essRes.value);
       }
     } catch {
     } finally {
@@ -551,6 +556,82 @@ function EmployeeDashboard({ navigation }: any) {
               </View>
             </View>
           </View>
+
+          {/* ESS Overview Alerts & Cards */}
+          {essStats && (
+            <View style={{ marginBottom: 16 }}>
+              {/* Birthday & Anniversary Banners */}
+              {(essStats.birthdayWishes?.isTodayUserBirthday ||
+                (essStats.birthdayWishes?.todayBirthdays && essStats.birthdayWishes.todayBirthdays.length > 0) ||
+                essStats.workAnniversary?.isTodayUserAnniversary ||
+                (essStats.workAnniversary?.todayAnniversaries && essStats.workAnniversary.todayAnniversaries.length > 0)) && (
+                <View style={styles.essWishCard}>
+                  {essStats.birthdayWishes?.isTodayUserBirthday && (
+                    <Text style={styles.essWishTitle}>🎂 Happy Birthday to You! 🎉</Text>
+                  )}
+                  {essStats.birthdayWishes?.todayBirthdays?.map((b: any) => (
+                    <Text key={b._id} style={styles.essWishText}>
+                      It is {b.firstName} {b.lastName}'s birthday today! 🎁
+                    </Text>
+                  ))}
+                  {essStats.workAnniversary?.isTodayUserAnniversary && (
+                    <Text style={[styles.essWishTitle, { marginTop: 8 }]}>🎖️ Happy Work Anniversary! 👏</Text>
+                  )}
+                  {essStats.workAnniversary?.todayAnniversaries?.map((a: any) => (
+                    <Text key={a._id} style={styles.essWishText}>
+                      Happy Work Anniversary to {a.firstName} {a.lastName}! 🎖️
+                    </Text>
+                  ))}
+                </View>
+              )}
+
+              {/* Shift, Approvals, Unpaid Payroll Info */}
+              <View style={styles.essGrid}>
+                <View style={styles.essGridCard}>
+                  <Clock size={16} color={C.primary} />
+                  <Text style={styles.essGridCardLabel}>TODAY'S SHIFT</Text>
+                  <Text style={styles.essGridCardVal}>{essStats.todayShift?.name || "General"}</Text>
+                  <Text style={styles.essGridCardSub}>
+                    {essStats.todayShift?.startTime} - {essStats.todayShift?.endTime}
+                  </Text>
+                </View>
+
+                <View style={styles.essGridCard}>
+                  <CheckCircle2 size={16} color={C.warning} />
+                  <Text style={styles.essGridCardLabel}>APPROVALS</Text>
+                  <Text style={styles.essGridCardVal}>
+                    {essStats.pendingApprovalsCount > 0 ? `${essStats.pendingApprovalsCount} Pending` : "None"}
+                  </Text>
+                  <Text style={styles.essGridCardSub}>Requires action</Text>
+                </View>
+
+                <View style={styles.essGridCard}>
+                  <IndianRupee size={16} color={C.success} />
+                  <Text style={styles.essGridCardLabel}>UNPAID SALARY</Text>
+                  <Text style={styles.essGridCardVal}>
+                    {essStats.pendingSalary?.length > 0 ? `${essStats.pendingSalary.length} Slips` : "None"}
+                  </Text>
+                  <Text style={styles.essGridCardSub}>Pending release</Text>
+                </View>
+              </View>
+
+              {/* Announcements List */}
+              {essStats.announcements?.length > 0 && (
+                <View style={styles.essAnnounceCard}>
+                  <Text style={styles.essSectionTitle}>📢 Announcements</Text>
+                  {essStats.announcements.map((a: any) => (
+                    <View key={a._id} style={styles.essAnnounceRow}>
+                      <Text style={styles.essAnnounceTitle}>{a.title}</Text>
+                      <Text style={styles.essAnnounceBody}>{a.content}</Text>
+                      <Text style={styles.essAnnounceDate}>{new Date(a.date).toLocaleDateString('en-IN')}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+
+            </View>
+          )}
 
           {/* 3-Day Attendance Tabs */}
           <Text style={styles.sectionLabel}>Attendance</Text>
@@ -793,6 +874,90 @@ const styles = StyleSheet.create({
     paddingHorizontal: 3,
   },
   bellBadgeText: { color: C.white, fontSize: 9, fontWeight: '700' },
+  essWishCard: {
+    backgroundColor: '#FDF2F8',
+    borderWidth: 2,
+    borderColor: C.black,
+    padding: 12,
+    marginBottom: 12,
+  },
+  essWishTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: C.black,
+  },
+  essWishText: {
+    fontSize: 12,
+    color: C.black,
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  essGrid: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  essGridCard: {
+    flex: 1,
+    backgroundColor: C.white,
+    borderWidth: 2,
+    borderColor: C.black,
+    padding: 10,
+  },
+  essGridCardLabel: {
+    fontSize: 8,
+    fontWeight: '800',
+    color: C.textMuted,
+    marginTop: 4,
+  },
+  essGridCardVal: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: C.black,
+    marginTop: 2,
+  },
+  essGridCardSub: {
+    fontSize: 9,
+    color: C.textMuted,
+    marginTop: 1,
+  },
+  essAnnounceCard: {
+    backgroundColor: C.white,
+    borderWidth: 2,
+    borderColor: C.black,
+    padding: 12,
+    marginBottom: 12,
+  },
+  essSectionTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: C.black,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  essAnnounceRow: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+    paddingBottom: 8,
+    marginBottom: 8,
+  },
+  essAnnounceTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: C.black,
+  },
+  essAnnounceBody: {
+    fontSize: 11,
+    color: C.textMuted,
+    marginTop: 2,
+  },
+  essAnnounceDate: {
+    fontSize: 9,
+    color: C.textLight,
+    marginTop: 4,
+    fontFamily: 'monospace',
+  },
+
   loaderWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { padding: 16, paddingBottom: 40 },
   errorBanner: {

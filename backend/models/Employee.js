@@ -93,6 +93,49 @@ const employeeSchema = new mongoose.Schema(
     // Raw face template received from ZKTeco/ESSL device (hex string, device-specific binary format)
     deviceFaceTemplate: { type: String, default: "" },
     deviceFaceEnrolledAt: { type: Date },
+    // ── ESS Profile Details ──────────────────────────────────────────────────
+    nominees: [
+      {
+        name: { type: String, required: true },
+        relationship: { type: String, required: true },
+        dateOfBirth: { type: Date },
+        percentage: { type: Number, default: 100 },
+      },
+    ],
+    familyDetails: [
+      {
+        name: { type: String, required: true },
+        relationship: { type: String, required: true },
+        dateOfBirth: { type: Date },
+        phone: { type: String },
+      },
+    ],
+    education: [
+      {
+        degree: { type: String, required: true },
+        school: { type: String, required: true },
+        passYear: { type: Number, required: true },
+        percentage: { type: Number },
+      },
+    ],
+    experience: [
+      {
+        company: { type: String, required: true },
+        role: { type: String, required: true },
+        start: { type: Date, required: true },
+        end: { type: Date },
+        description: { type: String },
+      },
+    ],
+    skills: { type: [String], default: [] },
+    certificates: [
+      {
+        name: { type: String, required: true },
+        issuer: { type: String, required: true },
+        date: { type: Date },
+        docUrl: { type: String },
+      },
+    ],
   },
   { timestamps: true },
 );

@@ -22,6 +22,9 @@ const leaveSchema = new mongoose.Schema(
         "paternity",
         "unpaid",
         "compensatory",
+        "hourly",
+        "wfh",
+        "outdoor_duty",
       ],
       required: true,
     },
@@ -39,6 +42,8 @@ const leaveSchema = new mongoose.Schema(
     rejectionReason: { type: String },
     isHalfDay: { type: Boolean, default: false },
     halfDayType: { type: String, enum: ["first_half", "second_half"] },
+    startHour: { type: String }, // e.g. "14:00"
+    endHour: { type: String }, // e.g. "16:00"
     deductSalary: { type: Boolean, default: true }, // true = unpaid (deduct), false = paid leave (no deduction)
   },
   { timestamps: true },

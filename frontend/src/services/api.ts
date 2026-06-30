@@ -77,6 +77,7 @@ export const authAPI = {
 
 export const dashboardAPI = {
   getStats: () => request("/dashboard/stats"),
+  getEmployeeStats: () => request("/dashboard/employee"),
 };
 
 export const employeeAPI = {
@@ -607,6 +608,13 @@ export const supportAPI = {
     priority: string;
     description: string;
   }) => request("/support", { method: "POST", body: JSON.stringify(body) }),
+  reply: (id: string, message: string) =>
+    request(`/support/${id}/reply`, {
+      method: "POST",
+      body: JSON.stringify({ message }),
+    }),
+  close: (id: string) =>
+    request(`/support/${id}/close`, { method: "POST" }),
 };
 
 export const documentAPI = {
@@ -628,4 +636,56 @@ export const documentAPI = {
 export const payrollPreviewAPI = {
   preview: (body: { month: number; year: number; employeeIds?: string[] }) =>
     request("/payroll/preview", { method: "POST", body: JSON.stringify(body) }),
+};
+
+export const assetAPI = {
+  getAll: (params?: Record<string, string>) => {
+    const q = params ? "?" + new URLSearchParams(params).toString() : "";
+    return request(`/assets${q}`);
+  },
+  create: (body: {
+    name: string;
+    assetType: string;
+    serialNumber: string;
+    employeeId?: string;
+  }) => request("/assets", { method: "POST", body: JSON.stringify(body) }),
+  assign: (id: string, employeeId: string, notes?: string) =>
+    request(`/assets/${id}/assign`, {
+      method: "POST",
+      body: JSON.stringify({ employeeId, notes }),
+    }),
+  return: (id: string) => request(`/assets/${id}/return`, { method: "POST" }),
+  delete: (id: string) => request(`/assets/${id}`, { method: "DELETE" }),
+};
+
+export const announcementAPI = {
+  getAll: () => request("/announcements"),
+  create: (body: { title: string; content: string }) =>
+    request("/announcements", { method: "POST", body: JSON.stringify(body) }),
+  delete: (id: string) => request(`/announcements/${id}`, { method: "DELETE" }),
+};
+
+
+
+export const attendanceCorrectionAPI = {
+  getAll: (params?: Record<string, string>) => {
+    const q = params ? "?" + new URLSearchParams(params).toString() : "";
+    return request(`/attendance-corrections${q}`);
+  },
+  create: (body: {
+    date: string;
+    type: "regularization" | "missed_punch";
+    checkIn?: string;
+    checkOut?: string;
+    reason: string;
+  }) =>
+    request("/attendance-corrections", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  updateStatus: (id: string, status: "approved" | "rejected", rejectionReason?: string) =>
+    request(`/attendance-corrections/${id}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status, rejectionReason }),
+    }),
 };

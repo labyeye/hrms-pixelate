@@ -49,6 +49,17 @@ const supportTicketSchema = new mongoose.Schema(
     crmTicketId: { type: String, default: null },
     statusUpdatedAt: { type: Date },
     resolvedNote: { type: String, default: "" },
+    replies: [
+      {
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        message: { type: String, required: true },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
   },
   { timestamps: true },
 );

@@ -8,42 +8,85 @@ const { validateMagicBytes } = require("../middleware/upload");
 const UPLOADS_ROOT = path.resolve(__dirname, "../uploads/employee-docs");
 
 const uploadDocument = asyncHandler(async (req, res) => {
-  if (!req.file) {
-    res.status(400);
-    throw new Error("No file uploaded");
+  let fileData = req.body.fileData;
+  let employeeId = req.body.employeeId;
+  let name = req.body.name;
+  let docType = req.body.docType;
+
+  let targetEmployeeId = employeeId;
+  if (req.user.role === "employee") {
+    const emp = await Employee.findOne({ user: req.user._id });
+    if (!emp) {
+      if (req.file) fs.unlinkSync(req.file.path);
+      res.status(404);
+      throw new Error("Employee record not found");
+    }
+    targetEmployeeId = emp._id.toString();
   }
 
-  const { employeeId, name, docType } = req.body;
-  if (!employeeId || !name || !docType) {
-    fs.unlinkSync(req.file.path);
+  if (!targetEmployeeId || !name || !docType) {
+    if (req.file) fs.unlinkSync(req.file.path);
     res.status(400);
     throw new Error("employeeId, name and docType are required");
   }
 
-  await validateMagicBytes(req.file.path);
+  let finalFile = null;
+
+  if (req.file) {
+    finalFile = req.file;
+  } else if (fileData) {
+    const matches = fileData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      res.status(400);
+      throw new Error("Invalid base64 file data");
+    }
+    const mimeType = matches[1];
+    const fileBuffer = Buffer.from(matches[2], "base64");
+    const sizeBytes = fileBuffer.length;
+
+    const ext = mimeType.split("/")[1] || "bin";
+    const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const absPath = path.resolve(UPLOADS_ROOT, filename);
+
+    fs.writeFileSync(absPath, fileBuffer);
+
+    finalFile = {
+      path: absPath,
+      mimetype: mimeType,
+      size: sizeBytes,
+      filename: filename,
+    };
+  }
+
+  if (!finalFile) {
+    res.status(400);
+    throw new Error("No file uploaded");
+  }
+
+  await validateMagicBytes(finalFile.path);
 
   const employee = await Employee.findOne({
-    _id: employeeId,
+    _id: targetEmployeeId,
     company: req.user.company,
   });
   if (!employee) {
-    fs.unlinkSync(req.file.path);
+    fs.unlinkSync(finalFile.path);
     res.status(404);
     throw new Error("Employee not found");
   }
 
   const relativePath = path
-    .relative(path.resolve(__dirname, "../"), req.file.path)
+    .relative(path.resolve(__dirname, "../"), finalFile.path)
     .replace(/\\/g, "/");
 
   const doc = await EmployeeDocument.create({
     company: req.user.company,
-    employee: employeeId,
+    employee: targetEmployeeId,
     uploadedBy: req.user._id,
     name,
     docType,
-    mimeType: req.file.mimetype,
-    sizeBytes: req.file.size,
+    mimeType: finalFile.mimetype,
+    sizeBytes: finalFile.size,
     filePath: relativePath,
   });
 
@@ -116,14 +159,32 @@ const downloadDocument = asyncHandler(async (req, res) => {
     throw new Error("File missing on server");
   }
 
-  res.download(abs, doc.name);
+  const fileBuffer = fs.readFileSync(abs);
+  const base64 = fileBuffer.toString("base64");
+
+  res.json({
+    success: true,
+    data: {
+      fileData: base64,
+      mimeType: doc.mimeType,
+      name: doc.name,
+    },
+  });
 });
 
 const deleteDocument = asyncHandler(async (req, res) => {
-  const doc = await EmployeeDocument.findOne({
-    _id: req.params.id,
-    company: req.user.company,
-  });
+  const filter = { _id: req.params.id, company: req.user.company };
+
+  if (req.user.role === "employee") {
+    const emp = await Employee.findOne({ user: req.user._id });
+    if (!emp) {
+      res.status(404);
+      throw new Error("Employee record not found");
+    }
+    filter.employee = emp._id;
+  }
+
+  const doc = await EmployeeDocument.findOne(filter);
   if (!doc) {
     res.status(404);
     throw new Error("Document not found");

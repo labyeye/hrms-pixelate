@@ -12,7 +12,7 @@ const {
   downloadEmployeeDocument,
 } = require("../controllers/employeeController");
 const { protect, authorize } = require("../middleware/auth");
-const { uploadEmployeeDocs } = require("../middleware/upload");
+const { uploadEmployeeDocs, uploadAvatar } = require("../middleware/upload");
 const router = express.Router();
 
 router.get("/me", protect, getMyEmployee);
@@ -55,6 +55,21 @@ router.post(
   authorize("super_admin", "hr_manager", "hr_executive"),
   uploadEmployeeDocs,
   uploadEmployeeDocuments,
+);
+
+router.post(
+  "/:id/avatar",
+  protect,
+  authorize("super_admin", "hr_manager", "hr_executive"),
+  uploadAvatar,
+  async (req, res) => {
+    const Employee = require("../models/Employee");
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const avatarUrl = `${baseUrl}/uploads/avatars/${req.file.filename}`;
+    await Employee.findByIdAndUpdate(req.params.id, { avatar: avatarUrl });
+    res.json({ success: true, avatar: avatarUrl });
+  },
 );
 
 router.get(

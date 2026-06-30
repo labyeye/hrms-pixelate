@@ -27,7 +27,7 @@ import {
   X,
   Pencil,
 } from 'lucide-react-native';
-import { attendanceAPI, employeeAPI } from '../api/api';
+import { attendanceAPI, employeeAPI, attendanceCorrectionAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import { AttendanceRecord } from '../types/hrms';
 import { C } from '../theme';
@@ -100,6 +100,70 @@ export default function AttendanceScreen() {
     notes: '',
   });
 
+  // Calendar modal state
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState({
+    year: new Date().getFullYear(),
+    month: new Date().getMonth(),
+  });
+
+  // Bulk modal state
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkStatus, setBulkStatus] = useState('present');
+  const [bulkSelected, setBulkSelected] = useState<string[]>([]);
+  const [bulkSaving, setBulkSaving] = useState(false);
+
+  // Correction states
+  const [showCorrectionModal, setShowCorrectionModal] = useState(false);
+  const [correctionForm, setCorrectionForm] = useState({
+    date: toDateStr(new Date()),
+    type: 'regularization',
+    checkIn: '',
+    checkOut: '',
+    reason: '',
+  });
+  const [submittingCorrection, setSubmittingCorrection] = useState(false);
+
+  const handleCreateCorrection = async () => {
+    if (!correctionForm.reason.trim()) {
+      Alert.alert('Validation', 'Please provide a reason');
+      return;
+    }
+    setSubmittingCorrection(true);
+    try {
+      let checkInISO = undefined;
+      let checkOutISO = undefined;
+
+      if (correctionForm.checkIn) {
+        checkInISO = new Date(`${correctionForm.date}T${correctionForm.checkIn}:00`).toISOString();
+      }
+      if (correctionForm.checkOut) {
+        checkOutISO = new Date(`${correctionForm.date}T${correctionForm.checkOut}:00`).toISOString();
+      }
+
+      await attendanceCorrectionAPI.create({
+        date: correctionForm.date,
+        type: correctionForm.type,
+        checkIn: checkInISO,
+        checkOut: checkOutISO,
+        reason: correctionForm.reason.trim(),
+      });
+      Alert.alert('Success', 'Attendance correction request submitted.');
+      setShowCorrectionModal(false);
+      setCorrectionForm({
+        date: toDateStr(new Date()),
+        type: 'regularization',
+        checkIn: '',
+        checkOut: '',
+        reason: '',
+      });
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to submit request');
+    } finally {
+      setSubmittingCorrection(false);
+    }
+  };
+
   const load = useCallback(
     async (showLoader = true) => {
       if (showLoader) {
@@ -161,17 +225,30 @@ export default function AttendanceScreen() {
     setShowModal(true);
   };
 
-  const markAbsent = async (empId: string) => {
-    try {
-      await attendanceAPI.mark({
-        employee: empId,
-        date: dateFilter,
-        status: 'absent',
-      });
-      await load();
-    } catch (e: any) {
-      Alert.alert('Error', e.message);
-    }
+  const markAbsent = (empId: string) => {
+    Alert.alert(
+      'Mark Absent',
+      `Mark this employee as absent for ${dateFilter}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Mark Absent',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await attendanceAPI.mark({
+                employee: empId,
+                date: dateFilter,
+                status: 'absent',
+              });
+              await load();
+            } catch (e: any) {
+              Alert.alert('Error', e.message);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const openEdit = (record: AttendanceRecord) => {
@@ -277,9 +354,28 @@ export default function AttendanceScreen() {
           <Text style={styles.headerTitle}>Attendance</Text>
         </View>
         {!isEmployee && (
-          <TouchableOpacity style={styles.addBtn} onPress={openNew}>
-            <CheckCircle2 size={14} color={C.white} />
-            <Text style={styles.addBtnText}>Mark</Text>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity
+              style={styles.bulkBtn}
+              onPress={() => {
+                setBulkSelected([]);
+                setBulkStatus('present');
+                setShowBulkModal(true);
+              }}
+            >
+              <CheckCircle2 size={14} color={C.primary} />
+              <Text style={styles.bulkBtnText}>Bulk</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.addBtn} onPress={openNew}>
+              <CheckCircle2 size={14} color={C.white} />
+              <Text style={styles.addBtnText}>Mark</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {isEmployee && (
+          <TouchableOpacity style={styles.addBtn} onPress={() => setShowCorrectionModal(true)}>
+            <Clock size={14} color={C.white} />
+            <Text style={styles.addBtnText}>Correction</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -291,7 +387,15 @@ export default function AttendanceScreen() {
         >
           <Text style={styles.dateBtnArrowText}>‹</Text>
         </TouchableOpacity>
-        <View style={styles.dateCurrent}>
+        <TouchableOpacity
+          style={styles.dateCurrent}
+          onPress={() => {
+            const d = new Date(dateFilter + 'T00:00:00');
+            setCalendarMonth({ year: d.getFullYear(), month: d.getMonth() });
+            setShowCalendar(true);
+          }}
+          activeOpacity={0.7}
+        >
           <Calendar size={13} color={C.primary} />
           <Text style={styles.dateCurrentText}>
             {new Date(dateFilter + 'T00:00:00').toLocaleDateString('en-IN', {
@@ -301,7 +405,7 @@ export default function AttendanceScreen() {
               year: 'numeric',
             })}
           </Text>
-        </View>
+        </TouchableOpacity>
         <TouchableOpacity
           onPress={() => shiftDate(1)}
           style={styles.dateBtnArrow}
@@ -381,6 +485,7 @@ export default function AttendanceScreen() {
         <FlatList
           data={filtered}
           keyExtractor={item => item._id}
+          style={{ flex: 1 }}
           contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 32 }}
           refreshControl={
             <RefreshControl
@@ -572,6 +677,241 @@ export default function AttendanceScreen() {
         />
       )}
 
+      {/* Calendar picker modal */}
+      <Modal
+        visible={showCalendar}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCalendar(false)}
+      >
+        <TouchableOpacity
+          style={styles.calOverlay}
+          activeOpacity={1}
+          onPress={() => setShowCalendar(false)}
+        >
+          <TouchableOpacity activeOpacity={1} style={styles.calSheet}>
+            {/* Month navigation */}
+            <View style={styles.calNavRow}>
+              <TouchableOpacity
+                style={styles.calNavBtn}
+                onPress={() =>
+                  setCalendarMonth(p => {
+                    if (p.month === 0) return { year: p.year - 1, month: 11 };
+                    return { ...p, month: p.month - 1 };
+                  })
+                }
+              >
+                <Text style={styles.calNavArrow}>‹</Text>
+              </TouchableOpacity>
+              <Text style={styles.calMonthLabel}>
+                {new Date(calendarMonth.year, calendarMonth.month, 1).toLocaleDateString(
+                  'en-IN',
+                  { month: 'long', year: 'numeric' },
+                )}
+              </Text>
+              <TouchableOpacity
+                style={styles.calNavBtn}
+                onPress={() =>
+                  setCalendarMonth(p => {
+                    if (p.month === 11) return { year: p.year + 1, month: 0 };
+                    return { ...p, month: p.month + 1 };
+                  })
+                }
+              >
+                <Text style={styles.calNavArrow}>›</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Day-of-week headers */}
+            <View style={styles.calDowRow}>
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                <Text key={d} style={styles.calDowText}>{d}</Text>
+              ))}
+            </View>
+
+            {/* Grid */}
+            {(() => {
+              const { year, month } = calendarMonth;
+              const firstDay = new Date(year, month, 1).getDay();
+              const daysInMonth = new Date(year, month + 1, 0).getDate();
+              const todayStr = toDateStr(new Date());
+              const cells: number[] = [];
+              for (let i = 0; i < firstDay; i++) cells.push(0);
+              for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+              while (cells.length % 7 !== 0) cells.push(0);
+              const rows: number[][] = [];
+              for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
+              return rows.map((row, ri) => (
+                <View key={ri} style={styles.calGridRow}>
+                  {row.map((day, ci) => {
+                    if (day === 0) return <View key={ci} style={styles.calCell} />;
+                    const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const isSelected = dayStr === dateFilter;
+                    const isToday = dayStr === todayStr;
+                    return (
+                      <TouchableOpacity
+                        key={ci}
+                        style={[
+                          styles.calCell,
+                          isSelected && styles.calCellSelected,
+                          !isSelected && isToday && styles.calCellToday,
+                        ]}
+                        onPress={() => {
+                          setDateFilter(dayStr);
+                          setShowCalendar(false);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.calCellText,
+                            isSelected && styles.calCellTextSelected,
+                            !isSelected && isToday && { color: C.primary },
+                          ]}
+                        >
+                          {day}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ));
+            })()}
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Bulk attendance modal */}
+      {!isEmployee && (
+        <Modal
+          visible={showBulkModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowBulkModal(false)}
+        >
+          <SafeAreaView style={styles.safe} edges={['top']}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Bulk Attendance</Text>
+              <TouchableOpacity onPress={() => setShowBulkModal(false)}>
+                <X size={22} color={C.black} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 32 }}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Status selector */}
+              <View>
+                <Text style={styles.fieldLabel}>Status *</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
+                  {Object.keys(STATUS_CONFIG)
+                    .filter(s => s !== 'not_checked_in' && s !== 'weekend')
+                    .map(s => (
+                      <TouchableOpacity
+                        key={s}
+                        style={[styles.selChip, bulkStatus === s && styles.selChipActive]}
+                        onPress={() => setBulkStatus(s)}
+                      >
+                        <Text style={[styles.selChipText, bulkStatus === s && { color: C.white }]}>
+                          {s.replace(/_/g, ' ').toUpperCase()}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                </View>
+              </View>
+
+              {/* Select all toggle */}
+              <TouchableOpacity
+                style={styles.bulkSelectAllRow}
+                onPress={() => {
+                  const eligible = employees.filter(
+                    e => !isWeekendForEmployee(dateFilter, e),
+                  );
+                  if (bulkSelected.length === eligible.length) {
+                    setBulkSelected([]);
+                  } else {
+                    setBulkSelected(eligible.map(e => e._id));
+                  }
+                }}
+              >
+                <View style={styles.bulkCheckbox}>
+                  {bulkSelected.length ===
+                    employees.filter(e => !isWeekendForEmployee(dateFilter, e)).length &&
+                    employees.filter(e => !isWeekendForEmployee(dateFilter, e)).length > 0 && (
+                      <View style={styles.bulkCheckboxInner} />
+                    )}
+                </View>
+                <Text style={styles.bulkSelectAllText}>Select All</Text>
+              </TouchableOpacity>
+
+              {/* Employee list */}
+              {employees.map(emp => {
+                const isWeekend = isWeekendForEmployee(dateFilter, emp);
+                if (isWeekend) return null;
+                const checked = bulkSelected.includes(emp._id);
+                return (
+                  <TouchableOpacity
+                    key={emp._id}
+                    style={styles.bulkEmpRow}
+                    onPress={() =>
+                      setBulkSelected(p =>
+                        checked ? p.filter(id => id !== emp._id) : [...p, emp._id],
+                      )
+                    }
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.bulkCheckbox, checked && styles.bulkCheckboxChecked]}>
+                      {checked && <View style={styles.bulkCheckboxInner} />}
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 10 }}>
+                      <Text style={styles.empOptionName}>
+                        {emp.firstName} {emp.lastName}
+                      </Text>
+                      <Text style={styles.empOptionId}>{emp.employeeId}</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            {/* Mark selected button */}
+            <View style={{ padding: 16, backgroundColor: C.white, borderTopWidth: 2, borderTopColor: C.black }}>
+              <TouchableOpacity
+                style={[styles.submitBtn, bulkSelected.length === 0 && { opacity: 0.5 }]}
+                disabled={bulkSelected.length === 0 || bulkSaving}
+                onPress={async () => {
+                  if (bulkSelected.length === 0) return;
+                  setBulkSaving(true);
+                  try {
+                    await attendanceAPI.bulkMark({
+                      records: bulkSelected.map(id => ({
+                        employee: id,
+                        date: dateFilter,
+                        status: bulkStatus,
+                      })),
+                    });
+                    setShowBulkModal(false);
+                    await load();
+                  } catch (e: any) {
+                    Alert.alert('Error', e.message);
+                  } finally {
+                    setBulkSaving(false);
+                  }
+                }}
+              >
+                {bulkSaving ? (
+                  <ActivityIndicator color={C.white} />
+                ) : (
+                  <Text style={styles.submitBtnText}>
+                    Mark Selected ({bulkSelected.length})
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
+        </Modal>
+      )}
+
       {!isEmployee && (
         <Modal
           visible={showModal}
@@ -715,6 +1055,98 @@ export default function AttendanceScreen() {
           </SafeAreaView>
         </Modal>
       )}
+
+      {isEmployee && (
+        <Modal
+          visible={showCorrectionModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowCorrectionModal(false)}
+        >
+          <SafeAreaView style={styles.safe} edges={['top']}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Request Correction</Text>
+              <TouchableOpacity onPress={() => setShowCorrectionModal(false)}>
+                <X size={22} color={C.black} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              contentContainerStyle={{ padding: 20, gap: 16 }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <View>
+                <Text style={styles.fieldLabel}>Date *</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  value={correctionForm.date}
+                  onChangeText={v => setCorrectionForm(p => ({ ...p, date: v }))}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={C.textLight}
+                />
+              </View>
+
+              <View>
+                <Text style={styles.fieldLabel}>Correction Type *</Text>
+                <View style={{ flexDirection: 'row', gap: 10, marginTop: 6 }}>
+                  {['regularization', 'missed_punch'].map(t => (
+                    <TouchableOpacity
+                      key={t}
+                      style={[styles.selChip, correctionForm.type === t && styles.selChipActive]}
+                      onPress={() => setCorrectionForm(p => ({ ...p, type: t }))}
+                    >
+                      <Text style={[styles.selChipText, correctionForm.type === t && { color: C.white }]}>
+                        {t.replace('_', ' ').toUpperCase()}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <TimePickerField
+                    label="Proposed Check In"
+                    value={correctionForm.checkIn}
+                    onChange={v => setCorrectionForm(p => ({ ...p, checkIn: v }))}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <TimePickerField
+                    label="Proposed Check Out"
+                    value={correctionForm.checkOut}
+                    onChange={v => setCorrectionForm(p => ({ ...p, checkOut: v }))}
+                  />
+                </View>
+              </View>
+
+              <View>
+                <Text style={styles.fieldLabel}>Reason *</Text>
+                <TextInput
+                  style={[styles.fieldInput, { minHeight: 80 }]}
+                  value={correctionForm.reason}
+                  onChangeText={v => setCorrectionForm(p => ({ ...p, reason: v }))}
+                  placeholder="Explain the correction request details..."
+                  placeholderTextColor={C.textLight}
+                  multiline
+                />
+              </View>
+
+              <TouchableOpacity
+                style={styles.submitBtn}
+                onPress={handleCreateCorrection}
+                disabled={submittingCorrection}
+              >
+                {submittingCorrection ? (
+                  <ActivityIndicator color={C.white} />
+                ) : (
+                  <Text style={styles.submitBtnText}>Submit Request</Text>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
@@ -764,6 +1196,7 @@ const styles = StyleSheet.create({
   dateCurrentText: { fontSize: 13, fontWeight: '700', color: C.black },
   summaryBar: {
     flexShrink: 0,
+    maxHeight: 96,
     backgroundColor: C.white,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
@@ -967,5 +1400,125 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 14,
     textTransform: 'uppercase',
+  },
+  // Bulk button
+  bulkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: C.white,
+    borderWidth: 2,
+    borderColor: C.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  bulkBtnText: {
+    color: C.primary,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  bulkSelectAllRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
+    gap: 10,
+  },
+  bulkSelectAllText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: C.black,
+    textTransform: 'uppercase',
+  },
+  bulkEmpRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  bulkCheckbox: {
+    width: 22,
+    height: 22,
+    borderWidth: 2,
+    borderColor: C.black,
+    backgroundColor: C.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bulkCheckboxChecked: {
+    borderColor: C.primary,
+    backgroundColor: C.primary,
+  },
+  bulkCheckboxInner: {
+    width: 10,
+    height: 10,
+    backgroundColor: C.white,
+  },
+  // Calendar modal
+  calOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
+  calSheet: {
+    backgroundColor: C.white,
+    borderTopWidth: 2,
+    borderTopColor: C.black,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 32,
+  },
+  calNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  calNavBtn: { width: 36, alignItems: 'center' },
+  calNavArrow: { fontSize: 26, fontWeight: '700', color: C.black },
+  calMonthLabel: { fontSize: 15, fontWeight: '700', color: C.black },
+  calDowRow: {
+    flexDirection: 'row',
+    marginBottom: 4,
+  },
+  calDowText: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: '700',
+    color: C.textMuted,
+    textTransform: 'uppercase',
+  },
+  calGridRow: {
+    flexDirection: 'row',
+    marginBottom: 2,
+  },
+  calCell: {
+    flex: 1,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: 1,
+  },
+  calCellSelected: {
+    backgroundColor: C.primary,
+    borderWidth: 2,
+    borderColor: C.black,
+  },
+  calCellToday: {
+    borderWidth: 2,
+    borderColor: C.primary,
+  },
+  calCellText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: C.black,
+  },
+  calCellTextSelected: {
+    color: C.white,
+    fontWeight: '700',
   },
 });

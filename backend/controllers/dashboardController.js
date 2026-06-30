@@ -210,4 +210,128 @@ const getStats = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { getStats };
+const getEmployeeStats = asyncHandler(async (req, res) => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const emp = await Employee.findOne({ user: req.user._id })
+    .populate("shift")
+    .populate("department");
+
+  if (!emp) {
+    res.status(404);
+    throw new Error("Employee record not found");
+  }
+
+  // 1. Birthday wishes & Work anniversaries
+  const isTodayUserBirthday = emp.dateOfBirth && 
+    new Date(emp.dateOfBirth).getMonth() === now.getMonth() &&
+    new Date(emp.dateOfBirth).getDate() === now.getDate();
+
+  const isTodayUserAnniversary = emp.joinDate &&
+    new Date(emp.joinDate).getMonth() === now.getMonth() &&
+    new Date(emp.joinDate).getDate() === now.getDate();
+
+  // Other employees birthdays today
+  const allEmps = await Employee.find({
+    company: req.user.company,
+    _id: { $ne: emp._id },
+    status: "active",
+  }).select("firstName lastName dateOfBirth joinDate designation avatar");
+
+  const todayBirthdays = allEmps.filter((e) => e.dateOfBirth &&
+    new Date(e.dateOfBirth).getMonth() === now.getMonth() &&
+    new Date(e.dateOfBirth).getDate() === now.getDate()
+  );
+
+  const todayAnniversaries = allEmps.filter((e) => e.joinDate &&
+    new Date(e.joinDate).getMonth() === now.getMonth() &&
+    new Date(e.joinDate).getDate() === now.getDate()
+  );
+
+  // 2. Upcoming Holidays (next 30 days)
+  const Holiday = require("../models/Holiday");
+  const thirtyDaysLater = new Date(today);
+  thirtyDaysLater.setDate(thirtyDaysLater.getDate() + 30);
+  const upcomingHolidays = await Holiday.find({
+    company: req.user.company,
+    date: { $gte: today, $lte: thirtyDaysLater },
+    isActive: true,
+  }).sort({ date: 1 });
+
+  // 3. Today's Shift
+  const todayShift = emp.shift
+    ? {
+        name: emp.shift.name,
+        startTime: emp.shift.startTime,
+        endTime: emp.shift.endTime,
+      }
+    : {
+        name: emp.shiftName || "General",
+        startTime: "09:00",
+        endTime: "18:00",
+      };
+
+  // 5. Pending Approvals Count (if manager/admin)
+  let pendingApprovalsCount = 0;
+  const isManager = ["super_admin", "hr_manager", "hr_executive"].includes(req.user.role) ||
+    await Employee.exists({ company: req.user.company, reportingTo: emp._id });
+
+  if (isManager) {
+    const Leave = require("../models/Leave");
+    const AttendanceCorrectionRequest = require("../models/AttendanceCorrectionRequest");
+
+    const isAdmin = ["super_admin", "hr_manager", "hr_executive"].includes(req.user.role);
+    let managerFilter = { company: req.user.company, status: "pending" };
+
+    if (!isAdmin) {
+      const reports = await Employee.find({ reportingTo: emp._id }).select("_id");
+      const reportIds = reports.map((r) => r._id);
+      managerFilter.employee = { $in: reportIds };
+    }
+
+    const [pendingLeaves, pendingCorrections] = await Promise.all([
+      Leave.countDocuments(managerFilter).catch(() => 0),
+      AttendanceCorrectionRequest.countDocuments(managerFilter).catch(() => 0),
+    ]);
+
+    pendingApprovalsCount = pendingLeaves + pendingCorrections;
+  }
+
+  // 6. Pending Salary
+  const Payroll = require("../models/Payroll");
+  const pendingSalary = await Payroll.find({
+    employee: emp._id,
+    status: { $ne: "paid" },
+  }).sort({ year: -1, month: -1 });
+
+  // 7. Company announcements
+  const Announcement = require("../models/Announcement");
+  const announcements = await Announcement.find({
+    company: req.user.company,
+    active: true,
+  })
+    .sort({ date: -1 })
+    .limit(5);
+
+  res.json({
+    success: true,
+    data: {
+      birthdayWishes: {
+        isTodayUserBirthday,
+        todayBirthdays,
+      },
+      workAnniversary: {
+        isTodayUserAnniversary,
+        todayAnniversaries,
+      },
+      upcomingHolidays,
+      todayShift,
+      pendingApprovalsCount,
+      pendingSalary,
+      announcements,
+    },
+  });
+});
+
+module.exports = { getStats, getEmployeeStats };

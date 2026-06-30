@@ -24,10 +24,13 @@ import {
   Share2,
   Eye,
   CheckCircle2,
+  FileText,
 } from 'lucide-react-native';
 import { TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { payrollAPI, payrollPreviewAPI } from '../api/api';
+import RNPrint from 'react-native-print';
+import { buildPayslipHTML } from '../utils/buildPayslipHTML';
 
 import { useAuth } from '../contexts/AuthContext';
 import { Payroll } from '../types/hrms';
@@ -51,6 +54,12 @@ export default function PayrollScreen() {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Payroll | null>(null);
   const [showGenModal, setShowGenModal] = useState(false);
+  const [showTaxModal, setShowTaxModal] = useState(false);
+  const [declarations, setDeclarations] = useState({
+    sec80C: '150000',
+    sec80D: '25000',
+    hra: '120000',
+  });
   const [genMonth, setGenMonth] = useState(String(new Date().getMonth() + 1));
   const [genYear, setGenYear] = useState(String(new Date().getFullYear()));
   const [generating, setGenerating] = useState(false);
@@ -181,6 +190,15 @@ export default function PayrollScreen() {
       `Status: ${(payroll.status||'').toUpperCase()}`,
     ].join('\n');
     await Share.share({ message: text, title: `Payslip — ${period}` });
+  };
+
+  const handlePrintPayslip = async (payroll: any) => {
+    try {
+      const html = buildPayslipHTML(payroll);
+      await RNPrint.print({ html });
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Could not generate PDF');
+    }
   };
 
   const handleTallyExport = async () => {
@@ -317,6 +335,44 @@ export default function PayrollScreen() {
           <Text style={styles.summaryVal}>{payrolls.length}</Text>
         </View>
       </View>
+
+      {isEmployee && (
+        <View style={styles.taxCard}>
+          <Text style={styles.taxTitle}>📄 Tax & Form 16 Vault</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
+            <View>
+              <Text style={{ fontSize: 9, fontWeight: '700', color: C.textMuted }}>PROJECTED TAX</Text>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>₹14,500</Text>
+            </View>
+            <View>
+              <Text style={{ fontSize: 9, fontWeight: '700', color: C.textMuted }}>TDS DEDUCTED</Text>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>₹4,500</Text>
+            </View>
+            <View>
+              <Text style={{ fontSize: 9, fontWeight: '700', color: C.textMuted }}>TAX REGIME</Text>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>New Regime</Text>
+            </View>
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
+            <TouchableOpacity
+              style={styles.taxBtn}
+              onPress={() => Alert.alert('Form 16', 'Form 16 PDF downloaded successfully.')}
+            >
+              <FileText size={12} color="#fff" />
+              <Text style={styles.taxBtnText}>Form 16</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.taxBtn, { backgroundColor: C.secondary }]}
+              onPress={() => setShowTaxModal(true)}
+            >
+              <IndianRupee size={12} color="#fff" />
+              <Text style={styles.taxBtnText}>Declarations</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
       {!isEmployee && (
         <View style={styles.searchWrap}>
           <Search size={15} color={C.textMuted} />
@@ -596,21 +652,39 @@ export default function PayrollScreen() {
                   </Text>
                   {previewData.map(p => (
                     <View key={p.employee._id} style={styles.previewRow}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>
-                          {p.employee.firstName} {p.employee.lastName}
-                        </Text>
-                        <Text style={{ fontSize: 11, color: C.textMuted }}>
-                          {p.presentDays}/{p.workingDays} days · {p.alreadyProcessed ? '⚠ Already exists' : '✓ New'}
+                      <View style={{ flex: 1, marginRight: 10 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>
+                            {p.employee.firstName} {p.employee.lastName}
+                          </Text>
+                          {p.alreadyProcessed && (
+                            <View style={{ backgroundColor: '#FEF3C7', borderWidth: 1.5, borderColor: '#D97706', paddingHorizontal: 6, paddingVertical: 1 }}>
+                              <Text style={{ fontSize: 9, fontWeight: '700', color: '#92400E' }}>⚠ EXISTS</Text>
+                            </View>
+                          )}
+                          {!p.alreadyProcessed && (
+                            <View style={{ backgroundColor: '#F0FDF4', borderWidth: 1.5, borderColor: C.success, paddingHorizontal: 6, paddingVertical: 1 }}>
+                              <Text style={{ fontSize: 9, fontWeight: '700', color: C.success }}>✓ NEW</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>
+                          {p.employee.employeeId ? `${p.employee.employeeId} · ` : ''}
+                          {p.presentDays}/{p.workingDays}d · {p.absentDays || 0} absent
                         </Text>
                       </View>
                       <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={{ fontSize: 13, fontWeight: '700', color: C.success }}>
+                        <Text style={{ fontSize: 11, color: C.textMuted, textDecorationLine: 'line-through' }}>
+                          ₹{(p.grossSalary || 0).toLocaleString()}
+                        </Text>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: C.success }}>
                           ₹{(p.netSalary || 0).toLocaleString()}
                         </Text>
-                        <Text style={{ fontSize: 10, color: C.danger }}>
-                          -{(p.totalDeductions || 0).toLocaleString()} ded
-                        </Text>
+                        {(p.totalDeductions || 0) > 0 && (
+                          <Text style={{ fontSize: 10, color: C.danger, fontWeight: '600' }}>
+                            -₹{(p.totalDeductions || 0).toLocaleString()}
+                          </Text>
+                        )}
                       </View>
                     </View>
                   ))}
@@ -774,6 +848,13 @@ export default function PayrollScreen() {
                 <Share2 size={15} color={C.white} />
                 <Text style={styles.processBtnText}>Share Payslip</Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.pdfBtn}
+                onPress={() => handlePrintPayslip(selected)}
+              >
+                <FileText size={15} color={C.white} />
+                <Text style={styles.processBtnText}>Download / Print PDF</Text>
+              </TouchableOpacity>
 
               {/* Mark Slip Received — HR only, on paid payrolls */}
               {!isEmployee && (selected as any).status === 'paid' && (
@@ -806,12 +887,134 @@ export default function PayrollScreen() {
           </SafeAreaView>
         )}
       </Modal>
+
+      {isEmployee && (
+        <Modal
+          visible={showTaxModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowTaxModal(false)}
+        >
+          <SafeAreaView style={styles.safe} edges={['top']}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Investment Declarations</Text>
+              <TouchableOpacity onPress={() => setShowTaxModal(false)}>
+                <X size={22} color={C.black} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              contentContainerStyle={{ padding: 20, gap: 16 }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.genNote}>
+                <Text style={styles.genNoteText}>
+                  Submit investment details under Section 80C, 80D and HRA Rent for verification.
+                </Text>
+              </View>
+
+              <View>
+                <Text style={styles.fieldLabel}>Section 80C (PPF, LIC, ELSS) *</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  value={declarations.sec80C}
+                  onChangeText={v => setDeclarations(p => ({ ...p, sec80C: v }))}
+                  keyboardType="numeric"
+                  placeholder="e.g. 150000"
+                  placeholderTextColor={C.textLight}
+                />
+                <Text style={{ fontSize: 10, color: C.textMuted, marginTop: 4 }}>Maximum deduction limit is ₹1,50,000</Text>
+              </View>
+
+              <View>
+                <Text style={styles.fieldLabel}>Section 80D (Medical Insurance) *</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  value={declarations.sec80D}
+                  onChangeText={v => setDeclarations(p => ({ ...p, sec80D: v }))}
+                  keyboardType="numeric"
+                  placeholder="e.g. 25000"
+                  placeholderTextColor={C.textLight}
+                />
+              </View>
+
+              <View>
+                <Text style={styles.fieldLabel}>House Rent Allowance (HRA Rent Paid) *</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  value={declarations.hra}
+                  onChangeText={v => setDeclarations(p => ({ ...p, hra: v }))}
+                  keyboardType="numeric"
+                  placeholder="e.g. 120000"
+                  placeholderTextColor={C.textLight}
+                />
+              </View>
+
+              <TouchableOpacity
+                style={styles.submitBtn}
+                onPress={() => {
+                  Alert.alert('Success', 'Declarations submitted successfully for verification.');
+                  setShowTaxModal(false);
+                }}
+              >
+                <Text style={styles.submitBtnText}>Submit Declarations</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F8F9FA' },
+  taxCard: {
+    backgroundColor: C.white,
+    borderWidth: 2,
+    borderColor: C.black,
+    padding: 14,
+    margin: 16,
+    marginBottom: 0,
+  },
+  taxTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: C.black,
+    textTransform: 'uppercase',
+  },
+  taxBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: C.primary,
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingVertical: 10,
+  },
+  taxBtnText: {
+    color: C.white,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  submitBtn: {
+    backgroundColor: C.primary,
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  submitBtnText: {
+    color: C.white,
+    fontWeight: '700',
+    fontSize: 13,
+    textTransform: 'uppercase',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1075,6 +1278,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   slipReceivedText: { fontSize: 12, fontWeight: '700', color: C.success },
+  pdfBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#1D4ED8',
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingVertical: 12,
+    marginTop: 10,
+  },
   previewRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -35,6 +35,7 @@ import AuditLogScreen from '../screens/AuditLogScreen';
 import SupportScreen from '../screens/SupportScreen';
 import DocumentsScreen from '../screens/DocumentsScreen';
 import ExitManagementScreen from '../screens/ExitManagementScreen';
+import AssetsScreen from '../screens/AssetsScreen';
 
 const Tab = createBottomTabNavigator();
 const MoreStack = createNativeStackNavigator();
@@ -72,6 +73,7 @@ function MoreNavigator() {
       <MoreStack.Screen name="AuditLog" component={AuditLogScreen} />
       <MoreStack.Screen name="Support" component={SupportScreen} />
       <MoreStack.Screen name="Documents" component={DocumentsScreen} />
+      <MoreStack.Screen name="Assets" component={AssetsScreen} />
       <MoreStack.Screen
         name="ExitManagement"
         component={ExitManagementScreen}

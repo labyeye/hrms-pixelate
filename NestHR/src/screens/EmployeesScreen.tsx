@@ -144,6 +144,9 @@ export default function EmployeesScreen() {
   const [form, setForm] = useState<typeof EMPTY_FORM>({ ...EMPTY_FORM });
   const [activeTab, setActiveTab] = useState(0);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [avatarAsset, setAvatarAsset] = useState<{ uri: string; type: string; fileName: string } | null>(null);
+  const [formDirty, setFormDirty] = useState(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [detailEmp, setDetailEmp] = useState<Employee | null>(null);
   const [actionModal, setActionModal] = useState<string | null>(null);
   const [actionForm, setActionForm] = useState<Record<string, any>>({});
@@ -202,28 +205,27 @@ export default function EmployeesScreen() {
   };
 
   const pickPhoto = () => {
+    const handleAsset = (r: any) => {
+      const asset = r.assets?.[0];
+      if (!asset?.uri) return;
+      setAvatarUri(asset.uri);
+      setAvatarAsset({
+        uri: asset.uri,
+        type: asset.type || 'image/jpeg',
+        fileName: asset.fileName || `avatar_${Date.now()}.jpg`,
+      });
+      setFormDirty(true);
+    };
     Alert.alert('Update Photo', 'Choose source', [
       {
         text: 'Camera',
         onPress: () =>
-          launchCamera(
-            { mediaType: 'photo', quality: 0.7, includeBase64: true },
-            r => {
-              if (r.assets?.[0]?.base64)
-                setAvatarUri(`data:image/jpeg;base64,${r.assets[0].base64}`);
-            },
-          ),
+          launchCamera({ mediaType: 'photo', quality: 0.8, includeBase64: false }, handleAsset),
       },
       {
         text: 'Gallery',
         onPress: () =>
-          launchImageLibrary(
-            { mediaType: 'photo', quality: 0.7, includeBase64: true },
-            r => {
-              if (r.assets?.[0]?.base64)
-                setAvatarUri(`data:image/jpeg;base64,${r.assets[0].base64}`);
-            },
-          ),
+          launchImageLibrary({ mediaType: 'photo', quality: 0.8, includeBase64: false }, handleAsset),
       },
       { text: 'Cancel', style: 'cancel' },
     ]);
@@ -233,6 +235,9 @@ export default function EmployeesScreen() {
     setEditingEmp(null);
     setForm({ ...EMPTY_FORM });
     setAvatarUri(null);
+    setAvatarAsset(null);
+    setFormDirty(false);
+    setFormErrors({});
     setActiveTab(0);
     setShowForm(true);
   };
@@ -294,34 +299,66 @@ export default function EmployeesScreen() {
       previousCompany: (emp as any).previousCompany || '',
     });
     setAvatarUri((emp as any).avatar || null);
+    setAvatarAsset(null);
+    setFormDirty(false);
+    setFormErrors({});
     setActiveTab(0);
     setShowForm(true);
   };
 
-  const handleSave = async () => {
-    if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim()) {
-      Alert.alert('Validation', 'First name, last name and email are required');
-      return;
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!form.firstName.trim()) errors.firstName = 'First name is required';
+    if (!form.lastName.trim()) errors.lastName = 'Last name is required';
+    if (!form.email.trim()) errors.email = 'Email is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+      errors.email = 'Enter a valid email address';
+    if (!editingEmp && !form.monthlySalary)
+      errors.monthlySalary = 'Monthly salary is required';
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      // Navigate to tab with first error
+      const tab1Fields = ['firstName', 'lastName', 'email'];
+      const tab3Fields = ['monthlySalary'];
+      const firstErr = Object.keys(errors)[0];
+      if (tab1Fields.includes(firstErr)) setActiveTab(0);
+      else if (tab3Fields.includes(firstErr)) setActiveTab(2);
+      return false;
     }
+    return true;
+  };
+
+  const handleSave = async () => {
+    if (!validateForm()) return;
     setSaving(true);
     try {
       const body: any = {
         ...form,
-        monthlySalary: form.monthlySalary
-          ? parseFloat(form.monthlySalary)
-          : undefined,
+        monthlySalary: form.monthlySalary ? parseFloat(form.monthlySalary) : undefined,
         otRate: form.otRate ? parseFloat(form.otRate) : undefined,
         salary: form.monthlySalary ? parseFloat(form.monthlySalary) : undefined,
-        ...(avatarUri ? { avatar: avatarUri } : {}),
       };
       if (!editingEmp && !body.defaultPassword) delete body.defaultPassword;
+      let savedId: string;
       if (editingEmp) {
         await employeeAPI.update(editingEmp._id, body);
+        savedId = editingEmp._id;
         await load();
       } else {
         const res = await employeeAPI.create(body);
+        savedId = res.data?._id;
         setEmployees(prev => [res.data, ...prev]);
       }
+      // Upload avatar via multipart if a new photo was picked
+      if (avatarAsset && savedId) {
+        try {
+          await employeeAPI.uploadAvatar(savedId, avatarAsset.uri, avatarAsset.type, avatarAsset.fileName);
+          await load();
+        } catch {
+          Alert.alert('Photo', 'Employee saved but photo upload failed. You can retry later.');
+        }
+      }
+      setFormDirty(false);
       setShowForm(false);
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -493,21 +530,45 @@ export default function EmployeesScreen() {
     },
   ];
 
-  const F = (label: string, key: keyof typeof EMPTY_FORM, props: any = {}) => (
-    <View>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <TextInput
-        style={[
-          styles.fieldInput,
-          props.multiline && { minHeight: 70, textAlignVertical: 'top' },
-        ]}
-        value={String(form[key] ?? '')}
-        onChangeText={(v: string) => setForm(p => ({ ...p, [key]: v }))}
-        placeholderTextColor={C.textLight}
-        {...props}
-      />
-    </View>
-  );
+  const closeForm = () => {
+    if (formDirty) {
+      Alert.alert('Unsaved Changes', 'You have unsaved changes. Discard them?', [
+        { text: 'Keep Editing', style: 'cancel' },
+        { text: 'Discard', style: 'destructive', onPress: () => setShowForm(false) },
+      ]);
+    } else {
+      setShowForm(false);
+    }
+  };
+
+  const F = (label: string, key: keyof typeof EMPTY_FORM, props: any = {}) => {
+    const isRequired = label.includes('*');
+    const err = formErrors[key];
+    return (
+      <View>
+        <Text style={[styles.fieldLabel, isRequired && { color: C.black }]}>
+          {label.replace(' *', '')}
+          {isRequired && <Text style={{ color: C.danger }}> *</Text>}
+        </Text>
+        <TextInput
+          style={[
+            styles.fieldInput,
+            props.multiline && { minHeight: 70, textAlignVertical: 'top' },
+            err ? { borderColor: C.danger } : {},
+          ]}
+          value={String(form[key] ?? '')}
+          onChangeText={(v: string) => {
+            setForm(p => ({ ...p, [key]: v }));
+            setFormDirty(true);
+            if (formErrors[key]) setFormErrors(p => ({ ...p, [key]: '' }));
+          }}
+          placeholderTextColor={C.textLight}
+          {...props}
+        />
+        {!!err && <Text style={styles.fieldError}>{err}</Text>}
+      </View>
+    );
+  };
 
   const Select = (
     label: string,
@@ -1837,7 +1898,7 @@ export default function EmployeesScreen() {
             <Text style={styles.modalTitle}>
               {editingEmp ? 'Edit Employee' : 'Add Employee'}
             </Text>
-            <TouchableOpacity onPress={() => setShowForm(false)}>
+            <TouchableOpacity onPress={closeForm}>
               <X size={22} color={C.black} />
             </TouchableOpacity>
           </View>
@@ -1906,7 +1967,7 @@ export default function EmployeesScreen() {
 
                 <View style={{ flexDirection: 'row', gap: 12 }}>
                   <View style={{ flex: 1,  }}>
-                    {F('First Name *', 'firstName', { placeholder: 'John' },)}
+                    {F('First Name *', 'firstName', { placeholder: 'John' })}
                   </View>
                   <View style={{ flex: 1 }}>
                     {F('Last Name *', 'lastName', { placeholder: 'Doe' })}
@@ -2099,7 +2160,7 @@ export default function EmployeesScreen() {
             {/* ── Tab 3: Salary ── */}
             {activeTab === 2 && (
               <>
-                {F('Monthly Salary (₹)', 'monthlySalary', {
+                {F('Monthly Salary (₹) *', 'monthlySalary', {
                   keyboardType: 'numeric',
                   placeholder: '50000',
                 })}
@@ -2516,6 +2577,13 @@ const styles = StyleSheet.create({
     color: C.black,
     marginBottom: 5,
     letterSpacing: 0.5,
+  },
+  fieldError: {
+    fontSize: 11,
+    color: C.danger,
+    fontWeight: '600',
+    marginTop: 3,
+    marginLeft: 2,
   },
   fieldInput: {
     borderWidth: 2,

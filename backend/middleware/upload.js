@@ -100,6 +100,30 @@ const uploadCompanyLogo = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
 }).single("logo");
 
+// Employee avatar upload
+const avatarStorage = multer.diskStorage({
+  destination(_req, _file, cb) {
+    const dir = path.join(UPLOAD_BASE, "avatars");
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename(req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
+    cb(null, `avatar_${req.params.id}_${Date.now()}${ext}`);
+  },
+});
+
+const uploadAvatar = multer({
+  storage: avatarStorage,
+  fileFilter(req, file, cb) {
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Only image files are allowed"), false);
+  },
+  limits: { fileSize: 5 * 1024 * 1024 },
+}).single("avatar");
+
+module.exports.uploadAvatar = uploadAvatar;
+
 // Document vault — generic file upload to disk
 const documentVaultStorage = multer.diskStorage({
   destination(_req, _file, cb) {

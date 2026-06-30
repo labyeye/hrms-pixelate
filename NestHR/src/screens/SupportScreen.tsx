@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -119,6 +119,22 @@ export default function SupportScreen({ navigation }: any) {
 
   // Detail view
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [freshTicket, setFreshTicket] = useState<any>(null);
+  const [replyMsg, setReplyMsg] = useState('');
+
+  useEffect(() => {
+    if (selectedTicket) {
+      supportAPI.getOne(selectedTicket._id)
+        .then(res => {
+          setFreshTicket(res.data || res);
+        })
+        .catch(() => {
+          setFreshTicket(selectedTicket);
+        });
+    } else {
+      setFreshTicket(null);
+    }
+  }, [selectedTicket]);
 
   const load = useCallback(async (isRefresh = false) => {
     try {
@@ -473,6 +489,114 @@ export default function SupportScreen({ navigation }: any) {
                   </View>
                 </View>
               ) : null}
+
+              {/* Conversation History */}
+              <View style={{ marginTop: 24 }}>
+                <Text style={styles.detailCellLabel}>Conversation Chat</Text>
+                <View style={{ borderWidth: 2, borderColor: C.black, padding: 10, gap: 10, marginTop: 8, backgroundColor: '#F9FAFB' }}>
+                  {/* Replies list */}
+                  {freshTicket?.replies?.map((rep: any, idx: number) => {
+                    const isSelf = rep.role === 'employee' || rep.submittedBy === (user as any)?._id;
+                    return (
+                      <View
+                        key={idx}
+                        style={{
+                          padding: 8,
+                          backgroundColor: isSelf ? '#EFF6FF' : '#FFF7ED',
+                          borderWidth: 2,
+                          borderColor: C.black,
+                          alignSelf: isSelf ? 'flex-end' : 'flex-start',
+                          width: '85%',
+                        }}
+                      >
+                        <Text style={{ fontSize: 9, fontWeight: '800', color: isSelf ? C.primary : C.secondary, textTransform: 'uppercase' }}>
+                          {isSelf ? 'You' : 'Support / HR'}
+                        </Text>
+                        <Text style={{ fontSize: 12, color: C.black, marginTop: 3, fontWeight: '500' }}>{rep.message}</Text>
+                        <Text style={{ fontSize: 8, color: C.textLight, marginTop: 4, fontFamily: 'monospace' }}>
+                          {new Date(rep.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </Text>
+                      </View>
+                    );
+                  })}
+
+                  {(!freshTicket?.replies || freshTicket.replies.length === 0) && (
+                    <Text style={{ fontSize: 11, color: C.textMuted, textAlign: 'center', paddingVertical: 10 }}>
+                      No replies in this conversation yet.
+                    </Text>
+                  )}
+                </View>
+              </View>
+
+              {/* Reply Form & Close Ticket button */}
+              {freshTicket?.status !== 'closed' && (
+                <View style={{ marginTop: 20, gap: 8 }}>
+                  <Text style={styles.detailCellLabel}>Send Reply</Text>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TextInput
+                      style={[S.input, { flex: 1, minHeight: 44, marginVertical: 0, paddingVertical: 0 }]}
+                      value={replyMsg}
+                      onChangeText={setReplyMsg}
+                      placeholder="Type reply message..."
+                      placeholderTextColor={C.textLight}
+                    />
+                    <TouchableOpacity
+                      style={{
+                        backgroundColor: C.primary,
+                        borderWidth: 2,
+                        borderColor: C.black,
+                        paddingHorizontal: 16,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
+                      onPress={async () => {
+                        if (!replyMsg.trim()) return;
+                        try {
+                          await supportAPI.reply(freshTicket._id, replyMsg.trim());
+                          setReplyMsg('');
+                          const res = await supportAPI.getOne(freshTicket._id);
+                          setFreshTicket(res.data || res);
+                        } catch (err: any) {
+                          Alert.alert('Error', err.message);
+                        }
+                      }}
+                    >
+                      <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700', textTransform: 'uppercase' }}>Send</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <TouchableOpacity
+                    style={{
+                      backgroundColor: C.danger,
+                      borderWidth: 2,
+                      borderColor: C.black,
+                      paddingVertical: 12,
+                      alignItems: 'center',
+                      marginTop: 8,
+                    }}
+                    onPress={async () => {
+                      Alert.alert('Close Ticket', 'Are you sure you want to close this ticket?', [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Close Ticket',
+                          style: 'destructive',
+                          onPress: async () => {
+                            try {
+                              await supportAPI.close(freshTicket._id);
+                              setSelectedTicket(null);
+                              load();
+                            } catch (err: any) {
+                              Alert.alert('Error', err.message);
+                            }
+                          },
+                        },
+                      ]);
+                    }}
+                  >
+                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700', textTransform: 'uppercase' }}>Close Ticket</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </ScrollView>
           </SafeAreaView>
         )}

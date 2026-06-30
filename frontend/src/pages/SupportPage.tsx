@@ -113,6 +113,11 @@ interface Ticket {
   submittedBy: { name: string; email: string };
   createdAt: string;
   statusUpdatedAt?: string;
+  replies?: Array<{
+    user?: { name: string; role: string; email: string };
+    message: string;
+    createdAt: string;
+  }>;
 }
 
 export default function SupportPage() {
@@ -123,6 +128,37 @@ export default function SupportPage() {
   const [submitting, setSubmitting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [replyMessage, setReplyMessage] = useState("");
+
+  const handleSendReply = async () => {
+    if (!replyMessage.trim() || !selectedTicket) return;
+    try {
+      const res = await supportAPI.reply(selectedTicket._id, replyMessage);
+      if (res.success) {
+        setSelectedTicket(res.data);
+        setReplyMessage("");
+        toast({ title: "Reply sent successfully." });
+        fetchTickets();
+      }
+    } catch (err: any) {
+      toast({ title: "Failed to send reply", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleCloseTicket = async () => {
+    if (!selectedTicket) return;
+    if (!confirm("Are you sure you want to close this ticket?")) return;
+    try {
+      const res = await supportAPI.close(selectedTicket._id);
+      if (res.success) {
+        setSelectedTicket(null);
+        toast({ title: "Ticket closed" });
+        fetchTickets();
+      }
+    } catch (err: any) {
+      toast({ title: "Failed to close ticket", description: err.message, variant: "destructive" });
+    }
+  };
 
   const [form, setForm] = useState({
     subject: "",
@@ -470,6 +506,52 @@ export default function SupportPage() {
                     </p>
                   </div>
                 )}
+
+                {/* Conversations & Replies */}
+                <div className="border-t border-black/10 pt-4 space-y-4">
+                  <p className="text-xs font-black uppercase text-black">Conversation History</p>
+                  <div className="max-h-40 overflow-y-auto space-y-2.5 p-2 bg-[#F8FAFF] border border-black/5">
+                    {/* Original Description */}
+                    <div className="text-xs border-b border-black/5 pb-2">
+                      <p className="font-bold text-black">{selectedTicket.submittedBy?.name || "Employee"} (Original Request)</p>
+                      <p className="text-muted-foreground mt-0.5 whitespace-pre-wrap">{selectedTicket.description}</p>
+                      <p className="text-[9px] text-gray-400 mt-1">{formatDate(selectedTicket.createdAt)}</p>
+                    </div>
+                    {/* Replies */}
+                    {selectedTicket.replies?.map((r: any, idx: number) => (
+                      <div key={idx} className="text-xs">
+                        <p className="font-bold text-black">
+                          {r.user?.name || "System"} <span className="text-[9px] font-normal uppercase text-muted-foreground">({r.user?.role})</span>
+                        </p>
+                        <p className="text-muted-foreground mt-0.5 whitespace-pre-wrap">{r.message}</p>
+                        <p className="text-[9px] text-gray-400 mt-1">{formatDate(r.createdAt)}</p>
+                      </div>
+                    ))}
+                    {(!selectedTicket.replies || selectedTicket.replies.length === 0) && (
+                      <p className="text-[11px] text-muted-foreground italic">No replies yet.</p>
+                    )}
+                  </div>
+
+                  {selectedTicket.status !== "closed" ? (
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Type your message..."
+                        value={replyMessage}
+                        onChange={(e) => setReplyMessage(e.target.value)}
+                        className="text-xs flex-1"
+                        onKeyDown={(e) => e.key === "Enter" && handleSendReply()}
+                      />
+                      <Button size="sm" onClick={handleSendReply}>
+                        Send
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={handleCloseTicket}>
+                        Close
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-red-500 font-bold">This ticket is closed. No further replies allowed.</p>
+                  )}
+                </div>
               </div>
             </>
           )}

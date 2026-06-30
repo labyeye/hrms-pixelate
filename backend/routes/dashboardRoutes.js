@@ -1,5 +1,5 @@
 const express = require("express");
-const { getStats } = require("../controllers/dashboardController");
+const { getStats, getEmployeeStats } = require("../controllers/dashboardController");
 const { protect } = require("../middleware/auth");
 const router = express.Router();
 
@@ -11,4 +11,5 @@ const noCache = (_req, res, next) => {
 };
 
 router.get("/stats", protect, noCache, getStats);
+router.get("/employee", protect, noCache, getEmployeeStats);
 module.exports = router;

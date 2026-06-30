@@ -45,4 +45,29 @@ router.delete(
   }),
 );
 
+// FCM token registration for React Native push notifications
+router.post(
+  "/fcm-register",
+  protect,
+  asyncHandler(async (req, res) => {
+    const { fcmToken, platform } = req.body;
+    if (!fcmToken) {
+      res.status(400);
+      throw new Error("fcmToken is required");
+    }
+    await PushSubscription.findOneAndUpdate(
+      { fcmToken },
+      {
+        employee: req.user._id,
+        company: req.user.company,
+        fcmToken,
+        platform: platform || "unknown",
+        userAgent: req.headers["user-agent"] || "",
+      },
+      { upsert: true, new: true },
+    );
+    res.json({ success: true });
+  }),
+);
+
 module.exports = router;

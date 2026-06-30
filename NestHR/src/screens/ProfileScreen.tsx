@@ -24,12 +24,49 @@ import {
   ChevronLeft,
   Shield,
   Camera,
+  CreditCard,
+  Cpu,
+  Heart,
+  BookOpen,
+  Award,
+  Briefcase,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { useAuth } from '../contexts/AuthContext';
 import { authAPI, employeeAPI } from '../api/api';
 import { C } from '../theme';
+
+function AccordionSection({ title, isOpen, onToggle, children, icon: Icon }: any) {
+  return (
+    <View style={{ borderBottomWidth: 1, borderBottomColor: '#E5E7EB', marginTop: 10 }}>
+      <TouchableOpacity
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingVertical: 12,
+          paddingHorizontal: 14,
+          backgroundColor: '#F9FAFB',
+          borderWidth: 2,
+          borderColor: C.black,
+        }}
+        onPress={onToggle}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          {Icon && <Icon size={16} color={C.primary} />}
+          <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>{title}</Text>
+        </View>
+        <Text style={{ fontSize: 16, fontWeight: '700', color: C.textMuted }}>{isOpen ? '−' : '+'}</Text>
+      </TouchableOpacity>
+      {isOpen && (
+        <View style={{ padding: 14, backgroundColor: C.white, borderWidth: 2, borderTopWidth: 0, borderColor: C.black }}>
+          {children}
+        </View>
+      )}
+    </View>
+  );
+}
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
@@ -42,12 +79,39 @@ export default function ProfileScreen() {
     (user as any)?.avatar || null,
   );
 
+  const [empProfile, setEmpProfile] = useState<any>(null);
+  const [panNumber, setPanNumber] = useState('');
+  const [bankAccount, setBankAccount] = useState('');
+  const [ifscCode, setIfscCode] = useState('');
+  const [emergencyContact, setEmergencyContact] = useState('');
+  const [nominees, setNominees] = useState<any[]>([]);
+  const [familyDetails, setFamilyDetails] = useState<any[]>([]);
+  const [education, setEducation] = useState<any[]>([]);
+  const [experience, setExperience] = useState<any[]>([]);
+  const [skills, setSkills] = useState<string[]>([]);
+  const [certificates, setCertificates] = useState<any[]>([]);
+
+  const [openSection, setOpenSection] = useState<string | null>(null);
+  const [newSkill, setNewSkill] = useState('');
+
   useEffect(() => {
     employeeAPI.getMe()
       .then(res => {
         const emp = res?.data || res;
+        setEmpProfile(emp);
         const uri = emp?.avatar || (user as any)?.avatar || null;
         if (uri) setAvatarUri(uri);
+
+        setPanNumber(emp?.panNumber || '');
+        setBankAccount(emp?.bankAccount || '');
+        setIfscCode(emp?.ifscCode || '');
+        setEmergencyContact(emp?.emergencyContact || '');
+        setNominees(emp?.nominees || []);
+        setFamilyDetails(emp?.familyDetails || []);
+        setEducation(emp?.education || []);
+        setExperience(emp?.experience || []);
+        setSkills(emp?.skills || []);
+        setCertificates(emp?.certificates || []);
       })
       .catch(() => {});
   }, []);
@@ -109,13 +173,27 @@ export default function ProfileScreen() {
         phone: phone.trim(),
         ...(avatarUri ? { avatar: avatarUri } : {}),
       });
+      if (empProfile?._id) {
+        await employeeAPI.update(empProfile._id, {
+          panNumber,
+          bankAccount,
+          ifscCode,
+          emergencyContact,
+          nominees,
+          familyDetails,
+          education,
+          experience,
+          skills,
+          certificates,
+        });
+      }
       updateUser({
         name: name.trim(),
         email: email.trim(),
         phone: phone.trim(),
         avatar: avatarUri || undefined,
       });
-      Alert.alert('Success', 'Profile updated successfully');
+      Alert.alert('Success', 'Profile details updated successfully');
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Failed to update profile');
     } finally {
@@ -271,6 +349,412 @@ export default function ProfileScreen() {
                 </>
               )}
             </TouchableOpacity>
+          </View>
+
+          {/* ESS Collapsible Sections */}
+          <View>
+            {/* Section: Bank & ID */}
+            <AccordionSection
+              title="Bank & Identification"
+              isOpen={openSection === 'bank'}
+              onToggle={() => setOpenSection(openSection === 'bank' ? null : 'bank')}
+              icon={CreditCard}
+            >
+              <View style={{ gap: 10 }}>
+                <Text style={s.fieldLabel}>PAN Number</Text>
+                <TextInput
+                  style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 8, fontSize: 13, color: C.black }}
+                  value={panNumber}
+                  onChangeText={setPanNumber}
+                  placeholder="ABCDE1234F"
+                  placeholderTextColor={C.textLight}
+                />
+                <Text style={s.fieldLabel}>Bank Account Number</Text>
+                <TextInput
+                  style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 8, fontSize: 13, color: C.black }}
+                  value={bankAccount}
+                  onChangeText={setBankAccount}
+                  placeholder="Account Number"
+                  placeholderTextColor={C.textLight}
+                />
+                <Text style={s.fieldLabel}>IFSC Code</Text>
+                <TextInput
+                  style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 8, fontSize: 13, color: C.black }}
+                  value={ifscCode}
+                  onChangeText={setIfscCode}
+                  placeholder="IFSC Code"
+                  placeholderTextColor={C.textLight}
+                />
+              </View>
+            </AccordionSection>
+
+            {/* Section: Nominees */}
+            <AccordionSection
+              title="Emergency & Nominees"
+              isOpen={openSection === 'nominees'}
+              onToggle={() => setOpenSection(openSection === 'nominees' ? null : 'nominees')}
+              icon={Heart}
+            >
+              <View style={{ gap: 12 }}>
+                <Text style={s.fieldLabel}>Emergency Contact</Text>
+                <TextInput
+                  style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 8, fontSize: 13, color: C.black }}
+                  value={emergencyContact}
+                  onChangeText={setEmergencyContact}
+                  placeholder="Contact Name & Phone"
+                  placeholderTextColor={C.textLight}
+                />
+
+                <Text style={[s.fieldLabel, { borderTopWidth: 1, borderTopColor: '#E5E7EB', paddingTop: 8, marginTop: 8 }]}>Nominees List</Text>
+                {nominees.map((n, i) => (
+                  <View key={i} style={{ borderWidth: 1, borderColor: '#E5E7EB', padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
+                    <TextInput
+                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      value={n.name}
+                      onChangeText={val => {
+                        const updated = [...nominees];
+                        updated[i].name = val;
+                        setNominees(updated);
+                      }}
+                      placeholder="Nominee Name"
+                      placeholderTextColor={C.textLight}
+                    />
+                    <TextInput
+                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      value={n.relationship}
+                      onChangeText={val => {
+                        const updated = [...nominees];
+                        updated[i].relationship = val;
+                        setNominees(updated);
+                      }}
+                      placeholder="Relationship"
+                      placeholderTextColor={C.textLight}
+                    />
+                    <TextInput
+                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      value={String(n.percentage || '')}
+                      keyboardType="numeric"
+                      onChangeText={val => {
+                        const updated = [...nominees];
+                        updated[i].percentage = Number(val) || 0;
+                        setNominees(updated);
+                      }}
+                      placeholder="Share Percentage"
+                      placeholderTextColor={C.textLight}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setNominees(nominees.filter((_, idx) => idx !== i))}
+                      style={{ alignSelf: 'flex-end', backgroundColor: C.danger, paddingHorizontal: 10, paddingVertical: 4 }}
+                    >
+                      <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                <TouchableOpacity
+                  onPress={() => setNominees([...nominees, { name: '', relationship: '', percentage: 100 }])}
+                  style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: C.black, padding: 8, alignItems: 'center', marginTop: 4 }}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: C.black }}>+ Add Nominee</Text>
+                </TouchableOpacity>
+              </View>
+            </AccordionSection>
+
+            {/* Section: Family */}
+            <AccordionSection
+              title="Family Details"
+              isOpen={openSection === 'family'}
+              onToggle={() => setOpenSection(openSection === 'family' ? null : 'family')}
+              icon={Heart}
+            >
+              <View style={{ gap: 12 }}>
+                {familyDetails.map((f, i) => (
+                  <View key={i} style={{ borderWidth: 1, borderColor: '#E5E7EB', padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
+                    <TextInput
+                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      value={f.name}
+                      onChangeText={val => {
+                        const updated = [...familyDetails];
+                        updated[i].name = val;
+                        setFamilyDetails(updated);
+                      }}
+                      placeholder="Member Name"
+                      placeholderTextColor={C.textLight}
+                    />
+                    <TextInput
+                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      value={f.relationship}
+                      onChangeText={val => {
+                        const updated = [...familyDetails];
+                        updated[i].relationship = val;
+                        setFamilyDetails(updated);
+                      }}
+                      placeholder="Relationship"
+                      placeholderTextColor={C.textLight}
+                    />
+                    <TextInput
+                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      value={f.phone}
+                      onChangeText={val => {
+                        const updated = [...familyDetails];
+                        updated[i].phone = val;
+                        setFamilyDetails(updated);
+                      }}
+                      placeholder="Phone"
+                      placeholderTextColor={C.textLight}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setFamilyDetails(familyDetails.filter((_, idx) => idx !== i))}
+                      style={{ alignSelf: 'flex-end', backgroundColor: C.danger, paddingHorizontal: 10, paddingVertical: 4 }}
+                    >
+                      <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                <TouchableOpacity
+                  onPress={() => setFamilyDetails([...familyDetails, { name: '', relationship: '', phone: '' }])}
+                  style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: C.black, padding: 8, alignItems: 'center', marginTop: 4 }}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: C.black }}>+ Add Family Member</Text>
+                </TouchableOpacity>
+              </View>
+            </AccordionSection>
+
+            {/* Section: Education */}
+            <AccordionSection
+              title="Education Records"
+              isOpen={openSection === 'education'}
+              onToggle={() => setOpenSection(openSection === 'education' ? null : 'education')}
+              icon={BookOpen}
+            >
+              <View style={{ gap: 12 }}>
+                {education.map((e, i) => (
+                  <View key={i} style={{ borderWidth: 1, borderColor: '#E5E7EB', padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
+                    <TextInput
+                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      value={e.degree}
+                      onChangeText={val => {
+                        const updated = [...education];
+                        updated[i].degree = val;
+                        setEducation(updated);
+                      }}
+                      placeholder="Degree / Course"
+                      placeholderTextColor={C.textLight}
+                    />
+                    <TextInput
+                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      value={e.school}
+                      onChangeText={val => {
+                        const updated = [...education];
+                        updated[i].school = val;
+                        setEducation(updated);
+                      }}
+                      placeholder="School / University"
+                      placeholderTextColor={C.textLight}
+                    />
+                    <TextInput
+                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      value={String(e.passYear || '')}
+                      keyboardType="numeric"
+                      onChangeText={val => {
+                        const updated = [...education];
+                        updated[i].passYear = Number(val) || 0;
+                        setEducation(updated);
+                      }}
+                      placeholder="Pass Year"
+                      placeholderTextColor={C.textLight}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setEducation(education.filter((_, idx) => idx !== i))}
+                      style={{ alignSelf: 'flex-end', backgroundColor: C.danger, paddingHorizontal: 10, paddingVertical: 4 }}
+                    >
+                      <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                <TouchableOpacity
+                  onPress={() => setEducation([...education, { degree: '', school: '', passYear: 2020 }])}
+                  style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: C.black, padding: 8, alignItems: 'center', marginTop: 4 }}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: C.black }}>+ Add Education Record</Text>
+                </TouchableOpacity>
+              </View>
+            </AccordionSection>
+
+            {/* Section: Experience */}
+            <AccordionSection
+              title="Work Experience"
+              isOpen={openSection === 'experience'}
+              onToggle={() => setOpenSection(openSection === 'experience' ? null : 'experience')}
+              icon={Briefcase}
+            >
+              <View style={{ gap: 12 }}>
+                {experience.map((exp, i) => (
+                  <View key={i} style={{ borderWidth: 1, borderColor: '#E5E7EB', padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
+                    <TextInput
+                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      value={exp.company}
+                      onChangeText={val => {
+                        const updated = [...experience];
+                        updated[i].company = val;
+                        setExperience(updated);
+                      }}
+                      placeholder="Company"
+                      placeholderTextColor={C.textLight}
+                    />
+                    <TextInput
+                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      value={exp.role}
+                      onChangeText={val => {
+                        const updated = [...experience];
+                        updated[i].role = val;
+                        setExperience(updated);
+                      }}
+                      placeholder="Role"
+                      placeholderTextColor={C.textLight}
+                    />
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                      <TextInput
+                        style={{ flex: 1, borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                        value={exp.start}
+                        onChangeText={val => {
+                          const updated = [...experience];
+                          updated[i].start = val;
+                          setExperience(updated);
+                        }}
+                        placeholder="Start Date"
+                        placeholderTextColor={C.textLight}
+                      />
+                      <TextInput
+                        style={{ flex: 1, borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                        value={exp.end}
+                        onChangeText={val => {
+                          const updated = [...experience];
+                          updated[i].end = val;
+                          setExperience(updated);
+                        }}
+                        placeholder="End Date"
+                        placeholderTextColor={C.textLight}
+                      />
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => setExperience(experience.filter((_, idx) => idx !== i))}
+                      style={{ alignSelf: 'flex-end', backgroundColor: C.danger, paddingHorizontal: 10, paddingVertical: 4 }}
+                    >
+                      <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                <TouchableOpacity
+                  onPress={() => setExperience([...experience, { company: '', role: '', start: '', end: '' }])}
+                  style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: C.black, padding: 8, alignItems: 'center', marginTop: 4 }}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: C.black }}>+ Add Experience Record</Text>
+                </TouchableOpacity>
+              </View>
+            </AccordionSection>
+
+            {/* Section: Skills */}
+            <AccordionSection
+              title="Skills Tags"
+              isOpen={openSection === 'skills'}
+              onToggle={() => setOpenSection(openSection === 'skills' ? null : 'skills')}
+              icon={Award}
+            >
+              <View style={{ gap: 10 }}>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TextInput
+                    style={{ flex: 1, borderWidth: 1, borderColor: '#D1D5DB', padding: 8, fontSize: 13, color: C.black }}
+                    value={newSkill}
+                    onChangeText={setNewSkill}
+                    placeholder="e.g. React Native, Swift"
+                    placeholderTextColor={C.textLight}
+                  />
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (newSkill.trim() && !skills.includes(newSkill.trim())) {
+                        setSkills([...skills, newSkill.trim()]);
+                        setNewSkill('');
+                      }
+                    }}
+                    style={{ backgroundColor: C.black, paddingHorizontal: 16, justifyContent: 'center' }}
+                  >
+                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Add</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+                  {skills.map((s, idx) => (
+                    <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: C.black, paddingHorizontal: 8, paddingVertical: 4, gap: 4 }}>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: C.black }}>{s}</Text>
+                      <TouchableOpacity onPress={() => setSkills(skills.filter((_, i) => i !== idx))}>
+                        <Text style={{ color: C.danger, fontWeight: '700', fontSize: 13 }}>×</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                  {skills.length === 0 && <Text style={{ fontSize: 11, color: C.textMuted }}>No skills tags listed.</Text>}
+                </View>
+              </View>
+            </AccordionSection>
+
+            {/* Section: Certificates */}
+            <AccordionSection
+              title="Certificates"
+              isOpen={openSection === 'certificates'}
+              onToggle={() => setOpenSection(openSection === 'certificates' ? null : 'certificates')}
+              icon={Award}
+            >
+              <View style={{ gap: 12 }}>
+                {certificates.map((cert, i) => (
+                  <View key={i} style={{ borderWidth: 1, borderColor: '#E5E7EB', padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
+                    <TextInput
+                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      value={cert.name}
+                      onChangeText={val => {
+                        const updated = [...certificates];
+                        updated[i].name = val;
+                        setCertificates(updated);
+                      }}
+                      placeholder="Certificate Name"
+                      placeholderTextColor={C.textLight}
+                    />
+                    <TextInput
+                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      value={cert.issuer}
+                      onChangeText={val => {
+                        const updated = [...certificates];
+                        updated[i].issuer = val;
+                        setCertificates(updated);
+                      }}
+                      placeholder="Issuer"
+                      placeholderTextColor={C.textLight}
+                    />
+                    <TextInput
+                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      value={cert.docUrl}
+                      onChangeText={val => {
+                        const updated = [...certificates];
+                        updated[i].docUrl = val;
+                        setCertificates(updated);
+                      }}
+                      placeholder="Certificate URL Link"
+                      placeholderTextColor={C.textLight}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setCertificates(certificates.filter((_, idx) => idx !== i))}
+                      style={{ alignSelf: 'flex-end', backgroundColor: C.danger, paddingHorizontal: 10, paddingVertical: 4 }}
+                    >
+                      <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                <TouchableOpacity
+                  onPress={() => setCertificates([...certificates, { name: '', issuer: '', docUrl: '' }])}
+                  style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: C.black, padding: 8, alignItems: 'center', marginTop: 4 }}
+                >
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: C.black }}>+ Add Certificate Record</Text>
+                </TouchableOpacity>
+              </View>
+            </AccordionSection>
           </View>
 
           {/* Change password */}

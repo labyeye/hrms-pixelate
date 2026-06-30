@@ -158,9 +158,22 @@ const MENU_ITEMS = [
     icon: MapPin,
     desc: 'Manage office locations & branches',
   },
+  {
+    key: 'Assets',
+    label: 'My Assets',
+    icon: Cpu,
+    desc: 'Track company hardware',
+  },
 ];
 
-const EMPLOYEE_MENU_KEYS = new Set(['Payroll', 'Holidays', 'Notifications', 'Support']);
+const EMPLOYEE_MENU_KEYS = new Set([
+  'Payroll',
+  'Holidays',
+  'Notifications',
+  'Support',
+  'Documents',
+  'Assets',
+]);
 
 export default function MoreScreen({ navigation }: any) {
   const { user, logout } = useAuth();
@@ -170,7 +183,10 @@ export default function MoreScreen({ navigation }: any) {
 
   useEffect(() => {
     if (isEmployee) {
-      employeeAPI.getMe().then(res => setEmpProfile(res?.data || res)).catch(() => {});
+      employeeAPI
+        .getMe()
+        .then(res => setEmpProfile(res?.data || res))
+        .catch(() => {});
     }
   }, [isEmployee]);
 
@@ -212,17 +228,12 @@ export default function MoreScreen({ navigation }: any) {
         onPress={() => navigation.navigate('Profile')}
         activeOpacity={0.8}
       >
-        {avatarUri ? (
-          <Image source={{ uri: avatarUri }} style={styles.userAvatarPhoto} />
+        {user?.avatar ? (
+          <Image source={{ uri: user.avatar }} style={styles.userAvatar} />
         ) : (
-          <View style={styles.userAvatar}>
+          <View style={[styles.userAvatar]}>
             <Text style={styles.userAvatarText}>
-              {(user?.name || 'U')
-                .split(' ')
-                .map((n: string) => n[0])
-                .join('')
-                .toUpperCase()
-                .slice(0, 2)}
+              {(user?.name || 'U')[0].toUpperCase()}
             </Text>
           </View>
         )}

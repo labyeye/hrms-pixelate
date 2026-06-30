@@ -66,7 +66,7 @@ async function request<T = any>(
     // Retry GET requests on transient network errors (stale keep-alive,
     // cell-tower switch, brief dropout). Never retry mutations.
     if (isGet && isNetworkErr && _retries > 0) {
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise<void>(r => setTimeout(() => r(), 1000));
       return request(endpoint, options, _retries - 1);
     }
 
@@ -119,6 +119,7 @@ export const authAPI = {
 
 export const dashboardAPI = {
   getStats: () => request('/dashboard/stats'),
+  getEmployeeStats: () => request('/dashboard/employee'),
 };
 
 export const employeeAPI = {
@@ -136,6 +137,29 @@ export const employeeAPI = {
       method: 'POST',
       body: JSON.stringify({ password }),
     }),
+  uploadAvatar: async (id: string, uri: string, type: string, fileName: string) => {
+    const token = await getToken();
+    const formData = new FormData();
+    formData.append('avatar', { uri, type, name: fileName } as any);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30_000);
+    try {
+      const res = await fetch(`${BASE_URL}/employees/${id}/avatar`, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: formData,
+      });
+      clearTimeout(timer);
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : {};
+      if (!res.ok) throw new Error(data.message || `Upload failed (${res.status})`);
+      return data;
+    } catch (err: any) {
+      clearTimeout(timer);
+      throw err;
+    }
+  },
 };
 
 export const attendanceAPI = {
@@ -523,6 +547,13 @@ export const supportAPI = {
   getOne: (id: string) => request(`/support/${id}`),
   create: (body: { subject: string; issueType: string; priority: string; description: string }) =>
     request('/support', { method: 'POST', body: JSON.stringify(body) }),
+  reply: (id: string, message: string) =>
+    request(`/support/${id}/reply`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    }),
+  close: (id: string) =>
+    request(`/support/${id}/close`, { method: 'POST' }),
 };
 
 export const documentAPI = {
@@ -558,6 +589,34 @@ export const documentAPI = {
 export const payrollPreviewAPI = {
   preview: (body: { month: number; year: number; employeeIds?: string[] }) =>
     request('/payroll/preview', { method: 'POST', body: JSON.stringify(body) }),
+};
+
+export const assetAPI = {
+  getAll: (params?: Record<string, string>) =>
+    request(`/assets${qs(params)}`),
+  return: (id: string) => request(`/assets/${id}/return`, { method: 'POST' }),
+};
+
+export const announcementAPI = {
+  getAll: () => request('/announcements'),
+};
+
+
+
+export const attendanceCorrectionAPI = {
+  getAll: (params?: Record<string, string>) =>
+    request(`/attendance-corrections${qs(params)}`),
+  create: (body: {
+    date: string;
+    type: string;
+    checkIn?: string;
+    checkOut?: string;
+    reason: string;
+  }) =>
+    request('/attendance-corrections', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 };
 
 // ── Local notification store ──────────────────────────────────────────────────

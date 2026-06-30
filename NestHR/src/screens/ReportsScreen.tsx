@@ -1465,12 +1465,12 @@ export default function ReportsScreen() {
         horizontal
         showsHorizontalScrollIndicator={false}
         style={s.catBar}
-        contentContainerStyle={{ gap: 8, paddingHorizontal: 16 }}
+        contentContainerStyle={{ gap: 8, paddingHorizontal: 6 }}
       >
         {CATS.map(c => {
           const active = catFilter === c.key;
           const color =
-            c.key === 'all' ? C.black : CAT_COLORS[c.key as Category];
+            c.key === 'all' ? C.primary : CAT_COLORS[c.key as Category];
           return (
             <TouchableOpacity
               key={c.key}
@@ -1574,20 +1574,20 @@ const s = StyleSheet.create({
   },
   countText: { color: C.white, fontSize: 12, fontWeight: '700' },
   catBar: {
-    height: 60, // ya remove maxHeight
+    maxHeight: 48,
     backgroundColor: C.white,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
+    paddingVertical: 8,
   },
   catChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 4,
     borderWidth: 2,
-    marginBottom: 10,
-    marginTop: 10,
     borderColor: C.black,
     backgroundColor: C.white,
     minWidth: 90,
     justifyContent: 'center',
-    flexShrink: 0,
     alignItems: 'center',
   },
   catChipText: {

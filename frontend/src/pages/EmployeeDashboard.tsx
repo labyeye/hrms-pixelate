@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { DocumentsTabPane } from "@/components/ess/DocumentsTabPane";
+import { AssetsTabPane } from "@/components/ess/AssetsTabPane";
+import { ProfileDetailsTabPane } from "@/components/ess/ProfileDetailsTabPane";
+import { AttendanceCorrectionPane } from "@/components/ess/AttendanceCorrectionPane";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   employeeAPI,
@@ -9,6 +13,12 @@ import {
   payrollAPI,
   performanceAPI,
   authAPI,
+  dashboardAPI,
+  assetAPI,
+  announcementAPI,
+  attendanceCorrectionAPI,
+  documentAPI,
+  supportAPI,
 } from "@/services/api";
 import { cn, formatDate, formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -38,6 +48,17 @@ import {
   Upload,
   Plus,
   Send,
+  FolderOpen,
+  Cpu,
+  Gift,
+  Award,
+  BookOpen,
+  Heart,
+  Megaphone,
+  UserCheck,
+  RefreshCw,
+  FileText,
+  Check,
 } from "lucide-react";
 
 interface AttendanceStats {
@@ -71,13 +92,15 @@ function InfoRow({
   );
 }
 
-type Tab = "overview" | "attendance" | "leaves" | "payroll" | "settings";
+type Tab = "overview" | "attendance" | "leaves" | "payroll" | "documents" | "assets" | "settings";
 
 const TABS: { id: Tab; label: string; icon: any }[] = [
   { id: "overview", label: "Overview", icon: User },
   { id: "attendance", label: "Attendance", icon: Clock },
   { id: "leaves", label: "Leaves", icon: Calendar },
   { id: "payroll", label: "Payroll", icon: IndianRupee },
+  { id: "documents", label: "Documents", icon: FolderOpen },
+  { id: "assets", label: "Assets", icon: Cpu },
   { id: "settings", label: "Settings", icon: Lock },
 ];
 
@@ -128,6 +151,7 @@ export default function EmployeeDashboard() {
   const [leaves, setLeaves] = useState<any[]>([]);
   const [payrolls, setPayrolls] = useState<any[]>([]);
   const [performance, setPerformance] = useState<any[]>([]);
+  const [essStats, setEssStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>("overview");
 
@@ -151,6 +175,8 @@ export default function EmployeeDashboard() {
     reason: "",
     isHalfDay: false,
     halfDayType: "first_half",
+    startHour: "",
+    endHour: "",
   });
   const [leaveSaving, setLeaveSaving] = useState(false);
 
@@ -201,6 +227,10 @@ export default function EmployeeDashboard() {
           performanceAPI
             .getAll({ employeeId: emp._id })
             .then((r) => r.success && setPerformance(r.data))
+            .catch(() => {}),
+          dashboardAPI
+            .getEmployeeStats()
+            .then((r) => r.success && setEssStats(r.data))
             .catch(() => {}),
         ]);
       }
@@ -348,13 +378,16 @@ export default function EmployeeDashboard() {
   };
 
   const handleRequestLeave = async () => {
-    const { leaveType, startDate, endDate, reason, isHalfDay, halfDayType } =
+    const { leaveType, startDate, endDate, reason, isHalfDay, halfDayType, startHour, endHour } =
       leaveForm;
     if (!startDate || !endDate || !reason.trim()) {
       toast({ title: "Please fill all fields", variant: "destructive" });
       return;
     }
-    const days = calcDays(startDate, endDate, isHalfDay);
+    let days = calcDays(startDate, endDate, isHalfDay);
+    if (leaveType === "hourly") {
+      days = 0.125;
+    }
     if (days <= 0) {
       toast({ title: "Invalid date range", variant: "destructive" });
       return;
@@ -369,6 +402,8 @@ export default function EmployeeDashboard() {
         reason: reason.trim(),
         isHalfDay,
         halfDayType,
+        startHour: leaveType === "hourly" ? startHour : undefined,
+        endHour: leaveType === "hourly" ? endHour : undefined,
       });
       if (res.success) {
         toast({
@@ -383,6 +418,8 @@ export default function EmployeeDashboard() {
           reason: "",
           isHalfDay: false,
           halfDayType: "first_half",
+          startHour: "",
+          endHour: "",
         });
         const emp = employee;
         leaveAPI
@@ -680,6 +717,124 @@ export default function EmployeeDashboard() {
 
           {}
           <div className="lg:col-span-2 space-y-5">
+            {/* ESS Overview Alerts & Cards */}
+            {essStats && (
+              <div className="space-y-4">
+                {/* Birthday & Anniversary Banners */}
+                {(essStats.birthdayWishes?.isTodayUserBirthday || 
+                  (essStats.birthdayWishes?.todayBirthdays && essStats.birthdayWishes.todayBirthdays.length > 0) ||
+                  essStats.workAnniversary?.isTodayUserAnniversary || 
+                  (essStats.workAnniversary?.todayAnniversaries && essStats.workAnniversary.todayAnniversaries.length > 0)) && (
+                  <div className="border-2 border-black bg-[#F8FAFF] p-4 space-y-2">
+                    {essStats.birthdayWishes?.isTodayUserBirthday && (
+                      <div className="flex items-center gap-3">
+                        <Gift className="w-8 h-8 text-pink-500 animate-bounce" />
+                        <div>
+                          <p className="font-bold text-lg text-black">Happy Birthday to You! 🎂</p>
+                          <p className="text-xs text-muted-foreground">The NestHR family wishes you a fantastic day ahead filled with joy and success!</p>
+                        </div>
+                      </div>
+                    )}
+                    {essStats.birthdayWishes?.todayBirthdays?.map((b: any) => (
+                      <div key={b._id} className="flex items-center gap-3 py-1">
+                        <Gift className="w-5 h-5 text-purple-500" />
+                        <p className="text-sm font-semibold text-black">
+                          It is <span className="underline">{b.firstName} {b.lastName}</span>'s birthday today! Send your wishes! 🎉
+                        </p>
+                      </div>
+                    ))}
+                    {essStats.workAnniversary?.isTodayUserAnniversary && (
+                      <div className="flex items-center gap-3 border-t border-black/10 pt-2">
+                        <Award className="w-8 h-8 text-yellow-500 animate-pulse" />
+                        <div>
+                          <p className="font-bold text-lg text-black">Happy Work Anniversary! 🎖️</p>
+                          <p className="text-xs text-muted-foreground">Thank you for your dedication and contribution to the company!</p>
+                        </div>
+                      </div>
+                    )}
+                    {essStats.workAnniversary?.todayAnniversaries?.map((a: any) => (
+                      <div key={a._id} className="flex items-center gap-3 py-1 border-t border-black/10 pt-2">
+                        <Award className="w-5 h-5 text-yellow-600" />
+                        <p className="text-sm font-semibold text-black">
+                          Happy Work Anniversary to <span className="font-bold">{a.firstName} {a.lastName}</span>! 👏
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Shift, Pending Approvals, Pending Salary Info */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Shift Info */}
+                  <div className="border-2 border-black bg-white p-4 flex items-center gap-3">
+                    <Clock className="w-8 h-8 text-[#024BAB]" />
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-muted-foreground">Today's Shift</p>
+                      <p className="text-sm font-bold text-black">{essStats.todayShift?.name || "General"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {essStats.todayShift?.startTime} - {essStats.todayShift?.endTime}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Pending Approvals */}
+                  <div className="border-2 border-black bg-white p-4 flex items-center gap-3">
+                    <UserCheck className="w-8 h-8 text-[#FA731C]" />
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-muted-foreground">Approvals</p>
+                      <p className="text-sm font-bold text-black">
+                        {essStats.pendingApprovalsCount > 0 
+                          ? `${essStats.pendingApprovalsCount} Pending` 
+                          : "All Clean"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Requires review</p>
+                    </div>
+                  </div>
+
+                  {/* Pending Salary */}
+                  <div className="border-2 border-black bg-white p-4 flex items-center gap-3">
+                    <IndianRupee className="w-8 h-8 text-[#00C48C]" />
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-muted-foreground">Pending Salary</p>
+                      <p className="text-sm font-bold text-black">
+                        {essStats.pendingSalary?.length > 0 
+                          ? `${essStats.pendingSalary.length} Months` 
+                          : "Paid"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Unpaid payslips</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Announcements Card */}
+                {essStats.announcements?.length > 0 && (
+                  <div className="border-2 border-black bg-white overflow-hidden">
+                    <div className="px-4 py-3 bg-[#024BAB] flex items-center gap-2">
+                      <Megaphone className="w-4 h-4 text-white" />
+                      <p className="text-xs font-black uppercase tracking-wider text-white">
+                        Company Announcements
+                      </p>
+                    </div>
+                    <div className="p-4 space-y-3">
+                      {essStats.announcements.map((a: any) => (
+                        <div key={a._id} className="border-b border-black/5 last:border-b-0 pb-3 last:pb-0">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-bold text-sm text-black">{a.title}</h4>
+                            <span className="text-[10px] font-mono text-muted-foreground">
+                              {new Date(a.date).toLocaleDateString("en-IN")}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">{a.content}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+
+              </div>
+            )}
+
             {}
             {attendance && (
               <div className="grid grid-cols-3 gap-4">
@@ -1021,6 +1176,7 @@ export default function EmployeeDashboard() {
                 </table>
               </div>
             )}
+            <AttendanceCorrectionPane toast={toast} />
           </div>
         </div>
       )}
@@ -1124,34 +1280,39 @@ export default function EmployeeDashboard() {
                       "paternity",
                       "unpaid",
                       "compensatory",
+                      "hourly",
+                      "wfh",
+                      "outdoor_duty",
                     ].map((t) => (
                       <option key={t} value={t} className="capitalize">
-                        {t.charAt(0).toUpperCase() + t.slice(1)}
+                        {t === "wfh" ? "WFH Request" : t.replace("_", " ")}
                       </option>
                     ))}
                   </select>
                 </div>
-                <div className="flex items-end">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={leaveForm.isHalfDay}
-                      onChange={(e) =>
-                        setLeaveForm((f) => ({
-                          ...f,
-                          isHalfDay: e.target.checked,
-                        }))
-                      }
-                      className="w-4 h-4 border-2 border-black accent-[#024BAB]"
-                    />
-                    <span className="text-xs font-bold uppercase">
-                      Half Day
-                    </span>
-                  </label>
-                </div>
+                {leaveForm.leaveType !== "hourly" && (
+                  <div className="flex items-end">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={leaveForm.isHalfDay}
+                        onChange={(e) =>
+                          setLeaveForm((f) => ({
+                            ...f,
+                            isHalfDay: e.target.checked,
+                          }))
+                        }
+                        className="w-4 h-4 border-2 border-black accent-[#024BAB]"
+                      />
+                      <span className="text-xs font-bold uppercase">
+                        Half Day
+                      </span>
+                    </label>
+                  </div>
+                )}
               </div>
 
-              {leaveForm.isHalfDay && (
+              {leaveForm.isHalfDay && leaveForm.leaveType !== "hourly" && (
                 <div>
                   <label className="block text-xs font-black uppercase mb-1.5">
                     Half Day Type
@@ -1169,6 +1330,37 @@ export default function EmployeeDashboard() {
                     <option value="first_half">First Half</option>
                     <option value="second_half">Second Half</option>
                   </select>
+                </div>
+              )}
+
+              {leaveForm.leaveType === "hourly" && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-black uppercase mb-1.5">
+                      Start Hour
+                    </label>
+                    <input
+                      type="time"
+                      value={leaveForm.startHour}
+                      onChange={(e) =>
+                        setLeaveForm((f) => ({ ...f, startHour: e.target.value }))
+                      }
+                      className="w-full border-2 border-black px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#024BAB] bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black uppercase mb-1.5">
+                      End Hour
+                    </label>
+                    <input
+                      type="time"
+                      value={leaveForm.endHour}
+                      onChange={(e) =>
+                        setLeaveForm((f) => ({ ...f, endHour: e.target.value }))
+                      }
+                      className="w-full border-2 border-black px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#024BAB] bg-white"
+                    />
+                  </div>
                 </div>
               )}
 
@@ -1337,6 +1529,14 @@ export default function EmployeeDashboard() {
             </div>
           )}
         </div>
+      )}
+
+      {tab === "documents" && (
+        <DocumentsTabPane employee={employee} toast={toast} />
+      )}
+
+      {tab === "assets" && (
+        <AssetsTabPane toast={toast} />
       )}
 
       {}
@@ -1532,6 +1732,9 @@ export default function EmployeeDashboard() {
                 </button>
               </div>
             </div>
+          </div>
+          <div className="mt-6 border-t-2 border-black/10 pt-6">
+            <ProfileDetailsTabPane employee={employee} toast={toast} onRefresh={loadEmployeeData} />
           </div>
         </div>
       )}
