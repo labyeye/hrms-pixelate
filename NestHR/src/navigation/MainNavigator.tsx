@@ -2,10 +2,10 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, Users, Clock, Calendar, Grid } from 'lucide-react-native';
 import { C } from '../theme';
 import { useAuth } from '../contexts/AuthContext';
-
 import DashboardScreen from '../screens/DashboardScreen';
 import EmployeesScreen from '../screens/EmployeesScreen';
 import AttendanceScreen from '../screens/AttendanceScreen';
@@ -35,7 +35,6 @@ import AuditLogScreen from '../screens/AuditLogScreen';
 import SupportScreen from '../screens/SupportScreen';
 import DocumentsScreen from '../screens/DocumentsScreen';
 import ExitManagementScreen from '../screens/ExitManagementScreen';
-import BranchesScreen from '../screens/BranchesScreen';
 
 const Tab = createBottomTabNavigator();
 const MoreStack = createNativeStackNavigator();
@@ -73,8 +72,10 @@ function MoreNavigator() {
       <MoreStack.Screen name="AuditLog" component={AuditLogScreen} />
       <MoreStack.Screen name="Support" component={SupportScreen} />
       <MoreStack.Screen name="Documents" component={DocumentsScreen} />
-      <MoreStack.Screen name="ExitManagement" component={ExitManagementScreen} />
-      <MoreStack.Screen name="Branches" component={BranchesScreen} />
+      <MoreStack.Screen
+        name="ExitManagement"
+        component={ExitManagementScreen}
+      />
     </MoreStack.Navigator>
   );
 }
@@ -90,6 +91,8 @@ const TAB_ICONS: Record<string, any> = {
 export default function MainNavigator() {
   const { user } = useAuth();
   const isEmployee = user?.role === 'employee';
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = 64 + insets.bottom;
 
   return (
     <Tab.Navigator
@@ -97,7 +100,7 @@ export default function MainNavigator() {
         const Icon = TAB_ICONS[route.name] || Home;
         return {
           headerShown: false,
-          tabBarStyle: styles.tabBar,
+          tabBarStyle: [styles.tabBar, { height: tabBarHeight, paddingBottom: insets.bottom + 4 }],
           tabBarActiveTintColor: C.primary,
           tabBarInactiveTintColor: '#9CA3AF',
           tabBarLabelStyle: styles.tabLabel,
@@ -145,8 +148,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 2,
     borderTopColor: '#000',
     backgroundColor: '#fff',
-    height: 64,
-    paddingBottom: 8,
     paddingTop: 4,
   },
   tabLabel: {

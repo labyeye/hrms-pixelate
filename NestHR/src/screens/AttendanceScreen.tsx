@@ -67,7 +67,7 @@ function toDateStr(d: Date) {
 
 function timeToISO(dateStr: string, timeStr: string): string | undefined {
   if (!timeStr) return undefined;
-  return `${dateStr}T${timeStr}:00`;
+  return `${dateStr}T${timeStr}:00+05:30`;
 }
 
 function isoToTime(iso: string | undefined): string {
@@ -229,7 +229,7 @@ export default function AttendanceScreen() {
           status: form.status,
           checkIn: timeToISO(dateFilter, form.checkIn),
           checkOut: timeToISO(dateFilter, form.checkOut),
-          notes: form.notes || undefined,
+          notes: form.notes,
         });
       } else {
         if (!selectedEmpId) {

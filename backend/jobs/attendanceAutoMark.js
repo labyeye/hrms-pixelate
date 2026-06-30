@@ -127,16 +127,11 @@ async function processDate(targetDate, istMinutesNow) {
           .lean();
 
         const newStatus = approvedLeave ? "on_leave" : "absent";
-        const newNotes = approvedLeave
-          ? `On approved leave: ${approvedLeave.leaveType}`
-          : "Auto-marked absent: no check-in recorded";
 
         if (existing) {
           if (existing.status !== newStatus) {
             existing.status = newStatus;
             existing.workHours = 0;
-            existing.notes =
-              (existing.notes ? existing.notes + " | " : "") + newNotes;
             if (approvedLeave)
               existing.leaveDeductSalary = approvedLeave.deductSalary !== false;
             await existing.save();
@@ -151,7 +146,6 @@ async function processDate(targetDate, istMinutesNow) {
             status: newStatus,
             workHours: 0,
             verifyMode: "auto",
-            notes: newNotes,
             ...(approvedLeave
               ? { leaveDeductSalary: approvedLeave.deductSalary !== false }
               : {}),
@@ -179,9 +173,6 @@ async function processDate(targetDate, istMinutesNow) {
           )
         ) {
           existing.status = "half_day";
-          existing.notes =
-            (existing.notes ? existing.notes + " | " : "") +
-            "Auto-marked half day: no check-out recorded";
           await existing.save();
           console.log(
             `[AutoMark] Marked half_day (no checkout): ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`,
@@ -203,9 +194,6 @@ async function processDate(targetDate, istMinutesNow) {
           ["present", "late"].includes(existing.status)
         ) {
           existing.status = "half_day";
-          existing.notes =
-            (existing.notes ? existing.notes + " | " : "") +
-            `Auto-marked half day: checked in ${Math.round(((cinMins - startMins) / 60) * 10) / 10}h late`;
           changed = true;
           console.log(
             `[AutoMark] Marked half_day (late check-in): ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`,
