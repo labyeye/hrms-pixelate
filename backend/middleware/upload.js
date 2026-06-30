@@ -122,8 +122,6 @@ const uploadAvatar = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
 }).single("avatar");
 
-module.exports.uploadAvatar = uploadAvatar;
-
 // Document vault — generic file upload to disk
 const documentVaultStorage = multer.diskStorage({
   destination(_req, _file, cb) {
@@ -146,5 +144,6 @@ module.exports = {
   uploadEmployeeDocs,
   uploadCompanyLogo,
   uploadDocumentVault,
+  uploadAvatar,
   validateMagicBytes,
 };
