@@ -13,8 +13,19 @@ Not exposed publicly — only the Node backend talks to it.
 ```bash
 python3.12 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+pip install --upgrade pip
+pip install --no-deps -r requirements.txt
 ```
+
+`--no-deps` is required: `face-recognition` declares a dependency on the
+package literally named `dlib` (which has no prebuilt Linux wheel and
+compiles from source via cmake). We install `dlib-bin` instead — a
+prebuilt wheel that registers itself under the `dlib` name at import time
+— but without `--no-deps`, pip's resolver still tries to separately fetch
+and build the real `dlib` from PyPI to satisfy that declared dependency,
+which is what causes cmake/pybind11 build failures on servers without a
+full build toolchain. `requirements.txt` is a full frozen dependency list,
+so `--no-deps` is safe here — nothing is missing.
 
 ## Run
 
