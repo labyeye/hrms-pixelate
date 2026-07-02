@@ -592,6 +592,7 @@ async function sendAttendanceStatus(
 async function sendPhoneOtp(phone, { otp }) {
   const accessToken = process.env.META_WA_TOKEN;
   const phoneNumberId = process.env.META_WA_PHONE_ID;
+  console.log(`[WA-OTP] token=${accessToken ? accessToken.slice(0,8)+'...' : 'MISSING'} phoneId=${phoneNumberId || 'MISSING'} to=${phone}`);
   if (!accessToken || !phoneNumberId) {
     console.warn("[WA-DEBUG] ABORT: META_WA_TOKEN or META_WA_PHONE_ID not set");
     return;
