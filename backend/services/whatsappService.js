@@ -640,6 +640,7 @@ async function sendPhoneOtp(phone, { otp }) {
           let data = "";
           res.on("data", (chunk) => (data += chunk));
           res.on("end", () => {
+            console.log(`[WA-OTP] Meta API status=${res.statusCode} body=${data}`);
             if (res.statusCode >= 200 && res.statusCode < 300)
               resolve(JSON.parse(data));
             else reject(new Error(`Meta API ${res.statusCode}: ${data}`));
