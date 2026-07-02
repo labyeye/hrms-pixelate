@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const speakeasy = require("speakeasy");
 const QRCode = require("qrcode");
 const User = require("../models/User");
+const Employee = require("../models/Employee");
 const Subscription = require("../models/Subscription");
 const generateToken = require("../utils/generateToken");
 const { validateBody } = require("../middleware/validate");
@@ -452,7 +453,13 @@ const sendOtp = asyncHandler(async (req, res) => {
 
   console.log(`[WA-OTP] controller entered, raw phone=${phone}`);
   const normalised = phone.replace(/\s/g, "").replace(/^\+91/, "").slice(-10);
-  const user = await User.findOne({ phone: { $in: [normalised, `+91${normalised}`, `91${normalised}`] } });
+  const phoneVariants = [normalised, `+91${normalised}`, `91${normalised}`];
+
+  let user = await User.findOne({ phone: { $in: phoneVariants } });
+  if (!user) {
+    const employee = await Employee.findOne({ phone: { $in: phoneVariants } });
+    if (employee) user = await User.findById(employee.user);
+  }
   console.log(`[WA-OTP] lookup phone=${normalised} found=${!!user}`);
   if (!user) {
     // Return generic success to avoid user enumeration
@@ -489,13 +496,9 @@ const verifyOtp = asyncHandler(async (req, res) => {
     throw new Error("Phone and OTP are required");
   }
 
-  const normalised = phone.replace(/\s/g, "");
   const hashed = crypto.createHash("sha256").update(otp.trim()).digest("hex");
 
   const user = await User.findOne({
-    phone: {
-      $regex: new RegExp(normalised.replace(/^\+91/, "").slice(-10) + "$"),
-    },
     phoneOtp: hashed,
     phoneOtpExpire: { $gt: new Date() },
   }).populate({
