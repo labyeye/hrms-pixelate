@@ -450,10 +450,13 @@ const sendOtp = asyncHandler(async (req, res) => {
     throw new Error("Phone number is required");
   }
 
+  console.log(`[WA-OTP] controller entered, raw phone=${phone}`);
   const normalised = phone.replace(/\s/g, "").replace(/^\+91/, "").slice(-10);
   const user = await User.findOne({ phone: { $in: [normalised, `+91${normalised}`, `91${normalised}`] } });
+  console.log(`[WA-OTP] lookup phone=${normalised} found=${!!user}`);
   if (!user) {
     // Return generic success to avoid user enumeration
+    console.warn(`[WA-OTP] ABORT: no user matched phone=${normalised} (raw=${phone})`);
     return res.json({
       success: true,
       message: "If that phone number is registered, an OTP has been sent.",
