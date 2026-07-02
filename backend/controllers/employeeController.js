@@ -644,6 +644,39 @@ const enrollEmployeeFace = asyncHandler(async (req, res) => {
   res.json({ success: true, message: "Face enrolled successfully" });
 });
 
+// Self-service version for the mobile app: the logged-in employee enrolls
+// their own face using a live camera capture (never a gallery photo), so the
+// enrolled embedding is captured under the same conditions as check-in
+// selfies, which keeps verification accuracy consistent.
+const enrollMyFace = asyncHandler(async (req, res) => {
+  let employee = await Employee.findOne({ user: req.user._id });
+  if (!employee && req.user.email && req.user.company) {
+    employee = await Employee.findOne({
+      email: req.user.email.toLowerCase(),
+      company: req.user.company,
+    });
+  }
+  if (!employee) {
+    res.status(404);
+    throw new Error("Employee record not found");
+  }
+  if (!req.file) {
+    res.status(400);
+    throw new Error("Photo is required");
+  }
+
+  const encoding = await enrollFace(
+    req.file.buffer,
+    req.file.originalname || "enroll.jpg",
+    req.file.mimetype,
+  );
+
+  employee.faceDescriptor = encoding;
+  await employee.save();
+
+  res.json({ success: true, message: "Face enrolled successfully" });
+});
+
 module.exports = {
   getEmployees,
   getEmployee,
@@ -656,4 +689,5 @@ module.exports = {
   uploadEmployeeDocuments,
   downloadEmployeeDocument,
   enrollEmployeeFace,
+  enrollMyFace,
 };

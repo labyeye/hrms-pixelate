@@ -1893,9 +1893,12 @@ export default function EmployeesPage() {
                                 Face Enrollment
                               </p>
                               <p className="text-xs text-muted-foreground mb-3">
-                                Upload a clear, single-face photo so the mobile
-                                app can verify it's really this employee at
-                                check-in/out
+                                Recommended: have the employee enroll their own
+                                face from the mobile app (uses the front
+                                camera, matching how they'll check in). Use
+                                this upload only as a fallback — a photo taken
+                                under different conditions than their phone
+                                selfie may reduce match accuracy.
                               </p>
                               <input
                                 ref={faceEnrollInputRef}

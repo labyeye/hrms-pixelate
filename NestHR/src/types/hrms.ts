@@ -59,6 +59,7 @@ export interface Employee {
   rfidCard?: string;
   faceDescriptor?: number[];
   geofenceAttendanceEnabled?: boolean;
+  geofenceMode?: 'specific' | 'any';
   geofenceLat?: number;
   geofenceLng?: number;
   geofenceRadiusMeters?: number;

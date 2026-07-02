@@ -11,6 +11,7 @@ const {
   uploadEmployeeDocuments,
   downloadEmployeeDocument,
   enrollEmployeeFace,
+  enrollMyFace,
 } = require("../controllers/employeeController");
 const { protect, authorize } = require("../middleware/auth");
 const {
@@ -21,6 +22,7 @@ const {
 const router = express.Router();
 
 router.get("/me", protect, getMyEmployee);
+router.post("/me/face-enroll", protect, uploadFaceEnrollPhoto, enrollMyFace);
 
 router
   .route("/")

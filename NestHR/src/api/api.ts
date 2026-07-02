@@ -137,6 +137,29 @@ export const employeeAPI = {
       method: 'POST',
       body: JSON.stringify({ password }),
     }),
+  enrollMyFace: async (uri: string, type: string, fileName: string) => {
+    const token = await getToken();
+    const formData = new FormData();
+    formData.append('photo', { uri, type, name: fileName } as any);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30_000);
+    try {
+      const res = await fetch(`${BASE_URL}/employees/me/face-enroll`, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: formData,
+      });
+      clearTimeout(timer);
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : {};
+      if (!res.ok) throw new Error(data.message || `Enrollment failed (${res.status})`);
+      return data;
+    } catch (err: any) {
+      clearTimeout(timer);
+      throw err;
+    }
+  },
   uploadAvatar: async (id: string, uri: string, type: string, fileName: string) => {
     const token = await getToken();
     const formData = new FormData();

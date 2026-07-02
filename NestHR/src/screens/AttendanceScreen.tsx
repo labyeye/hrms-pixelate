@@ -155,8 +155,9 @@ export default function AttendanceScreen() {
   // Self check-in/out (geofenced mobile attendance)
   const [myEmployee, setMyEmployee] = useState<Employee | null>(null);
   const [selfMarking, setSelfMarking] = useState<'checkin' | 'checkout' | null>(null);
+  const [enrolling, setEnrolling] = useState(false);
 
-  useEffect(() => {
+  const loadMyEmployee = useCallback(() => {
     if (!isEmployee) return;
     employeeAPI
       .getMe()
@@ -164,9 +165,48 @@ export default function AttendanceScreen() {
       .catch(() => {});
   }, [isEmployee]);
 
+  useEffect(() => {
+    loadMyEmployee();
+  }, [loadMyEmployee]);
+
+  const hasFaceEnrolled =
+    Array.isArray(myEmployee?.faceDescriptor) &&
+    myEmployee!.faceDescriptor!.length === 128;
+
   const todayStr = toDateStr(new Date());
   const todayRecord =
     isEmployee && dateFilter === todayStr ? records[0] : undefined;
+
+  const handleEnrollFace = async () => {
+    const ok = await requestSelfMarkPermissions();
+    if (!ok) {
+      Alert.alert('Permission Required', 'Camera access is required to enroll your face.');
+      return;
+    }
+
+    launchCamera(
+      { mediaType: 'photo', quality: 0.8, cameraType: 'front', saveToPhotos: false },
+      async result => {
+        const asset = result.assets?.[0];
+        if (!asset?.uri) return;
+
+        setEnrolling(true);
+        try {
+          await employeeAPI.enrollMyFace(
+            asset.uri,
+            asset.type || 'image/jpeg',
+            asset.fileName || `face_${Date.now()}.jpg`,
+          );
+          Alert.alert('Success', 'Face enrolled — you can now check in via the app.');
+          loadMyEmployee();
+        } catch (e: any) {
+          Alert.alert('Error', e.message || 'Face enrollment failed. Try a clear, well-lit photo.');
+        } finally {
+          setEnrolling(false);
+        }
+      },
+    );
+  };
 
   const handleSelfMark = async (action: 'checkin' | 'checkout') => {
     const ok = await requestSelfMarkPermissions();
@@ -509,7 +549,28 @@ export default function AttendanceScreen() {
               Geofenced Mobile Check-in
             </Text>
           </View>
-          {!todayRecord?.checkIn ? (
+          {!hasFaceEnrolled ? (
+            <>
+              <Text style={styles.selfMarkNoteText}>
+                Enroll your face first using the camera — this is required
+                before you can check in from the app.
+              </Text>
+              <TouchableOpacity
+                style={styles.selfMarkBtn}
+                onPress={handleEnrollFace}
+                disabled={enrolling}
+              >
+                {enrolling ? (
+                  <ActivityIndicator color={C.white} />
+                ) : (
+                  <>
+                    <Camera size={16} color={C.white} />
+                    <Text style={styles.selfMarkBtnText}>Enroll My Face</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </>
+          ) : !todayRecord?.checkIn ? (
             <TouchableOpacity
               style={styles.selfMarkBtn}
               onPress={() => handleSelfMark('checkin')}
@@ -1396,6 +1457,12 @@ const styles = StyleSheet.create({
   },
   selfMarkDoneRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   selfMarkDoneText: { fontSize: 13, fontWeight: '700', color: C.success },
+  selfMarkNoteText: {
+    fontSize: 12,
+    color: C.textMuted,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
