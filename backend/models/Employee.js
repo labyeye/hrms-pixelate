@@ -81,6 +81,11 @@ const employeeSchema = new mongoose.Schema(
     otRate: { type: Number, default: 0 },
     otEnabled: { type: Boolean, default: false },
     geofenceAttendanceEnabled: { type: Boolean, default: false },
+    geofenceMode: {
+      type: String,
+      enum: ["specific", "any"],
+      default: "specific",
+    },
     geofenceLat: { type: Number },
     geofenceLng: { type: Number },
     geofenceRadiusMeters: { type: Number, default: 200 },

@@ -107,6 +107,7 @@ interface EmployeeFormData {
   otRate: string;
   otEnabled: boolean;
   geofenceAttendanceEnabled: boolean;
+  geofenceMode: "specific" | "any";
   geofenceLat: string;
   geofenceLng: string;
   geofenceRadiusMeters: string;
@@ -164,6 +165,7 @@ const EMPTY_FORM: EmployeeFormData = {
   otRate: "",
   otEnabled: false,
   geofenceAttendanceEnabled: false,
+  geofenceMode: "specific",
   geofenceLat: "",
   geofenceLng: "",
   geofenceRadiusMeters: "200",
@@ -334,6 +336,7 @@ export default function EmployeesPage() {
       otRate: String((emp as any).otRate || ""),
       otEnabled: (emp as any).otEnabled === true,
       geofenceAttendanceEnabled: (emp as any).geofenceAttendanceEnabled === true,
+      geofenceMode: (emp as any).geofenceMode === "any" ? "any" : "specific",
       geofenceLat: (emp as any).geofenceLat != null ? String((emp as any).geofenceLat) : "",
       geofenceLng: (emp as any).geofenceLng != null ? String((emp as any).geofenceLng) : "",
       geofenceRadiusMeters: String((emp as any).geofenceRadiusMeters || 200),
@@ -1733,8 +1736,8 @@ export default function EmployeesPage() {
                           </p>
                           <p className="text-xs text-muted-foreground">
                             When on, this employee can mark attendance from the
-                            mobile app using selfie + GPS, only within the
-                            radius set below
+                            mobile app using a selfie, either from anywhere or
+                            restricted to a specific location
                           </p>
                         </div>
                         <button
@@ -1765,83 +1768,124 @@ export default function EmployeesPage() {
                       </div>
                       {form.geofenceAttendanceEnabled && (
                         <>
-                          <div className="grid grid-cols-3 gap-4 mb-3">
-                            <div>
-                              <label className="block text-xs font-bold text-black mb-1">
-                                Latitude
-                              </label>
-                              <input
-                                type="number"
-                                step="any"
-                                value={form.geofenceLat}
-                                onChange={(e) =>
-                                  setForm({ ...form, geofenceLat: e.target.value })
-                                }
-                                className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                                placeholder="e.g. 28.6139"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-bold text-black mb-1">
-                                Longitude
-                              </label>
-                              <input
-                                type="number"
-                                step="any"
-                                value={form.geofenceLng}
-                                onChange={(e) =>
-                                  setForm({ ...form, geofenceLng: e.target.value })
-                                }
-                                className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                                placeholder="e.g. 77.2090"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs font-bold text-black mb-1">
-                                Radius (meters)
-                              </label>
-                              <input
-                                type="number"
-                                min="10"
-                                value={form.geofenceRadiusMeters}
-                                onChange={(e) =>
-                                  setForm({
-                                    ...form,
-                                    geofenceRadiusMeters: e.target.value,
-                                  })
-                                }
-                                className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                                placeholder="200"
-                              />
-                            </div>
+                          <div className="flex gap-2 mb-4">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setForm({ ...form, geofenceMode: "any" })
+                              }
+                              className={cn(
+                                "flex-1 text-xs font-bold px-3 py-2.5 border-2 border-black",
+                                form.geofenceMode === "any"
+                                  ? "bg-[#024BAB] text-white"
+                                  : "bg-white text-black hover:bg-[#024BAB]/5",
+                              )}
+                            >
+                              Any Location
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setForm({ ...form, geofenceMode: "specific" })
+                              }
+                              className={cn(
+                                "flex-1 text-xs font-bold px-3 py-2.5 border-2 border-black",
+                                form.geofenceMode === "specific"
+                                  ? "bg-[#024BAB] text-white"
+                                  : "bg-white text-black hover:bg-[#024BAB]/5",
+                              )}
+                            >
+                              Specific Location
+                            </button>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (!navigator.geolocation) return;
-                              navigator.geolocation.getCurrentPosition(
-                                (pos) => {
-                                  setForm({
-                                    ...form,
-                                    geofenceLat: String(pos.coords.latitude),
-                                    geofenceLng: String(pos.coords.longitude),
-                                  });
-                                },
-                                () => {
-                                  setActionModal({
-                                    show: true,
-                                    type: "error",
-                                    title: "Location Unavailable",
-                                    message:
-                                      "Could not get your current location. Enter coordinates manually.",
-                                  });
-                                },
-                              );
-                            }}
-                            className="text-xs font-bold text-[#024BAB] border-2 border-[#024BAB] px-3 py-2 hover:bg-[#024BAB]/5"
-                          >
-                            Use My Current Location
-                          </button>
+
+                          {form.geofenceMode === "any" ? (
+                            <p className="text-xs text-muted-foreground mb-4">
+                              This employee can check in/out from anywhere —
+                              only face verification is required, no location
+                              restriction.
+                            </p>
+                          ) : (
+                            <>
+                              <div className="grid grid-cols-3 gap-4 mb-3">
+                                <div>
+                                  <label className="block text-xs font-bold text-black mb-1">
+                                    Latitude
+                                  </label>
+                                  <input
+                                    type="number"
+                                    step="any"
+                                    value={form.geofenceLat}
+                                    onChange={(e) =>
+                                      setForm({ ...form, geofenceLat: e.target.value })
+                                    }
+                                    className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                                    placeholder="e.g. 28.6139"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-bold text-black mb-1">
+                                    Longitude
+                                  </label>
+                                  <input
+                                    type="number"
+                                    step="any"
+                                    value={form.geofenceLng}
+                                    onChange={(e) =>
+                                      setForm({ ...form, geofenceLng: e.target.value })
+                                    }
+                                    className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                                    placeholder="e.g. 77.2090"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-bold text-black mb-1">
+                                    Radius (meters)
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min="10"
+                                    value={form.geofenceRadiusMeters}
+                                    onChange={(e) =>
+                                      setForm({
+                                        ...form,
+                                        geofenceRadiusMeters: e.target.value,
+                                      })
+                                    }
+                                    className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                                    placeholder="200"
+                                  />
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!navigator.geolocation) return;
+                                  navigator.geolocation.getCurrentPosition(
+                                    (pos) => {
+                                      setForm({
+                                        ...form,
+                                        geofenceLat: String(pos.coords.latitude),
+                                        geofenceLng: String(pos.coords.longitude),
+                                      });
+                                    },
+                                    () => {
+                                      setActionModal({
+                                        show: true,
+                                        type: "error",
+                                        title: "Location Unavailable",
+                                        message:
+                                          "Could not get your current location. Enter coordinates manually.",
+                                      });
+                                    },
+                                  );
+                                }}
+                                className="text-xs font-bold text-[#024BAB] border-2 border-[#024BAB] px-3 py-2 hover:bg-[#024BAB]/5"
+                              >
+                                Use My Current Location
+                              </button>
+                            </>
+                          )}
 
                           {editEmp ? (
                             <div className="mt-4 pt-4 border-t border-black/10">

@@ -266,7 +266,11 @@ const selfMarkAttendance = asyncHandler(async (req, res) => {
     throw new Error("Geofenced mobile attendance is not enabled for you");
   }
 
-  if (emp.geofenceLat == null || emp.geofenceLng == null) {
+  const geofenceMode = emp.geofenceMode || "specific";
+  if (
+    geofenceMode === "specific" &&
+    (emp.geofenceLat == null || emp.geofenceLng == null)
+  ) {
     cleanup();
     res.status(400);
     throw new Error("Geofence location has not been configured for you");
@@ -302,13 +306,16 @@ const selfMarkAttendance = asyncHandler(async (req, res) => {
     throw new Error("action must be 'checkin' or 'checkout'");
   }
 
-  const distanceMeters = haversineMeters(
-    lat,
-    lng,
-    emp.geofenceLat,
-    emp.geofenceLng,
-  );
-  if (distanceMeters > emp.geofenceRadiusMeters) {
+  // "any" mode still records the employee's GPS location for audit purposes,
+  // but doesn't restrict where they can check in/out from.
+  const distanceMeters =
+    geofenceMode === "specific"
+      ? haversineMeters(lat, lng, emp.geofenceLat, emp.geofenceLng)
+      : null;
+  if (
+    geofenceMode === "specific" &&
+    distanceMeters > emp.geofenceRadiusMeters
+  ) {
     cleanup();
     res.status(403);
     throw new Error(

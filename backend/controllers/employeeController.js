@@ -294,6 +294,7 @@ const updateEmployee = [
       "otEnabled",
       "otRate",
       "geofenceAttendanceEnabled",
+      "geofenceMode",
       "geofenceLat",
       "geofenceLng",
       "geofenceRadiusMeters",
@@ -320,11 +321,25 @@ const updateEmployee = [
     // Fields that hold ObjectId references — empty string must become undefined,
     // otherwise Mongoose throws a BSONError trying to cast "" to ObjectId.
     const objectIdFields = new Set(["shift", "department", "reportingTo"]);
+    // Fields with a Mongoose enum — "" isn't a valid enum value, so it must
+    // become undefined instead of being cast as-is (e.g. cleared bloodGroup).
+    const enumFields = new Set([
+      "employmentType",
+      "status",
+      "maritalStatus",
+      "bloodGroup",
+      "gender",
+      "workScheduleType",
+      "geofenceMode",
+    ]);
 
     for (const key of allowed) {
       if (req.body[key] !== undefined) {
         const val = req.body[key];
-        employee[key] = objectIdFields.has(key) && val === "" ? undefined : val;
+        employee[key] =
+          (objectIdFields.has(key) || enumFields.has(key)) && val === ""
+            ? undefined
+            : val;
       }
     }
 
