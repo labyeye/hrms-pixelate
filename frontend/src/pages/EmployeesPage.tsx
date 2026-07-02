@@ -106,6 +106,10 @@ interface EmployeeFormData {
   customWorkDays: number[];
   otRate: string;
   otEnabled: boolean;
+  geofenceAttendanceEnabled: boolean;
+  geofenceLat: string;
+  geofenceLng: string;
+  geofenceRadiusMeters: string;
   shift: string;
   shiftName: string;
   // Personal details
@@ -159,6 +163,10 @@ const EMPTY_FORM: EmployeeFormData = {
   customWorkDays: [],
   otRate: "",
   otEnabled: false,
+  geofenceAttendanceEnabled: false,
+  geofenceLat: "",
+  geofenceLng: "",
+  geofenceRadiusMeters: "200",
   shift: "",
   shiftName: "",
   fatherName: "",
@@ -199,6 +207,8 @@ export default function EmployeesPage() {
     aadhaarDoc?: File;
     panDoc?: File;
   }>({});
+  const [faceEnrolling, setFaceEnrolling] = useState(false);
+  const faceEnrollInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [viewEmp, setViewEmp] = useState<Employee | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -323,6 +333,10 @@ export default function EmployeesPage() {
       customWorkDays: (emp as any).customWorkDays || [],
       otRate: String((emp as any).otRate || ""),
       otEnabled: (emp as any).otEnabled === true,
+      geofenceAttendanceEnabled: (emp as any).geofenceAttendanceEnabled === true,
+      geofenceLat: (emp as any).geofenceLat != null ? String((emp as any).geofenceLat) : "",
+      geofenceLng: (emp as any).geofenceLng != null ? String((emp as any).geofenceLng) : "",
+      geofenceRadiusMeters: String((emp as any).geofenceRadiusMeters || 200),
       shift: (emp as any).shift?._id || (emp as any).shift || "",
       shiftName: (emp as any).shiftName || "",
       permanentAddress: (emp as any).permanentAddress || "",
@@ -347,6 +361,30 @@ export default function EmployeesPage() {
     setShowModal(true);
   };
 
+  const handleEnrollFace = async (file: File) => {
+    if (!editEmp) return;
+    setFaceEnrolling(true);
+    try {
+      await employeeAPI.enrollFace(editEmp._id, file);
+      setActionModal({
+        show: true,
+        type: "success",
+        title: "Face Enrolled",
+        message: "Face captured — this employee can now check in via the mobile app.",
+      });
+    } catch (err: any) {
+      setActionModal({
+        show: true,
+        type: "error",
+        title: "Enrollment Failed",
+        message: err.message || "Could not enroll face. Use a clear, single-face photo.",
+      });
+    } finally {
+      setFaceEnrolling(false);
+      if (faceEnrollInputRef.current) faceEnrollInputRef.current.value = "";
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -362,6 +400,9 @@ export default function EmployeesPage() {
         customWorkDays:
           form.workScheduleType === "custom" ? form.customWorkDays : [],
         otRate: Number(form.otRate) || 0,
+        geofenceLat: form.geofenceLat.trim() === "" ? undefined : Number(form.geofenceLat),
+        geofenceLng: form.geofenceLng.trim() === "" ? undefined : Number(form.geofenceLng),
+        geofenceRadiusMeters: Number(form.geofenceRadiusMeters) || 200,
       };
       let savedId = editEmp?._id;
       if (editEmp) {
@@ -1679,6 +1720,166 @@ export default function EmployeesPage() {
                           />
                         </div>
                       </div>
+                    </div>
+
+                    <div className="border-t-2 border-black pt-5">
+                      <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-4">
+                        Mobile Geofenced Attendance
+                      </p>
+                      <div className="flex items-center justify-between p-3 border-2 border-black/10 hover:border-black transition-colors mb-4">
+                        <div>
+                          <p className="text-sm font-bold text-black">
+                            Allow Mobile Camera Check-in/out
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            When on, this employee can mark attendance from the
+                            mobile app using selfie + GPS, only within the
+                            radius set below
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setForm({
+                              ...form,
+                              geofenceAttendanceEnabled:
+                                !form.geofenceAttendanceEnabled,
+                            })
+                          }
+                          className={cn(
+                            "w-12 h-6 border-2 border-black transition-colors relative flex-shrink-0",
+                            form.geofenceAttendanceEnabled
+                              ? "bg-[#024BAB]"
+                              : "bg-gray-200",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "absolute top-0.5 w-4 h-4 bg-white border border-black transition-all",
+                              form.geofenceAttendanceEnabled
+                                ? "left-6"
+                                : "left-0.5",
+                            )}
+                          />
+                        </button>
+                      </div>
+                      {form.geofenceAttendanceEnabled && (
+                        <>
+                          <div className="grid grid-cols-3 gap-4 mb-3">
+                            <div>
+                              <label className="block text-xs font-bold text-black mb-1">
+                                Latitude
+                              </label>
+                              <input
+                                type="number"
+                                step="any"
+                                value={form.geofenceLat}
+                                onChange={(e) =>
+                                  setForm({ ...form, geofenceLat: e.target.value })
+                                }
+                                className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                                placeholder="e.g. 28.6139"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-black mb-1">
+                                Longitude
+                              </label>
+                              <input
+                                type="number"
+                                step="any"
+                                value={form.geofenceLng}
+                                onChange={(e) =>
+                                  setForm({ ...form, geofenceLng: e.target.value })
+                                }
+                                className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                                placeholder="e.g. 77.2090"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-black mb-1">
+                                Radius (meters)
+                              </label>
+                              <input
+                                type="number"
+                                min="10"
+                                value={form.geofenceRadiusMeters}
+                                onChange={(e) =>
+                                  setForm({
+                                    ...form,
+                                    geofenceRadiusMeters: e.target.value,
+                                  })
+                                }
+                                className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                                placeholder="200"
+                              />
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!navigator.geolocation) return;
+                              navigator.geolocation.getCurrentPosition(
+                                (pos) => {
+                                  setForm({
+                                    ...form,
+                                    geofenceLat: String(pos.coords.latitude),
+                                    geofenceLng: String(pos.coords.longitude),
+                                  });
+                                },
+                                () => {
+                                  setActionModal({
+                                    show: true,
+                                    type: "error",
+                                    title: "Location Unavailable",
+                                    message:
+                                      "Could not get your current location. Enter coordinates manually.",
+                                  });
+                                },
+                              );
+                            }}
+                            className="text-xs font-bold text-[#024BAB] border-2 border-[#024BAB] px-3 py-2 hover:bg-[#024BAB]/5"
+                          >
+                            Use My Current Location
+                          </button>
+
+                          {editEmp ? (
+                            <div className="mt-4 pt-4 border-t border-black/10">
+                              <p className="text-sm font-bold text-black mb-1">
+                                Face Enrollment
+                              </p>
+                              <p className="text-xs text-muted-foreground mb-3">
+                                Upload a clear, single-face photo so the mobile
+                                app can verify it's really this employee at
+                                check-in/out
+                              </p>
+                              <input
+                                ref={faceEnrollInputRef}
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleEnrollFace(file);
+                                }}
+                              />
+                              <button
+                                type="button"
+                                disabled={faceEnrolling}
+                                onClick={() => faceEnrollInputRef.current?.click()}
+                                className="text-xs font-bold text-white bg-[#024BAB] border-2 border-black px-3 py-2 disabled:opacity-50"
+                              >
+                                {faceEnrolling ? "Enrolling…" : "Upload Face Photo"}
+                              </button>
+                            </div>
+                          ) : (
+                            <p className="mt-4 pt-4 border-t border-black/10 text-xs text-muted-foreground">
+                              Save this employee first, then reopen edit to
+                              enroll their face for mobile attendance.
+                            </p>
+                          )}
+                        </>
+                      )}
                     </div>
 
                     <div className="border-t-2 border-black pt-5">

@@ -12,6 +12,7 @@ const {
 } = require("../middleware/validate");
 const { logAudit } = require("../utils/auditLogger");
 const { validateMagicBytes } = require("../middleware/upload");
+const { enrollFace } = require("../services/faceService");
 
 const createSchema = {
   firstName: { required: true, type: "string", minLength: 1, maxLength: 80 },
@@ -292,6 +293,10 @@ const updateEmployee = [
       "customWorkDays",
       "otEnabled",
       "otRate",
+      "geofenceAttendanceEnabled",
+      "geofenceLat",
+      "geofenceLng",
+      "geofenceRadiusMeters",
       // Personal details
       "fatherName",
       "motherName",
@@ -595,6 +600,35 @@ const downloadEmployeeDocument = asyncHandler(async (req, res) => {
   res.download(abs);
 });
 
+// Enrolls (or re-enrolls) the employee's face embedding for mobile geofenced
+// attendance verification, using the internal face-recognition microservice.
+// The uploaded photo itself is never persisted — only the resulting embedding.
+const enrollEmployeeFace = asyncHandler(async (req, res) => {
+  const employee = await Employee.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!employee) {
+    res.status(404);
+    throw new Error("Employee not found");
+  }
+  if (!req.file) {
+    res.status(400);
+    throw new Error("Photo is required");
+  }
+
+  const encoding = await enrollFace(
+    req.file.buffer,
+    req.file.originalname || "enroll.jpg",
+    req.file.mimetype,
+  );
+
+  employee.faceDescriptor = encoding;
+  await employee.save();
+
+  res.json({ success: true, message: "Face enrolled successfully" });
+});
+
 module.exports = {
   getEmployees,
   getEmployee,
@@ -606,4 +640,5 @@ module.exports = {
   bulkImportEmployees,
   uploadEmployeeDocuments,
   downloadEmployeeDocument,
+  enrollEmployeeFace,
 };

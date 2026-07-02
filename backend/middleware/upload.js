@@ -140,10 +140,46 @@ const uploadDocumentVault = multer({
   limits: { fileSize: MAX_SIZE },
 }).single("file");
 
+// Attendance self-mark selfie upload (mobile geofenced check-in/out)
+const attendanceSelfieStorage = multer.diskStorage({
+  destination(_req, _file, cb) {
+    const dir = path.join(UPLOAD_BASE, "attendance-selfies");
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename(req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
+    const safe = `${req.user.company}_${req.user._id}_${Date.now()}${ext}`;
+    cb(null, safe);
+  },
+});
+
+const uploadAttendanceSelfie = multer({
+  storage: attendanceSelfieStorage,
+  fileFilter(req, file, cb) {
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Only image files are allowed"), false);
+  },
+  limits: { fileSize: 5 * 1024 * 1024 },
+}).single("selfie");
+
+// Face enrollment photo — kept in memory only, forwarded to the face-recognition
+// service and discarded (only the resulting embedding is persisted).
+const uploadFaceEnrollPhoto = multer({
+  storage: multer.memoryStorage(),
+  fileFilter(_req, file, cb) {
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Only image files are allowed"), false);
+  },
+  limits: { fileSize: 5 * 1024 * 1024 },
+}).single("photo");
+
 module.exports = {
   uploadEmployeeDocs,
   uploadCompanyLogo,
   uploadDocumentVault,
   uploadAvatar,
+  uploadAttendanceSelfie,
+  uploadFaceEnrollPhoto,
   validateMagicBytes,
 };

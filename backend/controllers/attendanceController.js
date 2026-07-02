@@ -1,10 +1,25 @@
 const asyncHandler = require("express-async-handler");
+const fs = require("fs");
 const Attendance = require("../models/Attendance");
 const Employee = require("../models/Employee");
 const Shift = require("../models/Shift");
 const { isHolidayDate } = require("./holidayController");
 const { safePagination } = require("../middleware/validate");
 const { sendAttendanceStatus } = require("../services/whatsappService");
+const { validateMagicBytes } = require("../middleware/upload");
+const { verifyFace } = require("../services/faceService");
+
+// Great-circle distance between two lat/lng points, in meters.
+function haversineMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.asin(Math.sqrt(a));
+}
 
 async function notifyAttendanceStatus(emp, date, status, companyId) {
   if (!emp?.phone) return;
@@ -227,6 +242,166 @@ const markAttendance = asyncHandler(async (req, res) => {
   res.json({ success: true, data: record });
 });
 
+// Employee self check-in/check-out from the mobile app: requires a live selfie +
+// GPS location, and only succeeds if the employee has geofenced attendance enabled
+// and is within their configured radius. Location is always re-validated server-side.
+const selfMarkAttendance = asyncHandler(async (req, res) => {
+  const cleanup = () => {
+    if (req.file) fs.unlink(req.file.path, () => {});
+  };
+
+  const emp = await Employee.findOne({
+    user: req.user._id,
+    company: req.user.company,
+  });
+  if (!emp) {
+    cleanup();
+    res.status(404);
+    throw new Error("Employee record not found");
+  }
+
+  if (!emp.geofenceAttendanceEnabled) {
+    cleanup();
+    res.status(403);
+    throw new Error("Geofenced mobile attendance is not enabled for you");
+  }
+
+  if (emp.geofenceLat == null || emp.geofenceLng == null) {
+    cleanup();
+    res.status(400);
+    throw new Error("Geofence location has not been configured for you");
+  }
+
+  if (!req.file) {
+    res.status(400);
+    throw new Error("Selfie photo is required");
+  }
+
+  try {
+    await validateMagicBytes(req.file.path); // throws + deletes file if invalid
+  } catch (err) {
+    res.status(400);
+    throw err;
+  }
+
+  const { action } = req.body;
+  const lat = parseFloat(req.body.lat);
+  const lng = parseFloat(req.body.lng);
+  const accuracy = req.body.accuracy
+    ? parseFloat(req.body.accuracy)
+    : undefined;
+
+  if (Number.isNaN(lat) || Number.isNaN(lng)) {
+    cleanup();
+    res.status(400);
+    throw new Error("Valid location coordinates are required");
+  }
+  if (!["checkin", "checkout"].includes(action)) {
+    cleanup();
+    res.status(400);
+    throw new Error("action must be 'checkin' or 'checkout'");
+  }
+
+  const distanceMeters = haversineMeters(
+    lat,
+    lng,
+    emp.geofenceLat,
+    emp.geofenceLng,
+  );
+  if (distanceMeters > emp.geofenceRadiusMeters) {
+    cleanup();
+    res.status(403);
+    throw new Error(
+      `You are ${Math.round(distanceMeters)}m away from the allowed location (max ${emp.geofenceRadiusMeters}m)`,
+    );
+  }
+
+  if (!Array.isArray(emp.faceDescriptor) || emp.faceDescriptor.length !== 128) {
+    cleanup();
+    res.status(400);
+    throw new Error("Face not enrolled for you. Contact HR to enable mobile attendance.");
+  }
+
+  const { match, distance } = await verifyFace(
+    fs.readFileSync(req.file.path),
+    req.file.filename,
+    req.file.mimetype,
+    emp.faceDescriptor,
+  );
+  if (!match) {
+    cleanup();
+    res.status(403);
+    throw new Error(
+      `Face does not match enrolled records (distance: ${distance.toFixed(3)})`,
+    );
+  }
+
+  const now = new Date();
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+
+  const holiday = await isHolidayDate(req.user.company, d);
+  const selfieUrl = `${req.protocol}://${req.get("host")}/uploads/attendance-selfies/${req.file.filename}`;
+  const location = { lat, lng, accuracy, distanceMeters };
+
+  let record = await Attendance.findOne({ employee: emp._id, date: d });
+
+  if (action === "checkin") {
+    if (record?.checkIn) {
+      cleanup();
+      res.status(400);
+      throw new Error("Already checked in today");
+    }
+    const computedStatus = holiday
+      ? "holiday"
+      : await resolveStatus(emp._id, now, "present");
+
+    record = await Attendance.findOneAndUpdate(
+      { employee: emp._id, date: d },
+      {
+        employee: emp._id,
+        date: d,
+        status: computedStatus,
+        checkIn: holiday ? undefined : now,
+        verifyMode: "geo_camera",
+        checkInSelfie: selfieUrl,
+        checkInLocation: location,
+        markedBy: req.user._id,
+      },
+      { upsert: true, new: true },
+    );
+  } else {
+    if (!record?.checkIn) {
+      cleanup();
+      res.status(400);
+      throw new Error("You must check in before checking out");
+    }
+    if (record.checkOut) {
+      cleanup();
+      res.status(400);
+      throw new Error("Already checked out today");
+    }
+    const workHours = (now - record.checkIn) / 3600000;
+    const autoOT = await calcOTHours(emp, now.toISOString());
+
+    record = await Attendance.findOneAndUpdate(
+      { employee: emp._id, date: d },
+      {
+        checkOut: now,
+        workHours,
+        overtime: autoOT,
+        checkOutSelfie: selfieUrl,
+        checkOutLocation: location,
+      },
+      { new: true },
+    );
+  }
+
+  await notifyAttendanceStatus(emp, d, record.status, req.user.company);
+
+  res.json({ success: true, data: record });
+});
+
 const updateAttendance = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status, checkIn, checkOut, notes, overtime, date, verifyMode } =
@@ -391,6 +566,7 @@ const getMonthSummary = asyncHandler(async (req, res) => {
 module.exports = {
   getAttendance,
   markAttendance,
+  selfMarkAttendance,
   updateAttendance,
   bulkMarkAttendance,
   getMonthSummary,

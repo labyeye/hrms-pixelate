@@ -13,8 +13,11 @@ import {
   ScrollView,
   Platform,
   Image,
+  PermissionsAndroid,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { launchCamera } from 'react-native-image-picker';
+import Geolocation from '@react-native-community/geolocation';
 import {
   Clock,
   Search,
@@ -26,12 +29,37 @@ import {
   LogOut,
   X,
   Pencil,
+  Camera,
+  MapPin,
 } from 'lucide-react-native';
 import { attendanceAPI, employeeAPI, attendanceCorrectionAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
-import { AttendanceRecord } from '../types/hrms';
+import { AttendanceRecord, Employee } from '../types/hrms';
 import { C } from '../theme';
 import { TimePickerField } from '../components/common/DatePickerField';
+
+async function requestSelfMarkPermissions(): Promise<boolean> {
+  if (Platform.OS !== 'android') return true;
+  const results = await PermissionsAndroid.requestMultiple([
+    PermissionsAndroid.PERMISSIONS.CAMERA,
+    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+  ]);
+  return (
+    results[PermissionsAndroid.PERMISSIONS.CAMERA] === PermissionsAndroid.RESULTS.GRANTED &&
+    results[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION] ===
+      PermissionsAndroid.RESULTS.GRANTED
+  );
+}
+
+function getCurrentPosition(): Promise<{ latitude: number; longitude: number; accuracy: number }> {
+  return new Promise((resolve, reject) => {
+    Geolocation.getCurrentPosition(
+      pos => resolve(pos.coords),
+      err => reject(new Error(err.message || 'Could not get your location')),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    );
+  });
+}
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> =
   {
@@ -123,6 +151,65 @@ export default function AttendanceScreen() {
     reason: '',
   });
   const [submittingCorrection, setSubmittingCorrection] = useState(false);
+
+  // Self check-in/out (geofenced mobile attendance)
+  const [myEmployee, setMyEmployee] = useState<Employee | null>(null);
+  const [selfMarking, setSelfMarking] = useState<'checkin' | 'checkout' | null>(null);
+
+  useEffect(() => {
+    if (!isEmployee) return;
+    employeeAPI
+      .getMe()
+      .then(res => setMyEmployee(res.data || null))
+      .catch(() => {});
+  }, [isEmployee]);
+
+  const todayStr = toDateStr(new Date());
+  const todayRecord =
+    isEmployee && dateFilter === todayStr ? records[0] : undefined;
+
+  const handleSelfMark = async (action: 'checkin' | 'checkout') => {
+    const ok = await requestSelfMarkPermissions();
+    if (!ok) {
+      Alert.alert(
+        'Permission Required',
+        'Camera and location access are required to mark attendance.',
+      );
+      return;
+    }
+
+    launchCamera(
+      { mediaType: 'photo', quality: 0.7, cameraType: 'front', saveToPhotos: false },
+      async result => {
+        const asset = result.assets?.[0];
+        if (!asset?.uri) return;
+
+        setSelfMarking(action);
+        try {
+          const coords = await getCurrentPosition();
+          const res = await attendanceAPI.selfMark({
+            action,
+            lat: coords.latitude,
+            lng: coords.longitude,
+            accuracy: coords.accuracy,
+            selfieUri: asset.uri,
+            selfieType: asset.type || 'image/jpeg',
+            selfieName: asset.fileName || `selfie_${Date.now()}.jpg`,
+          });
+          Alert.alert(
+            'Success',
+            action === 'checkin' ? 'Checked in successfully' : 'Checked out successfully',
+          );
+          if (res?.data) setRecords([res.data]);
+          else await load();
+        } catch (e: any) {
+          Alert.alert('Error', e.message || 'Failed to mark attendance');
+        } finally {
+          setSelfMarking(null);
+        }
+      },
+    );
+  };
 
   const handleCreateCorrection = async () => {
     if (!correctionForm.reason.trim()) {
@@ -413,6 +500,55 @@ export default function AttendanceScreen() {
           <Text style={styles.dateBtnArrowText}>›</Text>
         </TouchableOpacity>
       </View>
+
+      {isEmployee && myEmployee?.geofenceAttendanceEnabled && dateFilter === todayStr && (
+        <View style={styles.selfMarkCard}>
+          <View style={styles.selfMarkHeader}>
+            <MapPin size={14} color={C.primary} />
+            <Text style={styles.selfMarkHeaderText}>
+              Geofenced Mobile Check-in
+            </Text>
+          </View>
+          {!todayRecord?.checkIn ? (
+            <TouchableOpacity
+              style={styles.selfMarkBtn}
+              onPress={() => handleSelfMark('checkin')}
+              disabled={selfMarking !== null}
+            >
+              {selfMarking === 'checkin' ? (
+                <ActivityIndicator color={C.white} />
+              ) : (
+                <>
+                  <Camera size={16} color={C.white} />
+                  <Text style={styles.selfMarkBtnText}>Check In with Camera</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          ) : !todayRecord?.checkOut ? (
+            <TouchableOpacity
+              style={[styles.selfMarkBtn, { backgroundColor: C.danger }]}
+              onPress={() => handleSelfMark('checkout')}
+              disabled={selfMarking !== null}
+            >
+              {selfMarking === 'checkout' ? (
+                <ActivityIndicator color={C.white} />
+              ) : (
+                <>
+                  <Camera size={16} color={C.white} />
+                  <Text style={styles.selfMarkBtnText}>Check Out with Camera</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.selfMarkDoneRow}>
+              <CheckCircle2 size={16} color={C.success} />
+              <Text style={styles.selfMarkDoneText}>
+                Checked in and out for today
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
 
       {!isEmployee && (
         <ScrollView
@@ -1227,6 +1363,39 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
+  selfMarkCard: {
+    backgroundColor: C.white,
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
+    padding: 14,
+    gap: 10,
+  },
+  selfMarkHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  selfMarkHeaderText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: C.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  selfMarkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: C.primary,
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingVertical: 12,
+  },
+  selfMarkBtnText: {
+    color: C.white,
+    fontSize: 13,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  selfMarkDoneRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  selfMarkDoneText: { fontSize: 13, fontWeight: '700', color: C.success },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',

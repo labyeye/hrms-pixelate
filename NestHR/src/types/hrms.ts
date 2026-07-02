@@ -58,6 +58,10 @@ export interface Employee {
   biometricUserId?: string;
   rfidCard?: string;
   faceDescriptor?: number[];
+  geofenceAttendanceEnabled?: boolean;
+  geofenceLat?: number;
+  geofenceLng?: number;
+  geofenceRadiusMeters?: number;
 }
 
 export interface AttendanceRecord {
@@ -81,6 +85,16 @@ export interface AttendanceRecord {
   checkOut?: string;
   workingHours?: number;
   notes?: string;
+  verifyMode?:
+    | 'fingerprint'
+    | 'card'
+    | 'face'
+    | 'password'
+    | 'manual'
+    | 'auto'
+    | 'geo_camera';
+  checkInSelfie?: string;
+  checkOutSelfie?: string;
 }
 
 export interface LeaveRequest {

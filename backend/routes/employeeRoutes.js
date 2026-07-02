@@ -10,9 +10,14 @@ const {
   bulkImportEmployees,
   uploadEmployeeDocuments,
   downloadEmployeeDocument,
+  enrollEmployeeFace,
 } = require("../controllers/employeeController");
 const { protect, authorize } = require("../middleware/auth");
-const { uploadEmployeeDocs, uploadAvatar } = require("../middleware/upload");
+const {
+  uploadEmployeeDocs,
+  uploadAvatar,
+  uploadFaceEnrollPhoto,
+} = require("../middleware/upload");
 const router = express.Router();
 
 router.get("/me", protect, getMyEmployee);
@@ -70,6 +75,14 @@ router.post(
     await Employee.findByIdAndUpdate(req.params.id, { avatar: avatarUrl });
     res.json({ success: true, avatar: avatarUrl });
   },
+);
+
+router.post(
+  "/:id/face-enroll",
+  protect,
+  authorize("super_admin", "hr_manager", "hr_executive"),
+  uploadFaceEnrollPhoto,
+  enrollEmployeeFace,
 );
 
 router.get(

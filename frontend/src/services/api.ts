@@ -119,6 +119,20 @@ export const employeeAPI = {
   },
   getDocumentUrl: (id: string, type: "aadhaar" | "pan" | "resume") =>
     `${BASE_URL}/employees/${id}/documents/${type}`,
+  enrollFace: (id: string, photo: File) => {
+    const form = new FormData();
+    form.append("photo", photo);
+    const token = getToken();
+    return fetch(`${BASE_URL}/employees/${id}/face-enroll`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    }).then(async (r) => {
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.message || "Face enrollment failed");
+      return data;
+    });
+  },
 };
 
 export const attendanceAPI = {

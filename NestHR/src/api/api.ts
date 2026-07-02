@@ -173,6 +173,45 @@ export const attendanceAPI = {
     request('/attendance/bulk', { method: 'POST', body: JSON.stringify(body) }),
   getSummary: (params: Record<string, string>) =>
     request(`/attendance/summary${qs(params)}`),
+  selfMark: async (params: {
+    action: 'checkin' | 'checkout';
+    lat: number;
+    lng: number;
+    accuracy?: number;
+    selfieUri: string;
+    selfieType: string;
+    selfieName: string;
+  }) => {
+    const token = await getToken();
+    const formData = new FormData();
+    formData.append('action', params.action);
+    formData.append('lat', String(params.lat));
+    formData.append('lng', String(params.lng));
+    if (params.accuracy != null) formData.append('accuracy', String(params.accuracy));
+    formData.append('selfie', {
+      uri: params.selfieUri,
+      type: params.selfieType,
+      name: params.selfieName,
+    } as any);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30_000);
+    try {
+      const res = await fetch(`${BASE_URL}/attendance/self-mark`, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: formData,
+      });
+      clearTimeout(timer);
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : {};
+      if (!res.ok) throw new Error(data.message || `Check-in failed (${res.status})`);
+      return data;
+    } catch (err: any) {
+      clearTimeout(timer);
+      throw err;
+    }
+  },
 };
 
 export const leaveAPI = {

@@ -2,16 +2,19 @@ const express = require("express");
 const {
   getAttendance,
   markAttendance,
+  selfMarkAttendance,
   updateAttendance,
   bulkMarkAttendance,
   getMonthSummary,
 } = require("../controllers/attendanceController");
 const { runAutoMark } = require("../jobs/attendanceAutoMark");
 const { protect, authorize } = require("../middleware/auth");
+const { uploadAttendanceSelfie } = require("../middleware/upload");
 const router = express.Router();
 
 router.get("/", protect, getAttendance);
 router.get("/summary", protect, getMonthSummary);
+router.post("/self-mark", protect, uploadAttendanceSelfie, selfMarkAttendance);
 router.post(
   "/",
   protect,
