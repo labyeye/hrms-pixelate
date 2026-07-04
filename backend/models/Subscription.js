@@ -8,6 +8,8 @@ const subscriptionSchema = new mongoose.Schema(
       required: true,
     },
     plan: { type: String, required: true },
+    employeeCount: { type: Number },
+    ratePerEmployee: { type: Number },
     monthlyPrice: { type: Number, required: true },
     yearlyPrice: { type: Number, required: true },
     maxEmployees: { type: Number, required: true },

@@ -18,7 +18,9 @@
       "Bash(curl -sv https://hrms-backend.pixelatenest.com/api/health)",
       "Bash(curl -s -m 15 -o /dev/null -w \"HEALTH: %{http_code}\\\\n\" https://hrms-backend.pixelatenest.com/api/health)",
       "Bash(echo \"exit:$?\")",
-      "Bash(awk '/markModal &&/{print NR\": \"$0}' frontend/src/pages/AttendancePage.tsx)"
+      "Bash(awk '/markModal &&/{print NR\": \"$0}' frontend/src/pages/AttendancePage.tsx)",
+      "Bash(python3 -c ' *)",
+      "Bash(node -e \"require\\('./controllers/billingController.js'\\); console.log\\('OK'\\)\")"
     ]
   }
 }

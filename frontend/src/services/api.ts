@@ -278,13 +278,13 @@ export const billingAPI = {
   getInvoices: () =>
     request<{ success: boolean; data: any }>("/billing/invoices"),
   createOrder: (
-    plan: string,
+    employeeCount: number,
     billingCycle: "monthly" | "yearly",
     gateway: "razorpay" | "hdfc" = "razorpay",
   ) =>
     request<{ success: boolean; data: any }>("/billing/create-order", {
       method: "POST",
-      body: JSON.stringify({ plan, billingCycle, gateway }),
+      body: JSON.stringify({ employeeCount, billingCycle, gateway }),
     }),
   verifyRazorpay: (payload: {
     razorpayOrderId: string;

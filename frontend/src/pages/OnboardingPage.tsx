@@ -24,57 +24,29 @@ declare global {
 
 type Step = "company" | "employees" | "plan" | "payment";
 
-const PLANS = [
-  {
-    id: "starter",
-    name: "Starter",
-    monthlyPrice: 999,
-    yearlyPrice: 9590,
-    maxEmployees: 10,
-    description: "For small teams just getting started",
-    features: [
-      "Up to 10 employees",
-      "Employee management",
-      "Attendance tracking",
-      "Leave management",
-      "Basic reports",
-    ],
-  },
-  {
-    id: "professional",
-    name: "Professional",
-    monthlyPrice: 1999,
-    yearlyPrice: 19190,
-    maxEmployees: 25,
-    description: "For growing teams that need more",
-    popular: true,
-    features: [
-      "Up to 25 employees",
-      "Everything in Starter",
-      "Payroll processing",
-      "Performance reviews",
-      "WhatsApp notifications",
-      "Biometric integration",
-      "Advanced reports",
-    ],
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    monthlyPrice: 3999,
-    yearlyPrice: 38390,
-    maxEmployees: 100,
-    description: "For large organisations",
-    features: [
-      "Up to 100 employees",
-      "Everything in Professional",
-      "Custom workflows",
-      "Recruitment module",
-      "NFC card setup",
-      "Priority support",
-      "Dedicated account manager",
-    ],
-  },
+const PRICING_TIERS = [
+  { min: 1, max: 10, rate: 40, label: "1-10 employees" },
+  { min: 11, max: 20, rate: 35, label: "11-20 employees" },
+  { min: 21, max: 40, rate: 30, label: "21-40 employees" },
+  { min: 41, max: 60, rate: 25, label: "41-60 employees" },
+  { min: 61, max: Infinity, rate: 20, label: "60+ employees" },
+];
+
+function getPricingTier(count: number) {
+  return (
+    PRICING_TIERS.find((t) => count >= t.min && count <= t.max) ||
+    PRICING_TIERS[0]
+  );
+}
+
+const PLAN_FEATURES = [
+  "Employee management",
+  "Attendance tracking",
+  "Leave management",
+  "Payroll processing",
+  "Performance reviews",
+  "WhatsApp notifications",
+  "Reports & analytics",
 ];
 
 const STEPS: { id: Step; label: string }[] = [
@@ -142,7 +114,6 @@ export default function OnboardingPage() {
   );
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
   const [employeeCount, setEmployeeCount] = useState<number | "">("");
-  const [selectedPlan, setSelectedPlan] = useState<string>("professional");
   const [paying, setPaying] = useState(false);
   const [companyLoading, setCompanyLoading] = useState(false);
   const [companyError, setCompanyError] = useState("");
@@ -152,14 +123,6 @@ export default function OnboardingPage() {
       navigate("/", { replace: true });
     }
   }, [user?.company, user?.subscription?.status, navigate]);
-
-  useEffect(() => {
-    if (!employeeCount) return;
-    const count = Number(employeeCount);
-    if (count <= 10) setSelectedPlan("starter");
-    else if (count <= 25) setSelectedPlan("professional");
-    else setSelectedPlan("enterprise");
-  }, [employeeCount]);
 
   const handleCreateCompany = async (formData: {
     name: string;
@@ -217,14 +180,6 @@ export default function OnboardingPage() {
       });
       return;
     }
-    if (count > 100) {
-      toast({
-        title: "Enterprise+",
-        description: "For over 100 employees, contact us for a custom plan.",
-        variant: "destructive",
-      });
-      return;
-    }
     setStep("plan");
   };
 
@@ -239,13 +194,10 @@ export default function OnboardingPage() {
     });
 
   const handlePay = async () => {
+    const count = Number(employeeCount);
     setPaying(true);
     try {
-      const res = await billingAPI.createOrder(
-        selectedPlan,
-        billing,
-        "razorpay",
-      );
+      const res = await billingAPI.createOrder(count, billing, "razorpay");
       if (!res.success) throw new Error("Failed to create order");
       const order = res.data;
 
@@ -262,7 +214,7 @@ export default function OnboardingPage() {
           amount: order.amount * 100,
           currency: order.currency || "INR",
           name: "NestHR",
-          description: `${plan.name} Plan — ${billing}`,
+          description: `NestHR — ${count} employees — ${billing}`,
           theme: { color: "#024BAB" },
           handler: async (response: any) => {
             try {
@@ -273,7 +225,7 @@ export default function OnboardingPage() {
               });
               toast({
                 title: "Payment Successful!",
-                description: `${plan.name} plan activated. Welcome to NestHR!`,
+                description: "Subscription activated. Welcome to NestHR!",
                 variant: "success",
               });
               updateUser({
@@ -304,12 +256,13 @@ export default function OnboardingPage() {
     }
   };
 
-  const plan = PLANS.find((p) => p.id === selectedPlan)!;
+  const empCount = Number(employeeCount) || 0;
+  const tier = getPricingTier(empCount || 1);
+  const monthlyPrice = empCount * tier.rate;
+  const yearlyPrice = Math.round(monthlyPrice * 12 * 0.8);
   const planPrice =
-    billing === "yearly"
-      ? Math.round(plan.yearlyPrice / 12)
-      : plan.monthlyPrice;
-  const planTotal = billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
+    billing === "yearly" ? Math.round(yearlyPrice / 12) : monthlyPrice;
+  const planTotal = billing === "yearly" ? yearlyPrice : monthlyPrice;
 
   return (
     <div className="min-h-screen bg-[#F0F6FF]">
@@ -377,7 +330,6 @@ export default function OnboardingPage() {
               <input
                 type="number"
                 min={1}
-                max={100}
                 value={employeeCount}
                 onChange={(e) =>
                   setEmployeeCount(
@@ -413,27 +365,12 @@ export default function OnboardingPage() {
               </div>
 
               {employeeCount !== "" && Number(employeeCount) > 0 && (
-                <div
-                  className={cn(
-                    "flex items-center gap-2 p-3 border-2 border-black mb-5 text-sm font-black",
-                    Number(employeeCount) <= 10
-                      ? "bg-blue-50"
-                      : Number(employeeCount) <= 25
-                        ? "bg-orange-50"
-                        : "bg-purple-50",
-                  )}
-                >
+                <div className="flex items-center gap-2 p-3 border-2 border-black mb-5 text-sm font-black bg-blue-50">
                   <Zap className="w-4 h-4 shrink-0" />
                   <span>
-                    We recommend the{" "}
-                    <span className="uppercase">
-                      {Number(employeeCount) <= 10
-                        ? "Starter"
-                        : Number(employeeCount) <= 25
-                          ? "Professional"
-                          : "Enterprise"}
-                    </span>{" "}
-                    plan for {employeeCount} employees
+                    ₹{getPricingTier(Number(employeeCount)).rate}/employee/mo
+                    for {employeeCount} employees (
+                    {getPricingTier(Number(employeeCount)).label})
                   </span>
                 </div>
               )}
@@ -457,9 +394,7 @@ export default function OnboardingPage() {
                 Choose your plan
               </h1>
               <p className="text-gray-500 font-medium text-sm">
-                {employeeCount
-                  ? `Based on ${employeeCount} employees — we've highlighted the best fit`
-                  : "Select the plan that suits your team"}
+                Priced per employee — based on your team of {employeeCount}
               </p>
             </div>
 
@@ -494,94 +429,35 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            {/* Plans */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
-              {PLANS.map((p) => {
-                const isSelected = selectedPlan === p.id;
-                const isRecommended =
-                  employeeCount !== "" &&
-                  ((p.id === "starter" && Number(employeeCount) <= 10) ||
-                    (p.id === "professional" &&
-                      Number(employeeCount) > 10 &&
-                      Number(employeeCount) <= 25) ||
-                    (p.id === "enterprise" && Number(employeeCount) > 25));
-                const isTooSmall =
-                  employeeCount !== "" &&
-                  p.maxEmployees < Number(employeeCount);
-                const price =
-                  billing === "yearly"
-                    ? Math.round(p.yearlyPrice / 12)
-                    : p.monthlyPrice;
-                const total =
-                  billing === "yearly" ? p.yearlyPrice : p.monthlyPrice;
+            {/* Plan summary */}
+            <div className="max-w-sm mx-auto border-2 border-black bg-white p-6 mb-8">
+              <div className="flex items-center gap-1 bg-[#024BAB] text-white border border-black px-2 py-0.5 text-xs font-black w-fit mb-3">
+                <Users className="w-3 h-3" />
+                {employeeCount} employees · {tier.label}
+              </div>
 
-                return (
-                  <button
-                    key={p.id}
-                    onClick={() => !isTooSmall && setSelectedPlan(p.id)}
-                    disabled={isTooSmall}
-                    className={cn(
-                      "relative p-6 border-2 transition-all text-left flex flex-col",
-                      isSelected
-                        ? "border-black bg-white border-2"
-                        : "border-black bg-white",
-                      isTooSmall
-                        ? "opacity-40 cursor-not-allowed"
-                        : "hover:border-2 cursor-pointer",
-                    )}
-                  >
-                    {isRecommended && !isTooSmall && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#FA731C] border-2 border-black px-3 py-0.5 font-black text-xs text-white whitespace-nowrap">
-                        RECOMMENDED
-                      </div>
-                    )}
-                    {isSelected && (
-                      <div className="absolute -top-3 -right-3 w-6 h-6 bg-[#024BAB] border-2 border-black flex items-center justify-center">
-                        <Check className="w-3 h-3 text-white" />
-                      </div>
-                    )}
-                    {isTooSmall && (
-                      <div className="absolute -top-3 right-2 bg-gray-500 border-2 border-black px-2 py-0.5 font-black text-xs text-white">
-                        TOO SMALL
-                      </div>
-                    )}
+              <div className="mb-4 pb-4 border-b-2 border-black">
+                <div className="font-display font-black text-3xl text-[#024BAB]">
+                  ₹{planPrice.toLocaleString("en-IN")}
+                </div>
+                <div className="text-xs text-gray-500 font-medium">
+                  /month · ₹{tier.rate}/employee
+                </div>
+                {billing === "yearly" && (
+                  <div className="text-xs text-green-600 font-black mt-0.5">
+                    ₹{planTotal.toLocaleString("en-IN")} billed yearly
+                  </div>
+                )}
+              </div>
 
-                    <h3 className="font-black text-xl text-black mb-1">
-                      {p.name}
-                    </h3>
-                    <p className="text-xs text-gray-500 font-medium mb-4">
-                      {p.description}
-                    </p>
-
-                    <div className="mb-4 pb-4 border-b-2 border-black">
-                      <div className="font-display font-black text-3xl text-[#024BAB]">
-                        ₹{price.toLocaleString("en-IN")}
-                      </div>
-                      <div className="text-xs text-gray-500 font-medium">
-                        /month
-                      </div>
-                      {billing === "yearly" && (
-                        <div className="text-xs text-green-600 font-black mt-0.5">
-                          ₹{total.toLocaleString("en-IN")} billed yearly
-                        </div>
-                      )}
-                      <div className="mt-2 inline-flex items-center gap-1 bg-[#024BAB] text-white border border-black px-2 py-0.5 text-xs font-black">
-                        <Users className="w-3 h-3" />
-                        Up to {p.maxEmployees} employees
-                      </div>
-                    </div>
-
-                    <ul className="space-y-2 flex-grow">
-                      {p.features.map((f) => (
-                        <li key={f} className="flex items-start gap-2 text-xs">
-                          <Check className="w-3.5 h-3.5 text-[#024BAB] shrink-0 mt-0.5" />
-                          <span className="text-gray-700 font-medium">{f}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </button>
-                );
-              })}
+              <ul className="space-y-2">
+                {PLAN_FEATURES.map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-xs">
+                    <Check className="w-3.5 h-3.5 text-[#024BAB] shrink-0 mt-0.5" />
+                    <span className="text-gray-700 font-medium">{f}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
 
             <div className="max-w-sm mx-auto">
@@ -624,9 +500,9 @@ export default function OnboardingPage() {
                 </div>
                 <div className="p-5 space-y-3">
                   <div className="flex justify-between items-center text-sm">
-                    <span className="font-bold text-gray-600">Plan</span>
+                    <span className="font-bold text-gray-600">Rate</span>
                     <span className="font-black text-black uppercase">
-                      {plan.name}
+                      ₹{tier.rate}/employee/mo
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
@@ -638,7 +514,7 @@ export default function OnboardingPage() {
                   <div className="flex justify-between items-center text-sm">
                     <span className="font-bold text-gray-600">Employees</span>
                     <span className="font-black text-black">
-                      Up to {plan.maxEmployees}
+                      {employeeCount}
                     </span>
                   </div>
                   {billing === "yearly" && (
@@ -661,8 +537,8 @@ export default function OnboardingPage() {
                     <div className="bg-green-50 border border-green-200 p-2 text-xs font-bold text-green-700 text-center">
                       You save ₹
                       {(
-                        plan.monthlyPrice * 12 -
-                        plan.yearlyPrice
+                        monthlyPrice * 12 -
+                        yearlyPrice
                       ).toLocaleString("en-IN")}{" "}
                       compared to monthly billing
                     </div>

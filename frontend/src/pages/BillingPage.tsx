@@ -17,7 +17,6 @@ import {
   Building2,
   Zap,
   Download,
-  RefreshCw,
   X,
   ShieldCheck,
 } from "lucide-react";
@@ -29,39 +28,43 @@ declare global {
   }
 }
 
-const PLAN_COLORS: Record<string, string> = {
-  starter: "#00C48C",
-  professional: "#FA731C",
-  enterprise: "#A855F7",
-};
-const PLAN_POPULAR: Record<string, boolean> = {
-  professional: true,
-};
+const PRICING_TIERS = [
+  { min: 1, max: 10, rate: 40, label: "1-10 employees" },
+  { min: 11, max: 20, rate: 35, label: "11-20 employees" },
+  { min: 21, max: 40, rate: 30, label: "21-40 employees" },
+  { min: 41, max: 60, rate: 25, label: "41-60 employees" },
+  { min: 61, max: Infinity, rate: 20, label: "60+ employees" },
+];
+
+function getPricingTier(count: number) {
+  return (
+    PRICING_TIERS.find((t) => count >= t.min && count <= t.max) ||
+    PRICING_TIERS[0]
+  );
+}
 
 export default function BillingPage() {
   const { user } = useAuth();
   const { toast } = useToast();
 
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
-  const [plans, setPlans] = useState<any[]>([]);
   const [subscription, setSubscription] = useState<any>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [upgrading, setUpgrading] = useState<string | null>(null);
+  const [upgrading, setUpgrading] = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
-  const [gatewayModal, setGatewayModal] = useState<{ planId: string } | null>(
-    null,
-  );
+  const [newEmployeeCount, setNewEmployeeCount] = useState<number | "">("");
+  const [gatewayModal, setGatewayModal] = useState(false);
 
   useEffect(() => {
     Promise.all([
-      billingAPI.getPlans().then((r) => {
-        if (r.success) setPlans(r.data);
-      }),
       billingAPI
         .getSubscription()
         .then((r) => {
-          if (r.success) setSubscription(r.data);
+          if (r.success) {
+            setSubscription(r.data);
+            setNewEmployeeCount(r.data.maxEmployees || "");
+          }
         })
         .catch(() => {}),
       billingAPI
@@ -74,10 +77,10 @@ export default function BillingPage() {
   }, []);
 
   const sub = subscription || user?.company?.subscription;
-  const currentPlanId = sub?.plan || "starter";
+  const currentPlanId = sub?.plan || "1-10 employees";
 
-  const currentPlan = plans.find((p) => p.planType === currentPlanId) || {
-    name: currentPlanId.charAt(0).toUpperCase() + currentPlanId.slice(1),
+  const currentPlan = {
+    name: currentPlanId,
     monthlyPrice: sub?.monthlyPrice || 0,
     yearlyPrice: sub?.yearlyPrice || 0,
     maxEmployees: sub?.maxEmployees || 0,
@@ -132,18 +135,26 @@ export default function BillingPage() {
     }
   };
 
-  const handleUpgrade = (planId: string) => {
-    if (planId === currentPlanId) return;
-    setGatewayModal({ planId });
+  const handleUpdateTeamSize = () => {
+    const count = Number(newEmployeeCount);
+    if (!count || count < 1) {
+      toast({
+        title: "Enter employee count",
+        description: "How many employees should this plan cover?",
+        variant: "destructive",
+      });
+      return;
+    }
+    setGatewayModal(true);
   };
 
   const handleGatewaySelect = async (gateway: "razorpay" | "hdfc") => {
-    const planId = gatewayModal?.planId;
-    if (!planId) return;
-    setGatewayModal(null);
-    setUpgrading(planId);
+    const count = Number(newEmployeeCount);
+    if (!count) return;
+    setGatewayModal(false);
+    setUpgrading(true);
     try {
-      const res = await billingAPI.createOrder(planId, billing, gateway);
+      const res = await billingAPI.createOrder(count, billing, gateway);
       if (!res.success) throw new Error("Failed to create order");
       const order = res.data;
 
@@ -161,7 +172,7 @@ export default function BillingPage() {
             amount: order.amount * 100,
             currency: order.currency || "INR",
             name: "NestHR",
-            description: `${planId.charAt(0).toUpperCase() + planId.slice(1)} Plan — ${billing}`,
+            description: `NestHR — ${count} employees — ${billing}`,
             prefill: {
               name: order.userName,
               email: order.userEmail,
@@ -170,16 +181,14 @@ export default function BillingPage() {
             theme: { color: "#024BAB" },
             handler: async (response: any) => {
               try {
-                const verify = await billingAPI.verifyRazorpay({
+                await billingAPI.verifyRazorpay({
                   razorpayOrderId: response.razorpay_order_id,
                   razorpayPaymentId: response.razorpay_payment_id,
                   razorpaySignature: response.razorpay_signature,
                 });
                 toast({
                   title: "Payment Successful!",
-                  description: verify.data?.plan
-                    ? `${verify.data.plan} plan activated.`
-                    : "Subscription activated.",
+                  description: "Subscription updated.",
                 });
                 resolve();
               } catch (err: any) {
@@ -206,7 +215,7 @@ export default function BillingPage() {
         });
       }
     } finally {
-      setUpgrading(null);
+      setUpgrading(false);
     }
   };
 
@@ -392,101 +401,66 @@ export default function BillingPage() {
             </div>
           </div>
 
-          {plans.length === 0 ? (
-            <div className="border-2 p-8 text-center bg-white">
-              <RefreshCw className="w-8 h-8 text-[#024BAB] mx-auto mb-2 animate-spin" />
-              <p className="text-sm text-muted-foreground">Loading plans…</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {plans.map((plan) => {
-                const isCurrent = plan.planType === currentPlanId;
-                const price =
-                  billing === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
-                const isUpgrading = upgrading === plan.planType;
-                const color = PLAN_COLORS[plan.planType] || "#024BAB";
-                const popular = PLAN_POPULAR[plan.planType] || false;
-                return (
-                  <div
-                    key={plan.planType}
-                    className={cn(
-                      "border-2 p-5 flex flex-col relative bg-white",
-                      isCurrent && "border-[#024BAB] border-4",
-                    )}
-                    style={popular ? { boxShadow: `6px 6px 0px ${color}` } : {}}
-                  >
-                    {popular && (
-                      <div className="absolute -top-3 left-4 bg-[#024BAB] border-2 border-black px-3 py-0.5 text-[11px] font-bold text-white uppercase tracking-wider">
-                        Most Popular
-                      </div>
-                    )}
+          <div className="border-2 p-5 bg-white max-w-sm">
+            <label className="block text-xs font-bold uppercase tracking-wider text-black mb-2">
+              Number of employees
+            </label>
+            <input
+              type="number"
+              min={1}
+              value={newEmployeeCount}
+              onChange={(e) =>
+                setNewEmployeeCount(
+                  e.target.value === ""
+                    ? ""
+                    : Math.max(1, parseInt(e.target.value) || 1),
+                )
+              }
+              className="w-full border-2 border-black px-4 py-2.5 text-xl font-bold text-center focus:outline-none focus:ring-2 focus:ring-[#024BAB] mb-4"
+            />
 
-                    <div
-                      className="w-9 h-9 border-2 border-black flex items-center justify-center mb-3 shrink-0"
-                      style={{ backgroundColor: color }}
-                    >
-                      <Zap className="w-4 h-4 text-white" />
-                    </div>
-
-                    <h3 className="font-display font-bold text-xl text-black">
-                      {plan.name}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mb-3">
-                      {plan.description}
-                    </p>
-
-                    <div className="mb-4">
+            {Number(newEmployeeCount) > 0 && (
+              <div className="mb-4">
+                {(() => {
+                  const count = Number(newEmployeeCount);
+                  const tier = getPricingTier(count);
+                  const monthly = count * tier.rate;
+                  const yearly = Math.round(monthly * 12 * 0.8);
+                  const price = billing === "yearly" ? yearly : monthly;
+                  return (
+                    <>
                       <span className="font-display font-bold text-3xl text-black">
                         ₹{price.toLocaleString("en-IN")}
                       </span>
                       <span className="text-sm font-medium text-muted-foreground">
                         /{billing === "yearly" ? "yr" : "mo"}
                       </span>
-                    </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        ₹{tier.rate}/employee/mo · {tier.label}
+                      </p>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
 
-                    <ul className="space-y-2 flex-1 mb-5">
-                      {(plan.features || []).map((f: string) => (
-                        <li
-                          key={f}
-                          className="flex items-start gap-2 text-sm font-medium text-black"
-                        >
-                          <Check
-                            className="w-4 h-4 shrink-0 mt-0.5"
-                            style={{ color }}
-                          />
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-
-                    <button
-                      onClick={() => handleUpgrade(plan.planType)}
-                      disabled={isCurrent || isUpgrading}
-                      className={cn(
-                        "border-2 w-full py-2.5 text-sm flex items-center justify-center gap-2",
-                        isCurrent
-                          ? "bg-[#024BAB] text-white cursor-default"
-                          : "bg-black text-white hover:bg-black/80",
-                      )}
-                    >
-                      {isUpgrading ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : isCurrent ? (
-                        "Current Plan"
-                      ) : (
-                        <>
-                          {plan.planType === "enterprise"
-                            ? "Contact Sales"
-                            : "Upgrade Now"}
-                          <ArrowRight className="w-4 h-4" />
-                        </>
-                      )}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+            <button
+              onClick={handleUpdateTeamSize}
+              disabled={
+                upgrading || Number(newEmployeeCount) === empMax
+              }
+              className="border-2 w-full py-2.5 text-sm flex items-center justify-center gap-2 bg-black text-white hover:bg-black/80 disabled:opacity-50"
+            >
+              {upgrading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  Update & Pay
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
         {}
@@ -604,7 +578,7 @@ export default function BillingPage() {
           <div className="border-2 border-black bg-white w-full max-w-sm">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
               <h3 className="font-bold text-lg">Choose Payment Gateway</h3>
-              <button onClick={() => setGatewayModal(null)}>
+              <button onClick={() => setGatewayModal(false)}>
                 <X className="w-5 h-5" />
               </button>
             </div>

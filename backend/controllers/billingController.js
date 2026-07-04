@@ -1,6 +1,5 @@
 const asyncHandler = require("express-async-handler");
 const Company = require("../models/Company");
-const Plan = require("../models/Plan");
 const Subscription = require("../models/Subscription");
 const Invoice = require("../models/Invoice");
 const User = require("../models/User");
@@ -8,10 +7,10 @@ const OfferCode = require("../models/OfferCode");
 const hdfcPayment = require("../services/hdfcPaymentService");
 const razorpayService = require("../services/razorpayService");
 const { sendPaymentConfirmations } = require("../services/notificationService");
+const { TIERS, calculatePricing } = require("../utils/pricing");
 
 const getPlans = asyncHandler(async (req, res) => {
-  const plans = await Plan.find({ active: true }).sort({ monthlyPrice: 1 });
-  res.json({ success: true, data: plans });
+  res.json({ success: true, data: TIERS });
 });
 
 const getSubscription = asyncHandler(async (req, res) => {
@@ -85,17 +84,16 @@ const validateOfferCode = asyncHandler(async (req, res) => {
 
 const createOrder = asyncHandler(async (req, res) => {
   const {
-    plan: planId,
+    employeeCount,
     billingCycle = "monthly",
     gateway = "razorpay",
     offerCode,
   } = req.body;
 
-  if (!planId || !["starter", "professional", "enterprise"].includes(planId)) {
+  const empCount = Number(employeeCount);
+  if (!empCount || empCount < 1 || !Number.isInteger(empCount)) {
     res.status(400);
-    throw new Error(
-      "Invalid plan. Choose starter, professional, or enterprise",
-    );
+    throw new Error("Please provide a valid number of employees");
   }
   if (!["monthly", "yearly"].includes(billingCycle)) {
     res.status(400);
@@ -106,11 +104,7 @@ const createOrder = asyncHandler(async (req, res) => {
     throw new Error("Invalid gateway. Use razorpay or hdfc");
   }
 
-  const plan = await Plan.findOne({ planType: planId, active: true });
-  if (!plan) {
-    res.status(404);
-    throw new Error("Plan not found");
-  }
+  const pricing = calculatePricing(empCount);
 
   const company = await Company.findOne({ createdBy: req.user._id });
   if (!company) {
@@ -140,7 +134,7 @@ const createOrder = asyncHandler(async (req, res) => {
   }
 
   const amountRupees =
-    billingCycle === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
+    billingCycle === "yearly" ? pricing.yearlyPrice : pricing.monthlyPrice;
 
   let orderData;
 
@@ -149,7 +143,7 @@ const createOrder = asyncHandler(async (req, res) => {
       amount: amountRupees,
       receipt: `rcpt_${Date.now()}`,
       notes: {
-        planId,
+        employeeCount: empCount,
         billingCycle,
         userId: req.user._id.toString(),
         companyId: company._id.toString(),
@@ -160,10 +154,12 @@ const createOrder = asyncHandler(async (req, res) => {
       { company: company._id },
       {
         company: company._id,
-        plan: planId,
-        monthlyPrice: plan.monthlyPrice,
-        yearlyPrice: plan.yearlyPrice,
-        maxEmployees: plan.maxEmployees,
+        plan: pricing.tierLabel,
+        employeeCount: empCount,
+        ratePerEmployee: pricing.ratePerEmployee,
+        monthlyPrice: pricing.monthlyPrice,
+        yearlyPrice: pricing.yearlyPrice,
+        maxEmployees: empCount,
         billingCycle,
         startDate: new Date(),
         renewalDate: new Date(),
@@ -184,7 +180,9 @@ const createOrder = asyncHandler(async (req, res) => {
       keyId: result.keyId,
       amount: amountRupees,
       currency: "INR",
-      plan: planId,
+      employeeCount: empCount,
+      ratePerEmployee: pricing.ratePerEmployee,
+      plan: pricing.tierLabel,
       billingCycle,
       companyName: company.name,
       userName: req.user.name,
@@ -216,10 +214,12 @@ const createOrder = asyncHandler(async (req, res) => {
       { company: company._id },
       {
         company: company._id,
-        plan: planId,
-        monthlyPrice: plan.monthlyPrice,
-        yearlyPrice: plan.yearlyPrice,
-        maxEmployees: plan.maxEmployees,
+        plan: pricing.tierLabel,
+        employeeCount: empCount,
+        ratePerEmployee: pricing.ratePerEmployee,
+        monthlyPrice: pricing.monthlyPrice,
+        yearlyPrice: pricing.yearlyPrice,
+        maxEmployees: empCount,
         billingCycle,
         startDate: new Date(),
         renewalDate: new Date(),
@@ -240,7 +240,9 @@ const createOrder = asyncHandler(async (req, res) => {
       paymentUrl: result.paymentUrl,
       amount: amountRupees,
       currency: "INR",
-      plan: planId,
+      employeeCount: empCount,
+      ratePerEmployee: pricing.ratePerEmployee,
+      plan: pricing.tierLabel,
       billingCycle,
       offerApplied: !!validatedOffer,
       bonusMonths: validatedOffer ? validatedOffer.bonusMonths : 0,
@@ -326,10 +328,7 @@ async function _activateSubscription({ lookup, update, invoiceExtra, res }) {
     throw new Error("Company not found");
   }
 
-  const plan = await Plan.findOne({
-    planType: subscription.plan,
-    active: true,
-  });
+  const planName = subscription.plan;
   const amountPaid =
     subscription.billingCycle === "yearly"
       ? subscription.yearlyPrice
@@ -376,7 +375,7 @@ async function _activateSubscription({ lookup, update, invoiceExtra, res }) {
     company: company._id,
     subscription: updatedSub._id,
     invoiceNumber,
-    plan: plan ? plan.name : subscription.plan,
+    plan: planName,
     billingCycle: subscription.billingCycle,
     amount: amountPaid,
     status: "paid",
@@ -409,7 +408,7 @@ async function _activateSubscription({ lookup, update, invoiceExtra, res }) {
     toName: user?.name || company.name,
     toPhone: user?.phone || company.phone || "",
     companyName: company.name,
-    planName: plan ? plan.name : subscription.plan,
+    planName: planName,
     amount: amountPaid,
     billingCycle: subscription.billingCycle,
     renewalDate,
@@ -421,7 +420,7 @@ async function _activateSubscription({ lookup, update, invoiceExtra, res }) {
     success: true,
     message: "Subscription activated successfully",
     data: {
-      plan: plan ? plan.name : subscription.plan,
+      plan: planName,
       billingCycle: subscription.billingCycle,
       amount: amountPaid,
       renewalDate,
