@@ -30,6 +30,7 @@ import PaymentFailedPage from "./pages/PaymentFailedPage";
 import WelcomePage from "./pages/WelcomePage";
 import ManagePage from "./pages/ManagePage";
 import EmployeePayrollPage from "./pages/EmployeePayrollPage";
+import MyLoansPage from "./pages/MyLoansPage";
 import EmployeeReportPage from "./pages/EmployeeReportPage";
 import LoansPage from "./pages/LoansPage";
 import NotFound from "./pages/NotFound";
@@ -307,6 +308,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <EmployeeReportPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/my-loans"
+          element={
+            <ProtectedRoute>
+              <MyLoansPage />
             </ProtectedRoute>
           }
         />

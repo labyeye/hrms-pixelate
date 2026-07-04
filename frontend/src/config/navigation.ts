@@ -134,6 +134,12 @@ const allGroups: NavGroup[] = [
         icon: FileText,
         roles: ["employee"],
       },
+      {
+        title: "My Loans",
+        href: "/my-loans",
+        icon: Banknote,
+        roles: ["employee"],
+      },
     ],
   },
   {
