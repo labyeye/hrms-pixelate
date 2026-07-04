@@ -535,7 +535,7 @@ export default function AttendancePage() {
               <div>
                 <p
                   className={cn(
-                    "text-2xl font-black leading-none",
+                    "text-2xl font-bold leading-none",
                     isActive ? text : "text-black",
                   )}
                 >

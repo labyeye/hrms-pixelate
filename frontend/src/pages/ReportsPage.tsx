@@ -415,7 +415,7 @@ function CategoryTag({ cat }: { cat: Category }) {
   return (
     <span
       className={cn(
-        "px-2 py-0.5 text-[10px] font-black uppercase tracking-wider border border-black",
+        "px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border border-black",
         styles[cat],
       )}
     >
@@ -494,7 +494,7 @@ function StatusCell({ val }: { val: string }) {
     return (
       <span
         className={cn(
-          "px-2 py-0.5 text-[10px] font-black uppercase rounded",
+          "px-2 py-0.5 text-[10px] font-bold uppercase rounded",
           cls,
         )}
       >
@@ -511,7 +511,7 @@ function NameCell({ name }: { name: string }) {
   return (
     <span className="flex items-center gap-2">
       <span
-        className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-black flex-shrink-0"
+        className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
         style={{ backgroundColor: color }}
       >
         {initials}
@@ -546,7 +546,7 @@ function ReportTable({
               {headers.map((h) => (
                 <th
                   key={h}
-                  className="px-4 py-3 text-left text-xs font-black text-black uppercase tracking-wider whitespace-nowrap"
+                  className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap"
                 >
                   {h}
                 </th>
@@ -823,26 +823,26 @@ function SalaryRegisterGen({
       {data.length > 0 && (
         <div className="flex gap-4">
           <div className="border-2 bg-[#024BAB] text-white p-4 flex-1">
-            <p className="text-xs font-black uppercase tracking-wider opacity-80">
+            <p className="text-xs font-bold uppercase tracking-wider opacity-80">
               Total Gross
             </p>
-            <p className="text-2xl font-black mt-1">
+            <p className="text-2xl font-bold mt-1">
               {formatCurrency(totalGross)}
             </p>
           </div>
           <div className="border-2 bg-[#00C48C] text-white p-4 flex-1">
-            <p className="text-xs font-black uppercase tracking-wider opacity-80">
+            <p className="text-xs font-bold uppercase tracking-wider opacity-80">
               Total Net Pay
             </p>
-            <p className="text-2xl font-black mt-1">
+            <p className="text-2xl font-bold mt-1">
               {formatCurrency(totalNet)}
             </p>
           </div>
           <div className="border-2 bg-[#EF4444] text-white p-4 flex-1">
-            <p className="text-xs font-black uppercase tracking-wider opacity-80">
+            <p className="text-xs font-bold uppercase tracking-wider opacity-80">
               Total Deductions
             </p>
-            <p className="text-2xl font-black mt-1">
+            <p className="text-2xl font-bold mt-1">
               {formatCurrency(totalGross - totalNet)}
             </p>
           </div>
@@ -1000,7 +1000,7 @@ function SalarySlipGen({
   .report-header { display: flex; align-items: stretch; justify-content: space-between; gap: 16px; border-bottom: 3px solid #024BAB; padding-bottom: 12px; margin-bottom: 18px; }
   .header-company { display: flex; align-items: center; gap: 10px; }
   .header-company img { height: 44px; width: auto; object-fit: contain; }
-  .company-name { font-size: 17px; font-weight: 900; color: #024BAB; }
+  .company-name { font-size: 17px; font-weight: 700; color: #024BAB; }
   .company-sub { font-size: 9px; color: #9CA3AF; margin-top: 2px; }
   .header-center { flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
   .report-badge { display: inline-block; background: #EFF6FF; color: #024BAB; border: 1px solid #BFDBFE; border-radius: 3px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 7px; margin-bottom: 4px; }
@@ -1017,7 +1017,7 @@ function SalarySlipGen({
   .amt { font-weight: 700; }
   .section { margin-top: 14px; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #024BAB; border-bottom: 2px solid #024BAB; padding-bottom: 4px; margin-bottom: 6px; }
   .total { font-weight: 700; font-size: 13px; background: #EFF6FF; padding: 7px 0; }
-  .net { font-weight: 900; font-size: 14px; background: #DCFCE7; color: #15803D; padding: 8px 0; }
+  .net { font-weight: 700; font-size: 14px; background: #DCFCE7; color: #15803D; padding: 8px 0; }
   .footer-bar { margin-top: 20px; border-top: 1px solid #E5E7EB; padding-top: 6px; display: flex; justify-content: space-between; font-size: 9px; color: #9CA3AF; }
 </style></head><body>
   <div class="report-header">
@@ -1123,7 +1123,7 @@ function SalarySlipGen({
               >
                 <p
                   className={cn(
-                    "font-black text-sm",
+                    "font-bold text-sm",
                     selected?._id === p._id ? "text-white" : "text-black",
                   )}
                 >
@@ -1143,7 +1143,7 @@ function SalarySlipGen({
                 </p>
                 <p
                   className={cn(
-                    "text-sm font-black mt-2",
+                    "text-sm font-bold mt-2",
                     selected?._id === p._id ? "text-white" : "text-[#00C48C]",
                   )}
                 >
@@ -1156,7 +1156,7 @@ function SalarySlipGen({
             <div className="border-2 bg-white p-6 space-y-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="text-xl font-black text-black">
+                  <h3 className="text-xl font-bold text-black">
                     {selected.employee?.firstName} {selected.employee?.lastName}
                   </h3>
                   <p className="text-sm text-muted-foreground">
@@ -1165,13 +1165,13 @@ function SalarySlipGen({
                     {selected.employee?.designation}
                   </p>
                 </div>
-                <span className="px-3 py-1 border-2 border-black bg-[#024BAB] text-white text-xs font-black">
+                <span className="px-3 py-1 border-2 border-black bg-[#024BAB] text-white text-xs font-bold">
                   {MONTHS[+month - 1]} {year}
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-2">
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
                     Earnings
                   </p>
                   {[
@@ -1191,13 +1191,13 @@ function SalarySlipGen({
                       </span>
                     </div>
                   ))}
-                  <div className="flex justify-between py-2 mt-1 bg-[#024BAB]/5 px-2 text-sm font-black">
+                  <div className="flex justify-between py-2 mt-1 bg-[#024BAB]/5 px-2 text-sm font-bold">
                     <span>Gross Salary</span>
                     <span>{formatCurrency(selected.grossSalary || 0)}</span>
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mb-2">
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
                     Deductions
                   </p>
                   {[
@@ -1215,7 +1215,7 @@ function SalarySlipGen({
                       </span>
                     </div>
                   ))}
-                  <div className="flex justify-between py-2 mt-1 bg-red-50 px-2 text-sm font-black">
+                  <div className="flex justify-between py-2 mt-1 bg-red-50 px-2 text-sm font-bold">
                     <span>Total Deductions</span>
                     <span className="text-[#EF4444]">
                       -{formatCurrency(selected.totalDeductions || 0)}
@@ -1224,10 +1224,10 @@ function SalarySlipGen({
                 </div>
               </div>
               <div className="border-2 border-black bg-[#00C48C] p-4 flex justify-between items-center">
-                <span className="text-white font-black text-lg uppercase tracking-wide">
+                <span className="text-white font-bold text-lg uppercase tracking-wide">
                   Net Pay
                 </span>
-                <span className="text-white font-black text-2xl">
+                <span className="text-white font-bold text-2xl">
                   {formatCurrency(selected.netSalary || 0)}
                 </span>
               </div>
@@ -2699,7 +2699,7 @@ function EmployeeReportGen({
     <div className="space-y-5">
       {/* Step 1: Select Employee */}
       <div className="border-2 border-black bg-white p-5">
-        <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-3">
+        <p className="text-xs font-bold uppercase tracking-wider text-[#024BAB] mb-3">
           Step 1 — Select Employee
         </p>
         <div className="relative mb-3">
@@ -2742,14 +2742,14 @@ function EmployeeReportGen({
                     />
                   ) : (
                     <span
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[10px] font-black flex-shrink-0"
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
                       style={{ backgroundColor: bg }}
                     >
                       {getInitials(name)}
                     </span>
                   )}
                   <div className="min-w-0">
-                    <p className="text-xs font-black text-black truncate">
+                    <p className="text-xs font-bold text-black truncate">
                       {name}
                     </p>
                     <p className="text-[10px] text-muted-foreground truncate">
@@ -2775,14 +2775,14 @@ function EmployeeReportGen({
               />
             ) : (
               <span
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-black"
+                className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold"
                 style={{ backgroundColor: color }}
               >
                 {initials}
               </span>
             )}
             <div>
-              <p className="font-black text-black">{empName}</p>
+              <p className="font-bold text-black">{empName}</p>
               <p className="text-xs text-muted-foreground">
                 {selectedEmp.employeeId} · {selectedEmp.department?.name} ·{" "}
                 {selectedEmp.designation}
@@ -2799,7 +2799,7 @@ function EmployeeReportGen({
               <X className="w-4 h-4" />
             </button>
           </div>
-          <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-3">
+          <p className="text-xs font-bold uppercase tracking-wider text-[#024BAB] mb-3">
             Step 2 — Select Report Type
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -2820,7 +2820,7 @@ function EmployeeReportGen({
               >
                 <p
                   className={cn(
-                    "text-xs font-black",
+                    "text-xs font-bold",
                     reportType === rt.id ? "text-white" : "text-black",
                   )}
                 >
@@ -2845,7 +2845,7 @@ function EmployeeReportGen({
       {/* Step 3: Period + Generate */}
       {selectedEmp && reportType && (
         <div className="border-2 border-black bg-white p-5 space-y-4">
-          <p className="text-xs font-black uppercase tracking-wider text-[#024BAB]">
+          <p className="text-xs font-bold uppercase tracking-wider text-[#024BAB]">
             Step 3 — Select Period & Generate
           </p>
           <div className="flex flex-wrap gap-3 items-center">
@@ -2870,7 +2870,7 @@ function EmployeeReportGen({
             <button
               onClick={generate}
               disabled={loading}
-              className="flex items-center gap-2 border-2 border-black px-4 py-2 text-sm font-black bg-[#024BAB] text-white disabled:opacity-50"
+              className="flex items-center gap-2 border-2 border-black px-4 py-2 text-sm font-bold bg-[#024BAB] text-white disabled:opacity-50"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -2933,7 +2933,7 @@ function ComingSoonGen() {
         <FileText className="w-8 h-8 text-[#024BAB]" />
       </div>
       <div className="text-center">
-        <p className="font-black text-black text-lg">Coming Soon</p>
+        <p className="font-bold text-black text-lg">Coming Soon</p>
         <p className="text-sm text-muted-foreground mt-1">
           This report requires additional data configuration.
           <br />
@@ -3227,7 +3227,7 @@ function AnalyticsTab({
             key={id}
             onClick={() => setAttTab(id)}
             className={cn(
-              "px-4 py-2 text-sm font-black border-r-2 border-black last:border-r-0 transition-all",
+              "px-4 py-2 text-sm font-bold border-r-2 border-black last:border-r-0 transition-all",
               attTab === id
                 ? "bg-[#024BAB] text-white"
                 : "bg-white text-black hover:bg-gray-50",
@@ -3264,10 +3264,10 @@ function AnalyticsTab({
               },
             ].map(({ label, value, color }) => (
               <div key={label} className="border-2 bg-white p-4">
-                <p className="text-2xl font-black" style={{ color }}>
+                <p className="text-2xl font-bold" style={{ color }}>
                   {value}
                 </p>
-                <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mt-0.5">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mt-0.5">
                   {label}
                 </p>
               </div>
@@ -3275,7 +3275,7 @@ function AnalyticsTab({
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="border-2 bg-white p-5">
-              <h3 className="font-black text-sm text-black mb-3">
+              <h3 className="font-bold text-sm text-black mb-3">
                 Dept Headcount
               </h3>
               <ResponsiveContainer width="100%" height={200}>
@@ -3315,7 +3315,7 @@ function AnalyticsTab({
               </ResponsiveContainer>
             </div>
             <div className="border-2 bg-white p-5">
-              <h3 className="font-black text-sm text-black mb-3">
+              <h3 className="font-bold text-sm text-black mb-3">
                 Dept Breakdown Table
               </h3>
               <div className="overflow-auto">
@@ -3326,7 +3326,7 @@ function AnalyticsTab({
                         (h) => (
                           <th
                             key={h}
-                            className="px-3 py-2 text-left font-black uppercase tracking-wider text-muted-foreground"
+                            className="px-3 py-2 text-left font-bold uppercase tracking-wider text-muted-foreground"
                           >
                             {h}
                           </th>
@@ -3374,17 +3374,17 @@ function AnalyticsTab({
               { label: "On Leave", value: attSummary.leave, color: "#024BAB" },
             ].map(({ label, value, color }) => (
               <div key={label} className="border-2 bg-white p-4">
-                <p className="text-2xl font-black" style={{ color }}>
+                <p className="text-2xl font-bold" style={{ color }}>
                   {value}
                 </p>
-                <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mt-0.5">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mt-0.5">
                   {label}
                 </p>
               </div>
             ))}
           </div>
           <div className="border-2 bg-white p-5">
-            <h3 className="font-black text-sm text-black mb-3">
+            <h3 className="font-bold text-sm text-black mb-3">
               Attendance Distribution
             </h3>
             <div className="flex items-center gap-6">
@@ -3469,7 +3469,7 @@ function AnalyticsTab({
                         {label}
                       </span>
                     </div>
-                    <span className="text-xs font-black text-black">
+                    <span className="text-xs font-bold text-black">
                       {value}
                     </span>
                   </div>
@@ -3501,17 +3501,17 @@ function AnalyticsTab({
               },
             ].map(({ label, value, color }) => (
               <div key={label} className="border-2 bg-white p-4">
-                <p className="text-xl font-black" style={{ color }}>
+                <p className="text-xl font-bold" style={{ color }}>
                   {value}
                 </p>
-                <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mt-0.5">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mt-0.5">
                   {label}
                 </p>
               </div>
             ))}
           </div>
           <div className="border-2 bg-white p-5">
-            <h3 className="font-black text-sm text-black mb-3">
+            <h3 className="font-bold text-sm text-black mb-3">
               Dept-wise Payroll
             </h3>
             <ResponsiveContainer width="100%" height={200}>
@@ -3575,10 +3575,10 @@ function AnalyticsTab({
               },
             ].map(({ label, value, color, sub }) => (
               <div key={label} className="border-2 bg-white p-4">
-                <p className="text-xl font-black" style={{ color }}>
+                <p className="text-xl font-bold" style={{ color }}>
                   {value}
                 </p>
-                <p className="text-xs font-black uppercase tracking-wider text-muted-foreground mt-0.5">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mt-0.5">
                   {label}
                 </p>
                 <p className="text-[10px] text-muted-foreground">{sub}</p>
@@ -3602,7 +3602,7 @@ function AnalyticsTab({
                       ].map((h) => (
                         <th
                           key={h}
-                          className="px-4 py-3 text-left font-black uppercase tracking-wider"
+                          className="px-4 py-3 text-left font-bold uppercase tracking-wider"
                         >
                           {h}
                         </th>
@@ -3734,7 +3734,7 @@ export default function ReportsPage() {
           <button
             onClick={() => setPageMode("catalog")}
             className={cn(
-              "px-4 py-2 text-sm font-black border-r-2 border-black transition-all",
+              "px-4 py-2 text-sm font-bold border-r-2 border-black transition-all",
               pageMode === "catalog"
                 ? "bg-black text-white"
                 : "bg-white text-black hover:bg-gray-50",
@@ -3745,7 +3745,7 @@ export default function ReportsPage() {
           <button
             onClick={() => setPageMode("analytics")}
             className={cn(
-              "px-4 py-2 text-sm font-black transition-all",
+              "px-4 py-2 text-sm font-bold transition-all",
               pageMode === "analytics"
                 ? "bg-black text-white"
                 : "bg-white text-black hover:bg-gray-50",
@@ -3776,7 +3776,7 @@ export default function ReportsPage() {
                 </button>
                 <div className="flex items-center gap-2">
                   <CategoryTag cat={activeReport.category} />
-                  <h2 className="text-xl font-black text-black">
+                  <h2 className="text-xl font-bold text-black">
                     {activeReport.name}
                   </h2>
                 </div>
@@ -3818,7 +3818,7 @@ export default function ReportsPage() {
                   key={id}
                   onClick={() => setFilterCat(id)}
                   className={cn(
-                    "px-4 py-2 text-sm font-black border-r-2 border-black last:border-r-0 transition-all",
+                    "px-4 py-2 text-sm font-bold border-r-2 border-black last:border-r-0 transition-all",
                     filterCat === id
                       ? "bg-black text-white"
                       : "bg-white text-black hover:bg-gray-50",
@@ -3842,7 +3842,7 @@ export default function ReportsPage() {
                     className="w-2.5 h-2.5 rounded-none"
                     style={{ backgroundColor: CATEGORY_META[cat].color }}
                   />
-                  <span className="text-xs font-black text-black uppercase tracking-wider">
+                  <span className="text-xs font-bold text-black uppercase tracking-wider">
                     {CATEGORY_META[cat].label}
                   </span>
                   <span className="text-xs font-bold text-muted-foreground">
@@ -3864,7 +3864,7 @@ export default function ReportsPage() {
                     className="h-5 w-1 border border-black"
                     style={{ backgroundColor: CATEGORY_META[cat].color }}
                   />
-                  <h2 className="text-base font-black text-black uppercase tracking-wider">
+                  <h2 className="text-base font-bold text-black uppercase tracking-wider">
                     {CATEGORY_META[cat].label} ({catReports.length})
                   </h2>
                 </div>
@@ -3900,12 +3900,12 @@ export default function ReportsPage() {
                             <div className="flex items-center gap-2 flex-wrap mb-1">
                               <CategoryTag cat={report.category} />
                               {!report.available && (
-                                <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider border border-black bg-gray-100 text-gray-500">
+                                <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border border-black bg-gray-100 text-gray-500">
                                   Coming Soon
                                 </span>
                               )}
                             </div>
-                            <p className="font-black text-black text-sm leading-tight">
+                            <p className="font-bold text-black text-sm leading-tight">
                               {report.name}
                             </p>
                           </div>
@@ -3919,7 +3919,7 @@ export default function ReportsPage() {
                           }
                           disabled={!report.available}
                           className={cn(
-                            "w-full py-2 text-sm font-black border-2 border-black transition-all",
+                            "w-full py-2 text-sm font-bold border-2 border-black transition-all",
                             isActive
                               ? "bg-black text-white"
                               : report.available

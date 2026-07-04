@@ -74,7 +74,7 @@ export default function PaymentSuccessPage() {
           <div className="w-9 h-9 bg-[#024BAB] border-2 border-black flex items-center justify-center">
             <Zap className="w-5 h-5 text-white" />
           </div>
-          <span className="font-display font-black text-xl text-black">
+          <span className="font-display font-bold text-xl text-black">
             NestHR
           </span>
         </div>
@@ -86,7 +86,7 @@ export default function PaymentSuccessPage() {
           {status === "verifying" && (
             <div className="bg-white border-2 border-black p-10 text-center">
               <Loader2 className="w-12 h-12 animate-spin text-[#024BAB] mx-auto mb-4" />
-              <h2 className="font-black text-xl text-black mb-2">
+              <h2 className="font-bold text-xl text-black mb-2">
                 Confirming your payment
               </h2>
               <p className="text-sm text-gray-500 font-medium">
@@ -101,7 +101,7 @@ export default function PaymentSuccessPage() {
               {}
               <div className="bg-green-500 border-b-2 border-black p-6 text-center">
                 <CheckCircle className="w-12 h-12 text-white mx-auto mb-3" />
-                <h1 className="font-black text-2xl text-white">
+                <h1 className="font-bold text-2xl text-white">
                   Payment Successful!
                 </h1>
                 <p className="text-green-100 font-medium text-sm mt-1">
@@ -113,33 +113,33 @@ export default function PaymentSuccessPage() {
               <div className="p-6 space-y-3 border-b-2 border-black">
                 <div className="flex justify-between text-sm">
                   <span className="font-bold text-gray-500">Invoice</span>
-                  <span className="font-black text-black font-mono">
+                  <span className="font-bold text-black font-mono">
                     {details.invoiceNumber}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="font-bold text-gray-500">Plan</span>
-                  <span className="font-black text-black uppercase">
+                  <span className="font-bold text-black uppercase">
                     {details.plan}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="font-bold text-gray-500">Billing</span>
-                  <span className="font-black text-black capitalize">
+                  <span className="font-bold text-black capitalize">
                     {details.billingCycle}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm border-t-2 border-black pt-3">
-                  <span className="font-black text-sm uppercase">
+                  <span className="font-bold text-sm uppercase">
                     Amount Paid
                   </span>
-                  <span className="font-black text-xl text-[#024BAB]">
+                  <span className="font-bold text-xl text-[#024BAB]">
                     ₹{details.amount.toLocaleString("en-IN")}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="font-bold text-gray-500">Next Renewal</span>
-                  <span className="font-black text-black">
+                  <span className="font-bold text-black">
                     {formatDate(details.renewalDate)}
                   </span>
                 </div>
@@ -147,7 +147,7 @@ export default function PaymentSuccessPage() {
 
               {}
               <div className="p-4 bg-[#F0F6FF] border-b-2 border-black">
-                <p className="text-xs font-black uppercase text-gray-500 mb-2">
+                <p className="text-xs font-bold uppercase text-gray-500 mb-2">
                   Confirmations sent to
                 </p>
                 <div className="flex gap-4 text-xs font-bold text-gray-600">
@@ -165,7 +165,7 @@ export default function PaymentSuccessPage() {
               <div className="p-6">
                 <button
                   onClick={() => navigate("/welcome", { replace: true })}
-                  className="w-full bg-[#024BAB] text-white border-2 border-black font-black uppercase text-sm px-4 py-3 flex items-center justify-center gap-2 hover:bg-[#023590] transition-all"
+                  className="w-full bg-[#024BAB] text-white border-2 border-black font-bold uppercase text-sm px-4 py-3 flex items-center justify-center gap-2 hover:bg-[#023590] transition-all"
                 >
                   Continue to Dashboard
                   <ArrowRight className="w-4 h-4" />
@@ -181,9 +181,9 @@ export default function PaymentSuccessPage() {
           {status === "failed" && (
             <div className="bg-white border-2 border-black p-8 text-center">
               <div className="w-12 h-12 bg-red-100 border-2 border-red-500 flex items-center justify-center mx-auto mb-4">
-                <span className="text-red-500 font-black text-xl">✕</span>
+                <span className="text-red-500 font-bold text-xl">✕</span>
               </div>
-              <h2 className="font-black text-xl text-black mb-2">
+              <h2 className="font-bold text-xl text-black mb-2">
                 Verification Failed
               </h2>
               <p className="text-sm text-gray-500 font-medium mb-6">
@@ -192,7 +192,7 @@ export default function PaymentSuccessPage() {
               <div className="space-y-3">
                 <button
                   onClick={() => navigate("/onboarding")}
-                  className="w-full bg-[#024BAB] text-white border-2 border-black font-black uppercase text-sm px-4 py-3 hover:bg-[#023590] transition-all"
+                  className="w-full bg-[#024BAB] text-white border-2 border-black font-bold uppercase text-sm px-4 py-3 hover:bg-[#023590] transition-all"
                 >
                   Try Again
                 </button>

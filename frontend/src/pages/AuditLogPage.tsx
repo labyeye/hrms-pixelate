@@ -96,7 +96,7 @@ export default function AuditLogPage() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-black text-black flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-black flex items-center gap-2">
             <Shield className="w-6 h-6" /> Audit Log
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
@@ -191,22 +191,22 @@ export default function AuditLogPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b-2 border-black bg-[#F0F6FF]">
-                      <th className="text-left px-4 py-3 font-black text-xs uppercase tracking-wider">
+                      <th className="text-left px-4 py-3 font-bold text-xs uppercase tracking-wider">
                         Timestamp
                       </th>
-                      <th className="text-left px-4 py-3 font-black text-xs uppercase tracking-wider">
+                      <th className="text-left px-4 py-3 font-bold text-xs uppercase tracking-wider">
                         User
                       </th>
-                      <th className="text-left px-4 py-3 font-black text-xs uppercase tracking-wider">
+                      <th className="text-left px-4 py-3 font-bold text-xs uppercase tracking-wider">
                         Action
                       </th>
-                      <th className="text-left px-4 py-3 font-black text-xs uppercase tracking-wider">
+                      <th className="text-left px-4 py-3 font-bold text-xs uppercase tracking-wider">
                         Entity
                       </th>
-                      <th className="text-left px-4 py-3 font-black text-xs uppercase tracking-wider">
+                      <th className="text-left px-4 py-3 font-bold text-xs uppercase tracking-wider">
                         IP
                       </th>
-                      <th className="text-left px-4 py-3 font-black text-xs uppercase tracking-wider">
+                      <th className="text-left px-4 py-3 font-bold text-xs uppercase tracking-wider">
                         Details
                       </th>
                     </tr>
@@ -239,7 +239,7 @@ export default function AuditLogPage() {
                           </td>
                           <td className="px-4 py-3">
                             <span
-                              className={`px-2 py-0.5 text-xs font-black border rounded-sm whitespace-nowrap ${ACTION_COLORS[log.action] || "bg-gray-100 text-gray-700 border-gray-300"}`}
+                              className={`px-2 py-0.5 text-xs font-bold border rounded-sm whitespace-nowrap ${ACTION_COLORS[log.action] || "bg-gray-100 text-gray-700 border-gray-300"}`}
                             >
                               {actionLabel(log.action)}
                             </span>
@@ -250,7 +250,7 @@ export default function AuditLogPage() {
                           <td className="px-4 py-3 text-xs text-gray-400 font-mono">
                             {log.ip || "—"}
                           </td>
-                          <td className="px-4 py-3 text-xs text-[#024BAB] font-black">
+                          <td className="px-4 py-3 text-xs text-[#024BAB] font-bold">
                             {log.details && Object.keys(log.details).length > 0
                               ? "View ▾"
                               : "—"}
@@ -273,7 +273,7 @@ export default function AuditLogPage() {
                                       <span className="text-xs text-gray-500 font-bold uppercase">
                                         {k}:{" "}
                                       </span>
-                                      <span className="text-xs font-black text-black">
+                                      <span className="text-xs font-bold text-black">
                                         {String(v)}
                                       </span>
                                     </div>
@@ -299,7 +299,7 @@ export default function AuditLogPage() {
                     <button
                       onClick={() => setPage((p) => Math.max(1, p - 1))}
                       disabled={page === 1}
-                      className="flex items-center gap-1 px-3 py-1.5 border-2 border-black text-xs font-black disabled:opacity-40 hover:bg-white transition-colors"
+                      className="flex items-center gap-1 px-3 py-1.5 border-2 border-black text-xs font-bold disabled:opacity-40 hover:bg-white transition-colors"
                     >
                       <ChevronLeft className="w-3 h-3" /> Prev
                     </button>
@@ -308,7 +308,7 @@ export default function AuditLogPage() {
                         setPage((p) => Math.min(totalPages, p + 1))
                       }
                       disabled={page === totalPages}
-                      className="flex items-center gap-1 px-3 py-1.5 border-2 border-black text-xs font-black disabled:opacity-40 hover:bg-white transition-colors"
+                      className="flex items-center gap-1 px-3 py-1.5 border-2 border-black text-xs font-bold disabled:opacity-40 hover:bg-white transition-colors"
                     >
                       Next <ChevronRight className="w-3 h-3" />
                     </button>

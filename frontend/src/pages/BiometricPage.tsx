@@ -608,7 +608,7 @@ export default function BiometricPage() {
                 <div className="text-left">
                   <p
                     className={cn(
-                      "text-sm font-black",
+                      "text-sm font-bold",
                       tab === item.id ? "text-[#024BAB]" : "text-black",
                     )}
                   >
@@ -627,7 +627,7 @@ export default function BiometricPage() {
           {tab === "locations_devices" && (
             <div>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="font-black text-lg flex items-center gap-2">
+                <h2 className="font-bold text-lg flex items-center gap-2">
                   <MapPin className="w-5 h-5 text-[#024BAB]" /> Locations
                 </h2>
                 <button
@@ -636,7 +636,7 @@ export default function BiometricPage() {
                     setEditingLoc(null);
                     setLocForm({ name: "", address: "", description: "" });
                   }}
-                  className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-black text-sm uppercase transition-all"
+                  className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-bold text-sm uppercase transition-all"
                 >
                   <Plus className="w-4 h-4" /> Add Location
                 </button>
@@ -644,12 +644,12 @@ export default function BiometricPage() {
 
               {showLocForm && (
                 <div className="bg-white border-2 border-black p-6 mb-6">
-                  <h3 className="font-black mb-4">
+                  <h3 className="font-bold mb-4">
                     {editingLoc ? "Edit Location" : "New Location"}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-black uppercase mb-1">
+                      <label className="block text-xs font-bold uppercase mb-1">
                         Location Name *
                       </label>
                       <input
@@ -662,7 +662,7 @@ export default function BiometricPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-black uppercase mb-1">
+                      <label className="block text-xs font-bold uppercase mb-1">
                         Address
                       </label>
                       <input
@@ -678,7 +678,7 @@ export default function BiometricPage() {
                       />
                     </div>
                     <div className="md:col-span-2">
-                      <label className="block text-xs font-black uppercase mb-1">
+                      <label className="block text-xs font-bold uppercase mb-1">
                         Description
                       </label>
                       <input
@@ -698,7 +698,7 @@ export default function BiometricPage() {
                     <button
                       onClick={handleSaveLocation}
                       disabled={locSaving}
-                      className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-black text-sm uppercase disabled:opacity-60"
+                      className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-bold text-sm uppercase disabled:opacity-60"
                     >
                       {locSaving ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -712,7 +712,7 @@ export default function BiometricPage() {
                         setShowLocForm(false);
                         setEditingLoc(null);
                       }}
-                      className="flex items-center gap-2 bg-white border-2 border-black px-4 py-2 font-black text-sm uppercase"
+                      className="flex items-center gap-2 bg-white border-2 border-black px-4 py-2 font-bold text-sm uppercase"
                     >
                       <X className="w-4 h-4" /> Cancel
                     </button>
@@ -727,7 +727,7 @@ export default function BiometricPage() {
               ) : locations.length === 0 ? (
                 <div className="text-center py-12 bg-white border-2 border-black">
                   <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="font-black text-gray-500">
+                  <p className="font-bold text-gray-500">
                     No locations yet. Add one to get started.
                   </p>
                 </div>
@@ -746,7 +746,7 @@ export default function BiometricPage() {
                               loc.isActive ? "bg-green-500" : "bg-gray-300",
                             )}
                           />
-                          <h3 className="font-black text-base">{loc.name}</h3>
+                          <h3 className="font-bold text-base">{loc.name}</h3>
                         </div>
                         <div className="flex gap-1">
                           <button
@@ -777,7 +777,7 @@ export default function BiometricPage() {
                       <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
                         <span
                           className={cn(
-                            "text-xs font-black uppercase px-2 py-0.5 border-2",
+                            "text-xs font-bold uppercase px-2 py-0.5 border-2",
                             loc.isActive
                               ? "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]"
                               : "bg-gray-100 text-gray-500 border-gray-300",
@@ -802,12 +802,12 @@ export default function BiometricPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
                   <div className="lg:col-span-2">
                     <div className="flex items-center justify-between mb-4">
-                      <h2 className="font-black text-lg flex items-center gap-2">
+                      <h2 className="font-bold text-lg flex items-center gap-2">
                         <Cpu className="w-5 h-5 text-[#024BAB]" /> Devices
                       </h2>
                       <button
                         onClick={() => setShowDevForm((p) => !p)}
-                        className="flex items-center gap-1.5 bg-[#024BAB] text-white border-2 border-black px-3 py-1.5 font-black text-xs uppercase"
+                        className="flex items-center gap-1.5 bg-[#024BAB] text-white border-2 border-black px-3 py-1.5 font-bold text-xs uppercase"
                       >
                         <Plus className="w-3.5 h-3.5" /> Add
                       </button>
@@ -817,7 +817,7 @@ export default function BiometricPage() {
                       <div className="bg-white border-2 border-black p-4 mb-4">
                         <div className="space-y-3">
                           <div>
-                            <label className="block text-xs font-black uppercase mb-1">
+                            <label className="block text-xs font-bold uppercase mb-1">
                               Device Name *
                             </label>
                             <input
@@ -833,7 +833,7 @@ export default function BiometricPage() {
                             />
                           </div>
                           <div>
-                            <label className="block text-xs font-black uppercase mb-1">
+                            <label className="block text-xs font-bold uppercase mb-1">
                               Location *
                             </label>
                             <select
@@ -860,7 +860,7 @@ export default function BiometricPage() {
                             <button
                               onClick={handleCreateDevice}
                               disabled={devSaving}
-                              className="flex-1 bg-[#024BAB] text-white border-2 border-black py-2 font-black text-xs uppercase disabled:opacity-60 flex items-center justify-center gap-1"
+                              className="flex-1 bg-[#024BAB] text-white border-2 border-black py-2 font-bold text-xs uppercase disabled:opacity-60 flex items-center justify-center gap-1"
                             >
                               {devSaving && (
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -869,7 +869,7 @@ export default function BiometricPage() {
                             </button>
                             <button
                               onClick={() => setShowDevForm(false)}
-                              className="flex-1 bg-white border-2 border-black py-2 font-black text-xs uppercase"
+                              className="flex-1 bg-white border-2 border-black py-2 font-bold text-xs uppercase"
                             >
                               Cancel
                             </button>
@@ -905,7 +905,7 @@ export default function BiometricPage() {
                                       : "bg-gray-300",
                                   )}
                                 />
-                                <span className="font-black text-sm">
+                                <span className="font-bold text-sm">
                                   {dev.name}
                                 </span>
                               </div>
@@ -950,7 +950,7 @@ export default function BiometricPage() {
                         <div className="p-5 border-b-2 border-black">
                           <div className="flex items-start justify-between">
                             <div>
-                              <h3 className="font-black text-xl">
+                              <h3 className="font-bold text-xl">
                                 {selectedDevice.name}
                               </h3>
                               <p className="text-sm text-gray-500 font-medium flex items-center gap-1 mt-1">
@@ -991,7 +991,7 @@ export default function BiometricPage() {
 
                           <div className="mt-3 flex items-center gap-2">
                             {selectedDevice.activated ? (
-                              <span className="flex items-center gap-1.5 text-xs font-black text-[#00C48C] bg-[#00C48C]/10 border-2 border-[#00C48C] px-2 py-1">
+                              <span className="flex items-center gap-1.5 text-xs font-bold text-[#00C48C] bg-[#00C48C]/10 border-2 border-[#00C48C] px-2 py-1">
                                 <CheckCircle2 className="w-3.5 h-3.5" />
                                 Connected
                                 {selectedDevice.deviceMeta?.model &&
@@ -1000,7 +1000,7 @@ export default function BiometricPage() {
                                   ` · ${selectedDevice.deviceMeta.ip}`}
                               </span>
                             ) : (
-                              <span className="flex items-center gap-1.5 text-xs font-black text-[#FA731C] bg-[#FA731C]/10 border-2 border-[#FA731C] px-2 py-1">
+                              <span className="flex items-center gap-1.5 text-xs font-bold text-[#FA731C] bg-[#FA731C]/10 border-2 border-[#FA731C] px-2 py-1">
                                 <Wifi className="w-3.5 h-3.5" />
                                 Awaiting connection
                               </span>
@@ -1019,7 +1019,7 @@ export default function BiometricPage() {
                             <div className="p-3 bg-blue-50 border-2 border-[#024BAB]/20">
                               <div className="flex items-center gap-2 mb-2">
                                 <Monitor className="w-4 h-4 text-[#024BAB]" />
-                                <span className="text-xs font-black uppercase text-[#024BAB]">
+                                <span className="text-xs font-bold uppercase text-[#024BAB]">
                                   Option A — Browser Terminal (Tablet / Kiosk)
                                 </span>
                               </div>
@@ -1078,7 +1078,7 @@ export default function BiometricPage() {
                             <div className="p-3 bg-gray-50 border-2 border-gray-200">
                               <div className="flex items-center gap-2 mb-2">
                                 <Terminal className="w-4 h-4 text-gray-600" />
-                                <span className="text-xs font-black uppercase text-gray-600">
+                                <span className="text-xs font-bold uppercase text-gray-600">
                                   Option B — Hardware Device / Local Agent
                                 </span>
                               </div>
@@ -1092,7 +1092,7 @@ export default function BiometricPage() {
                               </p>
                               <div className="space-y-2">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xs font-black text-gray-500 w-28 shrink-0">
+                                  <span className="text-xs font-bold text-gray-500 w-28 shrink-0">
                                     Server URL
                                   </span>
                                   <code className="flex-1 text-xs font-mono bg-white border border-gray-200 px-2 py-1 text-gray-700 truncate">
@@ -1111,10 +1111,10 @@ export default function BiometricPage() {
                                   </button>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xs font-black text-gray-500 w-28 shrink-0">
+                                  <span className="text-xs font-bold text-gray-500 w-28 shrink-0">
                                     Activation Code
                                   </span>
-                                  <code className="flex-1 text-sm font-mono font-black bg-white border-2 border-black px-2 py-1 text-black tracking-widest">
+                                  <code className="flex-1 text-sm font-mono font-bold bg-white border-2 border-black px-2 py-1 text-black tracking-widest">
                                     {selectedDevice.activationCode || "——"}
                                   </code>
                                   <button
@@ -1144,7 +1144,7 @@ export default function BiometricPage() {
                               onClick={() =>
                                 handleRegenerateToken(selectedDevice._id)
                               }
-                              className="flex items-center gap-1 text-xs font-black text-red-500 hover:underline"
+                              className="flex items-center gap-1 text-xs font-bold text-red-500 hover:underline"
                             >
                               <RefreshCw className="w-3 h-3" /> Regenerate token
                               (invalidates both URLs)
@@ -1154,7 +1154,7 @@ export default function BiometricPage() {
 
                         <div className="p-5">
                           <div className="flex items-center justify-between mb-4">
-                            <h4 className="font-black flex items-center gap-2">
+                            <h4 className="font-bold flex items-center gap-2">
                               <CreditCard className="w-4 h-4" /> NFC Cards
                               <span className="text-xs font-medium text-gray-500">
                                 ({selectedDevice.nfcCards.length}/10)
@@ -1164,13 +1164,13 @@ export default function BiometricPage() {
 
                           {selectedDevice.nfcCards.length < 10 && (
                             <div className="border-2 border-dashed border-gray-300 p-4 mb-4">
-                              <p className="text-xs font-black uppercase mb-3 text-gray-500">
+                              <p className="text-xs font-bold uppercase mb-3 text-gray-500">
                                 Assign New Card
                               </p>
                               <div className="grid grid-cols-1 gap-3">
                                 <div className="grid grid-cols-2 gap-3">
                                   <div>
-                                    <label className="block text-xs font-black uppercase mb-1">
+                                    <label className="block text-xs font-bold uppercase mb-1">
                                       NFC Card UID *
                                     </label>
                                     <input
@@ -1186,7 +1186,7 @@ export default function BiometricPage() {
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-black uppercase mb-1">
+                                    <label className="block text-xs font-bold uppercase mb-1">
                                       Label (optional)
                                     </label>
                                     <input
@@ -1203,7 +1203,7 @@ export default function BiometricPage() {
                                   </div>
                                 </div>
                                 <div>
-                                  <label className="block text-xs font-black uppercase mb-1">
+                                  <label className="block text-xs font-bold uppercase mb-1">
                                     Employee *
                                   </label>
                                   <select
@@ -1228,7 +1228,7 @@ export default function BiometricPage() {
                                 <button
                                   onClick={handleAssignNfc}
                                   disabled={!nfcForm.uid || !nfcForm.employeeId}
-                                  className="bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-black text-xs uppercase disabled:opacity-50"
+                                  className="bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-bold text-xs uppercase disabled:opacity-50"
                                 >
                                   Assign Card
                                 </button>
@@ -1252,7 +1252,7 @@ export default function BiometricPage() {
                                       <CreditCard className="w-4 h-4 text-white" />
                                     </div>
                                     <div>
-                                      <p className="font-black text-sm font-mono">
+                                      <p className="font-bold text-sm font-mono">
                                         {card.uid}
                                       </p>
                                       <p className="text-xs text-gray-500 font-medium">
@@ -1286,7 +1286,7 @@ export default function BiometricPage() {
             <div>
               <div className="border-2 border-black bg-white mb-6">
                 <div className="flex items-center justify-between p-4 border-b-2 border-black">
-                  <h3 className="font-black text-sm text-black uppercase tracking-wider">
+                  <h3 className="font-bold text-sm text-black uppercase tracking-wider">
                     Device Sync Log
                   </h3>
                 </div>
@@ -1298,7 +1298,7 @@ export default function BiometricPage() {
                           (h) => (
                             <th
                               key={h}
-                              className="px-4 py-3 text-left text-xs font-black text-black uppercase tracking-wider"
+                              className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider"
                             >
                               {h}
                             </th>
@@ -1386,7 +1386,7 @@ export default function BiometricPage() {
                 />
                 <button
                   onClick={fetchLogs}
-                  className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-black text-sm uppercase"
+                  className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-bold text-sm uppercase"
                 >
                   <RefreshCw className="w-4 h-4" /> Refresh
                 </button>
@@ -1399,7 +1399,7 @@ export default function BiometricPage() {
               ) : logs.length === 0 ? (
                 <div className="text-center py-12 bg-white border-2 border-black">
                   <Activity className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="font-black text-gray-500">
+                  <p className="font-bold text-gray-500">
                     No biometric activity found
                   </p>
                 </div>
@@ -1408,22 +1408,22 @@ export default function BiometricPage() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b-2 border-black bg-[#024BAB] text-white">
-                        <th className="text-left px-4 py-3 text-xs font-black uppercase">
+                        <th className="text-left px-4 py-3 text-xs font-bold uppercase">
                           Employee
                         </th>
-                        <th className="text-left px-4 py-3 text-xs font-black uppercase">
+                        <th className="text-left px-4 py-3 text-xs font-bold uppercase">
                           Location
                         </th>
-                        <th className="text-left px-4 py-3 text-xs font-black uppercase">
+                        <th className="text-left px-4 py-3 text-xs font-bold uppercase">
                           Device
                         </th>
-                        <th className="text-left px-4 py-3 text-xs font-black uppercase">
+                        <th className="text-left px-4 py-3 text-xs font-bold uppercase">
                           Method
                         </th>
-                        <th className="text-left px-4 py-3 text-xs font-black uppercase">
+                        <th className="text-left px-4 py-3 text-xs font-bold uppercase">
                           Type
                         </th>
-                        <th className="text-left px-4 py-3 text-xs font-black uppercase">
+                        <th className="text-left px-4 py-3 text-xs font-bold uppercase">
                           Time
                         </th>
                       </tr>
@@ -1438,7 +1438,7 @@ export default function BiometricPage() {
                           )}
                         >
                           <td className="px-4 py-3">
-                            <p className="font-black text-sm">
+                            <p className="font-bold text-sm">
                               {log.employee.firstName} {log.employee.lastName}
                             </p>
                             <p className="text-xs text-gray-500 font-mono">
@@ -1457,7 +1457,7 @@ export default function BiometricPage() {
                           <td className="px-4 py-3">
                             <span
                               className={cn(
-                                "text-xs font-black uppercase px-2 py-0.5 border-2",
+                                "text-xs font-bold uppercase px-2 py-0.5 border-2",
                                 log.method === "nfc"
                                   ? "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB]"
                                   : log.method === "face"
@@ -1480,7 +1480,7 @@ export default function BiometricPage() {
                           <td className="px-4 py-3">
                             <span
                               className={cn(
-                                "text-xs font-black uppercase px-2 py-0.5 border-2 flex items-center gap-1 w-fit",
+                                "text-xs font-bold uppercase px-2 py-0.5 border-2 flex items-center gap-1 w-fit",
                                 log.type === "check_in"
                                   ? "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]"
                                   : "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C]",
@@ -1511,8 +1511,8 @@ export default function BiometricPage() {
           {tab === "adms" && (
             <div className="space-y-6">
               <div className="border-2 border-black p-5">
-                <h2 className="font-display font-black text-base mb-4 flex items-center gap-2">
-                  <span className="w-6 h-6 bg-black text-white text-xs font-black flex items-center justify-center">
+                <h2 className="font-display font-bold text-base mb-4 flex items-center gap-2">
+                  <span className="w-6 h-6 bg-black text-white text-xs font-bold flex items-center justify-center">
                     1
                   </span>
                   Select Device (ESSL MB-20 / ZKTeco)
@@ -1531,7 +1531,7 @@ export default function BiometricPage() {
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <Cpu className="w-4 h-4" />
-                        <span className="font-black text-sm">{d.name}</span>
+                        <span className="font-bold text-sm">{d.name}</span>
                         {(d as any).serialNumber && (
                           <span className="ml-auto text-[10px] font-mono bg-[#00C48C]/10 text-[#00C48C] px-1.5 py-0.5 border-2 border-[#00C48C]">
                             SN: {(d as any).serialNumber}
@@ -1559,8 +1559,8 @@ export default function BiometricPage() {
               {admsDevice && (
                 <>
                   <div className="border-2 border-black p-5">
-                    <h2 className="font-display font-black text-base mb-1 flex items-center gap-2">
-                      <span className="w-6 h-6 bg-black text-white text-xs font-black flex items-center justify-center">
+                    <h2 className="font-display font-bold text-base mb-1 flex items-center gap-2">
+                      <span className="w-6 h-6 bg-black text-white text-xs font-bold flex items-center justify-center">
                         2
                       </span>
                       Register ADMS Serial Number
@@ -1573,7 +1573,7 @@ export default function BiometricPage() {
                     </p>
                     <div className="flex gap-3 items-end max-w-md">
                       <div className="flex-1">
-                        <label className="block text-xs font-black uppercase mb-1">
+                        <label className="block text-xs font-bold uppercase mb-1">
                           Serial Number (SN)
                         </label>
                         <input
@@ -1588,7 +1588,7 @@ export default function BiometricPage() {
                       <button
                         onClick={handleSaveSerial}
                         disabled={serialSaving || !admsSerial.trim()}
-                        className="border-2 bg-[#024BAB] text-white px-4 py-2 font-black text-sm disabled:opacity-40 flex items-center gap-2"
+                        className="border-2 bg-[#024BAB] text-white px-4 py-2 font-bold text-sm disabled:opacity-40 flex items-center gap-2"
                       >
                         {serialSaving ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -1609,8 +1609,8 @@ export default function BiometricPage() {
                   <div className="border-2 border-black">
                     <div className="px-5 py-4 border-b-2 border-black flex items-center justify-between">
                       <div>
-                        <h2 className="font-display font-black text-base flex items-center gap-2">
-                          <span className="w-6 h-6 bg-black text-white text-xs font-black flex items-center justify-center">
+                        <h2 className="font-display font-bold text-base flex items-center gap-2">
+                          <span className="w-6 h-6 bg-black text-white text-xs font-bold flex items-center justify-center">
                             3
                           </span>
                           Employees — Assign IDs & Sync to Device
@@ -1625,7 +1625,7 @@ export default function BiometricPage() {
                         disabled={
                           syncingAll || !(admsDevice as any).serialNumber
                         }
-                        className="border-2 bg-[#024BAB] text-white px-4 py-2 font-black text-xs disabled:opacity-40 flex items-center gap-2 shrink-0"
+                        className="border-2 bg-[#024BAB] text-white px-4 py-2 font-bold text-xs disabled:opacity-40 flex items-center gap-2 shrink-0"
                       >
                         {syncingAll ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1645,16 +1645,16 @@ export default function BiometricPage() {
                         <table className="w-full text-sm">
                           <thead>
                             <tr className="border-b-2 border-black bg-gray-50">
-                              <th className="text-left px-4 py-3 font-black text-xs uppercase">
+                              <th className="text-left px-4 py-3 font-bold text-xs uppercase">
                                 Employee
                               </th>
-                              <th className="text-left px-4 py-3 font-black text-xs uppercase">
+                              <th className="text-left px-4 py-3 font-bold text-xs uppercase">
                                 Device User ID
                               </th>
-                              <th className="text-left px-4 py-3 font-black text-xs uppercase">
+                              <th className="text-left px-4 py-3 font-bold text-xs uppercase">
                                 RFID Card
                               </th>
-                              <th className="text-right px-4 py-3 font-black text-xs uppercase">
+                              <th className="text-right px-4 py-3 font-bold text-xs uppercase">
                                 Actions
                               </th>
                             </tr>
@@ -1751,7 +1751,7 @@ export default function BiometricPage() {
                                         onClick={() => setFaceEnrollEmp(emp)}
                                         title="Enroll face via PC webcam"
                                         className={cn(
-                                          " px-2 py-1.5 text-[10px] font-black flex items-center gap-1 border-2",
+                                          " px-2 py-1.5 text-[10px] font-bold flex items-center gap-1 border-2",
                                           emp.faceDescriptor?.length === 128
                                             ? "bg-purple-100 border-purple-400 text-purple-800"
                                             : "bg-white border-black hover:bg-gray-50",
@@ -1768,7 +1768,7 @@ export default function BiometricPage() {
                                         <button
                                           onClick={() => setFpEnrollEmp(emp)}
                                           title="Trigger fingerprint enrollment on device"
-                                          className=" px-2 py-1.5 text-[10px] font-black flex items-center gap-1 bg-white border-2 border-black hover:bg-gray-50"
+                                          className=" px-2 py-1.5 text-[10px] font-bold flex items-center gap-1 bg-white border-2 border-black hover:bg-gray-50"
                                         >
                                           <Fingerprint className="w-3 h-3" /> FP
                                           Enroll
@@ -1783,7 +1783,7 @@ export default function BiometricPage() {
                                               handleTriggerFaceEnroll(emp)
                                             }
                                             title="Send command to device — employee stands in front of device to scan face"
-                                            className=" px-2 py-1.5 text-[10px] font-black flex items-center gap-1 bg-green-50 border-2 border-green-600 text-green-800 hover:bg-green-100"
+                                            className=" px-2 py-1.5 text-[10px] font-bold flex items-center gap-1 bg-green-50 border-2 border-green-600 text-green-800 hover:bg-green-100"
                                           >
                                             <Scan className="w-3 h-3" />{" "}
                                             {emp.deviceFaceTemplate
@@ -1796,7 +1796,7 @@ export default function BiometricPage() {
                                                 handlePushFaceTemplate(emp)
                                               }
                                               title="Push stored face template to this device (for employees enrolled on another device)"
-                                              className=" px-2 py-1.5 text-[10px] font-black flex items-center gap-1 bg-blue-50 border-2 border-blue-600 text-blue-800 hover:bg-blue-100"
+                                              className=" px-2 py-1.5 text-[10px] font-bold flex items-center gap-1 bg-blue-50 border-2 border-blue-600 text-blue-800 hover:bg-blue-100"
                                             >
                                               <Scan className="w-3 h-3" /> Push
                                               Face
@@ -1815,7 +1815,7 @@ export default function BiometricPage() {
                                             syncingId === emp._id ||
                                             !(admsDevice as any).serialNumber
                                           }
-                                          className="border-2 bg-[#024BAB] text-white px-2 py-1.5 text-[10px] font-black disabled:opacity-40 flex items-center gap-1"
+                                          className="border-2 bg-[#024BAB] text-white px-2 py-1.5 text-[10px] font-bold disabled:opacity-40 flex items-center gap-1"
                                         >
                                           {syncingId === emp._id ? (
                                             <Loader2 className="w-3 h-3 animate-spin" />
@@ -1843,12 +1843,12 @@ export default function BiometricPage() {
                   {/* Command queue status */}
                   <div className="border-2 border-black">
                     <div className="px-5 py-4 border-b-2 border-black flex items-center justify-between">
-                      <h2 className="font-display font-black text-base flex items-center gap-2">
+                      <h2 className="font-display font-bold text-base flex items-center gap-2">
                         <Terminal className="w-4 h-4" /> Command Queue
                       </h2>
                       <button
                         onClick={() => fetchCommands(admsDevice._id)}
-                        className=" bg-white border-2 border-black px-3 py-1.5 text-xs font-black flex items-center gap-1.5"
+                        className=" bg-white border-2 border-black px-3 py-1.5 text-xs font-bold flex items-center gap-1.5"
                       >
                         <RefreshCw className="w-3 h-3" /> Refresh
                       </button>
@@ -1866,19 +1866,19 @@ export default function BiometricPage() {
                         <table className="w-full text-xs">
                           <thead>
                             <tr className="border-b-2 border-black bg-gray-50">
-                              <th className="text-left px-4 py-2 font-black uppercase">
+                              <th className="text-left px-4 py-2 font-bold uppercase">
                                 ID
                               </th>
-                              <th className="text-left px-4 py-2 font-black uppercase">
+                              <th className="text-left px-4 py-2 font-bold uppercase">
                                 Type
                               </th>
-                              <th className="text-left px-4 py-2 font-black uppercase">
+                              <th className="text-left px-4 py-2 font-bold uppercase">
                                 Employee
                               </th>
-                              <th className="text-left px-4 py-2 font-black uppercase">
+                              <th className="text-left px-4 py-2 font-bold uppercase">
                                 Status
                               </th>
-                              <th className="text-left px-4 py-2 font-black uppercase">
+                              <th className="text-left px-4 py-2 font-bold uppercase">
                                 Created
                               </th>
                             </tr>
@@ -1900,7 +1900,7 @@ export default function BiometricPage() {
                                 <td className="px-4 py-2">
                                   <span
                                     className={cn(
-                                      "px-2 py-0.5 border-2 font-black text-[10px] uppercase",
+                                      "px-2 py-0.5 border-2 font-bold text-[10px] uppercase",
                                       cmd.status === "done" &&
                                         "bg-[#00C48C]/10 border-[#00C48C] text-[#00C48C]",
                                       cmd.status === "pending" &&
@@ -1961,7 +1961,7 @@ export default function BiometricPage() {
             <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
               <div className="border-2 border-black w-full max-w-md bg-white">
                 <div className="px-6 py-4 border-b-2 border-black flex items-center justify-between">
-                  <h2 className="font-display font-black text-base flex items-center gap-2">
+                  <h2 className="font-display font-bold text-base flex items-center gap-2">
                     <Scan className="w-4 h-4" /> Scan RFID Card
                   </h2>
                   <button
@@ -1973,7 +1973,7 @@ export default function BiometricPage() {
                 </div>
                 <div className="p-6 space-y-4">
                   <div className="bg-blue-50 border-2 border-blue-300 p-4">
-                    <p className="font-black text-sm text-blue-800">
+                    <p className="font-bold text-sm text-blue-800">
                       Employee: {rfidModalEmp.firstName} {rfidModalEmp.lastName}
                     </p>
                     <p className="text-xs text-blue-600 mt-0.5">
@@ -1983,7 +1983,7 @@ export default function BiometricPage() {
 
                   {/* Option A: USB HID reader — captures as keyboard input */}
                   <div>
-                    <p className="text-xs font-black uppercase mb-2 text-gray-600">
+                    <p className="text-xs font-bold uppercase mb-2 text-gray-600">
                       Option A — USB RFID Reader
                     </p>
                     <p className="text-xs text-gray-500 mb-3">
@@ -2015,7 +2015,7 @@ export default function BiometricPage() {
 
                   {/* Option B: manual entry */}
                   <div>
-                    <p className="text-xs font-black uppercase mb-2 text-gray-600">
+                    <p className="text-xs font-bold uppercase mb-2 text-gray-600">
                       Option B — Manual Entry
                     </p>
                     <input
@@ -2030,7 +2030,7 @@ export default function BiometricPage() {
                     <button
                       onClick={() => handleSaveRfid(rfidBuffer)}
                       disabled={!rfidBuffer.trim() || rfidSaving}
-                      className="flex-1 border-2 bg-[#024BAB] text-white py-2.5 font-black text-sm disabled:opacity-40 flex items-center justify-center gap-2"
+                      className="flex-1 border-2 bg-[#024BAB] text-white py-2.5 font-bold text-sm disabled:opacity-40 flex items-center justify-center gap-2"
                     >
                       {rfidSaving ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -2041,7 +2041,7 @@ export default function BiometricPage() {
                     </button>
                     <button
                       onClick={() => setRfidModalEmp(null)}
-                      className=" bg-white border-2 border-black px-5 py-2.5 font-black text-sm"
+                      className=" bg-white border-2 border-black px-5 py-2.5 font-bold text-sm"
                     >
                       Cancel
                     </button>

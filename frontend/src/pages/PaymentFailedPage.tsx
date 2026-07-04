@@ -23,7 +23,7 @@ export default function PaymentFailedPage() {
           <div className="w-9 h-9 bg-[#024BAB] border-2 border-black flex items-center justify-center">
             <Zap className="w-5 h-5 text-white" />
           </div>
-          <span className="font-display font-black text-xl text-black">
+          <span className="font-display font-bold text-xl text-black">
             NestHR
           </span>
         </div>
@@ -35,7 +35,7 @@ export default function PaymentFailedPage() {
             {}
             <div className="bg-red-500 border-b-2 border-black p-6 text-center">
               <AlertTriangle className="w-12 h-12 text-white mx-auto mb-3" />
-              <h1 className="font-black text-2xl text-white">Payment Failed</h1>
+              <h1 className="font-bold text-2xl text-white">Payment Failed</h1>
               <p className="text-red-100 font-medium text-sm mt-1">
                 Your subscription has not been activated
               </p>
@@ -49,7 +49,7 @@ export default function PaymentFailedPage() {
 
             {}
             <div className="p-5 bg-[#FFF8F0] border-b-2 border-black">
-              <p className="text-xs font-black uppercase text-gray-500 mb-3">
+              <p className="text-xs font-bold uppercase text-gray-500 mb-3">
                 Common causes
               </p>
               <ul className="space-y-1 text-xs font-medium text-gray-600">
@@ -64,14 +64,14 @@ export default function PaymentFailedPage() {
             <div className="p-6 space-y-3">
               <button
                 onClick={() => navigate("/onboarding")}
-                className="w-full bg-[#024BAB] text-white border-2 border-black font-black uppercase text-sm px-4 py-3 flex items-center justify-center gap-2 hover:bg-[#023590] transition-all"
+                className="w-full bg-[#024BAB] text-white border-2 border-black font-bold uppercase text-sm px-4 py-3 flex items-center justify-center gap-2 hover:bg-[#023590] transition-all"
               >
                 <RotateCcw className="w-4 h-4" />
                 Try Again
               </button>
               <button
                 onClick={() => navigate("/onboarding")}
-                className="w-full bg-white text-black border-2 border-black font-black uppercase text-sm px-4 py-3 flex items-center justify-center gap-2 hover:bg-gray-50 transition-all"
+                className="w-full bg-white text-black border-2 border-black font-bold uppercase text-sm px-4 py-3 flex items-center justify-center gap-2 hover:bg-gray-50 transition-all"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Back to Plans

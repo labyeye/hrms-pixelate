@@ -89,7 +89,7 @@ export default function CompanyDetailsForm({
 
       {}
       <div className="space-y-2">
-        <label className="block text-xs font-black uppercase tracking-wider text-black">
+        <label className="block text-xs font-bold uppercase tracking-wider text-black">
           Company Name *
         </label>
         <input
@@ -105,7 +105,7 @@ export default function CompanyDetailsForm({
 
       {}
       <div className="space-y-2">
-        <label className="block text-xs font-black uppercase tracking-wider text-black">
+        <label className="block text-xs font-bold uppercase tracking-wider text-black">
           Company Email
         </label>
         <input
@@ -119,7 +119,7 @@ export default function CompanyDetailsForm({
 
       {}
       <div className="space-y-2">
-        <label className="block text-xs font-black uppercase tracking-wider text-black">
+        <label className="block text-xs font-bold uppercase tracking-wider text-black">
           Phone *
         </label>
         <input
@@ -136,7 +136,7 @@ export default function CompanyDetailsForm({
 
       {}
       <div className="space-y-2">
-        <label className="block text-xs font-black uppercase tracking-wider text-black">
+        <label className="block text-xs font-bold uppercase tracking-wider text-black">
           Industry
         </label>
         <input
@@ -150,7 +150,7 @@ export default function CompanyDetailsForm({
 
       {}
       <div className="space-y-2">
-        <label className="block text-xs font-black uppercase tracking-wider text-black">
+        <label className="block text-xs font-bold uppercase tracking-wider text-black">
           Website
         </label>
         <input
@@ -164,7 +164,7 @@ export default function CompanyDetailsForm({
 
       {}
       <div className="space-y-2">
-        <label className="block text-xs font-black uppercase tracking-wider text-black">
+        <label className="block text-xs font-bold uppercase tracking-wider text-black">
           GST Number
         </label>
         <input
@@ -180,7 +180,7 @@ export default function CompanyDetailsForm({
 
       {}
       <div className="space-y-2">
-        <label className="block text-xs font-black uppercase tracking-wider text-black">
+        <label className="block text-xs font-bold uppercase tracking-wider text-black">
           PAN Number
         </label>
         <input
@@ -198,7 +198,7 @@ export default function CompanyDetailsForm({
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-[#024BAB] border-2 border-black text-white font-black uppercase text-sm px-4 py-3 hover:bg-[#023590] disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+        className="w-full bg-[#024BAB] border-2 border-black text-white font-bold uppercase text-sm px-4 py-3 hover:bg-[#023590] disabled:opacity-60 disabled:cursor-not-allowed transition-all"
       >
         {loading ? (
           <span className="flex items-center justify-center gap-2">

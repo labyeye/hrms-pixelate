@@ -50,7 +50,7 @@ function NumField({
 }) {
   return (
     <div>
-      <label className="block text-xs font-black uppercase mb-1 text-gray-600">
+      <label className="block text-xs font-bold uppercase mb-1 text-gray-600">
         {label}
       </label>
       <div className="relative">
@@ -87,7 +87,7 @@ function Toggle({
   return (
     <div className="flex items-center justify-between py-2">
       <div>
-        <p className="text-sm font-black">{label}</p>
+        <p className="text-sm font-bold">{label}</p>
         {description && <p className="text-xs text-gray-500">{description}</p>}
       </div>
       <button
@@ -157,7 +157,7 @@ export default function PayrollSettingsPage() {
     <AppLayout title="Payroll Settings">
       <div className="w-full mx-auto">
         <div className="mb-6">
-          <h1 className="font-display font-black text-3xl text-black">
+          <h1 className="font-display font-bold text-3xl text-black">
             Payroll Settings
           </h1>
           <p className="text-gray-600 font-medium mt-1">
@@ -178,7 +178,7 @@ export default function PayrollSettingsPage() {
                 <div className="flex items-center gap-3">
                   <ShieldAlert className="w-5 h-5 text-[#024BAB]" />
                   <div>
-                    <h2 className="font-black text-base">
+                    <h2 className="font-bold text-base">
                       Attendance Deduction Rules
                     </h2>
                     <p className="text-xs text-gray-500">
@@ -192,7 +192,7 @@ export default function PayrollSettingsPage() {
               <div className="p-5 space-y-6">
                 {/* Late deduction */}
                 <div>
-                  <p className="text-xs font-black uppercase mb-3">
+                  <p className="text-xs font-bold uppercase mb-3">
                     Late Arrival
                   </p>
                   <div className="grid grid-cols-3 gap-4">
@@ -203,7 +203,7 @@ export default function PayrollSettingsPage() {
                       hint={`On time if in by ${fmt(rules.shiftStartHour, rules.shiftStartMinute + rules.lateThresholdMinutes)}`}
                     />
                     <div>
-                      <label className="block text-xs font-black uppercase mb-1 text-gray-600">
+                      <label className="block text-xs font-bold uppercase mb-1 text-gray-600">
                         Deduction Type
                       </label>
                       <select
@@ -211,8 +211,7 @@ export default function PayrollSettingsPage() {
                         onChange={(e) =>
                           set({
                             lateDeductionType: e.target.value as
-                              | "fixed"
-                              | "percent",
+                              "fixed" | "percent",
                           })
                         }
                         className="w-full border-2 border-black px-3 py-2 text-sm bg-white focus:outline-none"
@@ -238,7 +237,7 @@ export default function PayrollSettingsPage() {
 
                 {/* Half-day threshold */}
                 <div className="border-t pt-5">
-                  <p className="text-xs font-black uppercase mb-3">
+                  <p className="text-xs font-bold uppercase mb-3">
                     Half-Day Rule
                   </p>
                   <NumField
@@ -253,7 +252,7 @@ export default function PayrollSettingsPage() {
                 <div className="border-t pt-5">
                   <div className="flex items-center gap-2 mb-3">
                     <LogOut className="w-4 h-4 text-[#024BAB]" />
-                    <p className="text-xs font-black uppercase">
+                    <p className="text-xs font-bold uppercase">
                       Early Checkout
                     </p>
                   </div>
@@ -282,7 +281,7 @@ export default function PayrollSettingsPage() {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-6 py-3 font-black text-sm uppercase disabled:opacity-60"
+              className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-6 py-3 font-bold text-sm uppercase disabled:opacity-60"
             >
               {saving ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

@@ -125,7 +125,7 @@ export default function LoginPage() {
 
         {}
         <div className="relative z-10">
-          <h1 className="text-4xl xl:text-5xl font-display font-black text-white leading-tight mb-5">
+          <h1 className="text-4xl xl:text-5xl font-display font-bold text-white leading-tight mb-5">
             Every employee.
             <br />
             Every payslip.
@@ -170,7 +170,7 @@ export default function LoginPage() {
               <div className="mb-8">
                 <div className="flex items-center gap-3 mb-2">
                   <ShieldCheck className="w-7 h-7 text-[#024BAB]" />
-                  <h2 className="text-2xl font-display font-black text-black">
+                  <h2 className="text-2xl font-display font-bold text-black">
                     Two-Factor Auth
                   </h2>
                 </div>
@@ -188,7 +188,7 @@ export default function LoginPage() {
 
               <form onSubmit={handle2FASubmit} className="space-y-5">
                 <div>
-                  <label className="block text-xs font-black text-black uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
                     Authenticator Code
                   </label>
                   <input
@@ -199,7 +199,7 @@ export default function LoginPage() {
                       setError("");
                     }}
                     placeholder="000000"
-                    className="w-full px-4 py-3 border-2 border-black text-lg font-black tracking-[0.5em] text-center bg-white focus:outline-none focus:border-[#024BAB] transition-colors"
+                    className="w-full px-4 py-3 border-2 border-black text-lg font-bold tracking-[0.5em] text-center bg-white focus:outline-none focus:border-[#024BAB] transition-colors"
                     autoFocus
                     maxLength={8}
                   />
@@ -210,7 +210,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading || tfaCode.length < 6}
-                  className="w-full bg-[#024BAB] text-white py-3.5 text-sm font-black border-2 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#0a0a0a] transition-all flex items-center justify-center gap-2"
+                  className="w-full bg-[#024BAB] text-white py-3.5 text-sm font-bold border-2 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#0a0a0a] transition-all flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
@@ -230,7 +230,7 @@ export default function LoginPage() {
                     setError("");
                     setTfaCode("");
                   }}
-                  className="w-full py-2 text-xs font-black text-gray-500 hover:text-black transition-colors"
+                  className="w-full py-2 text-xs font-bold text-gray-500 hover:text-black transition-colors"
                 >
                   ← Back to login
                 </button>
@@ -242,7 +242,7 @@ export default function LoginPage() {
               <div className="mb-8">
                 <div className="flex items-center gap-3 mb-2">
                   <Smartphone className="w-7 h-7 text-[#024BAB]" />
-                  <h2 className="text-2xl font-display font-black text-black">
+                  <h2 className="text-2xl font-display font-bold text-black">
                     {otpSent ? "Enter OTP" : "Phone Login"}
                   </h2>
                 </div>
@@ -263,7 +263,7 @@ export default function LoginPage() {
               {!otpSent ? (
                 <form onSubmit={handleSendOtp} className="space-y-5">
                   <div>
-                    <label className="block text-xs font-black text-black uppercase tracking-wider mb-1.5">
+                    <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
                       Phone Number
                     </label>
                     <input
@@ -282,7 +282,7 @@ export default function LoginPage() {
                   <button
                     type="submit"
                     disabled={otpLoading || !phone.trim()}
-                    className="w-full bg-[#024BAB] text-white py-3.5 text-sm font-black border-2 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#0a0a0a] transition-all flex items-center justify-center gap-2"
+                    className="w-full bg-[#024BAB] text-white py-3.5 text-sm font-bold border-2 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#0a0a0a] transition-all flex items-center justify-center gap-2"
                   >
                     {otpLoading ? (
                       <>
@@ -302,7 +302,7 @@ export default function LoginPage() {
                       setError("");
                       setPhone("");
                     }}
-                    className="w-full py-2 text-xs font-black text-gray-500 hover:text-black transition-colors"
+                    className="w-full py-2 text-xs font-bold text-gray-500 hover:text-black transition-colors"
                   >
                     ← Sign in with Email
                   </button>
@@ -310,7 +310,7 @@ export default function LoginPage() {
               ) : (
                 <form onSubmit={handleVerifyOtp} className="space-y-5">
                   <div>
-                    <label className="block text-xs font-black text-black uppercase tracking-wider mb-1.5">
+                    <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
                       WhatsApp OTP
                     </label>
                     <input
@@ -321,7 +321,7 @@ export default function LoginPage() {
                         setError("");
                       }}
                       placeholder="000000"
-                      className="w-full px-4 py-3 border-2 border-black text-lg font-black tracking-[0.5em] text-center bg-white focus:outline-none focus:border-[#024BAB] transition-colors"
+                      className="w-full px-4 py-3 border-2 border-black text-lg font-bold tracking-[0.5em] text-center bg-white focus:outline-none focus:border-[#024BAB] transition-colors"
                       autoFocus
                       maxLength={6}
                     />
@@ -329,7 +329,7 @@ export default function LoginPage() {
                   <button
                     type="submit"
                     disabled={otpLoading || otp.length < 6}
-                    className="w-full bg-[#024BAB] text-white py-3.5 text-sm font-black border-2 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#0a0a0a] transition-all flex items-center justify-center gap-2"
+                    className="w-full bg-[#024BAB] text-white py-3.5 text-sm font-bold border-2 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#0a0a0a] transition-all flex items-center justify-center gap-2"
                   >
                     {otpLoading ? (
                       <>
@@ -349,7 +349,7 @@ export default function LoginPage() {
                       setOtp("");
                       setError("");
                     }}
-                    className="w-full py-2 text-xs font-black text-gray-500 hover:text-black transition-colors"
+                    className="w-full py-2 text-xs font-bold text-gray-500 hover:text-black transition-colors"
                   >
                     ← Change number / Resend
                   </button>
@@ -361,7 +361,7 @@ export default function LoginPage() {
             <>
               {}
               <div className="mb-8">
-                <h2 className="text-2xl sm:text-3xl font-display font-black text-black">
+                <h2 className="text-2xl sm:text-3xl font-display font-bold text-black">
                   Welcome back
                 </h2>
                 <p className="text-sm text-gray-500 mt-1 font-medium">
@@ -380,7 +380,7 @@ export default function LoginPage() {
               <form onSubmit={handleSubmit} className="space-y-5">
                 {}
                 <div>
-                  <label className="block text-xs font-black text-black uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
                     Email
                   </label>
                   <input
@@ -400,7 +400,7 @@ export default function LoginPage() {
 
                 {}
                 <div>
-                  <label className="block text-xs font-black text-black uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
                     Password
                   </label>
                   <div className="flex border-2 border-black focus-within:border-[#024BAB] transition-colors">
@@ -434,7 +434,7 @@ export default function LoginPage() {
                 <div className="flex justify-end">
                   <Link
                     to="/forgot-password"
-                    className="text-xs font-black text-[#024BAB] hover:underline"
+                    className="text-xs font-bold text-[#024BAB] hover:underline"
                   >
                     Forgot password?
                   </Link>
@@ -444,7 +444,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-[#024BAB] text-white py-3.5 text-sm font-black border-2 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#0a0a0a] transition-all flex items-center justify-center gap-2 mt-2"
+                  className="w-full bg-[#024BAB] text-white py-3.5 text-sm font-bold border-2 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#0a0a0a] transition-all flex items-center justify-center gap-2 mt-2"
                 >
                   {loading ? (
                     <>
@@ -467,7 +467,7 @@ export default function LoginPage() {
                     setLoginMode("phone");
                     setError("");
                   }}
-                  className="inline-flex items-center gap-1.5 text-xs font-black text-[#024BAB] hover:underline"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-[#024BAB] hover:underline"
                 >
                   <Smartphone className="w-3.5 h-3.5" /> Login with Phone OTP
                   (WhatsApp)
@@ -480,7 +480,7 @@ export default function LoginPage() {
                   New to NestHR?{" "}
                   <Link
                     to="/register"
-                    className="font-black text-[#024BAB] hover:underline transition-colors"
+                    className="font-bold text-[#024BAB] hover:underline transition-colors"
                   >
                     Create an account
                   </Link>

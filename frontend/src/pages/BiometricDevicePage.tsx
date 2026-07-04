@@ -332,11 +332,11 @@ export default function BiometricDevicePage() {
       <div className="min-h-screen bg-[#0A0F1E] flex items-center justify-center p-6">
         <div className="text-center max-w-sm">
           <XCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h2 className="text-white font-black text-2xl mb-2">Device Error</h2>
+          <h2 className="text-white font-bold text-2xl mb-2">Device Error</h2>
           <p className="text-gray-400 mb-6">{error}</p>
           <button
             onClick={fetchDevice}
-            className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-white/20 px-6 py-3 font-black uppercase mx-auto"
+            className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-white/20 px-6 py-3 font-bold uppercase mx-auto"
           >
             <RefreshCw className="w-4 h-4" /> Retry
           </button>
@@ -353,9 +353,7 @@ export default function BiometricDevicePage() {
           <div className="w-7 h-7 bg-[#024BAB] border border-white/20 flex items-center justify-center">
             <Zap className="w-4 h-4 text-white" />
           </div>
-          <span className="text-white font-black text-sm">
-            NestHR Biometric
-          </span>
+          <span className="text-white font-bold text-sm">NestHR Biometric</span>
         </div>
         <div className="flex items-center gap-4 text-xs font-medium">
           <span
@@ -381,7 +379,7 @@ export default function BiometricDevicePage() {
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         {}
         <div className="text-center mb-8">
-          <h1 className="text-white font-black text-3xl">
+          <h1 className="text-white font-bold text-3xl">
             {device?.location?.name}
           </h1>
           {device?.location?.address && (
@@ -419,7 +417,7 @@ export default function BiometricDevicePage() {
                 setScanState("idle");
               }}
               className={cn(
-                "flex items-center gap-2 px-5 py-3 text-sm font-black uppercase transition-all border-r border-white/20 last:border-r-0",
+                "flex items-center gap-2 px-5 py-3 text-sm font-bold uppercase transition-all border-r border-white/20 last:border-r-0",
                 mode === m.id
                   ? "bg-[#024BAB] text-white"
                   : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white",
@@ -437,7 +435,7 @@ export default function BiometricDevicePage() {
           {scanState === "success" && result && (
             <div className="border-2 border-green-400 bg-green-950/50 p-8 text-center animate-pulse-once">
               <CheckCircle2 className="w-16 h-16 text-green-400 mx-auto mb-4" />
-              <h2 className="text-white font-black text-2xl mb-1">
+              <h2 className="text-white font-bold text-2xl mb-1">
                 {result.employee.name}
               </h2>
               <p className="text-green-400 font-mono text-sm mb-3">
@@ -445,7 +443,7 @@ export default function BiometricDevicePage() {
               </p>
               <div
                 className={cn(
-                  "inline-flex items-center gap-2 px-4 py-2 border font-black text-sm uppercase",
+                  "inline-flex items-center gap-2 px-4 py-2 border font-bold text-sm uppercase",
                   result.type === "check_in"
                     ? "border-green-400 text-green-400 bg-green-900/30"
                     : "border-orange-400 text-orange-400 bg-orange-900/30",
@@ -467,14 +465,14 @@ export default function BiometricDevicePage() {
           {scanState === "error" && (
             <div className="border-2 border-red-400 bg-red-950/50 p-8 text-center">
               <XCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-              <p className="text-red-300 font-black text-lg">{scanError}</p>
+              <p className="text-red-300 font-bold text-lg">{scanError}</p>
             </div>
           )}
 
           {scanState === "scanning" && (
             <div className="border-2 border-[#024BAB] bg-blue-950/50 p-8 text-center">
               <Loader2 className="w-16 h-16 text-[#024BAB] animate-spin mx-auto mb-4" />
-              <p className="text-white font-black text-lg">Processing...</p>
+              <p className="text-white font-bold text-lg">Processing...</p>
             </div>
           )}
 
@@ -514,7 +512,7 @@ export default function BiometricDevicePage() {
                   )}
                   {}
                   <div className="border-t border-white/10 pt-6">
-                    <p className="text-white/40 text-xs font-black uppercase mb-3">
+                    <p className="text-white/40 text-xs font-bold uppercase mb-3">
                       Manual Card UID
                     </p>
                     <div className="flex gap-2">
@@ -537,7 +535,7 @@ export default function BiometricDevicePage() {
                           doRecord({ method: "nfc", nfcUid: manualUid })
                         }
                         disabled={!manualUid}
-                        className="bg-[#024BAB] border-2 border-white/20 text-white px-4 py-2 font-black text-sm disabled:opacity-40"
+                        className="bg-[#024BAB] border-2 border-white/20 text-white px-4 py-2 font-bold text-sm disabled:opacity-40"
                       >
                         Scan
                       </button>
@@ -577,20 +575,20 @@ export default function BiometricDevicePage() {
                   {!cameraActive ? (
                     <button
                       onClick={startCamera}
-                      className="w-full bg-[#024BAB] border-2 border-white/20 text-white font-black uppercase py-3 mb-4"
+                      className="w-full bg-[#024BAB] border-2 border-white/20 text-white font-bold uppercase py-3 mb-4"
                     >
                       Start Camera
                     </button>
                   ) : (
                     <button
                       onClick={stopCamera}
-                      className="w-full bg-white/10 border-2 border-white/20 text-white font-black uppercase py-3 mb-4"
+                      className="w-full bg-white/10 border-2 border-white/20 text-white font-bold uppercase py-3 mb-4"
                     >
                       Stop Camera
                     </button>
                   )}
                   <div className="border-t border-white/10 pt-4">
-                    <p className="text-white/40 text-xs font-black uppercase mb-2">
+                    <p className="text-white/40 text-xs font-bold uppercase mb-2">
                       Select Employee
                     </p>
                     <select
@@ -618,7 +616,7 @@ export default function BiometricDevicePage() {
                         doRecord({ method: "face", employeeId: faceEmployeeId })
                       }
                       disabled={!faceEmployeeId}
-                      className="w-full bg-[#024BAB] border-2 border-white/20 text-white font-black uppercase py-3 disabled:opacity-40"
+                      className="w-full bg-[#024BAB] border-2 border-white/20 text-white font-bold uppercase py-3 disabled:opacity-40"
                     >
                       Record Attendance
                     </button>
@@ -629,7 +627,7 @@ export default function BiometricDevicePage() {
               {}
               {mode === "enroll" && (
                 <div className="text-center">
-                  <p className="text-white/60 text-sm font-black uppercase mb-4">
+                  <p className="text-white/60 text-sm font-bold uppercase mb-4">
                     Register Face for Employee
                   </p>
 
@@ -691,7 +689,7 @@ export default function BiometricDevicePage() {
                               !enrollSelectedEmp ||
                               enrollLoadState === "loading"
                             }
-                            className="w-full bg-[#024BAB] border-2 border-white/20 text-white font-black uppercase py-3 disabled:opacity-40 flex items-center justify-center gap-2"
+                            className="w-full bg-[#024BAB] border-2 border-white/20 text-white font-bold uppercase py-3 disabled:opacity-40 flex items-center justify-center gap-2"
                           >
                             {enrollLoadState === "loading" ? (
                               <>
@@ -726,7 +724,7 @@ export default function BiometricDevicePage() {
                         />
                         <div
                           className={cn(
-                            "absolute top-3 right-3 px-2 py-1 text-[10px] font-black uppercase border",
+                            "absolute top-3 right-3 px-2 py-1 text-[10px] font-bold uppercase border",
                             enrollLiveDetection
                               ? "bg-green-500 border-green-700 text-white"
                               : "bg-red-500 border-red-700 text-white",
@@ -738,7 +736,7 @@ export default function BiometricDevicePage() {
                       <button
                         onClick={handleEnrollCapture}
                         disabled={!enrollLiveDetection}
-                        className="w-full bg-[#024BAB] border-2 border-white/20 text-white font-black uppercase py-3 disabled:opacity-40 mb-2 flex items-center justify-center gap-2"
+                        className="w-full bg-[#024BAB] border-2 border-white/20 text-white font-bold uppercase py-3 disabled:opacity-40 mb-2 flex items-center justify-center gap-2"
                       >
                         <Camera className="w-4 h-4" />
                         {enrollLiveDetection
@@ -747,7 +745,7 @@ export default function BiometricDevicePage() {
                       </button>
                       <button
                         onClick={handleEnrollReset}
-                        className="w-full bg-white/10 border-2 border-white/20 text-white font-black uppercase py-2 text-sm"
+                        className="w-full bg-white/10 border-2 border-white/20 text-white font-bold uppercase py-2 text-sm"
                       >
                         Back
                       </button>
@@ -759,7 +757,7 @@ export default function BiometricDevicePage() {
                     <>
                       <div className="bg-green-950/50 border-2 border-green-400 p-6 mb-4 text-center">
                         <Check className="w-10 h-10 text-green-400 mx-auto mb-2" />
-                        <p className="font-black text-green-300">
+                        <p className="font-bold text-green-300">
                           Face captured!
                         </p>
                         <p className="text-xs text-green-500 mt-1">
@@ -768,13 +766,13 @@ export default function BiometricDevicePage() {
                       </div>
                       <button
                         onClick={handleEnrollSave}
-                        className="w-full bg-green-600 border-2 border-white/20 text-white font-black uppercase py-3 mb-2 flex items-center justify-center gap-2"
+                        className="w-full bg-green-600 border-2 border-white/20 text-white font-bold uppercase py-3 mb-2 flex items-center justify-center gap-2"
                       >
                         <Check className="w-4 h-4" /> Save Enrollment
                       </button>
                       <button
                         onClick={handleEnrollRetry}
-                        className="w-full bg-white/10 border-2 border-white/20 text-white font-black uppercase py-2 text-sm"
+                        className="w-full bg-white/10 border-2 border-white/20 text-white font-bold uppercase py-2 text-sm"
                       >
                         Retry Capture
                       </button>
@@ -785,7 +783,7 @@ export default function BiometricDevicePage() {
                   {enrollStep === "saving" && (
                     <div className="flex items-center justify-center gap-2 py-8">
                       <Loader2 className="w-6 h-6 animate-spin text-[#024BAB]" />
-                      <span className="text-white font-black">Saving…</span>
+                      <span className="text-white font-bold">Saving…</span>
                     </div>
                   )}
 
@@ -794,7 +792,7 @@ export default function BiometricDevicePage() {
                     <>
                       <div className="bg-green-950/50 border-2 border-green-400 p-6 mb-4 text-center">
                         <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-2" />
-                        <p className="font-black text-white text-lg">
+                        <p className="font-bold text-white text-lg">
                           Enrollment complete!
                         </p>
                         <p className="text-sm text-green-400 mt-1">
@@ -808,7 +806,7 @@ export default function BiometricDevicePage() {
                       </div>
                       <button
                         onClick={handleEnrollReset}
-                        className="w-full bg-[#024BAB] border-2 border-white/20 text-white font-black uppercase py-3"
+                        className="w-full bg-[#024BAB] border-2 border-white/20 text-white font-bold uppercase py-3"
                       >
                         Enroll Another
                       </button>
@@ -860,7 +858,7 @@ export default function BiometricDevicePage() {
                           }
                           className="bg-white/5 hover:bg-[#024BAB]/50 border-2 border-white/10 hover:border-[#024BAB] text-white text-left p-3 transition-all"
                         >
-                          <p className="font-black text-sm">
+                          <p className="font-bold text-sm">
                             {card.employee.firstName} {card.employee.lastName}
                           </p>
                           <p className="text-white/40 text-xs font-mono">

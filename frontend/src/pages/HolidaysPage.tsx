@@ -80,7 +80,7 @@ function TypeBadge({ type }: { type: Holiday["type"] }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 px-2 py-0.5 text-xs font-black uppercase border",
+        "inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold uppercase border",
         m.bg,
         m.border,
         m.text,
@@ -229,7 +229,7 @@ export default function HolidaysPage() {
         {}
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h1 className="font-display font-black text-3xl text-black">
+            <h1 className="font-display font-bold text-3xl text-black">
               Company Holidays
             </h1>
             <p className="text-gray-600 font-medium mt-1">
@@ -243,7 +243,7 @@ export default function HolidaysPage() {
                 resetForm();
                 setShowForm(true);
               }}
-              className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-black text-sm uppercase"
+              className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-bold text-sm uppercase"
             >
               <Plus className="w-4 h-4" /> Add Holiday
             </button>
@@ -255,14 +255,14 @@ export default function HolidaysPage() {
           <div className="flex items-center gap-0 border-2 border-black bg-white overflow-hidden">
             <button
               onClick={() => setYear((y) => y - 1)}
-              className="px-3 py-2 font-black text-lg hover:bg-gray-50 border-r-2 border-black"
+              className="px-3 py-2 font-bold text-lg hover:bg-gray-50 border-r-2 border-black"
             >
               ‹
             </button>
-            <span className="px-4 py-2 font-black text-base">{year}</span>
+            <span className="px-4 py-2 font-bold text-base">{year}</span>
             <button
               onClick={() => setYear((y) => y + 1)}
-              className="px-3 py-2 font-black text-lg hover:bg-gray-50 border-l-2 border-black"
+              className="px-3 py-2 font-bold text-lg hover:bg-gray-50 border-l-2 border-black"
             >
               ›
             </button>
@@ -280,7 +280,7 @@ export default function HolidaysPage() {
                 <div
                   key={t}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 border-2 text-sm font-black",
+                    "flex items-center gap-2 px-3 py-1.5 border-2 text-sm font-bold",
                     m.bg,
                     m.border,
                     m.text,
@@ -300,12 +300,12 @@ export default function HolidaysPage() {
         {}
         {showForm && canManage && (
           <div className="bg-white border-2 border-black p-6 mb-6">
-            <h3 className="font-black text-base mb-4">
+            <h3 className="font-bold text-base mb-4">
               {editingId ? "Edit Holiday" : "Add Holiday"}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-black uppercase mb-1">
+                <label className="block text-xs font-bold uppercase mb-1">
                   Holiday Name *
                 </label>
                 <input
@@ -319,7 +319,7 @@ export default function HolidaysPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-black uppercase mb-1">
+                <label className="block text-xs font-bold uppercase mb-1">
                   Date *
                 </label>
                 <input
@@ -333,7 +333,7 @@ export default function HolidaysPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-black uppercase mb-1">
+                <label className="block text-xs font-bold uppercase mb-1">
                   Type *
                 </label>
                 <select
@@ -358,7 +358,7 @@ export default function HolidaysPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-black uppercase mb-1">
+                <label className="block text-xs font-bold uppercase mb-1">
                   Description (optional)
                 </label>
                 <input
@@ -375,7 +375,7 @@ export default function HolidaysPage() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-black text-sm uppercase disabled:opacity-60"
+                className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-bold text-sm uppercase disabled:opacity-60"
               >
                 {saving ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -386,7 +386,7 @@ export default function HolidaysPage() {
               </button>
               <button
                 onClick={resetForm}
-                className="flex items-center gap-2 bg-white border-2 border-black px-4 py-2 font-black text-sm uppercase"
+                className="flex items-center gap-2 bg-white border-2 border-black px-4 py-2 font-bold text-sm uppercase"
               >
                 <X className="w-4 h-4" /> Cancel
               </button>
@@ -402,7 +402,7 @@ export default function HolidaysPage() {
         ) : holidays.length === 0 ? (
           <div className="text-center py-16 bg-white border-2 border-black">
             <CalendarDays className="w-14 h-14 text-gray-200 mx-auto mb-3" />
-            <p className="font-black text-gray-400 text-lg">
+            <p className="font-bold text-gray-400 text-lg">
               No holidays for {year}
             </p>
             {canManage && (
@@ -427,7 +427,7 @@ export default function HolidaysPage() {
                   ].map((h) => (
                     <th
                       key={h}
-                      className="px-4 py-3 text-left text-xs font-black text-white uppercase tracking-wider"
+                      className="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider"
                     >
                       {h}
                     </th>
@@ -448,7 +448,7 @@ export default function HolidaysPage() {
                           colSpan={canManage ? 7 : 6}
                           className="px-4 py-2 bg-[#024BAB]/5 border-t-2 border-[#024BAB]/20"
                         >
-                          <span className="text-xs font-black uppercase tracking-widest text-[#024BAB]">
+                          <span className="text-xs font-bold uppercase tracking-widest text-[#024BAB]">
                             {MONTHS[m]} · {grouped[m].length} holiday
                             {grouped[m].length > 1 ? "s" : ""}
                           </span>
@@ -475,12 +475,12 @@ export default function HolidaysPage() {
                                   m2.bg,
                                 )}
                               >
-                                <span className="text-[9px] font-black uppercase text-gray-500">
+                                <span className="text-[9px] font-bold uppercase text-gray-500">
                                   {dayName}
                                 </span>
                                 <span
                                   className={cn(
-                                    "text-lg font-black leading-none",
+                                    "text-lg font-bold leading-none",
                                     m2.text,
                                   )}
                                 >
@@ -499,7 +499,7 @@ export default function HolidaysPage() {
                               )}
                             </td>
                             <td className="px-4 py-3">
-                              <span className="font-black text-black">
+                              <span className="font-bold text-black">
                                 {h.name}
                               </span>
                             </td>
@@ -514,7 +514,7 @@ export default function HolidaysPage() {
                             <td className="px-4 py-3">
                               <span
                                 className={cn(
-                                  "text-xs font-black uppercase px-2 py-0.5 border",
+                                  "text-xs font-bold uppercase px-2 py-0.5 border",
                                   h.isActive
                                     ? "bg-green-50 text-green-700 border-green-300"
                                     : "bg-gray-50 text-gray-400 border-gray-200",
@@ -553,7 +553,7 @@ export default function HolidaysPage() {
 
         {}
         <div className="mt-6 p-4 bg-blue-50 border-2 border-[#024BAB]/20">
-          <p className="text-xs font-black uppercase text-[#024BAB] mb-2">
+          <p className="text-xs font-bold uppercase text-[#024BAB] mb-2">
             How holidays affect attendance
           </p>
           <ul className="text-xs text-gray-600 space-y-1 font-medium">

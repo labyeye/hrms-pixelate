@@ -93,8 +93,18 @@ export interface AttendanceRecord {
     | "manual"
     | "auto"
     | "geo_camera";
-  checkInLocation?: { lat: number; lng: number; accuracy?: number; distanceMeters?: number };
-  checkOutLocation?: { lat: number; lng: number; accuracy?: number; distanceMeters?: number };
+  checkInLocation?: {
+    lat: number;
+    lng: number;
+    accuracy?: number;
+    distanceMeters?: number;
+  };
+  checkOutLocation?: {
+    lat: number;
+    lng: number;
+    accuracy?: number;
+    distanceMeters?: number;
+  };
 }
 
 export interface LeaveRequest {

@@ -408,7 +408,7 @@ export default function DashboardPage() {
                         {label}
                       </span>
                     </div>
-                    <span className="text-xs font-black text-black">
+                    <span className="text-xs font-bold text-black">
                       {value}
                     </span>
                   </div>

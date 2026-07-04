@@ -89,7 +89,7 @@ export default function WelcomePage() {
           <div className="w-9 h-9 bg-[#024BAB] border-2 border-black flex items-center justify-center">
             <Zap className="w-5 h-5 text-white" />
           </div>
-          <span className="font-display font-black text-xl text-black">
+          <span className="font-display font-bold text-xl text-black">
             NestHR
           </span>
         </div>
@@ -121,16 +121,16 @@ export default function WelcomePage() {
                   <CheckCircle className="w-7 h-7 text-[#024BAB]" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-white/60 mb-0.5">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/60 mb-0.5">
                     Subscription Active
                   </p>
-                  <p className="text-white font-black text-lg leading-tight">
+                  <p className="text-white font-bold text-lg leading-tight">
                     {companyName} is ready to go
                   </p>
                 </div>
               </div>
 
-              <h1 className="font-display font-black text-3xl sm:text-4xl text-white leading-tight">
+              <h1 className="font-display font-bold text-3xl sm:text-4xl text-white leading-tight">
                 Welcome aboard,
                 <br />
                 <span className="text-[#FA731C]">{userName}!</span>
@@ -147,7 +147,7 @@ export default function WelcomePage() {
                 {countdown !== null ? (
                   <>
                     Redirecting to your dashboard in{" "}
-                    <span className="text-[#024BAB] font-black tabular-nums">
+                    <span className="text-[#024BAB] font-bold tabular-nums">
                       {countdown}s
                     </span>
                   </>
@@ -157,7 +157,7 @@ export default function WelcomePage() {
               </p>
               <button
                 onClick={() => navigate("/", { replace: true })}
-                className="flex items-center gap-2 bg-[#FA731C] text-white border-2 border-black font-black uppercase text-sm px-6 py-3 hover:bg-[#e06419] transition-all active:scale-95"
+                className="flex items-center gap-2 bg-[#FA731C] text-white border-2 border-black font-bold uppercase text-sm px-6 py-3 hover:bg-[#e06419] transition-all active:scale-95"
               >
                 Go to Dashboard
                 <ArrowRight className="w-4 h-4" />
@@ -175,7 +175,7 @@ export default function WelcomePage() {
               : "opacity-0 translate-y-8",
           )}
         >
-          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4">
             Everything included in your plan
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -193,7 +193,7 @@ export default function WelcomePage() {
                 >
                   <Icon className="w-4 h-4" style={{ color }} />
                 </div>
-                <span className="text-xs font-black text-black">{label}</span>
+                <span className="text-xs font-bold text-black">{label}</span>
               </div>
             ))}
           </div>
@@ -208,7 +208,7 @@ export default function WelcomePage() {
               : "opacity-0 translate-y-8",
           )}
         >
-          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-4">
             Quick setup checklist
           </p>
           <div className="bg-white border-2 border-black divide-y-2 divide-black">
@@ -218,10 +218,10 @@ export default function WelcomePage() {
                 className="flex items-center gap-5 px-6 py-5 hover:bg-[#F8FAFF] transition-colors cursor-default"
               >
                 <div className="w-10 h-10 bg-[#024BAB] border-2 border-black flex items-center justify-center shrink-0">
-                  <span className="text-white font-black text-xs">{num}</span>
+                  <span className="text-white font-bold text-xs">{num}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-black text-black">{title}</p>
+                  <p className="text-sm font-bold text-black">{title}</p>
                   <p className="text-xs text-gray-500 font-medium mt-0.5">
                     {desc}
                   </p>

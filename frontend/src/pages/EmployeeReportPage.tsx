@@ -181,7 +181,7 @@ export default function EmployeeReportPage() {
       <div className="w-full mx-auto">
         <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="font-display font-black text-3xl text-black">
+            <h1 className="font-display font-bold text-3xl text-black">
               My Report
             </h1>
             <p className="text-gray-600 font-medium mt-1">
@@ -215,7 +215,7 @@ export default function EmployeeReportPage() {
             <button
               onClick={handlePrint}
               disabled={records.length === 0}
-              className="flex items-center gap-1.5 border-2 border-black bg-[#024BAB] text-white px-4 py-2 text-sm font-black disabled:opacity-40 hover:bg-[#024BAB]/90 transition-colors"
+              className="flex items-center gap-1.5 border-2 border-black bg-[#024BAB] text-white px-4 py-2 text-sm font-bold disabled:opacity-40 hover:bg-[#024BAB]/90 transition-colors"
             >
               <Download className="w-4 h-4" />
               Export
@@ -268,8 +268,8 @@ export default function EmployeeReportPage() {
               className="bg-white border-2 border-black p-3 text-center"
             >
               <Icon className={`w-5 h-5 ${color} mx-auto mb-1`} />
-              <p className={`text-xl font-black ${color}`}>{value}</p>
-              <p className="text-[10px] font-black uppercase text-gray-400">
+              <p className={`text-xl font-bold ${color}`}>{value}</p>
+              <p className="text-[10px] font-bold uppercase text-gray-400">
                 {label}
               </p>
             </div>
@@ -280,7 +280,7 @@ export default function EmployeeReportPage() {
         {payroll && (
           <div className="bg-[#024BAB] border-2 border-black p-4 mb-6 flex flex-wrap items-center gap-6">
             <div>
-              <p className="text-[10px] font-black uppercase text-white/60">
+              <p className="text-[10px] font-bold uppercase text-white/60">
                 Payroll — {MONTHS[month - 1]} {year}
               </p>
               <p className="text-xs font-bold text-white capitalize">
@@ -302,10 +302,10 @@ export default function EmployeeReportPage() {
               },
             ].map(({ label, value }) => (
               <div key={label}>
-                <p className="text-[10px] font-black uppercase text-white/60">
+                <p className="text-[10px] font-bold uppercase text-white/60">
                   {label}
                 </p>
-                <p className="text-base font-black text-white">{value}</p>
+                <p className="text-base font-bold text-white">{value}</p>
               </div>
             ))}
           </div>
@@ -319,7 +319,7 @@ export default function EmployeeReportPage() {
         ) : records.length === 0 ? (
           <div className="border-2 border-black bg-white p-12 text-center">
             <BarChart2 className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <p className="font-black text-lg text-gray-500">
+            <p className="font-bold text-lg text-gray-500">
               No attendance records
             </p>
             <p className="text-sm text-gray-400 mt-1">
@@ -335,7 +335,7 @@ export default function EmployeeReportPage() {
                     (h) => (
                       <th
                         key={h}
-                        className="px-4 py-3 text-left text-xs font-black uppercase text-gray-600"
+                        className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600"
                       >
                         {h}
                       </th>

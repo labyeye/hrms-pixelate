@@ -56,7 +56,7 @@ async function sendSubscriptionConfirmationEmail(opts) {
     body { font-family: Arial, sans-serif; background: #F0F6FF; margin: 0; padding: 0; }
     .container { max-width: 560px; margin: 32px auto; background: #ffffff; border: 2px solid #000; }
     .header { background: #024BAB; padding: 24px 32px; border-bottom: 2px solid #000; }
-    .header h1 { color: #fff; margin: 0; font-size: 22px; font-weight: 900; letter-spacing: -0.5px; }
+    .header h1 { color: #fff; margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
     .header p { color: #b3d0ff; margin: 4px 0 0; font-size: 13px; }
     .body { padding: 32px; }
     .greeting { font-size: 16px; font-weight: 700; color: #000; margin-bottom: 8px; }
@@ -67,9 +67,9 @@ async function sendSubscriptionConfirmationEmail(opts) {
     .card-label { color: #666; font-weight: 600; }
     .card-value { color: #000; font-weight: 800; }
     .card-value.highlight { color: #024BAB; font-size: 15px; }
-    .btn { display: inline-block; background: #024BAB; color: #fff; font-weight: 900; font-size: 14px; text-decoration: none; padding: 14px 28px; border: 2px solid #000; letter-spacing: 0.5px; margin-top: 8px; }
+    .btn { display: inline-block; background: #024BAB; color: #fff; font-weight: 700; font-size: 14px; text-decoration: none; padding: 14px 28px; border: 2px solid #000; letter-spacing: 0.5px; margin-top: 8px; }
     .footer { background: #f8f8f8; border-top: 2px solid #000; padding: 16px 32px; font-size: 12px; color: #888; }
-    .badge { display: inline-block; background: #024BAB; color: #fff; font-size: 11px; font-weight: 900; padding: 3px 8px; border: 1px solid #000; text-transform: uppercase; letter-spacing: 0.5px; }
+    .badge { display: inline-block; background: #024BAB; color: #fff; font-size: 11px; font-weight: 700; padding: 3px 8px; border: 1px solid #000; text-transform: uppercase; letter-spacing: 0.5px; }
   </style>
 </head>
 <body>

@@ -1563,7 +1563,7 @@ const s = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  logoText: { fontSize: 16, fontWeight: '900', color: C.black },
+  logoText: { fontSize: 16, fontWeight: '700', color: C.black },
   headerTitle: { fontSize: 20, fontWeight: '700', color: C.black, flex: 1 },
   countBadge: {
     backgroundColor: C.primary,

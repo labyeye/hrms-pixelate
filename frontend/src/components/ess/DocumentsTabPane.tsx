@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { documentAPI } from "@/services/api";
-import { Loader2, Upload, Trash2, Download, Eye, FileText, CheckCircle, AlertCircle } from "lucide-react";
+import {
+  Loader2,
+  Upload,
+  Trash2,
+  Download,
+  Eye,
+  FileText,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -40,12 +49,19 @@ export function DocumentsTabPane({ employee, toast }: Props) {
     loadDocs();
   }, []);
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, docType: string) => {
+  const handleUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    docType: string,
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "Error", description: "File size exceeds 5MB limit", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "File size exceeds 5MB limit",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -64,19 +80,34 @@ export function DocumentsTabPane({ employee, toast }: Props) {
         });
 
         if (uploadRes.success) {
-          toast({ title: "Success", description: `${file.name} uploaded successfully.` });
+          toast({
+            title: "Success",
+            description: `${file.name} uploaded successfully.`,
+          });
           await loadDocs();
         } else {
-          toast({ title: "Failed", description: "Failed to upload document", variant: "destructive" });
+          toast({
+            title: "Failed",
+            description: "Failed to upload document",
+            variant: "destructive",
+          });
         }
       } catch (err: any) {
-        toast({ title: "Error", description: err.message || "Something went wrong", variant: "destructive" });
+        toast({
+          title: "Error",
+          description: err.message || "Something went wrong",
+          variant: "destructive",
+        });
       } finally {
         setUploadingDoc(null);
       }
     };
     reader.onerror = () => {
-      toast({ title: "Error", description: "Could not read file", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Could not read file",
+        variant: "destructive",
+      });
       setUploadingDoc(null);
     };
     reader.readAsDataURL(file);
@@ -94,15 +125,24 @@ export function DocumentsTabPane({ employee, toast }: Props) {
         downloadLink.download = docName;
         downloadLink.click();
       } else {
-        toast({ title: "Failed", description: "Could not download file data", variant: "destructive" });
+        toast({
+          title: "Failed",
+          description: "Could not download file data",
+          variant: "destructive",
+        });
       }
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
     }
   };
 
   const handleDelete = async (docId: string) => {
-    if (!confirm("Are you sure you want to delete/replace this document?")) return;
+    if (!confirm("Are you sure you want to delete/replace this document?"))
+      return;
     try {
       const res = await documentAPI.delete(docId);
       if (res.success) {
@@ -110,7 +150,11 @@ export function DocumentsTabPane({ employee, toast }: Props) {
         await loadDocs();
       }
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -125,9 +169,10 @@ export function DocumentsTabPane({ employee, toast }: Props) {
   return (
     <div className="space-y-6">
       <div className="border-2 border-black bg-white p-5">
-        <h3 className="text-sm font-black uppercase mb-1">My Document Vault</h3>
+        <h3 className="text-sm font-bold uppercase mb-1">My Document Vault</h3>
         <p className="text-xs text-muted-foreground">
-          Upload, download, or replace your documents. All documents are securely stored and verified by HR.
+          Upload, download, or replace your documents. All documents are
+          securely stored and verified by HR.
         </p>
       </div>
 
@@ -136,19 +181,24 @@ export function DocumentsTabPane({ employee, toast }: Props) {
           const uploaded = docs.find((d) => d.docType === t.id);
 
           return (
-            <div key={t.id} className="border-2 border-black bg-white flex flex-col justify-between p-4 space-y-4">
+            <div
+              key={t.id}
+              className="border-2 border-black bg-white flex flex-col justify-between p-4 space-y-4"
+            >
               <div>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
                     <FileText className="w-5 h-5 text-[#024BAB]" />
-                    <p className="text-xs font-black uppercase text-black">{t.label}</p>
+                    <p className="text-xs font-bold uppercase text-black">
+                      {t.label}
+                    </p>
                   </div>
                   {uploaded ? (
-                    <span className="flex items-center gap-1 text-[10px] font-black uppercase text-green-700 bg-green-50 border border-green-700 px-1.5 py-0.5">
+                    <span className="flex items-center gap-1 text-[10px] font-bold uppercase text-green-700 bg-green-50 border border-green-700 px-1.5 py-0.5">
                       <CheckCircle className="w-3 h-3" /> Uploaded
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1 text-[10px] font-black uppercase text-amber-700 bg-amber-50 border border-amber-700 px-1.5 py-0.5">
+                    <span className="flex items-center gap-1 text-[10px] font-bold uppercase text-amber-700 bg-amber-50 border border-amber-700 px-1.5 py-0.5">
                       <AlertCircle className="w-3 h-3" /> Missing
                     </span>
                   )}
@@ -156,9 +206,12 @@ export function DocumentsTabPane({ employee, toast }: Props) {
 
                 {uploaded ? (
                   <div className="mt-3">
-                    <p className="text-xs font-bold text-black truncate">{uploaded.name}</p>
+                    <p className="text-xs font-bold text-black truncate">
+                      {uploaded.name}
+                    </p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">
-                      Uploaded on {new Date(uploaded.createdAt).toLocaleDateString("en-IN")}
+                      Uploaded on{" "}
+                      {new Date(uploaded.createdAt).toLocaleDateString("en-IN")}
                     </p>
                   </div>
                 ) : (
@@ -172,8 +225,10 @@ export function DocumentsTabPane({ employee, toast }: Props) {
                 {uploaded ? (
                   <>
                     <button
-                      onClick={() => handleDownload(uploaded._id, uploaded.name)}
-                      className="flex-1 flex items-center justify-center gap-1 bg-white text-black border-2 border-black py-2 font-black text-[10px] uppercase hover:bg-gray-50"
+                      onClick={() =>
+                        handleDownload(uploaded._id, uploaded.name)
+                      }
+                      className="flex-1 flex items-center justify-center gap-1 bg-white text-black border-2 border-black py-2 font-bold text-[10px] uppercase hover:bg-gray-50"
                     >
                       <Download className="w-3 h-3" /> Download
                     </button>
@@ -186,7 +241,7 @@ export function DocumentsTabPane({ employee, toast }: Props) {
                     </button>
                   </>
                 ) : (
-                  <label className="flex-1 flex items-center justify-center gap-1.5 bg-[#024BAB] text-white border-2 border-black py-2 font-black text-[10px] uppercase cursor-pointer hover:bg-[#024BAB]/90">
+                  <label className="flex-1 flex items-center justify-center gap-1.5 bg-[#024BAB] text-white border-2 border-black py-2 font-bold text-[10px] uppercase cursor-pointer hover:bg-[#024BAB]/90">
                     {uploadingDoc === t.id ? (
                       <Loader2 className="w-3 h-3 animate-spin" />
                     ) : (

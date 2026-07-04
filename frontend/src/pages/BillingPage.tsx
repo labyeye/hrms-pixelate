@@ -446,9 +446,7 @@ export default function BillingPage() {
 
             <button
               onClick={handleUpdateTeamSize}
-              disabled={
-                upgrading || Number(newEmployeeCount) === empMax
-              }
+              disabled={upgrading || Number(newEmployeeCount) === empMax}
               className="border-2 w-full py-2.5 text-sm flex items-center justify-center gap-2 bg-black text-white hover:bg-black/80 disabled:opacity-50"
             >
               {upgrading ? (

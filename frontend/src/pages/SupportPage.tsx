@@ -141,7 +141,11 @@ export default function SupportPage() {
         fetchTickets();
       }
     } catch (err: any) {
-      toast({ title: "Failed to send reply", description: err.message, variant: "destructive" });
+      toast({
+        title: "Failed to send reply",
+        description: err.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -156,7 +160,11 @@ export default function SupportPage() {
         fetchTickets();
       }
     } catch (err: any) {
-      toast({ title: "Failed to close ticket", description: err.message, variant: "destructive" });
+      toast({
+        title: "Failed to close ticket",
+        description: err.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -509,26 +517,45 @@ export default function SupportPage() {
 
                 {/* Conversations & Replies */}
                 <div className="border-t border-black/10 pt-4 space-y-4">
-                  <p className="text-xs font-black uppercase text-black">Conversation History</p>
+                  <p className="text-xs font-bold uppercase text-black">
+                    Conversation History
+                  </p>
                   <div className="max-h-40 overflow-y-auto space-y-2.5 p-2 bg-[#F8FAFF] border border-black/5">
                     {/* Original Description */}
                     <div className="text-xs border-b border-black/5 pb-2">
-                      <p className="font-bold text-black">{selectedTicket.submittedBy?.name || "Employee"} (Original Request)</p>
-                      <p className="text-muted-foreground mt-0.5 whitespace-pre-wrap">{selectedTicket.description}</p>
-                      <p className="text-[9px] text-gray-400 mt-1">{formatDate(selectedTicket.createdAt)}</p>
+                      <p className="font-bold text-black">
+                        {selectedTicket.submittedBy?.name || "Employee"}{" "}
+                        (Original Request)
+                      </p>
+                      <p className="text-muted-foreground mt-0.5 whitespace-pre-wrap">
+                        {selectedTicket.description}
+                      </p>
+                      <p className="text-[9px] text-gray-400 mt-1">
+                        {formatDate(selectedTicket.createdAt)}
+                      </p>
                     </div>
                     {/* Replies */}
                     {selectedTicket.replies?.map((r: any, idx: number) => (
                       <div key={idx} className="text-xs">
                         <p className="font-bold text-black">
-                          {r.user?.name || "System"} <span className="text-[9px] font-normal uppercase text-muted-foreground">({r.user?.role})</span>
+                          {r.user?.name || "System"}{" "}
+                          <span className="text-[9px] font-normal uppercase text-muted-foreground">
+                            ({r.user?.role})
+                          </span>
                         </p>
-                        <p className="text-muted-foreground mt-0.5 whitespace-pre-wrap">{r.message}</p>
-                        <p className="text-[9px] text-gray-400 mt-1">{formatDate(r.createdAt)}</p>
+                        <p className="text-muted-foreground mt-0.5 whitespace-pre-wrap">
+                          {r.message}
+                        </p>
+                        <p className="text-[9px] text-gray-400 mt-1">
+                          {formatDate(r.createdAt)}
+                        </p>
                       </div>
                     ))}
-                    {(!selectedTicket.replies || selectedTicket.replies.length === 0) && (
-                      <p className="text-[11px] text-muted-foreground italic">No replies yet.</p>
+                    {(!selectedTicket.replies ||
+                      selectedTicket.replies.length === 0) && (
+                      <p className="text-[11px] text-muted-foreground italic">
+                        No replies yet.
+                      </p>
                     )}
                   </div>
 
@@ -539,17 +566,25 @@ export default function SupportPage() {
                         value={replyMessage}
                         onChange={(e) => setReplyMessage(e.target.value)}
                         className="text-xs flex-1"
-                        onKeyDown={(e) => e.key === "Enter" && handleSendReply()}
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && handleSendReply()
+                        }
                       />
                       <Button size="sm" onClick={handleSendReply}>
                         Send
                       </Button>
-                      <Button size="sm" variant="destructive" onClick={handleCloseTicket}>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={handleCloseTicket}
+                      >
                         Close
                       </Button>
                     </div>
                   ) : (
-                    <p className="text-xs text-red-500 font-bold">This ticket is closed. No further replies allowed.</p>
+                    <p className="text-xs text-red-500 font-bold">
+                      This ticket is closed. No further replies allowed.
+                    </p>
                   )}
                 </div>
               </div>

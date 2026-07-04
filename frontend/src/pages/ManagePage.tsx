@@ -69,7 +69,7 @@ function NbInput({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-xs font-black text-black uppercase tracking-wider">
+      <label className="block text-xs font-bold text-black uppercase tracking-wider">
         {label}
       </label>
       <input
@@ -111,7 +111,7 @@ function SubHeader({
           <div className="w-8 h-8 bg-[#024BAB] border-2 border-black flex items-center justify-center">
             <Icon className="w-4 h-4 text-white" />
           </div>
-          <h2 className="text-xl font-black text-black">{title}</h2>
+          <h2 className="text-xl font-bold text-black">{title}</h2>
         </div>
       </div>
       {onAdd && (
@@ -141,7 +141,7 @@ function NbTable({
             {headers.map((h) => (
               <th
                 key={h}
-                className="px-4 py-3 text-left text-xs font-black text-black uppercase tracking-wider whitespace-nowrap"
+                className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap"
               >
                 {h}
               </th>
@@ -392,7 +392,7 @@ function ShiftsSection({ onBack }: { onBack: () => void }) {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 bg-white w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
-              <h3 className="font-black text-lg">
+              <h3 className="font-bold text-lg">
                 {editing ? "Edit Shift" : "Add Shift"}
               </h3>
               <button onClick={() => setModal(false)}>
@@ -439,7 +439,7 @@ function ShiftsSection({ onBack }: { onBack: () => void }) {
                   onChange={(v) => setForm({ ...form, otAfterHours: v })}
                 />
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-black text-black uppercase tracking-wider">
+                  <label className="block text-xs font-bold text-black uppercase tracking-wider">
                     Color
                   </label>
                   <input
@@ -632,7 +632,7 @@ function SalaryHeadsSection({ onBack }: { onBack: () => void }) {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 bg-white w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
-              <h3 className="font-black text-lg">
+              <h3 className="font-bold text-lg">
                 {editing ? "Edit Component" : "Add Component"}
               </h3>
               <button onClick={() => setModal(false)}>
@@ -649,7 +649,7 @@ function SalaryHeadsSection({ onBack }: { onBack: () => void }) {
               />
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-black text-black uppercase tracking-wider">
+                  <label className="block text-xs font-bold text-black uppercase tracking-wider">
                     Type
                   </label>
                   <NbSelect
@@ -662,7 +662,7 @@ function SalaryHeadsSection({ onBack }: { onBack: () => void }) {
                   </NbSelect>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-black text-black uppercase tracking-wider">
+                  <label className="block text-xs font-bold text-black uppercase tracking-wider">
                     Calculation
                   </label>
                   <NbSelect
@@ -869,7 +869,7 @@ function DesignationsSection({ onBack }: { onBack: () => void }) {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 bg-white w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
-              <h3 className="font-black text-lg">
+              <h3 className="font-bold text-lg">
                 {editing ? "Edit Designation" : "Add Designation"}
               </h3>
               <button onClick={() => setModal(false)}>
@@ -886,7 +886,7 @@ function DesignationsSection({ onBack }: { onBack: () => void }) {
               />
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-black text-black uppercase tracking-wider">
+                  <label className="block text-xs font-bold text-black uppercase tracking-wider">
                     Department
                   </label>
                   <NbSelect
@@ -902,7 +902,7 @@ function DesignationsSection({ onBack }: { onBack: () => void }) {
                   </NbSelect>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-black text-black uppercase tracking-wider">
+                  <label className="block text-xs font-bold text-black uppercase tracking-wider">
                     Grade
                   </label>
                   <NbSelect
@@ -1051,7 +1051,7 @@ function OfferLettersSection({ onBack }: { onBack: () => void }) {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 bg-white w-full max-w-2xl max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
-              <h3 className="font-black text-lg">
+              <h3 className="font-bold text-lg">
                 {editing ? "Edit Template" : "Add Template"}
               </h3>
               <button onClick={() => setModal(false)}>
@@ -1077,7 +1077,7 @@ function OfferLettersSection({ onBack }: { onBack: () => void }) {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-black text-black uppercase tracking-wider">
+                <label className="block text-xs font-bold text-black uppercase tracking-wider">
                   Template Body
                 </label>
                 <p className="text-[10px] text-muted-foreground">
@@ -1118,7 +1118,7 @@ function OfferLettersSection({ onBack }: { onBack: () => void }) {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 bg-white w-full max-w-xl max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
-              <h3 className="font-black text-lg">{preview.name}</h3>
+              <h3 className="font-bold text-lg">{preview.name}</h3>
               <button onClick={() => setPreview(null)}>
                 <X className="w-5 h-5" />
               </button>
@@ -1340,7 +1340,7 @@ export default function ManagePage() {
               <Icon className="w-6 h-6 text-white" />
             </div>
             <div>
-              <p className="font-black text-black text-sm">{label}</p>
+              <p className="font-bold text-black text-sm">{label}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
             </div>
           </button>

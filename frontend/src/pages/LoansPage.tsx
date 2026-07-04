@@ -171,10 +171,14 @@ export default function LoansPage() {
   };
 
   const handleReject = async (id: string) => {
-    const rejectionReason = window.prompt("Reason for rejection (optional):") || "";
+    const rejectionReason =
+      window.prompt("Reason for rejection (optional):") || "";
     try {
       await loanAPI.updateStatus(id, { status: "rejected", rejectionReason });
-      toast({ title: "Rejected", description: "Loan/advance request rejected." });
+      toast({
+        title: "Rejected",
+        description: "Loan/advance request rejected.",
+      });
       load();
     } catch (err: any) {
       toast({
@@ -268,7 +272,16 @@ export default function LoansPage() {
             </button>
           ))}
           <span className="border-l-2 border-black/20 mx-1" />
-          {(["all", "pending", "active", "rejected", "cleared", "paused"] as const).map((s) => (
+          {(
+            [
+              "all",
+              "pending",
+              "active",
+              "rejected",
+              "cleared",
+              "paused",
+            ] as const
+          ).map((s) => (
             <button
               key={s}
               onClick={() => setFilterStatus(s)}
@@ -335,7 +348,7 @@ export default function LoansPage() {
                 {label}
               </p>
             </div>
-            <p className={cn("text-xl font-black", color)}>{value}</p>
+            <p className={cn("text-xl font-bold", color)}>{value}</p>
           </div>
         ))}
       </div>

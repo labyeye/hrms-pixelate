@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   headerTitle: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerText: {
     fontSize: 17,
-    fontWeight: '900',
+    fontWeight: '700',
     color: '#000',
     letterSpacing: -0.3,
   },

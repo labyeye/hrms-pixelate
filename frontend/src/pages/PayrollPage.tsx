@@ -985,7 +985,7 @@ export default function PayrollPage() {
                   <td className="px-4 py-3 text-right">
                     <span
                       className={cn(
-                        "text-sm font-black",
+                        "text-sm font-bold",
                         p.netSalary === 0 ? "text-red-500" : "text-black",
                       )}
                     >
@@ -1029,11 +1029,11 @@ export default function PayrollPage() {
                       </button>
                       {/* Slip receipt confirmation */}
                       {p.slipReceived === "received" ? (
-                        <span className="flex items-center gap-1 text-[10px] font-black text-[#00C48C] border-2 border-[#00C48C] px-2 py-0.5">
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-[#00C48C] border-2 border-[#00C48C] px-2 py-0.5">
                           <CheckCircle className="w-3 h-3" /> RECEIVED
                         </span>
                       ) : p.slipReceived === "not_received" ? (
-                        <span className="flex items-center gap-1 text-[10px] font-black text-red-500 border-2 border-red-400 px-2 py-0.5">
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-red-500 border-2 border-red-400 px-2 py-0.5">
                           <X className="w-3 h-3" /> NOT RECEIVED
                         </span>
                       ) : (
@@ -1263,7 +1263,7 @@ export default function PayrollPage() {
                           <td className="px-3 py-2 text-right text-red-500">
                             -{formatCurrency(p.totalDeductions)}
                           </td>
-                          <td className="px-3 py-2 text-right font-black">
+                          <td className="px-3 py-2 text-right font-bold">
                             {formatCurrency(p.netSalary)}
                           </td>
                           <td className="px-3 py-2 text-center">

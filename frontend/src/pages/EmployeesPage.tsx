@@ -351,10 +351,17 @@ export default function EmployeesPage() {
       customWorkDays: (emp as any).customWorkDays || [],
       otRate: String((emp as any).otRate || ""),
       otEnabled: (emp as any).otEnabled === true,
-      geofenceAttendanceEnabled: (emp as any).geofenceAttendanceEnabled === true,
+      geofenceAttendanceEnabled:
+        (emp as any).geofenceAttendanceEnabled === true,
       geofenceMode: (emp as any).geofenceMode === "any" ? "any" : "specific",
-      geofenceLat: (emp as any).geofenceLat != null ? String((emp as any).geofenceLat) : "",
-      geofenceLng: (emp as any).geofenceLng != null ? String((emp as any).geofenceLng) : "",
+      geofenceLat:
+        (emp as any).geofenceLat != null
+          ? String((emp as any).geofenceLat)
+          : "",
+      geofenceLng:
+        (emp as any).geofenceLng != null
+          ? String((emp as any).geofenceLng)
+          : "",
       geofenceRadiusMeters: String((emp as any).geofenceRadiusMeters || 200),
       shift: (emp as any).shift?._id || (emp as any).shift || "",
       shiftName: (emp as any).shiftName || "",
@@ -397,14 +404,17 @@ export default function EmployeesPage() {
         show: true,
         type: "success",
         title: "Face Enrolled",
-        message: "Face captured — this employee can now check in via the mobile app.",
+        message:
+          "Face captured — this employee can now check in via the mobile app.",
       });
     } catch (err: any) {
       setActionModal({
         show: true,
         type: "error",
         title: "Enrollment Failed",
-        message: err.message || "Could not enroll face. Use a clear, single-face photo.",
+        message:
+          err.message ||
+          "Could not enroll face. Use a clear, single-face photo.",
       });
     } finally {
       setFaceEnrolling(false);
@@ -427,8 +437,10 @@ export default function EmployeesPage() {
         customWorkDays:
           form.workScheduleType === "custom" ? form.customWorkDays : [],
         otRate: Number(form.otRate) || 0,
-        geofenceLat: form.geofenceLat.trim() === "" ? undefined : Number(form.geofenceLat),
-        geofenceLng: form.geofenceLng.trim() === "" ? undefined : Number(form.geofenceLng),
+        geofenceLat:
+          form.geofenceLat.trim() === "" ? undefined : Number(form.geofenceLat),
+        geofenceLng:
+          form.geofenceLng.trim() === "" ? undefined : Number(form.geofenceLng),
         geofenceRadiusMeters: Number(form.geofenceRadiusMeters) || 200,
         customShift: form.isCustomShift
           ? {
@@ -775,7 +787,7 @@ export default function EmployeesPage() {
     <AppLayout title="Employees">
       {}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h1 className="font-display font-black text-2xl text-black">
+        <h1 className="font-display font-bold text-2xl text-black">
           Employees
         </h1>
         <div className="grid-cols-2 grid gap-2">
@@ -808,7 +820,7 @@ export default function EmployeesPage() {
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               Total Employees
             </p>
-            <p className="text-2xl font-black text-black">{employees.length}</p>
+            <p className="text-2xl font-bold text-black">{employees.length}</p>
           </div>
         </div>
         <div className="border-2 border-black bg-white p-4 flex items-center gap-3">
@@ -820,7 +832,7 @@ export default function EmployeesPage() {
               Total Est. Balance
             </p>
             <p
-              className={`text-2xl font-black ${totalEstBalance < 0 ? "text-red-500" : "text-[#00C48C]"}`}
+              className={`text-2xl font-bold ${totalEstBalance < 0 ? "text-red-500" : "text-[#00C48C]"}`}
             >
               {formatCurrency(totalEstBalance)}
             </p>
@@ -834,7 +846,7 @@ export default function EmployeesPage() {
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               Total Loan Balance
             </p>
-            <p className="text-2xl font-black text-[#EF4444]">
+            <p className="text-2xl font-bold text-[#EF4444]">
               {formatCurrency(totalLoan)}
             </p>
           </div>
@@ -1002,13 +1014,13 @@ export default function EmployeesPage() {
                   {/* Balance chips */}
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     <div className="bg-[#F8FAFF] border border-black/10 px-3 py-2">
-                      <p className="text-[10px] font-black uppercase text-muted-foreground">
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
                         Est. Balance
                       </p>
                       {sal ? (
                         <p
                           className={cn(
-                            "text-sm font-black",
+                            "text-sm font-bold",
                             bal < 0
                               ? "text-[#EF4444]"
                               : bal < sal * 0.3
@@ -1022,21 +1034,21 @@ export default function EmployeesPage() {
                           })}
                         </p>
                       ) : (
-                        <p className="text-sm font-black text-muted-foreground">
+                        <p className="text-sm font-bold text-muted-foreground">
                           —
                         </p>
                       )}
                     </div>
                     <div className="bg-[#F8FAFF] border border-black/10 px-3 py-2">
-                      <p className="text-[10px] font-black uppercase text-muted-foreground">
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
                         Loan Balance
                       </p>
                       {loan > 0 ? (
-                        <p className="text-sm font-black text-[#EF4444]">
+                        <p className="text-sm font-bold text-[#EF4444]">
                           ₹{loan.toLocaleString()}
                         </p>
                       ) : (
-                        <p className="text-sm font-black text-muted-foreground">
+                        <p className="text-sm font-bold text-muted-foreground">
                           —
                         </p>
                       )}
@@ -1274,7 +1286,7 @@ export default function EmployeesPage() {
                 >
                   <span
                     className={cn(
-                      "inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black mr-1.5",
+                      "inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold mr-1.5",
                       formTab === idx
                         ? "bg-white text-[#024BAB]"
                         : "bg-black/10 text-black",
@@ -1346,7 +1358,7 @@ export default function EmployeesPage() {
                         />
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs font-black uppercase tracking-wider text-black mb-1">
+                        <p className="text-xs font-bold uppercase tracking-wider text-black mb-1">
                           Profile Photo
                         </p>
                         <p className="text-xs text-muted-foreground">
@@ -1573,7 +1585,7 @@ export default function EmployeesPage() {
                 {formTab === 1 && (
                   <div className="space-y-6">
                     <div>
-                      <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-1">
+                      <p className="text-xs font-bold uppercase tracking-wider text-[#024BAB] mb-1">
                         Work Schedule
                       </p>
                       <p className="text-xs text-gray-500 mb-4">
@@ -1605,7 +1617,7 @@ export default function EmployeesPage() {
                                 : "bg-white text-black hover:bg-[#024BAB]/5",
                             )}
                           >
-                            <div className="text-xl font-black mb-1">
+                            <div className="text-xl font-bold mb-1">
                               {label}
                             </div>
                             <div className="text-xs font-normal opacity-70">
@@ -1631,7 +1643,7 @@ export default function EmployeesPage() {
                               : "bg-white text-black hover:bg-[#024BAB]/5",
                           )}
                         >
-                          <div className="text-xl font-black mb-1">Custom</div>
+                          <div className="text-xl font-bold mb-1">Custom</div>
                           <div className="text-xs font-normal opacity-70">
                             Pick days
                           </div>
@@ -1691,7 +1703,7 @@ export default function EmployeesPage() {
                     </div>
 
                     <div className="border-t-2 border-black pt-5">
-                      <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-4">
+                      <p className="text-xs font-bold uppercase tracking-wider text-[#024BAB] mb-4">
                         Overtime & Biometric
                       </p>
                       <div className="flex items-center justify-between p-3 border-2 border-black/10 hover:border-black transition-colors mb-4">
@@ -1759,7 +1771,7 @@ export default function EmployeesPage() {
                     </div>
 
                     <div className="border-t-2 border-black pt-5">
-                      <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-4">
+                      <p className="text-xs font-bold uppercase tracking-wider text-[#024BAB] mb-4">
                         Mobile Geofenced Attendance
                       </p>
                       <div className="flex items-center justify-between p-3 border-2 border-black/10 hover:border-black transition-colors mb-4">
@@ -1850,7 +1862,10 @@ export default function EmployeesPage() {
                                     step="any"
                                     value={form.geofenceLat}
                                     onChange={(e) =>
-                                      setForm({ ...form, geofenceLat: e.target.value })
+                                      setForm({
+                                        ...form,
+                                        geofenceLat: e.target.value,
+                                      })
                                     }
                                     className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
                                     placeholder="e.g. 28.6139"
@@ -1865,7 +1880,10 @@ export default function EmployeesPage() {
                                     step="any"
                                     value={form.geofenceLng}
                                     onChange={(e) =>
-                                      setForm({ ...form, geofenceLng: e.target.value })
+                                      setForm({
+                                        ...form,
+                                        geofenceLng: e.target.value,
+                                      })
                                     }
                                     className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
                                     placeholder="e.g. 77.2090"
@@ -1898,8 +1916,12 @@ export default function EmployeesPage() {
                                     (pos) => {
                                       setForm({
                                         ...form,
-                                        geofenceLat: String(pos.coords.latitude),
-                                        geofenceLng: String(pos.coords.longitude),
+                                        geofenceLat: String(
+                                          pos.coords.latitude,
+                                        ),
+                                        geofenceLng: String(
+                                          pos.coords.longitude,
+                                        ),
                                       });
                                     },
                                     () => {
@@ -1927,11 +1949,11 @@ export default function EmployeesPage() {
                               </p>
                               <p className="text-xs text-muted-foreground mb-3">
                                 Recommended: have the employee enroll their own
-                                face from the mobile app (uses the front
-                                camera, matching how they'll check in). Use
-                                this upload only as a fallback — a photo taken
-                                under different conditions than their phone
-                                selfie may reduce match accuracy.
+                                face from the mobile app (uses the front camera,
+                                matching how they'll check in). Use this upload
+                                only as a fallback — a photo taken under
+                                different conditions than their phone selfie may
+                                reduce match accuracy.
                               </p>
                               <input
                                 ref={faceEnrollInputRef}
@@ -1946,10 +1968,14 @@ export default function EmployeesPage() {
                               <button
                                 type="button"
                                 disabled={faceEnrolling}
-                                onClick={() => faceEnrollInputRef.current?.click()}
+                                onClick={() =>
+                                  faceEnrollInputRef.current?.click()
+                                }
                                 className="text-xs font-bold text-white bg-[#024BAB] border-2 border-black px-3 py-2 disabled:opacity-50"
                               >
-                                {faceEnrolling ? "Enrolling…" : "Upload Face Photo"}
+                                {faceEnrolling
+                                  ? "Enrolling…"
+                                  : "Upload Face Photo"}
                               </button>
                             </div>
                           ) : (
@@ -1963,7 +1989,7 @@ export default function EmployeesPage() {
                     </div>
 
                     <div className="border-t-2 border-black pt-5">
-                      <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-4">
+                      <p className="text-xs font-bold uppercase tracking-wider text-[#024BAB] mb-4">
                         Shift Assignment
                       </p>
                       <div>
@@ -2090,9 +2116,9 @@ export default function EmployeesPage() {
                               />
                             </div>
                             <p className="text-xs text-muted-foreground col-span-2">
-                              This custom shift applies only to this employee and is
-                              used directly for their attendance and payroll
-                              calculations.
+                              This custom shift applies only to this employee
+                              and is used directly for their attendance and
+                              payroll calculations.
                             </p>
                           </div>
                         )}
@@ -2105,7 +2131,7 @@ export default function EmployeesPage() {
                 {formTab === 2 && (
                   <div className="space-y-6">
                     <div>
-                      <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-4">
+                      <p className="text-xs font-bold uppercase tracking-wider text-[#024BAB] mb-4">
                         Salary Information
                       </p>
                       <div>
@@ -2139,10 +2165,10 @@ export default function EmployeesPage() {
                                 key={label}
                                 className="bg-[#F8FAFF] border-2 border-black p-3 text-center"
                               >
-                                <p className="text-[10px] font-black uppercase text-muted-foreground">
+                                <p className="text-[10px] font-bold uppercase text-muted-foreground">
                                   {label}
                                 </p>
-                                <p className="text-sm font-black text-black mt-0.5">
+                                <p className="text-sm font-bold text-black mt-0.5">
                                   {value}
                                 </p>
                               </div>
@@ -2153,7 +2179,7 @@ export default function EmployeesPage() {
                     </div>
 
                     <div className="border-t-2 border-black pt-5">
-                      <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-4">
+                      <p className="text-xs font-bold uppercase tracking-wider text-[#024BAB] mb-4">
                         Compliance Numbers
                       </p>
                       <div className="grid grid-cols-2 gap-4">
@@ -2226,7 +2252,7 @@ export default function EmployeesPage() {
                 {formTab === 3 && (
                   <div className="space-y-6">
                     <div>
-                      <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-4">
+                      <p className="text-xs font-bold uppercase tracking-wider text-[#024BAB] mb-4">
                         Personal Details
                       </p>
                       <div className="grid grid-cols-2 gap-4">
@@ -2353,7 +2379,7 @@ export default function EmployeesPage() {
 
                     {/* ── Personal Details ─────────────────────────── */}
                     <div className="border-t-2 border-black pt-5">
-                      <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-4">
+                      <p className="text-xs font-bold uppercase tracking-wider text-[#024BAB] mb-4">
                         Personal Details
                       </p>
                       <div className="grid grid-cols-2 gap-4">
@@ -2520,7 +2546,7 @@ export default function EmployeesPage() {
 
                     {/* ── Professional Background ───────────────────── */}
                     <div className="border-t-2 border-black pt-5">
-                      <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-4">
+                      <p className="text-xs font-bold uppercase tracking-wider text-[#024BAB] mb-4">
                         Professional Background
                       </p>
                       <div className="grid grid-cols-2 gap-4">
@@ -2579,7 +2605,7 @@ export default function EmployeesPage() {
                     </div>
 
                     <div className="border-t-2 border-black pt-5">
-                      <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-4">
+                      <p className="text-xs font-bold uppercase tracking-wider text-[#024BAB] mb-4">
                         Identity Documents
                       </p>
                       <div className="grid grid-cols-2 gap-4">
@@ -2841,7 +2867,7 @@ export default function EmployeesPage() {
                     </div>
 
                     <div className="border-t-2 border-black pt-5">
-                      <p className="text-xs font-black uppercase tracking-wider text-[#024BAB] mb-4">
+                      <p className="text-xs font-bold uppercase tracking-wider text-[#024BAB] mb-4">
                         Bank Details
                       </p>
                       <div className="grid grid-cols-2 gap-4">
@@ -3036,7 +3062,7 @@ export default function EmployeesPage() {
                       <p className="text-xs text-muted-foreground font-bold">
                         {viewEmp.employeeId}
                       </p>
-                      <h1 className="text-2xl font-black text-black mt-0.5">
+                      <h1 className="text-2xl font-bold text-black mt-0.5">
                         {viewEmp.firstName} {viewEmp.lastName}
                       </h1>
                       <p className="text-sm font-medium text-muted-foreground mt-0.5">
@@ -3105,10 +3131,10 @@ export default function EmployeesPage() {
             {}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div className="border-2 border-black bg-white p-4">
-                <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-2">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
                   Monthly Salary
                 </p>
-                <p className="text-2xl font-black text-[#024BAB]">
+                <p className="text-2xl font-bold text-[#024BAB]">
                   ₹{(viewEmp.salary || 0).toLocaleString("en-IN")}
                 </p>
                 <span className="inline-block mt-1.5 text-[10px] font-bold bg-[#FA731C]/15 text-[#FA731C] px-2 py-0.5 border border-[#FA731C]">
@@ -3116,12 +3142,12 @@ export default function EmployeesPage() {
                 </span>
               </div>
               <div className="border-2 border-black bg-white p-4">
-                <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-2">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
                   Loan Balance
                 </p>
                 <p
                   className={cn(
-                    "text-2xl font-black",
+                    "text-2xl font-bold",
                     (viewEmp as any).loanBalance > 0
                       ? "text-[#EF4444]"
                       : "text-black",
@@ -3304,7 +3330,7 @@ export default function EmployeesPage() {
               <div className="border-2 border-black bg-white">
                 <div className="flex items-center gap-2 px-4 py-3 border-b-2 border-black bg-[#024BAB]/5">
                   <Phone className="w-4 h-4 text-[#024BAB]" />
-                  <h3 className="text-xs font-black uppercase tracking-wider text-black">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-black">
                     Contact Information
                   </h3>
                 </div>
@@ -3351,7 +3377,7 @@ export default function EmployeesPage() {
                       key={label as string}
                       className="flex items-start justify-between gap-2 border-b border-black/10 pb-2 last:border-0 last:pb-0"
                     >
-                      <span className="text-[10px] font-black text-muted-foreground uppercase shrink-0">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase shrink-0">
                         {label}
                       </span>
                       <span className="text-xs font-bold text-black text-right capitalize">
@@ -3365,7 +3391,7 @@ export default function EmployeesPage() {
               <div className="border-2 border-black bg-white">
                 <div className="flex items-center gap-2 px-4 py-3 border-b-2 border-black bg-[#024BAB]/5">
                   <CreditCard className="w-4 h-4 text-[#024BAB]" />
-                  <h3 className="text-xs font-black uppercase tracking-wider text-black">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-black">
                     Banking & Compliance
                   </h3>
                 </div>
@@ -3388,7 +3414,7 @@ export default function EmployeesPage() {
                       key={label}
                       className="flex items-start justify-between gap-2 border-b border-black/10 pb-2 last:border-0 last:pb-0"
                     >
-                      <span className="text-[10px] font-black text-muted-foreground uppercase shrink-0">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase shrink-0">
                         {label}
                       </span>
                       <span className="text-xs font-bold text-black text-right">
@@ -3407,7 +3433,7 @@ export default function EmployeesPage() {
                           href={employeeAPI.getDocumentUrl(viewEmp._id, "pan")}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-[10px] font-black border-2 border-[#024BAB] text-[#024BAB] px-2 py-1 hover:bg-[#024BAB]/10"
+                          className="text-[10px] font-bold border-2 border-[#024BAB] text-[#024BAB] px-2 py-1 hover:bg-[#024BAB]/10"
                         >
                           📄 PAN Doc
                         </a>
@@ -3420,7 +3446,7 @@ export default function EmployeesPage() {
                           )}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-[10px] font-black border-2 border-[#024BAB] text-[#024BAB] px-2 py-1 hover:bg-[#024BAB]/10"
+                          className="text-[10px] font-bold border-2 border-[#024BAB] text-[#024BAB] px-2 py-1 hover:bg-[#024BAB]/10"
                         >
                           📄 Aadhaar Doc
                         </a>
@@ -3433,7 +3459,7 @@ export default function EmployeesPage() {
                           )}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-[10px] font-black border-2 border-[#00C48C] text-[#00C48C] px-2 py-1 hover:bg-[#00C48C]/10"
+                          className="text-[10px] font-bold border-2 border-[#00C48C] text-[#00C48C] px-2 py-1 hover:bg-[#00C48C]/10"
                         >
                           📄 Resume
                         </a>
@@ -3449,7 +3475,7 @@ export default function EmployeesPage() {
                 (viewEmp as any).previousCompany) && (
                 <div className="border-2 border-black bg-white">
                   <div className="flex items-center gap-2 px-4 py-3 border-b-2 border-black bg-[#024BAB]/5">
-                    <span className="text-xs font-black uppercase tracking-wider text-black">
+                    <span className="text-xs font-bold uppercase tracking-wider text-black">
                       Professional Background
                     </span>
                   </div>
@@ -3465,7 +3491,7 @@ export default function EmployeesPage() {
                           key={label as string}
                           className="flex items-start justify-between gap-2 border-b border-black/10 pb-2 last:border-0 last:pb-0"
                         >
-                          <span className="text-[10px] font-black text-muted-foreground uppercase shrink-0">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase shrink-0">
                             {label}
                           </span>
                           <span className="text-xs font-bold text-black text-right">
@@ -3543,7 +3569,7 @@ export default function EmployeesPage() {
               className="p-5 space-y-4"
             >
               <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-black mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-black mb-1">
                   Type
                 </label>
                 <select
@@ -3558,7 +3584,7 @@ export default function EmployeesPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-black mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-black mb-1">
                   Amount (₹)
                 </label>
                 <input
@@ -3574,7 +3600,7 @@ export default function EmployeesPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-black mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-black mb-1">
                   Monthly EMI (₹)
                 </label>
                 <input
@@ -3590,7 +3616,7 @@ export default function EmployeesPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-black mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-black mb-1">
                   Reason
                 </label>
                 <input
@@ -3722,7 +3748,7 @@ export default function EmployeesPage() {
               className="p-5 space-y-4"
             >
               <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-black mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-black mb-1">
                   Date
                 </label>
                 <input
@@ -3738,7 +3764,7 @@ export default function EmployeesPage() {
               {txModal === "overtime" ? (
                 <>
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-black mb-1">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-black mb-1">
                       Overtime Hours
                     </label>
                     <input
@@ -3763,7 +3789,7 @@ export default function EmployeesPage() {
                 </>
               ) : (
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-black mb-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-black mb-1">
                     Amount (₹)
                   </label>
                   <input
@@ -3780,7 +3806,7 @@ export default function EmployeesPage() {
                 </div>
               )}
               <div>
-                <label className="block text-xs font-black uppercase tracking-wider text-black mb-1">
+                <label className="block text-xs font-bold uppercase tracking-wider text-black mb-1">
                   {txModal === "allowance"
                     ? "Remark (TA, DA, Incentive, etc.)"
                     : txModal === "overtime"
@@ -3844,7 +3870,7 @@ export default function EmployeesPage() {
             <div className="flex items-center justify-between px-5 py-4 border-b-2 border-black shrink-0">
               <div className="flex items-center gap-2">
                 <FileSpreadsheet className="w-5 h-5 text-[#024BAB]" />
-                <h2 className="font-black text-lg text-black">
+                <h2 className="font-bold text-lg text-black">
                   {importStep === "guide" && "Import Employees via Excel"}
                   {importStep === "preview" &&
                     `Preview — ${importRows.length} row${importRows.length !== 1 ? "s" : ""} found`}
@@ -3866,7 +3892,7 @@ export default function EmployeesPage() {
                   </div>
 
                   <div className="border-2 border-black overflow-hidden">
-                    <div className="grid grid-cols-[1fr_80px_1fr] bg-[#024BAB] text-white text-xs font-black uppercase px-3 py-2">
+                    <div className="grid grid-cols-[1fr_80px_1fr] bg-[#024BAB] text-white text-xs font-bold uppercase px-3 py-2">
                       <span>Column Header (exact)</span>
                       <span>Required</span>
                       <span>Example Value</span>
@@ -3879,7 +3905,7 @@ export default function EmployeesPage() {
                         <span className="font-bold text-black">{h.label}</span>
                         <span
                           className={cn(
-                            "text-xs font-black",
+                            "text-xs font-bold",
                             h.required ? "text-[#EF4444]" : "text-gray-400",
                           )}
                         >
@@ -3893,7 +3919,7 @@ export default function EmployeesPage() {
                   </div>
 
                   <div className="bg-amber-50 border-2 border-amber-400 p-3 text-xs font-medium text-amber-800 space-y-1">
-                    <p className="font-black">Notes:</p>
+                    <p className="font-bold">Notes:</p>
                     <p>
                       • <strong>Join Date</strong> and{" "}
                       <strong>Date of Birth</strong> must be in{" "}
@@ -3937,22 +3963,20 @@ export default function EmployeesPage() {
                       <table className="w-full text-xs">
                         <thead>
                           <tr className="bg-[#024BAB]/5 border-b-2 border-black">
-                            <th className="px-3 py-2 text-left font-black">
-                              #
-                            </th>
-                            <th className="px-3 py-2 text-left font-black">
+                            <th className="px-3 py-2 text-left font-bold">#</th>
+                            <th className="px-3 py-2 text-left font-bold">
                               Name
                             </th>
-                            <th className="px-3 py-2 text-left font-black">
+                            <th className="px-3 py-2 text-left font-bold">
                               Email
                             </th>
-                            <th className="px-3 py-2 text-left font-black">
+                            <th className="px-3 py-2 text-left font-bold">
                               Designation
                             </th>
-                            <th className="px-3 py-2 text-left font-black">
+                            <th className="px-3 py-2 text-left font-bold">
                               Department
                             </th>
-                            <th className="px-3 py-2 text-left font-black">
+                            <th className="px-3 py-2 text-left font-bold">
                               Join Date
                             </th>
                           </tr>
@@ -3991,7 +4015,7 @@ export default function EmployeesPage() {
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="border-2 border-[#00C48C] bg-[#00C48C]/10 p-4 text-center">
-                      <p className="text-3xl font-black text-[#00C48C]">
+                      <p className="text-3xl font-bold text-[#00C48C]">
                         {importResult.imported}
                       </p>
                       <p className="text-xs font-bold text-[#00C48C] mt-1">
@@ -3999,7 +4023,7 @@ export default function EmployeesPage() {
                       </p>
                     </div>
                     <div className="border-2 border-[#EF4444] bg-[#EF4444]/10 p-4 text-center">
-                      <p className="text-3xl font-black text-[#EF4444]">
+                      <p className="text-3xl font-bold text-[#EF4444]">
                         {importResult.failed}
                       </p>
                       <p className="text-xs font-bold text-[#EF4444] mt-1">
@@ -4010,7 +4034,7 @@ export default function EmployeesPage() {
 
                   {importResult.failed > 0 && (
                     <div className="border-2 border-black overflow-hidden">
-                      <div className="bg-[#EF4444] text-white text-xs font-black px-3 py-2">
+                      <div className="bg-[#EF4444] text-white text-xs font-bold px-3 py-2">
                         Failed Rows
                       </div>
                       {importResult.results
@@ -4020,7 +4044,7 @@ export default function EmployeesPage() {
                             key={r.row}
                             className="flex items-start gap-3 px-3 py-2 border-t border-black/10 text-sm"
                           >
-                            <span className="font-black text-[#EF4444] shrink-0">
+                            <span className="font-bold text-[#EF4444] shrink-0">
                               Row {r.row}
                             </span>
                             <span className="text-muted-foreground">

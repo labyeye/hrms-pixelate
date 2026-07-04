@@ -78,7 +78,7 @@ function StepIndicator({ current }: { current: Step }) {
             <div className="flex flex-col items-center">
               <div
                 className={cn(
-                  "w-9 h-9 border-2 border-black flex items-center justify-center font-black text-sm transition-all",
+                  "w-9 h-9 border-2 border-black flex items-center justify-center font-bold text-sm transition-all",
                   done && "bg-[#024BAB] text-white",
                   active && "bg-[#FA731C] text-white",
                   !done && !active && "bg-white text-gray-400",
@@ -88,7 +88,7 @@ function StepIndicator({ current }: { current: Step }) {
               </div>
               <span
                 className={cn(
-                  "text-[10px] font-black uppercase mt-1 tracking-wide",
+                  "text-[10px] font-bold uppercase mt-1 tracking-wide",
                   active
                     ? "text-[#FA731C]"
                     : done
@@ -275,7 +275,7 @@ export default function OnboardingPage() {
             <div className="w-9 h-9 bg-[#024BAB] border-2 border-black flex items-center justify-center">
               <Zap className="w-5 h-5 text-white" />
             </div>
-            <span className="font-display font-black text-xl text-black">
+            <span className="font-display font-bold text-xl text-black">
               NestHR
             </span>
           </div>
@@ -295,7 +295,7 @@ export default function OnboardingPage() {
         {step === "company" && (
           <div>
             <div className="text-center mb-8">
-              <h1 className="font-display font-black text-3xl text-black mb-2">
+              <h1 className="font-display font-bold text-3xl text-black mb-2">
                 Set up your company
               </h1>
               <p className="text-gray-500 font-medium text-sm">
@@ -317,7 +317,7 @@ export default function OnboardingPage() {
         {step === "employees" && (
           <div>
             <div className="text-center mb-8">
-              <h1 className="font-display font-black text-3xl text-black mb-2">
+              <h1 className="font-display font-bold text-3xl text-black mb-2">
                 How big is your team?
               </h1>
               <p className="text-gray-500 font-medium text-sm">
@@ -326,7 +326,7 @@ export default function OnboardingPage() {
             </div>
 
             <div className="bg-white border-2 border-black p-8 max-w-sm mx-auto">
-              <label className="block text-xs font-black uppercase tracking-wider text-black mb-3">
+              <label className="block text-xs font-bold uppercase tracking-wider text-black mb-3">
                 Number of employees
               </label>
               <input
@@ -342,7 +342,7 @@ export default function OnboardingPage() {
                 }
                 placeholder="e.g. 15"
                 autoFocus
-                className="w-full border-2 border-black px-4 py-3 text-2xl font-black text-center focus:outline-none focus:ring-2 focus:ring-[#024BAB] mb-2"
+                className="w-full border-2 border-black px-4 py-3 text-2xl font-bold text-center focus:outline-none focus:ring-2 focus:ring-[#024BAB] mb-2"
               />
               <p className="text-xs text-gray-400 font-medium text-center mb-6">
                 Include full-time, part-time, and contract staff
@@ -355,7 +355,7 @@ export default function OnboardingPage() {
                     key={n}
                     onClick={() => setEmployeeCount(n)}
                     className={cn(
-                      "py-2 text-sm font-black border-2 transition-all",
+                      "py-2 text-sm font-bold border-2 transition-all",
                       Number(employeeCount) === n
                         ? "bg-[#024BAB] text-white border-black"
                         : "bg-white text-black border-black hover:bg-gray-50",
@@ -367,7 +367,7 @@ export default function OnboardingPage() {
               </div>
 
               {employeeCount !== "" && Number(employeeCount) > 0 && (
-                <div className="flex items-center gap-2 p-3 border-2 border-black mb-5 text-sm font-black bg-blue-50">
+                <div className="flex items-center gap-2 p-3 border-2 border-black mb-5 text-sm font-bold bg-blue-50">
                   <Zap className="w-4 h-4 shrink-0" />
                   <span>
                     ₹{getPricingTier(Number(employeeCount)).rate}/employee/mo
@@ -379,7 +379,7 @@ export default function OnboardingPage() {
 
               <button
                 onClick={handleEmployeeContinue}
-                className="w-full bg-[#024BAB] text-white border-2 border-black font-black uppercase text-sm px-4 py-3 flex items-center justify-center gap-2 hover:bg-[#023590] transition-all"
+                className="w-full bg-[#024BAB] text-white border-2 border-black font-bold uppercase text-sm px-4 py-3 flex items-center justify-center gap-2 hover:bg-[#023590] transition-all"
               >
                 Continue
                 <ChevronRight className="w-4 h-4" />
@@ -392,7 +392,7 @@ export default function OnboardingPage() {
         {step === "plan" && (
           <div>
             <div className="text-center mb-8">
-              <h1 className="font-display font-black text-3xl text-black mb-2">
+              <h1 className="font-display font-bold text-3xl text-black mb-2">
                 Choose your plan
               </h1>
               <p className="text-gray-500 font-medium text-sm">
@@ -406,7 +406,7 @@ export default function OnboardingPage() {
                 <button
                   onClick={() => setBilling("monthly")}
                   className={cn(
-                    "px-6 py-3 text-sm font-black uppercase transition-all border-r-2 border-black",
+                    "px-6 py-3 text-sm font-bold uppercase transition-all border-r-2 border-black",
                     billing === "monthly"
                       ? "bg-[#024BAB] text-white"
                       : "text-black hover:bg-gray-50",
@@ -417,14 +417,14 @@ export default function OnboardingPage() {
                 <button
                   onClick={() => setBilling("yearly")}
                   className={cn(
-                    "px-6 py-3 text-sm font-black uppercase relative transition-all",
+                    "px-6 py-3 text-sm font-bold uppercase relative transition-all",
                     billing === "yearly"
                       ? "bg-[#024BAB] text-white"
                       : "text-black hover:bg-gray-50",
                   )}
                 >
                   Yearly
-                  <span className="absolute -top-5 left-1/2 -translate-x-1/2 bg-green-500 text-white text-[10px] font-black px-2 py-0.5 border border-black whitespace-nowrap">
+                  <span className="absolute -top-5 left-1/2 -translate-x-1/2 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 border border-black whitespace-nowrap">
                     Save 10%
                   </span>
                 </button>
@@ -433,20 +433,20 @@ export default function OnboardingPage() {
 
             {/* Plan summary */}
             <div className="max-w-sm mx-auto border-2 border-black bg-white p-6 mb-8">
-              <div className="flex items-center gap-1 bg-[#024BAB] text-white border border-black px-2 py-0.5 text-xs font-black w-fit mb-3">
+              <div className="flex items-center gap-1 bg-[#024BAB] text-white border border-black px-2 py-0.5 text-xs font-bold w-fit mb-3">
                 <Users className="w-3 h-3" />
                 {employeeCount} employees · {tier.label}
               </div>
 
               <div className="mb-4 pb-4 border-b-2 border-black">
-                <div className="font-display font-black text-3xl text-[#024BAB]">
+                <div className="font-display font-bold text-3xl text-[#024BAB]">
                   ₹{planPrice.toLocaleString("en-IN")}
                 </div>
                 <div className="text-xs text-gray-500 font-medium">
                   /month · ₹{tier.rate}/employee
                 </div>
                 {billing === "yearly" && (
-                  <div className="text-xs text-green-600 font-black mt-0.5">
+                  <div className="text-xs text-green-600 font-bold mt-0.5">
                     ₹{planTotal.toLocaleString("en-IN")} billed yearly
                   </div>
                 )}
@@ -465,7 +465,7 @@ export default function OnboardingPage() {
             <div className="max-w-sm mx-auto">
               <button
                 onClick={() => setStep("payment")}
-                className="w-full bg-[#024BAB] text-white border-2 border-black font-black uppercase text-sm px-4 py-3 flex items-center justify-center gap-2 hover:bg-[#023590] transition-all"
+                className="w-full bg-[#024BAB] text-white border-2 border-black font-bold uppercase text-sm px-4 py-3 flex items-center justify-center gap-2 hover:bg-[#023590] transition-all"
               >
                 Continue to Payment
                 <ChevronRight className="w-4 h-4" />
@@ -484,7 +484,7 @@ export default function OnboardingPage() {
         {step === "payment" && (
           <div>
             <div className="text-center mb-8">
-              <h1 className="font-display font-black text-3xl text-black mb-2">
+              <h1 className="font-display font-bold text-3xl text-black mb-2">
                 Confirm & Pay
               </h1>
               <p className="text-gray-500 font-medium text-sm">
@@ -496,26 +496,26 @@ export default function OnboardingPage() {
               {/* Order summary */}
               <div className="bg-white border-2 border-black">
                 <div className="p-5 border-b-2 border-black bg-[#F0F6FF]">
-                  <p className="font-black text-xs uppercase text-gray-500">
+                  <p className="font-bold text-xs uppercase text-gray-500">
                     Order Summary
                   </p>
                 </div>
                 <div className="p-5 space-y-3">
                   <div className="flex justify-between items-center text-sm">
                     <span className="font-bold text-gray-600">Rate</span>
-                    <span className="font-black text-black uppercase">
+                    <span className="font-bold text-black uppercase">
                       ₹{tier.rate}/employee/mo
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="font-bold text-gray-600">Billing</span>
-                    <span className="font-black text-black capitalize">
+                    <span className="font-bold text-black capitalize">
                       {billing}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="font-bold text-gray-600">Employees</span>
-                    <span className="font-black text-black">
+                    <span className="font-bold text-black">
                       {employeeCount}
                     </span>
                   </div>
@@ -524,24 +524,23 @@ export default function OnboardingPage() {
                       <span className="font-bold text-gray-600">
                         Monthly equiv.
                       </span>
-                      <span className="font-black text-gray-500">
+                      <span className="font-bold text-gray-500">
                         ₹{planPrice.toLocaleString("en-IN")}/mo
                       </span>
                     </div>
                   )}
                   <div className="border-t-2 border-black pt-3 flex justify-between items-center">
-                    <span className="font-black text-sm uppercase">Total</span>
-                    <span className="font-black text-xl text-[#024BAB]">
+                    <span className="font-bold text-sm uppercase">Total</span>
+                    <span className="font-bold text-xl text-[#024BAB]">
                       ₹{planTotal.toLocaleString("en-IN")}
                     </span>
                   </div>
                   {billing === "yearly" && (
                     <div className="bg-green-50 border border-green-200 p-2 text-xs font-bold text-green-700 text-center">
                       You save ₹
-                      {(
-                        monthlyPrice * 12 -
-                        yearlyPrice
-                      ).toLocaleString("en-IN")}{" "}
+                      {(monthlyPrice * 12 - yearlyPrice).toLocaleString(
+                        "en-IN",
+                      )}{" "}
                       compared to monthly billing
                     </div>
                   )}
@@ -550,30 +549,30 @@ export default function OnboardingPage() {
 
               {/* What happens next */}
               <div className="bg-white border-2 border-black p-5">
-                <p className="font-black text-xs uppercase text-gray-500 mb-3">
+                <p className="font-bold text-xs uppercase text-gray-500 mb-3">
                   What happens next
                 </p>
                 <ol className="space-y-2 text-xs font-medium text-gray-600">
                   <li className="flex items-start gap-2">
-                    <span className="w-5 h-5 bg-[#024BAB] text-white flex items-center justify-center font-black text-[10px] shrink-0 mt-0.5">
+                    <span className="w-5 h-5 bg-[#024BAB] text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
                       1
                     </span>
                     A Razorpay checkout window will open (secure page)
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="w-5 h-5 bg-[#024BAB] text-white flex items-center justify-center font-black text-[10px] shrink-0 mt-0.5">
+                    <span className="w-5 h-5 bg-[#024BAB] text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
                       2
                     </span>
                     Complete payment using net banking, UPI, card, or wallet
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="w-5 h-5 bg-[#024BAB] text-white flex items-center justify-center font-black text-[10px] shrink-0 mt-0.5">
+                    <span className="w-5 h-5 bg-[#024BAB] text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
                       3
                     </span>
                     Complete payment and your subscription activates instantly
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="w-5 h-5 bg-[#024BAB] text-white flex items-center justify-center font-black text-[10px] shrink-0 mt-0.5">
+                    <span className="w-5 h-5 bg-[#024BAB] text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
                       4
                     </span>
                     Confirmation sent to your email and WhatsApp
@@ -584,7 +583,7 @@ export default function OnboardingPage() {
               <button
                 onClick={handlePay}
                 disabled={paying}
-                className="w-full bg-[#024BAB] text-white border-2 border-black font-black uppercase text-sm px-4 py-4 flex items-center justify-center gap-2 hover:bg-[#023590] disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+                className="w-full bg-[#024BAB] text-white border-2 border-black font-bold uppercase text-sm px-4 py-4 flex items-center justify-center gap-2 hover:bg-[#023590] disabled:opacity-60 disabled:cursor-not-allowed transition-all"
               >
                 {paying ? (
                   <>

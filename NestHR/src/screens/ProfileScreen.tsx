@@ -865,7 +865,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarImg: { width: 88, height: 88, borderWidth: 2, borderColor: C.black },
-  avatarText: { fontSize: 30, fontWeight: '900', color: C.white },
+  avatarText: { fontSize: 30, fontWeight: '700', color: C.white },
   cameraBadge: {
     position: 'absolute',
     bottom: 0,

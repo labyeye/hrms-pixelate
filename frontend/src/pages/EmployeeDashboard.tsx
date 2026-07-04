@@ -81,7 +81,7 @@ function InfoRow({
     <div className="flex items-start gap-3 py-2.5 border-b border-black/8 last:border-0">
       {Icon && <Icon className="w-3.5 h-3.5 text-gray-400 mt-0.5 shrink-0" />}
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-0.5">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-0.5">
           {label}
         </p>
         <p className="text-sm font-semibold text-black truncate">
@@ -92,7 +92,14 @@ function InfoRow({
   );
 }
 
-type Tab = "overview" | "attendance" | "leaves" | "payroll" | "documents" | "assets" | "settings";
+type Tab =
+  | "overview"
+  | "attendance"
+  | "leaves"
+  | "payroll"
+  | "documents"
+  | "assets"
+  | "settings";
 
 const TABS: { id: Tab; label: string; icon: any }[] = [
   { id: "overview", label: "Overview", icon: User },
@@ -378,8 +385,16 @@ export default function EmployeeDashboard() {
   };
 
   const handleRequestLeave = async () => {
-    const { leaveType, startDate, endDate, reason, isHalfDay, halfDayType, startHour, endHour } =
-      leaveForm;
+    const {
+      leaveType,
+      startDate,
+      endDate,
+      reason,
+      isHalfDay,
+      halfDayType,
+      startHour,
+      endHour,
+    } = leaveForm;
     if (!startDate || !endDate || !reason.trim()) {
       toast({ title: "Please fill all fields", variant: "destructive" });
       return;
@@ -527,7 +542,7 @@ export default function EmployeeDashboard() {
                 </h1>
                 <span
                   className={cn(
-                    "text-[10px] font-black uppercase border-2 px-2 py-0.5",
+                    "text-[10px] font-bold uppercase border-2 px-2 py-0.5",
                     employee.status === "active"
                       ? "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]"
                       : "bg-gray-100 text-gray-500 border-gray-300",
@@ -565,7 +580,7 @@ export default function EmployeeDashboard() {
                       className="border-2 border-black px-3 py-1.5 text-center bg-white min-w-[90px] flex flex-col items-center gap-0.5"
                     >
                       <Icon className={cn("w-3.5 h-3.5 mt-0.5", color)} />
-                      <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                         {label}
                       </p>
                       <p className={cn("text-sm font-bold", color)}>{value}</p>
@@ -591,7 +606,7 @@ export default function EmployeeDashboard() {
             key={t.id}
             onClick={() => setTab(t.id)}
             className={cn(
-              "flex items-center gap-2 px-4 py-3 text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all border-r-2 border-black last:border-r-0 flex-1 justify-center",
+              "flex items-center gap-2 px-4 py-3 text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all border-r-2 border-black last:border-r-0 flex-1 justify-center",
               tab === t.id
                 ? "bg-[#024BAB] text-white"
                 : "bg-white text-black hover:bg-[#024BAB]/5",
@@ -611,7 +626,7 @@ export default function EmployeeDashboard() {
             <div className="border-2 border-black bg-white overflow-hidden">
               <div className="px-4 py-3 bg-[#024BAB] flex items-center gap-2">
                 <User className="w-4 h-4 text-white" />
-                <p className="text-xs font-black uppercase tracking-wider text-white">
+                <p className="text-xs font-bold uppercase tracking-wider text-white">
                   Personal Information
                 </p>
               </div>
@@ -652,7 +667,7 @@ export default function EmployeeDashboard() {
             <div className="border-2 border-black bg-white overflow-hidden">
               <div className="px-4 py-3 bg-[#024BAB] flex items-center gap-2">
                 <Briefcase className="w-4 h-4 text-white" />
-                <p className="text-xs font-black uppercase tracking-wider text-white">
+                <p className="text-xs font-bold uppercase tracking-wider text-white">
                   Work Information
                 </p>
               </div>
@@ -690,7 +705,7 @@ export default function EmployeeDashboard() {
             <div className="border-2 border-black bg-white overflow-hidden">
               <div className="px-4 py-3 bg-[#024BAB] flex items-center gap-2">
                 <Shield className="w-4 h-4 text-white" />
-                <p className="text-xs font-black uppercase tracking-wider text-white">
+                <p className="text-xs font-bold uppercase tracking-wider text-white">
                   Address & Documents
                 </p>
               </div>
@@ -721,17 +736,25 @@ export default function EmployeeDashboard() {
             {essStats && (
               <div className="space-y-4">
                 {/* Birthday & Anniversary Banners */}
-                {(essStats.birthdayWishes?.isTodayUserBirthday || 
-                  (essStats.birthdayWishes?.todayBirthdays && essStats.birthdayWishes.todayBirthdays.length > 0) ||
-                  essStats.workAnniversary?.isTodayUserAnniversary || 
-                  (essStats.workAnniversary?.todayAnniversaries && essStats.workAnniversary.todayAnniversaries.length > 0)) && (
+                {(essStats.birthdayWishes?.isTodayUserBirthday ||
+                  (essStats.birthdayWishes?.todayBirthdays &&
+                    essStats.birthdayWishes.todayBirthdays.length > 0) ||
+                  essStats.workAnniversary?.isTodayUserAnniversary ||
+                  (essStats.workAnniversary?.todayAnniversaries &&
+                    essStats.workAnniversary.todayAnniversaries.length >
+                      0)) && (
                   <div className="border-2 border-black bg-[#F8FAFF] p-4 space-y-2">
                     {essStats.birthdayWishes?.isTodayUserBirthday && (
                       <div className="flex items-center gap-3">
                         <Gift className="w-8 h-8 text-pink-500 animate-bounce" />
                         <div>
-                          <p className="font-bold text-lg text-black">Happy Birthday to You! 🎂</p>
-                          <p className="text-xs text-muted-foreground">The NestHR family wishes you a fantastic day ahead filled with joy and success!</p>
+                          <p className="font-bold text-lg text-black">
+                            Happy Birthday to You! 🎂
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            The NestHR family wishes you a fantastic day ahead
+                            filled with joy and success!
+                          </p>
                         </div>
                       </div>
                     )}
@@ -739,7 +762,11 @@ export default function EmployeeDashboard() {
                       <div key={b._id} className="flex items-center gap-3 py-1">
                         <Gift className="w-5 h-5 text-purple-500" />
                         <p className="text-sm font-semibold text-black">
-                          It is <span className="underline">{b.firstName} {b.lastName}</span>'s birthday today! Send your wishes! 🎉
+                          It is{" "}
+                          <span className="underline">
+                            {b.firstName} {b.lastName}
+                          </span>
+                          's birthday today! Send your wishes! 🎉
                         </p>
                       </div>
                     ))}
@@ -747,19 +774,33 @@ export default function EmployeeDashboard() {
                       <div className="flex items-center gap-3 border-t border-black/10 pt-2">
                         <Award className="w-8 h-8 text-yellow-500 animate-pulse" />
                         <div>
-                          <p className="font-bold text-lg text-black">Happy Work Anniversary! 🎖️</p>
-                          <p className="text-xs text-muted-foreground">Thank you for your dedication and contribution to the company!</p>
+                          <p className="font-bold text-lg text-black">
+                            Happy Work Anniversary! 🎖️
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Thank you for your dedication and contribution to
+                            the company!
+                          </p>
                         </div>
                       </div>
                     )}
-                    {essStats.workAnniversary?.todayAnniversaries?.map((a: any) => (
-                      <div key={a._id} className="flex items-center gap-3 py-1 border-t border-black/10 pt-2">
-                        <Award className="w-5 h-5 text-yellow-600" />
-                        <p className="text-sm font-semibold text-black">
-                          Happy Work Anniversary to <span className="font-bold">{a.firstName} {a.lastName}</span>! 👏
-                        </p>
-                      </div>
-                    ))}
+                    {essStats.workAnniversary?.todayAnniversaries?.map(
+                      (a: any) => (
+                        <div
+                          key={a._id}
+                          className="flex items-center gap-3 py-1 border-t border-black/10 pt-2"
+                        >
+                          <Award className="w-5 h-5 text-yellow-600" />
+                          <p className="text-sm font-semibold text-black">
+                            Happy Work Anniversary to{" "}
+                            <span className="font-bold">
+                              {a.firstName} {a.lastName}
+                            </span>
+                            ! 👏
+                          </p>
+                        </div>
+                      ),
+                    )}
                   </div>
                 )}
 
@@ -769,10 +810,15 @@ export default function EmployeeDashboard() {
                   <div className="border-2 border-black bg-white p-4 flex items-center gap-3">
                     <Clock className="w-8 h-8 text-[#024BAB]" />
                     <div>
-                      <p className="text-[10px] font-black uppercase text-muted-foreground">Today's Shift</p>
-                      <p className="text-sm font-bold text-black">{essStats.todayShift?.name || "General"}</p>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                        Today's Shift
+                      </p>
+                      <p className="text-sm font-bold text-black">
+                        {essStats.todayShift?.name || "General"}
+                      </p>
                       <p className="text-xs text-muted-foreground">
-                        {essStats.todayShift?.startTime} - {essStats.todayShift?.endTime}
+                        {essStats.todayShift?.startTime} -{" "}
+                        {essStats.todayShift?.endTime}
                       </p>
                     </div>
                   </div>
@@ -781,13 +827,17 @@ export default function EmployeeDashboard() {
                   <div className="border-2 border-black bg-white p-4 flex items-center gap-3">
                     <UserCheck className="w-8 h-8 text-[#FA731C]" />
                     <div>
-                      <p className="text-[10px] font-black uppercase text-muted-foreground">Approvals</p>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                        Approvals
+                      </p>
                       <p className="text-sm font-bold text-black">
-                        {essStats.pendingApprovalsCount > 0 
-                          ? `${essStats.pendingApprovalsCount} Pending` 
+                        {essStats.pendingApprovalsCount > 0
+                          ? `${essStats.pendingApprovalsCount} Pending`
                           : "All Clean"}
                       </p>
-                      <p className="text-xs text-muted-foreground">Requires review</p>
+                      <p className="text-xs text-muted-foreground">
+                        Requires review
+                      </p>
                     </div>
                   </div>
 
@@ -795,13 +845,17 @@ export default function EmployeeDashboard() {
                   <div className="border-2 border-black bg-white p-4 flex items-center gap-3">
                     <IndianRupee className="w-8 h-8 text-[#00C48C]" />
                     <div>
-                      <p className="text-[10px] font-black uppercase text-muted-foreground">Pending Salary</p>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                        Pending Salary
+                      </p>
                       <p className="text-sm font-bold text-black">
-                        {essStats.pendingSalary?.length > 0 
-                          ? `${essStats.pendingSalary.length} Months` 
+                        {essStats.pendingSalary?.length > 0
+                          ? `${essStats.pendingSalary.length} Months`
                           : "Paid"}
                       </p>
-                      <p className="text-xs text-muted-foreground">Unpaid payslips</p>
+                      <p className="text-xs text-muted-foreground">
+                        Unpaid payslips
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -811,27 +865,32 @@ export default function EmployeeDashboard() {
                   <div className="border-2 border-black bg-white overflow-hidden">
                     <div className="px-4 py-3 bg-[#024BAB] flex items-center gap-2">
                       <Megaphone className="w-4 h-4 text-white" />
-                      <p className="text-xs font-black uppercase tracking-wider text-white">
+                      <p className="text-xs font-bold uppercase tracking-wider text-white">
                         Company Announcements
                       </p>
                     </div>
                     <div className="p-4 space-y-3">
                       {essStats.announcements.map((a: any) => (
-                        <div key={a._id} className="border-b border-black/5 last:border-b-0 pb-3 last:pb-0">
+                        <div
+                          key={a._id}
+                          className="border-b border-black/5 last:border-b-0 pb-3 last:pb-0"
+                        >
                           <div className="flex items-center justify-between">
-                            <h4 className="font-bold text-sm text-black">{a.title}</h4>
+                            <h4 className="font-bold text-sm text-black">
+                              {a.title}
+                            </h4>
                             <span className="text-[10px] font-mono text-muted-foreground">
                               {new Date(a.date).toLocaleDateString("en-IN")}
                             </span>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">{a.content}</p>
+                          <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">
+                            {a.content}
+                          </p>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
-
-
               </div>
             )}
 
@@ -863,7 +922,7 @@ export default function EmployeeDashboard() {
                     className="border-2 border-black bg-white p-4"
                   >
                     <div className={cn("w-2 h-8 mb-3", color)} />
-                    <p className="text-xs font-black uppercase text-muted-foreground">
+                    <p className="text-xs font-bold uppercase text-muted-foreground">
                       {label}
                     </p>
                     <p className={cn("text-2xl font-bold mt-1", text)}>
@@ -879,7 +938,7 @@ export default function EmployeeDashboard() {
               <div className="border-2 border-black bg-white overflow-hidden">
                 <div className="px-4 py-3 bg-[#024BAB]/5 border-b-2 border-black flex items-center gap-2">
                   <Clock className="w-4 h-4 text-[#024BAB]" />
-                  <p className="text-xs font-black uppercase tracking-wider text-black">
+                  <p className="text-xs font-bold uppercase tracking-wider text-black">
                     Recent Attendance
                   </p>
                 </div>
@@ -896,7 +955,7 @@ export default function EmployeeDashboard() {
                         ].map((h) => (
                           <th
                             key={h}
-                            className="px-4 py-2 text-left text-[10px] font-black uppercase tracking-wider text-black"
+                            className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-black"
                           >
                             {h}
                           </th>
@@ -918,7 +977,7 @@ export default function EmployeeDashboard() {
                           <td className="px-4 py-2.5">
                             <span
                               className={cn(
-                                "px-2 py-0.5 text-[10px] font-black uppercase border-2",
+                                "px-2 py-0.5 text-[10px] font-bold uppercase border-2",
                                 attendanceStatusColor[rec.status] ||
                                   "bg-gray-100 text-gray-500 border-gray-300",
                               )}
@@ -959,13 +1018,13 @@ export default function EmployeeDashboard() {
                 <div className="px-4 py-3 bg-[#024BAB]/5 border-b-2 border-black flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-[#024BAB]" />
-                    <p className="text-xs font-black uppercase tracking-wider text-black">
+                    <p className="text-xs font-bold uppercase tracking-wider text-black">
                       Recent Leaves
                     </p>
                   </div>
                   <button
                     onClick={() => setTab("leaves")}
-                    className="text-[10px] font-black text-[#024BAB] flex items-center gap-1"
+                    className="text-[10px] font-bold text-[#024BAB] flex items-center gap-1"
                   >
                     View All <ChevronRight className="w-3 h-3" />
                   </button>
@@ -987,7 +1046,7 @@ export default function EmployeeDashboard() {
                       </div>
                       <span
                         className={cn(
-                          "px-2 py-0.5 text-[10px] font-black uppercase border-2",
+                          "px-2 py-0.5 text-[10px] font-bold uppercase border-2",
                           leaveStatusColor[lv.status] ||
                             "bg-gray-100 text-gray-500 border-gray-300",
                         )}
@@ -1005,7 +1064,7 @@ export default function EmployeeDashboard() {
               <div className="border-2 border-black bg-white overflow-hidden">
                 <div className="px-4 py-3 bg-[#024BAB]/5 border-b-2 border-black flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-[#024BAB]" />
-                  <p className="text-xs font-black uppercase tracking-wider text-black">
+                  <p className="text-xs font-bold uppercase tracking-wider text-black">
                     Performance Reviews
                   </p>
                 </div>
@@ -1085,7 +1144,7 @@ export default function EmployeeDashboard() {
               ].map(({ label, value, color, text }) => (
                 <div key={label} className="border-2 border-black bg-white p-4">
                   <div className={cn("w-2 h-6 mb-3", color)} />
-                  <p className="text-xs font-black uppercase text-muted-foreground">
+                  <p className="text-xs font-bold uppercase text-muted-foreground">
                     {label}
                   </p>
                   <p className={cn("text-2xl font-bold mt-1", text)}>{value}</p>
@@ -1095,7 +1154,7 @@ export default function EmployeeDashboard() {
           )}
           <div className="border-2 border-black bg-white overflow-hidden">
             <div className="px-4 py-3 bg-[#024BAB]/5 border-b-2 border-black">
-              <p className="text-xs font-black uppercase tracking-wider text-black">
+              <p className="text-xs font-bold uppercase tracking-wider text-black">
                 Attendance Records
               </p>
             </div>
@@ -1118,7 +1177,7 @@ export default function EmployeeDashboard() {
                       ].map((h) => (
                         <th
                           key={h}
-                          className="px-4 py-2 text-left text-[10px] font-black uppercase tracking-wider"
+                          className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-wider"
                         >
                           {h}
                         </th>
@@ -1140,7 +1199,7 @@ export default function EmployeeDashboard() {
                         <td className="px-4 py-3">
                           <span
                             className={cn(
-                              "px-2 py-0.5 text-[10px] font-black uppercase border-2",
+                              "px-2 py-0.5 text-[10px] font-bold uppercase border-2",
                               attendanceStatusColor[rec.status] ||
                                 "bg-gray-100 text-gray-500 border-gray-300",
                             )}
@@ -1186,12 +1245,12 @@ export default function EmployeeDashboard() {
         <div className="space-y-4">
           <div className="border-2 border-black bg-white overflow-hidden">
             <div className="px-4 py-3 bg-[#024BAB]/5 border-b-2 border-black flex items-center justify-between">
-              <p className="text-xs font-black uppercase tracking-wider text-black">
+              <p className="text-xs font-bold uppercase tracking-wider text-black">
                 Leave Records ({leaves.length})
               </p>
               <button
                 onClick={() => setShowLeaveModal(true)}
-                className="flex items-center gap-1.5 bg-[#024BAB] text-white border-2 border-black px-3 py-1.5 text-xs font-black uppercase hover:bg-[#024BAB]/90 transition-colors"
+                className="flex items-center gap-1.5 bg-[#024BAB] text-white border-2 border-black px-3 py-1.5 text-xs font-bold uppercase hover:bg-[#024BAB]/90 transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Request Leave
@@ -1215,7 +1274,7 @@ export default function EmployeeDashboard() {
                         </p>
                         <span
                           className={cn(
-                            "px-2 py-0.5 text-[10px] font-black uppercase border-2",
+                            "px-2 py-0.5 text-[10px] font-bold uppercase border-2",
                             leaveStatusColor[lv.status] ||
                               "bg-gray-100 text-gray-500 border-gray-300",
                           )}
@@ -1248,7 +1307,7 @@ export default function EmployeeDashboard() {
             <div className="flex items-center justify-between px-5 py-4 border-b-2 border-black bg-[#024BAB]">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-white" />
-                <p className="text-sm font-black uppercase tracking-wider text-white">
+                <p className="text-sm font-bold uppercase tracking-wider text-white">
                   Request Leave
                 </p>
               </div>
@@ -1262,7 +1321,7 @@ export default function EmployeeDashboard() {
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-black uppercase mb-1.5">
+                  <label className="block text-xs font-bold uppercase mb-1.5">
                     Leave Type
                   </label>
                   <select
@@ -1314,7 +1373,7 @@ export default function EmployeeDashboard() {
 
               {leaveForm.isHalfDay && leaveForm.leaveType !== "hourly" && (
                 <div>
-                  <label className="block text-xs font-black uppercase mb-1.5">
+                  <label className="block text-xs font-bold uppercase mb-1.5">
                     Half Day Type
                   </label>
                   <select
@@ -1336,20 +1395,23 @@ export default function EmployeeDashboard() {
               {leaveForm.leaveType === "hourly" && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-black uppercase mb-1.5">
+                    <label className="block text-xs font-bold uppercase mb-1.5">
                       Start Hour
                     </label>
                     <input
                       type="time"
                       value={leaveForm.startHour}
                       onChange={(e) =>
-                        setLeaveForm((f) => ({ ...f, startHour: e.target.value }))
+                        setLeaveForm((f) => ({
+                          ...f,
+                          startHour: e.target.value,
+                        }))
                       }
                       className="w-full border-2 border-black px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#024BAB] bg-white"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-black uppercase mb-1.5">
+                    <label className="block text-xs font-bold uppercase mb-1.5">
                       End Hour
                     </label>
                     <input
@@ -1366,7 +1428,7 @@ export default function EmployeeDashboard() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-black uppercase mb-1.5">
+                  <label className="block text-xs font-bold uppercase mb-1.5">
                     Start Date
                   </label>
                   <input
@@ -1379,7 +1441,7 @@ export default function EmployeeDashboard() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-black uppercase mb-1.5">
+                  <label className="block text-xs font-bold uppercase mb-1.5">
                     End Date
                   </label>
                   <input
@@ -1407,7 +1469,7 @@ export default function EmployeeDashboard() {
               )}
 
               <div>
-                <label className="block text-xs font-black uppercase mb-1.5">
+                <label className="block text-xs font-bold uppercase mb-1.5">
                   Reason
                 </label>
                 <textarea
@@ -1428,14 +1490,14 @@ export default function EmployeeDashboard() {
             <div className="flex gap-3 px-5 pb-5">
               <button
                 onClick={() => setShowLeaveModal(false)}
-                className="flex-1 border-2 border-black py-2.5 text-sm font-black uppercase hover:bg-gray-50"
+                className="flex-1 border-2 border-black py-2.5 text-sm font-bold uppercase hover:bg-gray-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleRequestLeave}
                 disabled={leaveSaving}
-                className="flex-1 flex items-center justify-center gap-2 bg-[#024BAB] text-white border-2 border-black py-2.5 text-sm font-black uppercase disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 bg-[#024BAB] text-white border-2 border-black py-2.5 text-sm font-bold uppercase disabled:opacity-50"
               >
                 {leaveSaving ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -1453,7 +1515,7 @@ export default function EmployeeDashboard() {
       {tab === "payroll" && (
         <div className="border-2 border-black bg-white overflow-hidden">
           <div className="px-4 py-3 bg-[#024BAB]/5 border-b-2 border-black">
-            <p className="text-xs font-black uppercase tracking-wider text-black">
+            <p className="text-xs font-bold uppercase tracking-wider text-black">
               Payroll History
             </p>
           </div>
@@ -1477,7 +1539,7 @@ export default function EmployeeDashboard() {
                     ].map((h) => (
                       <th
                         key={h}
-                        className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-wider"
+                        className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider"
                       >
                         {h}
                       </th>
@@ -1514,7 +1576,7 @@ export default function EmployeeDashboard() {
                       <td className="px-4 py-3">
                         <span
                           className={cn(
-                            "px-2 py-0.5 text-[10px] font-black uppercase border-2",
+                            "px-2 py-0.5 text-[10px] font-bold uppercase border-2",
                             payrollStatusColor[p.status] ||
                               "bg-gray-100 text-gray-500 border-gray-300",
                           )}
@@ -1535,9 +1597,7 @@ export default function EmployeeDashboard() {
         <DocumentsTabPane employee={employee} toast={toast} />
       )}
 
-      {tab === "assets" && (
-        <AssetsTabPane toast={toast} />
-      )}
+      {tab === "assets" && <AssetsTabPane toast={toast} />}
 
       {}
       {tab === "settings" && (
@@ -1546,7 +1606,7 @@ export default function EmployeeDashboard() {
           <div className="border-2 border-black bg-white overflow-hidden">
             <div className="px-4 py-3 bg-[#024BAB] border-b-2 border-black flex items-center gap-2">
               <Camera className="w-4 h-4 text-white" />
-              <p className="text-xs font-black uppercase tracking-wider text-white">
+              <p className="text-xs font-bold uppercase tracking-wider text-white">
                 Profile Photo
               </p>
             </div>
@@ -1571,7 +1631,7 @@ export default function EmployeeDashboard() {
                 <button
                   onClick={() => photoInputRef.current?.click()}
                   disabled={photoUploading}
-                  className="flex-1 flex items-center justify-center gap-2 bg-[#024BAB] text-white border-2 border-black py-2.5 font-black text-xs uppercase disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 bg-[#024BAB] text-white border-2 border-black py-2.5 font-bold text-xs uppercase disabled:opacity-50"
                 >
                   {photoUploading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1584,7 +1644,7 @@ export default function EmployeeDashboard() {
                   <button
                     onClick={handleRemovePhoto}
                     disabled={saving}
-                    className="flex items-center justify-center gap-2 bg-white text-[#EF4444] border-2 border-[#EF4444] px-4 py-2.5 font-black text-xs uppercase disabled:opacity-50"
+                    className="flex items-center justify-center gap-2 bg-white text-[#EF4444] border-2 border-[#EF4444] px-4 py-2.5 font-bold text-xs uppercase disabled:opacity-50"
                   >
                     <X className="w-4 h-4" /> Remove
                   </button>
@@ -1604,13 +1664,13 @@ export default function EmployeeDashboard() {
           <div className="border-2 border-black bg-white overflow-hidden">
             <div className="px-4 py-3 bg-[#024BAB] border-b-2 border-black flex items-center gap-2">
               <Edit2 className="w-4 h-4 text-white" />
-              <p className="text-xs font-black uppercase tracking-wider text-white">
+              <p className="text-xs font-bold uppercase tracking-wider text-white">
                 Edit Profile
               </p>
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-xs font-black uppercase mb-1.5">
+                <label className="block text-xs font-bold uppercase mb-1.5">
                   Display Name
                 </label>
                 <input
@@ -1621,7 +1681,7 @@ export default function EmployeeDashboard() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-black uppercase mb-1.5">
+                <label className="block text-xs font-bold uppercase mb-1.5">
                   Phone Number
                 </label>
                 <input
@@ -1632,7 +1692,7 @@ export default function EmployeeDashboard() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-black uppercase mb-1.5">
+                <label className="block text-xs font-bold uppercase mb-1.5">
                   Email
                 </label>
                 <input
@@ -1647,7 +1707,7 @@ export default function EmployeeDashboard() {
               <button
                 onClick={handleSaveProfile}
                 disabled={saving}
-                className="w-full flex items-center justify-center gap-2 bg-[#024BAB] text-white border-2 border-black py-2.5 font-black text-xs uppercase disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 bg-[#024BAB] text-white border-2 border-black py-2.5 font-bold text-xs uppercase disabled:opacity-50"
               >
                 {saving ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -1663,7 +1723,7 @@ export default function EmployeeDashboard() {
           <div className="border-2 border-black bg-white overflow-hidden lg:col-span-2">
             <div className="px-4 py-3 bg-[#024BAB] border-b-2 border-black flex items-center gap-2">
               <Lock className="w-4 h-4 text-white" />
-              <p className="text-xs font-black uppercase tracking-wider text-white">
+              <p className="text-xs font-bold uppercase tracking-wider text-white">
                 Change Password
               </p>
             </div>
@@ -1674,7 +1734,7 @@ export default function EmployeeDashboard() {
                 { key: "confirm", label: "Confirm New Password" },
               ].map(({ key, label }) => (
                 <div key={key}>
-                  <label className="block text-xs font-black uppercase mb-1.5">
+                  <label className="block text-xs font-bold uppercase mb-1.5">
                     {label}
                   </label>
                   <div className="relative">
@@ -1721,7 +1781,7 @@ export default function EmployeeDashboard() {
                     !pwForm.next ||
                     !pwForm.confirm
                   }
-                  className="flex items-center gap-2 bg-[#FA731C] text-white border-2 border-black px-6 py-2.5 font-black text-xs uppercase disabled:opacity-50"
+                  className="flex items-center gap-2 bg-[#FA731C] text-white border-2 border-black px-6 py-2.5 font-bold text-xs uppercase disabled:opacity-50"
                 >
                   {pwSaving ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1734,7 +1794,11 @@ export default function EmployeeDashboard() {
             </div>
           </div>
           <div className="mt-6 border-t-2 border-black/10 pt-6">
-            <ProfileDetailsTabPane employee={employee} toast={toast} onRefresh={loadEmployeeData} />
+            <ProfileDetailsTabPane
+              employee={employee}
+              toast={toast}
+              onRefresh={loadEmployeeData}
+            />
           </div>
         </div>
       )}

@@ -65,7 +65,7 @@ function StatusBadge({ status }: { status: string }) {
   const { label, cls } = map[status] ?? map.draft;
   return (
     <span
-      className={`text-[10px] font-black uppercase border-2 px-2 py-0.5 ${cls}`}
+      className={`text-[10px] font-bold uppercase border-2 px-2 py-0.5 ${cls}`}
     >
       {label}
     </span>
@@ -143,7 +143,7 @@ export default function EmployeePayrollPage() {
       <div className="w-full mx-auto">
         <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="font-display font-black text-3xl text-black">
+            <h1 className="font-display font-bold text-3xl text-black">
               My Payroll
             </h1>
             <p className="text-gray-600 font-medium mt-1">
@@ -199,10 +199,10 @@ export default function EmployeePayrollPage() {
                   <Icon className={`w-5 h-5 ${color}`} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase text-gray-500">
+                  <p className="text-[10px] font-bold uppercase text-gray-500">
                     {label}
                   </p>
-                  <p className={`text-lg font-black ${color}`}>{value}</p>
+                  <p className={`text-lg font-bold ${color}`}>{value}</p>
                 </div>
               </div>
             ))}
@@ -216,7 +216,7 @@ export default function EmployeePayrollPage() {
         ) : payrolls.length === 0 ? (
           <div className="border-2 border-black bg-white p-12 text-center">
             <IndianRupee className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <p className="font-black text-lg text-gray-500">
+            <p className="font-bold text-lg text-gray-500">
               No payroll records for {filterYear}
             </p>
             <p className="text-sm text-gray-400 mt-1">
@@ -233,15 +233,15 @@ export default function EmployeePayrollPage() {
                 {}
                 <div className="flex items-center gap-3 min-w-[130px]">
                   <div className="w-10 h-10 bg-[#024BAB] border-2 border-black flex flex-col items-center justify-center shrink-0">
-                    <span className="text-[9px] font-black text-white uppercase leading-none">
+                    <span className="text-[9px] font-bold text-white uppercase leading-none">
                       {MONTHS[p.month - 1].slice(0, 3)}
                     </span>
-                    <span className="text-xs font-black text-white leading-none">
+                    <span className="text-xs font-bold text-white leading-none">
                       {p.year}
                     </span>
                   </div>
                   <div>
-                    <p className="font-black text-sm text-black">
+                    <p className="font-bold text-sm text-black">
                       {MONTHS[p.month - 1]} {p.year}
                     </p>
                     <StatusBadge status={p.status} />
@@ -258,7 +258,7 @@ export default function EmployeePayrollPage() {
                 {}
                 <div className="flex gap-6 items-center">
                   <div className="text-center hidden md:block">
-                    <p className="text-[10px] font-black uppercase text-gray-400">
+                    <p className="text-[10px] font-bold uppercase text-gray-400">
                       Gross
                     </p>
                     <p className="text-sm font-bold text-black">
@@ -266,7 +266,7 @@ export default function EmployeePayrollPage() {
                     </p>
                   </div>
                   <div className="text-center hidden md:block">
-                    <p className="text-[10px] font-black uppercase text-red-400">
+                    <p className="text-[10px] font-bold uppercase text-red-400">
                       Deductions
                     </p>
                     <p className="text-sm font-bold text-red-500">
@@ -274,10 +274,10 @@ export default function EmployeePayrollPage() {
                     </p>
                   </div>
                   <div className="text-center">
-                    <p className="text-[10px] font-black uppercase text-[#00C48C]">
+                    <p className="text-[10px] font-bold uppercase text-[#00C48C]">
                       Net Pay
                     </p>
-                    <p className="text-base font-black text-[#00C48C]">
+                    <p className="text-base font-bold text-[#00C48C]">
                       {formatCurrency(p.netSalary)}
                     </p>
                   </div>
@@ -286,7 +286,7 @@ export default function EmployeePayrollPage() {
                 {}
                 <button
                   onClick={() => handlePrint(p)}
-                  className="flex items-center gap-1.5 border-2 border-black px-3 py-2 text-xs font-black hover:bg-[#024BAB] hover:text-white transition-colors shrink-0"
+                  className="flex items-center gap-1.5 border-2 border-black px-3 py-2 text-xs font-bold hover:bg-[#024BAB] hover:text-white transition-colors shrink-0"
                 >
                   <Download className="w-3.5 h-3.5" />
                   Slip

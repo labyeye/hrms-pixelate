@@ -369,7 +369,7 @@ function TwoFactorPanel() {
   return (
     <div className="p-6 space-y-6 max-w-lg">
       <div>
-        <h3 className="text-lg font-black text-black flex items-center gap-2">
+        <h3 className="text-lg font-bold text-black flex items-center gap-2">
           <ShieldCheck className="w-5 h-5" /> Two-Factor Authentication
         </h3>
         <p className="text-sm text-gray-500 mt-1">
@@ -379,7 +379,7 @@ function TwoFactorPanel() {
       </div>
 
       <div
-        className={`flex items-center gap-3 px-4 py-3 border-2 font-black text-sm ${enabled ? "border-green-400 bg-green-50 text-green-800" : "border-gray-300 bg-gray-50 text-gray-500"}`}
+        className={`flex items-center gap-3 px-4 py-3 border-2 font-bold text-sm ${enabled ? "border-green-400 bg-green-50 text-green-800" : "border-gray-300 bg-gray-50 text-gray-500"}`}
       >
         <ShieldCheck className="w-4 h-4 shrink-0" />
         {enabled
@@ -391,7 +391,7 @@ function TwoFactorPanel() {
         <button
           onClick={handleSetup}
           disabled={loading}
-          className="bg-[#024BAB] text-white px-5 py-2.5 text-sm font-black border-2 border-black hover:shadow-[4px_4px_0px_#0a0a0a] transition-all disabled:opacity-50"
+          className="bg-[#024BAB] text-white px-5 py-2.5 text-sm font-bold border-2 border-black hover:shadow-[4px_4px_0px_#0a0a0a] transition-all disabled:opacity-50"
         >
           {loading ? "Setting up..." : "Enable 2FA"}
         </button>
@@ -428,12 +428,12 @@ function TwoFactorPanel() {
               }
               placeholder="000000"
               maxLength={6}
-              className="flex-1 px-3 py-2.5 border-2 border-black text-lg font-black tracking-[0.4em] text-center focus:outline-none focus:border-[#024BAB]"
+              className="flex-1 px-3 py-2.5 border-2 border-black text-lg font-bold tracking-[0.4em] text-center focus:outline-none focus:border-[#024BAB]"
             />
             <button
               type="submit"
               disabled={loading || code.length < 6}
-              className="bg-[#024BAB] text-white px-5 py-2.5 text-sm font-black border-2 border-black disabled:opacity-50 hover:shadow-[4px_4px_0px_#0a0a0a] transition-all"
+              className="bg-[#024BAB] text-white px-5 py-2.5 text-sm font-bold border-2 border-black disabled:opacity-50 hover:shadow-[4px_4px_0px_#0a0a0a] transition-all"
             >
               {loading ? "..." : "Verify"}
             </button>
@@ -469,7 +469,7 @@ function TwoFactorPanel() {
           </div>
           <button
             onClick={() => setStep("idle")}
-            className="bg-[#024BAB] text-white px-5 py-2.5 text-sm font-black border-2 border-black hover:shadow-[4px_4px_0px_#0a0a0a] transition-all"
+            className="bg-[#024BAB] text-white px-5 py-2.5 text-sm font-bold border-2 border-black hover:shadow-[4px_4px_0px_#0a0a0a] transition-all"
           >
             Done — I've saved my codes
           </button>
@@ -478,7 +478,7 @@ function TwoFactorPanel() {
 
       {enabled && step === "idle" && (
         <div className="border-2 border-red-300 p-5 space-y-3">
-          <p className="text-sm font-black text-red-700">Disable 2FA</p>
+          <p className="text-sm font-bold text-red-700">Disable 2FA</p>
           <p className="text-xs text-gray-500">
             Enter a code from your authenticator app to disable 2FA.
           </p>
@@ -491,12 +491,12 @@ function TwoFactorPanel() {
               }
               placeholder="000000"
               maxLength={6}
-              className="flex-1 px-3 py-2.5 border-2 border-black text-lg font-black tracking-[0.4em] text-center focus:outline-none focus:border-red-400"
+              className="flex-1 px-3 py-2.5 border-2 border-black text-lg font-bold tracking-[0.4em] text-center focus:outline-none focus:border-red-400"
             />
             <button
               type="submit"
               disabled={loading || disableCode.length < 6}
-              className="bg-red-600 text-white px-5 py-2.5 text-sm font-black border-2 border-black disabled:opacity-50"
+              className="bg-red-600 text-white px-5 py-2.5 text-sm font-bold border-2 border-black disabled:opacity-50"
             >
               {loading ? "..." : "Disable"}
             </button>
@@ -1113,7 +1113,7 @@ export default function SettingsPage() {
                 key={group.group}
                 className="border-b-2 border-black last:border-b-0"
               >
-                <p className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground bg-gray-50 border-b border-black/10">
+                <p className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-gray-50 border-b border-black/10">
                   {group.group}
                 </p>
                 {group.items.map((tab) => {
@@ -1421,7 +1421,7 @@ export default function SettingsPage() {
                   {}
                   <div className="flex items-center justify-between p-4 border-2 border-black bg-green-50">
                     <div>
-                      <p className="font-black text-sm text-black">
+                      <p className="font-bold text-sm text-black">
                         Enable WhatsApp Notifications
                       </p>
                       <p className="text-xs text-gray-500 mt-0.5">
@@ -1453,7 +1453,7 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="p-4 bg-[#F0F7FF] border-2 border-[#024BAB]/30 text-xs text-gray-700 space-y-1">
-                    <p className="font-black text-[#024BAB] text-sm">
+                    <p className="font-bold text-[#024BAB] text-sm">
                       Powered by NestHR WhatsApp Service
                     </p>
                     <p>
@@ -1469,7 +1469,7 @@ export default function SettingsPage() {
 
                   {}
                   <div className="border-t-2 border-black pt-4 space-y-3">
-                    <h3 className="text-xs font-black uppercase tracking-wider text-gray-500">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">
                       Notification Events
                     </h3>
                     {[
@@ -1592,10 +1592,7 @@ export default function SettingsPage() {
                             {HRMS_ROLES.map((role) =>
                               (
                                 ["create", "read", "update", "delete"] as (
-                                  | "create"
-                                  | "read"
-                                  | "update"
-                                  | "delete"
+                                  "create" | "read" | "update" | "delete"
                                 )[]
                               ).map((op) => {
                                 const checked = res.permissions[role.id][op];
@@ -1709,7 +1706,7 @@ export default function SettingsPage() {
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="block text-xs font-black text-black uppercase tracking-wider">
+                      <label className="block text-xs font-bold text-black uppercase tracking-wider">
                         Salary Mode
                       </label>
                       <select
@@ -1728,7 +1725,7 @@ export default function SettingsPage() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="block text-xs font-black text-black uppercase tracking-wider">
+                      <label className="block text-xs font-bold text-black uppercase tracking-wider">
                         Salary Pay Day
                       </label>
                       <select
@@ -1762,7 +1759,7 @@ export default function SettingsPage() {
                     </div>
                   </div>
                   <div className="border-t-2 border-black/10 pt-4 space-y-3">
-                    <p className="text-xs font-black uppercase tracking-wider text-black">
+                    <p className="text-xs font-bold uppercase tracking-wider text-black">
                       Overtime
                     </p>
                     {[
@@ -1815,7 +1812,7 @@ export default function SettingsPage() {
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="block text-xs font-black text-black uppercase tracking-wider">
+                      <label className="block text-xs font-bold text-black uppercase tracking-wider">
                         Single Punch Action
                       </label>
                       <select
@@ -1834,7 +1831,7 @@ export default function SettingsPage() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="block text-xs font-black text-black uppercase tracking-wider">
+                      <label className="block text-xs font-bold text-black uppercase tracking-wider">
                         Double Punch Interval (minutes)
                       </label>
                       <input
@@ -2002,7 +1999,7 @@ export default function SettingsPage() {
                   ))}
                   {}
                   <div className="border-t-2 border-black/10 pt-4">
-                    <p className="text-xs font-black uppercase tracking-wider text-black mb-3">
+                    <p className="text-xs font-bold uppercase tracking-wider text-black mb-3">
                       API Key
                     </p>
                     <div className="flex items-center gap-2 border-2 border-black p-3 bg-gray-50">
@@ -2073,7 +2070,7 @@ export default function SettingsPage() {
                       },
                     ].map(({ key, label, options }) => (
                       <div key={key} className="space-y-2">
-                        <label className="block text-xs font-black text-black uppercase tracking-wider">
+                        <label className="block text-xs font-bold text-black uppercase tracking-wider">
                           {label}
                         </label>
                         <select
@@ -2099,7 +2096,7 @@ export default function SettingsPage() {
                       </div>
                     ))}
                     <div className="space-y-2">
-                      <label className="block text-xs font-black text-black uppercase tracking-wider">
+                      <label className="block text-xs font-bold text-black uppercase tracking-wider">
                         Employee Code Prefix
                       </label>
                       <input
@@ -2116,7 +2113,7 @@ export default function SettingsPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="block text-xs font-black text-black uppercase tracking-wider">
+                      <label className="block text-xs font-bold text-black uppercase tracking-wider">
                         Employee Code Suffix
                       </label>
                       <input
@@ -2213,7 +2210,7 @@ export default function SettingsPage() {
                       <button
                         onClick={() => photoInputRef.current?.click()}
                         disabled={photoUploading}
-                        className="flex items-center gap-1.5 bg-[#024BAB] text-white border-2 border-black px-4 py-2 text-xs font-black uppercase disabled:opacity-50"
+                        className="flex items-center gap-1.5 bg-[#024BAB] text-white border-2 border-black px-4 py-2 text-xs font-bold uppercase disabled:opacity-50"
                       >
                         <Upload className="w-3.5 h-3.5" />
                         {photoUploading ? "Uploading..." : "Upload Photo"}
@@ -2222,7 +2219,7 @@ export default function SettingsPage() {
                         <button
                           onClick={handleRemovePhoto}
                           disabled={photoUploading}
-                          className="flex items-center gap-1.5 bg-white text-[#EF4444] border-2 border-[#EF4444] px-4 py-2 text-xs font-black uppercase disabled:opacity-50"
+                          className="flex items-center gap-1.5 bg-white text-[#EF4444] border-2 border-[#EF4444] px-4 py-2 text-xs font-bold uppercase disabled:opacity-50"
                         >
                           <X className="w-3.5 h-3.5" /> Remove
                         </button>
@@ -2241,13 +2238,13 @@ export default function SettingsPage() {
                   <div className="border-2 border-black overflow-hidden">
                     <div className="px-4 py-3 bg-[#024BAB] border-b-2 border-black flex items-center gap-2">
                       <UserCircle className="w-4 h-4 text-white" />
-                      <p className="text-xs font-black uppercase tracking-wider text-white">
+                      <p className="text-xs font-bold uppercase tracking-wider text-white">
                         Edit Profile
                       </p>
                     </div>
                     <div className="p-5 space-y-4">
                       <div>
-                        <label className="block text-xs font-black uppercase mb-1.5">
+                        <label className="block text-xs font-bold uppercase mb-1.5">
                           Display Name
                         </label>
                         <input
@@ -2258,7 +2255,7 @@ export default function SettingsPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-black uppercase mb-1.5">
+                        <label className="block text-xs font-bold uppercase mb-1.5">
                           Phone Number
                         </label>
                         <input
@@ -2269,7 +2266,7 @@ export default function SettingsPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-black uppercase mb-1.5">
+                        <label className="block text-xs font-bold uppercase mb-1.5">
                           Email
                         </label>
                         <input
@@ -2284,7 +2281,7 @@ export default function SettingsPage() {
                       <button
                         onClick={handleSaveProfile}
                         disabled={profileSaving}
-                        className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-6 py-2.5 text-xs font-black uppercase disabled:opacity-50"
+                        className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-6 py-2.5 text-xs font-bold uppercase disabled:opacity-50"
                       >
                         {profileSaving ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
@@ -2300,7 +2297,7 @@ export default function SettingsPage() {
                   <div className="border-2 border-black overflow-hidden">
                     <div className="px-4 py-3 bg-[#024BAB] border-b-2 border-black flex items-center gap-2">
                       <Lock className="w-4 h-4 text-white" />
-                      <p className="text-xs font-black uppercase tracking-wider text-white">
+                      <p className="text-xs font-bold uppercase tracking-wider text-white">
                         Change Password
                       </p>
                     </div>
@@ -2311,7 +2308,7 @@ export default function SettingsPage() {
                         { key: "confirm", label: "Confirm New Password" },
                       ].map(({ key, label }) => (
                         <div key={key}>
-                          <label className="block text-xs font-black uppercase mb-1.5">
+                          <label className="block text-xs font-bold uppercase mb-1.5">
                             {label}
                           </label>
                           <div className="relative">
@@ -2359,7 +2356,7 @@ export default function SettingsPage() {
                             !pwForm.next ||
                             !pwForm.confirm
                           }
-                          className="flex items-center gap-2 bg-[#FA731C] text-white border-2 border-black px-6 py-2.5 text-xs font-black uppercase disabled:opacity-50"
+                          className="flex items-center gap-2 bg-[#FA731C] text-white border-2 border-black px-6 py-2.5 text-xs font-bold uppercase disabled:opacity-50"
                         >
                           {pwSaving ? (
                             <Loader2 className="w-4 h-4 animate-spin" />

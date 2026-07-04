@@ -189,7 +189,7 @@ export function buildReportHTML(
     }
     .company-name {
       font-size: 17px;
-      font-weight: 900;
+      font-weight: 700;
       color: #024BAB;
       line-height: 1.2;
     }

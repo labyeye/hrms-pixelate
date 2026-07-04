@@ -67,7 +67,7 @@ export function AppSidebar({ mobileOpen, onClose }: AppSidebarProps) {
           {groups.map((group) => (
             <div key={group.label}>
               {!collapsed && (
-                <p className="px-3 mb-1 text-[10px] font-black uppercase tracking-widest text-gray-400 select-none">
+                <p className="px-3 mb-1 text-[10px] font-bold uppercase tracking-widest text-gray-400 select-none">
                   {group.label}
                 </p>
               )}

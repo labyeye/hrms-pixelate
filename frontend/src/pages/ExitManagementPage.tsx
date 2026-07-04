@@ -179,7 +179,7 @@ export default function ExitManagementPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-black text-black flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-black flex items-center gap-2">
               <LogOut className="w-6 h-6" /> Exit Management
             </h1>
             <p className="text-sm text-gray-500 mt-0.5">
@@ -190,7 +190,7 @@ export default function ExitManagementPage() {
           {isHR && (
             <button
               onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 bg-[#024BAB] text-white px-4 py-2.5 text-sm font-black border-2 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_#0a0a0a] transition-all"
+              className="flex items-center gap-2 bg-[#024BAB] text-white px-4 py-2.5 text-sm font-bold border-2 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_#0a0a0a] transition-all"
             >
               <Plus className="w-4 h-4" /> Initiate Exit
             </button>
@@ -209,7 +209,7 @@ export default function ExitManagementPage() {
             <button
               key={f.value}
               onClick={() => setStatusFilter(f.value)}
-              className={`px-3 py-1.5 text-xs font-black border-2 transition-all ${statusFilter === f.value ? "bg-[#024BAB] text-white border-[#024BAB]" : "bg-white text-black border-black hover:border-[#024BAB]"}`}
+              className={`px-3 py-1.5 text-xs font-bold border-2 transition-all ${statusFilter === f.value ? "bg-[#024BAB] text-white border-[#024BAB]" : "bg-white text-black border-black hover:border-[#024BAB]"}`}
             >
               {f.label}
             </button>
@@ -232,22 +232,22 @@ export default function ExitManagementPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b-2 border-black bg-[#F0F6FF]">
-                    <th className="text-left px-4 py-3 font-black text-xs uppercase tracking-wider">
+                    <th className="text-left px-4 py-3 font-bold text-xs uppercase tracking-wider">
                       Employee
                     </th>
-                    <th className="text-left px-4 py-3 font-black text-xs uppercase tracking-wider">
+                    <th className="text-left px-4 py-3 font-bold text-xs uppercase tracking-wider">
                       Resignation
                     </th>
-                    <th className="text-left px-4 py-3 font-black text-xs uppercase tracking-wider">
+                    <th className="text-left px-4 py-3 font-bold text-xs uppercase tracking-wider">
                       Last Day
                     </th>
-                    <th className="text-left px-4 py-3 font-black text-xs uppercase tracking-wider">
+                    <th className="text-left px-4 py-3 font-bold text-xs uppercase tracking-wider">
                       Reason
                     </th>
-                    <th className="text-left px-4 py-3 font-black text-xs uppercase tracking-wider">
+                    <th className="text-left px-4 py-3 font-bold text-xs uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="text-left px-4 py-3 font-black text-xs uppercase tracking-wider">
+                    <th className="text-left px-4 py-3 font-bold text-xs uppercase tracking-wider">
                       FNF
                     </th>
                     <th className="px-4 py-3" />
@@ -279,7 +279,7 @@ export default function ExitManagementPage() {
                       </td>
                       <td className="px-4 py-3">
                         <span
-                          className={`px-2 py-0.5 text-xs font-black border rounded-sm ${STATUS_CONFIG[r.status]?.color || ""}`}
+                          className={`px-2 py-0.5 text-xs font-bold border rounded-sm ${STATUS_CONFIG[r.status]?.color || ""}`}
                         >
                           {STATUS_CONFIG[r.status]?.label || r.status}
                         </span>
@@ -298,7 +298,7 @@ export default function ExitManagementPage() {
                       <td className="px-4 py-3">
                         <button
                           onClick={() => setSelected(r)}
-                          className="text-[#024BAB] hover:underline font-black text-xs flex items-center gap-1"
+                          className="text-[#024BAB] hover:underline font-bold text-xs flex items-center gap-1"
                         >
                           View <ChevronRight className="w-3 h-3" />
                         </button>
@@ -317,14 +317,14 @@ export default function ExitManagementPage() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white border-2 border-black w-full max-w-lg">
             <div className="flex items-center justify-between px-6 py-4 border-b-2 border-black">
-              <h3 className="font-black text-lg">Initiate Exit Process</h3>
+              <h3 className="font-bold text-lg">Initiate Exit Process</h3>
               <button onClick={() => setShowCreate(false)}>
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleCreate} className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-black uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5">
                   Employee
                 </label>
                 <select
@@ -345,7 +345,7 @@ export default function ExitManagementPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5">
                     Resignation Date
                   </label>
                   <input
@@ -359,7 +359,7 @@ export default function ExitManagementPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5">
                     Notice Period (Days)
                   </label>
                   <input
@@ -376,7 +376,7 @@ export default function ExitManagementPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-black uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5">
                   Reason
                 </label>
                 <select
@@ -392,7 +392,7 @@ export default function ExitManagementPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-black uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider mb-1.5">
                   Details (optional)
                 </label>
                 <textarea
@@ -410,14 +410,14 @@ export default function ExitManagementPage() {
                 <button
                   type="button"
                   onClick={() => setShowCreate(false)}
-                  className="flex-1 py-2.5 border-2 border-black text-sm font-black hover:bg-gray-50"
+                  className="flex-1 py-2.5 border-2 border-black text-sm font-bold hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 bg-[#024BAB] text-white py-2.5 text-sm font-black border-2 border-black hover:shadow-[4px_4px_0px_#0a0a0a] transition-all"
+                  className="flex-1 bg-[#024BAB] text-white py-2.5 text-sm font-bold border-2 border-black hover:shadow-[4px_4px_0px_#0a0a0a] transition-all"
                 >
                   {saving ? "Saving..." : "Initiate Exit"}
                 </button>
@@ -432,7 +432,7 @@ export default function ExitManagementPage() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
           <div className="bg-white border-2 border-black w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 py-4 border-b-2 border-black sticky top-0 bg-white">
-              <h3 className="font-black text-lg">
+              <h3 className="font-bold text-lg">
                 {selected.employee?.firstName} {selected.employee?.lastName} —
                 Exit Details
               </h3>
@@ -476,7 +476,7 @@ export default function ExitManagementPage() {
                     <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">
                       {label}
                     </div>
-                    <div className="font-black text-sm text-black mt-0.5">
+                    <div className="font-bold text-sm text-black mt-0.5">
                       {value}
                     </div>
                   </div>
@@ -486,7 +486,7 @@ export default function ExitManagementPage() {
               {/* Checklist */}
               {isHR && (
                 <div className="border-2 border-black p-4">
-                  <h4 className="font-black mb-3 flex items-center gap-2">
+                  <h4 className="font-bold mb-3 flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4" /> Exit Checklist
                   </h4>
                   <div className="space-y-3">
@@ -498,7 +498,7 @@ export default function ExitManagementPage() {
                         onChange={(e) =>
                           handleUpdate(selected._id, { status: e.target.value })
                         }
-                        className="px-2 py-1 border-2 border-black text-xs font-black focus:outline-none"
+                        className="px-2 py-1 border-2 border-black text-xs font-bold focus:outline-none"
                       >
                         {Object.entries(STATUS_CONFIG).map(([v, { label }]) => (
                           <option key={v} value={v}>
@@ -563,12 +563,12 @@ export default function ExitManagementPage() {
               {/* FNF */}
               {isHR && (
                 <div className="border-2 border-black p-4">
-                  <h4 className="font-black mb-3 flex items-center gap-2">
+                  <h4 className="font-bold mb-3 flex items-center gap-2">
                     <DollarSign className="w-4 h-4" /> Full & Final Settlement
                   </h4>
                   <div className="grid grid-cols-2 gap-4 mb-3">
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-wider mb-1">
+                      <label className="block text-xs font-bold uppercase tracking-wider mb-1">
                         FNF Amount (₹)
                       </label>
                       <input
@@ -584,7 +584,7 @@ export default function ExitManagementPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-wider mb-1">
+                      <label className="block text-xs font-bold uppercase tracking-wider mb-1">
                         FNF Status
                       </label>
                       <select
@@ -594,7 +594,7 @@ export default function ExitManagementPage() {
                             fnfStatus: e.target.value,
                           })
                         }
-                        className="w-full px-3 py-2 border-2 border-black text-sm font-black focus:outline-none"
+                        className="w-full px-3 py-2 border-2 border-black text-sm font-bold focus:outline-none"
                       >
                         <option value="pending">Pending</option>
                         <option value="calculated">Calculated</option>
@@ -608,7 +608,7 @@ export default function ExitManagementPage() {
               {/* Notes */}
               {isHR && (
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1.5">
                     Exit Interview Notes
                   </label>
                   <textarea

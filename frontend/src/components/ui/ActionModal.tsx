@@ -53,7 +53,7 @@ export function ActionModal({
             >
               <CheckCircle className="w-16 h-16 text-[#00C48C]" />
             </div>
-            <h2 className="text-xl font-black text-black mb-2">{title}</h2>
+            <h2 className="text-xl font-bold text-black mb-2">{title}</h2>
             <p className="text-sm text-muted-foreground mb-5">{message}</p>
             <div className="flex gap-2">
               <div className="w-2 h-2 bg-[#00C48C] rounded-full animate-pulse" />
@@ -69,7 +69,7 @@ export function ActionModal({
             >
               <AlertCircle className="w-16 h-16 text-[#EF4444]" />
             </div>
-            <h2 className="text-xl font-black text-black mb-2">{title}</h2>
+            <h2 className="text-xl font-bold text-black mb-2">{title}</h2>
             <p className="text-sm text-muted-foreground mb-6">{message}</p>
             <button
               onClick={onClose}

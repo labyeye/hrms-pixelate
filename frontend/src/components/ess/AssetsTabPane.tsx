@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { assetAPI } from "@/services/api";
-import { Loader2, Cpu, Calendar, RefreshCw, Smartphone, Laptop, Check } from "lucide-react";
+import {
+  Loader2,
+  Cpu,
+  Calendar,
+  RefreshCw,
+  Smartphone,
+  Laptop,
+  Check,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -30,16 +38,28 @@ export function AssetsTabPane({ toast }: Props) {
   }, []);
 
   const handleReturn = async (id: string) => {
-    if (!confirm("Are you returning this asset? The assignment will be updated on the server.")) return;
+    if (
+      !confirm(
+        "Are you returning this asset? The assignment will be updated on the server.",
+      )
+    )
+      return;
     setReturningId(id);
     try {
       const res = await assetAPI.return(id);
       if (res.success) {
-        toast({ title: "Asset Returned", description: "The asset return process has been recorded." });
+        toast({
+          title: "Asset Returned",
+          description: "The asset return process has been recorded.",
+        });
         await loadAssets();
       }
     } catch (err: any) {
-      toast({ title: "Failed", description: err.message, variant: "destructive" });
+      toast({
+        title: "Failed",
+        description: err.message,
+        variant: "destructive",
+      });
     } finally {
       setReturningId(null);
     }
@@ -56,9 +76,12 @@ export function AssetsTabPane({ toast }: Props) {
   return (
     <div className="space-y-6">
       <div className="border-2 border-black bg-white p-5">
-        <h3 className="text-sm font-black uppercase mb-1">Company Assigned Assets</h3>
+        <h3 className="text-sm font-bold uppercase mb-1">
+          Company Assigned Assets
+        </h3>
         <p className="text-xs text-muted-foreground">
-          View your assigned laptops, mobile phones, SIMs, accessories, or vehicles, and report returns when handed back to IT/HR.
+          View your assigned laptops, mobile phones, SIMs, accessories, or
+          vehicles, and report returns when handed back to IT/HR.
         </p>
       </div>
 
@@ -73,7 +96,10 @@ export function AssetsTabPane({ toast }: Props) {
             const isLaptop = a.assetType === "laptop";
 
             return (
-              <div key={a._id} className="border-2 border-black bg-white flex flex-col justify-between p-4 space-y-4">
+              <div
+                key={a._id}
+                className="border-2 border-black bg-white flex flex-col justify-between p-4 space-y-4"
+              >
                 <div>
                   <div className="flex items-center gap-2">
                     {isLaptop ? (
@@ -83,17 +109,22 @@ export function AssetsTabPane({ toast }: Props) {
                     ) : (
                       <Cpu className="w-5 h-5 text-[#024BAB]" />
                     )}
-                    <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                       {a.assetType}
                     </span>
                   </div>
 
                   <div className="mt-3 space-y-1">
-                    <p className="text-sm font-black uppercase text-black">{a.name}</p>
-                    <p className="text-xs text-muted-foreground font-mono">S/N: {a.serialNumber}</p>
+                    <p className="text-sm font-bold uppercase text-black">
+                      {a.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground font-mono">
+                      S/N: {a.serialNumber}
+                    </p>
                     {a.assignmentDate && (
                       <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                        <Calendar className="w-3 h-3" /> Assigned: {new Date(a.assignmentDate).toLocaleDateString("en-IN")}
+                        <Calendar className="w-3 h-3" /> Assigned:{" "}
+                        {new Date(a.assignmentDate).toLocaleDateString("en-IN")}
                       </p>
                     )}
                   </div>
@@ -102,7 +133,7 @@ export function AssetsTabPane({ toast }: Props) {
                 <button
                   onClick={() => handleReturn(a._id)}
                   disabled={returningId === a._id}
-                  className="w-full flex items-center justify-center gap-1.5 bg-white text-red-600 border-2 border-red-600 py-2.5 font-black text-xs uppercase hover:bg-red-50 disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-1.5 bg-white text-red-600 border-2 border-red-600 py-2.5 font-bold text-xs uppercase hover:bg-red-50 disabled:opacity-50"
                 >
                   {returningId === a._id ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

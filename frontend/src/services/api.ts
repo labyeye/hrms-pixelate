@@ -531,7 +531,10 @@ export const loanAPI = {
   update: (id: string, body: object) =>
     request(`/loans/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   updateStatus: (id: string, body: object) =>
-    request(`/loans/${id}/status`, { method: "PUT", body: JSON.stringify(body) }),
+    request(`/loans/${id}/status`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
   delete: (id: string) => request(`/loans/${id}`, { method: "DELETE" }),
 };
 
@@ -633,8 +636,7 @@ export const supportAPI = {
       method: "POST",
       body: JSON.stringify({ message }),
     }),
-  close: (id: string) =>
-    request(`/support/${id}/close`, { method: "POST" }),
+  close: (id: string) => request(`/support/${id}/close`, { method: "POST" }),
 };
 
 export const documentAPI = {
@@ -685,8 +687,6 @@ export const announcementAPI = {
   delete: (id: string) => request(`/announcements/${id}`, { method: "DELETE" }),
 };
 
-
-
 export const attendanceCorrectionAPI = {
   getAll: (params?: Record<string, string>) => {
     const q = params ? "?" + new URLSearchParams(params).toString() : "";
@@ -703,7 +703,11 @@ export const attendanceCorrectionAPI = {
       method: "POST",
       body: JSON.stringify(body),
     }),
-  updateStatus: (id: string, status: "approved" | "rejected", rejectionReason?: string) =>
+  updateStatus: (
+    id: string,
+    status: "approved" | "rejected",
+    rejectionReason?: string,
+  ) =>
     request(`/attendance-corrections/${id}/status`, {
       method: "PUT",
       body: JSON.stringify({ status, rejectionReason }),

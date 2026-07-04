@@ -35,7 +35,7 @@ export function Toaster() {
               {t.title && (
                 <p
                   className={cn(
-                    "text-sm font-black",
+                    "text-sm font-bold",
                     isDestructive && "text-red-800",
                     isSuccess && "text-green-800",
                   )}

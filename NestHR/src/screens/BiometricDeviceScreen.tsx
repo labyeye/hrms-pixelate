@@ -1502,7 +1502,7 @@ const admsS = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepNum: { color: C.white, fontSize: 11, fontWeight: '900' },
+  stepNum: { color: C.white, fontSize: 11, fontWeight: '700' },
   stepTitle: {
     fontSize: 13,
     fontWeight: '800',

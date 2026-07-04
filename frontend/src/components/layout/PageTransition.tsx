@@ -1,7 +1,11 @@
 import { useLocation } from "react-router-dom";
 import { useEffect, useRef } from "react";
 
-export default function PageTransition({ children }: { children: React.ReactNode }) {
+export default function PageTransition({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const location = useLocation();
   const ref = useRef<HTMLDivElement>(null);
 

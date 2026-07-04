@@ -98,260 +98,262 @@ function AppRoutes() {
 
   return (
     <PageTransition>
-    <Routes>
-      <Route
-        path="/login"
-        element={!isAuthenticated ? <LoginPage /> : <Navigate to="/" replace />}
-      />
-      <Route
-        path="/register"
-        element={
-          !isAuthenticated ? <RegisterPage /> : <Navigate to="/" replace />
-        }
-      />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-      <Route
-        path="/onboarding"
-        element={
-          isAuthenticated ? (
-            <OnboardingPage />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      {}
-      <Route
-        path="/payment/success"
-        element={
-          isAuthenticated ? (
-            <PaymentSuccessPage />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="/payment/failed"
-        element={
-          isAuthenticated ? (
-            <PaymentFailedPage />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="/welcome"
-        element={
-          isAuthenticated ? <WelcomePage /> : <Navigate to="/login" replace />
-        }
-      />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <RootRedirect />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/billing"
-        element={
-          <BillingRoute>
-            <BillingPage />
-          </BillingRoute>
-        }
-      />
-      <Route
-        path="/my-profile"
-        element={
-          <ProtectedRoute>
-            <EmployeeDashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/employees"
-        element={
-          <ProtectedRoute>
-            <EmployeesPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/employee-credentials"
-        element={
-          <ProtectedRoute>
-            <EmployeeCredentialsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/attendance"
-        element={
-          <ProtectedRoute>
-            <AttendancePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/leave"
-        element={
-          <ProtectedRoute>
-            <LeavePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/payroll"
-        element={
-          <ProtectedRoute>
-            <PayrollPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/recruitment"
-        element={
-          <ProtectedRoute>
-            <RecruitmentPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/performance"
-        element={
-          <ProtectedRoute>
-            <PerformancePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/departments"
-        element={
-          <ProtectedRoute>
-            <DepartmentsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/reports"
-        element={
-          <ProtectedRoute>
-            <ReportsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/biometric"
-        element={
-          <ProtectedRoute>
-            <BiometricPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/holidays"
-        element={
-          <ProtectedRoute>
-            <HolidaysPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <SettingsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/nfc-manager"
-        element={
-          <ProtectedRoute>
-            <NfcManagerPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/payroll-settings"
-        element={
-          <ProtectedRoute>
-            <PayrollSettingsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/manage"
-        element={
-          <ProtectedRoute>
-            <ManagePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/my-payroll"
-        element={
-          <ProtectedRoute>
-            <EmployeePayrollPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/my-report"
-        element={
-          <ProtectedRoute>
-            <EmployeeReportPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/loans"
-        element={
-          <ProtectedRoute>
-            <LoansPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/exit-management"
-        element={
-          <ProtectedRoute>
-            <ExitManagementPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/audit-log"
-        element={
-          <ProtectedRoute>
-            <AuditLogPage />
-          </ProtectedRoute>
-        }
-      />
-      {}
-      <Route
-        path="/support"
-        element={
-          <ProtectedRoute>
-            <SupportPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/documents"
-        element={
-          <ProtectedRoute>
-            <DocumentVaultPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="/device/:token" element={<BiometricDevicePage />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+      <Routes>
+        <Route
+          path="/login"
+          element={
+            !isAuthenticated ? <LoginPage /> : <Navigate to="/" replace />
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            !isAuthenticated ? <RegisterPage /> : <Navigate to="/" replace />
+          }
+        />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+        <Route
+          path="/onboarding"
+          element={
+            isAuthenticated ? (
+              <OnboardingPage />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        {}
+        <Route
+          path="/payment/success"
+          element={
+            isAuthenticated ? (
+              <PaymentSuccessPage />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/payment/failed"
+          element={
+            isAuthenticated ? (
+              <PaymentFailedPage />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/welcome"
+          element={
+            isAuthenticated ? <WelcomePage /> : <Navigate to="/login" replace />
+          }
+        />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <RootRedirect />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/billing"
+          element={
+            <BillingRoute>
+              <BillingPage />
+            </BillingRoute>
+          }
+        />
+        <Route
+          path="/my-profile"
+          element={
+            <ProtectedRoute>
+              <EmployeeDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/employees"
+          element={
+            <ProtectedRoute>
+              <EmployeesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/employee-credentials"
+          element={
+            <ProtectedRoute>
+              <EmployeeCredentialsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/attendance"
+          element={
+            <ProtectedRoute>
+              <AttendancePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leave"
+          element={
+            <ProtectedRoute>
+              <LeavePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/payroll"
+          element={
+            <ProtectedRoute>
+              <PayrollPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/recruitment"
+          element={
+            <ProtectedRoute>
+              <RecruitmentPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/performance"
+          element={
+            <ProtectedRoute>
+              <PerformancePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/departments"
+          element={
+            <ProtectedRoute>
+              <DepartmentsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute>
+              <ReportsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/biometric"
+          element={
+            <ProtectedRoute>
+              <BiometricPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/holidays"
+          element={
+            <ProtectedRoute>
+              <HolidaysPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <SettingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/nfc-manager"
+          element={
+            <ProtectedRoute>
+              <NfcManagerPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/payroll-settings"
+          element={
+            <ProtectedRoute>
+              <PayrollSettingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/manage"
+          element={
+            <ProtectedRoute>
+              <ManagePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/my-payroll"
+          element={
+            <ProtectedRoute>
+              <EmployeePayrollPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/my-report"
+          element={
+            <ProtectedRoute>
+              <EmployeeReportPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/loans"
+          element={
+            <ProtectedRoute>
+              <LoansPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/exit-management"
+          element={
+            <ProtectedRoute>
+              <ExitManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/audit-log"
+          element={
+            <ProtectedRoute>
+              <AuditLogPage />
+            </ProtectedRoute>
+          }
+        />
+        {}
+        <Route
+          path="/support"
+          element={
+            <ProtectedRoute>
+              <SupportPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/documents"
+          element={
+            <ProtectedRoute>
+              <DocumentVaultPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/device/:token" element={<BiometricDevicePage />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
     </PageTransition>
   );
 }

@@ -179,7 +179,7 @@ export default function NfcManagerPage() {
       <div className="max-w-6xl mx-auto">
         {}
         <div className="mb-8">
-          <h1 className="font-display font-black text-3xl text-black">
+          <h1 className="font-display font-bold text-3xl text-black">
             NFC Card Manager
           </h1>
           <p className="text-gray-600 font-medium mt-1">
@@ -229,7 +229,7 @@ export default function NfcManagerPage() {
                             <User className="w-4 h-4 text-white" />
                           </div>
                           <div>
-                            <p className="font-black text-sm">
+                            <p className="font-bold text-sm">
                               {emp.firstName} {emp.lastName}
                             </p>
                             <p className="text-xs text-gray-500 font-mono">
@@ -239,7 +239,7 @@ export default function NfcManagerPage() {
                         </div>
                         <div className="flex flex-col items-end gap-1">
                           {cards.length > 0 ? (
-                            <span className="flex items-center gap-1 text-xs font-black text-[#024BAB] bg-blue-50 border border-blue-200 px-2 py-0.5">
+                            <span className="flex items-center gap-1 text-xs font-bold text-[#024BAB] bg-blue-50 border border-blue-200 px-2 py-0.5">
                               <CreditCard className="w-3 h-3" />
                               {cards.length} card{cards.length > 1 ? "s" : ""}
                             </span>
@@ -288,7 +288,7 @@ export default function NfcManagerPage() {
                           <User className="w-7 h-7 text-white" />
                         </div>
                         <div>
-                          <h2 className="font-black text-xl">
+                          <h2 className="font-bold text-xl">
                             {selectedEmployee.firstName}{" "}
                             {selectedEmployee.lastName}
                           </h2>
@@ -307,7 +307,7 @@ export default function NfcManagerPage() {
                           setShowAssignForm((p) => !p);
                           setAssignForm({ uid: "", deviceId: "", label: "" });
                         }}
-                        className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-black text-xs uppercase hover: transition-all"
+                        className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-bold text-xs uppercase hover: transition-all"
                       >
                         <Plus className="w-4 h-4" /> Assign Card
                       </button>
@@ -317,7 +317,7 @@ export default function NfcManagerPage() {
                     <div className="grid grid-cols-2 gap-3 mt-4">
                       {selectedEmployee.email && (
                         <div className="bg-white border border-gray-200 px-3 py-2">
-                          <p className="text-xs font-black uppercase text-gray-400">
+                          <p className="text-xs font-bold uppercase text-gray-400">
                             Email
                           </p>
                           <p className="text-sm font-medium mt-0.5">
@@ -327,7 +327,7 @@ export default function NfcManagerPage() {
                       )}
                       {selectedEmployee.phone && (
                         <div className="bg-white border border-gray-200 px-3 py-2">
-                          <p className="text-xs font-black uppercase text-gray-400">
+                          <p className="text-xs font-bold uppercase text-gray-400">
                             Phone
                           </p>
                           <p className="text-sm font-medium mt-0.5">
@@ -339,7 +339,7 @@ export default function NfcManagerPage() {
                         <div className="bg-white border border-gray-200 px-3 py-2 flex items-center gap-2">
                           <Building2 className="w-4 h-4 text-gray-400" />
                           <div>
-                            <p className="text-xs font-black uppercase text-gray-400">
+                            <p className="text-xs font-bold uppercase text-gray-400">
                               Department
                             </p>
                             <p className="text-sm font-medium">
@@ -351,10 +351,10 @@ export default function NfcManagerPage() {
                       <div className="bg-white border border-gray-200 px-3 py-2 flex items-center gap-2">
                         <CreditCard className="w-4 h-4 text-gray-400" />
                         <div>
-                          <p className="text-xs font-black uppercase text-gray-400">
+                          <p className="text-xs font-bold uppercase text-gray-400">
                             NFC Cards
                           </p>
-                          <p className="text-sm font-black text-[#024BAB]">
+                          <p className="text-sm font-bold text-[#024BAB]">
                             {selectedCards.length} assigned
                           </p>
                         </div>
@@ -365,12 +365,12 @@ export default function NfcManagerPage() {
                   {}
                   {showAssignForm && (
                     <div className="p-5 border-b-2 border-black bg-yellow-50">
-                      <p className="text-xs font-black uppercase mb-3 text-gray-600">
+                      <p className="text-xs font-bold uppercase mb-3 text-gray-600">
                         Assign New NFC Card to {selectedEmployee.firstName}
                       </p>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-xs font-black uppercase mb-1">
+                          <label className="block text-xs font-bold uppercase mb-1">
                             NFC Card UID *
                           </label>
                           <input
@@ -386,7 +386,7 @@ export default function NfcManagerPage() {
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-black uppercase mb-1">
+                          <label className="block text-xs font-bold uppercase mb-1">
                             Label (optional)
                           </label>
                           <input
@@ -402,7 +402,7 @@ export default function NfcManagerPage() {
                           />
                         </div>
                         <div className="col-span-2">
-                          <label className="block text-xs font-black uppercase mb-1">
+                          <label className="block text-xs font-bold uppercase mb-1">
                             Device *
                           </label>
                           <select
@@ -435,7 +435,7 @@ export default function NfcManagerPage() {
                               !assignForm.deviceId ||
                               assigning
                             }
-                            className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-black text-xs uppercase disabled:opacity-50"
+                            className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-bold text-xs uppercase disabled:opacity-50"
                           >
                             {assigning && (
                               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -444,7 +444,7 @@ export default function NfcManagerPage() {
                           </button>
                           <button
                             onClick={() => setShowAssignForm(false)}
-                            className="border-2 border-black px-4 py-2 font-black text-xs uppercase bg-white"
+                            className="border-2 border-black px-4 py-2 font-bold text-xs uppercase bg-white"
                           >
                             Cancel
                           </button>
@@ -455,7 +455,7 @@ export default function NfcManagerPage() {
 
                   {}
                   <div className="p-5">
-                    <h3 className="font-black text-sm uppercase mb-4 flex items-center gap-2">
+                    <h3 className="font-bold text-sm uppercase mb-4 flex items-center gap-2">
                       <CreditCard className="w-4 h-4" /> Assigned NFC Cards
                     </h3>
 
@@ -467,7 +467,7 @@ export default function NfcManagerPage() {
                         </p>
                         <button
                           onClick={() => setShowAssignForm(true)}
-                          className="mt-3 text-xs font-black text-[#024BAB] hover:underline"
+                          className="mt-3 text-xs font-bold text-[#024BAB] hover:underline"
                         >
                           + Assign a card
                         </button>
@@ -485,7 +485,7 @@ export default function NfcManagerPage() {
                                   <CreditCard className="w-5 h-5 text-white" />
                                 </div>
                                 <div>
-                                  <p className="font-black text-base font-mono">
+                                  <p className="font-bold text-base font-mono">
                                     {card.uid}
                                   </p>
                                   {card.label && (

@@ -70,7 +70,7 @@ export default function ResetPasswordPage() {
               <div className="flex justify-center mb-4">
                 <CheckCircle className="w-14 h-14 text-green-500" />
               </div>
-              <h2 className="text-xl font-black text-black mb-2">
+              <h2 className="text-xl font-bold text-black mb-2">
                 Password reset!
               </h2>
               <p className="text-sm text-gray-600">
@@ -80,7 +80,7 @@ export default function ResetPasswordPage() {
           ) : (
             <>
               <div className="mb-6">
-                <h2 className="text-2xl font-black text-black">
+                <h2 className="text-2xl font-bold text-black">
                   Set new password
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
@@ -97,7 +97,7 @@ export default function ResetPasswordPage() {
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                  <label className="block text-xs font-black text-black uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
                     New Password
                   </label>
                   <div className="flex border-2 border-black focus-within:border-[#024BAB] transition-colors">
@@ -128,7 +128,7 @@ export default function ResetPasswordPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-black text-black uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
                     Confirm Password
                   </label>
                   <input
@@ -147,7 +147,7 @@ export default function ResetPasswordPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-[#024BAB] text-white py-3.5 text-sm font-black border-2 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#0a0a0a] transition-all flex items-center justify-center gap-2"
+                  className="w-full bg-[#024BAB] text-white py-3.5 text-sm font-bold border-2 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#0a0a0a] transition-all flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
@@ -165,7 +165,7 @@ export default function ResetPasswordPage() {
               <div className="mt-6 text-center">
                 <Link
                   to="/login"
-                  className="text-sm font-black text-[#024BAB] hover:underline"
+                  className="text-sm font-bold text-[#024BAB] hover:underline"
                 >
                   Back to login
                 </Link>

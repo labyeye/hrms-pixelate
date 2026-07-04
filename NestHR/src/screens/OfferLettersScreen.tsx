@@ -63,9 +63,9 @@ function buildOfferLetterHTML(data: any): string {
 <meta charset="utf-8" />
 <style>
   body { font-family: Arial, sans-serif; margin: 40px; color: #111; font-size: 13px; }
-  h1 { font-size: 22px; font-weight: 900; border-bottom: 3px solid #024BAB; padding-bottom: 8px; margin-bottom: 20px; }
+  h1 { font-size: 22px; font-weight: 700; border-bottom: 3px solid #024BAB; padding-bottom: 8px; margin-bottom: 20px; }
   .header { display: flex; justify-content: space-between; margin-bottom: 30px; }
-  .company { font-weight: 900; font-size: 16px; color: #024BAB; }
+  .company { font-weight: 700; font-size: 16px; color: #024BAB; }
   .date { color: #666; }
   table { width: 100%; border-collapse: collapse; margin-top: 16px; }
   th { background: #024BAB; color: white; padding: 8px 10px; text-align: left; font-size: 11px; text-transform: uppercase; }
