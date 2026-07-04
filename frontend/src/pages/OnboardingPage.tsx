@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { billingAPI, companyAPI } from "@/services/api";
+import { billingAPI } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/Toaster";
 import CompanyDetailsForm from "@/components/CompanyDetailsForm";
@@ -24,12 +24,22 @@ declare global {
 
 type Step = "company" | "employees" | "plan" | "payment";
 
+interface CompanyFormData {
+  name: string;
+  email: string;
+  phone: string;
+  industry: string;
+  website: string;
+  gstNumber: string;
+  panNumber: string;
+}
+
 const PRICING_TIERS = [
-  { min: 1, max: 10, rate: 40, label: "1-10 employees" },
-  { min: 11, max: 20, rate: 35, label: "11-20 employees" },
-  { min: 21, max: 40, rate: 30, label: "21-40 employees" },
-  { min: 41, max: 60, rate: 25, label: "41-60 employees" },
-  { min: 61, max: Infinity, rate: 20, label: "60+ employees" },
+  { min: 1, max: 10, rate: 60, label: "1-10 employees" },
+  { min: 11, max: 20, rate: 55, label: "11-20 employees" },
+  { min: 21, max: 40, rate: 50, label: "21-40 employees" },
+  { min: 41, max: 60, rate: 45, label: "41-60 employees" },
+  { min: 61, max: Infinity, rate: 40, label: "60+ employees" },
 ];
 
 function getPricingTier(count: number) {
@@ -115,8 +125,8 @@ export default function OnboardingPage() {
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
   const [employeeCount, setEmployeeCount] = useState<number | "">("");
   const [paying, setPaying] = useState(false);
-  const [companyLoading, setCompanyLoading] = useState(false);
   const [companyError, setCompanyError] = useState("");
+  const [companyForm, setCompanyForm] = useState<CompanyFormData | null>(null);
 
   useEffect(() => {
     if (user?.company && user?.subscription?.status === "active") {
@@ -124,50 +134,13 @@ export default function OnboardingPage() {
     }
   }, [user?.company, user?.subscription?.status, navigate]);
 
-  const handleCreateCompany = async (formData: {
-    name: string;
-    email: string;
-    phone: string;
-    industry: string;
-    website: string;
-    gstNumber: string;
-    panNumber: string;
-  }) => {
+  const handleCreateCompany = async (formData: CompanyFormData) => {
+    // No API call here — the company is only persisted in the database
+    // once payment succeeds (see handlePay). We just hold the details
+    // in state and move the wizard forward.
     setCompanyError("");
-    setCompanyLoading(true);
-    try {
-      const res = await companyAPI.create(formData);
-      const company = res.data;
-      updateUser({
-        company: {
-          id: company._id,
-          name: company.name,
-          email: company.email,
-          status: company.status,
-        },
-      });
-      toast({
-        title: "Company created!",
-        description: "Now tell us about your team.",
-        variant: "success",
-      });
-      setStep("employees");
-    } catch (err: any) {
-      const msg = err.message || "Failed to create company";
-      if (msg.includes("User already has a company")) {
-        toast({
-          title: "Company already exists",
-          description: "Redirecting...",
-          variant: "destructive",
-        });
-        setTimeout(() => navigate("/", { replace: true }), 1800);
-      } else {
-        setCompanyError(msg);
-        toast({ title: "Error", description: msg, variant: "destructive" });
-      }
-    } finally {
-      setCompanyLoading(false);
-    }
+    setCompanyForm(formData);
+    setStep("employees");
   };
 
   const handleEmployeeContinue = () => {
@@ -195,9 +168,22 @@ export default function OnboardingPage() {
 
   const handlePay = async () => {
     const count = Number(employeeCount);
+    if (!user?.company && !companyForm) {
+      toast({
+        title: "Company details missing",
+        description: "Please go back and fill in your company details.",
+        variant: "destructive",
+      });
+      return;
+    }
     setPaying(true);
     try {
-      const res = await billingAPI.createOrder(count, billing, "razorpay");
+      const res = await billingAPI.createOrder(
+        count,
+        billing,
+        "razorpay",
+        user?.company ? undefined : companyForm!,
+      );
       if (!res.success) throw new Error("Failed to create order");
       const order = res.data;
 
@@ -218,7 +204,7 @@ export default function OnboardingPage() {
           theme: { color: "#024BAB" },
           handler: async (response: any) => {
             try {
-              await billingAPI.verifyRazorpay({
+              const verifyRes = await billingAPI.verifyRazorpay({
                 razorpayOrderId: response.razorpay_order_id,
                 razorpayPaymentId: response.razorpay_payment_id,
                 razorpaySignature: response.razorpay_signature,
@@ -228,8 +214,16 @@ export default function OnboardingPage() {
                 description: "Subscription activated. Welcome to NestHR!",
                 variant: "success",
               });
+              const createdCompany = verifyRes.data?.company;
               updateUser({
-                company: { ...user?.company!, status: "active" },
+                company: createdCompany
+                  ? {
+                      id: createdCompany._id,
+                      name: createdCompany.name,
+                      email: createdCompany.email,
+                      status: createdCompany.status,
+                    }
+                  : { ...user?.company!, status: "active" },
                 subscription: { status: "active" },
               });
               setTimeout(() => navigate("/welcome", { replace: true }), 1500);
@@ -245,10 +239,18 @@ export default function OnboardingPage() {
         rzp.open();
       });
     } catch (err: any) {
-      if (err.message !== "Payment cancelled") {
+      const msg = err.message || "Please try again.";
+      if (msg.includes("User already has a company")) {
+        toast({
+          title: "Company already exists",
+          description: "Redirecting...",
+          variant: "destructive",
+        });
+        setTimeout(() => navigate("/", { replace: true }), 1800);
+      } else if (err.message !== "Payment cancelled") {
         toast({
           title: "Could not initiate payment",
-          description: err.message || "Please try again.",
+          description: msg,
           variant: "destructive",
         });
       }
@@ -259,7 +261,7 @@ export default function OnboardingPage() {
   const empCount = Number(employeeCount) || 0;
   const tier = getPricingTier(empCount || 1);
   const monthlyPrice = empCount * tier.rate;
-  const yearlyPrice = Math.round(monthlyPrice * 12 * 0.8);
+  const yearlyPrice = Math.round(monthlyPrice * 12 * 0.9);
   const planPrice =
     billing === "yearly" ? Math.round(yearlyPrice / 12) : monthlyPrice;
   const planTotal = billing === "yearly" ? yearlyPrice : monthlyPrice;
@@ -302,7 +304,7 @@ export default function OnboardingPage() {
             </div>
             <div className="bg-white border-2 border-black p-8 max-w-2xl mx-auto">
               <CompanyDetailsForm
-                loading={companyLoading}
+                loading={false}
                 error={companyError}
                 onError={setCompanyError}
                 onSubmit={handleCreateCompany}
@@ -423,7 +425,7 @@ export default function OnboardingPage() {
                 >
                   Yearly
                   <span className="absolute -top-5 left-1/2 -translate-x-1/2 bg-green-500 text-white text-[10px] font-black px-2 py-0.5 border border-black whitespace-nowrap">
-                    Save 20%
+                    Save 10%
                   </span>
                 </button>
               </div>

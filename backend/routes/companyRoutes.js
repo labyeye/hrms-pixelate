@@ -7,7 +7,6 @@ const {
   upgradeSubscription,
   getPlans,
   getSubscriptionDetails,
-  createCompanyForUser,
   getMyCompany,
 } = require("../controllers/companyController");
 const { protectCompany, protect } = require("../middleware/auth");
@@ -18,7 +17,6 @@ router.post("/register", registerCompany);
 router.post("/login", loginCompany);
 router.get("/plans", getPlans);
 
-router.post("/", protect, createCompanyForUser);
 router.get("/me", protect, getMyCompany);
 
 router.get("/details", protectCompany, getCompanyDetails);

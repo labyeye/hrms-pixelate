@@ -281,10 +281,19 @@ export const billingAPI = {
     employeeCount: number,
     billingCycle: "monthly" | "yearly",
     gateway: "razorpay" | "hdfc" = "razorpay",
+    company?: {
+      name: string;
+      email: string;
+      phone: string;
+      industry: string;
+      website: string;
+      gstNumber: string;
+      panNumber: string;
+    },
   ) =>
     request<{ success: boolean; data: any }>("/billing/create-order", {
       method: "POST",
-      body: JSON.stringify({ employeeCount, billingCycle, gateway }),
+      body: JSON.stringify({ employeeCount, billingCycle, gateway, company }),
     }),
   verifyRazorpay: (payload: {
     razorpayOrderId: string;
@@ -504,11 +513,6 @@ export const payrollConfigAPI = {
 };
 
 export const companyAPI = {
-  create: (body: object) =>
-    request<{ success: boolean; data: any }>("/company", {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
   getMe: () => request<{ success: boolean; data: any }>("/company/me"),
   update: (body: object) =>
     request<{ success: boolean; data: any }>("/company", {

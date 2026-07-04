@@ -20,7 +20,11 @@
       "Bash(echo \"exit:$?\")",
       "Bash(awk '/markModal &&/{print NR\": \"$0}' frontend/src/pages/AttendancePage.tsx)",
       "Bash(python3 -c ' *)",
-      "Bash(node -e \"require\\('./controllers/billingController.js'\\); console.log\\('OK'\\)\")"
+      "Bash(node -e \"require\\('./controllers/billingController.js'\\); console.log\\('OK'\\)\")",
+      "Bash(node -c controllers/billingController.js)",
+      "Bash(node -c controllers/companyController.js)",
+      "Bash(node -c routes/companyRoutes.js)",
+      "Bash(node -c models/PendingOrder.js)"
     ]
   }
 }

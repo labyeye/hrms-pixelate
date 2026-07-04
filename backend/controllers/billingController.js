@@ -1,9 +1,11 @@
 const asyncHandler = require("express-async-handler");
+const crypto = require("crypto");
 const Company = require("../models/Company");
 const Subscription = require("../models/Subscription");
 const Invoice = require("../models/Invoice");
 const User = require("../models/User");
 const OfferCode = require("../models/OfferCode");
+const PendingOrder = require("../models/PendingOrder");
 const hdfcPayment = require("../services/hdfcPaymentService");
 const razorpayService = require("../services/razorpayService");
 const { sendPaymentConfirmations } = require("../services/notificationService");
@@ -88,6 +90,7 @@ const createOrder = asyncHandler(async (req, res) => {
     billingCycle = "monthly",
     gateway = "razorpay",
     offerCode,
+    company: companyDetails,
   } = req.body;
 
   const empCount = Number(employeeCount);
@@ -106,11 +109,7 @@ const createOrder = asyncHandler(async (req, res) => {
 
   const pricing = calculatePricing(empCount);
 
-  const company = await Company.findOne({ createdBy: req.user._id });
-  if (!company) {
-    res.status(404);
-    throw new Error("Company not found. Complete company setup first.");
-  }
+  const existingCompany = await Company.findOne({ createdBy: req.user._id });
 
   // Validate offer code if provided
   let validatedOffer = null;
@@ -136,6 +135,32 @@ const createOrder = asyncHandler(async (req, res) => {
   const amountRupees =
     billingCycle === "yearly" ? pricing.yearlyPrice : pricing.monthlyPrice;
 
+  // New signup: no Company exists yet. Company/Subscription are only created
+  // once payment is verified — don't touch either collection here.
+  let newCompanyDetails = null;
+  if (!existingCompany) {
+    const { name, email, phone, industry, website, gstNumber, panNumber } =
+      companyDetails || {};
+    if (!name || !phone) {
+      res.status(400);
+      throw new Error("Company name and phone are required");
+    }
+    const emailToUse = email || req.user.email;
+    if (await Company.findOne({ email: emailToUse })) {
+      res.status(400);
+      throw new Error("Company email already exists");
+    }
+    newCompanyDetails = {
+      name,
+      email: emailToUse,
+      phone,
+      industry,
+      website,
+      gstNumber,
+      panNumber,
+    };
+  }
+
   let orderData;
 
   if (gateway === "razorpay") {
@@ -146,33 +171,56 @@ const createOrder = asyncHandler(async (req, res) => {
         employeeCount: empCount,
         billingCycle,
         userId: req.user._id.toString(),
-        companyId: company._id.toString(),
+        companyId: existingCompany ? existingCompany._id.toString() : "",
       },
     });
 
-    await Subscription.findOneAndUpdate(
-      { company: company._id },
-      {
-        company: company._id,
-        plan: pricing.tierLabel,
+    if (existingCompany) {
+      await Subscription.findOneAndUpdate(
+        { company: existingCompany._id },
+        {
+          company: existingCompany._id,
+          plan: pricing.tierLabel,
+          employeeCount: empCount,
+          ratePerEmployee: pricing.ratePerEmployee,
+          monthlyPrice: pricing.monthlyPrice,
+          yearlyPrice: pricing.yearlyPrice,
+          maxEmployees: empCount,
+          billingCycle,
+          startDate: new Date(),
+          renewalDate: new Date(),
+          status: "inactive",
+          paymentStatus: "pending",
+          paymentMethod: "razorpay",
+          amountPaid: 0,
+          razorpayOrderId: result.orderId,
+          offerCode: validatedOffer ? validatedOffer.code : null,
+          offerBonusMonths: validatedOffer ? validatedOffer.bonusMonths : 0,
+        },
+        { upsert: true, new: true },
+      );
+    } else {
+      await PendingOrder.create({
+        orderId: result.orderId,
+        gateway: "razorpay",
+        user: req.user._id,
+        companyName: newCompanyDetails.name,
+        companyEmail: newCompanyDetails.email,
+        companyPhone: newCompanyDetails.phone,
+        industry: newCompanyDetails.industry,
+        website: newCompanyDetails.website,
+        gstNumber: newCompanyDetails.gstNumber,
+        panNumber: newCompanyDetails.panNumber,
         employeeCount: empCount,
+        billingCycle,
         ratePerEmployee: pricing.ratePerEmployee,
+        tierLabel: pricing.tierLabel,
         monthlyPrice: pricing.monthlyPrice,
         yearlyPrice: pricing.yearlyPrice,
-        maxEmployees: empCount,
-        billingCycle,
-        startDate: new Date(),
-        renewalDate: new Date(),
-        status: "inactive",
-        paymentStatus: "pending",
-        paymentMethod: "razorpay",
-        amountPaid: 0,
-        razorpayOrderId: result.orderId,
         offerCode: validatedOffer ? validatedOffer.code : null,
         offerBonusMonths: validatedOffer ? validatedOffer.bonusMonths : 0,
-      },
-      { upsert: true, new: true },
-    );
+      });
+    }
 
     orderData = {
       gateway: "razorpay",
@@ -184,10 +232,10 @@ const createOrder = asyncHandler(async (req, res) => {
       ratePerEmployee: pricing.ratePerEmployee,
       plan: pricing.tierLabel,
       billingCycle,
-      companyName: company.name,
+      companyName: existingCompany ? existingCompany.name : newCompanyDetails.name,
       userName: req.user.name,
       userEmail: req.user.email,
-      userPhone: req.user.phone || company.phone || "",
+      userPhone: req.user.phone || (existingCompany ? existingCompany.phone : newCompanyDetails.phone) || "",
       offerApplied: !!validatedOffer,
       bonusMonths: validatedOffer ? validatedOffer.bonusMonths : 0,
     };
@@ -200,39 +248,62 @@ const createOrder = asyncHandler(async (req, res) => {
       customer: {
         name: req.user.name,
         email: req.user.email,
-        phone: req.user.phone || company.phone || "",
-        address: company.address || "India",
-        city: company.city || "",
-        state: company.state || "",
-        pincode: company.pincode || "",
+        phone: req.user.phone || (existingCompany ? existingCompany.phone : newCompanyDetails.phone) || "",
+        address: existingCompany?.address || "India",
+        city: existingCompany?.city || "",
+        state: existingCompany?.state || "",
+        pincode: existingCompany?.pincode || "",
         userId: req.user._id.toString(),
-        companyId: company._id.toString(),
+        companyId: existingCompany ? existingCompany._id.toString() : "",
       },
     });
 
-    await Subscription.findOneAndUpdate(
-      { company: company._id },
-      {
-        company: company._id,
-        plan: pricing.tierLabel,
+    if (existingCompany) {
+      await Subscription.findOneAndUpdate(
+        { company: existingCompany._id },
+        {
+          company: existingCompany._id,
+          plan: pricing.tierLabel,
+          employeeCount: empCount,
+          ratePerEmployee: pricing.ratePerEmployee,
+          monthlyPrice: pricing.monthlyPrice,
+          yearlyPrice: pricing.yearlyPrice,
+          maxEmployees: empCount,
+          billingCycle,
+          startDate: new Date(),
+          renewalDate: new Date(),
+          status: "inactive",
+          paymentStatus: "pending",
+          paymentMethod: "hdfc_smartgateway",
+          amountPaid: 0,
+          hdfcOrderId: orderId,
+          offerCode: validatedOffer ? validatedOffer.code : null,
+          offerBonusMonths: validatedOffer ? validatedOffer.bonusMonths : 0,
+        },
+        { upsert: true, new: true },
+      );
+    } else {
+      await PendingOrder.create({
+        orderId,
+        gateway: "hdfc",
+        user: req.user._id,
+        companyName: newCompanyDetails.name,
+        companyEmail: newCompanyDetails.email,
+        companyPhone: newCompanyDetails.phone,
+        industry: newCompanyDetails.industry,
+        website: newCompanyDetails.website,
+        gstNumber: newCompanyDetails.gstNumber,
+        panNumber: newCompanyDetails.panNumber,
         employeeCount: empCount,
+        billingCycle,
         ratePerEmployee: pricing.ratePerEmployee,
+        tierLabel: pricing.tierLabel,
         monthlyPrice: pricing.monthlyPrice,
         yearlyPrice: pricing.yearlyPrice,
-        maxEmployees: empCount,
-        billingCycle,
-        startDate: new Date(),
-        renewalDate: new Date(),
-        status: "inactive",
-        paymentStatus: "pending",
-        paymentMethod: "hdfc_smartgateway",
-        amountPaid: 0,
-        hdfcOrderId: orderId,
         offerCode: validatedOffer ? validatedOffer.code : null,
         offerBonusMonths: validatedOffer ? validatedOffer.bonusMonths : 0,
-      },
-      { upsert: true, new: true },
-    );
+      });
+    }
 
     orderData = {
       gateway: "hdfc",
@@ -272,6 +343,22 @@ const verifyRazorpayPayment = asyncHandler(async (req, res) => {
     throw new Error("Payment verification failed. Invalid signature.");
   }
 
+  const pendingOrder = await PendingOrder.findOne({ orderId: razorpayOrderId });
+  if (pendingOrder) {
+    await _createCompanyAndActivate({
+      pendingOrder,
+      req,
+      update: {
+        razorpayPaymentId,
+        paymentMethod: "razorpay",
+        paymentStatus: "completed",
+      },
+      invoiceExtra: { razorpayOrderId, razorpayPaymentId },
+      res,
+    });
+    return;
+  }
+
   await _activateSubscription({
     lookup: { razorpayOrderId },
     update: {
@@ -299,6 +386,26 @@ const verifyHdfcPayment = asyncHandler(async (req, res) => {
     );
   }
 
+  const pendingOrder = await PendingOrder.findOne({ orderId });
+  if (pendingOrder) {
+    await _createCompanyAndActivate({
+      pendingOrder,
+      req,
+      update: {
+        hdfcTrackingId: verification.trackingId,
+        hdfcBankRefNo: verification.bankRefNo,
+        paymentMethod: "hdfc_smartgateway",
+        paymentStatus: "completed",
+      },
+      invoiceExtra: {
+        hdfcOrderId: orderId,
+        hdfcTrackingId: verification.trackingId,
+      },
+      res,
+    });
+    return;
+  }
+
   await _activateSubscription({
     lookup: { hdfcOrderId: orderId },
     update: {
@@ -314,6 +421,159 @@ const verifyHdfcPayment = asyncHandler(async (req, res) => {
     res,
   });
 });
+
+async function _createCompanyAndActivate({ pendingOrder, req, update, invoiceExtra, res }) {
+  if (pendingOrder.user.toString() !== req.user._id.toString()) {
+    res.status(403);
+    throw new Error("This order does not belong to the current user.");
+  }
+
+  const existingCompany = await Company.findOne({ createdBy: req.user._id });
+  if (existingCompany) {
+    await PendingOrder.deleteOne({ _id: pendingOrder._id });
+    res.status(400);
+    throw new Error("User already has a company");
+  }
+  if (await Company.findOne({ email: pendingOrder.companyEmail })) {
+    await PendingOrder.deleteOne({ _id: pendingOrder._id });
+    res.status(400);
+    throw new Error("Company email already exists");
+  }
+
+  const company = await Company.create({
+    name: pendingOrder.companyName,
+    email: pendingOrder.companyEmail,
+    phone: pendingOrder.companyPhone,
+    password: crypto.randomBytes(16).toString("hex"),
+    industry: pendingOrder.industry,
+    website: pendingOrder.website,
+    gstNumber: pendingOrder.gstNumber,
+    panNumber: pendingOrder.panNumber,
+    status: "active",
+    createdBy: req.user._id,
+  });
+
+  const amountPaid =
+    pendingOrder.billingCycle === "yearly"
+      ? pendingOrder.yearlyPrice
+      : pendingOrder.monthlyPrice;
+
+  const startDate = new Date();
+  const renewalDate = new Date();
+  if (pendingOrder.billingCycle === "yearly") {
+    renewalDate.setFullYear(renewalDate.getFullYear() + 1);
+  } else {
+    renewalDate.setMonth(renewalDate.getMonth() + 1);
+  }
+  const bonusMonths = pendingOrder.offerBonusMonths || 0;
+  if (bonusMonths > 0) {
+    renewalDate.setMonth(renewalDate.getMonth() + bonusMonths);
+  }
+
+  const subscription = await Subscription.create({
+    company: company._id,
+    plan: pendingOrder.tierLabel,
+    employeeCount: pendingOrder.employeeCount,
+    ratePerEmployee: pendingOrder.ratePerEmployee,
+    monthlyPrice: pendingOrder.monthlyPrice,
+    yearlyPrice: pendingOrder.yearlyPrice,
+    maxEmployees: pendingOrder.employeeCount,
+    billingCycle: pendingOrder.billingCycle,
+    startDate,
+    renewalDate,
+    status: "active",
+    amountPaid,
+    offerCode: pendingOrder.offerCode,
+    offerBonusMonths: pendingOrder.offerBonusMonths,
+    ...update,
+  });
+
+  company.subscription = subscription._id;
+  await company.save();
+
+  req.user.company = company._id;
+  await req.user.save();
+
+  let offerCodeDoc = null;
+  if (pendingOrder.offerCode) {
+    offerCodeDoc = await OfferCode.findOneAndUpdate(
+      { code: pendingOrder.offerCode },
+      { $inc: { usedCount: 1 } },
+      { new: true },
+    );
+  }
+
+  const invoiceCount = await Invoice.countDocuments();
+  const invoiceNumber = `KHT/HR/${String(invoiceCount + 1).padStart(3, "0")}`;
+  await Invoice.create({
+    company: company._id,
+    subscription: subscription._id,
+    invoiceNumber,
+    plan: pendingOrder.tierLabel,
+    billingCycle: pendingOrder.billingCycle,
+    amount: amountPaid,
+    status: "paid",
+    paidAt: new Date(),
+    ...invoiceExtra,
+  });
+
+  if (offerCodeDoc) {
+    await OfferCode.findByIdAndUpdate(offerCodeDoc._id, {
+      $push: {
+        usages: {
+          company: company._id,
+          companyName: company.name,
+          userEmail: company.email,
+          invoiceNumber,
+          usedAt: new Date(),
+        },
+      },
+    });
+  }
+
+  await PendingOrder.deleteOne({ _id: pendingOrder._id });
+
+  const dashboardUrl = process.env.FRONTEND_URL
+    ? `${process.env.FRONTEND_URL}/`
+    : "https://hrms.pixelatenest.com/";
+
+  sendPaymentConfirmations({
+    toEmail: req.user.email || company.email,
+    toName: req.user.name || company.name,
+    toPhone: req.user.phone || company.phone || "",
+    companyName: company.name,
+    planName: pendingOrder.tierLabel,
+    amount: amountPaid,
+    billingCycle: pendingOrder.billingCycle,
+    renewalDate,
+    dashboardUrl,
+    invoiceNumber,
+  }).catch((err) => console.error("[Notifications]", err.message));
+
+  res.status(201).json({
+    success: true,
+    message: "Company created and subscription activated successfully",
+    data: {
+      company: {
+        _id: company._id,
+        name: company.name,
+        email: company.email,
+        status: company.status,
+      },
+      plan: pendingOrder.tierLabel,
+      billingCycle: pendingOrder.billingCycle,
+      amount: amountPaid,
+      renewalDate,
+      invoiceNumber,
+      offerApplied: bonusMonths > 0,
+      bonusMonths: bonusMonths > 0 ? bonusMonths : undefined,
+      offerMessage:
+        bonusMonths > 0
+          ? `Congratulations! ${bonusMonths} bonus month(s) added to your subscription.`
+          : undefined,
+    },
+  });
+}
 
 async function _activateSubscription({ lookup, update, invoiceExtra, res }) {
   const subscription = await Subscription.findOne(lookup);

@@ -29,11 +29,11 @@ declare global {
 }
 
 const PRICING_TIERS = [
-  { min: 1, max: 10, rate: 40, label: "1-10 employees" },
-  { min: 11, max: 20, rate: 35, label: "11-20 employees" },
-  { min: 21, max: 40, rate: 30, label: "21-40 employees" },
-  { min: 41, max: 60, rate: 25, label: "41-60 employees" },
-  { min: 61, max: Infinity, rate: 20, label: "60+ employees" },
+  { min: 1, max: 10, rate: 60, label: "1-10 employees" },
+  { min: 11, max: 20, rate: 55, label: "11-20 employees" },
+  { min: 21, max: 40, rate: 50, label: "21-40 employees" },
+  { min: 41, max: 60, rate: 45, label: "41-60 employees" },
+  { min: 61, max: Infinity, rate: 40, label: "60+ employees" },
 ];
 
 function getPricingTier(count: number) {
@@ -395,7 +395,7 @@ export default function BillingPage() {
               >
                 Yearly
                 <span className="ml-1.5 text-[10px] bg-[#00C48C] text-black border border-black px-1 py-0.5 font-bold">
-                  -20%
+                  -10%
                 </span>
               </button>
             </div>
@@ -425,7 +425,7 @@ export default function BillingPage() {
                   const count = Number(newEmployeeCount);
                   const tier = getPricingTier(count);
                   const monthly = count * tier.rate;
-                  const yearly = Math.round(monthly * 12 * 0.8);
+                  const yearly = Math.round(monthly * 12 * 0.9);
                   const price = billing === "yearly" ? yearly : monthly;
                   return (
                     <>

@@ -1,12 +1,12 @@
 const TIERS = [
-  { minEmployees: 1, maxEmployees: 10, ratePerEmployee: 40, label: "1-10 employees" },
-  { minEmployees: 11, maxEmployees: 20, ratePerEmployee: 35, label: "11-20 employees" },
-  { minEmployees: 21, maxEmployees: 40, ratePerEmployee: 30, label: "21-40 employees" },
-  { minEmployees: 41, maxEmployees: 60, ratePerEmployee: 25, label: "41-60 employees" },
-  { minEmployees: 61, maxEmployees: Infinity, ratePerEmployee: 20, label: "60+ employees" },
+  { minEmployees: 1, maxEmployees: 10, ratePerEmployee: 60, label: "1-10 employees" },
+  { minEmployees: 11, maxEmployees: 20, ratePerEmployee: 55, label: "11-20 employees" },
+  { minEmployees: 21, maxEmployees: 40, ratePerEmployee: 50, label: "21-40 employees" },
+  { minEmployees: 41, maxEmployees: 60, ratePerEmployee: 45, label: "41-60 employees" },
+  { minEmployees: 61, maxEmployees: Infinity, ratePerEmployee: 40, label: "60+ employees" },
 ];
 
-const YEARLY_DISCOUNT = 0.2;
+const YEARLY_DISCOUNT = 0.1;
 
 function getTier(employeeCount) {
   return (

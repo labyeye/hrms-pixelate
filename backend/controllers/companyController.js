@@ -231,78 +231,6 @@ const getSubscriptionDetails = asyncHandler(async (req, res) => {
   });
 });
 
-const createCompanyForUser = asyncHandler(async (req, res) => {
-  const { name, email, phone, industry, website, gstNumber, panNumber } =
-    req.body;
-  const userId = req.user._id;
-
-  if (!name || !phone) {
-    res.status(400);
-    throw new Error("Company name and phone are required");
-  }
-
-  const existingCompany = await Company.findOne({ createdBy: userId });
-  if (existingCompany) {
-    res.status(400);
-    throw new Error("User already has a company");
-  }
-
-  if (email && (await Company.findOne({ email }))) {
-    res.status(400);
-    throw new Error("Company email already exists");
-  }
-
-  const company = await Company.create({
-    name,
-    email: email || req.user.email,
-    phone,
-    password: require("crypto").randomBytes(16).toString("hex"),
-    industry,
-    website,
-    gstNumber,
-    panNumber,
-    status: "trial",
-    createdBy: userId,
-  });
-
-  const starterPlan = await Plan.findOne({ planType: "starter" });
-  const trialEndDate = new Date();
-  trialEndDate.setDate(trialEndDate.getDate() + 14);
-
-  const subscription = await Subscription.create({
-    company: company._id,
-    plan: starterPlan?.planType || "starter",
-    monthlyPrice: starterPlan?.monthlyPrice || 50,
-    yearlyPrice: starterPlan?.yearlyPrice || 500,
-    maxEmployees: starterPlan?.maxEmployees || 10,
-    billingCycle: "monthly",
-    startDate: new Date(),
-    renewalDate: trialEndDate,
-    status: "active",
-    paymentStatus: "completed",
-  });
-
-  company.subscription = subscription._id;
-  await company.save();
-
-  req.user.company = company._id;
-  await req.user.save();
-
-  res.status(201).json({
-    success: true,
-    message: "Company created successfully",
-    data: {
-      _id: company._id,
-      name: company.name,
-      email: company.email,
-      phone: company.phone,
-      status: company.status,
-      industry: company.industry,
-      subscription: subscription,
-    },
-  });
-});
-
 const getMyCompany = asyncHandler(async (req, res) => {
   const company = await Company.findOne({ createdBy: req.user._id }).populate(
     "subscription",
@@ -328,6 +256,5 @@ module.exports = {
   upgradeSubscription,
   getPlans,
   getSubscriptionDetails,
-  createCompanyForUser,
   getMyCompany,
 };
