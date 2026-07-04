@@ -4,7 +4,12 @@
       "Bash(pm2 env *)",
       "Bash(node -e ' *)",
       "Bash(curl -s -X POST http://localhost:5000/api/auth/otp/send -H \"Content-Type: application/json\" -d '{\"phone\":\"+918798732114\"}')",
-      "Bash(curl -sv http://localhost:5000/api/auth/otp/send -X POST -H \"Content-Type: application/json\" -d '{\"phone\":\"+918798732114\"}')"
+      "Bash(curl -sv http://localhost:5000/api/auth/otp/send -X POST -H \"Content-Type: application/json\" -d '{\"phone\":\"+918798732114\"}')",
+      "Bash(curl -s -o /tmp/resp.txt -w \"%{http_code}\\\\n\" -X POST https://hrms-backend.pixelatenest.com/api/employees/me/face-enroll)",
+      "Bash(curl -v -X POST https://hrms-backend.pixelatenest.com/api/employees/me/face-enroll)",
+      "Bash(ipconfig getifaddr *)",
+      "Bash(lsof -iTCP -sTCP:LISTEN -n -P)",
+      "Bash(/usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate)"
     ]
   }
 }
