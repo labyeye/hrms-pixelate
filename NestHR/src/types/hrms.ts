@@ -96,6 +96,8 @@ export interface AttendanceRecord {
     | 'geo_camera';
   checkInSelfie?: string;
   checkOutSelfie?: string;
+  checkInLocation?: { lat: number; lng: number; accuracy?: number; distanceMeters?: number };
+  checkOutLocation?: { lat: number; lng: number; accuracy?: number; distanceMeters?: number };
 }
 
 export interface LeaveRequest {

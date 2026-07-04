@@ -9,7 +9,16 @@
       "Bash(curl -v -X POST https://hrms-backend.pixelatenest.com/api/employees/me/face-enroll)",
       "Bash(ipconfig getifaddr *)",
       "Bash(lsof -iTCP -sTCP:LISTEN -n -P)",
-      "Bash(/usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate)"
+      "Bash(/usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate)",
+      "Bash(curl -s -o /dev/null -w \"HEALTH: %{http_code}\\\\n\" https://hrms-backend.pixelatenest.com/api/health)",
+      "Bash(curl -s -w \"\\\\nSTATUS:%{http_code}\\\\n\" -X POST https://hrms-backend.pixelatenest.com/api/employees/me/face-enroll -F \"photo=@/dev/null;type=image/jpeg\")",
+      "Read(//dev/**)",
+      "Bash(dd if=/dev/zero of=/tmp/bigfake.jpg bs=1024 count=3000)",
+      "Bash(curl -s -w \"\\\\nSTATUS:%{http_code}\\\\n\" -X POST https://hrms-backend.pixelatenest.com/api/employees/me/face-enroll -F \"photo=@/tmp/bigfake.jpg;type=image/jpeg\")",
+      "Bash(curl -sv https://hrms-backend.pixelatenest.com/api/health)",
+      "Bash(curl -s -m 15 -o /dev/null -w \"HEALTH: %{http_code}\\\\n\" https://hrms-backend.pixelatenest.com/api/health)",
+      "Bash(echo \"exit:$?\")",
+      "Bash(awk '/markModal &&/{print NR\": \"$0}' frontend/src/pages/AttendancePage.tsx)"
     ]
   }
 }

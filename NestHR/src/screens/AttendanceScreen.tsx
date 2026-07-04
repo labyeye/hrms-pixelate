@@ -14,6 +14,7 @@ import {
   Platform,
   Image,
   PermissionsAndroid,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { launchCamera } from 'react-native-image-picker';
@@ -37,6 +38,30 @@ import { useAuth } from '../contexts/AuthContext';
 import { AttendanceRecord, Employee } from '../types/hrms';
 import { C } from '../theme';
 import { TimePickerField } from '../components/common/DatePickerField';
+
+function openLocationInMaps(loc: { lat: number; lng: number }) {
+  Linking.openURL(
+    `https://www.google.com/maps/search/?api=1&query=${loc.lat},${loc.lng}`,
+  );
+}
+
+function showLocationOptions(item: AttendanceRecord) {
+  const buttons: any[] = [];
+  if (item.checkInLocation) {
+    buttons.push({
+      text: 'Check-in location',
+      onPress: () => openLocationInMaps(item.checkInLocation!),
+    });
+  }
+  if (item.checkOutLocation) {
+    buttons.push({
+      text: 'Check-out location',
+      onPress: () => openLocationInMaps(item.checkOutLocation!),
+    });
+  }
+  buttons.push({ text: 'Cancel', style: 'cancel' });
+  Alert.alert('View Location', 'Open in Google Maps', buttons);
+}
 
 async function requestSelfMarkPermissions(): Promise<boolean> {
   if (Platform.OS !== 'android') return true;
@@ -185,7 +210,14 @@ export default function AttendanceScreen() {
     }
 
     launchCamera(
-      { mediaType: 'photo', quality: 0.8, cameraType: 'front', saveToPhotos: false },
+      {
+        mediaType: 'photo',
+        quality: 0.8,
+        cameraType: 'front',
+        saveToPhotos: false,
+        maxWidth: 1280,
+        maxHeight: 1280,
+      },
       async result => {
         const asset = result.assets?.[0];
         if (!asset?.uri) return;
@@ -219,7 +251,14 @@ export default function AttendanceScreen() {
     }
 
     launchCamera(
-      { mediaType: 'photo', quality: 0.7, cameraType: 'front', saveToPhotos: false },
+      {
+        mediaType: 'photo',
+        quality: 0.7,
+        cameraType: 'front',
+        saveToPhotos: false,
+        maxWidth: 1280,
+        maxHeight: 1280,
+      },
       async result => {
         const asset = result.assets?.[0];
         if (!asset?.uri) return;
@@ -863,6 +902,15 @@ export default function AttendanceScreen() {
                           </Text>
                         </View>
                       )}
+                    {(item.checkInLocation || item.checkOutLocation) && (
+                      <TouchableOpacity
+                        style={styles.timePill}
+                        onPress={() => showLocationOptions(item)}
+                      >
+                        <MapPin size={11} color={C.primary} />
+                        <Text style={styles.timeText}>Location</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 )}
                 {item.notes && (

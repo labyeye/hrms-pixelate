@@ -152,7 +152,17 @@ export const employeeAPI = {
       });
       clearTimeout(timer);
       const text = await res.text();
-      const data = text ? JSON.parse(text) : {};
+      let data: any;
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        console.error('Face enroll: non-JSON response', res.status, text.slice(0, 500));
+        throw new Error(
+          `Server returned an unexpected response (status ${res.status}). ` +
+            'This usually means the photo was rejected by the server before reaching the app ' +
+            '(e.g. file too large) — try again with better lighting or contact support.',
+        );
+      }
       if (!res.ok) throw new Error(data.message || `Enrollment failed (${res.status})`);
       return data;
     } catch (err: any) {

@@ -26,6 +26,7 @@ import {
   AlarmClock,
   LogOut,
   Palmtree,
+  MapPin,
 } from "lucide-react";
 
 const DAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -141,6 +142,9 @@ export default function AttendancePage() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [windowStart, setWindowStart] = useState<number>(1);
   const [markingAbsent, setMarkingAbsent] = useState(false);
+  const [locationRecord, setLocationRecord] = useState<AttendanceRecord | null>(
+    null,
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -734,6 +738,7 @@ export default function AttendancePage() {
                   "OT Hrs",
                   "Via",
                   "Status",
+                  "Location",
                   ...(isEmployee ? [] : [""]),
                 ].map((h) => (
                   <th
@@ -842,6 +847,19 @@ export default function AttendancePage() {
                             )
                           : rec.status.replace("_", " ")}
                       </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {rec.checkInLocation || rec.checkOutLocation ? (
+                        <button
+                          onClick={() => setLocationRecord(rec)}
+                          title="View check-in/check-out location"
+                          className="p-1.5 border-2 border-black hover:bg-[#024BAB] hover:text-white transition-colors"
+                        >
+                          <MapPin className="w-3 h-3" />
+                        </button>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">—</span>
+                      )}
                     </td>
                     {!isEmployee && (
                       <td className="px-4 py-3">
@@ -1054,6 +1072,68 @@ export default function AttendancePage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {}
+      {locationRecord && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="border-2 bg-white w-full max-w-md">
+            <div className="flex items-center justify-between p-5 border-b-2 border-black">
+              <h3 className="font-display font-bold text-lg flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-[#024BAB]" />
+                Attendance Location
+              </h3>
+              <button onClick={() => setLocationRecord(null)}>
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-xs text-muted-foreground -mt-1">
+                {(locationRecord.employee as any)?.firstName}{" "}
+                {(locationRecord.employee as any)?.lastName} —{" "}
+                {new Date(locationRecord.date).toLocaleDateString("en-IN")}
+              </p>
+              {[
+                { label: "Check In", loc: locationRecord.checkInLocation },
+                { label: "Check Out", loc: locationRecord.checkOutLocation },
+              ].map(({ label, loc }) =>
+                loc ? (
+                  <div key={label} className="border-2 border-black/10 p-3">
+                    <p className="text-xs font-bold text-black mb-1">{label}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Lat {loc.lat.toFixed(6)}, Lng {loc.lng.toFixed(6)}
+                    </p>
+                    {loc.distanceMeters != null && (
+                      <p className="text-xs text-muted-foreground">
+                        {Math.round(loc.distanceMeters)}m from allowed geofence
+                      </p>
+                    )}
+                    {loc.accuracy != null && (
+                      <p className="text-xs text-muted-foreground">
+                        GPS accuracy: ±{Math.round(loc.accuracy)}m
+                      </p>
+                    )}
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${loc.lat},${loc.lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block mt-2 text-xs font-bold text-[#024BAB] underline"
+                    >
+                      Open in Google Maps
+                    </a>
+                  </div>
+                ) : (
+                  <div key={label} className="border-2 border-black/10 p-3">
+                    <p className="text-xs font-bold text-black mb-1">{label}</p>
+                    <p className="text-xs text-muted-foreground">
+                      No location recorded
+                    </p>
+                  </div>
+                ),
+              )}
+            </div>
           </div>
         </div>
       )}

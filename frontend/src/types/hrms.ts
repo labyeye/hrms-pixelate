@@ -85,6 +85,16 @@ export interface AttendanceRecord {
     | "weekend";
   workHours?: number;
   notes?: string;
+  verifyMode?:
+    | "fingerprint"
+    | "card"
+    | "face"
+    | "password"
+    | "manual"
+    | "auto"
+    | "geo_camera";
+  checkInLocation?: { lat: number; lng: number; accuracy?: number; distanceMeters?: number };
+  checkOutLocation?: { lat: number; lng: number; accuracy?: number; distanceMeters?: number };
 }
 
 export interface LeaveRequest {
