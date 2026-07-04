@@ -362,6 +362,10 @@ export const loanAPI = {
   getAll: (params?: Record<string, string>) => request(`/loans${qs(params)}`),
   create: (body: object) =>
     request('/loans', { method: 'POST', body: JSON.stringify(body) }),
+  request: (body: object) =>
+    request('/loans/request', { method: 'POST', body: JSON.stringify(body) }),
+  updateStatus: (id: string, body: object) =>
+    request(`/loans/${id}/status`, { method: 'PUT', body: JSON.stringify(body) }),
   update: (id: string, body: object) =>
     request(`/loans/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   delete: (id: string) => request(`/loans/${id}`, { method: 'DELETE' }),

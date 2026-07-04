@@ -147,7 +147,8 @@ export function buildInvoiceHTML(inv: any): string {
 @page { margin: 0; size: A4; }
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { margin: 0; padding: 0; }
-body { font-family: Arial, Helvetica, sans-serif; font-size: 9pt; color: #111; background:#fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+body { font-family: "DM Sans", Arial, Helvetica, sans-serif; font-size: 9pt; color: #111; background:#fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .page-wrap { margin: 10mm; }
 .outer { border: 1.5pt solid #222; }
 .title-bar { border-bottom: 1.5pt solid #222; padding: 6px; text-align: center; }

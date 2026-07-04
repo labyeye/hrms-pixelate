@@ -169,6 +169,7 @@ const MENU_ITEMS = [
 const EMPLOYEE_MENU_KEYS = new Set([
   'Payroll',
   'Holidays',
+  'Loans',
   'Notifications',
   'Support',
   'Documents',
@@ -263,11 +264,17 @@ export default function MoreScreen({ navigation }: any) {
           ).map((item, i, arr) => {
             const Icon = item.icon;
             const label =
-              isEmployee && item.key === 'Payroll' ? 'My Payslips' : item.label;
+              isEmployee && item.key === 'Payroll'
+                ? 'My Payslips'
+                : isEmployee && item.key === 'Loans'
+                  ? 'My Loans'
+                  : item.label;
             const desc =
               isEmployee && item.key === 'Payroll'
                 ? 'View your salary payslips'
-                : item.desc;
+                : isEmployee && item.key === 'Loans'
+                  ? 'Request a loan or salary advance'
+                  : item.desc;
             return (
               <TouchableOpacity
                 key={item.key}

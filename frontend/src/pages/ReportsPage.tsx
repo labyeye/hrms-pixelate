@@ -994,8 +994,9 @@ function SalarySlipGen({
     win.document.write(`<!DOCTYPE html>
 <html><head><title>Salary Slip</title><style>
   @page { size: A4; margin: 15mm 15mm 22mm; @bottom-right { content: "Page " counter(page); font-size: 9px; color: #6B7280; } }
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, sans-serif; font-size: 12px; color: #111; max-width: 700px; margin: auto; }
+  body { font-family: "DM Sans", Arial, sans-serif; font-size: 12px; color: #111; max-width: 700px; margin: auto; }
   .report-header { display: flex; align-items: stretch; justify-content: space-between; gap: 16px; border-bottom: 3px solid #024BAB; padding-bottom: 12px; margin-bottom: 18px; }
   .header-company { display: flex; align-items: center; gap: 10px; }
   .header-company img { height: 44px; width: auto; object-fit: contain; }

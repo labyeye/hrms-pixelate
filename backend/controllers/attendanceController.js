@@ -39,9 +39,15 @@ async function calcOTHours(emp, checkOutISO) {
   if (!emp.otEnabled) return 0;
   if (!checkOutISO) return 0;
 
-  const shift = emp.shift
-    ? await Shift.findById(emp.shift).select("endTime")
-    : null;
+  let shift = null;
+  if (emp.isCustomShift && emp.customShift?.endTime) {
+    shift = emp.customShift;
+  } else if (emp.shift) {
+    shift =
+      typeof emp.shift === "object" && emp.shift.endTime
+        ? emp.shift
+        : await Shift.findById(emp.shift).select("endTime");
+  }
 
   const endTimeStr = shift?.endTime;
   if (!endTimeStr) return 0;
@@ -71,10 +77,17 @@ async function resolveStatus(employeeId, checkIn, requestedStatus) {
   // Only auto-promote present → late; never override an explicit absent/leave/etc.
   if (!checkIn || requestedStatus !== "present") return requestedStatus;
 
-  const emp = await Employee.findById(employeeId).select("shift");
-  if (!emp?.shift) return requestedStatus;
+  const emp = await Employee.findById(employeeId).select(
+    "shift isCustomShift customShift",
+  );
+  if (!emp) return requestedStatus;
 
-  const shift = await Shift.findById(emp.shift).select("startTime");
+  const shift =
+    emp.isCustomShift && emp.customShift?.startTime
+      ? emp.customShift
+      : emp.shift
+        ? await Shift.findById(emp.shift).select("startTime")
+        : null;
   if (!shift?.startTime) return requestedStatus;
 
   const [shiftH, shiftM] = shift.startTime.split(":").map(Number);
@@ -428,7 +441,7 @@ const updateAttendance = asyncHandler(async (req, res) => {
   // Load employee with shift for OT calculation
   const empForOT = await Employee.findById(record.employee._id)
     .populate("shift", "endTime")
-    .select("otEnabled shift");
+    .select("otEnabled shift isCustomShift customShift");
 
   // Note: record.date is intentionally not updated — it's part of the unique compound
   // index (employee + date) and changing it would cause duplicate key errors.

@@ -67,6 +67,114 @@ const EMPTY_FORM: LeaveForm = {
   isHalfDay: false,
 };
 
+function LeaveFormFields({
+  f,
+  setF,
+  showEmployee,
+  employees,
+}: {
+  f: LeaveForm;
+  setF: (v: LeaveForm) => void;
+  showEmployee: boolean;
+  employees: Employee[];
+}) {
+  return (
+    <>
+      {showEmployee && (
+        <div>
+          <label className="block text-xs font-bold text-black mb-1">
+            Employee
+          </label>
+          <select
+            value={f.employee}
+            onChange={(e) => setF({ ...f, employee: e.target.value })}
+            className="border-2 w-full px-3 py-2 text-sm"
+            required
+          >
+            <option value="">Select employee</option>
+            {employees.map((e) => (
+              <option key={e._id} value={e._id}>
+                {e.firstName} {e.lastName}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      <div>
+        <label className="block text-xs font-bold text-black mb-1">
+          Leave Type
+        </label>
+        <select
+          required
+          value={f.leaveType}
+          onChange={(e) => setF({ ...f, leaveType: e.target.value })}
+          className="border-2 w-full px-3 py-2 text-sm"
+        >
+          {Object.entries(TYPE_LABELS).map(([v, l]) => (
+            <option key={v} value={v}>
+              {l}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-bold text-black mb-1">
+            Start Date
+          </label>
+          <input
+            type="date"
+            value={f.startDate}
+            onChange={(e) => setF({ ...f, startDate: e.target.value })}
+            className="border-2 w-full px-3 py-2 text-sm"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-black mb-1">
+            End Date
+          </label>
+          <input
+            type="date"
+            value={f.endDate}
+            onChange={(e) => setF({ ...f, endDate: e.target.value })}
+            className="border-2 w-full px-3 py-2 text-sm"
+            required
+          />
+        </div>
+      </div>
+      <div>
+        <label className="block text-xs font-bold text-black mb-1">
+          Number of Days
+        </label>
+        <input
+          type="number"
+          min="0.5"
+          max="30"
+          step="0.5"
+          value={f.days}
+          onChange={(e) => setF({ ...f, days: e.target.value })}
+          className="border-2 w-full px-3 py-2 text-sm"
+          required
+        />
+      </div>
+      <div>
+        <label className="block text-xs font-bold text-black mb-1">
+          Reason
+        </label>
+        <textarea
+          value={f.reason}
+          onChange={(e) => setF({ ...f, reason: e.target.value })}
+          className="border-2 w-full px-3 py-2 text-sm resize-none"
+          rows={3}
+          required
+          placeholder="Reason for leave..."
+        />
+      </div>
+    </>
+  );
+}
+
 function toDateInputValue(dateStr: string) {
   if (!dateStr) return "";
   return new Date(dateStr).toISOString().slice(0, 10);
@@ -333,110 +441,6 @@ export default function LeavePage() {
       }
       return sortDir === "asc" ? cmp : -cmp;
     });
-
-  const LeaveFormFields = ({
-    f,
-    setF,
-    showEmployee,
-  }: {
-    f: LeaveForm;
-    setF: (v: LeaveForm) => void;
-    showEmployee: boolean;
-  }) => (
-    <>
-      {showEmployee && (
-        <div>
-          <label className="block text-xs font-bold text-black mb-1">
-            Employee
-          </label>
-          <select
-            value={f.employee}
-            onChange={(e) => setF({ ...f, employee: e.target.value })}
-            className="border-2 w-full px-3 py-2 text-sm"
-            required
-          >
-            <option value="">Select employee</option>
-            {employees.map((e) => (
-              <option key={e._id} value={e._id}>
-                {e.firstName} {e.lastName}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-      <div>
-        <label className="block text-xs font-bold text-black mb-1">
-          Leave Type
-        </label>
-        <select
-          required
-          value={f.leaveType}
-          onChange={(e) => setF({ ...f, leaveType: e.target.value })}
-          className="border-2 w-full px-3 py-2 text-sm"
-        >
-          {Object.entries(TYPE_LABELS).map(([v, l]) => (
-            <option key={v} value={v}>
-              {l}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-bold text-black mb-1">
-            Start Date
-          </label>
-          <input
-            type="date"
-            value={f.startDate}
-            onChange={(e) => setF({ ...f, startDate: e.target.value })}
-            className="border-2 w-full px-3 py-2 text-sm"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-bold text-black mb-1">
-            End Date
-          </label>
-          <input
-            type="date"
-            value={f.endDate}
-            onChange={(e) => setF({ ...f, endDate: e.target.value })}
-            className="border-2 w-full px-3 py-2 text-sm"
-            required
-          />
-        </div>
-      </div>
-      <div>
-        <label className="block text-xs font-bold text-black mb-1">
-          Number of Days
-        </label>
-        <input
-          type="number"
-          min="0.5"
-          max="30"
-          step="0.5"
-          value={f.days}
-          onChange={(e) => setF({ ...f, days: e.target.value })}
-          className="border-2 w-full px-3 py-2 text-sm"
-          required
-        />
-      </div>
-      <div>
-        <label className="block text-xs font-bold text-black mb-1">
-          Reason
-        </label>
-        <textarea
-          value={f.reason}
-          onChange={(e) => setF({ ...f, reason: e.target.value })}
-          className="border-2 w-full px-3 py-2 text-sm resize-none"
-          rows={3}
-          required
-          placeholder="Reason for leave..."
-        />
-      </div>
-    </>
-  );
 
   return (
     <AppLayout title="Leave Management">
@@ -776,6 +780,7 @@ export default function LeavePage() {
                 f={form}
                 setF={setForm}
                 showEmployee={!isEmployee}
+                employees={employees}
               />
               <div className="flex gap-3">
                 <button
@@ -813,6 +818,7 @@ export default function LeavePage() {
                 f={editForm}
                 setF={setEditForm}
                 showEmployee={false}
+                employees={employees}
               />
               <div className="flex gap-3">
                 <button

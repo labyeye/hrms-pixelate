@@ -530,6 +530,8 @@ export const loanAPI = {
     request("/loans", { method: "POST", body: JSON.stringify(body) }),
   update: (id: string, body: object) =>
     request(`/loans/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  updateStatus: (id: string, body: object) =>
+    request(`/loans/${id}/status`, { method: "PUT", body: JSON.stringify(body) }),
   delete: (id: string) => request(`/loans/${id}`, { method: "DELETE" }),
 };
 

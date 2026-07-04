@@ -43,15 +43,22 @@ async function processDate(targetDate, istMinutesNow) {
   const isToday = targetDate.getTime() === todayMidnight.getTime();
 
   const employees = await Employee.find({
-    shift: { $exists: true, $ne: null },
     $or: [
-      { status: "active" },
-      { status: { $exists: false } },
-      { status: null },
+      { shift: { $exists: true, $ne: null } },
+      { isCustomShift: true },
+    ],
+    $and: [
+      {
+        $or: [
+          { status: "active" },
+          { status: { $exists: false } },
+          { status: null },
+        ],
+      },
     ],
   })
     .select(
-      "_id company shift otEnabled workScheduleType customWorkDays workDaysPerWeek",
+      "_id company shift isCustomShift customShift otEnabled workScheduleType customWorkDays workDaysPerWeek",
     )
     .lean();
 
@@ -76,7 +83,10 @@ async function processDate(targetDate, istMinutesNow) {
     if (isHoliday) continue;
 
     for (const emp of companyEmps) {
-      const shift = shiftMap[emp.shift?.toString()];
+      const shift =
+        emp.isCustomShift && emp.customShift?.startTime && emp.customShift?.endTime
+          ? emp.customShift
+          : shiftMap[emp.shift?.toString()];
       if (!shift) continue;
 
       const startMins = shiftStartMinutes(shift);

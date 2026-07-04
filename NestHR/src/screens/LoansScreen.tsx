@@ -26,36 +26,31 @@ import {
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { loanAPI, employeeAPI } from '../api/api';
+import { useAuth } from '../contexts/AuthContext';
 import { C } from '../theme';
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> =
   {
     pending: { color: C.warning, bg: '#FFF7ED', icon: Clock },
-    approved: { color: C.success, bg: '#F0FDF4', icon: CheckCircle2 },
-    rejected: { color: C.danger, bg: '#FEF2F2', icon: XCircle },
     active: { color: C.primary, bg: '#EFF6FF', icon: CreditCard },
-    closed: { color: C.textMuted, bg: '#F3F4F6', icon: CheckCircle2 },
+    rejected: { color: C.danger, bg: '#FEF2F2', icon: XCircle },
+    cleared: { color: C.textMuted, bg: '#F3F4F6', icon: CheckCircle2 },
+    paused: { color: C.warning, bg: '#FFF7ED', icon: Clock },
   };
 
-const LOAN_TYPES = [
-  'personal',
-  'home',
-  'vehicle',
-  'education',
-  'medical',
-  'other',
-];
+const LOAN_TYPES = ['loan', 'advance'];
 
 const EMPTY_FORM = {
-  loanType: 'personal',
+  type: 'loan',
   amount: '',
-  interestRate: '',
-  tenure: '',
-  purpose: '',
+  tenureMonths: '',
+  reason: '',
 };
 
 export default function LoansScreen() {
   const navigation = useNavigation<any>();
+  const { user } = useAuth();
+  const isEmployee = user?.role === 'employee';
   const [loans, setLoans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -86,8 +81,8 @@ export default function LoansScreen() {
 
   useEffect(() => {
     load();
-    loadEmployees();
-  }, [load, loadEmployees]);
+    if (!isEmployee) loadEmployees();
+  }, [load, loadEmployees, isEmployee]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -100,29 +95,38 @@ export default function LoansScreen() {
     : loans;
 
   const handleGiveLoan = async () => {
-    if (!selectedEmpId) {
+    if (!isEmployee && !selectedEmpId) {
       Alert.alert('Validation', 'Please select an employee');
       return;
     }
-    if (!form.amount || !form.purpose.trim()) {
-      Alert.alert('Validation', 'Amount and purpose are required');
+    if (!form.amount || !form.reason.trim()) {
+      Alert.alert('Validation', 'Amount and reason are required');
       return;
     }
     setSaving(true);
     try {
-      await loanAPI.create({
-        ...form,
-        employee: selectedEmpId,
+      const payload = {
+        type: form.type,
         amount: parseFloat(form.amount),
-        interestRate: form.interestRate
-          ? parseFloat(form.interestRate)
-          : undefined,
-        tenure: form.tenure ? parseInt(form.tenure) : undefined,
-      });
+        tenureMonths: form.tenureMonths ? parseInt(form.tenureMonths) : 0,
+        reason: form.reason.trim(),
+      };
+      if (isEmployee) {
+        await loanAPI.request(payload);
+      } else {
+        await loanAPI.create({
+          ...payload,
+          employee: selectedEmpId,
+          remainingBalance: payload.amount,
+        });
+      }
       setShowForm(false);
       setForm(EMPTY_FORM);
       setSelectedEmpId('');
       await load();
+      if (isEmployee) {
+        Alert.alert('Submitted', 'Your request has been sent for approval.');
+      }
     } catch (e: any) {
       Alert.alert('Error', e.message);
     } finally {
@@ -132,7 +136,7 @@ export default function LoansScreen() {
 
   const handleAction = (loan: any, action: 'approved' | 'rejected') => {
     Alert.alert(
-      `${action === 'approved' ? 'Approve' : 'Reject'} Loan`,
+      `${action === 'approved' ? 'Approve' : 'Reject'} Request`,
       'Are you sure?',
       [
         { text: 'Cancel', style: 'cancel' },
@@ -141,7 +145,7 @@ export default function LoansScreen() {
           style: action === 'rejected' ? 'destructive' : 'default',
           onPress: async () => {
             try {
-              await loanAPI.update(loan._id, { status: action });
+              await loanAPI.updateStatus(loan._id, { status: action });
               await load();
             } catch (e: any) {
               Alert.alert('Error', e.message);
@@ -167,7 +171,9 @@ export default function LoansScreen() {
             <ChevronLeft size={22} color={C.black} />
           </TouchableOpacity>
           <CreditCard size={20} color={C.primary} />
-          <Text style={styles.headerTitle}>Loans</Text>
+          <Text style={styles.headerTitle}>
+            {isEmployee ? 'My Loans' : 'Loans'}
+          </Text>
         </View>
         <TouchableOpacity
           style={styles.addBtn}
@@ -178,7 +184,9 @@ export default function LoansScreen() {
           }}
         >
           <Plus size={14} color={C.white} />
-          <Text style={styles.addBtnText}>Give Loan</Text>
+          <Text style={styles.addBtnText}>
+            {isEmployee ? 'Request' : 'Give Loan'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -269,10 +277,7 @@ export default function LoansScreen() {
               icon: Clock,
             };
             const emp = item.employee as any;
-            const monthlyEmi =
-              item.amount && item.tenure
-                ? (item.amount / item.tenure).toFixed(0)
-                : null;
+            const monthlyEmi = item.monthlyEmi || null;
             return (
               <View style={styles.card}>
                 <View style={styles.cardTop}>
@@ -292,9 +297,9 @@ export default function LoansScreen() {
                   )}
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={styles.loanType}>
-                      {item.loanType?.replace('_', ' ').toUpperCase()} LOAN
+                      {item.type === 'advance' ? 'SALARY ADVANCE' : 'LOAN'}
                     </Text>
-                    {emp && (
+                    {emp && !isEmployee && (
                       <Text style={styles.empName}>
                         {emp.firstName} {emp.lastName}
                       </Text>
@@ -317,24 +322,31 @@ export default function LoansScreen() {
                   </View>
                 </View>
                 <View style={styles.detailRow}>
-                  {item.interestRate && (
+                  {item.tenureMonths ? (
                     <Text style={styles.detail}>
-                      Rate: {item.interestRate}%
+                      Tenure: {item.tenureMonths}mo
+                    </Text>
+                  ) : null}
+                  {monthlyEmi ? (
+                    <Text style={styles.detail}>EMI: ₹{monthlyEmi}</Text>
+                  ) : null}
+                  {item.remainingBalance != null && item.status === 'active' && (
+                    <Text style={styles.detail}>
+                      Balance: ₹{item.remainingBalance.toLocaleString()}
                     </Text>
                   )}
-                  {item.tenure && (
-                    <Text style={styles.detail}>Tenure: {item.tenure}mo</Text>
-                  )}
-                  {monthlyEmi && (
-                    <Text style={styles.detail}>EMI: ₹{monthlyEmi}</Text>
-                  )}
                 </View>
-                {item.purpose && (
+                {item.reason && (
                   <Text style={styles.purpose} numberOfLines={1}>
-                    {item.purpose}
+                    {item.reason}
                   </Text>
                 )}
-                {item.status === 'pending' && (
+                {item.status === 'rejected' && item.rejectionReason && (
+                  <Text style={[styles.purpose, { color: C.danger }]} numberOfLines={2}>
+                    Reason: {item.rejectionReason}
+                  </Text>
+                )}
+                {!isEmployee && item.status === 'pending' && (
                   <View style={styles.actionRow}>
                     <TouchableOpacity
                       style={styles.approveBtn}
@@ -365,7 +377,9 @@ export default function LoansScreen() {
       >
         <SafeAreaView style={styles.safe} edges={['top']}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Give Loan to Staff</Text>
+            <Text style={styles.modalTitle}>
+              {isEmployee ? 'Request Loan / Advance' : 'Give Loan to Staff'}
+            </Text>
             <TouchableOpacity onPress={() => setShowForm(false)}>
               <X size={22} color={C.black} />
             </TouchableOpacity>
@@ -375,6 +389,7 @@ export default function LoansScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
+            {!isEmployee && (
             <View>
               <Text style={styles.fieldLabel}>Employee *</Text>
               <View style={styles.empPicker}>
@@ -427,8 +442,9 @@ export default function LoansScreen() {
                 })}
               </View>
             </View>
+            )}
             <View>
-              <Text style={styles.fieldLabel}>Loan Type</Text>
+              <Text style={styles.fieldLabel}>Type</Text>
               <View
                 style={{
                   flexDirection: 'row',
@@ -442,17 +458,17 @@ export default function LoansScreen() {
                     key={t}
                     style={[
                       styles.selChip,
-                      form.loanType === t && styles.selChipActive,
+                      form.type === t && styles.selChipActive,
                     ]}
-                    onPress={() => setForm(p => ({ ...p, loanType: t }))}
+                    onPress={() => setForm(p => ({ ...p, type: t }))}
                   >
                     <Text
                       style={[
                         styles.selChipText,
-                        form.loanType === t && { color: C.white },
+                        form.type === t && { color: C.white },
                       ]}
                     >
-                      {t.toUpperCase()}
+                      {t === 'advance' ? 'SALARY ADVANCE' : 'LOAN'}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -469,37 +485,26 @@ export default function LoansScreen() {
                 keyboardType="numeric"
               />
             </View>
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>Interest Rate (%)</Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  value={form.interestRate}
-                  onChangeText={v => setForm(p => ({ ...p, interestRate: v }))}
-                  placeholder="8.5"
-                  placeholderTextColor={C.textLight}
-                  keyboardType="decimal-pad"
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>Tenure (months)</Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  value={form.tenure}
-                  onChangeText={v => setForm(p => ({ ...p, tenure: v }))}
-                  placeholder="24"
-                  placeholderTextColor={C.textLight}
-                  keyboardType="numeric"
-                />
-              </View>
+            <View>
+              <Text style={styles.fieldLabel}>
+                How many months to repay? (Tenure)
+              </Text>
+              <TextInput
+                style={styles.fieldInput}
+                value={form.tenureMonths}
+                onChangeText={v => setForm(p => ({ ...p, tenureMonths: v }))}
+                placeholder="e.g. 6"
+                placeholderTextColor={C.textLight}
+                keyboardType="numeric"
+              />
             </View>
             <View>
-              <Text style={styles.fieldLabel}>Purpose *</Text>
+              <Text style={styles.fieldLabel}>Reason *</Text>
               <TextInput
                 style={[styles.fieldInput, { minHeight: 80 }]}
-                value={form.purpose}
-                onChangeText={v => setForm(p => ({ ...p, purpose: v }))}
-                placeholder="Reason for loan…"
+                value={form.reason}
+                onChangeText={v => setForm(p => ({ ...p, reason: v }))}
+                placeholder="Reason for loan / advance…"
                 placeholderTextColor={C.textLight}
                 multiline
               />
@@ -512,7 +517,9 @@ export default function LoansScreen() {
               {saving ? (
                 <ActivityIndicator color={C.white} />
               ) : (
-                <Text style={styles.submitBtnText}>Give Loan</Text>
+                <Text style={styles.submitBtnText}>
+                  {isEmployee ? 'Submit Request' : 'Give Loan'}
+                </Text>
               )}
             </TouchableOpacity>
           </ScrollView>

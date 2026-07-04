@@ -100,7 +100,8 @@ export default function EmployeePayrollPage() {
       <html>
       <head><title>Salary Slip — ${MONTHS[p.month - 1]} ${p.year}</title>
       <style>
-        body { font-family: Arial, sans-serif; font-size: 13px; padding: 32px; color: #000; }
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+        body { font-family: "DM Sans", Arial, sans-serif; font-size: 13px; padding: 32px; color: #000; }
         h2 { font-size: 18px; margin-bottom: 4px; }
         .subtitle { color: #666; margin-bottom: 24px; font-size: 12px; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }

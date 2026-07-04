@@ -1,5 +1,12 @@
 import { StyleSheet } from 'react-native';
 
+export const FONT = {
+  regular: 'DMSans-Regular',
+  medium: 'DMSans-Medium',
+  semiBold: 'DMSans-SemiBold',
+  bold: 'DMSans-Bold',
+};
+
 export const C = {
   primary: '#024BAB',
   secondary: '#FA731C',
@@ -38,18 +45,19 @@ export const S = StyleSheet.create({
   },
 
   // Typography
-  h1: { fontSize: 22, fontWeight: '700', color: C.black },
-  h2: { fontSize: 18, fontWeight: '700', color: C.black },
-  h3: { fontSize: 15, fontWeight: '700', color: C.black },
+  h1: { fontFamily: FONT.bold, fontSize: 22, fontWeight: '700', color: C.black },
+  h2: { fontFamily: FONT.bold, fontSize: 18, fontWeight: '700', color: C.black },
+  h3: { fontFamily: FONT.bold, fontSize: 15, fontWeight: '700', color: C.black },
   label: {
+    fontFamily: FONT.bold,
     fontSize: 12,
     fontWeight: '700',
     color: C.black,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  body: { fontSize: 14, fontWeight: '500', color: C.black },
-  small: { fontSize: 12, fontWeight: '500', color: C.textMuted },
+  body: { fontFamily: FONT.medium, fontSize: 14, fontWeight: '500', color: C.black },
+  small: { fontFamily: FONT.medium, fontSize: 12, fontWeight: '500', color: C.textMuted },
   mono: { fontFamily: 'monospace', fontSize: 12 },
 
   // Buttons
@@ -65,6 +73,7 @@ export const S = StyleSheet.create({
     gap: 6,
   },
   btnPrimaryText: {
+    fontFamily: FONT.bold,
     color: C.white,
     fontWeight: '700',
     fontSize: 13,
@@ -82,6 +91,7 @@ export const S = StyleSheet.create({
     gap: 6,
   },
   btnSecondaryText: {
+    fontFamily: FONT.bold,
     color: C.black,
     fontWeight: '700',
     fontSize: 13,
@@ -101,6 +111,7 @@ export const S = StyleSheet.create({
 
   // Input
   input: {
+    fontFamily: FONT.medium,
     borderWidth: 2,
     borderColor: C.black,
     paddingHorizontal: 12,
@@ -147,7 +158,7 @@ export const S = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
-  badgeText: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
+  badgeText: { fontFamily: FONT.bold, fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
 
   // Divider
   divider: { height: 2, backgroundColor: C.black, marginVertical: 12 },
@@ -168,6 +179,7 @@ export const S = StyleSheet.create({
   // Empty state
   emptyState: { alignItems: 'center', justifyContent: 'center', padding: 40 },
   emptyText: {
+    fontFamily: FONT.bold,
     fontSize: 14,
     fontWeight: '700',
     color: C.textMuted,

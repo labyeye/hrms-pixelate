@@ -2,6 +2,8 @@ const express = require("express");
 const {
   getLoans,
   createLoan,
+  requestLoan,
+  updateLoanStatus,
   updateLoan,
   deleteLoan,
 } = require("../controllers/loanController");
@@ -10,6 +12,8 @@ const router = express.Router();
 
 router.get("/", protect, getLoans);
 router.post("/", protect, createLoan);
+router.post("/request", protect, requestLoan);
+router.put("/:id/status", protect, updateLoanStatus);
 router.put("/:id", protect, updateLoan);
 router.delete("/:id", protect, deleteLoan);
 

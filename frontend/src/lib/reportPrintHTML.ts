@@ -160,8 +160,9 @@ export function buildReportHTML(
         color: #6B7280;
       }
     }
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; font-size: 12px; color: #111; }
+    body { font-family: "DM Sans", Arial, sans-serif; font-size: 12px; color: #111; }
 
     /* ── Print header ── */
     .report-header {

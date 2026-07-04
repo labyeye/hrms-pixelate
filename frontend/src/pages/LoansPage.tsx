@@ -13,6 +13,8 @@ import {
   IndianRupee,
   TrendingDown,
   CheckCircle2,
+  Check,
+  Clock,
 } from "lucide-react";
 import { Employee } from "@/types/hrms";
 
@@ -29,9 +31,11 @@ interface Loan {
   amount: number;
   remainingBalance: number;
   monthlyEmi: number;
+  tenureMonths?: number;
   reason: string;
   disbursedOn: string;
-  status: "active" | "cleared" | "paused";
+  status: "pending" | "active" | "rejected" | "cleared" | "paused";
+  rejectionReason?: string;
   clearedOn?: string;
   remarks: string;
 }
@@ -48,7 +52,9 @@ const EMPTY_FORM = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
+  pending: "bg-orange-50 border-orange-500 text-orange-800",
   active: "bg-green-50 border-green-500 text-green-800",
+  rejected: "bg-red-50 border-red-500 text-red-800",
   cleared: "bg-gray-100 border-gray-400 text-gray-600",
   paused: "bg-yellow-50 border-yellow-500 text-yellow-800",
 };
@@ -62,7 +68,7 @@ export default function LoansPage() {
     "all",
   );
   const [filterStatus, setFilterStatus] = useState<
-    "all" | "active" | "cleared" | "paused"
+    "all" | "pending" | "active" | "rejected" | "cleared" | "paused"
   >("all");
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<
@@ -150,6 +156,35 @@ export default function LoansPage() {
     setSaving(false);
   };
 
+  const handleApprove = async (id: string) => {
+    try {
+      await loanAPI.updateStatus(id, { status: "approved" });
+      toast({ title: "Approved", description: "Loan/advance approved." });
+      load();
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    const rejectionReason = window.prompt("Reason for rejection (optional):") || "";
+    try {
+      await loanAPI.updateStatus(id, { status: "rejected", rejectionReason });
+      toast({ title: "Rejected", description: "Loan/advance request rejected." });
+      load();
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleDelete = async (id: string) => {
     try {
       await loanAPI.delete(id);
@@ -199,6 +234,9 @@ export default function LoansPage() {
   const activeCount = displayedLoans.filter(
     (l) => l.status === "active",
   ).length;
+  const pendingCount = displayedLoans.filter(
+    (l) => l.status === "pending",
+  ).length;
   const clearedCount = displayedLoans.filter(
     (l) => l.status === "cleared",
   ).length;
@@ -230,7 +268,7 @@ export default function LoansPage() {
             </button>
           ))}
           <span className="border-l-2 border-black/20 mx-1" />
-          {(["all", "active", "cleared", "paused"] as const).map((s) => (
+          {(["all", "pending", "active", "rejected", "cleared", "paused"] as const).map((s) => (
             <button
               key={s}
               onClick={() => setFilterStatus(s)}
@@ -273,6 +311,12 @@ export default function LoansPage() {
             value: String(activeCount),
             icon: IndianRupee,
             color: "text-green-600",
+          },
+          {
+            label: "Pending",
+            value: String(pendingCount),
+            icon: Clock,
+            color: "text-orange-600",
           },
           {
             label: "Cleared",
@@ -413,6 +457,24 @@ export default function LoansPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
+                      {loan.status === "pending" && (
+                        <>
+                          <button
+                            onClick={() => handleApprove(loan._id)}
+                            className="p-1.5 border-2 border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-colors"
+                            title="Approve"
+                          >
+                            <Check className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => handleReject(loan._id)}
+                            className="p-1.5 border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-colors"
+                            title="Reject"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </>
+                      )}
                       <button
                         onClick={() => openEdit(loan)}
                         className="p-1.5 border-2 border-black hover:bg-[#024BAB] hover:text-white transition-colors"

@@ -583,6 +583,104 @@ async function sendAttendanceStatus(
   }
 }
 
+// ─── Loans / Advances ───────────────────────────────────────────────────────
+
+/**
+ * Template: neshr_loan_submitted
+ * Body:  Hi {{1}}, your {{2}} request of ₹{{3}} ({{4}} month(s) tenure) has been submitted and is awaiting approval.
+ */
+async function sendLoanSubmitted(
+  phone,
+  { firstName, type, amount, tenureMonths },
+  companyId,
+) {
+  try {
+    const s = await getCompanySetting("whatsappNotifyLeave", companyId);
+    if (!s) return;
+    const label = type === "advance" ? "Salary Advance" : "Loan";
+    await sendTemplate(
+      phone,
+      "neshr_loan_submitted",
+      [firstName, label, String(amount), String(tenureMonths || 0)],
+      s.whatsappLang || "en",
+    );
+  } catch (err) {
+    console.error("[WhatsApp] sendLoanSubmitted:", err.message);
+  }
+}
+
+/**
+ * Template: neshr_loan_approved
+ * Body:  Hi {{1}}, your {{2}} request of ₹{{3}} has been APPROVED. Monthly EMI: ₹{{4}}.
+ */
+async function sendLoanApproved(
+  phone,
+  { firstName, type, amount, monthlyEmi },
+  companyId,
+) {
+  try {
+    const s = await getCompanySetting("whatsappNotifyLeave", companyId);
+    if (!s) return;
+    const label = type === "advance" ? "Salary Advance" : "Loan";
+    await sendTemplate(
+      phone,
+      "neshr_loan_approved",
+      [firstName, label, String(amount), String(monthlyEmi || 0)],
+      s.whatsappLang || "en",
+    );
+  } catch (err) {
+    console.error("[WhatsApp] sendLoanApproved:", err.message);
+  }
+}
+
+/**
+ * Template: neshr_loan_rejected
+ * Body:  Hi {{1}}, your {{2}} request of ₹{{3}} has been REJECTED. Reason: {{4}}.
+ */
+async function sendLoanRejected(
+  phone,
+  { firstName, type, amount, reason },
+  companyId,
+) {
+  try {
+    const s = await getCompanySetting("whatsappNotifyLeave", companyId);
+    if (!s) return;
+    const label = type === "advance" ? "Salary Advance" : "Loan";
+    await sendTemplate(
+      phone,
+      "neshr_loan_rejected",
+      [firstName, label, String(amount), reason || "Not specified"],
+      s.whatsappLang || "en",
+    );
+  } catch (err) {
+    console.error("[WhatsApp] sendLoanRejected:", err.message);
+  }
+}
+
+/**
+ * Template: neshr_loan_request_hr
+ * Body:  New {{1}} Request — Employee: {{2}} ({{3}}), Amount: ₹{{4}}, Tenure: {{5}} month(s), Reason: {{6}}.
+ */
+async function sendLoanAppliedHR(
+  phone,
+  { type, empName, empId, amount, tenureMonths, reason },
+  companyId,
+) {
+  try {
+    const s = await getCompanySetting("whatsappNotifyLeave", companyId);
+    if (!s) return;
+    const label = type === "advance" ? "Salary Advance" : "Loan";
+    await sendTemplate(
+      phone,
+      "neshr_loan_request_hr",
+      [label, empName, empId, String(amount), String(tenureMonths || 0), reason || "-"],
+      s.whatsappLang || "en",
+    );
+  } catch (err) {
+    console.error("[WhatsApp] sendLoanAppliedHR:", err.message);
+  }
+}
+
 // ─── Phone OTP Login (no per-company gate) ───────────────────────────────────
 
 /**
@@ -705,4 +803,8 @@ module.exports = {
   sendAttendanceStatus,
   sendSalaryPaid,
   sendSubscriptionWA,
+  sendLoanSubmitted,
+  sendLoanApproved,
+  sendLoanRejected,
+  sendLoanAppliedHR,
 };

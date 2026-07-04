@@ -34,7 +34,7 @@
 		<true/>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string></string>
+	<string/>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
@@ -60,5 +60,12 @@
 	<string>NestHR needs camera access to update employee profile photos</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>NestHR needs photo library access to update employee profile photos</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>DMSans-Bold.ttf</string>
+		<string>DMSans-Medium.ttf</string>
+		<string>DMSans-Regular.ttf</string>
+		<string>DMSans-SemiBold.ttf</string>
+	</array>
 </dict>
 </plist>

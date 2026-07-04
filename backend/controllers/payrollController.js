@@ -9,6 +9,7 @@ const { safePagination } = require("../middleware/validate");
 const { sendSalaryPaid } = require("../services/whatsappService");
 const { generatePayslipPdf } = require("../services/pdfService");
 const Setting = require("../models/Setting");
+const { getEffectiveShift } = require("../utils/shiftUtils");
 
 const PAYROLL_STATUS = ["processed", "paid", "cancelled"];
 
@@ -141,7 +142,7 @@ const processPayroll = asyncHandler(async (req, res) => {
     const salary = emp.salary ?? 0;
     const dailyRate = workingDays > 0 ? salary / workingDays : 0;
 
-    const empShift = emp.shift;
+    const empShift = getEffectiveShift(emp);
     let shiftH, shiftM, shiftEndH, shiftEndM;
 
     if (empShift?.startTime) {
@@ -728,7 +729,7 @@ const previewPayroll = asyncHandler(async (req, res) => {
     const salary = emp.salary ?? 0;
     const dailyRate = workingDays > 0 ? salary / workingDays : 0;
 
-    const empShift = emp.shift;
+    const empShift = getEffectiveShift(emp);
     let shiftH, shiftM, shiftEndH, shiftEndM;
     if (empShift?.startTime) {
       const s = parseTime(empShift.startTime);

@@ -113,6 +113,14 @@ interface EmployeeFormData {
   geofenceRadiusMeters: string;
   shift: string;
   shiftName: string;
+  isCustomShift: boolean;
+  customShift: {
+    startTime: string;
+    endTime: string;
+    breakMinutes: string;
+    workingHours: string;
+    otAfterHours: string;
+  };
   // Personal details
   fatherName: string;
   motherName: string;
@@ -171,6 +179,14 @@ const EMPTY_FORM: EmployeeFormData = {
   geofenceRadiusMeters: "200",
   shift: "",
   shiftName: "",
+  isCustomShift: false,
+  customShift: {
+    startTime: "",
+    endTime: "",
+    breakMinutes: "30",
+    workingHours: "8",
+    otAfterHours: "9",
+  },
   fatherName: "",
   motherName: "",
   spouseName: "",
@@ -342,6 +358,14 @@ export default function EmployeesPage() {
       geofenceRadiusMeters: String((emp as any).geofenceRadiusMeters || 200),
       shift: (emp as any).shift?._id || (emp as any).shift || "",
       shiftName: (emp as any).shiftName || "",
+      isCustomShift: (emp as any).isCustomShift === true,
+      customShift: {
+        startTime: (emp as any).customShift?.startTime || "",
+        endTime: (emp as any).customShift?.endTime || "",
+        breakMinutes: String((emp as any).customShift?.breakMinutes ?? 30),
+        workingHours: String((emp as any).customShift?.workingHours ?? 8),
+        otAfterHours: String((emp as any).customShift?.otAfterHours ?? 9),
+      },
       permanentAddress: (emp as any).permanentAddress || "",
       city: (emp as any).city || "",
       state: (emp as any).state || "",
@@ -406,6 +430,15 @@ export default function EmployeesPage() {
         geofenceLat: form.geofenceLat.trim() === "" ? undefined : Number(form.geofenceLat),
         geofenceLng: form.geofenceLng.trim() === "" ? undefined : Number(form.geofenceLng),
         geofenceRadiusMeters: Number(form.geofenceRadiusMeters) || 200,
+        customShift: form.isCustomShift
+          ? {
+              startTime: form.customShift.startTime,
+              endTime: form.customShift.endTime,
+              breakMinutes: Number(form.customShift.breakMinutes) || 30,
+              workingHours: Number(form.customShift.workingHours) || 8,
+              otAfterHours: Number(form.customShift.otAfterHours) || 9,
+            }
+          : undefined,
       };
       let savedId = editEmp?._id;
       if (editEmp) {
@@ -1938,8 +1971,17 @@ export default function EmployeesPage() {
                           Shift
                         </label>
                         <select
-                          value={form.shift}
+                          value={form.isCustomShift ? "custom" : form.shift}
                           onChange={(e) => {
+                            if (e.target.value === "custom") {
+                              setForm({
+                                ...form,
+                                shift: "",
+                                shiftName: "Custom",
+                                isCustomShift: true,
+                              });
+                              return;
+                            }
                             const selected = shifts.find(
                               (s) => s._id === e.target.value,
                             );
@@ -1947,6 +1989,7 @@ export default function EmployeesPage() {
                               ...form,
                               shift: e.target.value,
                               shiftName: selected ? selected.name : "",
+                              isCustomShift: false,
                             });
                           }}
                           className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 bg-white"
@@ -1957,12 +2000,101 @@ export default function EmployeesPage() {
                               {s.name} ({s.startTime} – {s.endTime})
                             </option>
                           ))}
+                          <option value="custom">— Custom shift —</option>
                         </select>
-                        {shifts.length === 0 && (
+                        {shifts.length === 0 && !form.isCustomShift && (
                           <p className="text-xs text-muted-foreground mt-1">
                             No shifts yet. Create one under{" "}
-                            <strong>Manage → Shifts</strong>.
+                            <strong>Manage → Shifts</strong>, or pick{" "}
+                            <strong>Custom shift</strong> above.
                           </p>
+                        )}
+                        {form.isCustomShift && (
+                          <div className="grid grid-cols-2 gap-3 mt-3 border-2 border-black p-3 bg-[#F5F5F0]">
+                            <div>
+                              <label className="block text-xs font-bold text-black mb-1">
+                                Start Time
+                              </label>
+                              <input
+                                type="time"
+                                value={form.customShift.startTime}
+                                onChange={(e) =>
+                                  setForm({
+                                    ...form,
+                                    customShift: {
+                                      ...form.customShift,
+                                      startTime: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="border-2 border-black w-full px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 bg-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-black mb-1">
+                                End Time
+                              </label>
+                              <input
+                                type="time"
+                                value={form.customShift.endTime}
+                                onChange={(e) =>
+                                  setForm({
+                                    ...form,
+                                    customShift: {
+                                      ...form.customShift,
+                                      endTime: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="border-2 border-black w-full px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 bg-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-black mb-1">
+                                Break (minutes)
+                              </label>
+                              <input
+                                type="number"
+                                min={0}
+                                value={form.customShift.breakMinutes}
+                                onChange={(e) =>
+                                  setForm({
+                                    ...form,
+                                    customShift: {
+                                      ...form.customShift,
+                                      breakMinutes: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="border-2 border-black w-full px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 bg-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-black mb-1">
+                                OT After (hours)
+                              </label>
+                              <input
+                                type="number"
+                                min={0}
+                                value={form.customShift.otAfterHours}
+                                onChange={(e) =>
+                                  setForm({
+                                    ...form,
+                                    customShift: {
+                                      ...form.customShift,
+                                      otAfterHours: e.target.value,
+                                    },
+                                  })
+                                }
+                                className="border-2 border-black w-full px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 bg-white"
+                              />
+                            </div>
+                            <p className="text-xs text-muted-foreground col-span-2">
+                              This custom shift applies only to this employee and is
+                              used directly for their attendance and payroll
+                              calculations.
+                            </p>
+                          </div>
                         )}
                       </div>
                     </div>
