@@ -69,6 +69,11 @@ const VERIFY_MODE_CONFIG: Record<
     icon: Scan,
     color: "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]",
   },
+  geo_camera: {
+    label: "Face",
+    icon: Scan,
+    color: "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]",
+  },
   password: {
     label: "Password",
     icon: KeyRound,
@@ -833,20 +838,28 @@ export default function AttendancePage() {
                       })()}
                     </td>
                     <td className="px-4 py-3">
-                      <span
-                        className={cn(
-                          "border-2 text-[10px] capitalize flex items-center gap-1 w-fit",
-                          STATUS_COLORS[rec.status],
+                      <div className="flex flex-col items-start gap-1">
+                        <span
+                          className={cn(
+                            "border-2 text-[10px] capitalize flex items-center gap-1 w-fit",
+                            STATUS_COLORS[rec.status],
+                          )}
+                        >
+                          <Icon className="w-3 h-3" />{" "}
+                          {rec.status === "weekend"
+                            ? new Date(
+                                rec.date + "T00:00:00",
+                              ).toLocaleDateString("en-IN", {
+                                weekday: "long",
+                              })
+                            : rec.status.replace("_", " ")}
+                        </span>
+                        {(rec as any).earlyLeaving && (
+                          <span className="border-2 text-[10px] flex items-center gap-1 w-fit bg-[#3B82F6]/10 text-[#3B82F6] border-[#3B82F6] px-2 py-0.5">
+                            <LogOut className="w-3 h-3" /> Early Leave
+                          </span>
                         )}
-                      >
-                        <Icon className="w-3 h-3" />{" "}
-                        {rec.status === "weekend"
-                          ? new Date(rec.date + "T00:00:00").toLocaleDateString(
-                              "en-IN",
-                              { weekday: "long" },
-                            )
-                          : rec.status.replace("_", " ")}
-                      </span>
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       {rec.checkInLocation || rec.checkOutLocation ? (

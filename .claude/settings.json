@@ -24,7 +24,9 @@
       "Bash(node -c controllers/billingController.js)",
       "Bash(node -c controllers/companyController.js)",
       "Bash(node -c routes/companyRoutes.js)",
-      "Bash(node -c models/PendingOrder.js)"
+      "Bash(node -c models/PendingOrder.js)",
+      "Bash(node -e \"require\\('./controllers/attendanceController.js'\\); console.log\\('OK'\\)\")",
+      "Bash(node -e \"require\\('./controllers/attendanceController.js'\\); require\\('./models/Attendance.js'\\); console.log\\('OK'\\)\")"
     ]
   }
 }

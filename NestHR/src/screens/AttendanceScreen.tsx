@@ -98,6 +98,15 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> =
     holiday: { color: '#A855F7', bg: '#FAF5FF', icon: Calendar },
   };
 
+const VERIFY_MODE_LABELS: Record<string, string> = {
+  fingerprint: 'FINGERPRINT',
+  card: 'CARD',
+  face: 'FACE',
+  geo_camera: 'FACE',
+  password: 'PASSWORD',
+  auto: 'AUTO',
+};
+
 function isWeekendForEmployee(dateStr: string, emp: any): boolean {
   const date = new Date(dateStr + 'T00:00:00');
   const day = date.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
@@ -898,10 +907,21 @@ export default function AttendanceScreen() {
                       (item as any).verifyMode !== 'manual' && (
                         <View style={styles.verifyPill}>
                           <Text style={styles.verifyPillText}>
-                            {(item as any).verifyMode.toUpperCase()}
+                            {VERIFY_MODE_LABELS[(item as any).verifyMode] ||
+                              (item as any).verifyMode.toUpperCase()}
                           </Text>
                         </View>
                       )}
+                    {(item as any).earlyLeaving && (
+                      <View
+                        style={[styles.timePill, { borderColor: C.primary }]}
+                      >
+                        <LogOut size={11} color={C.primary} />
+                        <Text style={[styles.timeText, { color: C.primary }]}>
+                          Early Leave
+                        </Text>
+                      </View>
+                    )}
                     {(item.checkInLocation || item.checkOutLocation) && (
                       <TouchableOpacity
                         style={styles.timePill}

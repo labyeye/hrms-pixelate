@@ -25,6 +25,7 @@ const attendanceSchema = new mongoose.Schema(
     },
     workHours: { type: Number, default: 0 },
     overtime: { type: Number, default: 0 },
+    earlyLeaving: { type: Boolean, default: false },
     notes: { type: String },
     leaveDeductSalary: { type: Boolean, default: true }, // for on_leave records: true = deduct, false = paid leave
     markedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },

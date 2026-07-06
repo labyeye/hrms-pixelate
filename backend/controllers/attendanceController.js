@@ -33,31 +33,26 @@ async function notifyAttendanceStatus(emp, date, status, companyId) {
 const GRACE_MINUTES = 15;
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000; // UTC+5:30
 
-// Returns auto-calculated OT hours based on checkout vs shift end.
-// Returns 0 if OT is not enabled or checkout doesn't exceed shift end.
-async function calcOTHours(emp, checkOutISO) {
-  if (!emp.otEnabled) return 0;
-  if (!checkOutISO) return 0;
-
-  let shift = null;
+// Resolves the shift doc/subdoc (custom-per-employee or company Shift ref) to use
+// for this employee, or null if none is configured.
+async function resolveShift(emp) {
   if (emp.isCustomShift && emp.customShift?.endTime) {
-    shift = emp.customShift;
-  } else if (emp.shift) {
-    shift =
-      typeof emp.shift === "object" && emp.shift.endTime
-        ? emp.shift
-        : await Shift.findById(emp.shift).select("endTime");
+    return emp.customShift;
   }
+  if (emp.shift) {
+    return typeof emp.shift === "object" && emp.shift.endTime
+      ? emp.shift
+      : await Shift.findById(emp.shift).select("startTime endTime");
+  }
+  return null;
+}
 
-  const endTimeStr = shift?.endTime;
-  if (!endTimeStr) return 0;
-
+// Converts a shift's "HH:MM" end time + the attendance date (from checkOutISO)
+// into an absolute UTC timestamp, for comparison against the actual checkout time.
+// Use Date.UTC() so the result is always UTC midnight regardless of server timezone —
+// new Date(y, m, d) uses local timezone which double-counts IST offset on IST servers.
+function shiftEndUTC(endTimeStr, checkOutISO) {
   const [endH, endM] = endTimeStr.split(":").map(Number);
-
-  // Build shift-end as UTC from attendance date portion of checkOut.
-  // Use Date.UTC() so the result is always UTC midnight regardless of server timezone —
-  // new Date(y, m, d) uses local timezone which double-counts IST offset on IST servers.
-  const checkOutUTC = new Date(checkOutISO).getTime();
   const checkOutDate = new Date(checkOutISO);
   const utcMidnight = Date.UTC(
     checkOutDate.getUTCFullYear(),
@@ -65,12 +60,38 @@ async function calcOTHours(emp, checkOutISO) {
     checkOutDate.getUTCDate(),
   );
   const istMidnight = utcMidnight - IST_OFFSET_MS;
-  const shiftEndUTC = istMidnight + (endH * 60 + endM) * 60000;
+  return istMidnight + (endH * 60 + endM) * 60000;
+}
 
-  const otMs = checkOutUTC - shiftEndUTC;
+// Returns auto-calculated OT hours based on checkout vs shift end.
+// Returns 0 if OT is not enabled or checkout doesn't exceed shift end.
+async function calcOTHours(emp, checkOutISO) {
+  if (!emp.otEnabled) return 0;
+  if (!checkOutISO) return 0;
+
+  const shift = await resolveShift(emp);
+  const endTimeStr = shift?.endTime;
+  if (!endTimeStr) return 0;
+
+  const checkOutUTC = new Date(checkOutISO).getTime();
+  const otMs = checkOutUTC - shiftEndUTC(endTimeStr, checkOutISO);
   if (otMs <= 0) return 0;
 
   return parseFloat((otMs / 3_600_000).toFixed(2));
+}
+
+// Returns true if checkout happened more than GRACE_MINUTES before shift end.
+// Returns false if there's no shift configured or no checkout time.
+async function calcEarlyLeaving(emp, checkOutISO) {
+  if (!checkOutISO) return false;
+
+  const shift = await resolveShift(emp);
+  const endTimeStr = shift?.endTime;
+  if (!endTimeStr) return false;
+
+  const checkOutUTC = new Date(checkOutISO).getTime();
+  const earlyMs = shiftEndUTC(endTimeStr, checkOutISO) - checkOutUTC;
+  return earlyMs > GRACE_MINUTES * 60000;
 }
 
 async function resolveStatus(employeeId, checkIn, requestedStatus) {
@@ -218,9 +239,11 @@ const markAttendance = asyncHandler(async (req, res) => {
 
   let workHours = 0;
   let autoOT = 0;
+  let earlyLeaving = false;
   if (checkIn && checkOut && !holiday) {
     workHours = (new Date(checkOut) - new Date(checkIn)) / 3600000;
     autoOT = await calcOTHours(emp, checkOut);
+    earlyLeaving = await calcEarlyLeaving(emp, checkOut);
   }
 
   const record = await Attendance.findOneAndUpdate(
@@ -233,6 +256,7 @@ const markAttendance = asyncHandler(async (req, res) => {
       checkOut: holiday ? undefined : checkOut,
       workHours,
       overtime: autoOT,
+      earlyLeaving,
       verifyMode: verifyMode || "manual",
       notes: holiday ? `Holiday: ${holiday.name}` : notes || undefined,
       markedBy: req.user._id,
@@ -403,6 +427,7 @@ const selfMarkAttendance = asyncHandler(async (req, res) => {
     }
     const workHours = (now - record.checkIn) / 3600000;
     const autoOT = await calcOTHours(emp, now.toISOString());
+    const earlyLeaving = await calcEarlyLeaving(emp, now.toISOString());
 
     record = await Attendance.findOneAndUpdate(
       { employee: emp._id, date: d },
@@ -410,6 +435,7 @@ const selfMarkAttendance = asyncHandler(async (req, res) => {
         checkOut: now,
         workHours,
         overtime: autoOT,
+        earlyLeaving,
         checkOutSelfie: selfieUrl,
         checkOutLocation: location,
       },
@@ -481,6 +507,9 @@ const updateAttendance = asyncHandler(async (req, res) => {
         record.checkOut.toISOString(),
       );
     }
+    record.earlyLeaving = empForOT
+      ? await calcEarlyLeaving(empForOT, record.checkOut.toISOString())
+      : false;
   } else if (overtime !== undefined) {
     record.overtime = parseFloat(overtime) || 0;
   }

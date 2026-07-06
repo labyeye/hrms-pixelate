@@ -84,6 +84,7 @@ export interface AttendanceRecord {
     | "holiday"
     | "weekend";
   workHours?: number;
+  earlyLeaving?: boolean;
   notes?: string;
   verifyMode?:
     | "fingerprint"
