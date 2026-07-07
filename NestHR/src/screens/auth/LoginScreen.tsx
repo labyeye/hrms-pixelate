@@ -251,21 +251,8 @@ export default function LoginScreen({ navigation }: any) {
                   onPress={() => setMode('phone')}
                 >
                   <Text style={[styles.forgotText, { color: C.primary }]}>
-                    📱 Login with Phone OTP (WhatsApp)
+                   Login using OTP
                   </Text>
-                </TouchableOpacity>
-
-                <View style={styles.dividerRow}>
-                  <View style={styles.dividerLine} />
-                  <Text style={styles.dividerText}>OR</Text>
-                  <View style={styles.dividerLine} />
-                </View>
-
-                <TouchableOpacity
-                  style={styles.btnSecondary}
-                  onPress={() => navigation.navigate('Register')}
-                >
-                  <Text style={styles.btnSecondaryText}>Create New Account</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -345,27 +332,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 16,
-    gap: 10,
-  },
-  dividerLine: { flex: 1, height: 1, backgroundColor: '#E5E7EB' },
-  dividerText: { fontSize: 11, fontWeight: '700', color: C.textMuted },
-  btnSecondary: {
-    borderWidth: 2,
-    borderColor: C.black,
-    paddingVertical: 14,
-    alignItems: 'center',
-    backgroundColor: C.white,
-  },
-  btnSecondaryText: {
-    color: C.black,
-    fontWeight: '700',
-    fontSize: 13,
-    textTransform: 'uppercase',
   },
   forgotBtn: { alignItems: 'center', paddingVertical: 10 },
   forgotText: { fontSize: 13, fontWeight: '700', color: C.primary },

@@ -58,7 +58,7 @@ async function processDate(targetDate, istMinutesNow) {
     ],
   })
     .select(
-      "_id company shift isCustomShift customShift otEnabled workScheduleType customWorkDays workDaysPerWeek",
+      "_id company shift isCustomShift customShift otEnabled workScheduleType customWorkDays workDaysPerWeek joinDate exitDate",
     )
     .lean();
 
@@ -83,6 +83,20 @@ async function processDate(targetDate, istMinutesNow) {
     if (isHoliday) continue;
 
     for (const emp of companyEmps) {
+      // Skip days outside the employee's employment period entirely.
+      if (emp.joinDate) {
+        const jd = toISTMidnight(
+          new Date(new Date(emp.joinDate).getTime() + IST_OFFSET_MS),
+        );
+        if (targetDate.getTime() < jd.getTime()) continue;
+      }
+      if (emp.exitDate) {
+        const ed = toISTMidnight(
+          new Date(new Date(emp.exitDate).getTime() + IST_OFFSET_MS),
+        );
+        if (targetDate.getTime() > ed.getTime()) continue;
+      }
+
       const shift =
         emp.isCustomShift && emp.customShift?.startTime && emp.customShift?.endTime
           ? emp.customShift

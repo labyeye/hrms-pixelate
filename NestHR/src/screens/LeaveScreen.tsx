@@ -34,9 +34,9 @@ import { C } from '../theme';
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> =
   {
-    pending: { color: C.warning, bg: '#FFF7ED', icon: Clock },
-    approved: { color: C.success, bg: '#F0FDF4', icon: CheckCircle2 },
-    rejected: { color: C.danger, bg: '#FEF2F2', icon: XCircle },
+    pending: { color: C.warning, bg: '#FEF3E2', icon: Clock },
+    approved: { color: C.success, bg: '#E7F9F1', icon: CheckCircle2 },
+    rejected: { color: C.danger, bg: '#FDEBEB', icon: XCircle },
   };
 
 const LEAVE_TYPES = [
@@ -447,84 +447,124 @@ export default function LeaveScreen() {
               item.startDate && item.endDate
                 ? daysBetween(item.startDate, item.endDate)
                 : null;
+            const initials = emp
+              ? `${emp.firstName?.[0] || ''}${
+                  emp.lastName?.[0] || ''
+                }`.toUpperCase()
+              : '?';
             return (
-              <View
-                style={[
-                  styles.card,
-                  { borderLeftColor: cfg.color, borderLeftWidth: 4 },
-                ]}
-              >
-                <View style={styles.cardTop}>
-                  <View
-                    style={[
-                      styles.typeTag,
-                      {
-                        backgroundColor: C.primary + '15',
-                        borderColor: C.primary,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.typeTagText, { color: C.primary }]}>
+              <View style={[styles.card]}>
+                <View style={styles.cardRow}>
+                  <View style={styles.photoWrap}>
+                    {emp?.avatar ? (
+                      <Image
+                        source={{ uri: emp.avatar }}
+                        style={styles.empPhoto}
+                      />
+                    ) : (
+                      <View
+                        style={[
+                          styles.empPhoto,
+                          styles.empPhotoFallback,
+                          { backgroundColor: cfg.bg },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.empPhotoInitials,
+                            { color: cfg.color },
+                          ]}
+                        >
+                          {initials}
+                        </Text>
+                      </View>
+                    )}
+                    <View
+                      style={[
+                        styles.statusBadgeOverlay,
+                        { backgroundColor: C.white, borderColor: cfg.color },
+                      ]}
+                    >
+                      <Icon size={11} color={cfg.color} />
+                    </View>
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={styles.empName} numberOfLines={1}>
+                      {emp
+                        ? `${emp.firstName} ${emp.lastName}`.toUpperCase()
+                        : 'UNKNOWN'}
+                    </Text>
+                    <Text style={styles.empSub}>
+                      {emp?.employeeId || ''}
+                      {emp?.employeeId ? ' · ' : ''}
                       {item.leaveType?.replace('_', ' ').toUpperCase()}
                     </Text>
                   </View>
                   <View
                     style={[
                       styles.statusTag,
-                      { backgroundColor: cfg.color, borderColor: C.black },
+                      { backgroundColor: cfg.bg, borderColor: cfg.color },
                     ]}
                   >
-                    <Icon size={10} color={C.white} />
-                    <Text style={[styles.statusTagText, { color: C.white }]}>
+                    <Text style={[styles.statusTagText, { color: cfg.color }]}>
                       {item.status.toUpperCase()}
                     </Text>
                   </View>
                 </View>
 
-                {emp && (
-                  <View style={styles.empRow}>
-                    {emp.avatar ? (
-                      <Image
-                        source={{ uri: emp.avatar }}
-                        style={styles.empPhoto}
-                      />
-                    ) : (
-                      <View style={styles.empInitials}>
-                        <Text style={styles.empInitialsText}>
-                          {(emp.firstName?.[0] || '') +
-                            (emp.lastName?.[0] || '')}
-                        </Text>
+                <View style={styles.cardDivider} />
+                <View style={styles.statsRow}>
+                  <View style={styles.statCol}>
+                    <View style={styles.statLabelRow}>
+                      <View
+                        style={[
+                          styles.statIconWrap,
+                          { backgroundColor: '#E8F0FB' },
+                        ]}
+                      >
+                        <Calendar size={12} color={C.primary} />
                       </View>
-                    )}
-                    <Text style={styles.empText}>
-                      {emp.firstName} {emp.lastName}
-                    </Text>
-                    {emp.employeeId && (
-                      <Text style={styles.empId}>{emp.employeeId}</Text>
-                    )}
-                  </View>
-                )}
-
-                <View style={styles.dateRow}>
-                  <View style={styles.dateItem}>
-                    <Text style={styles.dateLabel}>FROM</Text>
-                    <Text style={styles.dateVal}>
+                      <Text style={styles.statLabel}>From</Text>
+                    </View>
+                    <Text style={styles.statValue}>
                       {formatDate(item.startDate)}
                     </Text>
                   </View>
-                  <View style={styles.dateSep}>
-                    <Text style={styles.dateSepText}>→</Text>
-                  </View>
-                  <View style={styles.dateItem}>
-                    <Text style={styles.dateLabel}>TO</Text>
-                    <Text style={styles.dateVal}>
+                  <View style={styles.statDivider} />
+                  <View style={styles.statCol}>
+                    <View style={styles.statLabelRow}>
+                      <View
+                        style={[
+                          styles.statIconWrap,
+                          { backgroundColor: '#E8F0FB' },
+                        ]}
+                      >
+                        <Calendar size={12} color={C.primary} />
+                      </View>
+                      <Text style={styles.statLabel}>To</Text>
+                    </View>
+                    <Text style={styles.statValue}>
                       {formatDate(item.endDate)}
                     </Text>
                   </View>
                   {days && (
-                    <View style={styles.daysTag}>
-                      <Text style={styles.daysText}>{days}d</Text>
-                    </View>
+                    <>
+                      <View style={styles.statDivider} />
+                      <View style={styles.statCol}>
+                        <View style={styles.statLabelRow}>
+                          <View
+                            style={[
+                              styles.statIconWrap,
+                              { backgroundColor: '#F0EBFC' },
+                            ]}
+                          >
+                            <Clock size={12} color="#7C3AED" />
+                          </View>
+                          <Text style={styles.statLabel}>Duration</Text>
+                        </View>
+                        <Text style={styles.statValue}>{days}d</Text>
+                      </View>
+                    </>
                   )}
                 </View>
 
@@ -1099,69 +1139,55 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: C.black,
     padding: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  cardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  typeTag: { borderWidth: 2, paddingHorizontal: 8, paddingVertical: 3 },
-  typeTagText: { fontSize: 12, fontWeight: '700' },
-  statusTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+  cardRow: { flexDirection: 'row', alignItems: 'center' },
+  photoWrap: { position: 'relative', width: 48, height: 48 },
+  empPhoto: { width: 48, height: 48, borderRadius: 24 },
+  empPhotoFallback: { alignItems: 'center', justifyContent: 'center' },
+  empPhotoInitials: { fontSize: 16, fontWeight: '700' },
+  statusBadgeOverlay: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     borderWidth: 2,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  statusTagText: { fontSize: 9, fontWeight: '700' },
-  empRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 10,
-  },
-  empPhoto: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: C.black,
-  },
-  empInitials: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: C.black,
-    backgroundColor: C.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  empInitialsText: { fontSize: 9, fontWeight: '700', color: C.white },
-  empText: { fontSize: 13, fontWeight: '700', color: C.black },
-  empId: { fontSize: 11, color: C.textMuted, fontFamily: 'monospace' },
-  dateRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  dateItem: { flex: 1 },
-  dateLabel: {
-    fontSize: 9,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    color: C.textMuted,
+  empName: { fontSize: 15, fontWeight: '800', color: C.black, letterSpacing: 0.2 },
+  empSub: { fontSize: 11, color: '#9CA3AF', fontWeight: '600', marginTop: 2 },
+  statusTag: {
+    borderWidth: 1.5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
   },
-  dateVal: { fontSize: 13, fontWeight: '700', color: C.black, marginTop: 2 },
-  dateSep: { width: 30, alignItems: 'center' },
-  dateSepText: { fontSize: 16, color: C.textMuted },
-  daysTag: {
-    backgroundColor: C.primary,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderWidth: 2,
-    borderColor: C.black,
+  statusTagText: { fontSize: 9, fontWeight: '700', letterSpacing: 0.3 },
+  cardDivider: {
+    height: 1,
+    backgroundColor: '#F0F1F3',
+    marginTop: 12,
+    marginBottom: 10,
   },
-  daysText: { color: C.white, fontSize: 12, fontWeight: '700' },
+  statsRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  statCol: { flex: 1, gap: 3 },
+  statDivider: { width: 1, backgroundColor: '#F0F1F3', marginHorizontal: 10 },
+  statLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  statIconWrap: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statLabel: { fontSize: 10, color: '#9CA3AF', fontWeight: '600' },
+  statValue: { fontSize: 15, fontWeight: '700', color: C.black },
   reason: {
     fontSize: 12,
     color: C.textMuted,
@@ -1204,8 +1230,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     backgroundColor: C.success,
-    borderWidth: 2,
-    borderColor: C.black,
+    borderRadius: 8,
     paddingVertical: 8,
   },
   rejectBtn: {
@@ -1215,8 +1240,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     backgroundColor: C.danger,
-    borderWidth: 2,
-    borderColor: C.black,
+    borderRadius: 8,
     paddingVertical: 8,
   },
   actionBtnText: {

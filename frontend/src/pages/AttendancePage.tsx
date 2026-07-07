@@ -31,6 +31,14 @@ import {
 
 const DAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+// True if `dateStr` (YYYY-MM-DD) falls before the employee's join date or
+// after their exit date — i.e. they weren't employed on that date.
+function isOutsideEmploymentPeriod(dateStr: string, emp: any): boolean {
+  if (emp.joinDate && dateStr < toLocalDateStr(emp.joinDate)) return true;
+  if (emp.exitDate && dateStr > toLocalDateStr(emp.exitDate)) return true;
+  return false;
+}
+
 function isWeekendForEmployee(dateStr: string, emp: any): boolean {
   const date = new Date(dateStr + "T00:00:00");
   const day = date.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
@@ -367,17 +375,19 @@ export default function AttendancePage() {
     const recordByEmpId = new Map(
       dateRecords.map((r) => [(r.employee as any)?._id, r]),
     );
-    displayedRecords = employees.map((emp) => {
-      const existing = recordByEmpId.get(emp._id);
-      if (existing) return existing;
-      const weekend = isWeekendForEmployee(selectedDate, emp);
-      return {
-        _id: `v_${emp._id}`,
-        employee: emp,
-        date: selectedDate,
-        status: weekend ? "weekend" : "not_checked_in",
-      };
-    });
+    displayedRecords = employees
+      .filter((emp) => !isOutsideEmploymentPeriod(selectedDate, emp))
+      .map((emp) => {
+        const existing = recordByEmpId.get(emp._id);
+        if (existing) return existing;
+        const weekend = isWeekendForEmployee(selectedDate, emp);
+        return {
+          _id: `v_${emp._id}`,
+          employee: emp,
+          date: selectedDate,
+          status: weekend ? "weekend" : "not_checked_in",
+        };
+      });
     if (activeFilter && activeFilter !== "early_leaving") {
       displayedRecords = displayedRecords.filter(
         (r) => r.status === activeFilter,
@@ -688,7 +698,8 @@ export default function AttendancePage() {
           const unrecorded = employees.filter(
             (e) =>
               !recordedEmpIds.has(e._id) &&
-              !isWeekendForEmployee(selectedDate, e),
+              !isWeekendForEmployee(selectedDate, e) &&
+              !isOutsideEmploymentPeriod(selectedDate, e),
           );
           if (unrecorded.length === 0) return null;
           return (

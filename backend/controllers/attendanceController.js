@@ -21,6 +21,22 @@ function haversineMeters(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.asin(Math.sqrt(a));
 }
 
+// Returns an error message if `date` falls outside the employee's employment
+// period (before joinDate or after exitDate), or null if it's in bounds.
+function employmentBoundsError(emp, date) {
+  if (emp.joinDate) {
+    const jd = new Date(emp.joinDate);
+    jd.setHours(0, 0, 0, 0);
+    if (date < jd) return "Cannot mark attendance before the employee's join date";
+  }
+  if (emp.exitDate) {
+    const ed = new Date(emp.exitDate);
+    ed.setHours(0, 0, 0, 0);
+    if (date > ed) return "Cannot mark attendance after the employee's exit date";
+  }
+  return null;
+}
+
 async function notifyAttendanceStatus(emp, date, status, companyId) {
   if (!emp?.phone) return;
   await sendAttendanceStatus(
@@ -231,6 +247,12 @@ const markAttendance = asyncHandler(async (req, res) => {
 
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
+
+  const boundsError = employmentBoundsError(emp, d);
+  if (boundsError) {
+    res.status(400);
+    throw new Error(boundsError);
+  }
 
   const holiday = await isHolidayDate(req.user.company, d);
   const computedStatus = holiday
@@ -551,11 +573,16 @@ const bulkMarkAttendance = asyncHandler(async (req, res) => {
 
   const companyEmployees = await Employee.find({
     company: req.user.company,
-  }).select("_id");
-  const companyEmpSet = new Set(companyEmployees.map((e) => e._id.toString()));
-  const filteredRecords = records.filter(
-    (r) => r.employee && companyEmpSet.has(r.employee.toString()),
+  }).select("_id joinDate exitDate");
+  const companyEmpMap = new Map(
+    companyEmployees.map((e) => [e._id.toString(), e]),
   );
+  const filteredRecords = records.filter((r) => {
+    if (!r.employee) return false;
+    const emp = companyEmpMap.get(r.employee.toString());
+    if (!emp) return false;
+    return !employmentBoundsError(emp, d);
+  });
 
   const ops = filteredRecords.map((r) => ({
     updateOne: {

@@ -32,6 +32,11 @@ import {
   Pencil,
   Camera,
   MapPin,
+  Building2,
+  Fingerprint,
+  ScanFace,
+  CreditCard,
+  KeyRound,
 } from 'lucide-react-native';
 import { attendanceAPI, employeeAPI, attendanceCorrectionAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -131,14 +136,14 @@ async function getCurrentPosition(): Promise<{
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> =
   {
-    present: { color: C.success, bg: '#F0FDF4', icon: CheckCircle2 },
-    absent: { color: C.danger, bg: '#FEF2F2', icon: XCircle },
-    late: { color: C.warning, bg: '#FFF7ED', icon: AlertCircle },
-    half_day: { color: C.secondary, bg: '#FFF7ED', icon: AlertCircle },
-    on_leave: { color: C.primary, bg: '#EFF6FF', icon: Calendar },
+    present: { color: C.success, bg: '#E7F9F1', icon: CheckCircle2 },
+    absent: { color: C.danger, bg: '#FDEBEB', icon: XCircle },
+    late: { color: C.warning, bg: '#FEF3E2', icon: AlertCircle },
+    half_day: { color: C.secondary, bg: '#FEEEE3', icon: AlertCircle },
+    on_leave: { color: C.primary, bg: '#E8F0FB', icon: Calendar },
     not_checked_in: { color: '#9CA3AF', bg: '#F3F4F6', icon: Clock },
     weekend: { color: '#9CA3AF', bg: '#F3F4F6', icon: Calendar },
-    holiday: { color: '#A855F7', bg: '#FAF5FF', icon: Calendar },
+    holiday: { color: '#A855F7', bg: '#F4EBFC', icon: Calendar },
   };
 
 const VERIFY_MODE_LABELS: Record<string, string> = {
@@ -148,6 +153,15 @@ const VERIFY_MODE_LABELS: Record<string, string> = {
   geo_camera: 'FACE',
   password: 'PASSWORD',
   auto: 'AUTO',
+};
+
+const VERIFY_MODE_ICONS: Record<string, any> = {
+  fingerprint: Fingerprint,
+  card: CreditCard,
+  face: ScanFace,
+  geo_camera: ScanFace,
+  password: KeyRound,
+  auto: Clock,
 };
 
 function isWeekendForEmployee(dateStr: string, emp: any): boolean {
@@ -816,26 +830,50 @@ export default function AttendanceScreen() {
                   emp.lastName?.[0] || ''
                 }`.toUpperCase()
               : '?';
+            const ciDate = item.checkIn
+              ? new Date(item.checkIn).toLocaleDateString('en-IN', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                })
+              : null;
+            const coDate = item.checkOut
+              ? new Date(item.checkOut).toLocaleDateString('en-IN', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                })
+              : null;
+            const verifyMode = (item as any).verifyMode;
+            const VerifyIcon =
+              (verifyMode && VERIFY_MODE_ICONS[verifyMode]) || Clock;
+            const deptName =
+              typeof emp?.department === 'object'
+                ? emp?.department?.name
+                : emp?.department;
+            const statusLabel =
+              item.status === 'weekend'
+                ? new Date(dateFilter + 'T00:00:00')
+                    .toLocaleDateString('en-IN', { weekday: 'long' })
+                    .toUpperCase()
+                : item.status.replace(/_/g, ' ').toUpperCase();
             return (
               <View
-                style={[
-                  styles.card,
-                  { borderLeftColor: cfg.color, borderLeftWidth: 4 },
-                ]}
+                style={[styles.card, { borderLeftColor: cfg.color }]}
               >
                 <View style={styles.cardRow}>
                   <View style={styles.photoWrap}>
                     {emp?.avatar ? (
                       <Image
                         source={{ uri: emp.avatar }}
-                        style={[styles.empPhoto, { borderColor: cfg.color }]}
+                        style={styles.empPhoto}
                       />
                     ) : (
                       <View
                         style={[
                           styles.empPhoto,
                           styles.empPhotoFallback,
-                          { backgroundColor: cfg.bg, borderColor: cfg.color },
+                          { backgroundColor: cfg.bg },
                         ]}
                       >
                         <Text
@@ -851,20 +889,28 @@ export default function AttendanceScreen() {
                     <View
                       style={[
                         styles.statusBadgeOverlay,
-                        { backgroundColor: cfg.bg, borderColor: cfg.color },
+                        { backgroundColor: C.white, borderColor: cfg.color },
                       ]}
                     >
-                      <Icon size={10} color={cfg.color} />
+                      <Icon size={11} color={cfg.color} />
                     </View>
                   </View>
                   <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={styles.empName}>
-                      {emp ? `${emp.firstName} ${emp.lastName}` : 'Unknown'}
+                    <Text style={styles.empName} numberOfLines={1}>
+                      {emp
+                        ? `${emp.firstName} ${emp.lastName}`.toUpperCase()
+                        : 'UNKNOWN'}
                     </Text>
                     <Text style={styles.empSub}>
                       {emp?.employeeId || ''}
                       {emp?.designation ? ` · ${emp.designation}` : ''}
                     </Text>
+                    {!!deptName && (
+                      <View style={styles.empDeptRow}>
+                        <Building2 size={11} color="#9CA3AF" />
+                        <Text style={styles.empDeptText}>{deptName}</Text>
+                      </View>
+                    )}
                   </View>
                   <View style={styles.cardActions}>
                     <View
@@ -876,9 +922,7 @@ export default function AttendanceScreen() {
                       <Text
                         style={[styles.statusTagText, { color: cfg.color }]}
                       >
-                        {item.status === 'weekend'
-                          ? new Date(dateFilter + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'long' }).toUpperCase()
-                          : item.status.replace(/_/g, ' ').toUpperCase()}
+                        {statusLabel}
                       </Text>
                     </View>
                     {!isEmployee &&
@@ -916,20 +960,80 @@ export default function AttendanceScreen() {
                       ))}
                   </View>
                 </View>
-                {(ciTime || coTime || workHours || overtime > 0) && (
+
+                {(ciTime || coTime || verifyMode) && (
+                  <>
+                    <View style={styles.cardDivider} />
+                    <View style={styles.statsRow}>
+                      <View style={styles.statCol}>
+                        <View style={styles.statLabelRow}>
+                          <View
+                            style={[
+                              styles.statIconWrap,
+                              { backgroundColor: '#E7F9F1' },
+                            ]}
+                          >
+                            <LogIn size={12} color={C.success} />
+                          </View>
+                          <Text style={styles.statLabel}>Check In</Text>
+                        </View>
+                        <Text style={styles.statValue}>
+                          {ciTime || '--:--'}
+                        </Text>
+                        {ciDate && (
+                          <Text style={styles.statSub}>{ciDate}</Text>
+                        )}
+                      </View>
+                      <View style={styles.statDivider} />
+                      <View style={styles.statCol}>
+                        <View style={styles.statLabelRow}>
+                          <View
+                            style={[
+                              styles.statIconWrap,
+                              { backgroundColor: '#FDEBEB' },
+                            ]}
+                          >
+                            <LogOut size={12} color={C.danger} />
+                          </View>
+                          <Text style={styles.statLabel}>Check Out</Text>
+                        </View>
+                        <Text style={styles.statValue}>
+                          {coTime || '--:--'}
+                        </Text>
+                        {coDate && (
+                          <Text style={styles.statSub}>{coDate}</Text>
+                        )}
+                      </View>
+                      {verifyMode && (
+                        <>
+                          <View style={styles.statDivider} />
+                          <View style={styles.statCol}>
+                            <View style={styles.statLabelRow}>
+                              <View
+                                style={[
+                                  styles.statIconWrap,
+                                  { backgroundColor: '#F0EBFC' },
+                                ]}
+                              >
+                                <VerifyIcon size={12} color="#7C3AED" />
+                              </View>
+                              <Text style={styles.statLabel}>Method</Text>
+                            </View>
+                            <Text style={styles.statValue}>
+                              {VERIFY_MODE_LABELS[verifyMode] ||
+                                verifyMode.toUpperCase()}
+                            </Text>
+                          </View>
+                        </>
+                      )}
+                    </View>
+                  </>
+                )}
+
+                {(workHours || overtime > 0 || (item as any).earlyLeaving ||
+                  item.checkInLocation ||
+                  item.checkOutLocation) && (
                   <View style={styles.timeRow}>
-                    {ciTime && (
-                      <View style={styles.timePill}>
-                        <LogIn size={11} color={C.success} />
-                        <Text style={styles.timeText}>{ciTime}</Text>
-                      </View>
-                    )}
-                    {coTime && (
-                      <View style={styles.timePill}>
-                        <LogOut size={11} color={C.danger} />
-                        <Text style={styles.timeText}>{coTime}</Text>
-                      </View>
-                    )}
                     {workHours && (
                       <View style={styles.timePill}>
                         <Clock size={11} color={C.primary} />
@@ -946,15 +1050,6 @@ export default function AttendanceScreen() {
                         </Text>
                       </View>
                     )}
-                    {(item as any).verifyMode &&
-                      (item as any).verifyMode !== 'manual' && (
-                        <View style={styles.verifyPill}>
-                          <Text style={styles.verifyPillText}>
-                            {VERIFY_MODE_LABELS[(item as any).verifyMode] ||
-                              (item as any).verifyMode.toUpperCase()}
-                          </Text>
-                        </View>
-                      )}
                     {(item as any).earlyLeaving && (
                       <View
                         style={[styles.timePill, { borderColor: C.primary }]}
@@ -1591,8 +1686,12 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
-    borderColor: C.black,
     padding: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   cardRow: { flexDirection: 'row', alignItems: 'center' },
   cardActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -1602,10 +1701,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  photoWrap: { position: 'relative', width: 44, height: 44 },
-  empPhoto: { width: 44, height: 44, borderRadius: 22, borderWidth: 2 },
+  photoWrap: { position: 'relative', width: 48, height: 48 },
+  empPhoto: { width: 48, height: 48, borderRadius: 24,borderWidth: 2, borderColor: '#000000ff' },
   empPhotoFallback: { alignItems: 'center', justifyContent: 'center' },
-  empPhotoInitials: { fontSize: 15, fontWeight: '700' },
+  empPhotoInitials: { fontSize: 16, fontWeight: '700' },
   statusBadgeOverlay: {
     position: 'absolute',
     bottom: -2,
@@ -1613,10 +1712,41 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    borderWidth: 1,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  empDeptRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 3,
+  },
+  empDeptText: { fontSize: 11, color: '#9CA3AF', fontWeight: '500' },
+  cardDivider: {
+    height: 1,
+    backgroundColor: '#F0F1F3',
+    marginTop: 12,
+    marginBottom: 10,
+  },
+  statsRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  statCol: { flex: 1, gap: 3 },
+  statDivider: { width: 1, backgroundColor: '#F0F1F3', marginHorizontal: 10 },
+  statLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  statIconWrap: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statLabel: {
+    fontSize: 10,
+    color: '#9CA3AF',
+    fontWeight: '600',
+  },
+  statValue: { fontSize: 15, fontWeight: '700', color: C.black },
+  statSub: { fontSize: 10, color: '#B0B4BA', fontWeight: '500' },
   verifyPill: {
     backgroundColor: '#F3F4F6',
     borderWidth: 1,
@@ -1630,26 +1760,32 @@ const styles = StyleSheet.create({
     color: C.textMuted,
     textTransform: 'uppercase',
   },
-  empName: { fontSize: 15, fontWeight: '700', color: C.black },
-  empSub: { fontSize: 11, color: C.textMuted, fontWeight: '500' },
-  statusTag: { borderWidth: 2, paddingHorizontal: 8, paddingVertical: 3 },
-  statusTagText: { fontSize: 9, fontWeight: '700' },
+  empName: { fontSize: 15, fontWeight: '800', color: C.black, letterSpacing: 0.2 },
+  empSub: { fontSize: 11, color: '#9CA3AF', fontWeight: '600', marginTop: 2 },
+  statusTag: {
+    borderWidth: 1.5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  statusTagText: { fontSize: 9, fontWeight: '700', letterSpacing: 0.3 },
   editBtn: {
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: C.primary,
-    padding: 6,
-    backgroundColor: '#EFF6FF',
+    padding: 4,
+    backgroundColor: '#FFFFFF',
   },
   markBtn: {
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: C.primary,
-    padding: 6,
+    borderRadius: 8,
+    padding: 7,
     backgroundColor: C.primary,
   },
   absentBtn: {
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: C.danger,
-    padding: 6,
+    borderRadius: 8,
+    padding: 7,
     backgroundColor: C.danger,
   },
   timeRow: { flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' },
@@ -1660,6 +1796,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
     paddingHorizontal: 8,
     paddingVertical: 4,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },

@@ -422,7 +422,7 @@ export default function EmployeesPage() {
     }
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
@@ -2978,6 +2978,7 @@ export default function EmployeesPage() {
 
                 {formTab < FORM_TABS.length - 1 ? (
                   <button
+                    key="next"
                     type="button"
                     onClick={() =>
                       setFormTab((t) => Math.min(FORM_TABS.length - 1, t + 1))
@@ -2988,8 +2989,10 @@ export default function EmployeesPage() {
                   </button>
                 ) : (
                   <button
-                    type="submit"
+                    key="submit"
+                    type="button"
                     disabled={saving}
+                    onClick={handleSave}
                     className="flex items-center gap-2 border-2 border-black bg-[#024BAB] text-white px-6 py-2 text-sm font-bold hover:bg-[#01368A] disabled:opacity-50"
                   >
                     <CheckCircle className="w-4 h-4" />
