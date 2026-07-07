@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const Company = require("../models/Company");
 const Subscription = require("../models/Subscription");
 const Invoice = require("../models/Invoice");
+const { FEATURES_BY_TIER } = require("../utils/planFeatures");
 
 const getSaasStats = asyncHandler(async (req, res) => {
   const now = new Date();
@@ -129,4 +130,34 @@ const getSaasStats = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { getSaasStats };
+const updateCompanyTier = asyncHandler(async (req, res) => {
+  const { companyId } = req.params;
+  const { tier } = req.body;
+
+  if (!Object.keys(FEATURES_BY_TIER).includes(tier)) {
+    res.status(400);
+    throw new Error(
+      `Invalid tier. Must be one of: ${Object.keys(FEATURES_BY_TIER).join(", ")}`,
+    );
+  }
+
+  const company = await Company.findById(companyId).select("subscription");
+  if (!company) {
+    res.status(404);
+    throw new Error("Company not found");
+  }
+  if (!company.subscription) {
+    res.status(404);
+    throw new Error("Company has no subscription to update");
+  }
+
+  const subscription = await Subscription.findByIdAndUpdate(
+    company.subscription,
+    { tier },
+    { new: true },
+  );
+
+  res.json({ success: true, data: subscription });
+});
+
+module.exports = { getSaasStats, updateCompanyTier };

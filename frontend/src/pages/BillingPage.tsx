@@ -28,26 +28,19 @@ declare global {
   }
 }
 
-const PRICING_TIERS = [
-  { min: 1, max: 10, rate: 60, label: "1-10 employees" },
-  { min: 11, max: 20, rate: 55, label: "11-20 employees" },
-  { min: 21, max: 40, rate: 50, label: "21-40 employees" },
-  { min: 41, max: 60, rate: 45, label: "41-60 employees" },
-  { min: 61, max: Infinity, rate: 40, label: "60+ employees" },
-];
+type Tier = "web" | "web_mobile" | "web_mobile_whatsapp";
 
-function getPricingTier(count: number) {
-  return (
-    PRICING_TIERS.find((t) => count >= t.min && count <= t.max) ||
-    PRICING_TIERS[0]
-  );
-}
+const PLANS: { tier: Tier; name: string; rate: number }[] = [
+  { tier: "web", name: "Web", rate: 500 },
+  { tier: "web_mobile", name: "Web + Mobile", rate: 700 },
+  { tier: "web_mobile_whatsapp", name: "Web + Mobile + WhatsApp", rate: 800 },
+];
 
 export default function BillingPage() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
+  const [selectedTier, setSelectedTier] = useState<Tier>("web_mobile");
   const [subscription, setSubscription] = useState<any>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +57,7 @@ export default function BillingPage() {
           if (r.success) {
             setSubscription(r.data);
             setNewEmployeeCount(r.data.maxEmployees || "");
+            if (r.data.tier) setSelectedTier(r.data.tier);
           }
         })
         .catch(() => {}),
@@ -154,7 +148,12 @@ export default function BillingPage() {
     setGatewayModal(false);
     setUpgrading(true);
     try {
-      const res = await billingAPI.createOrder(count, billing, gateway);
+      const res = await billingAPI.createOrder(
+        count,
+        selectedTier,
+        "yearly",
+        gateway,
+      );
       if (!res.success) throw new Error("Failed to create order");
       const order = res.data;
 
@@ -172,7 +171,7 @@ export default function BillingPage() {
             amount: order.amount * 100,
             currency: order.currency || "INR",
             name: "NestHR",
-            description: `NestHR — ${count} employees — ${billing}`,
+            description: `NestHR — ${count} employees — ${order.plan}`,
             prefill: {
               name: order.userName,
               email: order.userEmail,
@@ -368,37 +367,31 @@ export default function BillingPage() {
 
         {}
         <div>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <h2 className="font-display font-bold text-2xl text-black">
-              Change Plan
-            </h2>
-            <div className="flex items-center border-2 border-black overflow-hidden self-start">
-              <button
-                onClick={() => setBilling("monthly")}
-                className={cn(
-                  "px-4 py-2 text-sm font-bold transition-colors",
-                  billing === "monthly"
-                    ? "bg-[#024BAB] text-white"
-                    : "bg-white text-black hover:bg-[#024BAB]/10",
-                )}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setBilling("yearly")}
-                className={cn(
-                  "px-4 py-2 text-sm font-bold transition-colors border-l-2 border-black",
-                  billing === "yearly"
-                    ? "bg-[#024BAB] text-white"
-                    : "bg-white text-black hover:bg-[#024BAB]/10",
-                )}
-              >
-                Yearly
-                <span className="ml-1.5 text-[10px] bg-[#00C48C] text-black border border-black px-1 py-0.5 font-bold">
-                  -10%
-                </span>
-              </button>
-            </div>
+          <h2 className="font-display font-bold text-2xl text-black mb-6">
+            Change Plan
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 max-w-2xl">
+            {PLANS.map((p) => {
+              const isSelected = selectedTier === p.tier;
+              return (
+                <button
+                  key={p.tier}
+                  onClick={() => setSelectedTier(p.tier)}
+                  className={cn(
+                    "text-left border-2 bg-white p-4 transition-all",
+                    isSelected
+                      ? "border-[#024BAB] ring-2 ring-[#024BAB]"
+                      : "border-black hover:border-[#024BAB]",
+                  )}
+                >
+                  <p className="font-bold text-sm text-black">{p.name}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    ₹{p.rate}/employee/year
+                  </p>
+                </button>
+              );
+            })}
           </div>
 
           <div className="border-2 p-5 bg-white max-w-sm">
@@ -423,20 +416,18 @@ export default function BillingPage() {
               <div className="mb-4">
                 {(() => {
                   const count = Number(newEmployeeCount);
-                  const tier = getPricingTier(count);
-                  const monthly = count * tier.rate;
-                  const yearly = Math.round(monthly * 12 * 0.9);
-                  const price = billing === "yearly" ? yearly : monthly;
+                  const plan = PLANS.find((p) => p.tier === selectedTier)!;
+                  const yearly = count * plan.rate;
                   return (
                     <>
                       <span className="font-display font-bold text-3xl text-black">
-                        ₹{price.toLocaleString("en-IN")}
+                        ₹{yearly.toLocaleString("en-IN")}
                       </span>
                       <span className="text-sm font-medium text-muted-foreground">
-                        /{billing === "yearly" ? "yr" : "mo"}
+                        /yr
                       </span>
                       <p className="text-xs text-muted-foreground mt-1">
-                        ₹{tier.rate}/employee/mo · {tier.label}
+                        ₹{plan.rate}/employee/year · {plan.name}
                       </p>
                     </>
                   );
@@ -446,7 +437,11 @@ export default function BillingPage() {
 
             <button
               onClick={handleUpdateTeamSize}
-              disabled={upgrading || Number(newEmployeeCount) === empMax}
+              disabled={
+                upgrading ||
+                (Number(newEmployeeCount) === empMax &&
+                  selectedTier === sub?.tier)
+              }
               className="border-2 w-full py-2.5 text-sm flex items-center justify-center gap-2 bg-black text-white hover:bg-black/80 disabled:opacity-50"
             >
               {upgrading ? (

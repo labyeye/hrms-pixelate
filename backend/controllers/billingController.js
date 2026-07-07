@@ -9,10 +9,15 @@ const PendingOrder = require("../models/PendingOrder");
 const hdfcPayment = require("../services/hdfcPaymentService");
 const razorpayService = require("../services/razorpayService");
 const { sendPaymentConfirmations } = require("../services/notificationService");
-const { TIERS, calculatePricing } = require("../utils/pricing");
+const { TIER_RATES, TIER_LABELS, calculatePricing } = require("../utils/pricing");
 
 const getPlans = asyncHandler(async (req, res) => {
-  res.json({ success: true, data: TIERS });
+  const plans = Object.keys(TIER_RATES).map((tier) => ({
+    tier,
+    label: TIER_LABELS[tier],
+    ratePerEmployee: TIER_RATES[tier],
+  }));
+  res.json({ success: true, data: plans });
 });
 
 const getSubscription = asyncHandler(async (req, res) => {
@@ -87,6 +92,7 @@ const validateOfferCode = asyncHandler(async (req, res) => {
 const createOrder = asyncHandler(async (req, res) => {
   const {
     employeeCount,
+    tier,
     billingCycle = "monthly",
     gateway = "razorpay",
     offerCode,
@@ -98,6 +104,12 @@ const createOrder = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("Please provide a valid number of employees");
   }
+  if (!Object.keys(TIER_RATES).includes(tier)) {
+    res.status(400);
+    throw new Error(
+      `Invalid plan. Choose one of: ${Object.keys(TIER_RATES).join(", ")}`,
+    );
+  }
   if (!["monthly", "yearly"].includes(billingCycle)) {
     res.status(400);
     throw new Error("Invalid billing cycle");
@@ -107,7 +119,7 @@ const createOrder = asyncHandler(async (req, res) => {
     throw new Error("Invalid gateway. Use razorpay or hdfc");
   }
 
-  const pricing = calculatePricing(empCount);
+  const pricing = calculatePricing(empCount, tier);
 
   const existingCompany = await Company.findOne({ createdBy: req.user._id });
 
@@ -181,6 +193,7 @@ const createOrder = asyncHandler(async (req, res) => {
         {
           company: existingCompany._id,
           plan: pricing.tierLabel,
+          tier: pricing.tier,
           employeeCount: empCount,
           ratePerEmployee: pricing.ratePerEmployee,
           monthlyPrice: pricing.monthlyPrice,
@@ -213,6 +226,7 @@ const createOrder = asyncHandler(async (req, res) => {
         panNumber: newCompanyDetails.panNumber,
         employeeCount: empCount,
         billingCycle,
+        tier: pricing.tier,
         ratePerEmployee: pricing.ratePerEmployee,
         tierLabel: pricing.tierLabel,
         monthlyPrice: pricing.monthlyPrice,
@@ -264,6 +278,7 @@ const createOrder = asyncHandler(async (req, res) => {
         {
           company: existingCompany._id,
           plan: pricing.tierLabel,
+          tier: pricing.tier,
           employeeCount: empCount,
           ratePerEmployee: pricing.ratePerEmployee,
           monthlyPrice: pricing.monthlyPrice,
@@ -296,6 +311,7 @@ const createOrder = asyncHandler(async (req, res) => {
         panNumber: newCompanyDetails.panNumber,
         employeeCount: empCount,
         billingCycle,
+        tier: pricing.tier,
         ratePerEmployee: pricing.ratePerEmployee,
         tierLabel: pricing.tierLabel,
         monthlyPrice: pricing.monthlyPrice,
@@ -473,6 +489,7 @@ async function _createCompanyAndActivate({ pendingOrder, req, update, invoiceExt
   const subscription = await Subscription.create({
     company: company._id,
     plan: pendingOrder.tierLabel,
+    tier: pendingOrder.tier,
     employeeCount: pendingOrder.employeeCount,
     ratePerEmployee: pendingOrder.ratePerEmployee,
     monthlyPrice: pendingOrder.monthlyPrice,

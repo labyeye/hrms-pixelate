@@ -14,7 +14,7 @@ const {
   sendOtp,
   verifyOtp,
 } = require("../controllers/authController");
-const { protect } = require("../middleware/auth");
+const { protect, requirePlanFeature } = require("../middleware/auth");
 const router = express.Router();
 
 // Strict limiter for sensitive unauthenticated auth endpoints
@@ -40,9 +40,19 @@ router.post("/reset-password/:token", sensitiveLimit, resetPassword);
 router.post("/otp/send", sensitiveLimit, sendOtp);
 router.post("/otp/verify", sensitiveLimit, verifyOtp);
 
-router.post("/2fa/setup", protect, setup2FA);
-router.post("/2fa/confirm", protect, confirm2FA);
-router.post("/2fa/disable", protect, disable2FA);
+router.post("/2fa/setup", protect, requirePlanFeature("twoFactor"), setup2FA);
+router.post(
+  "/2fa/confirm",
+  protect,
+  requirePlanFeature("twoFactor"),
+  confirm2FA,
+);
+router.post(
+  "/2fa/disable",
+  protect,
+  requirePlanFeature("twoFactor"),
+  disable2FA,
+);
 router.post("/2fa/verify", verify2FA);
 
 module.exports = router;

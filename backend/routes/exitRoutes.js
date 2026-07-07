@@ -6,10 +6,10 @@ const {
   updateExit,
   deleteExit,
 } = require("../controllers/exitController");
-const { protect, authorize } = require("../middleware/auth");
+const { protect, authorize, requirePlanFeature } = require("../middleware/auth");
 const router = express.Router();
 
-router.use(protect);
+router.use(protect, requirePlanFeature("exitManagement"));
 router.get("/", getExits);
 router.get("/:id", getExit);
 router.post(

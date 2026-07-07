@@ -9,6 +9,7 @@ const generateToken = require("../utils/generateToken");
 const { validateBody } = require("../middleware/validate");
 const { sendPasswordResetEmail } = require("../services/notificationService");
 const { sendPhoneOtp } = require("../services/whatsappService");
+const { getCompanyFeatures } = require("../utils/planFeatures");
 
 const registerSchema = {
   name: { required: true, type: "string", minLength: 2, maxLength: 80 },
@@ -104,6 +105,16 @@ const login = [
         res.status(403);
         throw new Error(
           "Your 2-month free trial has expired. Please subscribe to continue.",
+        );
+      }
+    }
+
+    if (req.body.client === "mobile" && user.company) {
+      const features = await getCompanyFeatures(user.company._id);
+      if (!features.mobileApp) {
+        res.status(403);
+        throw new Error(
+          "Your organization's plan does not include mobile app access.",
         );
       }
     }

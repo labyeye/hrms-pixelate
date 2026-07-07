@@ -30,7 +30,7 @@ export const authAPI = {
   login: (email: string, password: string) =>
     request("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, client: "web" }),
     }),
   register: (body: { name: string; email: string; password: string }) =>
     request("/auth/register", { method: "POST", body: JSON.stringify(body) }),
@@ -279,6 +279,7 @@ export const billingAPI = {
     request<{ success: boolean; data: any }>("/billing/invoices"),
   createOrder: (
     employeeCount: number,
+    tier: "web" | "web_mobile" | "web_mobile_whatsapp",
     billingCycle: "monthly" | "yearly",
     gateway: "razorpay" | "hdfc" = "razorpay",
     company?: {
@@ -293,7 +294,13 @@ export const billingAPI = {
   ) =>
     request<{ success: boolean; data: any }>("/billing/create-order", {
       method: "POST",
-      body: JSON.stringify({ employeeCount, billingCycle, gateway, company }),
+      body: JSON.stringify({
+        employeeCount,
+        tier,
+        billingCycle,
+        gateway,
+        company,
+      }),
     }),
   verifyRazorpay: (payload: {
     razorpayOrderId: string;

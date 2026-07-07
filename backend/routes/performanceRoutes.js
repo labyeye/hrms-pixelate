@@ -4,19 +4,19 @@ const {
   createReview,
   updateReview,
 } = require("../controllers/performanceController");
-const { protect, authorize } = require("../middleware/auth");
+const { protect, authorize, requirePlanFeature } = require("../middleware/auth");
 const router = express.Router();
 
-router.get("/", protect, getReviews);
+router.use(protect, requirePlanFeature("performanceReviews"));
+
+router.get("/", getReviews);
 router.post(
   "/",
-  protect,
   authorize("super_admin", "hr_manager", "hr_executive"),
   createReview,
 );
 router.put(
   "/:id",
-  protect,
   authorize("super_admin", "hr_manager", "hr_executive"),
   updateReview,
 );

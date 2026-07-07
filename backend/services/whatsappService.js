@@ -1,6 +1,7 @@
 const https = require("https");
 const FormData = require("form-data");
 const Setting = require("../models/Setting");
+const { getCompanyFeatures } = require("../utils/planFeatures");
 
 // ─── Internal: upload a buffer to Meta Media API → returns media_id ──────────
 
@@ -133,6 +134,13 @@ async function sendTemplate(
 async function getCompanySetting(eventKey, companyId) {
   if (!companyId) {
     console.warn(`[WA-DEBUG] getCompanySetting: companyId is null/undefined`);
+    return null;
+  }
+  const features = await getCompanyFeatures(companyId);
+  if (!features.whatsapp) {
+    console.warn(
+      `[WA-DEBUG] getCompanySetting: plan does not include whatsapp for company=${companyId}`,
+    );
     return null;
   }
   const setting = await Setting.findOne({ company: companyId }).select(

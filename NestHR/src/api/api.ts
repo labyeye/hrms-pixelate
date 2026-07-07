@@ -92,7 +92,7 @@ export const authAPI = {
   login: (email: string, password: string) =>
     request('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, client: 'mobile' }),
     }),
   register: (body: { name: string; email: string; password: string }) =>
     request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),

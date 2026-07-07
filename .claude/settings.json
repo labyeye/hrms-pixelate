@@ -26,7 +26,11 @@
       "Bash(node -c routes/companyRoutes.js)",
       "Bash(node -c models/PendingOrder.js)",
       "Bash(node -e \"require\\('./controllers/attendanceController.js'\\); console.log\\('OK'\\)\")",
-      "Bash(node -e \"require\\('./controllers/attendanceController.js'\\); require\\('./models/Attendance.js'\\); console.log\\('OK'\\)\")"
+      "Bash(node -e \"require\\('./controllers/attendanceController.js'\\); require\\('./models/Attendance.js'\\); console.log\\('OK'\\)\")",
+      "WebFetch(domain:pagarbook.com)",
+      "WebFetch(domain:www.pagarguru.com)",
+      "WebFetch(domain:www.pixelatenest.com)",
+      "WebSearch"
     ]
   }
 }

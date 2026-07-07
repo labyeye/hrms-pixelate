@@ -1,31 +1,27 @@
-const TIERS = [
-  { minEmployees: 1, maxEmployees: 10, ratePerEmployee: 60, label: "1-10 employees" },
-  { minEmployees: 11, maxEmployees: 20, ratePerEmployee: 55, label: "11-20 employees" },
-  { minEmployees: 21, maxEmployees: 40, ratePerEmployee: 50, label: "21-40 employees" },
-  { minEmployees: 41, maxEmployees: 60, ratePerEmployee: 45, label: "41-60 employees" },
-  { minEmployees: 61, maxEmployees: Infinity, ratePerEmployee: 40, label: "60+ employees" },
-];
+const { TIER_RATES } = require("./planFeatures");
 
-const YEARLY_DISCOUNT = 0.1;
+const TIER_LABELS = {
+  web: "Web",
+  web_mobile: "Web + Mobile",
+  web_mobile_whatsapp: "Web + Mobile + WhatsApp",
+};
 
-function getTier(employeeCount) {
-  return (
-    TIERS.find(
-      (t) => employeeCount >= t.minEmployees && employeeCount <= t.maxEmployees,
-    ) || TIERS[0]
-  );
-}
+// Flat per-employee-per-year rate by tier. Monthly is just the yearly price
+// prorated over 12 months — there's no separate monthly-billing discount.
+function calculatePricing(employeeCount, tier) {
+  const rate = TIER_RATES[tier];
+  if (!rate) throw new Error(`Unknown tier: ${tier}`);
 
-function calculatePricing(employeeCount) {
-  const tier = getTier(employeeCount);
-  const monthlyPrice = employeeCount * tier.ratePerEmployee;
-  const yearlyPrice = Math.round(monthlyPrice * 12 * (1 - YEARLY_DISCOUNT));
+  const yearlyPrice = employeeCount * rate;
+  const monthlyPrice = Math.round(yearlyPrice / 12);
+
   return {
-    ratePerEmployee: tier.ratePerEmployee,
-    tierLabel: tier.label,
+    tier,
+    tierLabel: TIER_LABELS[tier],
+    ratePerEmployee: rate,
     monthlyPrice,
     yearlyPrice,
   };
 }
 
-module.exports = { TIERS, getTier, calculatePricing };
+module.exports = { TIER_RATES, TIER_LABELS, calculatePricing };

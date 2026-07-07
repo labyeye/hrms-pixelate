@@ -76,14 +76,57 @@ async function requestSelfMarkPermissions(): Promise<boolean> {
   );
 }
 
-function getCurrentPosition(): Promise<{ latitude: number; longitude: number; accuracy: number }> {
+function getPosition(options: {
+  enableHighAccuracy: boolean;
+  timeout: number;
+  maximumAge: number;
+}): Promise<{ latitude: number; longitude: number; accuracy: number }> {
   return new Promise((resolve, reject) => {
     Geolocation.getCurrentPosition(
       pos => resolve(pos.coords),
-      err => reject(new Error(err.message || 'Could not get your location')),
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+      err => reject(err),
+      options,
     );
   });
+}
+
+async function getCurrentPosition(): Promise<{
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+}> {
+  try {
+    // Try a high-accuracy GPS fix first, accepting a recently cached
+    // location so we don't always wait for a cold GPS start.
+    return await getPosition({
+      enableHighAccuracy: true,
+      timeout: 20000,
+      maximumAge: 30000,
+    });
+  } catch (err: any) {
+    if (err?.code === 3 /* TIMEOUT */) {
+      // GPS took too long (common indoors) — fall back to a
+      // faster, lower-accuracy network-based location.
+      try {
+        return await getPosition({
+          enableHighAccuracy: false,
+          timeout: 15000,
+          maximumAge: 60000,
+        });
+      } catch (fallbackErr: any) {
+        throw new Error(
+          fallbackErr?.message ||
+            'Could not get your location. Move to an open area and try again.',
+        );
+      }
+    }
+    if (err?.code === 2 /* POSITION_UNAVAILABLE */) {
+      throw new Error(
+        'Location services are turned off on your device. Please enable Location/GPS and try again.',
+      );
+    }
+    throw new Error(err?.message || 'Could not get your location');
+  }
 }
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> =

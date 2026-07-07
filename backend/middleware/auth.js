@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const asyncHandler = require("express-async-handler");
 const User = require("../models/User");
 const Company = require("../models/Company");
+const { getCompanyFeatures } = require("../utils/planFeatures");
 
 const protect = asyncHandler(async (req, res, next) => {
   let token;
@@ -63,6 +64,18 @@ const authorize =
     next();
   };
 
+const requirePlanFeature = (featureKey) =>
+  asyncHandler(async (req, res, next) => {
+    const features = await getCompanyFeatures(req.user.company);
+    if (!features[featureKey]) {
+      res.status(403);
+      throw new Error(
+        `Your plan does not include ${featureKey}. Ask your admin to upgrade.`,
+      );
+    }
+    next();
+  });
+
 // Platform-admin guard — verifies JWT issued specifically for the SaaS admin panel
 const protectPlatformAdmin = (req, res, next) => {
   const auth = req.headers.authorization ?? "";
@@ -79,4 +92,10 @@ const protectPlatformAdmin = (req, res, next) => {
   }
 };
 
-module.exports = { protect, protectCompany, authorize, protectPlatformAdmin };
+module.exports = {
+  protect,
+  protectCompany,
+  authorize,
+  requirePlanFeature,
+  protectPlatformAdmin,
+};

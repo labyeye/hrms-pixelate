@@ -8,7 +8,6 @@ import CompanyDetailsForm from "@/components/CompanyDetailsForm";
 import {
   Check,
   Zap,
-  Users,
   Loader2,
   ChevronRight,
   ExternalLink,
@@ -34,29 +33,54 @@ interface CompanyFormData {
   panNumber: string;
 }
 
-const PRICING_TIERS = [
-  { min: 1, max: 10, rate: 60, label: "1-10 employees" },
-  { min: 11, max: 20, rate: 55, label: "11-20 employees" },
-  { min: 21, max: 40, rate: 50, label: "21-40 employees" },
-  { min: 41, max: 60, rate: 45, label: "41-60 employees" },
-  { min: 61, max: Infinity, rate: 40, label: "60+ employees" },
-];
+type Tier = "web" | "web_mobile" | "web_mobile_whatsapp";
 
-function getPricingTier(count: number) {
-  return (
-    PRICING_TIERS.find((t) => count >= t.min && count <= t.max) ||
-    PRICING_TIERS[0]
-  );
-}
-
-const PLAN_FEATURES = [
-  "Employee management",
-  "Attendance tracking",
-  "Leave management",
-  "Payroll processing",
-  "Performance reviews",
-  "WhatsApp notifications",
-  "Reports & analytics",
+const PLANS: {
+  tier: Tier;
+  name: string;
+  rate: number;
+  blurb: string;
+  features: string[];
+}[] = [
+  {
+    tier: "web",
+    name: "Web",
+    rate: 500,
+    blurb: "For office-based teams",
+    features: [
+      "Employee management",
+      "Web / biometric-hardware attendance",
+      "Leave management",
+      "Payroll processing",
+      "Basic reports",
+      "Email notifications",
+    ],
+  },
+  {
+    tier: "web_mobile",
+    name: "Web + Mobile",
+    rate: 700,
+    blurb: "For teams with field or frontline staff",
+    features: [
+      "Everything in Web, plus:",
+      "Mobile app self check-in (face + geofence)",
+      "Performance reviews",
+      "Exit management",
+    ],
+  },
+  {
+    tier: "web_mobile_whatsapp",
+    name: "Web + Mobile + WhatsApp",
+    rate: 800,
+    blurb: "The full suite",
+    features: [
+      "Everything in Web + Mobile, plus:",
+      "WhatsApp notifications",
+      "2FA & audit log",
+      "Recruitment",
+      "Priority support",
+    ],
+  },
 ];
 
 const STEPS: { id: Step; label: string }[] = [
@@ -122,7 +146,7 @@ export default function OnboardingPage() {
   const [step, setStep] = useState<Step>(
     user?.company ? "employees" : "company",
   );
-  const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
+  const [selectedTier, setSelectedTier] = useState<Tier>("web_mobile");
   const [employeeCount, setEmployeeCount] = useState<number | "">("");
   const [paying, setPaying] = useState(false);
   const [companyError, setCompanyError] = useState("");
@@ -133,6 +157,11 @@ export default function OnboardingPage() {
       navigate("/", { replace: true });
     }
   }, [user?.company, user?.subscription?.status, navigate]);
+
+  const empCount = Number(employeeCount) || 0;
+  const plan = PLANS.find((p) => p.tier === selectedTier)!;
+  const yearlyPrice = empCount * plan.rate;
+  const monthlyEquiv = Math.round(yearlyPrice / 12);
 
   const handleCreateCompany = async (formData: CompanyFormData) => {
     // No API call here — the company is only persisted in the database
@@ -180,7 +209,8 @@ export default function OnboardingPage() {
     try {
       const res = await billingAPI.createOrder(
         count,
-        billing,
+        selectedTier,
+        "yearly",
         "razorpay",
         user?.company ? undefined : companyForm!,
       );
@@ -200,7 +230,7 @@ export default function OnboardingPage() {
           amount: order.amount * 100,
           currency: order.currency || "INR",
           name: "NestHR",
-          description: `NestHR — ${count} employees — ${billing}`,
+          description: `NestHR — ${plan.name} — ${count} employees`,
           theme: { color: "#024BAB" },
           handler: async (response: any) => {
             try {
@@ -257,14 +287,6 @@ export default function OnboardingPage() {
       setPaying(false);
     }
   };
-
-  const empCount = Number(employeeCount) || 0;
-  const tier = getPricingTier(empCount || 1);
-  const monthlyPrice = empCount * tier.rate;
-  const yearlyPrice = Math.round(monthlyPrice * 12 * 0.9);
-  const planPrice =
-    billing === "yearly" ? Math.round(yearlyPrice / 12) : monthlyPrice;
-  const planTotal = billing === "yearly" ? yearlyPrice : monthlyPrice;
 
   return (
     <div className="min-h-screen bg-[#F0F6FF]">
@@ -366,17 +388,6 @@ export default function OnboardingPage() {
                 ))}
               </div>
 
-              {employeeCount !== "" && Number(employeeCount) > 0 && (
-                <div className="flex items-center gap-2 p-3 border-2 border-black mb-5 text-sm font-bold bg-blue-50">
-                  <Zap className="w-4 h-4 shrink-0" />
-                  <span>
-                    ₹{getPricingTier(Number(employeeCount)).rate}/employee/mo
-                    for {employeeCount} employees (
-                    {getPricingTier(Number(employeeCount)).label})
-                  </span>
-                </div>
-              )}
-
               <button
                 onClick={handleEmployeeContinue}
                 className="w-full bg-[#024BAB] text-white border-2 border-black font-bold uppercase text-sm px-4 py-3 flex items-center justify-center gap-2 hover:bg-[#023590] transition-all"
@@ -396,70 +407,67 @@ export default function OnboardingPage() {
                 Choose your plan
               </h1>
               <p className="text-gray-500 font-medium text-sm">
-                Priced per employee — based on your team of {employeeCount}
+                Priced per employee, per year — for your team of{" "}
+                {employeeCount}
               </p>
             </div>
 
-            {/* Billing toggle */}
-            <div className="flex justify-center mb-8">
-              <div className="flex items-center bg-white border-2 border-black overflow-hidden">
-                <button
-                  onClick={() => setBilling("monthly")}
-                  className={cn(
-                    "px-6 py-3 text-sm font-bold uppercase transition-all border-r-2 border-black",
-                    billing === "monthly"
-                      ? "bg-[#024BAB] text-white"
-                      : "text-black hover:bg-gray-50",
-                  )}
-                >
-                  Monthly
-                </button>
-                <button
-                  onClick={() => setBilling("yearly")}
-                  className={cn(
-                    "px-6 py-3 text-sm font-bold uppercase relative transition-all",
-                    billing === "yearly"
-                      ? "bg-[#024BAB] text-white"
-                      : "text-black hover:bg-gray-50",
-                  )}
-                >
-                  Yearly
-                  <span className="absolute -top-5 left-1/2 -translate-x-1/2 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 border border-black whitespace-nowrap">
-                    Save 10%
-                  </span>
-                </button>
-              </div>
-            </div>
+            {/* Plan cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              {PLANS.map((p) => {
+                const isSelected = selectedTier === p.tier;
+                const total = empCount * p.rate;
+                return (
+                  <button
+                    key={p.tier}
+                    onClick={() => setSelectedTier(p.tier)}
+                    className={cn(
+                      "text-left border-2 bg-white p-5 flex flex-col transition-all",
+                      isSelected
+                        ? "border-[#024BAB] ring-2 ring-[#024BAB]"
+                        : "border-black hover:border-[#024BAB]",
+                    )}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="font-display font-bold text-lg text-black">
+                        {p.name}
+                      </h3>
+                      {isSelected && (
+                        <Check className="w-5 h-5 text-[#024BAB] shrink-0" />
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 font-medium mb-4">
+                      {p.blurb}
+                    </p>
 
-            {/* Plan summary */}
-            <div className="max-w-sm mx-auto border-2 border-black bg-white p-6 mb-8">
-              <div className="flex items-center gap-1 bg-[#024BAB] text-white border border-black px-2 py-0.5 text-xs font-bold w-fit mb-3">
-                <Users className="w-3 h-3" />
-                {employeeCount} employees · {tier.label}
-              </div>
+                    <div className="mb-4 pb-4 border-b-2 border-black">
+                      <div className="font-display font-bold text-2xl text-[#024BAB]">
+                        ₹{p.rate}
+                      </div>
+                      <div className="text-xs text-gray-500 font-medium">
+                        /employee/year
+                      </div>
+                      <div className="text-xs text-gray-600 font-bold mt-1">
+                        ₹{total.toLocaleString("en-IN")} total/year
+                      </div>
+                    </div>
 
-              <div className="mb-4 pb-4 border-b-2 border-black">
-                <div className="font-display font-bold text-3xl text-[#024BAB]">
-                  ₹{planPrice.toLocaleString("en-IN")}
-                </div>
-                <div className="text-xs text-gray-500 font-medium">
-                  /month · ₹{tier.rate}/employee
-                </div>
-                {billing === "yearly" && (
-                  <div className="text-xs text-green-600 font-bold mt-0.5">
-                    ₹{planTotal.toLocaleString("en-IN")} billed yearly
-                  </div>
-                )}
-              </div>
-
-              <ul className="space-y-2">
-                {PLAN_FEATURES.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-xs">
-                    <Check className="w-3.5 h-3.5 text-[#024BAB] shrink-0 mt-0.5" />
-                    <span className="text-gray-700 font-medium">{f}</span>
-                  </li>
-                ))}
-              </ul>
+                    <ul className="space-y-2">
+                      {p.features.map((f) => (
+                        <li
+                          key={f}
+                          className="flex items-start gap-2 text-xs"
+                        >
+                          <Check className="w-3.5 h-3.5 text-[#024BAB] shrink-0 mt-0.5" />
+                          <span className="text-gray-700 font-medium">
+                            {f}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </button>
+                );
+              })}
             </div>
 
             <div className="max-w-sm mx-auto">
@@ -502,15 +510,13 @@ export default function OnboardingPage() {
                 </div>
                 <div className="p-5 space-y-3">
                   <div className="flex justify-between items-center text-sm">
-                    <span className="font-bold text-gray-600">Rate</span>
-                    <span className="font-bold text-black uppercase">
-                      ₹{tier.rate}/employee/mo
-                    </span>
+                    <span className="font-bold text-gray-600">Plan</span>
+                    <span className="font-bold text-black">{plan.name}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="font-bold text-gray-600">Billing</span>
-                    <span className="font-bold text-black capitalize">
-                      {billing}
+                    <span className="font-bold text-gray-600">Rate</span>
+                    <span className="font-bold text-black">
+                      ₹{plan.rate}/employee/year
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
@@ -519,31 +525,22 @@ export default function OnboardingPage() {
                       {employeeCount}
                     </span>
                   </div>
-                  {billing === "yearly" && (
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="font-bold text-gray-600">
-                        Monthly equiv.
-                      </span>
-                      <span className="font-bold text-gray-500">
-                        ₹{planPrice.toLocaleString("en-IN")}/mo
-                      </span>
-                    </div>
-                  )}
-                  <div className="border-t-2 border-black pt-3 flex justify-between items-center">
-                    <span className="font-bold text-sm uppercase">Total</span>
-                    <span className="font-bold text-xl text-[#024BAB]">
-                      ₹{planTotal.toLocaleString("en-IN")}
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="font-bold text-gray-600">
+                      Monthly equiv.
+                    </span>
+                    <span className="font-bold text-gray-500">
+                      ₹{monthlyEquiv.toLocaleString("en-IN")}/mo
                     </span>
                   </div>
-                  {billing === "yearly" && (
-                    <div className="bg-green-50 border border-green-200 p-2 text-xs font-bold text-green-700 text-center">
-                      You save ₹
-                      {(monthlyPrice * 12 - yearlyPrice).toLocaleString(
-                        "en-IN",
-                      )}{" "}
-                      compared to monthly billing
-                    </div>
-                  )}
+                  <div className="border-t-2 border-black pt-3 flex justify-between items-center">
+                    <span className="font-bold text-sm uppercase">
+                      Total / year
+                    </span>
+                    <span className="font-bold text-xl text-[#024BAB]">
+                      ₹{yearlyPrice.toLocaleString("en-IN")}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -593,7 +590,7 @@ export default function OnboardingPage() {
                 ) : (
                   <>
                     <ExternalLink className="w-5 h-5" />
-                    Pay ₹{planTotal.toLocaleString("en-IN")} via Razorpay
+                    Pay ₹{yearlyPrice.toLocaleString("en-IN")} via Razorpay
                   </>
                 )}
               </button>
