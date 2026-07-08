@@ -13,12 +13,12 @@ import {
   ScrollView,
   Platform,
   Image,
-  PermissionsAndroid,
   Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { launchCamera } from 'react-native-image-picker';
-import Geolocation from '@react-native-community/geolocation';
+import { requestSelfMarkPermissions } from '../utils/location';
 import {
   Clock,
   Search,
@@ -66,72 +66,6 @@ function showLocationOptions(item: AttendanceRecord) {
   }
   buttons.push({ text: 'Cancel', style: 'cancel' });
   Alert.alert('View Location', 'Open in Google Maps', buttons);
-}
-
-async function requestSelfMarkPermissions(): Promise<boolean> {
-  if (Platform.OS !== 'android') return true;
-  const results = await PermissionsAndroid.requestMultiple([
-    PermissionsAndroid.PERMISSIONS.CAMERA,
-    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-  ]);
-  return (
-    results[PermissionsAndroid.PERMISSIONS.CAMERA] === PermissionsAndroid.RESULTS.GRANTED &&
-    results[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION] ===
-      PermissionsAndroid.RESULTS.GRANTED
-  );
-}
-
-function getPosition(options: {
-  enableHighAccuracy: boolean;
-  timeout: number;
-  maximumAge: number;
-}): Promise<{ latitude: number; longitude: number; accuracy: number }> {
-  return new Promise((resolve, reject) => {
-    Geolocation.getCurrentPosition(
-      pos => resolve(pos.coords),
-      err => reject(err),
-      options,
-    );
-  });
-}
-
-async function getCurrentPosition(): Promise<{
-  latitude: number;
-  longitude: number;
-  accuracy: number;
-}> {
-  try {
-    // Try a high-accuracy GPS fix first, accepting a recently cached
-    // location so we don't always wait for a cold GPS start.
-    return await getPosition({
-      enableHighAccuracy: true,
-      timeout: 20000,
-      maximumAge: 30000,
-    });
-  } catch (err: any) {
-    if (err?.code === 3 /* TIMEOUT */) {
-      // GPS took too long (common indoors) — fall back to a
-      // faster, lower-accuracy network-based location.
-      try {
-        return await getPosition({
-          enableHighAccuracy: false,
-          timeout: 15000,
-          maximumAge: 60000,
-        });
-      } catch (fallbackErr: any) {
-        throw new Error(
-          fallbackErr?.message ||
-            'Could not get your location. Move to an open area and try again.',
-        );
-      }
-    }
-    if (err?.code === 2 /* POSITION_UNAVAILABLE */) {
-      throw new Error(
-        'Location services are turned off on your device. Please enable Location/GPS and try again.',
-      );
-    }
-    throw new Error(err?.message || 'Could not get your location');
-  }
 }
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> =
@@ -198,7 +132,7 @@ function isoToTime(iso: string | undefined): string {
   });
 }
 
-export default function AttendanceScreen() {
+export default function AttendanceScreen({ navigation }: any) {
   const { user } = useAuth();
   const isEmployee = user?.role === 'employee';
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
@@ -306,54 +240,23 @@ export default function AttendanceScreen() {
     );
   };
 
+  // Opens the live face-scan screen, which captures + verifies + submits the
+  // check-in/out itself (auto-capture once a steady face is detected).
   const handleSelfMark = async (action: 'checkin' | 'checkout') => {
-    const ok = await requestSelfMarkPermissions();
-    if (!ok) {
-      Alert.alert(
-        'Permission Required',
-        'Camera and location access are required to mark attendance.',
-      );
-      return;
+    setSelfMarking(action);
+    try {
+      const ok = await requestSelfMarkPermissions();
+      if (!ok) {
+        Alert.alert(
+          'Permission Required',
+          'Camera and location access are required to mark attendance.',
+        );
+        return;
+      }
+      navigation.navigate('FaceCheckIn', { action });
+    } finally {
+      setSelfMarking(null);
     }
-
-    launchCamera(
-      {
-        mediaType: 'photo',
-        quality: 0.7,
-        cameraType: 'front',
-        saveToPhotos: false,
-        maxWidth: 1280,
-        maxHeight: 1280,
-      },
-      async result => {
-        const asset = result.assets?.[0];
-        if (!asset?.uri) return;
-
-        setSelfMarking(action);
-        try {
-          const coords = await getCurrentPosition();
-          const res = await attendanceAPI.selfMark({
-            action,
-            lat: coords.latitude,
-            lng: coords.longitude,
-            accuracy: coords.accuracy,
-            selfieUri: asset.uri,
-            selfieType: asset.type || 'image/jpeg',
-            selfieName: asset.fileName || `selfie_${Date.now()}.jpg`,
-          });
-          Alert.alert(
-            'Success',
-            action === 'checkin' ? 'Checked in successfully' : 'Checked out successfully',
-          );
-          if (res?.data) setRecords([res.data]);
-          else await load();
-        } catch (e: any) {
-          Alert.alert('Error', e.message || 'Failed to mark attendance');
-        } finally {
-          setSelfMarking(null);
-        }
-      },
-    );
   };
 
   const handleCreateCorrection = async () => {
@@ -436,6 +339,13 @@ export default function AttendanceScreen() {
   useEffect(() => {
     loadEmps();
   }, [loadEmps]);
+
+  // Refresh today's record when returning from the face-scan check-in/out screen.
+  useFocusEffect(
+    useCallback(() => {
+      if (isEmployee) load(false);
+    }, [isEmployee, load]),
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
