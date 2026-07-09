@@ -3,6 +3,10 @@
 
 const FACE_SERVICE_URL = process.env.FACE_SERVICE_URL || "http://127.0.0.1:8091";
 const FACE_SERVICE_API_KEY = process.env.FACE_SERVICE_API_KEY || "";
+// Bounds how long we wait on the Python service — without this, a stuck
+// face-service process would hang the request indefinitely (the mobile
+// client only has its own 30s abort as a backstop).
+const FACE_SERVICE_TIMEOUT_MS = 10_000;
 
 async function callFaceService(path, buffer, filename, mimetype, extraFields = {}) {
   const form = new FormData();
@@ -15,6 +19,7 @@ async function callFaceService(path, buffer, filename, mimetype, extraFields = {
       method: "POST",
       headers: FACE_SERVICE_API_KEY ? { "x-api-key": FACE_SERVICE_API_KEY } : {},
       body: form,
+      signal: AbortSignal.timeout(FACE_SERVICE_TIMEOUT_MS),
     });
   } catch (err) {
     throw new Error("Face recognition service is unavailable");

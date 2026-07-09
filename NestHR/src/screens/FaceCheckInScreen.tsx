@@ -13,6 +13,7 @@ import { useIsFocused } from '@react-navigation/native';
 import {
   Camera,
   useCameraDevice,
+  useCameraFormat,
   useCameraPermission,
   useFrameProcessor,
 } from 'react-native-vision-camera';
@@ -24,7 +25,7 @@ import { getCurrentPosition } from '../utils/location';
 import { C } from '../theme';
 
 // How long a face must be steadily present before we auto-capture + submit.
-const STEADY_MS = 1500;
+const STEADY_MS = 800;
 const GUIDE_SIZE = 260;
 
 type Status =
@@ -41,6 +42,14 @@ export default function FaceCheckInScreen({ navigation, route }: any) {
   const action: 'checkin' | 'checkout' = route.params?.action || 'checkin';
   const isFocused = useIsFocused();
   const device = useCameraDevice('front');
+  // Cap the *captured photo* resolution — the face already fills most of a
+  // selfie frame, so a small photo is plenty for verification and drastically
+  // cuts upload time + server-side detection cost (a full-res photo makes
+  // face detection the dominant cost of the whole check-in flow). Doesn't
+  // affect the live frame-processor resolution used for "hold steady" below.
+  const format = useCameraFormat(device, [
+    { photoResolution: { width: 640, height: 480 } },
+  ]);
   const { hasPermission, requestPermission } = useCameraPermission();
 
   const cameraRef = useRef<Camera>(null);
@@ -74,14 +83,17 @@ export default function FaceCheckInScreen({ navigation, route }: any) {
   }, []);
 
   const capture = useCallback(async () => {
+    const t0 = Date.now();
     setStatus('capturing');
     try {
       const photo = await cameraRef.current?.takePhoto({ flash: 'off' });
       if (!photo?.path) throw new Error('Could not capture photo. Try again.');
       const uri = Platform.OS === 'android' ? `file://${photo.path}` : photo.path;
+      const tPhoto = Date.now();
 
       setStatus('submitting');
       const coords = await getCurrentPosition();
+      const tLocation = Date.now();
       await attendanceAPI.selfMark({
         action,
         lat: coords.latitude,
@@ -91,6 +103,10 @@ export default function FaceCheckInScreen({ navigation, route }: any) {
         selfieType: 'image/jpeg',
         selfieName: `selfie_${Date.now()}.jpg`,
       });
+      const tDone = Date.now();
+      console.log(
+        `[FaceCheckIn] photo=${tPhoto - t0}ms location=${tLocation - tPhoto}ms verify=${tDone - tLocation}ms total=${tDone - t0}ms`,
+      );
 
       setStatus('success');
       setTimeout(() => navigation.goBack(), 900);
@@ -205,6 +221,7 @@ export default function FaceCheckInScreen({ navigation, route }: any) {
             ref={cameraRef}
             style={StyleSheet.absoluteFill}
             device={device}
+            format={format}
             isActive={isFocused && (status === 'scanning' || status === 'capturing')}
             photo
             frameProcessor={frameProcessor}

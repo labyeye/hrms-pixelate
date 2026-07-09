@@ -388,12 +388,14 @@ const selfMarkAttendance = asyncHandler(async (req, res) => {
     throw new Error("Face not enrolled for you. Contact HR to enable mobile attendance.");
   }
 
+  const faceVerifyStart = Date.now();
   const { match, distance } = await verifyFace(
-    fs.readFileSync(req.file.path),
+    await fs.promises.readFile(req.file.path),
     req.file.filename,
     req.file.mimetype,
     emp.faceDescriptor,
   );
+  console.log(`[selfMarkAttendance] verifyFace took ${Date.now() - faceVerifyStart}ms`);
   if (!match) {
     cleanup();
     res.status(403);

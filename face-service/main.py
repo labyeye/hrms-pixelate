@@ -1,13 +1,25 @@
 import io
+import logging
 import os
+import time
 
 import face_recognition
 import numpy as np
 from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 from PIL import Image
+from starlette.concurrency import run_in_threadpool
 
 API_KEY = os.environ.get("FACE_SERVICE_API_KEY", "")
 MATCH_THRESHOLD = float(os.environ.get("FACE_MATCH_THRESHOLD", "0.5"))
+# Detection cost scales with pixel count — a selfie's face already fills most
+# of the frame, so there's no accuracy reason to run detection on a full-res
+# photo. Capping the longest edge here is a defensive floor: the mobile app
+# already captures at ~640x480, but this also protects the web kiosk / older
+# app builds that may still send larger images.
+MAX_DETECTION_DIM = int(os.environ.get("FACE_MAX_DETECTION_DIM", "480"))
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("face-service")
 
 app = FastAPI(title="NestHR Face Service")
 
@@ -22,12 +34,20 @@ def load_image(raw: bytes) -> np.ndarray:
         img = Image.open(io.BytesIO(raw)).convert("RGB")
     except Exception:
         raise HTTPException(status_code=400, detail="Could not decode image")
+    if max(img.size) > MAX_DETECTION_DIM:
+        img.thumbnail((MAX_DETECTION_DIM, MAX_DETECTION_DIM), Image.BILINEAR)
     return np.array(img)
 
 
 def get_single_encoding(raw: bytes) -> list[float]:
+    t0 = time.perf_counter()
     image = load_image(raw)
-    locations = face_recognition.face_locations(image)
+    t1 = time.perf_counter()
+    # number_of_times_to_upsample=0: the default of 1 doubles image dimensions
+    # before detecting (to catch small/distant faces), which roughly doubles
+    # detection cost — unnecessary for a close-up verification selfie.
+    locations = face_recognition.face_locations(image, number_of_times_to_upsample=0)
+    t2 = time.perf_counter()
     if len(locations) == 0:
         raise HTTPException(status_code=422, detail="No face detected in image")
     if len(locations) > 1:
@@ -35,6 +55,14 @@ def get_single_encoding(raw: bytes) -> list[float]:
             status_code=422, detail="Multiple faces detected; use a single-face photo"
         )
     encodings = face_recognition.face_encodings(image, known_face_locations=locations)
+    t3 = time.perf_counter()
+    logger.info(
+        "decode=%.0fms detect=%.0fms encode=%.0fms total=%.0fms",
+        (t1 - t0) * 1000,
+        (t2 - t1) * 1000,
+        (t3 - t2) * 1000,
+        (t3 - t0) * 1000,
+    )
     return encodings[0].tolist()
 
 
@@ -50,7 +78,7 @@ async def enroll(
 ):
     check_api_key(x_api_key)
     raw = await file.read()
-    encoding = get_single_encoding(raw)
+    encoding = await run_in_threadpool(get_single_encoding, raw)
     return {"success": True, "encoding": encoding}
 
 
@@ -62,7 +90,7 @@ async def verify(
 ):
     check_api_key(x_api_key)
     raw = await file.read()
-    probe_encoding = np.array(get_single_encoding(raw))
+    probe_encoding = np.array(await run_in_threadpool(get_single_encoding, raw))
 
     try:
         stored = np.array([float(v) for v in encoding.split(",")])
