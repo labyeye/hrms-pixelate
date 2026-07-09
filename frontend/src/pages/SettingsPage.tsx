@@ -1722,6 +1722,7 @@ export default function SettingsPage() {
                         <option value="monthly">Monthly</option>
                         <option value="15day">15-Day Cycle</option>
                         <option value="weekly">Weekly</option>
+                        <option value="custom">Custom</option>
                       </select>
                     </div>
                     <div className="space-y-2">
@@ -1758,6 +1759,68 @@ export default function SettingsPage() {
                       </select>
                     </div>
                   </div>
+                  {settings?.salaryMode === "custom" && (
+                    <div className="border-2 border-black/10 p-4 space-y-3 bg-[#F8FAFF]">
+                      <p className="text-xs font-bold uppercase tracking-wider text-black">
+                        Attendance Period
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Attendance from the start day of the previous month
+                        through the end day of the payroll month will be used
+                        to calculate salary — e.g. start day 5 and end day 5
+                        means the period runs from 5th of the previous month
+                        to 5th of the current month.
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="block text-xs font-bold text-black uppercase tracking-wider">
+                            Period Start Day
+                          </label>
+                          <select
+                            value={settings?.salaryCycleStartDay || 1}
+                            onChange={(e) =>
+                              setSettings((p: any) => ({
+                                ...p,
+                                salaryCycleStartDay: Number(e.target.value),
+                              }))
+                            }
+                            className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
+                          >
+                            {Array.from({ length: 31 }, (_, i) => i + 1).map(
+                              (d) => (
+                                <option key={d} value={d}>
+                                  {d}
+                                </option>
+                              ),
+                            )}
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="block text-xs font-bold text-black uppercase tracking-wider">
+                            Period End Day
+                          </label>
+                          <select
+                            value={settings?.salaryCycleEndDay || 31}
+                            onChange={(e) =>
+                              setSettings((p: any) => ({
+                                ...p,
+                                salaryCycleEndDay: Number(e.target.value),
+                              }))
+                            }
+                            className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
+                          >
+                            {Array.from({ length: 31 }, (_, i) => i + 1).map(
+                              (d) => (
+                                <option key={d} value={d}>
+                                  {d}
+                                </option>
+                              ),
+                            )}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <div className="border-t-2 border-black/10 pt-4 space-y-3">
                     <p className="text-xs font-bold uppercase tracking-wider text-black">
                       Overtime

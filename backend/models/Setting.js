@@ -77,10 +77,12 @@ const settingSchema = new mongoose.Schema(
 
     salaryMode: {
       type: String,
-      enum: ["monthly", "15day", "weekly"],
+      enum: ["monthly", "15day", "weekly", "custom"],
       default: "monthly",
     },
     salaryPayDay: { type: String, default: "31" },
+    salaryCycleStartDay: { type: Number, min: 1, max: 31, default: 1 },
+    salaryCycleEndDay: { type: Number, min: 1, max: 31, default: 31 },
 
     singlePunchAction: { type: String, default: "half_day" },
     doublePunchInterval: { type: Number, default: 5 },

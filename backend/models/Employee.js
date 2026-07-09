@@ -24,10 +24,18 @@ const employeeSchema = new mongoose.Schema(
     exitDate: { type: Date },
     status: {
       type: String,
-      enum: ["active", "inactive", "on_leave", "terminated"],
+      enum: ["active", "inactive", "on_leave", "terminated", "exited"],
       default: "active",
     },
     salary: { type: Number, default: 0 },
+    salaryHistory: [
+      {
+        amount: { type: Number, required: true },
+        effectiveFrom: { type: Date, required: true, default: Date.now },
+        changedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        changedByName: { type: String },
+      },
+    ],
     bankAccount: { type: String },
     accountHolderName: { type: String },
     ifscCode: { type: String },

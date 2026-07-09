@@ -105,6 +105,14 @@ const REPORTS: ReportDef[] = [
     needsMonth: true,
   },
   {
+    id: 'salary-history',
+    label: 'Salary History Report',
+    desc: 'Every salary change per employee — old amount, new amount, who changed it.',
+    category: 'payroll',
+    icon: TrendingUp,
+    color: C.primary,
+  },
+  {
     id: 'net-salary',
     label: 'Net Salary Report',
     desc: 'Net take-home salary after all deductions for the period.',
@@ -347,6 +355,62 @@ async function generateReport(
           fmtCur(p.tds || 0),
           fmtCur(p.totalDeductions || 0),
           fmtCur(p.netSalary),
+        ]),
+      };
+    }
+    case 'salary-history': {
+      const r = await employeeAPI.getAll({ limit: '1000' });
+      const employees: any[] = r.data || [];
+      const entries: any[] = [];
+      for (const e of employees) {
+        const history = [...(e.salaryHistory || [])].sort(
+          (a: any, b: any) =>
+            new Date(a.effectiveFrom).getTime() -
+            new Date(b.effectiveFrom).getTime(),
+        );
+        history.forEach((h: any, i: number) => {
+          entries.push({
+            empId: e.employeeId || '—',
+            name: `${e.firstName} ${e.lastName}`,
+            dept: e.department?.name || '—',
+            prevAmount: i > 0 ? history[i - 1].amount : null,
+            newAmount: h.amount,
+            effectiveFrom: h.effectiveFrom,
+            changedBy: h.changedByName || '—',
+          });
+        });
+      }
+      entries.sort(
+        (a, b) =>
+          new Date(b.effectiveFrom).getTime() -
+          new Date(a.effectiveFrom).getTime(),
+      );
+      return {
+        headers: [
+          'Emp ID',
+          'Name',
+          'Dept',
+          'Previous Salary',
+          'New Salary',
+          'Change %',
+          'Effective From',
+          'Changed By',
+        ],
+        rows: entries.map(r2 => [
+          r2.empId,
+          r2.name,
+          r2.dept,
+          r2.prevAmount != null ? fmtCur(r2.prevAmount) : '—',
+          fmtCur(r2.newAmount),
+          r2.prevAmount != null && r2.prevAmount > 0
+            ? `${(((r2.newAmount - r2.prevAmount) / r2.prevAmount) * 100).toFixed(1)}%`
+            : '—',
+          new Date(r2.effectiveFrom).toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          }),
+          r2.changedBy,
         ]),
       };
     }

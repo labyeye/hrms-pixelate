@@ -136,6 +136,11 @@ const updateExit = asyncHandler(async (req, res) => {
   if (req.body.status === "completed" && !exit.approvedBy) {
     exit.approvedBy = req.user._id;
     exit.approvedAt = new Date();
+
+    await Employee.findByIdAndUpdate(exit.employee, {
+      status: "exited",
+      exitDate: exit.lastWorkingDay,
+    });
   }
 
   await exit.save();

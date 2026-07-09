@@ -2164,6 +2164,62 @@ export default function EmployeesScreen() {
                   keyboardType: 'numeric',
                   placeholder: '50000',
                 })}
+                {editingEmp &&
+                  ((editingEmp as any).salaryHistory?.length || 0) > 0 && (
+                    <View style={{ marginTop: 4, marginBottom: 12 }}>
+                      <Text style={styles.fieldLabel}>Salary History</Text>
+                      <View
+                        style={{
+                          borderWidth: 2,
+                          borderColor: C.black,
+                          marginTop: 6,
+                        }}
+                      >
+                        {[...((editingEmp as any).salaryHistory || [])]
+                          .sort(
+                            (a: any, b: any) =>
+                              new Date(b.effectiveFrom).getTime() -
+                              new Date(a.effectiveFrom).getTime(),
+                          )
+                          .map((h: any, i: number) => (
+                            <View
+                              key={h._id || i}
+                              style={{
+                                flexDirection: 'row',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                paddingHorizontal: 12,
+                                paddingVertical: 10,
+                                borderTopWidth: i > 0 ? 1 : 0,
+                                borderTopColor: '#F3F4F6',
+                              }}
+                            >
+                              <Text
+                                style={{ fontSize: 12, color: C.textMuted }}
+                              >
+                                {new Date(
+                                  h.effectiveFrom,
+                                ).toLocaleDateString('en-IN', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric',
+                                })}
+                                {h.changedByName ? ` — ${h.changedByName}` : ''}
+                              </Text>
+                              <Text
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: '700',
+                                  color: C.black,
+                                }}
+                              >
+                                ₹{h.amount.toLocaleString('en-IN')}
+                              </Text>
+                            </View>
+                          ))}
+                      </View>
+                    </View>
+                  )}
                 {F('PF Number', 'pfNumber', {
                   placeholder: 'PF account number',
                   autoCapitalize: 'characters',

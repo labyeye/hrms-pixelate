@@ -209,6 +209,14 @@ const createEmployee = [
       department: department || undefined,
       employmentType: employmentType || "full_time",
       salary: salary !== undefined ? Number(salary) : 0,
+      salaryHistory: [
+        {
+          amount: salary !== undefined ? Number(salary) : 0,
+          effectiveFrom: joinDate || new Date(),
+          changedBy: req.user._id,
+          changedByName: req.user.name,
+        },
+      ],
       bankAccount: bankAccount || undefined,
       accountHolderName: accountHolderName || undefined,
       ifscCode: ifscCode || undefined,
@@ -339,6 +347,8 @@ const updateEmployee = [
       "geofenceMode",
     ]);
 
+    const previousSalary = employee.salary;
+
     for (const key of allowed) {
       if (req.body[key] !== undefined) {
         const val = req.body[key];
@@ -355,6 +365,19 @@ const updateEmployee = [
     ) {
       res.status(400);
       throw new Error("Invalid salary value");
+    }
+
+    if (
+      req.body.salary !== undefined &&
+      Number(employee.salary) !== previousSalary
+    ) {
+      employee.salaryHistory = employee.salaryHistory || [];
+      employee.salaryHistory.push({
+        amount: Number(employee.salary),
+        effectiveFrom: new Date(),
+        changedBy: req.user._id,
+        changedByName: req.user.name,
+      });
     }
 
     await employee.save();

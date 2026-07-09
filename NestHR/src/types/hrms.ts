@@ -54,6 +54,13 @@ export interface Employee {
   status: 'active' | 'inactive' | 'terminated' | 'on_leave';
   joiningDate: string;
   salary?: number;
+  salaryHistory?: {
+    _id?: string;
+    amount: number;
+    effectiveFrom: string;
+    changedBy?: string;
+    changedByName?: string;
+  }[];
   avatar?: string;
   biometricUserId?: string;
   rfidCard?: string;

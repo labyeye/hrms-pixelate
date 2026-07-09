@@ -67,17 +67,44 @@ const getPayrolls = asyncHandler(async (req, res) => {
   });
 });
 
-function getWorkingDays(year, month, workDaysPerWeek) {
+function getWorkingDays(startDate, endDate, workDaysPerWeek) {
   const days = workDaysPerWeek ?? 6;
   let count = 0;
-  const end = new Date(year, month, 0).getDate();
-  for (let d = 1; d <= end; d++) {
-    const dow = new Date(year, month - 1, d).getDay();
+  const cur = new Date(startDate);
+  cur.setHours(0, 0, 0, 0);
+  const end = new Date(endDate);
+  end.setHours(0, 0, 0, 0);
+  while (cur <= end) {
+    const dow = cur.getDay();
     if (days >= 7) count++;
     else if (days >= 6 && dow >= 1 && dow <= 6) count++;
     else if (dow >= 1 && dow <= 5) count++;
+    cur.setDate(cur.getDate() + 1);
   }
   return count || 1;
+}
+
+// Returns the attendance date range used to calculate payroll for month/year.
+// Default is the calendar month; if the company has a custom salary cycle
+// configured, the period instead runs from salaryCycleStartDay of the
+// previous month through salaryCycleEndDay of the target month.
+function getPayPeriod(y, m, settings) {
+  if (
+    settings?.salaryMode === "custom" &&
+    settings.salaryCycleStartDay &&
+    settings.salaryCycleEndDay
+  ) {
+    const startDay = Math.min(31, Math.max(1, settings.salaryCycleStartDay));
+    const endDay = Math.min(31, Math.max(1, settings.salaryCycleEndDay));
+    return {
+      startDate: new Date(y, m - 2, startDay),
+      endDate: new Date(y, m - 1, endDay, 23, 59, 59),
+    };
+  }
+  return {
+    startDate: new Date(y, m - 1, 1),
+    endDate: new Date(y, m, 0, 23, 59, 59),
+  };
 }
 
 function parseTime(timeStr) {
@@ -104,9 +131,9 @@ const processPayroll = asyncHandler(async (req, res) => {
   const deductionRule = await DeductionRule.findOne({
     company: req.user.company,
   });
+  const settings = await Setting.findOne({ company: req.user.company });
 
-  const startDate = new Date(y, m - 1, 1);
-  const endDate = new Date(y, m, 0);
+  const { startDate, endDate } = getPayPeriod(y, m, settings);
 
   // force=true: delete existing records for this month and reprocess
   if (force) {
@@ -138,7 +165,7 @@ const processPayroll = asyncHandler(async (req, res) => {
     if (attendances.length === 0) continue;
 
     const workDaysPerWeek = emp.workDaysPerWeek ?? 6;
-    const workingDays = getWorkingDays(y, m, workDaysPerWeek);
+    const workingDays = getWorkingDays(startDate, endDate, workDaysPerWeek);
     const salary = emp.salary ?? 0;
     const dailyRate = workingDays > 0 ? salary / workingDays : 0;
 
@@ -312,8 +339,8 @@ const processPayroll = asyncHandler(async (req, res) => {
 
     const earlyCheckoutDeduction = 0;
 
-    const txMonthStart = new Date(y, m - 1, 1);
-    const txMonthEnd = new Date(y, m, 0, 23, 59, 59);
+    const txMonthStart = startDate;
+    const txMonthEnd = endDate;
     const pendingTx = await Transaction.find({
       employee: emp._id,
       company: req.user.company,
@@ -389,6 +416,8 @@ const processPayroll = asyncHandler(async (req, res) => {
       employee: emp._id,
       month: m,
       year: y,
+      payPeriodStart: startDate,
+      payPeriodEnd: endDate,
       basicSalary: salary,
       earnedBasic: earnedSalary,
       totalWorkHours: parseFloat(totalWorkHours.toFixed(2)),
@@ -710,9 +739,9 @@ const previewPayroll = asyncHandler(async (req, res) => {
   const deductionRule = await DeductionRule.findOne({
     company: req.user.company,
   });
+  const settings = await Setting.findOne({ company: req.user.company });
 
-  const startDate = new Date(y, m - 1, 1);
-  const endDate = new Date(y, m, 0);
+  const { startDate, endDate } = getPayPeriod(y, m, settings);
 
   const previews = [];
 
@@ -725,7 +754,7 @@ const previewPayroll = asyncHandler(async (req, res) => {
     if (attendances.length === 0) continue;
 
     const workDaysPerWeek = emp.workDaysPerWeek ?? 6;
-    const workingDays = getWorkingDays(y, m, workDaysPerWeek);
+    const workingDays = getWorkingDays(startDate, endDate, workDaysPerWeek);
     const salary = emp.salary ?? 0;
     const dailyRate = workingDays > 0 ? salary / workingDays : 0;
 
@@ -862,8 +891,8 @@ const previewPayroll = asyncHandler(async (req, res) => {
       lateDeduction += parseFloat(ruleFine.toFixed(2));
     }
 
-    const txMonthStart = new Date(y, m - 1, 1);
-    const txMonthEnd = new Date(y, m, 0, 23, 59, 59);
+    const txMonthStart = startDate;
+    const txMonthEnd = endDate;
     const pendingTx = await Transaction.find({
       employee: emp._id,
       company: req.user.company,
@@ -928,6 +957,8 @@ const previewPayroll = asyncHandler(async (req, res) => {
       },
       month: m,
       year: y,
+      payPeriodStart: startDate,
+      payPeriodEnd: endDate,
       basicSalary: salary,
       earnedBasic: earnedSalary,
       totalWorkHours: parseFloat(totalWorkHours.toFixed(2)),

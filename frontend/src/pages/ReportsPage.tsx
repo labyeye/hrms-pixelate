@@ -94,6 +94,14 @@ const REPORTS: ReportDef[] = [
     available: true,
   },
   {
+    id: "salary-history",
+    name: "Salary History Report",
+    desc: "Track every salary change per employee over time — old amount, new amount, and who changed it.",
+    category: "payroll",
+    icon: TrendingUp,
+    available: true,
+  },
+  {
     id: "net-salary",
     name: "Net Salary Report",
     desc: "Employee net salary report showing take-home pay after all deductions.",
@@ -854,6 +862,124 @@ function SalaryRegisterGen({
         <EmptyState msg="No payroll records for this period" />
       ) : (
         <ReportTable id="sal-reg-tbl" headers={headers} rows={rows} />
+      )}
+    </div>
+  );
+}
+
+function SalaryHistoryGen({
+  company,
+}: {
+  departments: any[];
+  company: ReportCompany;
+}) {
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    load();
+  }, []);
+  async function load() {
+    setLoading(true);
+    try {
+      const r = await employeeAPI.getAll({ limit: "1000" });
+      if (r.success) setData(r.data);
+    } catch {}
+    setLoading(false);
+  }
+
+  const rows = useMemo(() => {
+    const out: {
+      empId: string;
+      name: string;
+      dept: string;
+      prevAmount: number | null;
+      newAmount: number;
+      effectiveFrom: string;
+      changedBy: string;
+    }[] = [];
+    for (const e of data) {
+      const history = [...(e.salaryHistory || [])].sort(
+        (a, b) =>
+          new Date(a.effectiveFrom).getTime() -
+          new Date(b.effectiveFrom).getTime(),
+      );
+      history.forEach((h, i) => {
+        out.push({
+          empId: e.employeeId || "—",
+          name: `${e.firstName} ${e.lastName}`,
+          dept: e.department?.name || "—",
+          prevAmount: i > 0 ? history[i - 1].amount : null,
+          newAmount: h.amount,
+          effectiveFrom: h.effectiveFrom,
+          changedBy: h.changedByName || "—",
+        });
+      });
+    }
+    return out.sort(
+      (a, b) =>
+        new Date(b.effectiveFrom).getTime() -
+        new Date(a.effectiveFrom).getTime(),
+    );
+  }, [data]);
+
+  const headers = [
+    "Emp ID",
+    "Name",
+    "Dept",
+    "Previous Salary",
+    "New Salary",
+    "Change %",
+    "Effective From",
+    "Changed By",
+  ];
+  const tableRows = rows.map((r) => [
+    r.empId,
+    r.name,
+    r.dept,
+    r.prevAmount != null ? formatCurrency(r.prevAmount) : "—",
+    formatCurrency(r.newAmount),
+    r.prevAmount != null && r.prevAmount > 0
+      ? `${(((r.newAmount - r.prevAmount) / r.prevAmount) * 100).toFixed(1)}%`
+      : "—",
+    formatDate(r.effectiveFrom),
+    r.changedBy,
+  ]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <div className="ml-auto flex gap-2">
+          <button
+            onClick={() =>
+              printReport(
+                "Salary History Report",
+                "All Time",
+                headers,
+                tableRows,
+                { company, reportCategory: "Payroll" },
+              )
+            }
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-white"
+          >
+            <Printer className="w-4 h-4" /> Print
+          </button>
+          <button
+            onClick={() =>
+              exportCSV([headers, ...tableRows], "salary_history_report.csv")
+            }
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-bold bg-[#024BAB] text-white"
+          >
+            <Download className="w-4 h-4" /> Export CSV
+          </button>
+        </div>
+      </div>
+      {loading ? (
+        <LoadingState />
+      ) : rows.length === 0 ? (
+        <EmptyState msg="No salary changes recorded yet" />
+      ) : (
+        <ReportTable id="sal-hist-tbl" headers={headers} rows={tableRows} />
       )}
     </div>
   );
@@ -3087,6 +3213,7 @@ const REPORT_COMPONENT: Record<
   "tally-export": TallyExportGen,
   "pay-report": PayReportGen,
   "salary-register": SalaryRegisterGen,
+  "salary-history": SalaryHistoryGen,
   "net-salary": NetSalaryGen,
   "salary-slip": SalarySlipGen,
   "pf-register": PFRegisterGen,

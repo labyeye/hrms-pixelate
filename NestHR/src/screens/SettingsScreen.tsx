@@ -330,6 +330,142 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Salary Mode */}
+        <View>
+          <View style={styles.sectionHeader}>
+            <DollarSign size={14} color={C.primary} />
+            <Text style={styles.sectionTitle}>Salary Mode</Text>
+          </View>
+          <View style={styles.card}>
+            <View style={styles.fieldRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.fieldLabel}>Salary Mode</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: 8, marginTop: 6 }}
+                >
+                  {[
+                    { value: 'monthly', label: 'Monthly' },
+                    { value: '15day', label: '15-Day Cycle' },
+                    { value: 'weekly', label: 'Weekly' },
+                    { value: 'custom', label: 'Custom' },
+                  ].map(o => (
+                    <TouchableOpacity
+                      key={o.value}
+                      style={[
+                        styles.selChip,
+                        (form as any).salaryMode === o.value &&
+                          styles.selChipActive,
+                      ]}
+                      onPress={() =>
+                        setForm(p => ({ ...p, salaryMode: o.value } as any))
+                      }
+                    >
+                      <Text
+                        style={[
+                          styles.selChipText,
+                          (form as any).salaryMode === o.value && {
+                            color: C.white,
+                          },
+                        ]}
+                      >
+                        {o.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+            <View style={[styles.fieldRow, styles.fieldBorder]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.fieldLabel}>Salary Pay Day</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: 8, marginTop: 6 }}
+                >
+                  {['1', '5', '7', '10', '15', '20', '25', '28', '31'].map(
+                    d => (
+                      <TouchableOpacity
+                        key={d}
+                        style={[
+                          styles.selChip,
+                          (form as any).salaryPayDay === d &&
+                            styles.selChipActive,
+                        ]}
+                        onPress={() =>
+                          setForm(p => ({ ...p, salaryPayDay: d } as any))
+                        }
+                      >
+                        <Text
+                          style={[
+                            styles.selChipText,
+                            (form as any).salaryPayDay === d && {
+                              color: C.white,
+                            },
+                          ]}
+                        >
+                          {d === '31' ? 'Last day' : `${d}th`}
+                        </Text>
+                      </TouchableOpacity>
+                    ),
+                  )}
+                </ScrollView>
+              </View>
+            </View>
+            {(form as any).salaryMode === 'custom' && (
+              <View style={[styles.fieldRow, styles.fieldBorder]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.toggleDesc}>
+                    Attendance from the start day of the previous month
+                    through the end day of the payroll month will be used to
+                    calculate salary.
+                  </Text>
+                  <Text style={[styles.fieldLabel, { marginTop: 10 }]}>
+                    Period Start Day
+                  </Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={String((form as any).salaryCycleStartDay || '1')}
+                    onChangeText={v =>
+                      setForm(
+                        p =>
+                          ({
+                            ...p,
+                            salaryCycleStartDay:
+                              Number(v.replace(/\D/g, '')) || 1,
+                          } as any),
+                      )
+                    }
+                    keyboardType="numeric"
+                    maxLength={2}
+                  />
+                  <Text style={[styles.fieldLabel, { marginTop: 10 }]}>
+                    Period End Day
+                  </Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={String((form as any).salaryCycleEndDay || '31')}
+                    onChangeText={v =>
+                      setForm(
+                        p =>
+                          ({
+                            ...p,
+                            salaryCycleEndDay:
+                              Number(v.replace(/\D/g, '')) || 31,
+                          } as any),
+                      )
+                    }
+                    keyboardType="numeric"
+                    maxLength={2}
+                  />
+                </View>
+              </View>
+            )}
+          </View>
+        </View>
+
         {/* Notifications placeholder */}
         <View>
           <View style={styles.sectionHeader}>
@@ -631,6 +767,14 @@ const styles = StyleSheet.create({
   },
   toggleLabel: { fontSize: 13, fontWeight: '700', color: C.black },
   toggleDesc: { fontSize: 11, color: C.textMuted, marginTop: 2 },
+  selChip: {
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  selChipActive: { backgroundColor: C.primary },
+  selChipText: { fontSize: 11, fontWeight: '700', color: C.black },
   navRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -14,6 +14,8 @@ const payrollSchema = new mongoose.Schema(
     },
     month: { type: Number, required: true },
     year: { type: Number, required: true },
+    payPeriodStart: { type: Date },
+    payPeriodEnd: { type: Date },
     basicSalary: { type: Number, required: true },
     hra: { type: Number, default: 0 },
     da: { type: Number, default: 0 },

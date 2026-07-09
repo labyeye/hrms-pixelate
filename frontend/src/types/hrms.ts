@@ -60,6 +60,13 @@ export interface Employee {
   exitDate?: string;
   status: "active" | "inactive" | "on_leave" | "terminated";
   salary?: number;
+  salaryHistory?: {
+    _id?: string;
+    amount: number;
+    effectiveFrom: string;
+    changedBy?: string;
+    changedByName?: string;
+  }[];
   workDaysPerWeek?: 5 | 6 | 7;
   otRate?: number;
   otEnabled?: boolean;

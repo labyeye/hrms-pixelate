@@ -694,7 +694,7 @@ const syncAllToDevice = asyncHandler(async (req, res) => {
   const employees = await Employee.find({
     company: req.user.company,
     biometricUserId: { $exists: true, $ne: "" },
-    status: { $ne: "terminated" },
+    status: { $nin: ["terminated", "exited"] },
   });
 
   await BiometricCommand.deleteMany({
@@ -836,7 +836,7 @@ const getFaceDescriptors = asyncHandler(async (req, res) => {
   const employees = await Employee.find({
     company: req.user.company,
     faceDescriptor: { $exists: true, $not: { $size: 0 } },
-    status: { $ne: "terminated" },
+    status: { $nin: ["terminated", "exited"] },
   }).select("_id firstName lastName employeeId faceDescriptor");
 
   const data = employees.map((e) => ({
@@ -858,7 +858,7 @@ const faceAttendance = asyncHandler(async (req, res) => {
 
   const employees = await Employee.find({
     faceDescriptor: { $exists: true, $not: { $size: 0 } },
-    status: { $ne: "terminated" },
+    status: { $nin: ["terminated", "exited"] },
   }).select("_id firstName lastName employeeId phone faceDescriptor company");
 
   const THRESHOLD = 0.5;
@@ -1189,7 +1189,7 @@ const getDeviceEmployees = asyncHandler(async (req, res) => {
 
   const employees = await Employee.find({
     company: device.company,
-    status: { $ne: "terminated" },
+    status: { $nin: ["terminated", "exited"] },
   })
     .select("_id firstName lastName employeeId faceDescriptor")
     .sort({ firstName: 1 });
@@ -1224,7 +1224,7 @@ const enrollFaceFromDevice = asyncHandler(async (req, res) => {
   const employee = await Employee.findOne({
     _id: employeeId,
     company: device.company,
-    status: { $ne: "terminated" },
+    status: { $nin: ["terminated", "exited"] },
   });
   if (!employee) {
     res.status(404);

@@ -2176,6 +2176,43 @@ export default function EmployeesPage() {
                           </div>
                         )}
                       </div>
+                      {editEmp && (editEmp.salaryHistory?.length || 0) > 0 && (
+                        <div className="mt-4">
+                          <p className="text-xs font-bold uppercase tracking-wider text-black mb-2">
+                            Salary History
+                          </p>
+                          <div className="border-2 border-black divide-y-2 divide-black max-h-48 overflow-y-auto">
+                            {[...(editEmp.salaryHistory || [])]
+                              .sort(
+                                (a, b) =>
+                                  new Date(b.effectiveFrom).getTime() -
+                                  new Date(a.effectiveFrom).getTime(),
+                              )
+                              .map((h, i) => (
+                                <div
+                                  key={h._id || i}
+                                  className="flex items-center justify-between px-3 py-2 text-sm"
+                                >
+                                  <span className="text-muted-foreground">
+                                    {new Date(
+                                      h.effectiveFrom,
+                                    ).toLocaleDateString("en-IN", {
+                                      day: "2-digit",
+                                      month: "short",
+                                      year: "numeric",
+                                    })}
+                                    {h.changedByName
+                                      ? ` — ${h.changedByName}`
+                                      : ""}
+                                  </span>
+                                  <span className="font-bold text-black">
+                                    ₹{h.amount.toLocaleString("en-IN")}
+                                  </span>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="border-t-2 border-black pt-5">
