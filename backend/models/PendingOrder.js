@@ -20,7 +20,7 @@ const pendingOrderSchema = new mongoose.Schema(
     billingCycle: { type: String, enum: ["monthly", "yearly"], required: true },
     tier: {
       type: String,
-      enum: ["web", "web_mobile", "web_mobile_whatsapp"],
+      enum: ["web_mobile", "web_mobile_whatsapp"],
       required: true,
     },
     ratePerEmployee: { type: Number, required: true },

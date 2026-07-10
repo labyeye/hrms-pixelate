@@ -33,7 +33,7 @@ interface CompanyFormData {
   panNumber: string;
 }
 
-type Tier = "web" | "web_mobile" | "web_mobile_whatsapp";
+type Tier = "web_mobile" | "web_mobile_whatsapp";
 
 const PLANS: {
   tier: Tier;
@@ -43,35 +43,26 @@ const PLANS: {
   features: string[];
 }[] = [
   {
-    tier: "web",
-    name: "Web",
-    rate: 500,
-    blurb: "For office-based teams",
+    tier: "web_mobile",
+    name: "Web + Mobile",
+    rate: 299,
+    blurb: "For office-based and frontline teams",
     features: [
       "Employee management",
       "Web / biometric-hardware attendance",
+      "Mobile app self check-in (face + geofence)",
       "Leave management",
       "Payroll processing",
+      "Performance reviews",
+      "Exit management",
       "Basic reports",
       "Email notifications",
     ],
   },
   {
-    tier: "web_mobile",
-    name: "Web + Mobile",
-    rate: 700,
-    blurb: "For teams with field or frontline staff",
-    features: [
-      "Everything in Web, plus:",
-      "Mobile app self check-in (face + geofence)",
-      "Performance reviews",
-      "Exit management",
-    ],
-  },
-  {
     tier: "web_mobile_whatsapp",
     name: "Web + Mobile + WhatsApp",
-    rate: 800,
+    rate: 499,
     blurb: "The full suite",
     features: [
       "Everything in Web + Mobile, plus:",
