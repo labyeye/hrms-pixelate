@@ -195,17 +195,29 @@ export default function AttendancePage() {
   };
 
   // Returns datetime-local string pre-filled with the given date.
-  // Uses current time if the date is today, otherwise 09:00.
-  const defaultCheckIn = (dateStr: string): string => {
+  // Uses current time if the date is today, otherwise the employee's shift start.
+  const defaultCheckIn = (dateStr: string, empId?: string): string => {
     const today = new Date().toISOString().split("T")[0];
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
     const time =
       dateStr === today
         ? `${pad(now.getHours())}:${pad(now.getMinutes())}`
-        : "09:00";
+        : shiftTimesFor(empId).start;
     return `${dateStr}T${time}`;
   };
+
+  // Employee's shift start/end ("HH:MM"), falling back to 09:00-18:00 if unset.
+  const shiftTimesFor = (empId?: string): { start: string; end: string } => {
+    const emp = employees.find((e) => e._id === empId) as any;
+    const start =
+      emp?.customShift?.startTime || emp?.shift?.startTime || "09:00";
+    const end = emp?.customShift?.endTime || emp?.shift?.endTime || "18:00";
+    return { start, end };
+  };
+
+  const defaultCheckOut = (dateStr: string, empId?: string): string =>
+    `${dateStr}T${shiftTimesFor(empId).end}`;
 
   const markAbsentSingle = async (empId: string) => {
     try {
@@ -227,8 +239,8 @@ export default function AttendancePage() {
       employee: empId,
       date,
       status: "present",
-      checkIn: defaultCheckIn(date),
-      checkOut: "",
+      checkIn: defaultCheckIn(date, empId),
+      checkOut: defaultCheckOut(date, empId),
       overtime: "",
       notes: "",
       verifyMode: "manual",
@@ -966,9 +978,15 @@ export default function AttendancePage() {
                 </label>
                 <select
                   value={markForm.employee}
-                  onChange={(e) =>
-                    setMarkForm({ ...markForm, employee: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const empId = e.target.value;
+                    setMarkForm((f) => ({
+                      ...f,
+                      employee: empId,
+                      checkIn: f.checkIn ? defaultCheckIn(f.date, empId) : f.checkIn,
+                      checkOut: defaultCheckOut(f.date, empId),
+                    }));
+                  }}
                   className="border-2 w-full px-3 py-2 text-sm disabled:opacity-60 disabled:bg-gray-50"
                   required
                   disabled={!!editingId}
@@ -993,7 +1011,8 @@ export default function AttendancePage() {
                     setMarkForm((f) => ({
                       ...f,
                       date: d,
-                      checkIn: f.checkIn ? defaultCheckIn(d) : "",
+                      checkIn: f.checkIn ? defaultCheckIn(d, f.employee) : "",
+                      checkOut: f.checkOut ? defaultCheckOut(d, f.employee) : "",
                     }));
                   }}
                   className="border-2 w-full px-3 py-2 text-sm"

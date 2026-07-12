@@ -21,7 +21,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
+import RazorpayIcon from "../../assets/image.png";
 declare global {
   interface Window {
     Razorpay: any;
@@ -55,7 +55,7 @@ export default function BillingPage() {
         .then((r) => {
           if (r.success) {
             setSubscription(r.data);
-            setNewEmployeeCount(r.data.maxEmployees || "");
+            setNewEmployeeCount(r.data.currentEmployeeCount || r.data.maxEmployees || "");
             if (r.data.tier) setSelectedTier(r.data.tier);
           }
         })
@@ -68,7 +68,7 @@ export default function BillingPage() {
         .catch(() => {}),
     ]).finally(() => setLoading(false));
   }, []);
-
+  const paymentMethodIcon =  RazorpayIcon;
   const sub = subscription || user?.company?.subscription;
   const currentPlanId = sub?.plan || "1-10 employees";
 
@@ -463,10 +463,8 @@ export default function BillingPage() {
           {sub?.paymentMethod ? (
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border-2 border-black bg-[#024BAB]/5">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-7 bg-black flex items-center justify-center shrink-0">
-                  <span className="text-white font-bold text-xs uppercase">
-                    {sub.paymentMethod}
-                  </span>
+                <div className="w-10 h-7 flex items-center justify-center shrink-0">
+                  <img src={paymentMethodIcon} alt={sub.paymentMethod}  />
                 </div>
                 <div>
                   <p className="font-bold text-sm text-black capitalize">
