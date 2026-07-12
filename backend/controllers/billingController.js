@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const crypto = require("crypto");
 const Company = require("../models/Company");
 const Subscription = require("../models/Subscription");
+const Employee = require("../models/Employee");
 const Invoice = require("../models/Invoice");
 const User = require("../models/User");
 const OfferCode = require("../models/OfferCode");
@@ -33,7 +34,14 @@ const getSubscription = asyncHandler(async (req, res) => {
     return res
       .status(404)
       .json({ success: false, message: "No active subscription found" });
-  res.json({ success: true, data: subscription });
+  const currentEmployeeCount = await Employee.countDocuments({
+    company: company._id,
+    status: "active",
+  });
+  res.json({
+    success: true,
+    data: { ...subscription.toObject(), currentEmployeeCount },
+  });
 });
 
 const getInvoices = asyncHandler(async (req, res) => {
@@ -122,6 +130,23 @@ const createOrder = asyncHandler(async (req, res) => {
   const pricing = calculatePricing(empCount, tier);
 
   const existingCompany = await Company.findOne({ createdBy: req.user._id });
+  const existingSubscription = existingCompany
+    ? await Subscription.findOne({ company: existingCompany._id })
+    : null;
+
+  // Adding seats to an already-active plan (same tier) should only bill for
+  // the new seats, not re-bill the whole headcount the customer already paid for.
+  const isSeatTopUp =
+    existingSubscription &&
+    existingSubscription.status === "active" &&
+    existingSubscription.tier === tier &&
+    empCount > (existingSubscription.maxEmployees || 0);
+  const chargePricing = isSeatTopUp
+    ? calculatePricing(
+        empCount - existingSubscription.maxEmployees,
+        tier,
+      )
+    : pricing;
 
   // Validate offer code if provided
   let validatedOffer = null;
@@ -145,7 +170,9 @@ const createOrder = asyncHandler(async (req, res) => {
   }
 
   const amountRupees =
-    billingCycle === "yearly" ? pricing.yearlyPrice : pricing.monthlyPrice;
+    billingCycle === "yearly"
+      ? chargePricing.yearlyPrice
+      : chargePricing.monthlyPrice;
 
   // New signup: no Company exists yet. Company/Subscription are only created
   // once payment is verified — don't touch either collection here.
@@ -206,6 +233,7 @@ const createOrder = asyncHandler(async (req, res) => {
           paymentStatus: "pending",
           paymentMethod: "razorpay",
           amountPaid: 0,
+          pendingChargeAmount: amountRupees,
           razorpayOrderId: result.orderId,
           offerCode: validatedOffer ? validatedOffer.code : null,
           offerBonusMonths: validatedOffer ? validatedOffer.bonusMonths : 0,
@@ -291,6 +319,7 @@ const createOrder = asyncHandler(async (req, res) => {
           paymentStatus: "pending",
           paymentMethod: "hdfc_smartgateway",
           amountPaid: 0,
+          pendingChargeAmount: amountRupees,
           hdfcOrderId: orderId,
           offerCode: validatedOffer ? validatedOffer.code : null,
           offerBonusMonths: validatedOffer ? validatedOffer.bonusMonths : 0,
@@ -607,9 +636,10 @@ async function _activateSubscription({ lookup, update, invoiceExtra, res }) {
 
   const planName = subscription.plan;
   const amountPaid =
-    subscription.billingCycle === "yearly"
+    subscription.pendingChargeAmount ??
+    (subscription.billingCycle === "yearly"
       ? subscription.yearlyPrice
-      : subscription.monthlyPrice;
+      : subscription.monthlyPrice);
 
   const startDate = new Date();
   const renewalDate = new Date();

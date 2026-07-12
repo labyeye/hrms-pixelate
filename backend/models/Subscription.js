@@ -39,6 +39,11 @@ const subscriptionSchema = new mongoose.Schema(
     },
     paymentMethod: { type: String },
     amountPaid: { type: Number, default: 0 },
+    // Amount actually owed for the order currently pending payment — differs
+    // from monthlyPrice/yearlyPrice (the full ongoing plan cost) when this
+    // order is a seat top-up: the customer only owes for the added seats,
+    // not the full new headcount.
+    pendingChargeAmount: { type: Number },
     notes: { type: String },
     isTrial: { type: Boolean, default: false },
     trialEndDate: { type: Date },

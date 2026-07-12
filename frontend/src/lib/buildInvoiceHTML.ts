@@ -166,7 +166,6 @@ body { font-family: "DM Sans", Arial, Helvetica, sans-serif; font-size: 9pt; col
 .meta-value { font-size: 8pt; color: #111; flex: 1; }
 .party-row { display: flex; border-bottom: 1pt solid #222; }
 .party-block { flex: 1; padding: 10px; }
-.party-block.right { border-left: 1pt solid #222; }
 .party-label { font-size: 7pt; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
 .party-name { font-size: 11pt; font-weight: 700; color: #111; margin-bottom: 3px; }
 .party-line { font-size: 8pt; color: #333; margin-top: 2px; }
@@ -255,14 +254,6 @@ td { padding: 7px 5px; font-size: 8pt; color: #111; border-bottom: 0.5pt solid #
       ${clientPhone ? `<div class="party-line">Phone: ${clientPhone}</div>` : ""}
       ${clientGST ? `<div class="party-line" style="font-weight:700">GSTIN: ${clientGST}</div>` : ""}
       ${clientPAN ? `<div class="party-line">PAN: ${clientPAN}</div>` : ""}
-    </div>
-    <div class="party-block right">
-      <div class="party-label">Ship To</div>
-      <div class="party-name">${clientName}</div>
-      ${clientAddress ? `<div class="party-line">${clientAddress}</div>` : ""}
-      <div class="party-line" style="margin-top:8px;font-size:7.5pt;color:#888">
-        (Service delivered digitally — same as billing address)
-      </div>
     </div>
   </div>
 

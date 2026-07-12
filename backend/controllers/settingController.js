@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const path = require("path");
 const Setting = require("../models/Setting");
+const Company = require("../models/Company");
 
 const getSettings = asyncHandler(async (req, res) => {
   const company = req.user.company;
@@ -20,6 +21,14 @@ const updateSettings = asyncHandler(async (req, res) => {
     { $set: { ...req.body, company } },
     { new: true, upsert: true, runValidators: true },
   );
+
+  // Invoices/PDFs read GST off the Company document, not Setting — keep it
+  // in sync so a GST number entered here actually shows up on invoices.
+  if (typeof req.body.companyGST === "string") {
+    await Company.findByIdAndUpdate(company, {
+      gstNumber: req.body.companyGST,
+    });
+  }
 
   res.json({ success: true, data: setting });
 });
