@@ -1,7 +1,6 @@
 const { TIER_RATES } = require("./planFeatures");
 
 const TIER_LABELS = {
-  web: "Web",
   web_mobile: "Web + Mobile",
   web_mobile_whatsapp: "Web + Mobile + WhatsApp",
 };

@@ -10,7 +10,7 @@ const subscriptionSchema = new mongoose.Schema(
     plan: { type: String, required: true },
     tier: {
       type: String,
-      enum: ["web", "web_mobile", "web_mobile_whatsapp"],
+      enum: ["web_mobile", "web_mobile_whatsapp"],
       default: "web_mobile_whatsapp",
     },
     employeeCount: { type: Number },

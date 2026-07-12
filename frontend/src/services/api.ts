@@ -279,7 +279,7 @@ export const billingAPI = {
     request<{ success: boolean; data: any }>("/billing/invoices"),
   createOrder: (
     employeeCount: number,
-    tier: "web" | "web_mobile" | "web_mobile_whatsapp",
+    tier: "web_mobile" | "web_mobile_whatsapp",
     billingCycle: "monthly" | "yearly",
     gateway: "razorpay" | "hdfc" = "razorpay",
     company?: {

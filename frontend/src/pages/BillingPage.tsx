@@ -28,12 +28,11 @@ declare global {
   }
 }
 
-type Tier = "web" | "web_mobile" | "web_mobile_whatsapp";
+type Tier = "web_mobile" | "web_mobile_whatsapp";
 
 const PLANS: { tier: Tier; name: string; rate: number }[] = [
-  { tier: "web", name: "Web", rate: 500 },
-  { tier: "web_mobile", name: "Web + Mobile", rate: 700 },
-  { tier: "web_mobile_whatsapp", name: "Web + Mobile + WhatsApp", rate: 800 },
+  { tier: "web_mobile", name: "Web + Mobile", rate: 299 },
+  { tier: "web_mobile_whatsapp", name: "Web + Mobile + WhatsApp", rate: 499 },
 ];
 
 export default function BillingPage() {
