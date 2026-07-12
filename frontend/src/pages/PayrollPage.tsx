@@ -26,9 +26,11 @@ import {
   ArrowUp,
   ArrowDown,
   Eye,
+  Download,
 } from "lucide-react";
 import { ActionModal } from "@/components/ui/ActionModal";
-
+import tallyLogo from "../../assets/tally.png";
+import zohoBooksLogo from "../../assets/zoho-books.png";
 // ── Indian number to words ───────────────────────────────────────────────────
 function toIndianWords(n: number): string {
   const ones = [
@@ -593,6 +595,20 @@ export default function PayrollPage() {
             className="bg-white text-black px-4 py-2 text-sm flex items-center gap-1.5 border-2 border-black"
           >
             <Printer className="w-4 h-4" /> Bulk Slips
+          </button>
+          <button
+            onClick={() => payrollAPI.exportTally(month, year)}
+            disabled={payrolls.length === 0}
+            className="bg-white text-black px-4 py-2 text-sm flex items-center gap-1.5 border-2 border-black disabled:opacity-40"
+          >
+            <img src={tallyLogo} alt="Tally" className="w-7 h-4" /> Tally XML
+          </button>
+          <button
+            onClick={() => payrollAPI.exportZoho(month, year)}
+            disabled={payrolls.length === 0}
+            className="bg-white text-black px-4 py-2 text-sm flex items-center gap-1.5 border-2 border-black disabled:opacity-40"
+          >
+            <img src={zohoBooksLogo} alt="Zoho" className="w-4 h-4" /> Zoho CSV
           </button>
           <button
             onClick={() => {

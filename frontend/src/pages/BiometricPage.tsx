@@ -1541,6 +1541,45 @@ export default function BiometricPage() {
                   </span>
                   Select Device (ESSL MB-20 / ZKTeco)
                 </h2>
+                <div className="p-3 bg-gray-50 border-2 border-gray-200 mb-4">
+                  <p className="text-xs text-gray-500 mb-2">
+                    Any device that speaks the <strong>ADMS / iClock push</strong>{" "}
+                    protocol (most ZKTeco and eSSL biometric terminals) works
+                    here. On the device: <strong>Menu → Comm → Cloud Server
+                    Setting</strong> → enable ADMS, then set:
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-gray-500 w-28 shrink-0">
+                      Server Address
+                    </span>
+                    <code className="flex-1 text-xs font-mono bg-white border border-gray-200 px-2 py-1 text-gray-700 truncate">
+                      {window.location.origin.replace(/^https?:\/\//, "")}
+                    </code>
+                    <button
+                      onClick={() =>
+                        copyToClipboard(
+                          window.location.origin.replace(/^https?:\/\//, ""),
+                        )
+                      }
+                      className="p-1 hover:text-black text-gray-400"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs font-bold text-gray-500 w-28 shrink-0">
+                      Server Port
+                    </span>
+                    <code className="flex-1 text-xs font-mono bg-white border border-gray-200 px-2 py-1 text-gray-700">
+                      {window.location.protocol === "https:" ? "443" : "80"}
+                    </code>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Then register the device's serial number below (step 2).
+                    Matrix COSEC devices don't speak ADMS — they need Matrix's
+                    proprietary SDK, which isn't integrated here.
+                  </p>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {devices.map((d) => (
                     <button

@@ -169,13 +169,13 @@ export default function AttendancePage() {
       const attRes = await attendanceAPI.getAll({
         month: String(month),
         year: String(year),
-        limit: "200",
+        limit: "5000",
       });
       if (attRes.success) setRecords(attRes.data);
       if (!isEmployee) {
         const empRes = await employeeAPI.getAll({
           status: "active",
-          limit: "200",
+          limit: "5000",
         });
         if (empRes.success) setEmployees(empRes.data);
       }

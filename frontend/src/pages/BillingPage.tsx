@@ -4,6 +4,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { billingAPI } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+import { useConfirm } from "@/hooks/use-confirm";
 import { buildInvoiceHTML } from "@/lib/buildInvoiceHTML";
 import {
   Check,
@@ -31,13 +32,14 @@ declare global {
 type Tier = "web_mobile" | "web_mobile_whatsapp";
 
 const PLANS: { tier: Tier; name: string; rate: number }[] = [
-  { tier: "web_mobile", name: "Web + Mobile", rate: 299 },
-  { tier: "web_mobile_whatsapp", name: "Web + Mobile + WhatsApp", rate: 499 },
+  { tier: "web_mobile", name: "NestHR Starter", rate: 299 },
+  { tier: "web_mobile_whatsapp", name: "NestHR Professional", rate: 499 },
 ];
 
 export default function BillingPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const confirm = useConfirm();
 
   const [selectedTier, setSelectedTier] = useState<Tier>("web_mobile");
   const [subscription, setSubscription] = useState<any>(null);
@@ -47,6 +49,7 @@ export default function BillingPage() {
   const [downloading, setDownloading] = useState<string | null>(null);
   const [newEmployeeCount, setNewEmployeeCount] = useState<number | "">("");
   const [gatewayModal, setGatewayModal] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -99,6 +102,7 @@ export default function BillingPage() {
 
   const isActive =
     sub?.status === "active" || sub?.status === "pending_renewal";
+  const isCancelled = sub?.status === "cancelled";
 
   const loadRazorpayScript = useCallback((): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -139,6 +143,32 @@ export default function BillingPage() {
       return;
     }
     setGatewayModal(true);
+  };
+
+  const handleCancelSubscription = async () => {
+    const ok = await confirm({
+      title: "Cancel subscription?",
+      description: `You'll keep access until ${isTrial ? "your trial ends" : renewalDate ? renewalDate.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "the end of your billing period"}, then it won't renew.`,
+    });
+    if (!ok) return;
+    setCancelling(true);
+    try {
+      const res = await billingAPI.cancelSubscription();
+      if (!res.success) throw new Error(res.message || "Failed to cancel");
+      setSubscription(res.data);
+      toast({
+        title: "Subscription cancelled",
+        description: "Auto-renewal has been turned off.",
+      });
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message || "Failed to cancel subscription",
+        variant: "destructive",
+      });
+    } finally {
+      setCancelling(false);
+    }
   };
 
   const handleGatewaySelect = async (gateway: "razorpay" | "hdfc") => {
@@ -229,7 +259,7 @@ export default function BillingPage() {
 
   return (
     <AppLayout title="Billing">
-      <div className="max-w-5xl mx-auto space-y-6 sm:space-y-8 p-4 sm:p-6">
+      <div className="mx-auto space-y-6 sm:space-y-8 p-4 sm:p-6">
         {}
         {isTrial && (
           <div className="border-2 border-[#FBBF24] bg-[#FBBF24]/10 p-4 flex items-start gap-3">
@@ -286,28 +316,53 @@ export default function BillingPage() {
               </p>
             </div>
           </div>
-          <div
-            className={cn(
-              "flex items-center gap-1.5 self-start sm:self-auto px-3 py-1.5 border-2 border-black font-bold text-sm",
-              isTrial
-                ? "bg-[#FBBF24] text-black"
-                : isActive
-                  ? "bg-white text-[#024BAB]"
-                  : "bg-[#EF4444] text-white",
+          <div className="flex flex-col items-start sm:items-end gap-2">
+            <div
+              className={cn(
+                "flex items-center gap-1.5 self-start sm:self-auto px-3 py-1.5 border-2 border-black font-bold text-sm",
+                isTrial
+                  ? "bg-[#FBBF24] text-black"
+                  : isCancelled
+                    ? "bg-[#FBBF24] text-black"
+                    : isActive
+                      ? "bg-white text-[#024BAB]"
+                      : "bg-[#EF4444] text-white",
+              )}
+            >
+              {isTrial || isCancelled ? (
+                <Zap className="w-4 h-4" />
+              ) : isActive ? (
+                <Check className="w-4 h-4" />
+              ) : (
+                <AlertTriangle className="w-4 h-4" />
+              )}
+              {isTrial
+                ? `${daysLeft ?? 0} days left`
+                : isCancelled
+                  ? "Cancelling"
+                  : isActive
+                    ? "Paid & Active"
+                    : "Attention Required"}
+            </div>
+            {sub && !isCancelled && (isActive || isTrial) && (
+              <button
+                onClick={handleCancelSubscription}
+                disabled={cancelling}
+                className="text-xs font-bold text-white px-2.5 py-1 border-2 border-black bg-[#EF4444] hover:bg-[#DC2626] transition-colors disabled:opacity-50"
+              >
+                {cancelling ? "Cancelling…" : "Cancel plan"}
+              </button>
             )}
-          >
-            {isTrial ? (
-              <Zap className="w-4 h-4" />
-            ) : isActive ? (
-              <Check className="w-4 h-4" />
-            ) : (
-              <AlertTriangle className="w-4 h-4" />
+            {isCancelled && (
+              <span className="text-xs font-bold text-white/70">
+                Cancelled — access until{" "}
+                {expiryDate?.toLocaleDateString("en-IN", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                }) || "period end"}
+              </span>
             )}
-            {isTrial
-              ? `${daysLeft ?? 0} days left`
-              : isActive
-                ? "Paid & Active"
-                : "Attention Required"}
           </div>
         </div>
 
@@ -320,6 +375,7 @@ export default function BillingPage() {
               max: empMax === 999 ? "∞" : empMax,
               pct: empMax === 999 ? 10 : empPct,
               icon: Users,
+              bg: "bg-[#024BAB]",
             },
             {
               label: "Days Remaining",
@@ -327,6 +383,7 @@ export default function BillingPage() {
               max: totalDays,
               pct: daysPct,
               icon: Calendar,
+              bg: "bg-[#FA731C]",
             },
             {
               label: "Plan Limit",
@@ -334,23 +391,31 @@ export default function BillingPage() {
               max: "",
               pct: 100,
               icon: Building2,
+              bg: "bg-[#00C48C]",
             },
           ].map((stat) => (
-            <div key={stat.label} className="border-2 p-4 bg-white">
-              <div className="flex items-center gap-2 mb-2">
-                <stat.icon className="w-4 h-4 text-[#024BAB] shrink-0" />
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+            <div key={stat.label} className="border-2 p-4 flex flex-col gap-3 bg-white">
+              <div
+                className={cn(
+                  "w-10 h-10 border-2 border-black flex items-center justify-center shrink-0",
+                  stat.bg,
+                )}
+              >
+                <stat.icon className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="font-display font-bold text-3xl text-black">
+                  {stat.value}
+                  {stat.max !== "" && (
+                    <span className="text-sm font-medium text-muted-foreground ml-1">
+                      / {stat.max}
+                    </span>
+                  )}
+                </p>
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mt-0.5">
                   {stat.label}
                 </p>
               </div>
-              <p className="font-display font-bold text-2xl text-black mb-2">
-                {stat.value}
-                {stat.max !== "" && (
-                  <span className="text-sm font-medium text-muted-foreground ml-1">
-                    / {stat.max}
-                  </span>
-                )}
-              </p>
               <div className="h-2 bg-[#024BAB]/20 border border-black">
                 <div
                   className={cn(

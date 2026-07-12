@@ -552,8 +552,8 @@ const recordBiometric = asyncHandler(async (req, res) => {
 
 const getLogs = asyncHandler(async (req, res) => {
   const { safePagination } = require("../middleware/validate");
-  const { page, limit, skip } = safePagination(req.query, 50, 200);
-  const { locationId, deviceId, employeeId, date } = req.query;
+  const { page, limit, skip } = safePagination(req.query, 50, 5000);
+  const { locationId, deviceId, employeeId, date, month, year } = req.query;
 
   const filter = { company: req.user.company };
   if (locationId) filter.location = locationId;
@@ -567,13 +567,19 @@ const getLogs = asyncHandler(async (req, res) => {
       end.setHours(23, 59, 59, 999);
       filter.timestamp = { $gte: d, $lte: end };
     }
+  } else if (month && year) {
+    const m = parseInt(month),
+      y = parseInt(year);
+    if (!isNaN(m) && !isNaN(y)) {
+      filter.timestamp = { $gte: new Date(y, m - 1, 1), $lt: new Date(y, m, 1) };
+    }
   }
 
   const total = await BiometricLog.countDocuments(filter);
   const logs = await BiometricLog.find(filter)
     .populate("employee", "firstName lastName employeeId")
     .populate("device", "name")
-    .populate("location", "name")
+    .populate("location", "name address")
     .sort({ timestamp: -1 })
     .skip(skip)
     .limit(limit);

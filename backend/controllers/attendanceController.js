@@ -8,6 +8,7 @@ const { safePagination } = require("../middleware/validate");
 const { sendAttendanceStatus } = require("../services/whatsappService");
 const { validateMagicBytes } = require("../middleware/upload");
 const { verifyFace } = require("../services/faceService");
+const { logAudit } = require("../utils/auditLogger");
 
 // Great-circle distance between two lat/lng points, in meters.
 function haversineMeters(lat1, lon1, lat2, lon2) {
@@ -141,7 +142,9 @@ async function resolveStatus(employeeId, checkIn, requestedStatus) {
 }
 
 const getAttendance = asyncHandler(async (req, res) => {
-  const { page, limit, skip } = safePagination(req.query, 50, 200);
+  // Month view is bounded by employees × days in month, not user input — cap high
+  // enough that a full company's month never gets silently truncated.
+  const { page, limit, skip } = safePagination(req.query, 50, 5000);
   const { month, year, employeeId, department } = req.query;
 
   if (req.user.role === "employee") {
@@ -268,6 +271,10 @@ const markAttendance = asyncHandler(async (req, res) => {
     earlyLeaving = await calcEarlyLeaving(emp, checkOut);
   }
 
+  const before = await Attendance.findOne({ employee, date: d }).select(
+    "status checkIn checkOut",
+  );
+
   const record = await Attendance.findOneAndUpdate(
     { employee, date: d },
     {
@@ -288,6 +295,16 @@ const markAttendance = asyncHandler(async (req, res) => {
     path: "employee",
     select: "firstName lastName employeeId designation department avatar phone",
     populate: { path: "department", select: "name" },
+  });
+
+  await logAudit(req, before ? "attendance.update" : "attendance.create", "Attendance", record._id, {
+    date: d,
+    employeeName: `${record.employee.firstName} ${record.employee.lastName}`,
+    employeeCode: record.employee.employeeId,
+    before: before
+      ? { status: before.status, checkIn: before.checkIn, checkOut: before.checkOut }
+      : null,
+    after: { status: record.status, checkIn: record.checkIn, checkOut: record.checkOut },
   });
 
   // Send WA notification for actionable statuses (not holiday/weekend/on_leave)
@@ -493,6 +510,12 @@ const updateAttendance = asyncHandler(async (req, res) => {
     .populate("shift", "endTime")
     .select("otEnabled shift isCustomShift customShift");
 
+  const before = {
+    status: record.status,
+    checkIn: record.checkIn,
+    checkOut: record.checkOut,
+  };
+
   // Note: record.date is intentionally not updated — it's part of the unique compound
   // index (employee + date) and changing it would cause duplicate key errors.
   if (checkIn !== undefined)
@@ -545,6 +568,18 @@ const updateAttendance = asyncHandler(async (req, res) => {
     path: "employee",
     select: "firstName lastName employeeId designation department avatar phone",
     populate: { path: "department", select: "name" },
+  });
+
+  await logAudit(req, "attendance.update", "Attendance", record._id, {
+    date: record.date,
+    employeeName: `${record.employee.firstName} ${record.employee.lastName}`,
+    employeeCode: record.employee.employeeId,
+    before,
+    after: {
+      status: record.status,
+      checkIn: record.checkIn,
+      checkOut: record.checkOut,
+    },
   });
 
   await notifyAttendanceStatus(

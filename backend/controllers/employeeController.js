@@ -29,7 +29,9 @@ const updateSchema = {
 };
 
 const getEmployees = asyncHandler(async (req, res) => {
-  const { page, limit, skip } = safePagination(req.query);
+  // Employee list is bounded by company headcount, not user input — cap high
+  // enough that a full company roster never gets silently truncated.
+  const { page, limit, skip } = safePagination(req.query, 20, 5000);
   const { search, department, status, type } = req.query;
 
   const filter = { company: req.user.company };

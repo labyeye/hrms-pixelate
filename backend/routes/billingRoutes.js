@@ -4,6 +4,7 @@ const { protect } = require("../middleware/auth");
 const {
   getPlans,
   getSubscription,
+  cancelSubscription,
   getInvoices,
   createOrder,
   validateOfferCode,
@@ -14,6 +15,7 @@ const {
 
 router.get("/plans", getPlans);
 router.get("/subscription", protect, getSubscription);
+router.post("/cancel-subscription", protect, cancelSubscription);
 router.get("/invoices", protect, getInvoices);
 router.post("/validate-offer", protect, validateOfferCode);
 router.post("/create-order", protect, createOrder);

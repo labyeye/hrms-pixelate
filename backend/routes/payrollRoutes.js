@@ -9,6 +9,10 @@ const {
   bulkMarkPaid,
   markSlipReceived,
 } = require("../controllers/payrollController");
+const {
+  exportTally,
+  exportZoho,
+} = require("../controllers/payrollExportController");
 const { protect, authorize } = require("../middleware/auth");
 const router = express.Router();
 
@@ -54,6 +58,19 @@ router.patch(
   protect,
   authorize("super_admin", "hr_manager", "hr_executive"),
   markSlipReceived,
+);
+
+router.get(
+  "/export/tally",
+  protect,
+  authorize("super_admin", "hr_manager"),
+  exportTally,
+);
+router.get(
+  "/export/zoho",
+  protect,
+  authorize("super_admin", "hr_manager"),
+  exportZoho,
 );
 
 module.exports = router;

@@ -4,8 +4,28 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { performanceAPI, employeeAPI } from "@/services/api";
 import { PerformanceReview, Employee } from "@/types/hrms";
 import { cn } from "@/lib/utils";
-import { Plus, TrendingUp, Star, X } from "lucide-react";
+import { Plus, TrendingUp, Star, X, Activity, CalendarCheck, ListChecks } from "lucide-react";
 import { useConfirm } from "@/hooks/use-confirm";
+import { useAuth } from "@/contexts/AuthContext";
+
+type LiveMetrics = {
+  employeeId?: string;
+  firstName: string;
+  lastName: string;
+  attendancePct: number | null;
+  taskPct: number | null;
+  score: number | null;
+  presentDays: number;
+  totalTasks: number;
+  completedTasks: number;
+};
+
+function scoreColor(score: number | null) {
+  if (score == null) return "bg-gray-100 text-gray-500 border-black/20";
+  if (score >= 80) return "bg-[#00C48C]/10 text-[#00815A] border-[#00C48C]";
+  if (score >= 50) return "bg-[#FA731C]/10 text-[#B5540E] border-[#FA731C]";
+  return "bg-[#EF4444]/10 text-[#B91C1C] border-[#EF4444]";
+}
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
@@ -32,10 +52,16 @@ function StarRating({ value }: { value: number }) {
 }
 
 export default function PerformancePage() {
+  const { user } = useAuth();
+  const isEmployee = user?.role === "employee";
   const confirm = useConfirm();
   const [reviews, setReviews] = useState<PerformanceReview[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
+  const [liveMetrics, setLiveMetrics] = useState<LiveMetrics | LiveMetrics[] | null>(
+    null,
+  );
+  const [liveLoading, setLiveLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({
     employee: "",
@@ -65,6 +91,20 @@ export default function PerformancePage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    const now = new Date();
+    performanceAPI
+      .getLive({
+        month: String(now.getMonth() + 1),
+        year: String(now.getFullYear()),
+      })
+      .then((r: any) => {
+        if (r.success) setLiveMetrics(r.data);
+      })
+      .catch(() => {})
+      .finally(() => setLiveLoading(false));
+  }, []);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,6 +148,104 @@ export default function PerformancePage() {
         >
           <Plus className="w-4 h-4" /> New Review
         </button>
+      </div>
+
+      {/* Live performance — auto-computed from this month's attendance + tasks */}
+      <div className="border-2 bg-white p-4 mb-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Activity className="w-4 h-4 text-[#024BAB]" />
+          <p className="text-xs font-bold text-black uppercase tracking-wider">
+            Live Performance — This Month
+          </p>
+        </div>
+
+        {liveLoading ? (
+          <p className="text-xs text-muted-foreground">Loading…</p>
+        ) : isEmployee ? (
+          liveMetrics && !Array.isArray(liveMetrics) ? (
+            <div className="flex flex-wrap items-center gap-4">
+              <div
+                className={cn(
+                  "border-2 px-4 py-2 font-display font-bold text-2xl shrink-0",
+                  scoreColor(liveMetrics.score),
+                )}
+              >
+                {liveMetrics.score != null ? `${liveMetrics.score}%` : "—"}
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <CalendarCheck className="w-3.5 h-3.5" />
+                Attendance:{" "}
+                <span className="font-bold text-black">
+                  {liveMetrics.attendancePct != null
+                    ? `${liveMetrics.attendancePct}%`
+                    : "No data"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <ListChecks className="w-3.5 h-3.5" />
+                Tasks:{" "}
+                <span className="font-bold text-black">
+                  {liveMetrics.totalTasks > 0
+                    ? `${liveMetrics.completedTasks}/${liveMetrics.totalTasks} done`
+                    : "None assigned"}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">No data yet this month.</p>
+          )
+        ) : Array.isArray(liveMetrics) && liveMetrics.length > 0 ? (
+          <div className="overflow-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b-2 border-black">
+                  {["Employee", "Score", "Attendance", "Tasks"].map((h) => (
+                    <th
+                      key={h}
+                      className="px-3 py-2 text-left text-xs font-bold text-black uppercase tracking-wider"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[...liveMetrics]
+                  .sort((a, b) => (b.score ?? -1) - (a.score ?? -1))
+                  .map((m) => (
+                    <tr
+                      key={m.employeeId}
+                      className="border-b border-black/10"
+                    >
+                      <td className="px-3 py-2 text-xs font-bold text-black">
+                        {m.firstName} {m.lastName}
+                      </td>
+                      <td className="px-3 py-2">
+                        <span
+                          className={cn(
+                            "border-2 px-2 py-0.5 text-xs font-bold",
+                            scoreColor(m.score),
+                          )}
+                        >
+                          {m.score != null ? `${m.score}%` : "—"}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-xs text-black">
+                        {m.attendancePct != null ? `${m.attendancePct}%` : "—"}
+                      </td>
+                      <td className="px-3 py-2 text-xs text-black">
+                        {m.totalTasks > 0
+                          ? `${m.completedTasks}/${m.totalTasks}`
+                          : "—"}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">No employees to show.</p>
+        )}
       </div>
 
       {}

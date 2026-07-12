@@ -44,6 +44,32 @@ const getSubscription = asyncHandler(async (req, res) => {
   });
 });
 
+// Cancels auto-renew: the subscription stays active (and billed) until
+// renewalDate/trialEndDate, then lapses instead of charging again.
+const cancelSubscription = asyncHandler(async (req, res) => {
+  const company = await Company.findOne({ createdBy: req.user._id });
+  if (!company)
+    return res
+      .status(404)
+      .json({ success: false, message: "Company not found" });
+  const subscription = await Subscription.findOne({ company: company._id });
+  if (!subscription)
+    return res
+      .status(404)
+      .json({ success: false, message: "No active subscription found" });
+  if (subscription.status === "cancelled") {
+    return res
+      .status(400)
+      .json({ success: false, message: "Subscription is already cancelled" });
+  }
+
+  subscription.autoRenew = false;
+  subscription.status = "cancelled";
+  await subscription.save();
+
+  res.json({ success: true, data: subscription });
+});
+
 const getInvoices = asyncHandler(async (req, res) => {
   const company = await Company.findOne({ createdBy: req.user._id });
   if (!company)
@@ -752,6 +778,7 @@ const verifyPayment = asyncHandler(async (req, res) => {
 module.exports = {
   getPlans,
   getSubscription,
+  cancelSubscription,
   getInvoices,
   createOrder,
   validateOfferCode,

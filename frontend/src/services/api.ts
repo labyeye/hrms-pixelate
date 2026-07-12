@@ -4,6 +4,24 @@ export const getToken = () => localStorage.getItem("hrms_token");
 export const setToken = (t: string) => localStorage.setItem("hrms_token", t);
 export const removeToken = () => localStorage.removeItem("hrms_token");
 
+export async function downloadFile(
+  endpoint: string,
+  filename: string,
+): Promise<void> {
+  const token = getToken();
+  const res = await fetch(`${BASE_URL}${endpoint}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error("Download failed");
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 async function request<T = any>(
   endpoint: string,
   options: RequestInit = {},
@@ -196,6 +214,16 @@ export const payrollAPI = {
       method: "PATCH",
       body: JSON.stringify({ status }),
     }),
+  exportTally: (month: number, year: number) =>
+    downloadFile(
+      `/payroll/export/tally?month=${month}&year=${year}`,
+      `Tally_Salary_${month}_${year}.xml`,
+    ),
+  exportZoho: (month: number, year: number) =>
+    downloadFile(
+      `/payroll/export/zoho?month=${month}&year=${year}`,
+      `Zoho_Salary_${month}_${year}.csv`,
+    ),
 };
 
 export const recruitmentAPI = {
@@ -246,6 +274,10 @@ export const performanceAPI = {
       method: "PUT",
       body: JSON.stringify(body),
     }),
+  getLive: (params?: Record<string, string>) => {
+    const q = params ? "?" + new URLSearchParams(params).toString() : "";
+    return request(`/performance/live${q}`);
+  },
 };
 
 export const settingsAPI = {
@@ -277,6 +309,11 @@ export const billingAPI = {
     request<{ success: boolean; data: any }>("/billing/subscription"),
   getInvoices: () =>
     request<{ success: boolean; data: any }>("/billing/invoices"),
+  cancelSubscription: () =>
+    request<{ success: boolean; data: any; message?: string }>(
+      "/billing/cancel-subscription",
+      { method: "POST" },
+    ),
   createOrder: (
     employeeCount: number,
     tier: "web_mobile" | "web_mobile_whatsapp",
