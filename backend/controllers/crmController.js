@@ -1,6 +1,8 @@
 const Invoice = require("../models/Invoice");
 const OfferCode = require("../models/OfferCode");
 const Attendance = require("../models/Attendance");
+const Company = require("../models/Company");
+const Subscription = require("../models/Subscription");
 
 const crmAuth = (req, res) => {
   const apiKey = req.headers["x-api-key"];
@@ -179,6 +181,54 @@ exports.getCrmAttendance = async (req, res) => {
       : records;
 
     res.json({ success: true, total: result.length, attendance: result });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// PATCH /api/crm/companies/:companyId/subscription — activate/extend/deactivate a
+// company's subscription from the external CRM dashboard on payment/expiry events.
+exports.updateCrmSubscription = async (req, res) => {
+  if (!crmAuth(req, res)) return;
+  try {
+    const { companyId } = req.params;
+    const { status, paymentStatus, renewalDate } = req.body;
+
+    const allowedStatus = ["active", "inactive", "cancelled", "pending_renewal"];
+    const allowedPaymentStatus = ["pending", "completed", "failed"];
+    if (status !== undefined && !allowedStatus.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status. Must be one of: ${allowedStatus.join(", ")}`,
+      });
+    }
+    if (paymentStatus !== undefined && !allowedPaymentStatus.includes(paymentStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid paymentStatus. Must be one of: ${allowedPaymentStatus.join(", ")}`,
+      });
+    }
+
+    const company = await Company.findById(companyId).select("subscription");
+    if (!company) {
+      return res.status(404).json({ success: false, message: "Company not found" });
+    }
+    if (!company.subscription) {
+      return res.status(404).json({ success: false, message: "Company has no subscription to update" });
+    }
+
+    const updates = {};
+    if (status !== undefined) updates.status = status;
+    if (paymentStatus !== undefined) updates.paymentStatus = paymentStatus;
+    if (renewalDate !== undefined) updates.renewalDate = new Date(renewalDate);
+
+    const subscription = await Subscription.findByIdAndUpdate(
+      company.subscription,
+      updates,
+      { new: true },
+    );
+
+    res.json({ success: true, subscription });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

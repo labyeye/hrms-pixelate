@@ -174,7 +174,9 @@ router.get("/", statsGuard, async (req, res) => {
       { $match: { status: "active" } },
       { $group: { _id: "$company", count: { $sum: 1 } } },
     ]);
-    for (const e of empCounts) empCountMap[e._id.toString()] = e.count;
+    for (const u of userCounts) {
+      if (u._id) userCountMap[u._id.toString()] = u.count;
+    }
 
     // User (login) count per company
     const userCountMap = {};
