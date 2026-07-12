@@ -169,13 +169,14 @@ router.get("/", statsGuard, async (req, res) => {
       .lean();
 
     // Employee count per company (active only)
+    // Employee count per company (active only)
     const empCountMap = {};
     const empCounts = await Employee.aggregate([
       { $match: { status: "active" } },
       { $group: { _id: "$company", count: { $sum: 1 } } },
     ]);
-    for (const u of userCounts) {
-      if (u._id) userCountMap[u._id.toString()] = u.count;
+    for (const e of empCounts) {
+      if (e._id) empCountMap[e._id.toString()] = e.count;
     }
 
     // User (login) count per company
@@ -183,8 +184,9 @@ router.get("/", statsGuard, async (req, res) => {
     const userCounts = await User.aggregate([
       { $group: { _id: "$company", count: { $sum: 1 } } },
     ]);
-    for (const u of userCounts) userCountMap[u._id.toString()] = u.count;
-
+    for (const u of userCounts) {
+      if (u._id) userCountMap[u._id.toString()] = u.count;
+    }
     const tenants = companies.map((c) => {
       const sub = c.subscription;
       const companyId = c._id.toString();
