@@ -4,7 +4,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { employeeAPI, authAPI } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { Employee } from "@/types/hrms";
-import { cn, formatDate } from "@/lib/utils";
+import { cn, formatDate, generatePassword } from "@/lib/utils";
 import {
   Search,
   Lock,
@@ -18,10 +18,12 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useConfirm } from "@/hooks/use-confirm";
 
 export default function EmployeeCredentialsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -98,6 +100,12 @@ export default function EmployeeCredentialsPage() {
       return;
     }
 
+    const ok = await confirm({
+      title: "Reset this employee's password?",
+      description: "The new password will replace their current login credentials.",
+    });
+    if (!ok) return;
+
     setUpdating(true);
     try {
       const res = await employeeAPI.resetPassword(selectedEmp._id, newPassword);
@@ -139,14 +147,8 @@ export default function EmployeeCredentialsPage() {
     setUpdating(false);
   };
 
-  const generatePassword = () => {
-    const chars =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%";
-    let pwd = "";
-    for (let i = 0; i < 12; i++) {
-      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setNewPassword(pwd);
+  const generateNewPassword = () => {
+    setNewPassword(generatePassword());
   };
 
   const handleCreateCredential = async () => {
@@ -159,6 +161,12 @@ export default function EmployeeCredentialsPage() {
       });
       return;
     }
+
+    const ok = await confirm({
+      title: "Create this credential?",
+      description: "This will set a login password for the selected employee.",
+    });
+    if (!ok) return;
 
     setUpdating(true);
     try {
@@ -213,6 +221,12 @@ export default function EmployeeCredentialsPage() {
       });
       return;
     }
+
+    const ok = await confirm({
+      title: "Update your password?",
+      description: "You will need to use the new password next time you log in.",
+    });
+    if (!ok) return;
 
     setUpdating(true);
     try {
@@ -481,7 +495,7 @@ export default function EmployeeCredentialsPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={generatePassword}
+                  onClick={generateNewPassword}
                   className="text-xs font-bold text-[#024BAB] hover:underline"
                 >
                   💡 Generate Strong Password
@@ -631,15 +645,10 @@ export default function EmployeeCredentialsPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    const chars =
-                      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%";
-                    let pwd = "";
-                    for (let i = 0; i < 12; i++) {
-                      pwd += chars.charAt(
-                        Math.floor(Math.random() * chars.length),
-                      );
-                    }
-                    setCreateFormData({ ...createFormData, password: pwd });
+                    setCreateFormData({
+                      ...createFormData,
+                      password: generatePassword(),
+                    });
                   }}
                   className="text-xs font-bold text-[#024BAB] hover:underline"
                 >
@@ -757,15 +766,7 @@ export default function EmployeeCredentialsPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    const chars =
-                      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%";
-                    let pwd = "";
-                    for (let i = 0; i < 12; i++) {
-                      pwd += chars.charAt(
-                        Math.floor(Math.random() * chars.length),
-                      );
-                    }
-                    setManagerPassword(pwd);
+                    setManagerPassword(generatePassword());
                   }}
                   className="text-xs font-bold text-[#024BAB] hover:underline"
                 >

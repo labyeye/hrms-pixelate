@@ -16,6 +16,7 @@ import {
   ArrowDown,
 } from "lucide-react";
 import { ActionModal } from "@/components/ui/ActionModal";
+import { useConfirm } from "@/hooks/use-confirm";
 
 const STATUS_COLORS: Record<string, string> = {
   open: "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C] px-2 py-0.5",
@@ -43,6 +44,7 @@ const STAGES = [
 ];
 
 export default function RecruitmentPage() {
+  const confirm = useConfirm();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,6 +98,11 @@ export default function RecruitmentPage() {
 
   const handleCreateJob = async (e: React.FormEvent) => {
     e.preventDefault();
+    const ok = await confirm({
+      title: "Post this job?",
+      description: "This will publish a new job opening.",
+    });
+    if (!ok) return;
     setSaving(true);
     try {
       await recruitmentAPI.create({
@@ -124,6 +131,11 @@ export default function RecruitmentPage() {
   const handleAddCandidate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!candidateModal) return;
+    const ok = await confirm({
+      title: "Add candidate?",
+      description: "This will add the candidate to the job's pipeline.",
+    });
+    if (!ok) return;
     setSaving(true);
     try {
       await recruitmentAPI.addCandidate(candidateModal.jobId, candForm);

@@ -1,9 +1,11 @@
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto");
 const asyncHandler = require("express-async-handler");
 const EmployeeDocument = require("../models/EmployeeDocument");
 const Employee = require("../models/Employee");
 const { validateMagicBytes } = require("../middleware/upload");
+const { moveToTrash } = require("./trashController");
 
 const UPLOADS_ROOT = path.resolve(__dirname, "../uploads/employee-docs");
 
@@ -45,7 +47,7 @@ const uploadDocument = asyncHandler(async (req, res) => {
     const sizeBytes = fileBuffer.length;
 
     const ext = mimeType.split("/")[1] || "bin";
-    const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const filename = `${Date.now()}_${crypto.randomUUID()}.${ext}`;
     const absPath = path.resolve(UPLOADS_ROOT, filename);
 
     fs.writeFileSync(absPath, fileBuffer);
@@ -88,6 +90,7 @@ const uploadDocument = asyncHandler(async (req, res) => {
     mimeType: finalFile.mimetype,
     sizeBytes: finalFile.size,
     filePath: relativePath,
+    expiryDate: req.body.expiryDate || null,
   });
 
   res.status(201).json({
@@ -98,6 +101,83 @@ const uploadDocument = asyncHandler(async (req, res) => {
       docType: doc.docType,
       mimeType: doc.mimeType,
       sizeBytes: doc.sizeBytes,
+      createdAt: doc.createdAt,
+    },
+  });
+});
+
+const LETTER_TEMPLATES = {
+  salary_certificate: (emp, company) => `SALARY CERTIFICATE
+
+This is to certify that ${emp.firstName} ${emp.lastName} (Employee ID: ${emp.employeeId}) is employed with ${company?.name || "the company"} as ${emp.designation} since ${emp.joinDate ? new Date(emp.joinDate).toDateString() : "N/A"}.
+
+Current gross salary: ₹${emp.salary || 0} per month.
+
+This certificate is issued upon the employee's request for official purposes.
+
+Date: ${new Date().toDateString()}`,
+  experience_letter: (emp, company) => `EXPERIENCE LETTER
+
+This is to certify that ${emp.firstName} ${emp.lastName} (Employee ID: ${emp.employeeId}) worked with ${company?.name || "the company"} as ${emp.designation} from ${emp.joinDate ? new Date(emp.joinDate).toDateString() : "N/A"} ${emp.exitDate ? `to ${new Date(emp.exitDate).toDateString()}` : "to present"}.
+
+During this period, their conduct and performance were found satisfactory.
+
+Date: ${new Date().toDateString()}`,
+  address_proof_letter: (emp, company) => `ADDRESS PROOF LETTER
+
+This is to certify that ${emp.firstName} ${emp.lastName} (Employee ID: ${emp.employeeId}) is a bona fide employee of ${company?.name || "the company"}, working as ${emp.designation}.
+
+This letter is issued for address proof purposes upon the employee's request.
+
+Date: ${new Date().toDateString()}`,
+};
+
+const generateLetter = asyncHandler(async (req, res) => {
+  const { employeeId, docType } = req.body;
+  if (!employeeId || !LETTER_TEMPLATES[docType]) {
+    res.status(400);
+    throw new Error("Valid employeeId and docType are required");
+  }
+
+  const employee = await Employee.findOne({
+    _id: employeeId,
+    company: req.user.company,
+  });
+  if (!employee) {
+    res.status(404);
+    throw new Error("Employee not found");
+  }
+
+  const Company = require("../models/Company");
+  const company = await Company.findById(req.user.company);
+
+  const content = LETTER_TEMPLATES[docType](employee, company);
+  const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.txt`;
+  const absPath = path.resolve(UPLOADS_ROOT, filename);
+  fs.writeFileSync(absPath, content, "utf8");
+
+  const relativePath = path
+    .relative(path.resolve(__dirname, "../"), absPath)
+    .replace(/\\/g, "/");
+
+  const doc = await EmployeeDocument.create({
+    company: req.user.company,
+    employee: employeeId,
+    uploadedBy: req.user._id,
+    name: `${docType.replace(/_/g, " ")} - ${employee.firstName} ${employee.lastName}`,
+    docType,
+    mimeType: "text/plain",
+    sizeBytes: Buffer.byteLength(content, "utf8"),
+    filePath: relativePath,
+    generated: true,
+  });
+
+  res.status(201).json({
+    success: true,
+    data: {
+      _id: doc._id,
+      name: doc.name,
+      docType: doc.docType,
       createdAt: doc.createdAt,
     },
   });
@@ -123,6 +203,15 @@ const getDocuments = asyncHandler(async (req, res) => {
     .populate("employee", "firstName lastName employeeId")
     .populate("uploadedBy", "name email")
     .sort({ createdAt: -1 });
+
+  if (req.query.expiringWithinDays) {
+    const days = Number(req.query.expiringWithinDays);
+    const cutoff = new Date(Date.now() + days * 86400000);
+    return res.json({
+      success: true,
+      data: docs.filter((d) => d.expiryDate && d.expiryDate <= cutoff),
+    });
+  }
 
   res.json({ success: true, data: docs });
 });
@@ -190,13 +279,8 @@ const deleteDocument = asyncHandler(async (req, res) => {
     throw new Error("Document not found");
   }
 
-  // Delete file from disk
-  if (doc.filePath) {
-    const abs = path.resolve(__dirname, "../", doc.filePath);
-    if (fs.existsSync(abs)) fs.unlinkSync(abs);
-  }
-
-  await doc.deleteOne();
+  // File stays on disk until purged from Trash, so restore can recover it.
+  await moveToTrash("EmployeeDocument", doc, req);
   res.json({ success: true, message: "Document deleted" });
 });
 
@@ -205,4 +289,5 @@ module.exports = {
   getDocuments,
   downloadDocument,
   deleteDocument,
+  generateLetter,
 };

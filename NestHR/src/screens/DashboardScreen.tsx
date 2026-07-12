@@ -39,9 +39,10 @@ import {
   attendanceAPI,
   payrollAPI,
   authAPI,
+  announcementAPI,
 } from '../api/api';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
-import { C } from '../theme';
+import { C, S } from '../theme';
 
 const CARD_WIDTH = (Dimensions.get('window').width - 32 - 10) / 2;
 
@@ -619,13 +620,88 @@ function EmployeeDashboard({ navigation }: any) {
               {essStats.announcements?.length > 0 && (
                 <View style={styles.essAnnounceCard}>
                   <Text style={styles.essSectionTitle}>📢 Announcements</Text>
-                  {essStats.announcements.map((a: any) => (
-                    <View key={a._id} style={styles.essAnnounceRow}>
-                      <Text style={styles.essAnnounceTitle}>{a.title}</Text>
-                      <Text style={styles.essAnnounceBody}>{a.content}</Text>
-                      <Text style={styles.essAnnounceDate}>{new Date(a.date).toLocaleDateString('en-IN')}</Text>
-                    </View>
-                  ))}
+                  {essStats.announcements.map((a: any) => {
+                    const isRead = a.readBy?.some((id: string) => id === user?.id);
+                    const acked = a.acknowledgedBy?.some((id: string) => id === user?.id);
+                    return (
+                      <TouchableOpacity
+                        key={a._id}
+                        style={styles.essAnnounceRow}
+                        activeOpacity={0.7}
+                        onPress={() => {
+                          if (!isRead) {
+                            announcementAPI.markRead(a._id).catch(() => {});
+                            setEssStats((prev: any) => ({
+                              ...prev,
+                              announcements: prev.announcements.map((x: any) =>
+                                x._id === a._id
+                                  ? { ...x, readBy: [...(x.readBy || []), user?.id] }
+                                  : x,
+                              ),
+                            }));
+                          }
+                        }}
+                      >
+                        <View style={S.rowBetween}>
+                          <View style={S.rowCenter}>
+                            {a.pinned && <Text style={{ marginRight: 4 }}>📌</Text>}
+                            {!!a.priority && a.priority !== 'medium' && (
+                              <View
+                                style={[
+                                  styles.essAnnounceBadge,
+                                  {
+                                    borderColor:
+                                      a.priority === 'critical' || a.priority === 'high'
+                                        ? C.danger
+                                        : C.success,
+                                  },
+                                ]}
+                              >
+                                <Text
+                                  style={[
+                                    styles.essAnnounceBadgeText,
+                                    {
+                                      color:
+                                        a.priority === 'critical' || a.priority === 'high'
+                                          ? C.danger
+                                          : C.success,
+                                    },
+                                  ]}
+                                >
+                                  {a.priority}
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                          {!isRead && <View style={styles.essAnnounceDot} />}
+                        </View>
+                        <Text style={styles.essAnnounceTitle}>{a.title}</Text>
+                        <Text style={styles.essAnnounceBody}>{a.content}</Text>
+                        <Text style={styles.essAnnounceDate}>{new Date(a.date).toLocaleDateString('en-IN')}</Text>
+                        {a.acknowledgementRequired && (
+                          <TouchableOpacity
+                            disabled={acked}
+                            onPress={() => {
+                              announcementAPI.acknowledge(a._id).catch(() => {});
+                              setEssStats((prev: any) => ({
+                                ...prev,
+                                announcements: prev.announcements.map((x: any) =>
+                                  x._id === a._id
+                                    ? { ...x, acknowledgedBy: [...(x.acknowledgedBy || []), user?.id] }
+                                    : x,
+                                ),
+                              }));
+                            }}
+                            style={[styles.essAckBtn, acked && { opacity: 0.5 }]}
+                          >
+                            <Text style={styles.essAckBtnText}>
+                              {acked ? '✓ Acknowledged' : 'Acknowledge'}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               )}
 
@@ -956,6 +1032,38 @@ const styles = StyleSheet.create({
     color: C.textLight,
     marginTop: 4,
     fontFamily: 'monospace',
+  },
+  essAnnounceBadge: {
+    borderWidth: 1.5,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  essAnnounceBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  essAnnounceDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: C.primary,
+  },
+  essAckBtn: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: C.danger,
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  essAckBtnText: {
+    color: C.white,
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
   },
 
   loaderWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },

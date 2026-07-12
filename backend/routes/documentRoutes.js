@@ -4,6 +4,7 @@ const {
   getDocuments,
   downloadDocument,
   deleteDocument,
+  generateLetter,
 } = require("../controllers/documentController");
 const { protect, authorize } = require("../middleware/auth");
 const { uploadDocumentVault } = require("../middleware/upload");
@@ -11,6 +12,12 @@ const { uploadDocumentVault } = require("../middleware/upload");
 const router = express.Router();
 
 router.get("/", protect, getDocuments);
+router.post(
+  "/generate-letter",
+  protect,
+  authorize("super_admin", "hr_manager", "hr_executive"),
+  generateLetter,
+);
 router.post(
   "/",
   protect,

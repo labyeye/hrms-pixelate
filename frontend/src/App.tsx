@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ToastProvider } from "@/hooks/use-toast";
+import { ConfirmProvider } from "@/hooks/use-confirm";
 import { usePushNotification } from "@/hooks/usePushNotification";
 import { Users2 } from "lucide-react";
 import DashboardPage from "./pages/DashboardPage";
@@ -40,6 +41,9 @@ import ExitManagementPage from "./pages/ExitManagementPage";
 import AuditLogPage from "./pages/AuditLogPage";
 import SupportPage from "./pages/SupportPage";
 import DocumentVaultPage from "./pages/DocumentVaultPage";
+import TasksPage from "./pages/TasksPage";
+import AnnouncementsPage from "./pages/AnnouncementsPage";
+import TrashPage from "./pages/TrashPage";
 import nesthrlogo from "../assets/nesthr.png";
 import PageTransition from "@/components/layout/PageTransition";
 const queryClient = new QueryClient({
@@ -360,7 +364,31 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/tasks"
+          element={
+            <ProtectedRoute>
+              <TasksPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/announcements"
+          element={
+            <ProtectedRoute>
+              <AnnouncementsPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/device/:token" element={<BiometricDevicePage />} />
+        <Route
+          path="/trash"
+          element={
+            <ProtectedRoute>
+              <TrashPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </PageTransition>
@@ -370,11 +398,13 @@ function AppRoutes() {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ToastProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </AuthProvider>
+      <ConfirmProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </AuthProvider>
+      </ConfirmProvider>
     </ToastProvider>
   </QueryClientProvider>
 );

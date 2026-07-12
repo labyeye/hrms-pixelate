@@ -27,12 +27,17 @@ const employeeDocumentSchema = new mongoose.Schema(
         "contract",
         "resume",
         "offer_letter",
+        "salary_certificate",
+        "experience_letter",
+        "address_proof_letter",
         "other",
       ],
     },
     mimeType: { type: String, required: true },
     sizeBytes: { type: Number, required: true },
     filePath: { type: String, required: true }, // relative path under /uploads/employee-docs/
+    expiryDate: { type: Date, default: null },
+    generated: { type: Boolean, default: false }, // true for HR-generated letters
   },
   { timestamps: true },
 );

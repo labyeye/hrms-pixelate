@@ -5,6 +5,7 @@ import { performanceAPI, employeeAPI } from "@/services/api";
 import { PerformanceReview, Employee } from "@/types/hrms";
 import { cn } from "@/lib/utils";
 import { Plus, TrendingUp, Star, X } from "lucide-react";
+import { useConfirm } from "@/hooks/use-confirm";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
@@ -31,6 +32,7 @@ function StarRating({ value }: { value: number }) {
 }
 
 export default function PerformancePage() {
+  const confirm = useConfirm();
   const [reviews, setReviews] = useState<PerformanceReview[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,6 +68,11 @@ export default function PerformancePage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    const ok = await confirm({
+      title: "Create performance review?",
+      description: "This will create a new performance review for the selected employee.",
+    });
+    if (!ok) return;
     setSaving(true);
     try {
       await performanceAPI.create({

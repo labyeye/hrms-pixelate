@@ -23,6 +23,9 @@ import {
   Shield,
   LifeBuoy,
   FolderOpen,
+  ListChecks,
+  Megaphone,
+  Trash2,
 } from "lucide-react";
 
 export interface NavItem {
@@ -140,6 +143,30 @@ const allGroups: NavGroup[] = [
         icon: Banknote,
         roles: ["employee"],
       },
+      {
+        title: "Tasks",
+        href: "/tasks",
+        icon: ListChecks,
+        roles: [
+          "super_admin",
+          "hr_manager",
+          "hr_executive",
+          "department_head",
+          "employee",
+        ],
+      },
+      {
+        title: "Announcements",
+        href: "/announcements",
+        icon: Megaphone,
+        roles: [
+          "super_admin",
+          "hr_manager",
+          "hr_executive",
+          "department_head",
+          "employee",
+        ],
+      },
     ],
   },
   {
@@ -197,6 +224,12 @@ const allGroups: NavGroup[] = [
         href: "/manage",
         icon: SlidersHorizontal,
         roles: ["super_admin", "hr_manager"],
+      },
+      {
+        title: "Trash",
+        href: "/trash",
+        icon: Trash2,
+        roles: ["super_admin", "hr_manager", "hr_executive"],
       },
       {
         title: "Billing",

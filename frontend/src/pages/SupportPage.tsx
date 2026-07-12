@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { supportAPI } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+import { useConfirm } from "@/hooks/use-confirm";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -123,6 +124,7 @@ interface Ticket {
 export default function SupportPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -151,7 +153,13 @@ export default function SupportPage() {
 
   const handleCloseTicket = async () => {
     if (!selectedTicket) return;
-    if (!confirm("Are you sure you want to close this ticket?")) return;
+    const ok = await confirm({
+      title: "Close this ticket?",
+      description: "This action cannot be undone.",
+      confirmText: "Close",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       const res = await supportAPI.close(selectedTicket._id);
       if (res.success) {
@@ -199,6 +207,11 @@ export default function SupportPage() {
       });
       return;
     }
+    const ok = await confirm({
+      title: "Submit this ticket?",
+      description: "This will create a new support ticket.",
+    });
+    if (!ok) return;
     setSubmitting(true);
     try {
       await supportAPI.create(form);

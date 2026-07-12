@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { biometricAPI } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+import { useConfirm } from "@/hooks/use-confirm";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { FaceEnrollModal } from "@/components/biometric/FaceEnrollModal";
 import { FingerprintEnrollModal } from "@/components/biometric/FingerprintEnrollModal";
@@ -92,6 +93,7 @@ interface BiometricLog {
 
 export default function BiometricPage() {
   const { toast } = useToast();
+  const confirm = useConfirm();
   const toastRef = useRef(toast);
   toastRef.current = toast;
   const [tab, setTab] = useState<Tab>("locations_devices");
@@ -202,6 +204,13 @@ export default function BiometricPage() {
 
   const handleSaveLocation = async () => {
     if (!locForm.name.trim() || locSaving) return;
+    const ok = await confirm({
+      title: editingLoc ? "Save changes?" : "Create this location?",
+      description: editingLoc
+        ? "This will update the location details."
+        : "A new location will be added.",
+    });
+    if (!ok) return;
     setLocSaving(true);
     try {
       if (editingLoc) {
@@ -226,10 +235,13 @@ export default function BiometricPage() {
   };
 
   const handleDeleteLocation = async (id: string) => {
-    if (
-      !confirm("Delete this location? Associated devices will be deactivated.")
-    )
-      return;
+    const ok = await confirm({
+      title: "Delete this location?",
+      description: "Associated devices will be deactivated. This action cannot be undone.",
+      confirmText: "Delete",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await biometricAPI.deleteLocation(id);
       setLocations((prev) => prev.filter((l) => l._id !== id));
@@ -251,6 +263,11 @@ export default function BiometricPage() {
 
   const handleCreateDevice = async () => {
     if (!devForm.name.trim() || !devForm.location || devSaving) return;
+    const ok = await confirm({
+      title: "Create this device?",
+      description: "A new device will be added to the selected location.",
+    });
+    if (!ok) return;
     setDevSaving(true);
     try {
       const res = await biometricAPI.createDevice(devForm);
@@ -269,12 +286,13 @@ export default function BiometricPage() {
   };
 
   const handleRegenerateToken = async (deviceId: string) => {
-    if (
-      !confirm(
-        "Regenerate token? Both the terminal URL and activation code will change — reconnection required.",
-      )
-    )
-      return;
+    const ok = await confirm({
+      title: "Regenerate token?",
+      description: "Both the terminal URL and activation code will change — reconnection required. This action cannot be undone.",
+      confirmText: "Regenerate",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       const res = await biometricAPI.regenerateDeviceToken(deviceId);
       setDevices((prev) =>
@@ -324,7 +342,13 @@ export default function BiometricPage() {
   };
 
   const handleDeleteDevice = async (id: string) => {
-    if (!confirm("Delete this device?")) return;
+    const ok = await confirm({
+      title: "Delete this device?",
+      description: "This action cannot be undone.",
+      confirmText: "Delete",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await biometricAPI.deleteDevice(id);
       setDevices((prev) => prev.filter((d) => d._id !== id));

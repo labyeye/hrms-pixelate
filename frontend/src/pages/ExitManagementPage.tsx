@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { exitAPI, employeeAPI } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+import { useConfirm } from "@/hooks/use-confirm";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   LogOut,
@@ -86,6 +87,7 @@ function fmt(d?: string) {
 export default function ExitManagementPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const isHR = user?.role !== "employee";
 
   const [records, setRecords] = useState<ExitRecord[]>([]);
@@ -133,6 +135,11 @@ export default function ExitManagementPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    const ok = await confirm({
+      title: "Initiate exit process?",
+      description: "This will start the resignation and exit workflow for this employee.",
+    });
+    if (!ok) return;
     setSaving(true);
     try {
       await exitAPI.create({

@@ -4,6 +4,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { holidayAPI } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useConfirm } from "@/hooks/use-confirm";
 import { cn } from "@/lib/utils";
 import { ActionModal } from "@/components/ui/ActionModal";
 import {
@@ -95,6 +96,7 @@ function TypeBadge({ type }: { type: Holiday["type"] }) {
 export default function HolidaysPage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const canManage = user?.role === "super_admin" || user?.role === "hr_manager";
 
   const now = new Date();
@@ -160,6 +162,13 @@ export default function HolidaysPage() {
       });
       return;
     }
+    const ok = await confirm({
+      title: editingId ? "Save changes?" : "Add this holiday?",
+      description: editingId
+        ? "This will update the holiday details."
+        : "This will be declared as a company holiday.",
+    });
+    if (!ok) return;
     setSaving(true);
     try {
       if (editingId) {
@@ -184,7 +193,13 @@ export default function HolidaysPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this holiday?")) return;
+    const ok = await confirm({
+      title: "Delete this holiday?",
+      description: "This action cannot be undone.",
+      confirmText: "Delete",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await holidayAPI.delete(id);
       setHolidays((p) => p.filter((h) => h._id !== id));

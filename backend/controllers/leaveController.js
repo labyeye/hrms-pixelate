@@ -4,6 +4,7 @@ const Attendance = require("../models/Attendance");
 const Employee = require("../models/Employee");
 const User = require("../models/User");
 const Company = require("../models/Company");
+const { moveToTrash } = require("./trashController");
 const { safePagination } = require("../middleware/validate");
 const {
   sendLeaveSubmitted,
@@ -604,7 +605,7 @@ const deleteLeave = asyncHandler(async (req, res) => {
     });
   }
 
-  await leave.deleteOne();
+  await moveToTrash("Leave", leave, req);
   res.json({ success: true, message: "Leave request withdrawn" });
 });
 

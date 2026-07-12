@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useConfirm } from "@/hooks/use-confirm";
+import { useToast } from "@/hooks/use-toast";
 
 const DOC_TYPES = [
   { value: "id_proof", label: "ID Proof", icon: Shield },
@@ -40,6 +42,8 @@ function formatBytes(bytes: number) {
 
 export default function DocumentVaultPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const confirm = useConfirm();
   const isEmployee = user?.role === "employee";
   const [docs, setDocs] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
@@ -98,6 +102,12 @@ export default function DocumentVaultPage() {
     if (!fileObj || !form.name || !form.docType) return;
     if (!isEmployee && !form.employeeId) return;
 
+    const ok = await confirm({
+      title: "Upload document?",
+      description: "This will add the document to the vault.",
+    });
+    if (!ok) return;
+
     setUploading(true);
     try {
       const reader = new FileReader();
@@ -117,7 +127,7 @@ export default function DocumentVaultPage() {
       };
       reader.readAsDataURL(fileObj);
     } catch (err: any) {
-      alert(err.message || "Upload failed");
+      toast({ title: "Error", description: err.message || "Upload failed", variant: "destructive" });
     }
     setUploading(false);
   };
@@ -139,17 +149,23 @@ export default function DocumentVaultPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err: any) {
-      alert(err.message || "Download failed");
+      toast({ title: "Error", description: err.message || "Download failed", variant: "destructive" });
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this document?")) return;
+    const ok = await confirm({
+      title: "Delete this document?",
+      description: "This will move it to Trash, you can restore it later.",
+      confirmText: "Delete",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await documentAPI.delete(id);
       setDocs((prev) => prev.filter((d) => d._id !== id));
     } catch (err: any) {
-      alert(err.message);
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   };
 

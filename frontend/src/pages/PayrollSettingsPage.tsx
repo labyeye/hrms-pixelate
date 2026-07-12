@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
 import { payrollConfigAPI } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+import { useConfirm } from "@/hooks/use-confirm";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ShieldAlert, Clock, Loader2, Save, LogOut } from "lucide-react";
 
@@ -113,6 +114,7 @@ function fmt(h: number, m: number) {
 
 export default function PayrollSettingsPage() {
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [rules, setRules] = useState<DeductionRule>(DEFAULT_DEDUCTIONS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -138,6 +140,11 @@ export default function PayrollSettingsPage() {
 
   const handleSave = async () => {
     if (saving) return;
+    const ok = await confirm({
+      title: "Save payroll settings?",
+      description: "This updates attendance deduction rules for all employees.",
+    });
+    if (!ok) return;
     setSaving(true);
     try {
       await payrollConfigAPI.upsertDeductionRules(rules);

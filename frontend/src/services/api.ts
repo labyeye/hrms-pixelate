@@ -644,6 +644,47 @@ export const supportAPI = {
       body: JSON.stringify({ message }),
     }),
   close: (id: string) => request(`/support/${id}/close`, { method: "POST" }),
+  assign: (id: string, assignedTo: string) =>
+    request(`/support/${id}/assign`, {
+      method: "PATCH",
+      body: JSON.stringify({ assignedTo }),
+    }),
+};
+
+export const taskAPI = {
+  getAll: (params?: Record<string, string>) => {
+    const q = params ? "?" + new URLSearchParams(params).toString() : "";
+    return request(`/tasks${q}`);
+  },
+  getOne: (id: string) => request(`/tasks/${id}`),
+  create: (body: {
+    title: string;
+    description?: string;
+    assignedTo: string;
+    priority?: string;
+    dueDate?: string;
+  }) => request("/tasks", { method: "POST", body: JSON.stringify(body) }),
+  update: (
+    id: string,
+    body: {
+      title?: string;
+      description?: string;
+      assignedTo?: string;
+      priority?: string;
+      dueDate?: string;
+    },
+  ) => request(`/tasks/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  updateStatus: (id: string, status: string) =>
+    request(`/tasks/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    }),
+  addComment: (id: string, message: string) =>
+    request(`/tasks/${id}/comments`, {
+      method: "POST",
+      body: JSON.stringify({ message }),
+    }),
+  delete: (id: string) => request(`/tasks/${id}`, { method: "DELETE" }),
 };
 
 export const documentAPI = {
@@ -660,6 +701,11 @@ export const documentAPI = {
   }) => request("/documents", { method: "POST", body: JSON.stringify(body) }),
   download: (id: string) => request(`/documents/${id}/download`),
   delete: (id: string) => request(`/documents/${id}`, { method: "DELETE" }),
+  generateLetter: (employeeId: string, docType: string) =>
+    request("/documents/generate-letter", {
+      method: "POST",
+      body: JSON.stringify({ employeeId, docType }),
+    }),
 };
 
 export const payrollPreviewAPI = {
@@ -689,9 +735,23 @@ export const assetAPI = {
 
 export const announcementAPI = {
   getAll: () => request("/announcements"),
-  create: (body: { title: string; content: string }) =>
-    request("/announcements", { method: "POST", body: JSON.stringify(body) }),
+  create: (body: {
+    title: string;
+    content: string;
+    category?: string;
+    priority?: string;
+    pinned?: boolean;
+    expiryDate?: string;
+    targetAudience?: string;
+    departments?: string[];
+    roles?: string[];
+    acknowledgementRequired?: boolean;
+  }) => request("/announcements", { method: "POST", body: JSON.stringify(body) }),
   delete: (id: string) => request(`/announcements/${id}`, { method: "DELETE" }),
+  markRead: (id: string) =>
+    request(`/announcements/${id}/read`, { method: "POST" }),
+  acknowledge: (id: string) =>
+    request(`/announcements/${id}/acknowledge`, { method: "POST" }),
 };
 
 export const attendanceCorrectionAPI = {
@@ -719,4 +779,11 @@ export const attendanceCorrectionAPI = {
       method: "PUT",
       body: JSON.stringify({ status, rejectionReason }),
     }),
+};
+
+export const trashAPI = {
+  getAll: (modelName?: string) =>
+    request(`/trash${modelName ? `?modelName=${modelName}` : ""}`),
+  restore: (id: string) => request(`/trash/${id}/restore`, { method: "POST" }),
+  purge: (id: string) => request(`/trash/${id}`, { method: "DELETE" }),
 };

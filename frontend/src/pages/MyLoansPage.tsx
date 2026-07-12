@@ -3,6 +3,7 @@ import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { loanAPI } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+import { useConfirm } from "@/hooks/use-confirm";
 import { cn } from "@/lib/utils";
 import {
   Banknote,
@@ -75,6 +76,7 @@ const fmt = (n: number) =>
 
 export default function MyLoansPage() {
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [loans, setLoans] = useState<Loan[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
@@ -111,6 +113,11 @@ export default function MyLoansPage() {
       });
       return;
     }
+    const ok = await confirm({
+      title: "Submit loan/advance request?",
+      description: "This will send your request for approval.",
+    });
+    if (!ok) return;
     setSaving(true);
     try {
       await loanAPI.request({

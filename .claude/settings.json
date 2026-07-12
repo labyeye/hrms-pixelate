@@ -30,7 +30,8 @@
       "WebFetch(domain:pagarbook.com)",
       "WebFetch(domain:www.pagarguru.com)",
       "WebFetch(domain:www.pixelatenest.com)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(xargs grep -L \"limit\\\\|skip\\\\|paginate\")"
     ]
   }
 }

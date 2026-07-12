@@ -3,6 +3,7 @@ import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { loanAPI, employeeAPI } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+import { useConfirm } from "@/hooks/use-confirm";
 import { cn } from "@/lib/utils";
 import {
   Banknote,
@@ -61,6 +62,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function LoansPage() {
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [loans, setLoans] = useState<Loan[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -121,6 +123,13 @@ export default function LoansPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    const ok = await confirm({
+      title: editId ? "Save changes?" : "Add this loan/advance?",
+      description: editId
+        ? "This will update the loan/advance record."
+        : "This will create a new loan/advance entry.",
+    });
+    if (!ok) return;
     setSaving(true);
     try {
       const payload = {

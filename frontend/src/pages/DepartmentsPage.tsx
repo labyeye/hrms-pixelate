@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { departmentAPI } from "@/services/api";
+import { useConfirm } from "@/hooks/use-confirm";
 import { Department } from "@/types/hrms";
 import { cn } from "@/lib/utils";
 import {
@@ -45,6 +46,7 @@ const EMPTY_FORM: DeptForm = {
 };
 
 export default function DepartmentsPage() {
+  const confirm = useConfirm();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -96,6 +98,13 @@ export default function DepartmentsPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    const ok = await confirm({
+      title: editDept ? "Save changes?" : "Create this department?",
+      description: editDept
+        ? "This will update the department details."
+        : "A new department will be added.",
+    });
+    if (!ok) return;
     setSaving(true);
     try {
       if (editDept)
@@ -130,7 +139,13 @@ export default function DepartmentsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Deactivate this department?")) return;
+    const ok = await confirm({
+      title: "Deactivate this department?",
+      description: "This action cannot be undone.",
+      confirmText: "Deactivate",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await departmentAPI.delete(id);
       load();

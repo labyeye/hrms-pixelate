@@ -3,6 +3,7 @@ import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { leaveAPI, employeeAPI } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { useConfirm } from "@/hooks/use-confirm";
 import { LeaveRequest, Employee } from "@/types/hrms";
 import { cn, formatDate } from "@/lib/utils";
 import {
@@ -182,6 +183,7 @@ function toDateInputValue(dateStr: string) {
 
 export default function LeavePage() {
   const { user } = useAuth();
+  const confirm = useConfirm();
   const isEmployee = user?.role === "employee";
   const isAdmin = ["super_admin", "admin", "hr_manager"].includes(
     user?.role ?? "",
@@ -363,6 +365,13 @@ export default function LeavePage() {
       setCancelModal({ show: true, leaveId: leave._id, reason: "" });
       return;
     }
+    const ok = await confirm({
+      title: "Withdraw leave request?",
+      description: "This will move the request to Trash. You can restore it later if needed.",
+      confirmText: "Withdraw",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await leaveAPI.delete(leave._id);
       load();

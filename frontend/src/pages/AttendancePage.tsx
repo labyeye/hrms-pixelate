@@ -3,6 +3,8 @@ import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { attendanceAPI, employeeAPI } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { useConfirm } from "@/hooks/use-confirm";
 import { AttendanceRecord, Employee } from "@/types/hrms";
 import { cn } from "@/lib/utils";
 import {
@@ -131,6 +133,8 @@ const MONTHS = [
 
 export default function AttendancePage() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const confirm = useConfirm();
   const isEmployee = user?.role === "employee";
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -213,7 +217,7 @@ export default function AttendancePage() {
       });
       load();
     } catch (err: any) {
-      alert(err.message);
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   };
 
@@ -256,6 +260,13 @@ export default function AttendancePage() {
 
   const handleMark = async (e: React.FormEvent) => {
     e.preventDefault();
+    const ok = await confirm({
+      title: editingId ? "Update attendance record?" : "Mark attendance?",
+      description: editingId
+        ? "This will overwrite the existing record for this employee and date."
+        : "This will create a new attendance record for this employee.",
+    });
+    if (!ok) return;
     setSaving(true);
     try {
       const payload: Record<string, any> = {
@@ -279,7 +290,7 @@ export default function AttendancePage() {
       setEditingId(null);
       load();
     } catch (err: any) {
-      alert(err.message);
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
     setSaving(false);
   };
@@ -299,7 +310,7 @@ export default function AttendancePage() {
       );
       load();
     } catch (err: any) {
-      alert(err.message);
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
     setMarkingAbsent(false);
   };

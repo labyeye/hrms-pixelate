@@ -1,6 +1,7 @@
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto");
 const { fromFile } = require("file-type");
 
 // Allowed MIME types matched against actual file magic bytes
@@ -129,7 +130,7 @@ const documentVaultStorage = multer.diskStorage({
   },
   filename(_req, file, cb) {
     const ext = path.extname(file.originalname).toLowerCase() || ".bin";
-    const safe = `${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`;
+    const safe = `${Date.now()}_${crypto.randomUUID()}${ext}`;
     cb(null, safe);
   },
 });

@@ -47,6 +47,8 @@ const supportTicketSchema = new mongoose.Schema(
       default: "open",
     },
     crmTicketId: { type: String, default: null },
+    assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+    slaDueAt: { type: Date },
     statusUpdatedAt: { type: Date },
     resolvedNote: { type: String, default: "" },
     replies: [
@@ -64,10 +66,16 @@ const supportTicketSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+const SLA_HOURS = { critical: 4, high: 24, medium: 72, low: 120 };
+
 supportTicketSchema.pre("save", async function (next) {
   if (!this.ticketNumber) {
     const count = await mongoose.model("SupportTicket").countDocuments();
     this.ticketNumber = `TKT-${String(count + 1).padStart(5, "0")}`;
+  }
+  if (this.isNew) {
+    const hours = SLA_HOURS[this.priority] || SLA_HOURS.medium;
+    this.slaDueAt = new Date(Date.now() + hours * 3600 * 1000);
   }
   next();
 });

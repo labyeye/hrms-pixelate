@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { useConfirm } from "@/hooks/use-confirm";
 import {
   shiftAPI,
   salaryHeadAPI,
@@ -171,6 +172,7 @@ function NbTable({
 }
 
 function ShiftsSection({ onBack }: { onBack: () => void }) {
+  const confirm = useConfirm();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
@@ -236,6 +238,13 @@ function ShiftsSection({ onBack }: { onBack: () => void }) {
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
+    const ok = await confirm({
+      title: editing ? "Save shift changes?" : "Create shift?",
+      description: editing
+        ? "This will update the shift timing."
+        : "This will add a new shift.",
+    });
+    if (!ok) return;
     try {
       const payload = {
         ...form,
@@ -376,7 +385,13 @@ function ShiftsSection({ onBack }: { onBack: () => void }) {
               </button>
               <button
                 onClick={async () => {
-                  if (!confirm("Delete shift?")) return;
+                  const ok = await confirm({
+                    title: "Delete shift?",
+                    description: "This action cannot be undone.",
+                    confirmText: "Delete",
+                    destructive: true,
+                  });
+                  if (!ok) return;
                   await shiftAPI.delete(s._id);
                   load();
                 }}
@@ -476,6 +491,7 @@ function ShiftsSection({ onBack }: { onBack: () => void }) {
 }
 
 function SalaryHeadsSection({ onBack }: { onBack: () => void }) {
+  const confirm = useConfirm();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
@@ -529,6 +545,13 @@ function SalaryHeadsSection({ onBack }: { onBack: () => void }) {
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
+    const ok = await confirm({
+      title: editing ? "Save component changes?" : "Add salary component?",
+      description: editing
+        ? "This will update the salary component."
+        : "This will add a new salary component.",
+    });
+    if (!ok) return;
     try {
       const payload = { ...form, value: +form.value };
       if (editing) await salaryHeadAPI.update(editing._id, payload);
@@ -616,7 +639,13 @@ function SalaryHeadsSection({ onBack }: { onBack: () => void }) {
               </button>
               <button
                 onClick={async () => {
-                  if (!confirm("Delete component?")) return;
+                  const ok = await confirm({
+                    title: "Delete component?",
+                    description: "This action cannot be undone.",
+                    confirmText: "Delete",
+                    destructive: true,
+                  });
+                  if (!ok) return;
                   await salaryHeadAPI.delete(h._id);
                   load();
                 }}
@@ -727,6 +756,7 @@ function SalaryHeadsSection({ onBack }: { onBack: () => void }) {
 }
 
 function DesignationsSection({ onBack }: { onBack: () => void }) {
+  const confirm = useConfirm();
   const [data, setData] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -781,6 +811,13 @@ function DesignationsSection({ onBack }: { onBack: () => void }) {
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
+    const ok = await confirm({
+      title: editing ? "Save designation changes?" : "Create designation?",
+      description: editing
+        ? "This will update the designation."
+        : "This will add a new designation.",
+    });
+    if (!ok) return;
     try {
       const payload = {
         ...form,
@@ -853,7 +890,13 @@ function DesignationsSection({ onBack }: { onBack: () => void }) {
               </button>
               <button
                 onClick={async () => {
-                  if (!confirm("Delete designation?")) return;
+                  const ok = await confirm({
+                    title: "Delete designation?",
+                    description: "This action cannot be undone.",
+                    confirmText: "Delete",
+                    destructive: true,
+                  });
+                  if (!ok) return;
                   await designationAPI.delete(d._id);
                   load();
                 }}
@@ -955,6 +998,7 @@ function DesignationsSection({ onBack }: { onBack: () => void }) {
 }
 
 function OfferLettersSection({ onBack }: { onBack: () => void }) {
+  const confirm = useConfirm();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
@@ -988,6 +1032,13 @@ function OfferLettersSection({ onBack }: { onBack: () => void }) {
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
+    const ok = await confirm({
+      title: editing ? "Save template changes?" : "Create template?",
+      description: editing
+        ? "This will update the offer letter template."
+        : "This will add a new offer letter template.",
+    });
+    if (!ok) return;
     try {
       if (editing) await offerLetterAPI.update(editing._id, form);
       else await offerLetterAPI.create(form);
@@ -1034,7 +1085,13 @@ function OfferLettersSection({ onBack }: { onBack: () => void }) {
               </button>
               <button
                 onClick={async () => {
-                  if (!confirm("Delete template?")) return;
+                  const ok = await confirm({
+                    title: "Delete template?",
+                    description: "This action cannot be undone.",
+                    confirmText: "Delete",
+                    destructive: true,
+                  });
+                  if (!ok) return;
                   await offerLetterAPI.delete(l._id);
                   load();
                 }}

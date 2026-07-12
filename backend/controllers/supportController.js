@@ -108,6 +108,7 @@ exports.getMyTickets = asyncHandler(async (req, res) => {
 
   const tickets = await SupportTicket.find(filter)
     .populate("submittedBy", "name email")
+    .populate("assignedTo", "name email")
     .sort({ createdAt: -1 });
 
   res.json({ success: true, data: tickets });
@@ -119,6 +120,7 @@ exports.getTicket = asyncHandler(async (req, res) => {
     company: req.user.company,
   })
     .populate("submittedBy", "name email")
+    .populate("assignedTo", "name email")
     .populate("replies.user", "name role email");
 
   if (!ticket)
@@ -192,6 +194,25 @@ exports.replyToTicket = asyncHandler(async (req, res) => {
     .populate("submittedBy", "name email")
     .populate("replies.user", "name role email");
 
+  res.json({ success: true, data: populated });
+});
+
+exports.assignTicket = asyncHandler(async (req, res) => {
+  const { assignedTo } = req.body;
+  const ticket = await SupportTicket.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!ticket) {
+    res.status(404);
+    throw new Error("Ticket not found");
+  }
+  ticket.assignedTo = assignedTo || null;
+  if (ticket.status === "open") ticket.status = "in_progress";
+  await ticket.save();
+  const populated = await SupportTicket.findById(ticket._id)
+    .populate("submittedBy", "name email")
+    .populate("assignedTo", "name email");
   res.json({ success: true, data: populated });
 });
 

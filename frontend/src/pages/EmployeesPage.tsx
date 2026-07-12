@@ -47,6 +47,8 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { ActionModal } from "@/components/ui/ActionModal";
+import { useConfirm } from "@/hooks/use-confirm";
+import { useToast } from "@/hooks/use-toast";
 
 const STATUS_COLORS: Record<string, string> = {
   active:
@@ -203,6 +205,8 @@ const EMPTY_FORM: EmployeeFormData = {
 
 export default function EmployeesPage() {
   const navigate = useNavigate();
+  const confirm = useConfirm();
+  const { toast } = useToast();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [shifts, setShifts] = useState<any[]>([]);
@@ -424,6 +428,13 @@ export default function EmployeesPage() {
 
   const handleSave = async (e: React.SyntheticEvent) => {
     e.preventDefault();
+    const ok = await confirm({
+      title: editEmp ? "Save employee changes?" : "Add this employee?",
+      description: editEmp
+        ? "This will update the employee's information."
+        : "This will create a new employee record.",
+    });
+    if (!ok) return;
     setSaving(true);
     try {
       const payload = {
@@ -490,7 +501,13 @@ export default function EmployeesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Terminate this employee?")) return;
+    const ok = await confirm({
+      title: "Terminate this employee?",
+      description: "This action cannot be undone.",
+      confirmText: "Terminate",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await employeeAPI.delete(id);
       setActionModal({
@@ -705,7 +722,11 @@ export default function EmployeesPage() {
       setImportStep("result");
       if (res.imported > 0) load();
     } catch (err: any) {
-      alert(err.message || "Import failed");
+      toast({
+        title: "Error",
+        description: err.message || "Import failed",
+        variant: "destructive",
+      });
     }
     setImporting(false);
   };

@@ -675,6 +675,8 @@ export const assetAPI = {
 
 export const announcementAPI = {
   getAll: () => request('/announcements'),
+  markRead: (id: string) => request(`/announcements/${id}/read`, { method: 'POST' }),
+  acknowledge: (id: string) => request(`/announcements/${id}/acknowledge`, { method: 'POST' }),
 };
 
 

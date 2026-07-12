@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ActionModal } from "@/components/ui/ActionModal";
+import { useConfirm } from "@/hooks/use-confirm";
 
 type CrudOp = "create" | "read" | "update" | "delete";
 type HrmsRole =
@@ -691,6 +692,7 @@ function CropModal({
 export default function SettingsPage() {
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [settings, setSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -1023,6 +1025,11 @@ export default function SettingsPage() {
         return;
       }
     }
+    const ok = await confirm({
+      title: "Save settings?",
+      description: "This will update your company configuration.",
+    });
+    if (!ok) return;
     try {
       setSaving(true);
       await settingsAPI.update(settings);
