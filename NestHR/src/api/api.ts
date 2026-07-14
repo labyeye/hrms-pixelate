@@ -251,6 +251,39 @@ export const leaveAPI = {
   getAll: (params?: Record<string, string>) => request(`/leaves${qs(params)}`),
   create: (body: object) =>
     request('/leaves', { method: 'POST', body: JSON.stringify(body) }),
+  // Multipart variant used when a supporting document is attached (required
+  // for sick/casual leave). Mirrors documentAPI.upload's fetch pattern since
+  // FormData can't go through the JSON `request()` helper.
+  createWithDocument: async (body: Record<string, any>, file: {
+    uri: string;
+    type: string;
+    name: string;
+  }) => {
+    const token = await getToken();
+    const formData = new FormData();
+    Object.entries(body).forEach(([k, v]) => {
+      if (v !== undefined && v !== null) formData.append(k, String(v));
+    });
+    formData.append('document', file as any);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30_000);
+    try {
+      const res = await fetch(`${BASE_URL}/leaves`, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: formData,
+      });
+      clearTimeout(timer);
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : {};
+      if (!res.ok) throw new Error(data.message || `Request failed (${res.status})`);
+      return data;
+    } catch (err: any) {
+      clearTimeout(timer);
+      throw err;
+    }
+  },
   update: (id: string, body: object) =>
     request(`/leaves/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   updateStatus: (id: string, body: object) =>
@@ -429,6 +462,42 @@ export const payrollConfigAPI = {
     request('/payroll-config/deduction-rules', {
       method: 'PUT',
       body: JSON.stringify(body),
+    }),
+};
+
+export const attendanceSettingsAPI = {
+  get: () => request('/attendance-settings'),
+  update: (body: object) =>
+    request('/attendance-settings', { method: 'PUT', body: JSON.stringify(body) }),
+  upsertLateAllowance: (body: {
+    mode: 'bulk' | 'custom';
+    bulkCount?: number;
+    perEmployee?: { employee: string; count: number }[];
+  }) =>
+    request('/attendance-settings/late-allowance', {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  upsertLeaveAllowance: (body: {
+    leaveType: string;
+    mode: 'bulk' | 'custom';
+    bulkDays?: number;
+    perEmployee?: { employee: string; days: number }[];
+  }) =>
+    request('/attendance-settings/leave-allowance', {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  getBalanceSummary: () => request('/attendance-settings/balance-summary'),
+  getMyBalance: () => request('/attendance-settings/my-balance'),
+};
+
+export const lateApprovalAPI = {
+  getAll: () => request('/late-approvals'),
+  resolve: (id: string, resolvedStatus: string) =>
+    request(`/late-approvals/${id}/resolve`, {
+      method: 'POST',
+      body: JSON.stringify({ resolvedStatus }),
     }),
 };
 

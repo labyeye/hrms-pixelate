@@ -1773,10 +1773,10 @@ export default function SettingsPage() {
                       </p>
                       <p className="text-xs text-muted-foreground">
                         Attendance from the start day of the previous month
-                        through the end day of the payroll month will be used
-                        to calculate salary — e.g. start day 5 and end day 5
-                        means the period runs from 5th of the previous month
-                        to 5th of the current month.
+                        through the end day of the payroll month will be used to
+                        calculate salary — e.g. start day 5 and end day 5 means
+                        the period runs from 5th of the previous month to 5th of
+                        the current month.
                       </p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">

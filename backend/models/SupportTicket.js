@@ -47,7 +47,11 @@ const supportTicketSchema = new mongoose.Schema(
       default: "open",
     },
     crmTicketId: { type: String, default: null },
-    assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+    assignedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
     slaDueAt: { type: Date },
     statusUpdatedAt: { type: Date },
     resolvedNote: { type: String, default: "" },

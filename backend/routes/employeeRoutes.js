@@ -27,39 +27,31 @@ router.post("/me/face-enroll", protect, uploadFaceEnrollPhoto, enrollMyFace);
 router
   .route("/")
   .get(protect, getEmployees)
-  .post(
-    protect,
-    authorize("super_admin", "hr_manager", "hr_executive"),
-    createEmployee,
-  );
+  .post(protect, authorize("super_admin", "hr_manager"), createEmployee);
 router
   .route("/:id")
   .get(protect, getEmployee)
-  .put(
-    protect,
-    authorize("super_admin", "hr_manager", "hr_executive"),
-    updateEmployee,
-  )
+  .put(protect, authorize("super_admin", "hr_manager"), updateEmployee)
   .delete(protect, authorize("super_admin", "hr_manager"), deleteEmployee);
 
 router.post(
   "/bulk-import",
   protect,
-  authorize("super_admin", "hr_manager", "hr_executive"),
+  authorize("super_admin", "hr_manager"),
   bulkImportEmployees,
 );
 
 router.post(
   "/:id/reset-password",
   protect,
-  authorize("super_admin", "hr_manager", "hr_executive"),
+  authorize("super_admin", "hr_manager"),
   resetEmployeePassword,
 );
 
 router.post(
   "/:id/documents",
   protect,
-  authorize("super_admin", "hr_manager", "hr_executive"),
+  authorize("super_admin", "hr_manager"),
   uploadEmployeeDocs,
   uploadEmployeeDocuments,
 );
@@ -67,7 +59,7 @@ router.post(
 router.post(
   "/:id/avatar",
   protect,
-  authorize("super_admin", "hr_manager", "hr_executive"),
+  authorize("super_admin", "hr_manager"),
   uploadAvatar,
   async (req, res) => {
     const Employee = require("../models/Employee");
@@ -82,7 +74,7 @@ router.post(
 router.post(
   "/:id/face-enroll",
   protect,
-  authorize("super_admin", "hr_manager", "hr_executive"),
+  authorize("super_admin", "hr_manager"),
   uploadFaceEnrollPhoto,
   enrollEmployeeFace,
 );
@@ -90,7 +82,7 @@ router.post(
 router.get(
   "/:id/documents/:type",
   protect,
-  authorize("super_admin", "hr_manager", "hr_executive"),
+  authorize("super_admin", "hr_manager"),
   downloadEmployeeDocument,
 );
 

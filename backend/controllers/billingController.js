@@ -10,7 +10,11 @@ const PendingOrder = require("../models/PendingOrder");
 const hdfcPayment = require("../services/hdfcPaymentService");
 const razorpayService = require("../services/razorpayService");
 const { sendPaymentConfirmations } = require("../services/notificationService");
-const { TIER_RATES, TIER_LABELS, calculatePricing } = require("../utils/pricing");
+const {
+  TIER_RATES,
+  TIER_LABELS,
+  calculatePricing,
+} = require("../utils/pricing");
 
 const getPlans = asyncHandler(async (req, res) => {
   const plans = Object.keys(TIER_RATES).map((tier) => ({
@@ -168,10 +172,7 @@ const createOrder = asyncHandler(async (req, res) => {
     existingSubscription.tier === tier &&
     empCount > (existingSubscription.maxEmployees || 0);
   const chargePricing = isSeatTopUp
-    ? calculatePricing(
-        empCount - existingSubscription.maxEmployees,
-        tier,
-      )
+    ? calculatePricing(empCount - existingSubscription.maxEmployees, tier)
     : pricing;
 
   // Validate offer code if provided
@@ -300,10 +301,15 @@ const createOrder = asyncHandler(async (req, res) => {
       ratePerEmployee: pricing.ratePerEmployee,
       plan: pricing.tierLabel,
       billingCycle,
-      companyName: existingCompany ? existingCompany.name : newCompanyDetails.name,
+      companyName: existingCompany
+        ? existingCompany.name
+        : newCompanyDetails.name,
       userName: req.user.name,
       userEmail: req.user.email,
-      userPhone: req.user.phone || (existingCompany ? existingCompany.phone : newCompanyDetails.phone) || "",
+      userPhone:
+        req.user.phone ||
+        (existingCompany ? existingCompany.phone : newCompanyDetails.phone) ||
+        "",
       offerApplied: !!validatedOffer,
       bonusMonths: validatedOffer ? validatedOffer.bonusMonths : 0,
     };
@@ -316,7 +322,10 @@ const createOrder = asyncHandler(async (req, res) => {
       customer: {
         name: req.user.name,
         email: req.user.email,
-        phone: req.user.phone || (existingCompany ? existingCompany.phone : newCompanyDetails.phone) || "",
+        phone:
+          req.user.phone ||
+          (existingCompany ? existingCompany.phone : newCompanyDetails.phone) ||
+          "",
         address: existingCompany?.address || "India",
         city: existingCompany?.city || "",
         state: existingCompany?.state || "",
@@ -493,7 +502,13 @@ const verifyHdfcPayment = asyncHandler(async (req, res) => {
   });
 });
 
-async function _createCompanyAndActivate({ pendingOrder, req, update, invoiceExtra, res }) {
+async function _createCompanyAndActivate({
+  pendingOrder,
+  req,
+  update,
+  invoiceExtra,
+  res,
+}) {
   if (pendingOrder.user.toString() !== req.user._id.toString()) {
     res.status(403);
     throw new Error("This order does not belong to the current user.");

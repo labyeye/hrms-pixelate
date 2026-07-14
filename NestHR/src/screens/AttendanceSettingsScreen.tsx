@@ -18,12 +18,15 @@ import {
   ChevronLeft,
   IndianRupee,
   Percent,
+  Users,
+  CalendarClock,
+  BarChart2,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
-import { payrollConfigAPI } from '../api/api';
+import { attendanceSettingsAPI, employeeAPI } from '../api/api';
 import { C } from '../theme';
 
-interface DeductionRule {
+interface AttendanceSettings {
   shiftStartHour: number;
   shiftStartMinute: number;
   shiftEndHour: number;
@@ -36,7 +39,7 @@ interface DeductionRule {
   earlyCheckoutDeductionEnabled: boolean;
 }
 
-const DEFAULT: DeductionRule = {
+const DEFAULT: AttendanceSettings = {
   shiftStartHour: 9,
   shiftStartMinute: 0,
   shiftEndHour: 18,
@@ -49,31 +52,65 @@ const DEFAULT: DeductionRule = {
   earlyCheckoutDeductionEnabled: false,
 };
 
+const LEAVE_TYPES = [
+  'casual',
+  'sick',
+  'earned',
+  'maternity',
+  'paternity',
+  'unpaid',
+  'compensatory',
+  'hourly',
+  'wfh',
+  'outdoor_duty',
+];
+
 function pad(n: number) {
   return String(n).padStart(2, '0');
 }
 
-export default function PayrollSettingsScreen() {
+export default function AttendanceSettingsScreen() {
   const navigation = useNavigation<any>();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [rules, setRules] = useState<DeductionRule>(DEFAULT);
+  const [rules, setRules] = useState<AttendanceSettings>(DEFAULT);
+  const [employees, setEmployees] = useState<any[]>([]);
+
+  // Late allowance state
+  const [lateMode, setLateMode] = useState<'bulk' | 'custom'>('bulk');
+  const [lateBulk, setLateBulk] = useState('0');
+  const [latePerEmp, setLatePerEmp] = useState<Record<string, string>>({});
+  const [savingLate, setSavingLate] = useState(false);
+
+  // Leave allowance state
+  const [leaveType, setLeaveType] = useState('casual');
+  const [leaveMode, setLeaveMode] = useState<'bulk' | 'custom'>('bulk');
+  const [leaveBulk, setLeaveBulk] = useState('0');
+  const [leavePerEmp, setLeavePerEmp] = useState<Record<string, string>>({});
+  const [savingLeave, setSavingLeave] = useState(false);
+
+  // Balance summary
+  const [summary, setSummary] = useState<any[]>([]);
+  const [showSummary, setShowSummary] = useState(false);
 
   useEffect(() => {
-    payrollConfigAPI
-      .getDeductionRules()
-      .then(res => {
-        if (res?.data) setRules({ ...DEFAULT, ...res.data });
+    Promise.all([
+      attendanceSettingsAPI.get(),
+      employeeAPI.getAll(),
+    ])
+      .then(([settingsRes, empRes]) => {
+        if (settingsRes?.data) setRules({ ...DEFAULT, ...settingsRes.data });
+        setEmployees(empRes?.data || []);
       })
       .catch(e => Alert.alert('Error', e.message))
       .finally(() => setLoading(false));
   }, []);
 
-  const set = (key: keyof DeductionRule, value: any) =>
+  const set = (key: keyof AttendanceSettings, value: any) =>
     setRules(p => ({ ...p, [key]: value }));
 
   const numField = (
-    key: keyof DeductionRule,
+    key: keyof AttendanceSettings,
     label: string,
     hint?: string,
     suffix?: string,
@@ -101,12 +138,69 @@ export default function PayrollSettingsScreen() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await payrollConfigAPI.updateDeductionRules(rules);
-      Alert.alert('Saved', 'Deduction rules updated successfully');
+      await attendanceSettingsAPI.update(rules);
+      Alert.alert('Saved', 'Attendance settings updated successfully');
     } catch (e: any) {
       Alert.alert('Error', e.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveLateAllowance = async () => {
+    setSavingLate(true);
+    try {
+      await attendanceSettingsAPI.upsertLateAllowance(
+        lateMode === 'bulk'
+          ? { mode: 'bulk', bulkCount: Number(lateBulk) || 0 }
+          : {
+              mode: 'custom',
+              perEmployee: Object.entries(latePerEmp).map(([employee, count]) => ({
+                employee,
+                count: Number(count) || 0,
+              })),
+            },
+      );
+      Alert.alert('Saved', 'Late allowance updated');
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setSavingLate(false);
+    }
+  };
+
+  const handleSaveLeaveAllowance = async () => {
+    setSavingLeave(true);
+    try {
+      await attendanceSettingsAPI.upsertLeaveAllowance(
+        leaveMode === 'bulk'
+          ? { leaveType, mode: 'bulk', bulkDays: Number(leaveBulk) || 0 }
+          : {
+              leaveType,
+              mode: 'custom',
+              perEmployee: Object.entries(leavePerEmp).map(([employee, days]) => ({
+                employee,
+                days: Number(days) || 0,
+              })),
+            },
+      );
+      Alert.alert('Saved', `Leave allowance updated for ${leaveType}`);
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setSavingLeave(false);
+    }
+  };
+
+  const loadSummary = async () => {
+    setShowSummary(p => !p);
+    if (summary.length === 0) {
+      try {
+        const res = await attendanceSettingsAPI.getBalanceSummary();
+        setSummary(res?.data || []);
+      } catch (e: any) {
+        Alert.alert('Error', e.message);
+      }
     }
   };
 
@@ -131,7 +225,7 @@ export default function PayrollSettingsScreen() {
             <ChevronLeft size={22} color={C.black} />
           </TouchableOpacity>
           <ShieldAlert size={20} color={C.primary} />
-          <Text style={styles.headerTitle}>Payroll Settings</Text>
+          <Text style={styles.headerTitle}>Attendance Settings</Text>
         </View>
         <TouchableOpacity
           style={styles.saveBtn}
@@ -360,6 +454,210 @@ export default function PayrollSettingsScreen() {
           </View>
         </View>
 
+        {/* Late Allowance */}
+        <View>
+          <View style={styles.sectionHeader}>
+            <CalendarClock size={14} color={C.primary} />
+            <Text style={styles.sectionTitle}>Late Allowance / Month</Text>
+          </View>
+          <View style={styles.card}>
+            <View style={styles.typeRow}>
+              <TouchableOpacity
+                style={[styles.typeBtn, lateMode === 'bulk' && styles.typeBtnActive]}
+                onPress={() => setLateMode('bulk')}
+              >
+                <Text style={[styles.typeBtnText, lateMode === 'bulk' && styles.typeBtnTextActive]}>
+                  Bulk (all employees)
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.typeBtn, lateMode === 'custom' && styles.typeBtnActive]}
+                onPress={() => setLateMode('custom')}
+              >
+                <Text style={[styles.typeBtnText, lateMode === 'custom' && styles.typeBtnTextActive]}>
+                  Custom (per employee)
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {lateMode === 'bulk' ? (
+              <View style={[styles.field, styles.fieldBorder]}>
+                <Text style={styles.fieldLabel}>Max lates/month (no deduction)</Text>
+                <TextInput
+                  style={styles.standaloneInput}
+                  value={lateBulk}
+                  onChangeText={setLateBulk}
+                  keyboardType="numeric"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+            ) : (
+              <View style={[styles.field, styles.fieldBorder]}>
+                {employees.map(e => (
+                  <View key={e._id} style={styles.perEmpRow}>
+                    <Text style={styles.perEmpName} numberOfLines={1}>
+                      {e.firstName} {e.lastName}
+                    </Text>
+                    <TextInput
+                      style={styles.perEmpInput}
+                      value={latePerEmp[e._id] ?? ''}
+                      onChangeText={v =>
+                        setLatePerEmp(p => ({ ...p, [e._id]: v }))
+                      }
+                      keyboardType="numeric"
+                      placeholder="0"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </View>
+                ))}
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={[styles.smallSaveBtn, styles.fieldBorder]}
+              onPress={handleSaveLateAllowance}
+              disabled={savingLate}
+            >
+              {savingLate ? (
+                <ActivityIndicator size="small" color={C.white} />
+              ) : (
+                <Text style={styles.smallSaveBtnText}>Save Late Allowance</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Leave Allowance */}
+        <View>
+          <View style={styles.sectionHeader}>
+            <CalendarClock size={14} color={C.secondary} />
+            <Text style={styles.sectionTitle}>Leave Allowance / Month</Text>
+          </View>
+          <View style={styles.card}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
+            >
+              {LEAVE_TYPES.map(t => (
+                <TouchableOpacity
+                  key={t}
+                  style={[styles.chip, leaveType === t && styles.chipActive]}
+                  onPress={() => setLeaveType(t)}
+                >
+                  <Text style={[styles.chipText, leaveType === t && styles.chipTextActive]}>
+                    {t.toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <View style={[styles.typeRow, styles.fieldBorder]}>
+              <TouchableOpacity
+                style={[styles.typeBtn, leaveMode === 'bulk' && styles.typeBtnActive]}
+                onPress={() => setLeaveMode('bulk')}
+              >
+                <Text style={[styles.typeBtnText, leaveMode === 'bulk' && styles.typeBtnTextActive]}>
+                  Bulk (all employees)
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.typeBtn, leaveMode === 'custom' && styles.typeBtnActive]}
+                onPress={() => setLeaveMode('custom')}
+              >
+                <Text style={[styles.typeBtnText, leaveMode === 'custom' && styles.typeBtnTextActive]}>
+                  Custom (per employee)
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {leaveMode === 'bulk' ? (
+              <View style={[styles.field, styles.fieldBorder]}>
+                <Text style={styles.fieldLabel}>No-deduction days/month for {leaveType}</Text>
+                <TextInput
+                  style={styles.standaloneInput}
+                  value={leaveBulk}
+                  onChangeText={setLeaveBulk}
+                  keyboardType="numeric"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+            ) : (
+              <View style={[styles.field, styles.fieldBorder]}>
+                {employees.map(e => (
+                  <View key={e._id} style={styles.perEmpRow}>
+                    <Text style={styles.perEmpName} numberOfLines={1}>
+                      {e.firstName} {e.lastName}
+                    </Text>
+                    <TextInput
+                      style={styles.perEmpInput}
+                      value={leavePerEmp[e._id] ?? ''}
+                      onChangeText={v =>
+                        setLeavePerEmp(p => ({ ...p, [e._id]: v }))
+                      }
+                      keyboardType="numeric"
+                      placeholder="0"
+                      placeholderTextColor="#9CA3AF"
+                    />
+                  </View>
+                ))}
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={[styles.smallSaveBtn, styles.fieldBorder]}
+              onPress={handleSaveLeaveAllowance}
+              disabled={savingLeave}
+            >
+              {savingLeave ? (
+                <ActivityIndicator size="small" color={C.white} />
+              ) : (
+                <Text style={styles.smallSaveBtnText}>Save Leave Allowance</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Balance Summary */}
+        <View>
+          <TouchableOpacity style={styles.sectionHeader} onPress={loadSummary}>
+            <BarChart2 size={14} color={C.primary} />
+            <Text style={styles.sectionTitle}>
+              Balance Summary {showSummary ? '▲' : '▼'}
+            </Text>
+          </TouchableOpacity>
+          {showSummary && (
+            <View style={styles.card}>
+              {summary.length === 0 ? (
+                <Text style={styles.hint}>No usage recorded this month yet.</Text>
+              ) : (
+                summary.map((row, i) => (
+                  <View
+                    key={row.employee?._id || i}
+                    style={[styles.field, i > 0 && styles.fieldBorder]}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Users size={13} color={C.primary} />
+                      <Text style={styles.perEmpName}>
+                        {row.employee?.firstName} {row.employee?.lastName}
+                        {row.employee?.employeeId ? ` (${row.employee.employeeId})` : ''}
+                      </Text>
+                    </View>
+                    <Text style={styles.hint}>
+                      Late: {row.lateUsed}/{row.lateAllowed}
+                    </Text>
+                    {(row.leaveUsed || []).map((l: any) => (
+                      <Text key={l.leaveType} style={styles.hint}>
+                        {l.leaveType}: {l.daysUsed}/{l.daysAllowed}d
+                      </Text>
+                    ))}
+                  </View>
+                ))
+              )}
+            </View>
+          )}
+        </View>
+
         <View style={styles.infoBox}>
           <Text style={styles.infoText}>
             These rules apply globally to all employees. Per-employee overrides
@@ -449,6 +747,15 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: C.black,
   },
+  standaloneInput: {
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    fontWeight: '500',
+    color: C.black,
+  },
   suffix: {
     paddingHorizontal: 10,
     borderLeftWidth: 2,
@@ -491,4 +798,46 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 18,
   },
+  perEmpRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+    gap: 8,
+  },
+  perEmpName: { flex: 1, fontSize: 13, fontWeight: '600', color: C.black },
+  perEmpInput: {
+    width: 60,
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    fontSize: 13,
+    fontWeight: '700',
+    color: C.black,
+    textAlign: 'center',
+  },
+  smallSaveBtn: {
+    backgroundColor: C.primary,
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  smallSaveBtnText: {
+    color: C.white,
+    fontWeight: '700',
+    fontSize: 12,
+    textTransform: 'uppercase',
+  },
+  chip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 2,
+    borderColor: C.black,
+  },
+  chipActive: { backgroundColor: C.secondary },
+  chipText: { fontSize: 10, fontWeight: '700', color: C.black },
+  chipTextActive: { color: C.white },
 });

@@ -26,7 +26,10 @@ import {
   AlertCircle,
   Pencil,
   Trash2,
+  Paperclip,
+  Camera,
 } from 'lucide-react-native';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { leaveAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import { LeaveRequest } from '../types/hrms';
@@ -70,6 +73,8 @@ export default function LeaveScreen() {
     startHour: '',
     endHour: '',
   });
+  const [pickedDoc, setPickedDoc] = useState<any>(null);
+  const DOC_REQUIRED_TYPES = ['sick', 'casual'];
   const [approveModal, setApproveModal] = useState<{
     visible: boolean;
     leave: LeaveRequest | null;
@@ -128,6 +133,26 @@ export default function LeaveScreen() {
     return acc;
   }, {} as Record<string, number>);
 
+  const pickDocument = () => {
+    Alert.alert('Attach Document', 'Choose source', [
+      {
+        text: 'Camera',
+        onPress: () =>
+          launchCamera({ mediaType: 'photo', quality: 0.8 }, r => {
+            if (r.assets?.[0]) setPickedDoc(r.assets[0]);
+          }),
+      },
+      {
+        text: 'Gallery',
+        onPress: () =>
+          launchImageLibrary({ mediaType: 'photo', quality: 0.8 }, r => {
+            if (r.assets?.[0]) setPickedDoc(r.assets[0]);
+          }),
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
   const handleApply = async () => {
     const isHourly = form.leaveType === 'hourly';
     if (isHourly) {
@@ -141,19 +166,37 @@ export default function LeaveScreen() {
         return;
       }
     }
+    if (DOC_REQUIRED_TYPES.includes(form.leaveType) && !pickedDoc) {
+      Alert.alert('Validation', 'A supporting document is required for sick/casual leave');
+      return;
+    }
     setSaving(true);
     try {
       const start = new Date(form.startDate);
       const end = isHourly ? start : new Date(form.endDate);
       const days = isHourly ? 0.125 : Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
-      await leaveAPI.create({
+      const body = {
         ...form,
         endDate: isHourly ? form.startDate : form.endDate,
         days,
-      });
+      };
+      const res = pickedDoc
+        ? await leaveAPI.createWithDocument(body, {
+            uri: pickedDoc.uri,
+            type: pickedDoc.type || 'image/jpeg',
+            name: pickedDoc.fileName || `leave_doc_${Date.now()}.jpg`,
+          })
+        : await leaveAPI.create(body);
       setShowForm(false);
       setForm({ leaveType: 'casual', startDate: '', endDate: '', reason: '', startHour: '', endHour: '' });
+      setPickedDoc(null);
       await load();
+      if (res?.noBalanceLeft) {
+        Alert.alert(
+          'No Balance Left',
+          'No remaining no-deduction balance for this leave type this month — HR/Admin will decide on salary deduction.',
+        );
+      }
     } catch (e: any) {
       Alert.alert('Error', e.message);
     } finally {
@@ -307,7 +350,7 @@ export default function LeaveScreen() {
         </View>
         <TouchableOpacity
           style={styles.addBtn}
-          onPress={() => setShowForm(true)}
+          onPress={() => { setPickedDoc(null); setShowForm(true); }}
         >
           <Plus size={14} color={C.white} />
           <Text style={styles.addBtnText}>Apply</Text>
@@ -1016,6 +1059,33 @@ export default function LeaveScreen() {
                 multiline
               />
             </View>
+            <View>
+              <Text style={styles.fieldLabel}>
+                Supporting Document{DOC_REQUIRED_TYPES.includes(form.leaveType) ? ' *' : ' (optional)'}
+              </Text>
+              <TouchableOpacity style={styles.docPicker} onPress={pickDocument}>
+                {pickedDoc ? (
+                  <>
+                    <Paperclip size={18} color={C.primary} />
+                    <Text style={styles.docPickerText} numberOfLines={1}>
+                      {pickedDoc.fileName || 'Document selected'}
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Camera size={18} color="#9CA3AF" />
+                    <Text style={styles.docPickerPlaceholder}>
+                      Tap to attach a photo/scan
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              {DOC_REQUIRED_TYPES.includes(form.leaveType) && (
+                <Text style={styles.hint}>
+                  Required for sick/casual leave — retake the photo to correct a mistake.
+                </Text>
+              )}
+            </View>
             <TouchableOpacity
               style={styles.submitBtn}
               onPress={handleApply}
@@ -1285,6 +1355,20 @@ const styles = StyleSheet.create({
   },
   selChipActive: { backgroundColor: C.primary },
   selChipText: { fontSize: 11, fontWeight: '700', color: C.black },
+  docPicker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 2,
+    borderColor: C.black,
+    borderStyle: 'dashed',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    backgroundColor: '#F9FAFB',
+  },
+  docPickerText: { flex: 1, fontSize: 13, fontWeight: '700', color: C.primary },
+  docPickerPlaceholder: { fontSize: 13, fontWeight: '600', color: '#9CA3AF' },
+  hint: { fontSize: 11, color: '#9CA3AF', marginTop: 4 },
   submitBtn: {
     backgroundColor: C.primary,
     borderWidth: 2,

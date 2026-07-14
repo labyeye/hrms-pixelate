@@ -2,7 +2,7 @@ const asyncHandler = require("express-async-handler");
 const Task = require("../models/Task");
 const { moveToTrash } = require("./trashController");
 
-const ASSIGN_ROLES = ["super_admin", "hr_manager", "hr_executive", "department_head"];
+const ASSIGN_ROLES = ["super_admin", "hr_manager", "department_head"];
 
 // ponytail: sweeps on read instead of a cron job — fine at this volume, add a
 // scheduled job if task counts get large enough to make per-request sweeps costly.
@@ -19,7 +19,8 @@ async function markOverdueTasks(companyId) {
 }
 
 exports.createTask = asyncHandler(async (req, res) => {
-  const { title, description, assignedTo, priority, dueDate, department } = req.body;
+  const { title, description, assignedTo, priority, dueDate, department } =
+    req.body;
   if (!title || !title.trim()) {
     res.status(400);
     throw new Error("Title is required");
@@ -52,7 +53,10 @@ exports.createTask = asyncHandler(async (req, res) => {
 exports.updateTask = asyncHandler(async (req, res) => {
   const { title, description, assignedTo, priority, dueDate } = req.body;
 
-  const task = await Task.findOne({ _id: req.params.id, company: req.user.company });
+  const task = await Task.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
   if (!task) {
     res.status(404);
     throw new Error("Task not found");
@@ -109,7 +113,10 @@ exports.getTasks = asyncHandler(async (req, res) => {
 
 exports.getTask = asyncHandler(async (req, res) => {
   await markOverdueTasks(req.user.company);
-  const task = await Task.findOne({ _id: req.params.id, company: req.user.company })
+  const task = await Task.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  })
     .populate("assignedTo", "name email")
     .populate("assignedBy", "name email")
     .populate("statusHistory.changedBy", "name email")
@@ -136,7 +143,10 @@ exports.updateTaskStatus = asyncHandler(async (req, res) => {
     throw new Error("Invalid status");
   }
 
-  const task = await Task.findOne({ _id: req.params.id, company: req.user.company });
+  const task = await Task.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
   if (!task) {
     res.status(404);
     throw new Error("Task not found");
@@ -166,7 +176,10 @@ exports.addComment = asyncHandler(async (req, res) => {
     throw new Error("Message is required");
   }
 
-  const task = await Task.findOne({ _id: req.params.id, company: req.user.company });
+  const task = await Task.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
   if (!task) {
     res.status(404);
     throw new Error("Task not found");
@@ -181,12 +194,18 @@ exports.addComment = asyncHandler(async (req, res) => {
 
   task.comments.push({ user: req.user._id, message: message.trim() });
   await task.save();
-  const populated = await Task.findById(task._id).populate("comments.user", "name email");
+  const populated = await Task.findById(task._id).populate(
+    "comments.user",
+    "name email",
+  );
   res.json({ success: true, data: populated });
 });
 
 exports.deleteTask = asyncHandler(async (req, res) => {
-  const task = await Task.findOne({ _id: req.params.id, company: req.user.company });
+  const task = await Task.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
   if (!task) {
     res.status(404);
     throw new Error("Task not found");

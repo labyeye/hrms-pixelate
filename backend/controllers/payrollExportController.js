@@ -30,8 +30,16 @@ function empName(p) {
 }
 
 function xmlEscape(s) {
-  return String(s).replace(/[<>&'"]/g, (c) =>
-    ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" })[c],
+  return String(s).replace(
+    /[<>&'"]/g,
+    (c) =>
+      ({
+        "<": "&lt;",
+        ">": "&gt;",
+        "&": "&amp;",
+        "'": "&apos;",
+        '"': "&quot;",
+      })[c],
   );
 }
 
@@ -52,7 +60,9 @@ function buildTallyVoucher(p, date) {
   if (p.loanDeduction > 0)
     lines.push(tallyLedgerEntry(LEDGERS.loan, p.loanDeduction, false));
   if (p.otherDeductions > 0)
-    lines.push(tallyLedgerEntry(LEDGERS.otherDeductions, p.otherDeductions, false));
+    lines.push(
+      tallyLedgerEntry(LEDGERS.otherDeductions, p.otherDeductions, false),
+    );
   lines.push(tallyLedgerEntry(LEDGERS.bank, p.netSalary, false));
 
   return `

@@ -6,22 +6,18 @@ const {
   updateExit,
   deleteExit,
 } = require("../controllers/exitController");
-const { protect, authorize, requirePlanFeature } = require("../middleware/auth");
+const {
+  protect,
+  authorize,
+  requirePlanFeature,
+} = require("../middleware/auth");
 const router = express.Router();
 
 router.use(protect, requirePlanFeature("exitManagement"));
 router.get("/", getExits);
 router.get("/:id", getExit);
-router.post(
-  "/",
-  authorize("super_admin", "hr_manager", "hr_executive"),
-  createExit,
-);
-router.put(
-  "/:id",
-  authorize("super_admin", "hr_manager", "hr_executive"),
-  updateExit,
-);
+router.post("/", authorize("super_admin", "hr_manager"), createExit);
+router.put("/:id", authorize("super_admin", "hr_manager"), updateExit);
 router.delete("/:id", authorize("super_admin", "hr_manager"), deleteExit);
 
 module.exports = router;

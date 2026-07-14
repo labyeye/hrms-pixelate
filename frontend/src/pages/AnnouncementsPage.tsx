@@ -78,7 +78,12 @@ interface DeptOption {
   name: string;
 }
 
-const ROLE_OPTIONS = ["hr_manager", "hr_executive", "department_head", "employee"];
+const ROLE_OPTIONS = [
+  "hr_manager",
+  "hr_executive",
+  "department_head",
+  "employee",
+];
 
 const EMPTY_FORM = {
   title: "",
@@ -136,7 +141,8 @@ export default function AnnouncementsPage() {
   const filtered = useMemo(() => {
     return announcements.filter((a) => {
       if (categoryFilter && a.category !== categoryFilter) return false;
-      if (search && !a.title.toLowerCase().includes(search.toLowerCase())) return false;
+      if (search && !a.title.toLowerCase().includes(search.toLowerCase()))
+        return false;
       return true;
     });
   }, [announcements, search, categoryFilter]);
@@ -144,7 +150,10 @@ export default function AnnouncementsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title.trim() || !form.content.trim()) {
-      toast({ title: "Title and content are required", variant: "destructive" });
+      toast({
+        title: "Title and content are required",
+        variant: "destructive",
+      });
       return;
     }
     const ok = await confirm({
@@ -160,7 +169,10 @@ export default function AnnouncementsPage() {
       setCreateOpen(false);
       fetchAnnouncements();
     } catch (err: any) {
-      toast({ title: err.message || "Failed to post announcement", variant: "destructive" });
+      toast({
+        title: err.message || "Failed to post announcement",
+        variant: "destructive",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -181,14 +193,18 @@ export default function AnnouncementsPage() {
       toast({ title: "Acknowledged" });
       fetchAnnouncements();
     } catch (err: any) {
-      toast({ title: err.message || "Failed to acknowledge", variant: "destructive" });
+      toast({
+        title: err.message || "Failed to acknowledge",
+        variant: "destructive",
+      });
     }
   };
 
   const handleDelete = async (id: string) => {
     const ok = await confirm({
       title: "Delete this announcement?",
-      description: "This will move it to Trash. You can restore it later if needed.",
+      description:
+        "This will move it to Trash. You can restore it later if needed.",
       confirmText: "Delete",
       destructive: true,
     });
@@ -198,21 +214,29 @@ export default function AnnouncementsPage() {
       toast({ title: "Announcement deleted" });
       fetchAnnouncements();
     } catch (err: any) {
-      toast({ title: err.message || "Failed to delete", variant: "destructive" });
+      toast({
+        title: err.message || "Failed to delete",
+        variant: "destructive",
+      });
     }
   };
 
-  const unreadCount = announcements.filter((a) => !includesUser(a.readBy, user?.id)).length;
+  const unreadCount = announcements.filter(
+    (a) => !includesUser(a.readBy, user?.id),
+  ).length;
   const pinnedCount = announcements.filter((a) => a.pinned).length;
   const ackPendingCount = announcements.filter(
-    (a) => a.acknowledgementRequired && !includesUser(a.acknowledgedBy, user?.id),
+    (a) =>
+      a.acknowledgementRequired && !includesUser(a.acknowledgedBy, user?.id),
   ).length;
   const [viewersOf, setViewersOf] = useState<Announcement | null>(null);
 
   return (
     <AppLayout title="Announcements">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h1 className="font-display font-bold text-2xl text-black">Announcements</h1>
+        <h1 className="font-display font-bold text-2xl text-black">
+          Announcements
+        </h1>
         {isAdmin && (
           <button
             onClick={() => setCreateOpen(true)}
@@ -230,7 +254,9 @@ export default function AnnouncementsPage() {
             <Megaphone className="w-5 h-5 text-[#024BAB]" />
           </div>
           <div>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Unread</p>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              Unread
+            </p>
             <p className="text-2xl font-bold text-black">{unreadCount}</p>
           </div>
         </div>
@@ -239,7 +265,9 @@ export default function AnnouncementsPage() {
             <Pin className="w-5 h-5 text-[#FA731C]" />
           </div>
           <div>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Pinned</p>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              Pinned
+            </p>
             <p className="text-2xl font-bold text-black">{pinnedCount}</p>
           </div>
         </div>
@@ -320,7 +348,9 @@ export default function AnnouncementsPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                      {a.pinned && <Pin className="w-3.5 h-3.5 text-[#FA731C]" />}
+                      {a.pinned && (
+                        <Pin className="w-3.5 h-3.5 text-[#FA731C]" />
+                      )}
                       <span
                         className={cn(
                           "text-[10px] font-bold uppercase px-2 py-0.5 border capitalize",
@@ -352,14 +382,16 @@ export default function AnnouncementsPage() {
                       <span>{formatDate(a.date)}</span>
                       {a.expiryDate && (
                         <span className="flex items-center gap-1">
-                          <CalendarClock className="w-3 h-3" /> Expires {formatDate(a.expiryDate)}
+                          <CalendarClock className="w-3 h-3" /> Expires{" "}
+                          {formatDate(a.expiryDate)}
                         </span>
                       )}
                       {a.targetAudience !== "all" && (
                         <span className="capitalize">
                           Audience:{" "}
                           {a.targetAudience === "department"
-                            ? a.departments?.map((d) => d.name).join(", ") || "Department"
+                            ? a.departments?.map((d) => d.name).join(", ") ||
+                              "Department"
                             : a.roles?.join(", ")}
                         </span>
                       )}
@@ -420,14 +452,24 @@ export default function AnnouncementsPage() {
       )}
 
       {/* Create dialog */}
-      <Dialog open={createOpen} onOpenChange={(o) => { setCreateOpen(o); if (!o) setForm(EMPTY_FORM); }}>
+      <Dialog
+        open={createOpen}
+        onOpenChange={(o) => {
+          setCreateOpen(o);
+          if (!o) setForm(EMPTY_FORM);
+        }}
+      >
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-display">Post an Announcement</DialogTitle>
+            <DialogTitle className="font-display">
+              Post an Announcement
+            </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-black">Title *</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-black">
+                Title *
+              </label>
               <input
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -435,7 +477,9 @@ export default function AnnouncementsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-black">Content *</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-black">
+                Content *
+              </label>
               <textarea
                 rows={5}
                 value={form.content}
@@ -445,10 +489,14 @@ export default function AnnouncementsPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-black">Category</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-black">
+                  Category
+                </label>
                 <select
                   value={form.category}
-                  onChange={(e) => setForm({ ...form, category: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, category: e.target.value })
+                  }
                   className="w-full border-2 border-black px-3 py-2 text-sm font-medium outline-none"
                 >
                   {CATEGORIES.map((c) => (
@@ -459,10 +507,14 @@ export default function AnnouncementsPage() {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-black">Priority</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-black">
+                  Priority
+                </label>
                 <select
                   value={form.priority}
-                  onChange={(e) => setForm({ ...form, priority: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, priority: e.target.value })
+                  }
                   className="w-full border-2 border-black px-3 py-2 text-sm font-medium outline-none capitalize"
                 >
                   <option value="low">Low</option>
@@ -473,10 +525,19 @@ export default function AnnouncementsPage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-black">Target Audience</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-black">
+                Target Audience
+              </label>
               <select
                 value={form.targetAudience}
-                onChange={(e) => setForm({ ...form, targetAudience: e.target.value, departments: [], roles: [] })}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    targetAudience: e.target.value,
+                    departments: [],
+                    roles: [],
+                  })
+                }
                 className="w-full border-2 border-black px-3 py-2 text-sm font-medium outline-none"
               >
                 <option value="all">Everyone</option>
@@ -486,14 +547,18 @@ export default function AnnouncementsPage() {
             </div>
             {form.targetAudience === "department" && (
               <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-black">Departments</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-black">
+                  Departments
+                </label>
                 <select
                   multiple
                   value={form.departments}
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      departments: Array.from(e.target.selectedOptions).map((o) => o.value),
+                      departments: Array.from(e.target.selectedOptions).map(
+                        (o) => o.value,
+                      ),
                     })
                   }
                   className="w-full border-2 border-black px-3 py-2 text-sm font-medium outline-none h-24"
@@ -508,14 +573,18 @@ export default function AnnouncementsPage() {
             )}
             {form.targetAudience === "role" && (
               <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-black">Roles</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-black">
+                  Roles
+                </label>
                 <select
                   multiple
                   value={form.roles}
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      roles: Array.from(e.target.selectedOptions).map((o) => o.value),
+                      roles: Array.from(e.target.selectedOptions).map(
+                        (o) => o.value,
+                      ),
                     })
                   }
                   className="w-full border-2 border-black px-3 py-2 text-sm font-medium outline-none h-24"
@@ -535,7 +604,9 @@ export default function AnnouncementsPage() {
               <input
                 type="date"
                 value={form.expiryDate}
-                onChange={(e) => setForm({ ...form, expiryDate: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, expiryDate: e.target.value })
+                }
                 className="w-full border-2 border-black px-3 py-2 text-sm outline-none"
               />
             </div>
@@ -544,7 +615,9 @@ export default function AnnouncementsPage() {
                 <input
                   type="checkbox"
                   checked={form.pinned}
-                  onChange={(e) => setForm({ ...form, pinned: e.target.checked })}
+                  onChange={(e) =>
+                    setForm({ ...form, pinned: e.target.checked })
+                  }
                   className="w-4 h-4"
                 />
                 Pin to top
@@ -553,7 +626,12 @@ export default function AnnouncementsPage() {
                 <input
                   type="checkbox"
                   checked={form.acknowledgementRequired}
-                  onChange={(e) => setForm({ ...form, acknowledgementRequired: e.target.checked })}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      acknowledgementRequired: e.target.checked,
+                    })
+                  }
                   className="w-4 h-4"
                 />
                 Require acknowledgement
@@ -580,28 +658,41 @@ export default function AnnouncementsPage() {
       </Dialog>
 
       {/* Viewers dialog */}
-      <Dialog open={!!viewersOf} onOpenChange={(open) => !open && setViewersOf(null)}>
+      <Dialog
+        open={!!viewersOf}
+        onOpenChange={(open) => !open && setViewersOf(null)}
+      >
         <DialogContent className="max-w-sm">
           {viewersOf && (
             <>
               <DialogHeader>
-                <DialogTitle className="font-display">{viewersOf.title}</DialogTitle>
+                <DialogTitle className="font-display">
+                  {viewersOf.title}
+                </DialogTitle>
               </DialogHeader>
               <div className="space-y-4 mt-2">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-black mb-2">
                     Seen by ({viewersOf.readBy?.length || 0}
-                    {viewersOf.audienceCount ? ` of ${viewersOf.audienceCount}` : ""})
+                    {viewersOf.audienceCount
+                      ? ` of ${viewersOf.audienceCount}`
+                      : ""}
+                    )
                   </p>
                   <div className="max-h-40 overflow-y-auto space-y-1.5 p-2 bg-[#F8FAFF] border border-black/5">
                     {viewersOf.readBy?.length ? (
                       viewersOf.readBy.map((r) => (
-                        <p key={refId(r)} className="text-xs font-medium text-black">
+                        <p
+                          key={refId(r)}
+                          className="text-xs font-medium text-black"
+                        >
                           {typeof r === "string" ? r : `${r.name} — ${r.email}`}
                         </p>
                       ))
                     ) : (
-                      <p className="text-[11px] text-muted-foreground italic">No one yet.</p>
+                      <p className="text-[11px] text-muted-foreground italic">
+                        No one yet.
+                      </p>
                     )}
                   </div>
                 </div>
@@ -613,12 +704,19 @@ export default function AnnouncementsPage() {
                     <div className="max-h-40 overflow-y-auto space-y-1.5 p-2 bg-[#F8FAFF] border border-black/5">
                       {viewersOf.acknowledgedBy?.length ? (
                         viewersOf.acknowledgedBy.map((r) => (
-                          <p key={refId(r)} className="text-xs font-medium text-black">
-                            {typeof r === "string" ? r : `${r.name} — ${r.email}`}
+                          <p
+                            key={refId(r)}
+                            className="text-xs font-medium text-black"
+                          >
+                            {typeof r === "string"
+                              ? r
+                              : `${r.name} — ${r.email}`}
                           </p>
                         ))
                       ) : (
-                        <p className="text-[11px] text-muted-foreground italic">No one yet.</p>
+                        <p className="text-[11px] text-muted-foreground italic">
+                          No one yet.
+                        </p>
                       )}
                     </div>
                   </div>

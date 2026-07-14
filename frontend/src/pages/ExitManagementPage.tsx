@@ -4,6 +4,7 @@ import { exitAPI, employeeAPI } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useAuth } from "@/contexts/AuthContext";
+import { EmployeeCombobox } from "@/components/employees/EmployeeCombobox";
 import {
   LogOut,
   Plus,
@@ -137,7 +138,8 @@ export default function ExitManagementPage() {
     e.preventDefault();
     const ok = await confirm({
       title: "Initiate exit process?",
-      description: "This will start the resignation and exit workflow for this employee.",
+      description:
+        "This will start the resignation and exit workflow for this employee.",
     });
     if (!ok) return;
     setSaving(true);
@@ -334,21 +336,12 @@ export default function ExitManagementPage() {
                 <label className="block text-xs font-bold uppercase tracking-wider mb-1.5">
                   Employee
                 </label>
-                <select
+                <EmployeeCombobox
+                  employees={employees}
                   value={form.employee}
-                  onChange={(e) =>
-                    setForm({ ...form, employee: e.target.value })
-                  }
+                  onChange={(id) => setForm({ ...form, employee: id })}
                   className="w-full px-3 py-2.5 border-2 border-black text-sm font-medium focus:outline-none focus:border-[#024BAB]"
-                  required
-                >
-                  <option value="">Select employee...</option>
-                  {employees.map((emp) => (
-                    <option key={emp._id} value={emp._id}>
-                      {emp.firstName} {emp.lastName} ({emp.employeeId})
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>

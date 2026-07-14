@@ -18,6 +18,7 @@ import {
   Clock,
 } from "lucide-react";
 import { Employee } from "@/types/hrms";
+import { EmployeeCombobox } from "@/components/employees/EmployeeCombobox";
 
 interface Loan {
   _id: string;
@@ -535,22 +536,13 @@ export default function LoansPage() {
             <form onSubmit={handleSave} className="p-5 space-y-4">
               <div>
                 <label className="block text-xs font-bold mb-1">Employee</label>
-                <select
+                <EmployeeCombobox
+                  employees={employees}
                   value={form.employee}
-                  onChange={(e) =>
-                    setForm({ ...form, employee: e.target.value })
-                  }
+                  onChange={(id) => setForm({ ...form, employee: id })}
                   className="border-2 w-full px-3 py-2 text-sm disabled:opacity-60 disabled:bg-gray-50"
-                  required
                   disabled={!!editId}
-                >
-                  <option value="">Select employee</option>
-                  {employees.map((e) => (
-                    <option key={e._id} value={e._id}>
-                      {e.firstName} {e.lastName} ({e.employeeId})
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">

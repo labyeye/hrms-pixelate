@@ -556,6 +556,15 @@ export default function AttendanceScreen({ navigation }: any) {
         </TouchableOpacity>
       </View>
 
+      {isEmployee && todayRecord?.approvalPending && (
+        <View style={styles.approvalBanner}>
+          <AlertCircle size={14} color={C.warning} />
+          <Text style={styles.approvalBannerText}>
+            Today's attendance is pending HR approval (late check-in exceeded your monthly allowance)
+          </Text>
+        </View>
+      )}
+
       {isEmployee && myEmployee?.geofenceAttendanceEnabled && dateFilter === todayStr && (
         <View style={styles.selfMarkCard}>
           <View style={styles.selfMarkHeader}>
@@ -1539,6 +1548,22 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
+  },
+  approvalBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FEF3E2',
+    borderBottomWidth: 2,
+    borderBottomColor: C.warning,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  approvalBannerText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#92400E',
   },
   selfMarkCard: {
     backgroundColor: C.white,

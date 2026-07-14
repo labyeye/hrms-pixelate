@@ -17,12 +17,7 @@ const { protect, authorize } = require("../middleware/auth");
 const router = express.Router();
 
 router.get("/my", protect, getMyPayrolls);
-router.get(
-  "/",
-  protect,
-  authorize("super_admin", "hr_manager", "hr_executive"),
-  getPayrolls,
-);
+router.get("/", protect, authorize("super_admin", "hr_manager"), getPayrolls);
 router.post(
   "/preview",
   protect,
@@ -56,7 +51,7 @@ router.post(
 router.patch(
   "/:id/slip-received",
   protect,
-  authorize("super_admin", "hr_manager", "hr_executive"),
+  authorize("super_admin", "hr_manager"),
   markSlipReceived,
 );
 

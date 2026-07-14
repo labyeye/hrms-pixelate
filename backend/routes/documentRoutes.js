@@ -3,6 +3,7 @@ const {
   uploadDocument,
   getDocuments,
   downloadDocument,
+  updateDocument,
   deleteDocument,
   generateLetter,
 } = require("../controllers/documentController");
@@ -15,21 +16,35 @@ router.get("/", protect, getDocuments);
 router.post(
   "/generate-letter",
   protect,
-  authorize("super_admin", "hr_manager", "hr_executive"),
+  authorize("super_admin", "hr_manager"),
   generateLetter,
 );
 router.post(
   "/",
   protect,
-  authorize("super_admin", "hr_manager", "hr_executive", "employee"),
+  authorize("super_admin", "hr_manager", "employee"),
   uploadDocumentVault,
   uploadDocument,
 );
-router.get("/:id/download", protect, downloadDocument);
+// Edit/delete are HR-controlled; download stays open to employees since
+// downloadDocument itself scopes them to their own documents.
+router.get(
+  "/:id/download",
+  protect,
+  authorize("super_admin", "hr_manager", "employee"),
+  downloadDocument,
+);
+router.put(
+  "/:id",
+  protect,
+  authorize("super_admin", "hr_manager"),
+  uploadDocumentVault,
+  updateDocument,
+);
 router.delete(
   "/:id",
   protect,
-  authorize("super_admin", "hr_manager", "employee"),
+  authorize("super_admin", "hr_manager"),
   deleteDocument,
 );
 

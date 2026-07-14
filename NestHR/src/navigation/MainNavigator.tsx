@@ -29,7 +29,8 @@ import OfferLettersScreen from '../screens/OfferLettersScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import BiometricDeviceScreen from '../screens/BiometricDeviceScreen';
 import NfcManagerScreen from '../screens/NfcManagerScreen';
-import PayrollSettingsScreen from '../screens/PayrollSettingsScreen';
+import AttendanceSettingsScreen from '../screens/AttendanceSettingsScreen';
+import LateApprovalsScreen from '../screens/LateApprovalsScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import AuditLogScreen from '../screens/AuditLogScreen';
 import SupportScreen from '../screens/SupportScreen';
@@ -66,9 +67,10 @@ function MoreNavigator() {
       />
       <MoreStack.Screen name="NfcManager" component={NfcManagerScreen} />
       <MoreStack.Screen
-        name="PayrollSettings"
-        component={PayrollSettingsScreen}
+        name="AttendanceSettings"
+        component={AttendanceSettingsScreen}
       />
+      <MoreStack.Screen name="LateApprovals" component={LateApprovalsScreen} />
       <MoreStack.Screen name="Notifications" component={NotificationsScreen} />
       <MoreStack.Screen name="AuditLog" component={AuditLogScreen} />
       <MoreStack.Screen name="Support" component={SupportScreen} />

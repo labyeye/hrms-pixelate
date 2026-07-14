@@ -11,28 +11,147 @@ import {
   Search,
   FileText,
   File,
-  Shield,
-  Scroll,
+  IdCard,
+  Award,
+  FileSignature,
   Briefcase,
+  Mail,
   ChevronDown,
+  Pencil,
+  FileCheck2,
+  FileX2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useToast } from "@/hooks/use-toast";
+import { ImageCropModal } from "@/components/documents/ImageCropModal";
+import { compressImageToLimit } from "@/lib/compressImage";
+import {
+  AadharIcon,
+  PanIcon,
+  DrivingLicenseIcon,
+} from "@/components/documents/docIcons";
+import { EmployeeCombobox } from "@/components/employees/EmployeeCombobox";
+
+const MAX_DOC_BYTES = 5 * 1024 * 1024;
 
 const DOC_TYPES = [
-  { value: "id_proof", label: "ID Proof", icon: Shield },
-  { value: "certificate", label: "Certificate", icon: Scroll },
-  { value: "contract", label: "Contract", icon: FileText },
-  { value: "resume", label: "Resume", icon: Briefcase },
-  { value: "offer_letter", label: "Offer Letter", icon: File },
-  { value: "other", label: "Other", icon: File },
+  { value: "aadhar", label: "Aadhar", icon: AadharIcon, bg: "bg-white" },
+  { value: "pan", label: "PAN", icon: PanIcon, bg: "bg-white" },
+  {
+    value: "driving_license",
+    label: "Driving License",
+    icon: DrivingLicenseIcon,
+    bg: "bg-white",
+  },
+  { value: "id_proof", label: "ID Proof", icon: IdCard, bg: "bg-[#A855F7]" },
+  {
+    value: "certificate",
+    label: "Certificate",
+    icon: Award,
+    bg: "bg-[#FFD60A]",
+    iconColor: "text-black",
+  },
+  {
+    value: "contract",
+    label: "Contract",
+    icon: FileSignature,
+    bg: "bg-[#EF4444]",
+  },
+  { value: "resume", label: "Resume", icon: Briefcase, bg: "bg-[#024BAB]" },
+  {
+    value: "offer_letter",
+    label: "Offer Letter",
+    icon: Mail,
+    bg: "bg-[#FA731C]",
+  },
+  { value: "other", label: "Other", icon: File, bg: "bg-black" },
 ];
 
 const DOC_TYPE_MAP: Record<string, string> = Object.fromEntries(
   DOC_TYPES.map((d) => [d.value, d.label]),
 );
+
+function StatCard({
+  title,
+  value,
+  icon: Icon,
+  bg,
+  iconColor = "text-white",
+}: {
+  title: string;
+  value: number;
+  icon: React.ElementType;
+  bg: string;
+  iconColor?: string;
+}) {
+  return (
+    <div className="border-2 p-4 flex flex-col gap-3 bg-white">
+      <div
+        className={cn(
+          "w-10 h-10 border-2 border-black flex items-center justify-center shrink-0",
+          bg,
+        )}
+      >
+        <Icon className={cn("w-5 h-5", iconColor)} />
+      </div>
+      <div>
+        <p className="font-display font-bold text-3xl text-black">{value}</p>
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mt-0.5 truncate">
+          {title}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function DocTypePicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      {DOC_TYPES.map((t) => {
+        const Icon = t.icon;
+        const active = value === t.value;
+        return (
+          <button
+            key={t.value}
+            type="button"
+            onClick={() => onChange(t.value)}
+            className={cn(
+              "flex flex-col items-center gap-1.5 border-2 border-black px-2 py-2.5 text-center transition-colors",
+              active
+                ? "bg-[#024BAB] text-white"
+                : "bg-white hover:bg-[#024BAB]/5",
+            )}
+          >
+            <div
+              className={cn(
+                "w-8 h-8 border-2 border-black flex items-center justify-center shrink-0",
+                active ? "bg-white" : t.bg,
+              )}
+            >
+              <Icon
+                className={cn(
+                  "w-4 h-4",
+                  active ? "text-[#024BAB]" : t.iconColor || "text-white",
+                )}
+              />
+            </div>
+            <span className="text-[10px] font-bold leading-tight">
+              {t.label}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -45,6 +164,7 @@ export default function DocumentVaultPage() {
   const { toast } = useToast();
   const confirm = useConfirm();
   const isEmployee = user?.role === "employee";
+  const canManage = user?.role === "super_admin" || user?.role === "hr_manager";
   const [docs, setDocs] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,13 +173,17 @@ export default function DocumentVaultPage() {
   const [search, setSearch] = useState("");
   const [uploadModal, setUploadModal] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [editDoc, setEditDoc] = useState<any | null>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
   const [form, setForm] = useState({
     employeeId: "",
-    name: "",
+    name: DOC_TYPE_MAP.id_proof,
     docType: "id_proof",
   });
-  const [fileObj, setFileObj] = useState<File | null>(null);
+  const [fileObj, setFileObj] = useState<File | Blob | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const editFileRef = useRef<HTMLInputElement>(null);
+  const [allDocs, setAllDocs] = useState<any[]>([]);
 
   const load = async (empId?: string) => {
     setLoading(true);
@@ -73,6 +197,13 @@ export default function DocumentVaultPage() {
     setLoading(false);
   };
 
+  const loadAllDocs = async () => {
+    try {
+      const res = await documentAPI.getAll({});
+      if (res.success) setAllDocs(res.data);
+    } catch {}
+  };
+
   useEffect(() => {
     load();
     if (!isEmployee) {
@@ -82,6 +213,7 @@ export default function DocumentVaultPage() {
           if (r.success) setEmployees(r.data);
         })
         .catch(() => {});
+      loadAllDocs();
     }
   }, []);
 
@@ -90,12 +222,44 @@ export default function DocumentVaultPage() {
     load(id);
   };
 
+  const readAsDataURL = (blob: Blob) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+
+  const acceptFinalFile = async (
+    blob: Blob,
+    mimeType: string,
+    baseName: string,
+  ) => {
+    let out = blob;
+    if (mimeType.startsWith("image/") && out.size > MAX_DOC_BYTES) {
+      out = await compressImageToLimit(out, mimeType);
+    }
+    if (out.size > MAX_DOC_BYTES) {
+      toast({
+        title: "File too large",
+        description: "Documents must be 5MB or smaller.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setFileObj(out);
+    if (!form.name) setForm((prev) => ({ ...prev, name: baseName }));
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    setFileObj(f);
-    if (!form.name)
-      setForm((prev) => ({ ...prev, name: f.name.replace(/\.[^.]+$/, "") }));
+    const baseName = f.name.replace(/\.[^.]+$/, "");
+    if (f.type.startsWith("image/")) {
+      setCropFile(f);
+    } else {
+      acceptFinalFile(f, f.type, baseName);
+    }
   };
 
   const handleUpload = async () => {
@@ -110,26 +274,54 @@ export default function DocumentVaultPage() {
 
     setUploading(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const fileData = e.target?.result as string;
-        await documentAPI.upload({
-          employeeId: form.employeeId || undefined,
-          name: form.name,
-          docType: form.docType,
-          mimeType: fileObj.type,
-          fileData,
-        });
-        setUploadModal(false);
-        setForm({ employeeId: "", name: "", docType: "id_proof" });
-        setFileObj(null);
-        load(form.employeeId || undefined);
-      };
-      reader.readAsDataURL(fileObj);
+      const fileData = await readAsDataURL(fileObj);
+      await documentAPI.upload({
+        employeeId: form.employeeId || undefined,
+        name: form.name,
+        docType: form.docType,
+        mimeType: fileObj.type,
+        fileData,
+      });
+      setUploadModal(false);
+      setForm({
+        employeeId: "",
+        name: DOC_TYPE_MAP.id_proof,
+        docType: "id_proof",
+      });
+      setFileObj(null);
+      load(form.employeeId || undefined);
+      loadAllDocs();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message || "Upload failed", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: err.message || "Upload failed",
+        variant: "destructive",
+      });
     }
     setUploading(false);
+  };
+
+  const handleEditSave = async () => {
+    if (!editDoc) return;
+    try {
+      const body: { name?: string; docType?: string; fileData?: string } = {
+        name: editDoc.name,
+        docType: editDoc.docType,
+      };
+      if (fileObj) body.fileData = await readAsDataURL(fileObj);
+      await documentAPI.update(editDoc._id, body);
+      setEditDoc(null);
+      setFileObj(null);
+      load(selectedEmployee || undefined);
+      loadAllDocs();
+      toast({ title: "Document updated" });
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message || "Update failed",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDownload = async (doc: any) => {
@@ -149,7 +341,11 @@ export default function DocumentVaultPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err: any) {
-      toast({ title: "Error", description: err.message || "Download failed", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: err.message || "Download failed",
+        variant: "destructive",
+      });
     }
   };
 
@@ -164,8 +360,13 @@ export default function DocumentVaultPage() {
     try {
       await documentAPI.delete(id);
       setDocs((prev) => prev.filter((d) => d._id !== id));
+      loadAllDocs();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -176,8 +377,51 @@ export default function DocumentVaultPage() {
     return true;
   });
 
+  const employeesWithDocIds = new Set(
+    allDocs.map((d) => d.employee?._id).filter(Boolean),
+  );
+  const employeesWithDocs = employees.filter((e) =>
+    employeesWithDocIds.has(e._id),
+  ).length;
+  const employeesMissingDocs = employees.length - employeesWithDocs;
+  const perTypeCounts = DOC_TYPES.map((t) => ({
+    ...t,
+    count: new Set(
+      allDocs
+        .filter((d) => d.docType === t.value)
+        .map((d) => d.employee?._id)
+        .filter(Boolean),
+    ).size,
+  }));
+
   return (
     <AppLayout title="Document Vault">
+      {!isEmployee && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
+          <StatCard
+            title="Docs Uploaded"
+            value={employeesWithDocs}
+            icon={FileCheck2}
+            bg="bg-[#00C48C]"
+          />
+          <StatCard
+            title="Missing Docs"
+            value={employeesMissingDocs}
+            icon={FileX2}
+            bg="bg-red-500"
+          />
+          {perTypeCounts.map((t) => (
+            <StatCard
+              key={t.value}
+              title={t.label}
+              value={t.count}
+              icon={t.icon}
+              bg={t.bg}
+              iconColor={t.iconColor}
+            />
+          ))}
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div className="flex flex-wrap gap-2 flex-1">
           {!isEmployee && (
@@ -314,19 +558,34 @@ export default function DocumentVaultPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleDownload(doc)}
-                          className="flex items-center gap-1 text-xs font-bold border-2 border-black px-2 py-1 hover:bg-[#024BAB] hover:text-white transition-colors"
-                        >
-                          <Download className="w-3 h-3" /> Download
-                        </button>
-                        {!isEmployee && (
-                          <button
-                            onClick={() => handleDelete(doc._id)}
-                            className="flex items-center gap-1 text-xs font-bold border-2 border-red-500 text-red-500 px-2 py-1 hover:bg-red-500 hover:text-white transition-colors"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
+                        {canManage ? (
+                          <>
+                            <button
+                              onClick={() => handleDownload(doc)}
+                              className="flex items-center gap-1 text-xs font-bold border-2 border-black px-2 py-1 hover:bg-[#024BAB] hover:text-white transition-colors"
+                            >
+                              <Download className="w-3 h-3" /> Download
+                            </button>
+                            <button
+                              onClick={() => {
+                                setFileObj(null);
+                                setEditDoc({ ...doc });
+                              }}
+                              className="flex items-center gap-1 text-xs font-bold border-2 border-black px-2 py-1 hover:bg-[#024BAB] hover:text-white transition-colors"
+                            >
+                              <Pencil className="w-3 h-3" /> Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(doc._id)}
+                              className="flex items-center gap-1 text-xs font-bold border-2 border-red-500 text-red-500 px-2 py-1 hover:bg-red-500 hover:text-white transition-colors"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            Admin / HR Manager only
+                          </span>
                         )}
                       </div>
                     </td>
@@ -349,7 +608,11 @@ export default function DocumentVaultPage() {
                 onClick={() => {
                   setUploadModal(false);
                   setFileObj(null);
-                  setForm({ employeeId: "", name: "", docType: "id_proof" });
+                  setForm({
+                    employeeId: "",
+                    name: DOC_TYPE_MAP.id_proof,
+                    docType: "id_proof",
+                  });
                 }}
               >
                 <X className="w-5 h-5" />
@@ -360,63 +623,53 @@ export default function DocumentVaultPage() {
                 <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1">
                   Employee *
                 </label>
-                <select
+                <EmployeeCombobox
+                  employees={employees}
                   value={form.employeeId}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, employeeId: e.target.value }))
-                  }
-                  className="border-2 border-black px-3 py-2 text-sm font-medium outline-none bg-white w-full"
-                >
-                  <option value="">Select Employee</option>
-                  {employees.map((e) => (
-                    <option key={e._id} value={e._id}>
-                      {e.firstName} {e.lastName}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(id) => setForm((p) => ({ ...p, employeeId: id }))}
+                />
               </div>
               <div>
                 <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1">
                   Document Type *
                 </label>
-                <select
+                <DocTypePicker
                   value={form.docType}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, docType: e.target.value }))
+                  onChange={(v) =>
+                    setForm((p) => ({
+                      ...p,
+                      docType: v,
+                      name: v === "other" ? "" : DOC_TYPE_MAP[v],
+                    }))
                   }
-                  className="border-2 border-black px-3 py-2 text-sm font-medium outline-none bg-white w-full"
-                >
-                  {DOC_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>
-                      {t.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1">
-                  Document Name *
-                </label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, name: e.target.value }))
-                  }
-                  placeholder="e.g. Aadhar Card"
-                  className="border-2 border-black px-3 py-2 text-sm font-medium outline-none w-full"
                 />
               </div>
+              {form.docType === "other" && (
+                <div>
+                  <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1">
+                    Document Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={form.name}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, name: e.target.value }))
+                    }
+                    placeholder="e.g. Salary Slip"
+                    className="border-2 border-black px-3 py-2 text-sm font-medium outline-none w-full"
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1">
-                  File * (max 4 MB)
+                  File * (max 5 MB, PDF/JPG/PNG)
                 </label>
                 <input
                   ref={fileRef}
                   type="file"
                   onChange={handleFileChange}
                   className="hidden"
-                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  accept=".pdf,.jpg,.jpeg,.png"
                 />
                 <button
                   onClick={() => fileRef.current?.click()}
@@ -428,7 +681,7 @@ export default function DocumentVaultPage() {
                   )}
                 >
                   <Upload className="w-5 h-5" />
-                  {fileObj ? fileObj.name : "Click to select file"}
+                  {fileObj ? "File selected" : "Click to select file"}
                   {fileObj && (
                     <span className="text-[10px]">
                       {formatBytes(fileObj.size)}
@@ -444,6 +697,92 @@ export default function DocumentVaultPage() {
                 className="border-2 bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold w-full disabled:opacity-50"
               >
                 {uploading ? "Uploading..." : "Upload Document"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cropFile && (
+        <ImageCropModal
+          file={cropFile}
+          onCancel={() => setCropFile(null)}
+          onCropped={(blob) => {
+            const baseName = cropFile.name.replace(/\.[^.]+$/, "");
+            acceptFinalFile(blob, cropFile.type, baseName);
+            setCropFile(null);
+          }}
+        />
+      )}
+
+      {editDoc && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="border-2 bg-white w-full max-w-md">
+            <div className="flex items-center justify-between p-5 border-b-2 border-black">
+              <h3 className="font-display font-bold text-lg">Edit Document</h3>
+              <button
+                onClick={() => {
+                  setEditDoc(null);
+                  setFileObj(null);
+                }}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1">
+                  Document Type
+                </label>
+                <DocTypePicker
+                  value={editDoc.docType}
+                  onChange={(v) =>
+                    setEditDoc((p: any) => ({ ...p, docType: v }))
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1">
+                  Document Name
+                </label>
+                <input
+                  type="text"
+                  value={editDoc.name}
+                  onChange={(e) =>
+                    setEditDoc((p: any) => ({ ...p, name: e.target.value }))
+                  }
+                  className="border-2 border-black px-3 py-2 text-sm font-medium outline-none w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1">
+                  Replace File (optional, max 5 MB)
+                </label>
+                <input
+                  ref={editFileRef}
+                  type="file"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                />
+                <button
+                  onClick={() => editFileRef.current?.click()}
+                  className={cn(
+                    "border-2 border-dashed border-black w-full py-4 text-sm font-semibold flex flex-col items-center gap-1 hover:bg-[#024BAB]/5 transition-colors",
+                    fileObj
+                      ? "border-[#00C48C] text-[#00C48C]"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  <Upload className="w-5 h-5" />
+                  {fileObj ? "New file selected" : "Click to replace file"}
+                </button>
+              </div>
+              <button
+                onClick={handleEditSave}
+                className="border-2 bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold w-full"
+              >
+                Save Changes
               </button>
             </div>
           </div>

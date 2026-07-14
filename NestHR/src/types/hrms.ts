@@ -93,6 +93,7 @@ export interface AttendanceRecord {
   checkOut?: string;
   workingHours?: number;
   notes?: string;
+  approvalPending?: boolean;
   verifyMode?:
     | 'fingerprint'
     | 'card'

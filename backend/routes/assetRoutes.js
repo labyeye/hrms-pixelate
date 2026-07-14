@@ -12,7 +12,7 @@ const router = express.Router();
 router
   .route("/")
   .get(protect, getAssets)
-  .post(protect, authorize("super_admin", "hr_manager", "hr_executive"), createAsset);
+  .post(protect, authorize("super_admin", "hr_manager"), createAsset);
 
 router
   .route("/:id")
@@ -21,8 +21,8 @@ router
 router.post(
   "/:id/assign",
   protect,
-  authorize("super_admin", "hr_manager", "hr_executive"),
-  assignAsset
+  authorize("super_admin", "hr_manager"),
+  assignAsset,
 );
 
 router.post("/:id/return", protect, returnAsset); // Employees can return assets assigned to them

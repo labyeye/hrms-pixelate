@@ -1,11 +1,15 @@
 const asyncHandler = require("express-async-handler");
+const fs = require("fs");
+const path = require("path");
 const Leave = require("../models/Leave");
 const Attendance = require("../models/Attendance");
 const Employee = require("../models/Employee");
 const User = require("../models/User");
 const Company = require("../models/Company");
+const AttendanceBalance = require("../models/AttendanceBalance");
 const { moveToTrash } = require("./trashController");
 const { safePagination } = require("../middleware/validate");
+const { validateMagicBytes } = require("../middleware/upload");
 const {
   sendLeaveSubmitted,
   sendLeaveApproved,
@@ -203,7 +207,12 @@ const createLeave = asyncHandler(async (req, res) => {
     reason,
     isHalfDay,
     halfDayType,
+    deductSalary,
   } = req.body;
+
+  const cleanupUpload = () => {
+    if (req.file) fs.unlink(req.file.path, () => {});
+  };
 
   let emp;
   if (req.user.role === "employee") {
@@ -218,6 +227,7 @@ const createLeave = asyncHandler(async (req, res) => {
       }
     }
     if (!emp) {
+      cleanupUpload();
       res.status(404);
       throw new Error("Employee record not found for your account");
     }
@@ -228,33 +238,51 @@ const createLeave = asyncHandler(async (req, res) => {
       company: req.user.company,
     });
     if (!emp) {
+      cleanupUpload();
       res.status(404);
       throw new Error("Employee not found");
     }
   }
 
   if (!leaveType || !LEAVE_TYPES.includes(leaveType)) {
+    cleanupUpload();
     res.status(400);
     throw new Error("Invalid leave type");
   }
   if (!startDate || !endDate || !days || !reason) {
+    cleanupUpload();
     res.status(400);
     throw new Error("startDate, endDate, days, and reason are required");
   }
   if (typeof reason === "string" && reason.trim().length > 500) {
+    cleanupUpload();
     res.status(400);
     throw new Error("Reason must be under 500 characters");
   }
   const start = new Date(startDate);
   const end = new Date(endDate);
   if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) {
+    cleanupUpload();
     res.status(400);
     throw new Error("Invalid date range");
   }
   const daysNum = Number(days);
   if (isNaN(daysNum) || daysNum <= 0 || daysNum > 365) {
+    cleanupUpload();
     res.status(400);
     throw new Error("Invalid days value");
+  }
+  if (["sick", "casual"].includes(leaveType) && !req.file) {
+    res.status(400);
+    throw new Error("A supporting document is required for sick/casual leave");
+  }
+  if (req.file) {
+    try {
+      await validateMagicBytes(req.file.path); // throws + deletes file if invalid
+    } catch (err) {
+      res.status(400);
+      throw err;
+    }
   }
 
   const overlap = await Leave.findOne({
@@ -264,11 +292,37 @@ const createLeave = asyncHandler(async (req, res) => {
     endDate: { $gte: start },
   });
   if (overlap) {
+    cleanupUpload();
     res.status(400);
     throw new Error(
       "Employee already has a leave request overlapping these dates",
     );
   }
+
+  // Check current-month AttendanceBalance for this leave type — if enough
+  // balance remains, deduct from it and mark as no-deduction; otherwise leave
+  // deductSalary as caller-provided/default and flag noBalanceLeft for HR.
+  // Balance is only decremented after the Leave record is created below, so a
+  // failed create never leaves a stray deduction with no request to match it.
+  const balance = await AttendanceBalance.getOrCreateCurrentMonth(
+    employee,
+    req.user.company,
+  );
+  const leaveBalanceEntry = balance.leaveUsed.find(
+    (l) => l.leaveType === leaveType,
+  );
+  const remaining = leaveBalanceEntry
+    ? leaveBalanceEntry.daysAllowed - leaveBalanceEntry.daysUsed
+    : 0;
+  const willDeductFromBalance = leaveBalanceEntry && remaining >= daysNum;
+  const noBalanceLeft = !willDeductFromBalance;
+  let resolvedDeductSalary =
+    deductSalary !== undefined ? !!deductSalary : undefined;
+  if (willDeductFromBalance) resolvedDeductSalary = false;
+
+  const documentPath = req.file
+    ? path.relative(path.join(__dirname, "../uploads"), req.file.path)
+    : undefined;
 
   const leave = await Leave.create({
     company: req.user.company,
@@ -282,7 +336,16 @@ const createLeave = asyncHandler(async (req, res) => {
     halfDayType: isHalfDay ? halfDayType : undefined,
     startHour: req.body.startHour,
     endHour: req.body.endHour,
+    documentPath,
+    ...(resolvedDeductSalary !== undefined
+      ? { deductSalary: resolvedDeductSalary }
+      : {}),
   });
+
+  if (willDeductFromBalance) {
+    leaveBalanceEntry.daysUsed += daysNum;
+    await balance.save();
+  }
 
   try {
     // Notify employee that their request was submitted
@@ -338,7 +401,7 @@ const createLeave = asyncHandler(async (req, res) => {
     }
   } catch {}
 
-  res.status(201).json({ success: true, data: leave });
+  res.status(201).json({ success: true, data: leave, noBalanceLeft });
 });
 
 const updateLeaveStatus = asyncHandler(async (req, res) => {

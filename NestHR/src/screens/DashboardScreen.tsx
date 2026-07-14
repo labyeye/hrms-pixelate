@@ -40,6 +40,7 @@ import {
   payrollAPI,
   authAPI,
   announcementAPI,
+  attendanceSettingsAPI,
 } from '../api/api';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { C, S } from '../theme';
@@ -300,6 +301,7 @@ function EmployeeDashboard({ navigation }: any) {
   const [myAttendance, setMyAttendance] = useState<any[]>([]);
   const [latestPayroll, setLatestPayroll] = useState<any>(null);
   const [essStats, setEssStats] = useState<any>(null);
+  const [myBalance, setMyBalance] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -318,11 +320,12 @@ function EmployeeDashboard({ navigation }: any) {
 
   const load = useCallback(async () => {
     try {
-      const [profileRes, attRes, payRes, essRes] = await Promise.allSettled([
+      const [profileRes, attRes, payRes, essRes, balRes] = await Promise.allSettled([
         employeeAPI.getMe(),
         attendanceAPI.getAll({ month: String(month), year: String(year), limit: '200' }),
         payrollAPI.getMy(),
         dashboardAPI.getEmployeeStats(),
+        attendanceSettingsAPI.getMyBalance(),
       ]);
       if (profileRes.status === 'fulfilled') {
         setEmpProfile(profileRes.value?.data || profileRes.value);
@@ -336,6 +339,9 @@ function EmployeeDashboard({ navigation }: any) {
       }
       if (essRes.status === 'fulfilled') {
         setEssStats(essRes.value?.data || essRes.value);
+      }
+      if (balRes.status === 'fulfilled') {
+        setMyBalance(balRes.value?.data || null);
       }
     } catch {
     } finally {
@@ -796,6 +802,37 @@ function EmployeeDashboard({ navigation }: any) {
               );
             })}
           </View>
+
+          {/* Late/leave balance widget */}
+          {myBalance && (
+            <>
+              <Text style={styles.sectionLabel}>This Month's Balance</Text>
+              <View style={styles.card}>
+                <View style={[styles.quickRow]}>
+                  <View style={styles.quickIcon}>
+                    <Clock size={14} color={C.warning} />
+                  </View>
+                  <Text style={styles.quickLabel}>Late Arrivals</Text>
+                  <Text style={styles.quickVal}>
+                    {myBalance.lateUsed}/{myBalance.lateAllowed} left
+                  </Text>
+                </View>
+                {(myBalance.leaveUsed || []).map((l: any) => (
+                  <View key={l.leaveType} style={[styles.quickRow, styles.quickBorder]}>
+                    <View style={styles.quickIcon}>
+                      <CalendarOff size={14} color={C.primary} />
+                    </View>
+                    <Text style={styles.quickLabel}>
+                      {l.leaveType.replace(/_/g, ' ').toUpperCase()}
+                    </Text>
+                    <Text style={styles.quickVal}>
+                      {l.daysUsed}/{l.daysAllowed}d
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          )}
 
           {/* Latest payslip */}
           {latestPayroll && (

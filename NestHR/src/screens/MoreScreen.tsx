@@ -28,6 +28,7 @@ import {
   Cpu,
   Bell,
   ShieldAlert,
+  AlertOctagon,
   Shield,
   LifeBuoy,
   FolderOpen,
@@ -111,10 +112,16 @@ const MENU_ITEMS = [
     desc: 'Assign access cards to employees',
   },
   {
-    key: 'PayrollSettings',
-    label: 'Payroll Settings',
+    key: 'AttendanceSettings',
+    label: 'Attendance Settings',
     icon: ShieldAlert,
-    desc: 'Late & deduction rules',
+    desc: 'Shift, late & leave allowance rules',
+  },
+  {
+    key: 'LateApprovals',
+    label: 'Late Approvals',
+    icon: AlertOctagon,
+    desc: 'Resolve late check-ins over allowance',
   },
   {
     key: 'Notifications',

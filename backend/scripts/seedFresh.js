@@ -219,20 +219,7 @@ async function seed() {
     employeeId: "EMP-002",
   });
 
-  console.log("👤 Creating hr_executive...");
-  const hrExec = await User.create({
-    name: "Ankit Verma",
-    email: "hrexecutive@pixelate.tech",
-    password: "HrExec@1234",
-    role: "hr_executive",
-    phone: "9000000003",
-    company: company._id,
-    department: deptHR._id,
-    status: "active",
-    employeeId: "EMP-003",
-  });
-  console.log(`✅ hr_manager: hrmanager@pixelate.tech / HrManager@1234`);
-  console.log(`✅ hr_executive: hrexecutive@pixelate.tech / HrExec@1234\n`);
+  console.log(`✅ hr_manager: hrmanager@pixelate.tech / HrManager@1234\n`);
 
   console.log("👥 Creating employee users...");
   const employeeData = [
@@ -697,9 +684,6 @@ async function seed() {
   console.log("super_admin     | superadmin@pixelate.tech        | Admin@1234");
   console.log(
     "hr_manager      | hrmanager@pixelate.tech         | HrManager@1234",
-  );
-  console.log(
-    "hr_executive    | hrexecutive@pixelate.tech       | HrExec@1234",
   );
   console.log(
     "employee (×7)   | e.g. sid.nair@pixelate.tech     | Employee@1234",

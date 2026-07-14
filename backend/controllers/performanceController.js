@@ -83,7 +83,11 @@ const getLiveMetrics = asyncHandler(async (req, res) => {
     const metrics = await computeLiveMetrics(selfEmp, start, end);
     return res.json({
       success: true,
-      data: { ...metrics, firstName: selfEmp.firstName, lastName: selfEmp.lastName },
+      data: {
+        ...metrics,
+        firstName: selfEmp.firstName,
+        lastName: selfEmp.lastName,
+      },
     });
   }
 

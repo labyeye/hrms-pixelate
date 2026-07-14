@@ -42,7 +42,7 @@ const announcementSchema = new mongoose.Schema(
       },
     ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Announcement", announcementSchema);

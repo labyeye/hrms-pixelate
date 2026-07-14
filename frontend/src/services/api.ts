@@ -175,6 +175,27 @@ export const leaveAPI = {
   },
   create: (body: object) =>
     request("/leaves", { method: "POST", body: JSON.stringify(body) }),
+  createWithDocument: (body: Record<string, string>, document?: Blob) => {
+    const form = new FormData();
+    Object.entries(body).forEach(([k, v]) => form.append(k, v));
+    if (document)
+      form.append(
+        "document",
+        document,
+        "document" + (document.type === "application/pdf" ? ".pdf" : ".jpg"),
+      );
+    const token = getToken();
+    return fetch(`${BASE_URL}/leaves`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    }).then(async (r) => {
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok)
+        throw new Error(data.message || "Failed to submit leave request.");
+      return data;
+    });
+  },
   update: (id: string, body: object) =>
     request(`/leaves/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   updateStatus: (id: string, body: object) =>
@@ -548,11 +569,35 @@ export const payrollConfigAPI = {
       method: "PUT",
       body: JSON.stringify(body),
     }),
-  getDeductionRules: () => request("/payroll-config/deduction-rules"),
-  upsertDeductionRules: (body: object) =>
-    request("/payroll-config/deduction-rules", {
+};
+
+export const attendanceSettingsAPI = {
+  get: () => request("/attendance-settings"),
+  upsert: (body: object) =>
+    request("/attendance-settings", {
       method: "PUT",
       body: JSON.stringify(body),
+    }),
+  upsertLateAllowance: (body: object) =>
+    request("/attendance-settings/late-allowance", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  upsertLeaveAllowance: (body: object) =>
+    request("/attendance-settings/leave-allowance", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  getBalanceSummary: () => request("/attendance-settings/balance-summary"),
+  getMyBalance: () => request("/attendance-settings/my-balance"),
+};
+
+export const lateApprovalAPI = {
+  getAll: () => request("/late-approvals"),
+  resolve: (id: string, resolvedStatus: string) =>
+    request(`/late-approvals/${id}/resolve`, {
+      method: "POST",
+      body: JSON.stringify({ resolvedStatus }),
     }),
 };
 
@@ -737,6 +782,11 @@ export const documentAPI = {
     fileData: string;
   }) => request("/documents", { method: "POST", body: JSON.stringify(body) }),
   download: (id: string) => request(`/documents/${id}/download`),
+  update: (
+    id: string,
+    body: { name?: string; docType?: string; fileData?: string },
+  ) =>
+    request(`/documents/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   delete: (id: string) => request(`/documents/${id}`, { method: "DELETE" }),
   generateLetter: (employeeId: string, docType: string) =>
     request("/documents/generate-letter", {
@@ -783,7 +833,8 @@ export const announcementAPI = {
     departments?: string[];
     roles?: string[];
     acknowledgementRequired?: boolean;
-  }) => request("/announcements", { method: "POST", body: JSON.stringify(body) }),
+  }) =>
+    request("/announcements", { method: "POST", body: JSON.stringify(body) }),
   delete: (id: string) => request(`/announcements/${id}`, { method: "DELETE" }),
   markRead: (id: string) =>
     request(`/announcements/${id}/read`, { method: "POST" }),

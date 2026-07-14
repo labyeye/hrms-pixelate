@@ -141,6 +141,26 @@ const uploadDocumentVault = multer({
   limits: { fileSize: MAX_SIZE },
 }).single("file");
 
+// Leave application supporting document (e.g. medical certificate)
+const leaveDocStorage = multer.diskStorage({
+  destination(_req, _file, cb) {
+    const dir = path.join(UPLOAD_BASE, "leave-docs");
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename(_req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase() || ".bin";
+    const safe = `${Date.now()}_${crypto.randomUUID()}${ext}`;
+    cb(null, safe);
+  },
+});
+
+const uploadLeaveDocument = multer({
+  storage: leaveDocStorage,
+  fileFilter,
+  limits: { fileSize: MAX_SIZE },
+}).single("document");
+
 // Attendance self-mark selfie upload (mobile geofenced check-in/out)
 const attendanceSelfieStorage = multer.diskStorage({
   destination(_req, _file, cb) {
@@ -179,6 +199,7 @@ module.exports = {
   uploadEmployeeDocs,
   uploadCompanyLogo,
   uploadDocumentVault,
+  uploadLeaveDocument,
   uploadAvatar,
   uploadAttendanceSelfie,
   uploadFaceEnrollPhoto,

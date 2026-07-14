@@ -11,7 +11,7 @@ const {
   assignTicket,
 } = require("../controllers/supportController");
 
-const ADMIN_ROLES = ["super_admin", "hr_manager", "hr_executive"];
+const ADMIN_ROLES = ["super_admin", "hr_manager"];
 
 router.post("/", protect, createTicket);
 router.get("/", protect, getMyTickets);

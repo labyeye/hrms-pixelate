@@ -504,7 +504,10 @@ function StatusCell({ val }: { val: string }) {
   if (cls)
     return (
       <span
-        className={cn("px-2 py-0.5 text-[10px] font-semibold uppercase rounded", cls)}
+        className={cn(
+          "px-2 py-0.5 text-[10px] font-semibold uppercase rounded",
+          cls,
+        )}
       >
         {val}
       </span>
@@ -834,13 +837,17 @@ function SalaryRegisterGen({
             <p className="text-xs font-semibold uppercase tracking-wider opacity-80">
               Total Gross
             </p>
-            <p className="text-2xl font-semibold mt-1">{formatCurrency(totalGross)}</p>
+            <p className="text-2xl font-semibold mt-1">
+              {formatCurrency(totalGross)}
+            </p>
           </div>
           <div className="border-2 bg-[#00C48C] text-white p-4 flex-1">
             <p className="text-xs font-semibold uppercase tracking-wider opacity-80">
               Total Net Pay
             </p>
-            <p className="text-2xl font-semibold mt-1">{formatCurrency(totalNet)}</p>
+            <p className="text-2xl font-semibold mt-1">
+              {formatCurrency(totalNet)}
+            </p>
           </div>
           <div className="border-2 bg-[#EF4444] text-white p-4 flex-1">
             <p className="text-xs font-semibold uppercase tracking-wider opacity-80">
@@ -2871,7 +2878,9 @@ function EmployeeReportGen({
                     </span>
                   )}
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold text-black truncate">{name}</p>
+                    <p className="text-xs font-semibold text-black truncate">
+                      {name}
+                    </p>
                     <p className="text-[10px] text-muted-foreground truncate">
                       {emp.department?.name || emp.designation}
                     </p>
@@ -4295,7 +4304,9 @@ function AnalyticsTab({
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <div className="border-2 bg-white p-5">
-              <h3 className="font-semibold text-sm text-black mb-3">Dept Headcount</h3>
+              <h3 className="font-semibold text-sm text-black mb-3">
+                Dept Headcount
+              </h3>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={deptData} barCategoryGap="35%">
                   <CartesianGrid
@@ -4361,7 +4372,9 @@ function AnalyticsTab({
                           i % 2 !== 0 && "bg-[#F8FAFF]",
                         )}
                       >
-                        <td className="px-3 py-2 font-semibold text-black">{d.name}</td>
+                        <td className="px-3 py-2 font-semibold text-black">
+                          {d.name}
+                        </td>
                         <td className="px-3 py-2">{d.count}</td>
                         <td className="px-3 py-2">{d.male}</td>
                         <td className="px-3 py-2">{d.female}</td>
@@ -4481,9 +4494,13 @@ function AnalyticsTab({
                         className="w-2.5 h-2.5 border border-black"
                         style={{ background: color }}
                       />
-                      <span className="text-xs font-semibold text-black">{label}</span>
+                      <span className="text-xs font-semibold text-black">
+                        {label}
+                      </span>
                     </div>
-                    <span className="text-xs font-semibold text-black">{value}</span>
+                    <span className="text-xs font-semibold text-black">
+                      {value}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -4523,7 +4540,9 @@ function AnalyticsTab({
             ))}
           </div>
           <div className="border-2 bg-white p-5">
-            <h3 className="font-semibold text-sm text-black mb-3">Dept-wise Payroll</h3>
+            <h3 className="font-semibold text-sm text-black mb-3">
+              Dept-wise Payroll
+            </h3>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart
                 data={deptData.map((d) => ({ name: d.name, salary: d.salary }))}
@@ -4733,7 +4752,9 @@ export default function ReportsPage() {
       {}
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-display font-semibold text-black">Reports</h1>
+          <h1 className="text-3xl font-display font-semibold text-black">
+            Reports
+          </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Generate, filter, and export HR reports
           </p>

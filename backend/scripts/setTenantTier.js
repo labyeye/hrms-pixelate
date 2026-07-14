@@ -11,9 +11,8 @@ const TIER = "web_mobile_whatsapp";
 async function run() {
   await connectDB();
 
-  const before = await Subscription.findById(SUBSCRIPTION_ID).select(
-    "company plan tier",
-  );
+  const before =
+    await Subscription.findById(SUBSCRIPTION_ID).select("company plan tier");
   if (!before) {
     console.error(`Subscription ${SUBSCRIPTION_ID} not found`);
     process.exit(1);

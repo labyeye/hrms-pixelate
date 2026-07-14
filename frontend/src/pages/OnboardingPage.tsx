@@ -398,8 +398,7 @@ export default function OnboardingPage() {
                 Choose your plan
               </h1>
               <p className="text-gray-500 font-medium text-sm">
-                Priced per employee, per year — for your team of{" "}
-                {employeeCount}
+                Priced per employee, per year — for your team of {employeeCount}
               </p>
             </div>
 
@@ -445,14 +444,9 @@ export default function OnboardingPage() {
 
                     <ul className="space-y-2">
                       {p.features.map((f) => (
-                        <li
-                          key={f}
-                          className="flex items-start gap-2 text-xs"
-                        >
+                        <li key={f} className="flex items-start gap-2 text-xs">
                           <Check className="w-3.5 h-3.5 text-[#024BAB] shrink-0 mt-0.5" />
-                          <span className="text-gray-700 font-medium">
-                            {f}
-                          </span>
+                          <span className="text-gray-700 font-medium">{f}</span>
                         </li>
                       ))}
                     </ul>

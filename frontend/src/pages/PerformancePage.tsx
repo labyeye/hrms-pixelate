@@ -4,9 +4,18 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { performanceAPI, employeeAPI } from "@/services/api";
 import { PerformanceReview, Employee } from "@/types/hrms";
 import { cn } from "@/lib/utils";
-import { Plus, TrendingUp, Star, X, Activity, CalendarCheck, ListChecks } from "lucide-react";
+import {
+  Plus,
+  TrendingUp,
+  Star,
+  X,
+  Activity,
+  CalendarCheck,
+  ListChecks,
+} from "lucide-react";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useAuth } from "@/contexts/AuthContext";
+import { EmployeeCombobox } from "@/components/employees/EmployeeCombobox";
 
 type LiveMetrics = {
   employeeId?: string;
@@ -58,9 +67,9 @@ export default function PerformancePage() {
   const [reviews, setReviews] = useState<PerformanceReview[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
-  const [liveMetrics, setLiveMetrics] = useState<LiveMetrics | LiveMetrics[] | null>(
-    null,
-  );
+  const [liveMetrics, setLiveMetrics] = useState<
+    LiveMetrics | LiveMetrics[] | null
+  >(null);
   const [liveLoading, setLiveLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({
@@ -110,7 +119,8 @@ export default function PerformancePage() {
     e.preventDefault();
     const ok = await confirm({
       title: "Create performance review?",
-      description: "This will create a new performance review for the selected employee.",
+      description:
+        "This will create a new performance review for the selected employee.",
     });
     if (!ok) return;
     setSaving(true);
@@ -192,7 +202,9 @@ export default function PerformancePage() {
               </div>
             </div>
           ) : (
-            <p className="text-xs text-muted-foreground">No data yet this month.</p>
+            <p className="text-xs text-muted-foreground">
+              No data yet this month.
+            </p>
           )
         ) : Array.isArray(liveMetrics) && liveMetrics.length > 0 ? (
           <div className="overflow-auto">
@@ -213,10 +225,7 @@ export default function PerformancePage() {
                 {[...liveMetrics]
                   .sort((a, b) => (b.score ?? -1) - (a.score ?? -1))
                   .map((m) => (
-                    <tr
-                      key={m.employeeId}
-                      className="border-b border-black/10"
-                    >
+                    <tr key={m.employeeId} className="border-b border-black/10">
                       <td className="px-3 py-2 text-xs font-bold text-black">
                         {m.firstName} {m.lastName}
                       </td>
@@ -439,21 +448,12 @@ export default function PerformancePage() {
                 <label className="block text-xs font-bold text-black mb-1">
                   Employee
                 </label>
-                <select
+                <EmployeeCombobox
+                  employees={employees}
                   value={form.employee}
-                  onChange={(e) =>
-                    setForm({ ...form, employee: e.target.value })
-                  }
+                  onChange={(id) => setForm({ ...form, employee: id })}
                   className="border-2 w-full px-3 py-2 text-sm"
-                  required
-                >
-                  <option value="">Select employee</option>
-                  {employees.map((e) => (
-                    <option key={e._id} value={e._id}>
-                      {e.firstName} {e.lastName}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>

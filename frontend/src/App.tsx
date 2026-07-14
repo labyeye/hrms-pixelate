@@ -25,7 +25,8 @@ import BiometricPage from "./pages/BiometricPage";
 import BiometricDevicePage from "./pages/BiometricDevicePage";
 import HolidaysPage from "./pages/HolidaysPage";
 import NfcManagerPage from "./pages/NfcManagerPage";
-import PayrollSettingsPage from "./pages/PayrollSettingsPage";
+import AttendanceSettingsPage from "./pages/AttendanceSettingsPage";
+import LateApprovalsPage from "./pages/LateApprovalsPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import PaymentFailedPage from "./pages/PaymentFailedPage";
 import WelcomePage from "./pages/WelcomePage";
@@ -284,10 +285,18 @@ function AppRoutes() {
           }
         />
         <Route
-          path="/payroll-settings"
+          path="/attendance-settings"
           element={
             <ProtectedRoute>
-              <PayrollSettingsPage />
+              <AttendanceSettingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/late-approvals"
+          element={
+            <ProtectedRoute>
+              <LateApprovalsPage />
             </ProtectedRoute>
           }
         />

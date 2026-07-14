@@ -1,23 +1,33 @@
 // Thin client for the internal Python face-recognition microservice (../face-service).
 // Uses Node's built-in fetch/FormData/Blob — no extra dependency needed.
 
-const FACE_SERVICE_URL = process.env.FACE_SERVICE_URL || "http://127.0.0.1:8091";
+const FACE_SERVICE_URL =
+  process.env.FACE_SERVICE_URL || "http://127.0.0.1:8091";
 const FACE_SERVICE_API_KEY = process.env.FACE_SERVICE_API_KEY || "";
 // Bounds how long we wait on the Python service — without this, a stuck
 // face-service process would hang the request indefinitely (the mobile
 // client only has its own 30s abort as a backstop).
 const FACE_SERVICE_TIMEOUT_MS = 10_000;
 
-async function callFaceService(path, buffer, filename, mimetype, extraFields = {}) {
+async function callFaceService(
+  path,
+  buffer,
+  filename,
+  mimetype,
+  extraFields = {},
+) {
   const form = new FormData();
   form.append("file", new Blob([buffer], { type: mimetype }), filename);
-  for (const [key, value] of Object.entries(extraFields)) form.append(key, value);
+  for (const [key, value] of Object.entries(extraFields))
+    form.append(key, value);
 
   let res;
   try {
     res = await fetch(`${FACE_SERVICE_URL}${path}`, {
       method: "POST",
-      headers: FACE_SERVICE_API_KEY ? { "x-api-key": FACE_SERVICE_API_KEY } : {},
+      headers: FACE_SERVICE_API_KEY
+        ? { "x-api-key": FACE_SERVICE_API_KEY }
+        : {},
       body: form,
       signal: AbortSignal.timeout(FACE_SERVICE_TIMEOUT_MS),
     });

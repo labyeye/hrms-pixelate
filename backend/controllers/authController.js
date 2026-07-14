@@ -474,7 +474,9 @@ const sendOtp = asyncHandler(async (req, res) => {
   console.log(`[WA-OTP] lookup phone=${normalised} found=${!!user}`);
   if (!user) {
     // Return generic success to avoid user enumeration
-    console.warn(`[WA-OTP] ABORT: no user matched phone=${normalised} (raw=${phone})`);
+    console.warn(
+      `[WA-OTP] ABORT: no user matched phone=${normalised} (raw=${phone})`,
+    );
     return res.json({
       success: true,
       message: "If that phone number is registered, an OTP has been sent.",

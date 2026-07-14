@@ -9,10 +9,15 @@ async function run() {
   await connectDB();
 
   const employees = await Employee.find({
-    $or: [{ salaryHistory: { $exists: false } }, { salaryHistory: { $size: 0 } }],
+    $or: [
+      { salaryHistory: { $exists: false } },
+      { salaryHistory: { $size: 0 } },
+    ],
   });
 
-  console.log(`Backfilling salary history for ${employees.length} employee(s)...`);
+  console.log(
+    `Backfilling salary history for ${employees.length} employee(s)...`,
+  );
 
   let updated = 0;
   for (const emp of employees) {

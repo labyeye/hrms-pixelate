@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useConfirm } from "@/hooks/use-confirm";
 import { AttendanceRecord, Employee } from "@/types/hrms";
 import { cn } from "@/lib/utils";
+import { EmployeeCombobox } from "@/components/employees/EmployeeCombobox";
 import {
   Clock,
   CheckCircle,
@@ -229,7 +230,11 @@ export default function AttendancePage() {
       });
       load();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -302,7 +307,11 @@ export default function AttendancePage() {
       setEditingId(null);
       load();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
     }
     setSaving(false);
   };
@@ -322,7 +331,11 @@ export default function AttendancePage() {
       );
       load();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
     }
     setMarkingAbsent(false);
   };
@@ -976,28 +989,22 @@ export default function AttendancePage() {
                 <label className="block text-xs font-bold text-black mb-1">
                   Employee
                 </label>
-                <select
+                <EmployeeCombobox
+                  employees={employees}
                   value={markForm.employee}
-                  onChange={(e) => {
-                    const empId = e.target.value;
+                  onChange={(empId) => {
                     setMarkForm((f) => ({
                       ...f,
                       employee: empId,
-                      checkIn: f.checkIn ? defaultCheckIn(f.date, empId) : f.checkIn,
+                      checkIn: f.checkIn
+                        ? defaultCheckIn(f.date, empId)
+                        : f.checkIn,
                       checkOut: defaultCheckOut(f.date, empId),
                     }));
                   }}
                   className="border-2 w-full px-3 py-2 text-sm disabled:opacity-60 disabled:bg-gray-50"
-                  required
                   disabled={!!editingId}
-                >
-                  <option value="">Select employee</option>
-                  {employees.map((e) => (
-                    <option key={e._id} value={e._id}>
-                      {e.firstName} {e.lastName}
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
               <div>
                 <label className="block text-xs font-bold text-black mb-1">
@@ -1012,7 +1019,9 @@ export default function AttendancePage() {
                       ...f,
                       date: d,
                       checkIn: f.checkIn ? defaultCheckIn(d, f.employee) : "",
-                      checkOut: f.checkOut ? defaultCheckOut(d, f.employee) : "",
+                      checkOut: f.checkOut
+                        ? defaultCheckOut(d, f.employee)
+                        : "",
                     }));
                   }}
                   className="border-2 w-full px-3 py-2 text-sm"

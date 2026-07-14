@@ -45,6 +45,7 @@ const leaveSchema = new mongoose.Schema(
     startHour: { type: String }, // e.g. "14:00"
     endHour: { type: String }, // e.g. "16:00"
     deductSalary: { type: Boolean, default: true }, // true = unpaid (deduct), false = paid leave (no deduction)
+    documentPath: { type: String }, // relative path under /uploads/leave-docs/
   },
   { timestamps: true },
 );

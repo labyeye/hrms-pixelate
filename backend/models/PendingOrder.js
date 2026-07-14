@@ -35,6 +35,9 @@ const pendingOrderSchema = new mongoose.Schema(
 );
 
 // Abandoned/unpaid pending orders auto-expire after 24h.
-pendingOrderSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 });
+pendingOrderSchema.index(
+  { createdAt: 1 },
+  { expireAfterSeconds: 60 * 60 * 24 },
+);
 
 module.exports = mongoose.model("PendingOrder", pendingOrderSchema);

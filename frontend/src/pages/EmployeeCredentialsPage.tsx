@@ -5,6 +5,7 @@ import { employeeAPI, authAPI } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { Employee } from "@/types/hrms";
 import { cn, formatDate, generatePassword } from "@/lib/utils";
+import { EmployeeCombobox } from "@/components/employees/EmployeeCombobox";
 import {
   Search,
   Lock,
@@ -102,7 +103,8 @@ export default function EmployeeCredentialsPage() {
 
     const ok = await confirm({
       title: "Reset this employee's password?",
-      description: "The new password will replace their current login credentials.",
+      description:
+        "The new password will replace their current login credentials.",
     });
     if (!ok) return;
 
@@ -224,7 +226,8 @@ export default function EmployeeCredentialsPage() {
 
     const ok = await confirm({
       title: "Update your password?",
-      description: "You will need to use the new password next time you log in.",
+      description:
+        "You will need to use the new password next time you log in.",
     });
     if (!ok) return;
 
@@ -572,26 +575,18 @@ export default function EmployeeCredentialsPage() {
                 <label className="block text-xs font-bold text-black uppercase tracking-wider">
                   Select Employee
                 </label>
-                <select
+                <EmployeeCombobox
+                  employees={employees}
                   value={createFormData.selectedEmployee?._id || ""}
-                  onChange={(e) => {
-                    const emp = employees.find(
-                      (emp) => emp._id === e.target.value,
-                    );
+                  onChange={(id) => {
+                    const emp = employees.find((emp) => emp._id === id);
                     setCreateFormData({
                       ...createFormData,
                       selectedEmployee: emp || null,
                     });
                   }}
                   className="w-full px-3 py-2 border-2 border-black text-sm focus:outline-none focus:ring-2 focus:ring-[#024BAB] bg-white"
-                >
-                  <option value="">Choose an employee...</option>
-                  {employees.map((emp) => (
-                    <option key={emp._id} value={emp._id}>
-                      {emp.firstName} {emp.lastName} ({emp.email})
-                    </option>
-                  ))}
-                </select>
+                />
               </div>
 
               {}

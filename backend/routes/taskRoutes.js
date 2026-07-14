@@ -11,7 +11,7 @@ const {
   deleteTask,
 } = require("../controllers/taskController");
 
-const ASSIGN_ROLES = ["super_admin", "hr_manager", "hr_executive", "department_head"];
+const ASSIGN_ROLES = ["super_admin", "hr_manager", "department_head"];
 
 router
   .route("/")

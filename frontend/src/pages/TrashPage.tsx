@@ -38,7 +38,11 @@ export default function TrashPage() {
       .getAll()
       .then((res: any) => setItems(res.data))
       .catch((err: any) =>
-        toast({ title: "Error", description: err.message, variant: "destructive" }),
+        toast({
+          title: "Error",
+          description: err.message,
+          variant: "destructive",
+        }),
       )
       .finally(() => setLoading(false));
   };
@@ -56,7 +60,11 @@ export default function TrashPage() {
       toast({ title: "Restored", description: "Item restored successfully." });
       load();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -73,7 +81,11 @@ export default function TrashPage() {
       toast({ title: "Deleted", description: "Item permanently deleted." });
       load();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -105,7 +117,9 @@ export default function TrashPage() {
                     <span className="text-xs rounded-full border px-2 py-0.5 text-muted-foreground">
                       {TYPE_LABEL[item.modelName]}
                     </span>
-                    <span className="font-medium truncate">{displayLabel(item)}</span>
+                    <span className="font-medium truncate">
+                      {displayLabel(item)}
+                    </span>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     Deleted {formatDate(item.createdAt)}

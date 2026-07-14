@@ -86,7 +86,10 @@ const authRateLimit = rateLimit({
 const apiRateLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 5000 });
 
 app.use("/api/whatsapp-webhook", require("./routes/whatsappWebhookRoutes"));
-app.use("/api/hrms/whatsapp-webhook", require("./routes/whatsappWebhookRoutes"));
+app.use(
+  "/api/hrms/whatsapp-webhook",
+  require("./routes/whatsappWebhookRoutes"),
+);
 app.use("/api/company", require("./routes/companyRoutes"));
 
 app.use("/api/auth", authRateLimit, require("./routes/authRoutes"));
@@ -105,6 +108,11 @@ app.use("/api/payment-methods", require("./routes/paymentMethodRoutes"));
 app.use("/api/biometric", require("./routes/biometricRoutes"));
 app.use("/api/holidays", require("./routes/holidayRoutes"));
 app.use("/api/payroll-config", require("./routes/payrollConfigRoutes"));
+app.use(
+  "/api/attendance-settings",
+  require("./routes/attendanceSettingsRoutes"),
+);
+app.use("/api/late-approvals", require("./routes/lateApprovalRoutes"));
 app.use("/api/loans", require("./routes/loanRoutes"));
 app.use("/api/shifts", require("./routes/shiftRoutes"));
 app.use("/api/salary-heads", require("./routes/salaryHeadRoutes"));
@@ -121,7 +129,10 @@ app.use("/api/documents", require("./routes/documentRoutes"));
 app.use("/api/announcements", require("./routes/announcementRoutes"));
 app.use("/api/tasks", require("./routes/taskRoutes"));
 app.use("/api/assets", require("./routes/assetRoutes"));
-app.use("/api/attendance-corrections", require("./routes/attendanceCorrectionRoutes"));
+app.use(
+  "/api/attendance-corrections",
+  require("./routes/attendanceCorrectionRoutes"),
+);
 app.use("/api/trash", require("./routes/trashRoutes"));
 
 app.get("/api/health", (req, res) =>

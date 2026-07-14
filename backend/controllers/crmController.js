@@ -175,9 +175,7 @@ exports.getCrmAttendance = async (req, res) => {
     // optionally filter by company after populate
     const companyId = req.query.companyId;
     const result = companyId
-      ? records.filter(
-          (r) => r.employee?.company?.toString() === companyId,
-        )
+      ? records.filter((r) => r.employee?.company?.toString() === companyId)
       : records;
 
     res.json({ success: true, total: result.length, attendance: result });
@@ -194,7 +192,12 @@ exports.updateCrmSubscription = async (req, res) => {
     const { companyId } = req.params;
     const { status, paymentStatus, renewalDate } = req.body;
 
-    const allowedStatus = ["active", "inactive", "cancelled", "pending_renewal"];
+    const allowedStatus = [
+      "active",
+      "inactive",
+      "cancelled",
+      "pending_renewal",
+    ];
     const allowedPaymentStatus = ["pending", "completed", "failed"];
     if (status !== undefined && !allowedStatus.includes(status)) {
       return res.status(400).json({
@@ -202,7 +205,10 @@ exports.updateCrmSubscription = async (req, res) => {
         message: `Invalid status. Must be one of: ${allowedStatus.join(", ")}`,
       });
     }
-    if (paymentStatus !== undefined && !allowedPaymentStatus.includes(paymentStatus)) {
+    if (
+      paymentStatus !== undefined &&
+      !allowedPaymentStatus.includes(paymentStatus)
+    ) {
       return res.status(400).json({
         success: false,
         message: `Invalid paymentStatus. Must be one of: ${allowedPaymentStatus.join(", ")}`,
@@ -211,10 +217,17 @@ exports.updateCrmSubscription = async (req, res) => {
 
     const company = await Company.findById(companyId).select("subscription");
     if (!company) {
-      return res.status(404).json({ success: false, message: "Company not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Company not found" });
     }
     if (!company.subscription) {
-      return res.status(404).json({ success: false, message: "Company has no subscription to update" });
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message: "Company has no subscription to update",
+        });
     }
 
     const updates = {};

@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useConfirm } from "@/hooks/use-confirm";
 import { LeaveRequest, Employee } from "@/types/hrms";
 import { cn, formatDate } from "@/lib/utils";
+import { EmployeeCombobox } from "@/components/employees/EmployeeCombobox";
 import {
   Plus,
   CalendarDays,
@@ -18,8 +19,13 @@ import {
   ArrowDown,
   Pencil,
   Trash2,
+  Paperclip,
 } from "lucide-react";
 import { ActionModal } from "@/components/ui/ActionModal";
+import { ImageCropModal } from "@/components/documents/ImageCropModal";
+import { compressImageToLimit } from "@/lib/compressImage";
+
+const DOC_REQUIRED_TYPES = new Set(["sick", "casual"]);
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C] px-2 py-0.5",
@@ -73,11 +79,13 @@ function LeaveFormFields({
   setF,
   showEmployee,
   employees,
+  docSlot,
 }: {
   f: LeaveForm;
   setF: (v: LeaveForm) => void;
   showEmployee: boolean;
   employees: Employee[];
+  docSlot?: React.ReactNode;
 }) {
   return (
     <>
@@ -86,19 +94,12 @@ function LeaveFormFields({
           <label className="block text-xs font-bold text-black mb-1">
             Employee
           </label>
-          <select
+          <EmployeeCombobox
+            employees={employees}
             value={f.employee}
-            onChange={(e) => setF({ ...f, employee: e.target.value })}
+            onChange={(id) => setF({ ...f, employee: id })}
             className="border-2 w-full px-3 py-2 text-sm"
-            required
-          >
-            <option value="">Select employee</option>
-            {employees.map((e) => (
-              <option key={e._id} value={e._id}>
-                {e.firstName} {e.lastName}
-              </option>
-            ))}
-          </select>
+          />
         </div>
       )}
       <div>
@@ -172,6 +173,7 @@ function LeaveFormFields({
           placeholder="Reason for leave..."
         />
       </div>
+      {docSlot}
     </>
   );
 }
@@ -199,6 +201,11 @@ export default function LeavePage() {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState<LeaveForm>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [docBlob, setDocBlob] = useState<Blob | null>(null);
+  const [docFileName, setDocFileName] = useState("");
+  const [docError, setDocError] = useState("");
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const [noBalanceModal, setNoBalanceModal] = useState(false);
 
   // Edit modal
   const [editLeave, setEditLeave] = useState<LeaveRequest | null>(null);
@@ -275,20 +282,77 @@ export default function LeavePage() {
     load();
   }, [load]);
 
+  const resetDoc = () => {
+    setDocBlob(null);
+    setDocFileName("");
+    setDocError("");
+    setCropFile(null);
+  };
+
+  const onDocFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setDocError("");
+    if (file.type === "application/pdf") {
+      if (file.size > 5 * 1024 * 1024) {
+        setDocError("PDF exceeds 5MB limit.");
+        return;
+      }
+      setDocBlob(file);
+      setDocFileName(file.name);
+    } else if (file.type.startsWith("image/")) {
+      setCropFile(file);
+    } else {
+      setDocError("Only PDF, JPG, or PNG files are allowed.");
+    }
+  };
+
+  const onCropped = async (blob: Blob) => {
+    const compressed = await compressImageToLimit(
+      blob,
+      blob.type,
+      5 * 1024 * 1024,
+    );
+    setDocBlob(compressed);
+    setDocFileName("document.jpg");
+    setCropFile(null);
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (DOC_REQUIRED_TYPES.has(form.leaveType) && !docBlob) {
+      setDocError("A supporting document is required for this leave type.");
+      return;
+    }
     setSaving(true);
     try {
-      await leaveAPI.create({ ...form, days: Number(form.days) });
-      setActionModal({
-        show: true,
-        type: "success",
-        title: "Leave Applied",
-        message: "Your leave request has been submitted.",
-      });
+      const res = await leaveAPI.createWithDocument(
+        {
+          employee: form.employee,
+          leaveType: form.leaveType,
+          startDate: form.startDate,
+          endDate: form.endDate,
+          days: String(Number(form.days)),
+          reason: form.reason,
+          isHalfDay: String(form.isHalfDay),
+        },
+        docBlob ?? undefined,
+      );
       setShowModal(false);
       setForm(EMPTY_FORM);
+      resetDoc();
       load();
+      if (res?.noBalanceLeft) {
+        setNoBalanceModal(true);
+      } else {
+        setActionModal({
+          show: true,
+          type: "success",
+          title: "Leave Applied",
+          message: "Your leave request has been submitted.",
+        });
+      }
     } catch (err: any) {
       setActionModal({
         show: true,
@@ -367,7 +431,8 @@ export default function LeavePage() {
     }
     const ok = await confirm({
       title: "Withdraw leave request?",
-      description: "This will move the request to Trash. You can restore it later if needed.",
+      description:
+        "This will move the request to Trash. You can restore it later if needed.",
       confirmText: "Withdraw",
       destructive: true,
     });
@@ -758,7 +823,12 @@ export default function LeavePage() {
           <div className="border-2 bg-white w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b-2 border-black">
               <h3 className="font-display font-bold text-lg">Apply Leave</h3>
-              <button onClick={() => setShowModal(false)}>
+              <button
+                onClick={() => {
+                  setShowModal(false);
+                  resetDoc();
+                }}
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -790,6 +860,29 @@ export default function LeavePage() {
                 setF={setForm}
                 showEmployee={!isEmployee}
                 employees={employees}
+                docSlot={
+                  <div>
+                    <label className="block text-xs font-bold text-black mb-1">
+                      Supporting Document
+                      {DOC_REQUIRED_TYPES.has(form.leaveType) && (
+                        <span className="text-red-600"> *</span>
+                      )}
+                    </label>
+                    <label className="border-2 border-dashed border-black flex items-center gap-2 px-3 py-2 text-xs font-semibold cursor-pointer hover:bg-[#024BAB]/5">
+                      <Paperclip className="w-3.5 h-3.5 shrink-0" />
+                      {docFileName || "Choose PDF / JPG / PNG (max 5MB)"}
+                      <input
+                        type="file"
+                        accept=".pdf,image/jpeg,image/png"
+                        onChange={onDocFileChange}
+                        className="hidden"
+                      />
+                    </label>
+                    {docError && (
+                      <p className="text-xs text-red-600 mt-1">{docError}</p>
+                    )}
+                  </div>
+                }
               />
               <div className="flex gap-3">
                 <button
@@ -801,7 +894,10 @@ export default function LeavePage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
+                  onClick={() => {
+                    setShowModal(false);
+                    resetDoc();
+                  }}
                   className="border-2 bg-white text-black px-4 py-2.5 text-sm font-bold"
                 >
                   Cancel
@@ -1052,6 +1148,40 @@ export default function LeavePage() {
                   Go Back
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cropFile && (
+        <ImageCropModal
+          file={cropFile}
+          onCancel={() => setCropFile(null)}
+          onCropped={onCropped}
+        />
+      )}
+
+      {noBalanceModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="border-2 bg-white w-full max-w-sm">
+            <div className="flex items-center justify-between p-5 border-b-2 border-black">
+              <h3 className="font-display font-bold text-lg">Leave Applied</h3>
+              <button onClick={() => setNoBalanceModal(false)}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-sm text-black font-medium">
+                Your leave request has been submitted. You have no remaining
+                no-deduction balance for this leave type this month — HR/Admin
+                will decide whether your salary is deducted when approving.
+              </p>
+              <button
+                onClick={() => setNoBalanceModal(false)}
+                className="border-2 bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold w-full"
+              >
+                Got it
+              </button>
             </div>
           </div>
         </div>

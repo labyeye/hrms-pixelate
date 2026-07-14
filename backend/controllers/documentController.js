@@ -262,18 +262,10 @@ const downloadDocument = asyncHandler(async (req, res) => {
 });
 
 const deleteDocument = asyncHandler(async (req, res) => {
-  const filter = { _id: req.params.id, company: req.user.company };
-
-  if (req.user.role === "employee") {
-    const emp = await Employee.findOne({ user: req.user._id });
-    if (!emp) {
-      res.status(404);
-      throw new Error("Employee record not found");
-    }
-    filter.employee = emp._id;
-  }
-
-  const doc = await EmployeeDocument.findOne(filter);
+  const doc = await EmployeeDocument.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
   if (!doc) {
     res.status(404);
     throw new Error("Document not found");
@@ -284,10 +276,76 @@ const deleteDocument = asyncHandler(async (req, res) => {
   res.json({ success: true, message: "Document deleted" });
 });
 
+const updateDocument = asyncHandler(async (req, res) => {
+  const doc = await EmployeeDocument.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  });
+  if (!doc) {
+    res.status(404);
+    throw new Error("Document not found");
+  }
+
+  const { name, docType, expiryDate } = req.body;
+  if (name !== undefined) doc.name = name;
+  if (docType !== undefined) doc.docType = docType;
+  if (expiryDate !== undefined) doc.expiryDate = expiryDate || null;
+
+  if (req.file || req.body.fileData) {
+    const oldAbsPath = path.resolve(__dirname, "../", doc.filePath);
+    let finalFile = req.file;
+
+    if (!finalFile && req.body.fileData) {
+      const matches = req.body.fileData.match(
+        /^data:([A-Za-z-+\/]+);base64,(.+)$/,
+      );
+      if (!matches || matches.length !== 3) {
+        res.status(400);
+        throw new Error("Invalid base64 file data");
+      }
+      const mimeType = matches[1];
+      const fileBuffer = Buffer.from(matches[2], "base64");
+      const ext = mimeType.split("/")[1] || "bin";
+      const filename = `${Date.now()}_${crypto.randomUUID()}.${ext}`;
+      const absPath = path.resolve(UPLOADS_ROOT, filename);
+      fs.writeFileSync(absPath, fileBuffer);
+      finalFile = {
+        path: absPath,
+        mimetype: mimeType,
+        size: fileBuffer.length,
+      };
+    }
+
+    await validateMagicBytes(finalFile.path);
+
+    doc.mimeType = finalFile.mimetype;
+    doc.sizeBytes = finalFile.size;
+    doc.filePath = path
+      .relative(path.resolve(__dirname, "../"), finalFile.path)
+      .replace(/\\/g, "/");
+
+    if (fs.existsSync(oldAbsPath)) fs.unlinkSync(oldAbsPath);
+  }
+
+  await doc.save();
+  res.json({
+    success: true,
+    data: {
+      _id: doc._id,
+      name: doc.name,
+      docType: doc.docType,
+      mimeType: doc.mimeType,
+      sizeBytes: doc.sizeBytes,
+      expiryDate: doc.expiryDate,
+    },
+  });
+});
+
 module.exports = {
   uploadDocument,
   getDocuments,
   downloadDocument,
+  updateDocument,
   deleteDocument,
   generateLetter,
 };

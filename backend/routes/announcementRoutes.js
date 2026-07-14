@@ -12,7 +12,7 @@ const router = express.Router();
 router
   .route("/")
   .get(protect, getAnnouncements)
-  .post(protect, authorize("super_admin", "hr_manager", "hr_executive"), createAnnouncement);
+  .post(protect, authorize("super_admin", "hr_manager"), createAnnouncement);
 
 router.post("/:id/read", protect, markRead);
 router.post("/:id/acknowledge", protect, acknowledgeAnnouncement);

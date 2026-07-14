@@ -571,7 +571,10 @@ const getLogs = asyncHandler(async (req, res) => {
     const m = parseInt(month),
       y = parseInt(year);
     if (!isNaN(m) && !isNaN(y)) {
-      filter.timestamp = { $gte: new Date(y, m - 1, 1), $lt: new Date(y, m, 1) };
+      filter.timestamp = {
+        $gte: new Date(y, m - 1, 1),
+        $lt: new Date(y, m, 1),
+      };
     }
   }
 

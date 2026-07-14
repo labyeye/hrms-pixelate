@@ -19,6 +19,7 @@ import {
   attendanceCorrectionAPI,
   documentAPI,
   supportAPI,
+  attendanceSettingsAPI,
 } from "@/services/api";
 import { cn, formatDate, formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -159,6 +160,11 @@ export default function EmployeeDashboard() {
   const [payrolls, setPayrolls] = useState<any[]>([]);
   const [performance, setPerformance] = useState<any[]>([]);
   const [essStats, setEssStats] = useState<any>(null);
+  const [myBalance, setMyBalance] = useState<{
+    lateUsed: number;
+    lateAllowed: number;
+    leaveUsed: { leaveType: string; daysUsed: number; daysAllowed: number }[];
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>("overview");
 
@@ -238,6 +244,10 @@ export default function EmployeeDashboard() {
           dashboardAPI
             .getEmployeeStats()
             .then((r) => r.success && setEssStats(r.data))
+            .catch(() => {}),
+          attendanceSettingsAPI
+            .getMyBalance()
+            .then((r: any) => r.success && setMyBalance(r.data))
             .catch(() => {}),
         ]);
       }
@@ -930,6 +940,35 @@ export default function EmployeeDashboard() {
                     </p>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {}
+            {myBalance && (
+              <div className="border-2 border-black bg-white overflow-hidden">
+                <div className="px-4 py-3 bg-[#024BAB]/5 border-b-2 border-black flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#024BAB]" />
+                  <p className="text-xs font-bold uppercase tracking-wider text-black">
+                    This Month's Balance
+                  </p>
+                </div>
+                <div className="p-4 space-y-2">
+                  <p className="text-sm font-semibold text-black">
+                    Late balance: {myBalance.lateUsed}/{myBalance.lateAllowed}{" "}
+                    left this month
+                  </p>
+                  {myBalance.leaveUsed.length > 0 && (
+                    <p className="text-sm text-black">
+                      Leave balance:{" "}
+                      {myBalance.leaveUsed
+                        .map(
+                          (l) =>
+                            `${l.leaveType} ${l.daysUsed}/${l.daysAllowed}`,
+                        )
+                        .join(", ")}
+                    </p>
+                  )}
+                </div>
               </div>
             )}
 

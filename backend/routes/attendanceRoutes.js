@@ -18,19 +18,19 @@ router.post("/self-mark", protect, uploadAttendanceSelfie, selfMarkAttendance);
 router.post(
   "/",
   protect,
-  authorize("super_admin", "hr_manager", "hr_executive"),
+  authorize("super_admin", "hr_manager"),
   markAttendance,
 );
 router.put(
   "/:id",
   protect,
-  authorize("super_admin", "hr_manager", "hr_executive"),
+  authorize("super_admin", "hr_manager"),
   updateAttendance,
 );
 router.post(
   "/bulk",
   protect,
-  authorize("super_admin", "hr_manager", "hr_executive"),
+  authorize("super_admin", "hr_manager"),
   bulkMarkAttendance,
 );
 

@@ -6,30 +6,26 @@ const {
   addCandidate,
   updateCandidateStage,
 } = require("../controllers/recruitmentController");
-const { protect, authorize, requirePlanFeature } = require("../middleware/auth");
+const {
+  protect,
+  authorize,
+  requirePlanFeature,
+} = require("../middleware/auth");
 const router = express.Router();
 
 router.use(protect, requirePlanFeature("recruitment"));
 
 router.get("/", getJobs);
-router.post(
-  "/",
-  authorize("super_admin", "hr_manager", "hr_executive"),
-  createJob,
-);
-router.put(
-  "/:id",
-  authorize("super_admin", "hr_manager", "hr_executive"),
-  updateJob,
-);
+router.post("/", authorize("super_admin", "hr_manager"), createJob);
+router.put("/:id", authorize("super_admin", "hr_manager"), updateJob);
 router.post(
   "/:id/candidates",
-  authorize("super_admin", "hr_manager", "hr_executive"),
+  authorize("super_admin", "hr_manager"),
   addCandidate,
 );
 router.put(
   "/:id/candidates/:candidateId",
-  authorize("super_admin", "hr_manager", "hr_executive"),
+  authorize("super_admin", "hr_manager"),
   updateCandidateStage,
 );
 

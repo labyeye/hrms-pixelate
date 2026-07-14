@@ -7,9 +7,13 @@ const {
   deleteLeave,
 } = require("../controllers/leaveController");
 const { protect, authorize } = require("../middleware/auth");
+const { uploadLeaveDocument } = require("../middleware/upload");
 const router = express.Router();
 
-router.route("/").get(protect, getLeaves).post(protect, createLeave);
+router
+  .route("/")
+  .get(protect, getLeaves)
+  .post(protect, uploadLeaveDocument, createLeave);
 router
   .route("/:id")
   .patch(

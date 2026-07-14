@@ -4,6 +4,7 @@ const path = require("path");
 const asyncHandler = require("express-async-handler");
 const Employee = require("../models/Employee");
 const User = require("../models/User");
+const Department = require("../models/Department");
 const {
   escapeRegex,
   safePagination,
@@ -161,9 +162,23 @@ const createEmployee = [
       qualification,
       totalExperience,
       previousCompany,
+      role,
+      headOfDepartment,
     } = req.body;
 
     const normalizedEmail = email.toLowerCase().trim();
+
+    const ROLES = ["super_admin", "hr_manager", "department_head", "employee"];
+    if (role && !ROLES.includes(role)) {
+      res.status(400);
+      throw new Error("Invalid role");
+    }
+    if (role === "department_head" && !headOfDepartment) {
+      res.status(400);
+      throw new Error(
+        "headOfDepartment is required when role is department_head",
+      );
+    }
 
     if (salary !== undefined && (isNaN(Number(salary)) || Number(salary) < 0)) {
       res.status(400);
@@ -174,6 +189,12 @@ const createEmployee = [
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       userId = existingUser._id;
+      if (role) {
+        await User.findByIdAndUpdate(userId, {
+          role,
+          department: role === "department_head" ? headOfDepartment : undefined,
+        });
+      }
     } else {
       const { password: providedPassword } = req.body;
       const tempPassword =
@@ -184,10 +205,18 @@ const createEmployee = [
         name: `${firstName.trim()} ${lastName.trim()}`,
         email: normalizedEmail,
         password: tempPassword,
-        role: "employee",
+        role: role || "employee",
+        department: role === "department_head" ? headOfDepartment : undefined,
         company: req.user.company,
       });
       userId = user._id;
+    }
+
+    if (role === "department_head") {
+      await Department.findOneAndUpdate(
+        { _id: headOfDepartment, company: req.user.company },
+        { head: userId },
+      );
     }
 
     const lastEmp = await Employee.findOne({ company: req.user.company }).sort({
@@ -208,7 +237,9 @@ const createEmployee = [
       designation: designation.trim(),
       joinDate,
       phone: phone || undefined,
-      department: department || undefined,
+      department:
+        department ||
+        (role === "department_head" ? headOfDepartment : undefined),
       employmentType: employmentType || "full_time",
       salary: salary !== undefined ? Number(salary) : 0,
       salaryHistory: [
@@ -380,6 +411,39 @@ const updateEmployee = [
         changedBy: req.user._id,
         changedByName: req.user.name,
       });
+    }
+
+    if (req.body.role !== undefined) {
+      const ROLES = [
+        "super_admin",
+        "hr_manager",
+        "department_head",
+        "employee",
+      ];
+      if (!ROLES.includes(req.body.role)) {
+        res.status(400);
+        throw new Error("Invalid role");
+      }
+      if (req.body.role === "department_head" && !req.body.headOfDepartment) {
+        res.status(400);
+        throw new Error(
+          "headOfDepartment is required when role is department_head",
+        );
+      }
+      await User.findByIdAndUpdate(employee.user, {
+        role: req.body.role,
+        department:
+          req.body.role === "department_head"
+            ? req.body.headOfDepartment
+            : undefined,
+      });
+      if (req.body.role === "department_head") {
+        await Department.findOneAndUpdate(
+          { _id: req.body.headOfDepartment, company: req.user.company },
+          { head: employee.user },
+        );
+        employee.department = req.body.headOfDepartment;
+      }
     }
 
     await employee.save();

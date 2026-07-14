@@ -1,7 +1,10 @@
 const asyncHandler = require("express-async-handler");
 const EmployeePayrollConfig = require("../models/EmployeePayrollConfig");
-const DeductionRule = require("../models/DeductionRule");
 const Employee = require("../models/Employee");
+const {
+  getAttendanceSettings,
+  upsertAttendanceSettings,
+} = require("./attendanceSettingsController");
 
 const getAllConfigs = asyncHandler(async (req, res) => {
   const configs = await EmployeePayrollConfig.find({
@@ -63,48 +66,11 @@ const upsertConfig = asyncHandler(async (req, res) => {
   res.json({ success: true, data: config });
 });
 
-const getDeductionRules = asyncHandler(async (req, res) => {
-  const rule = await DeductionRule.findOne({ company: req.user.company });
-  res.json({ success: true, data: rule || null });
-});
-
-const upsertDeductionRules = asyncHandler(async (req, res) => {
-  const {
-    shiftStartHour,
-    shiftStartMinute,
-    shiftEndHour,
-    shiftEndMinute,
-    lateThresholdMinutes,
-    lateDeductionType,
-    lateDeductionAmount,
-    halfDayThresholdMinutes,
-    earlyCheckoutThresholdMinutes,
-    earlyCheckoutDeductionEnabled,
-  } = req.body;
-
-  const rule = await DeductionRule.findOneAndUpdate(
-    { company: req.user.company },
-    {
-      $set: {
-        company: req.user.company,
-        shiftStartHour: Number(shiftStartHour) ?? 9,
-        shiftStartMinute: Number(shiftStartMinute) ?? 0,
-        shiftEndHour: Number(shiftEndHour) ?? 18,
-        shiftEndMinute: Number(shiftEndMinute) ?? 0,
-        lateThresholdMinutes: Number(lateThresholdMinutes) ?? 15,
-        lateDeductionType: lateDeductionType || "fixed",
-        lateDeductionAmount: Number(lateDeductionAmount) ?? 0,
-        halfDayThresholdMinutes: Number(halfDayThresholdMinutes) ?? 120,
-        earlyCheckoutThresholdMinutes:
-          Number(earlyCheckoutThresholdMinutes) ?? 15,
-        earlyCheckoutDeductionEnabled: Boolean(earlyCheckoutDeductionEnabled),
-      },
-    },
-    { upsert: true, new: true },
-  );
-
-  res.json({ success: true, data: rule });
-});
+// Deduction-rules endpoints now live in attendanceSettingsController (the
+// settings page was renamed to "Attendance Settings"); delegate here so
+// existing payrollConfigRoutes consumers keep working unchanged.
+const getDeductionRules = getAttendanceSettings;
+const upsertDeductionRules = upsertAttendanceSettings;
 
 module.exports = {
   getAllConfigs,

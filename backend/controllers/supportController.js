@@ -101,7 +101,7 @@ exports.createTicket = asyncHandler(async (req, res) => {
 exports.getMyTickets = asyncHandler(async (req, res) => {
   const filter = { company: req.user.company };
 
-  const adminRoles = ["super_admin", "hr_manager", "hr_executive"];
+  const adminRoles = ["super_admin", "hr_manager"];
   if (!adminRoles.includes(req.user.role)) {
     filter.submittedBy = req.user._id;
   }

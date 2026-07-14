@@ -546,7 +546,9 @@ const markPaid = asyncHandler(async (req, res) => {
         const companySetting = await Setting.findOne({
           company: req.user.company,
         })
-          .select("companyName companyAddress logoUrl chequeLogoX chequeLogoY chequeLogoW")
+          .select(
+            "companyName companyAddress logoUrl chequeLogoX chequeLogoY chequeLogoW",
+          )
           .lean();
         const companyInfo = {
           name: companySetting?.companyName || "",
@@ -642,7 +644,9 @@ const bulkMarkPaid = asyncHandler(async (req, res) => {
       const companySetting = await Setting.findOne({
         company: req.user.company,
       })
-        .select("companyName companyAddress logoUrl chequeLogoX chequeLogoY chequeLogoW")
+        .select(
+          "companyName companyAddress logoUrl chequeLogoX chequeLogoY chequeLogoW",
+        )
         .lean();
       const companyInfo = {
         name: companySetting?.companyName || "",

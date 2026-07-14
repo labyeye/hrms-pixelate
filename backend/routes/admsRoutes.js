@@ -6,6 +6,7 @@ const BiometricDevice = require("../models/BiometricDevice");
 const BiometricCommand = require("../models/BiometricCommand");
 const Shift = require("../models/Shift");
 const User = require("../models/User");
+const DeductionRule = require("../models/DeductionRule");
 const { getEffectiveCheckOut } = require("../utils/shiftUtils");
 const {
   sendCheckIn,
@@ -14,8 +15,6 @@ const {
   sendCheckOutHR,
 } = require("../services/whatsappService");
 
-const GRACE_MINUTES = 15;
-const HALF_DAY_MINUTES = 120;
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
 
 async function resolveAttendanceStatus(employee, checkIn) {
@@ -29,8 +28,15 @@ async function resolveAttendanceStatus(employee, checkIn) {
   const ist = new Date(new Date(checkIn).getTime() + IST_OFFSET_MS);
   const checkInMins = ist.getUTCHours() * 60 + ist.getUTCMinutes();
   const minutesLate = checkInMins - shiftStartMins;
-  if (minutesLate > HALF_DAY_MINUTES) return "half_day";
-  if (minutesLate > GRACE_MINUTES) return "late";
+
+  const rule = await DeductionRule.findOne({
+    company: employee.company,
+  }).select("lateThresholdMinutes halfDayThresholdMinutes");
+  const graceMinutes = rule?.lateThresholdMinutes ?? 15;
+  const halfDayMinutes = rule?.halfDayThresholdMinutes ?? 120;
+
+  if (minutesLate > halfDayMinutes) return "half_day";
+  if (minutesLate > graceMinutes) return "late";
   return "present";
 }
 

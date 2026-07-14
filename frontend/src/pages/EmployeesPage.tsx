@@ -13,6 +13,7 @@ import {
 } from "@/services/api";
 import { Employee, Department } from "@/types/hrms";
 import { cn, formatDate } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Plus,
   Search,
@@ -137,6 +138,8 @@ interface EmployeeFormData {
   qualification: string;
   totalExperience: string;
   previousCompany: string;
+  role: string;
+  headOfDepartment: string;
 }
 
 const EMPTY_FORM: EmployeeFormData = {
@@ -201,10 +204,22 @@ const EMPTY_FORM: EmployeeFormData = {
   qualification: "",
   totalExperience: "",
   previousCompany: "",
+  role: "employee",
+  headOfDepartment: "",
 };
+
+const ROLE_OPTIONS = [
+  { value: "employee", label: "Employee" },
+  { value: "department_head", label: "Department Head" },
+  { value: "hr_manager", label: "HR Manager" },
+  { value: "super_admin", label: "Admin" },
+];
 
 export default function EmployeesPage() {
   const navigate = useNavigate();
+  const { user: authUser } = useAuth();
+  const canAssignRole =
+    authUser?.role === "super_admin" || authUser?.role === "hr_manager";
   const confirm = useConfirm();
   const { toast } = useToast();
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -1523,6 +1538,61 @@ export default function EmployeesPage() {
                         ))}
                       </div>
                     </div>
+
+                    {canAssignRole && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Role
+                          </label>
+                          <select
+                            value={form.role}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                role: e.target.value,
+                                headOfDepartment:
+                                  e.target.value === "department_head"
+                                    ? form.headOfDepartment
+                                    : "",
+                              })
+                            }
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 bg-white"
+                          >
+                            {ROLE_OPTIONS.map((r) => (
+                              <option key={r.value} value={r.value}>
+                                {r.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        {form.role === "department_head" && (
+                          <div>
+                            <label className="block text-xs font-bold text-black mb-1">
+                              Head Of Department
+                            </label>
+                            <select
+                              required
+                              value={form.headOfDepartment}
+                              onChange={(e) =>
+                                setForm({
+                                  ...form,
+                                  headOfDepartment: e.target.value,
+                                })
+                              }
+                              className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 bg-white"
+                            >
+                              <option value="">Select department</option>
+                              {departments.map((d) => (
+                                <option key={d._id} value={d._id}>
+                                  {d.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>

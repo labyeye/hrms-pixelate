@@ -46,7 +46,7 @@ exports.createAnnouncement = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: populated });
 });
 
-const ADMIN_ROLES = ["super_admin", "hr_manager", "hr_executive"];
+const ADMIN_ROLES = ["super_admin", "hr_manager"];
 
 exports.getAnnouncements = asyncHandler(async (req, res) => {
   const filter = { company: req.user.company };
@@ -74,7 +74,10 @@ exports.getAnnouncements = asyncHandler(async (req, res) => {
     announcements = announcements.filter((a) => {
       if (a.targetAudience === "all") return true;
       if (a.targetAudience === "department") {
-        return emp && a.departments.some((d) => String(d._id) === String(emp.department));
+        return (
+          emp &&
+          a.departments.some((d) => String(d._id) === String(emp.department))
+        );
       }
       if (a.targetAudience === "role") {
         return a.roles.includes(req.user.role);
@@ -124,9 +127,15 @@ exports.acknowledgeAnnouncement = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Announcement not found");
   }
-  if (!announcement.acknowledgedBy.some((id) => String(id) === String(req.user._id))) {
+  if (
+    !announcement.acknowledgedBy.some(
+      (id) => String(id) === String(req.user._id),
+    )
+  ) {
     announcement.acknowledgedBy.push(req.user._id);
-    if (!announcement.readBy.some((id) => String(id) === String(req.user._id))) {
+    if (
+      !announcement.readBy.some((id) => String(id) === String(req.user._id))
+    ) {
       announcement.readBy.push(req.user._id);
     }
     await announcement.save();

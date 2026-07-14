@@ -14,6 +14,7 @@ import {
   Lock,
   BarChart2,
   Fingerprint,
+  AlarmClock,
   Gift,
   CreditCard,
   SlidersHorizontal,
@@ -179,9 +180,15 @@ const allGroups: NavGroup[] = [
         roles: ["super_admin", "hr_manager"],
       },
       {
-        title: "Payroll Settings",
-        href: "/payroll-settings",
+        title: "Attendance Settings",
+        href: "/attendance-settings",
         icon: SlidersHorizontal,
+        roles: ["super_admin", "hr_manager"],
+      },
+      {
+        title: "Late Approvals",
+        href: "/late-approvals",
+        icon: AlarmClock,
         roles: ["super_admin", "hr_manager"],
       },
       {

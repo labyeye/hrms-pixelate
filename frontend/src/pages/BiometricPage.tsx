@@ -38,6 +38,7 @@ import {
   Fingerprint,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EmployeeCombobox } from "@/components/employees/EmployeeCombobox";
 
 type Tab = "locations_devices" | "logs" | "adms";
 
@@ -237,7 +238,8 @@ export default function BiometricPage() {
   const handleDeleteLocation = async (id: string) => {
     const ok = await confirm({
       title: "Delete this location?",
-      description: "Associated devices will be deactivated. This action cannot be undone.",
+      description:
+        "Associated devices will be deactivated. This action cannot be undone.",
       confirmText: "Delete",
       destructive: true,
     });
@@ -288,7 +290,8 @@ export default function BiometricPage() {
   const handleRegenerateToken = async (deviceId: string) => {
     const ok = await confirm({
       title: "Regenerate token?",
-      description: "Both the terminal URL and activation code will change — reconnection required. This action cannot be undone.",
+      description:
+        "Both the terminal URL and activation code will change — reconnection required. This action cannot be undone.",
       confirmText: "Regenerate",
       destructive: true,
     });
@@ -1230,24 +1233,17 @@ export default function BiometricPage() {
                                   <label className="block text-xs font-bold uppercase mb-1">
                                     Employee *
                                   </label>
-                                  <select
+                                  <EmployeeCombobox
+                                    employees={employees}
                                     value={nfcForm.employeeId}
-                                    onChange={(e) =>
+                                    onChange={(id) =>
                                       setNfcForm((p) => ({
                                         ...p,
-                                        employeeId: e.target.value,
+                                        employeeId: id,
                                       }))
                                     }
                                     className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none"
-                                  >
-                                    <option value="">Select employee</option>
-                                    {employees.map((emp) => (
-                                      <option key={emp._id} value={emp._id}>
-                                        {emp.firstName} {emp.lastName} (
-                                        {emp.employeeId})
-                                      </option>
-                                    ))}
-                                  </select>
+                                  />
                                 </div>
                                 <button
                                   onClick={handleAssignNfc}
@@ -1543,10 +1539,11 @@ export default function BiometricPage() {
                 </h2>
                 <div className="p-3 bg-gray-50 border-2 border-gray-200 mb-4">
                   <p className="text-xs text-gray-500 mb-2">
-                    Any device that speaks the <strong>ADMS / iClock push</strong>{" "}
-                    protocol (most ZKTeco and eSSL biometric terminals) works
-                    here. On the device: <strong>Menu → Comm → Cloud Server
-                    Setting</strong> → enable ADMS, then set:
+                    Any device that speaks the{" "}
+                    <strong>ADMS / iClock push</strong> protocol (most ZKTeco
+                    and eSSL biometric terminals) works here. On the device:{" "}
+                    <strong>Menu → Comm → Cloud Server Setting</strong> → enable
+                    ADMS, then set:
                   </p>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-gray-500 w-28 shrink-0">
