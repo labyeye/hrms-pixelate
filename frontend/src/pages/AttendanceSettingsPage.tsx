@@ -197,11 +197,16 @@ function CustomAllowanceModal({
               key={e._id}
               className="flex items-center justify-between px-4 py-2"
             >
-              <div>
-                <p className="text-sm font-bold">
-                  {e.firstName} {e.lastName}
-                </p>
-                <p className="text-xs text-muted-foreground">{e.employeeId}</p>
+              <div className="flex items-center gap-2">
+                <Avatar avatar={e.avatar} firstName={e.firstName} />
+                <div>
+                  <p className="text-sm font-bold">
+                    {e.firstName} {e.lastName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {e.employeeId}
+                  </p>
+                </div>
               </div>
               <input
                 type="number"
@@ -247,12 +252,33 @@ function CustomAllowanceModal({
   );
 }
 
+function Avatar({
+  avatar,
+  firstName,
+}: {
+  avatar?: string;
+  firstName?: string;
+}) {
+  return avatar ? (
+    <img
+      src={avatar}
+      alt={firstName}
+      className="w-7 h-7 border-2 border-black object-cover shrink-0 rounded-full"
+    />
+  ) : (
+    <div className="w-7 h-7 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[10px] font-bold text-white shrink-0 rounded-full">
+      {firstName?.[0]?.toUpperCase()}
+    </div>
+  );
+}
+
 interface BalanceRow {
   employee: {
     _id: string;
     firstName: string;
     lastName: string;
     employeeId: string;
+    avatar?: string;
   };
   lateUsed: number;
   lateAllowed: number;
@@ -744,12 +770,20 @@ export default function AttendanceSettingsPage() {
                           className={i % 2 ? "bg-[#F8FAFF]" : ""}
                         >
                           <td className="px-4 py-3">
-                            <p className="font-bold text-xs">
-                              {b.employee.firstName} {b.employee.lastName}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground">
-                              {b.employee.employeeId}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <Avatar
+                                avatar={b.employee.avatar}
+                                firstName={b.employee.firstName}
+                              />
+                              <div>
+                                <p className="font-bold text-xs">
+                                  {b.employee.firstName} {b.employee.lastName}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground">
+                                  {b.employee.employeeId}
+                                </p>
+                              </div>
+                            </div>
                           </td>
                           <td className="px-4 py-3 text-xs font-bold">
                             {b.lateUsed}/{b.lateAllowed}

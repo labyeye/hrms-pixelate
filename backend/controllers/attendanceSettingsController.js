@@ -88,6 +88,11 @@ const upsertLateAllowance = asyncHandler(async (req, res) => {
     { upsert: true, new: true },
   );
 
+  await AttendanceBalance.syncCurrentMonthLateAllowance(
+    req.user.company,
+    rule.lateAllowance,
+  );
+
   res.json({ success: true, data: rule.lateAllowance });
 });
 
@@ -117,6 +122,12 @@ const upsertLeaveAllowance = asyncHandler(async (req, res) => {
     { upsert: true, new: true },
   );
 
+  await AttendanceBalance.syncCurrentMonthLeaveAllowance(
+    req.user.company,
+    leaveType,
+    allowance,
+  );
+
   res.json({ success: true, data: allowance });
 });
 
@@ -124,7 +135,7 @@ const getBalanceSummary = asyncHandler(async (req, res) => {
   const employees = await Employee.find({
     company: req.user.company,
     status: { $ne: "terminated" },
-  }).select("firstName lastName employeeId");
+  }).select("firstName lastName employeeId avatar");
 
   const summary = await Promise.all(
     employees.map(async (emp) => {
@@ -138,6 +149,7 @@ const getBalanceSummary = asyncHandler(async (req, res) => {
           firstName: emp.firstName,
           lastName: emp.lastName,
           employeeId: emp.employeeId,
+          avatar: emp.avatar,
         },
         lateUsed: balance.lateUsed,
         lateAllowed: balance.lateAllowed,

@@ -88,4 +88,67 @@ attendanceBalanceSchema.statics.getOrCreateCurrentMonth = async function (
   return balance;
 };
 
+// Applies an updated DeductionRule.lateAllowance to the current month's
+// already-created balance docs, so a mid-month change takes effect immediately
+// instead of only from next month's fresh snapshot.
+attendanceBalanceSchema.statics.syncCurrentMonthLateAllowance = async function (
+  companyId,
+  lateAllowance,
+) {
+  const month = currentMonthKey();
+  if (lateAllowance?.mode === "custom") {
+    const overrides = lateAllowance.perEmployee || [];
+    await Promise.all(
+      overrides.map((o) =>
+        this.updateOne(
+          { company: companyId, month, employee: o.employee },
+          { $set: { lateAllowed: Number(o.count) || 0 } },
+        ),
+      ),
+    );
+    await this.updateMany(
+      {
+        company: companyId,
+        month,
+        employee: { $nin: overrides.map((o) => o.employee) },
+      },
+      { $set: { lateAllowed: 0 } },
+    );
+  } else {
+    await this.updateMany(
+      { company: companyId, month },
+      { $set: { lateAllowed: Number(lateAllowance?.bulkCount) || 0 } },
+    );
+  }
+};
+
+// Applies an updated LeaveAllowance to the current month's already-created
+// balance docs' matching leaveUsed entry, same reasoning as above.
+attendanceBalanceSchema.statics.syncCurrentMonthLeaveAllowance = async function (
+  companyId,
+  leaveType,
+  allowance,
+) {
+  const month = currentMonthKey();
+  const balances = await this.find({ company: companyId, month });
+  await Promise.all(
+    balances.map((balance) => {
+      const entry = balance.leaveUsed.find((l) => l.leaveType === leaveType);
+      let daysAllowed = allowance.mode === "bulk" ? allowance.bulkDays : 0;
+      if (allowance.mode === "custom") {
+        const override = allowance.perEmployee?.find(
+          (p) => p.employee?.toString() === balance.employee.toString(),
+        );
+        daysAllowed = override ? override.days : 0;
+      }
+      if (entry) {
+        entry.daysAllowed = daysAllowed;
+      } else {
+        balance.leaveUsed.push({ leaveType, daysUsed: 0, daysAllowed });
+      }
+      return balance.save();
+    }),
+  );
+};
+
 module.exports = mongoose.model("AttendanceBalance", attendanceBalanceSchema);
