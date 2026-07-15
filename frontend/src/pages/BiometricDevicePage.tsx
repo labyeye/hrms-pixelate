@@ -69,9 +69,16 @@ export default function BiometricDevicePage() {
   const [nfcReading, setNfcReading] = useState(false);
   const [manualUid, setManualUid] = useState("");
 
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [cameraActive, setCameraActive] = useState(false);
-  const [faceEmployeeId, setFaceEmployeeId] = useState("");
+  const {
+    videoRef,
+    loadState: faceLoadState,
+    cameraActive,
+    startCamera: faceStartCamera,
+    stopCamera: faceStopCamera,
+    captureFaceDescriptorWithLiveness,
+  } = useFaceRecognition();
+  const [faceVerifying, setFaceVerifying] = useState(false);
+  const [faceStatus, setFaceStatus] = useState("");
 
   const {
     videoRef: enrollVideoRef,
@@ -154,7 +161,6 @@ export default function BiometricDevicePage() {
       setResult(null);
       setManualUid("");
       setPinEmployeeId("");
-      setFaceEmployeeId("");
     }, 4000);
   };
 
@@ -209,32 +215,36 @@ export default function BiometricDevicePage() {
 
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user" },
-      });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-        setCameraActive(true);
-      }
-    } catch {
-      showScanError("Camera access denied");
+      await faceStartCamera();
+    } catch (e: any) {
+      showScanError(e.message || "Camera access denied");
     }
   };
 
   const stopCamera = () => {
-    if (videoRef.current?.srcObject) {
-      (videoRef.current.srcObject as MediaStream)
-        .getTracks()
-        .forEach((t) => t.stop());
-      videoRef.current.srcObject = null;
-      setCameraActive(false);
-    }
+    faceStopCamera();
   };
 
   useEffect(() => {
     if (mode !== "face") stopCamera();
   }, [mode]);
+
+  const doFaceVerify = async () => {
+    if (!token || faceVerifying) return;
+    setFaceVerifying(true);
+    setFaceStatus("Look at the camera and blink naturally…");
+    try {
+      const descriptor = await captureFaceDescriptorWithLiveness();
+      setFaceStatus("Verifying…");
+      const res = await biometricAPI.faceAttendance(descriptor, token);
+      showResult(res.data);
+    } catch (e: any) {
+      showScanError(e.message || "Face verification failed");
+    } finally {
+      setFaceVerifying(false);
+      setFaceStatus("");
+    }
+  };
 
   const fetchEnrollEmployees = useCallback(async () => {
     if (!token) return;
@@ -580,47 +590,28 @@ export default function BiometricDevicePage() {
                       Start Camera
                     </button>
                   ) : (
-                    <button
-                      onClick={stopCamera}
-                      className="w-full bg-white/10 border-2 border-white/20 text-white font-bold uppercase py-3 mb-4"
-                    >
-                      Stop Camera
-                    </button>
+                    <>
+                      <button
+                        onClick={doFaceVerify}
+                        disabled={faceVerifying || faceLoadState !== "ready"}
+                        className="w-full bg-[#024BAB] border-2 border-white/20 text-white font-bold uppercase py-3 mb-2 disabled:opacity-40"
+                      >
+                        {faceVerifying ? "Verifying…" : "Scan Face"}
+                      </button>
+                      {faceStatus && (
+                        <p className="text-white/60 text-xs font-medium mb-2">
+                          {faceStatus}
+                        </p>
+                      )}
+                      <button
+                        onClick={stopCamera}
+                        disabled={faceVerifying}
+                        className="w-full bg-white/10 border-2 border-white/20 text-white font-bold uppercase py-3 disabled:opacity-40"
+                      >
+                        Stop Camera
+                      </button>
+                    </>
                   )}
-                  <div className="border-t border-white/10 pt-4">
-                    <p className="text-white/40 text-xs font-bold uppercase mb-2">
-                      Select Employee
-                    </p>
-                    <select
-                      value={faceEmployeeId}
-                      onChange={(e) => setFaceEmployeeId(e.target.value)}
-                      className="w-full bg-white/10 border-2 border-white/20 text-white px-3 py-2 text-sm font-medium focus:outline-none focus:border-[#024BAB] mb-3"
-                    >
-                      <option value="" className="bg-[#0A0F1E]">
-                        Select employee
-                      </option>
-                      {device?.nfcCards.map((card) => (
-                        <option
-                          key={card.employee._id}
-                          value={card.employee._id}
-                          className="bg-[#0A0F1E]"
-                        >
-                          {card.employee.firstName} {card.employee.lastName} (
-                          {card.employee.employeeId})
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() =>
-                        faceEmployeeId &&
-                        doRecord({ method: "face", employeeId: faceEmployeeId })
-                      }
-                      disabled={!faceEmployeeId}
-                      className="w-full bg-[#024BAB] border-2 border-white/20 text-white font-bold uppercase py-3 disabled:opacity-40"
-                    >
-                      Record Attendance
-                    </button>
-                  </div>
                 </div>
               )}
 

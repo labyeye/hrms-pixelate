@@ -865,10 +865,23 @@ const faceAttendance = asyncHandler(async (req, res) => {
     throw new Error("Invalid face descriptor");
   }
 
+  const device = deviceToken
+    ? await BiometricDevice.findOne({ deviceToken, isActive: true }).populate(
+        "location",
+      )
+    : null;
+  if (deviceToken && !device) {
+    res.status(404);
+    throw new Error("Device not found");
+  }
+
   const employees = await Employee.find({
+    ...(device ? { company: device.company } : {}),
     faceDescriptor: { $exists: true, $not: { $size: 0 } },
     status: { $nin: ["terminated", "exited"] },
-  }).select("_id firstName lastName employeeId phone faceDescriptor company");
+  })
+    .select("_id firstName lastName employeeId phone faceDescriptor company")
+    .lean();
 
   const THRESHOLD = 0.5;
   let bestMatch = null;
@@ -971,11 +984,6 @@ const faceAttendance = asyncHandler(async (req, res) => {
     { upsert: true, new: true },
   );
 
-  let device = null;
-  if (deviceToken) {
-    device = await BiometricDevice.findOne({ deviceToken, isActive: true });
-  }
-
   if (device) {
     await BiometricLog.create({
       company: bestMatch.company,
@@ -1074,6 +1082,7 @@ const faceAttendance = asyncHandler(async (req, res) => {
       type: logType,
       confidence: parseFloat(((1 - bestDist / THRESHOLD) * 100).toFixed(1)),
       timestamp: now,
+      location: device?.location?.name,
     },
   });
 });

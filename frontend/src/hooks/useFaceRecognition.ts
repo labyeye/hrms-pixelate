@@ -100,6 +100,56 @@ export function useFaceRecognition() {
     return Array.from(detection.descriptor);
   }, [loadState]);
 
+  // Eye Aspect Ratio: low value = eyes closed. Photos/screens never dip this, so a
+  // blink within the capture window proves a live person, not a printed/displayed photo.
+  const eyeAspectRatio = (eye: faceapi.Point[]) => {
+    const dist = (a: faceapi.Point, b: faceapi.Point) =>
+      Math.hypot(a.x - b.x, a.y - b.y);
+    return (
+      (dist(eye[1], eye[5]) + dist(eye[2], eye[4])) / (2 * dist(eye[0], eye[3]))
+    );
+  };
+
+  const BLINK_EAR_THRESHOLD = 0.22;
+  const LIVENESS_TIMEOUT_MS = 4000;
+  const LIVENESS_POLL_MS = 100;
+
+  // Watches for a natural blink over a short window, then immediately captures the
+  // descriptor — keeps the total scan-to-result time low while blocking photo spoofing.
+  const captureFaceDescriptorWithLiveness = useCallback(async (): Promise<number[]> => {
+    if (!videoRef.current || loadState !== "ready") {
+      throw new Error("Camera or models not ready");
+    }
+    const video = videoRef.current;
+    const deadline = Date.now() + LIVENESS_TIMEOUT_MS;
+    let sawOpen = false;
+    let sawBlink = false;
+
+    while (Date.now() < deadline && !sawBlink) {
+      const detection = await faceapi
+        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+        .withFaceLandmarks();
+
+      if (detection) {
+        const landmarks = detection.landmarks;
+        const ear =
+          (eyeAspectRatio(landmarks.getLeftEye()) +
+            eyeAspectRatio(landmarks.getRightEye())) /
+          2;
+        if (ear >= BLINK_EAR_THRESHOLD) sawOpen = true;
+        else if (sawOpen) sawBlink = true;
+      }
+      if (!sawBlink) await new Promise((r) => setTimeout(r, LIVENESS_POLL_MS));
+    }
+
+    if (!sawBlink)
+      throw new Error(
+        "Liveness check failed — please blink naturally, photos are not accepted",
+      );
+
+    return captureFaceDescriptor();
+  }, [loadState, captureFaceDescriptor]);
+
   const startLiveDetection = useCallback(() => {
     if (!videoRef.current || !canvasRef.current || loadState !== "ready")
       return;
@@ -168,6 +218,7 @@ export function useFaceRecognition() {
     stopCamera,
     loadModels,
     captureFaceDescriptor,
+    captureFaceDescriptorWithLiveness,
     startLiveDetection,
     matchDescriptor,
   };
