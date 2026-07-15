@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { attendanceAPI, employeeAPI } from "@/services/api";
+import { attendanceAPI, employeeAPI, attendanceSettingsAPI } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useConfirm } from "@/hooks/use-confirm";
@@ -163,6 +163,10 @@ export default function AttendancePage() {
   const [locationRecord, setLocationRecord] = useState<AttendanceRecord | null>(
     null,
   );
+  const [myLateBalance, setMyLateBalance] = useState<{
+    lateUsed: number;
+    lateAllowed: number;
+  } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -179,6 +183,17 @@ export default function AttendancePage() {
           limit: "5000",
         });
         if (empRes.success) setEmployees(empRes.data);
+      } else {
+        attendanceSettingsAPI
+          .getMyBalance()
+          .then((r) => {
+            if (r.success)
+              setMyLateBalance({
+                lateUsed: r.data.lateUsed,
+                lateAllowed: r.data.lateAllowed,
+              });
+          })
+          .catch(() => {});
       }
     } catch {}
     setLoading(false);
@@ -496,6 +511,20 @@ export default function AttendancePage() {
           </button>
         )}
       </div>
+
+      {isEmployee && myLateBalance && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+          <div className="border-2 border-black bg-white p-4">
+            <p className="text-xs font-bold uppercase text-muted-foreground">
+              Late allowance left
+            </p>
+            <p className="text-2xl font-bold mt-1 text-[#024BAB]">
+              {Math.max(myLateBalance.lateAllowed - myLateBalance.lateUsed, 0)}/
+              {myLateBalance.lateAllowed}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-5">

@@ -8,6 +8,7 @@ const Shift = require("../models/Shift");
 const User = require("../models/User");
 const DeductionRule = require("../models/DeductionRule");
 const { getEffectiveCheckOut } = require("../utils/shiftUtils");
+const { handleLateAllowance } = require("../controllers/attendanceController");
 const {
   sendCheckIn,
   sendCheckInHR,
@@ -237,6 +238,9 @@ async function processLog(
     console.log(
       `[ADMS] Created attendance checkIn=${punchTime.toISOString()} status=${status} verifyMode=${verifyMode} for ${employee.firstName}`,
     );
+    if (status === "late") {
+      await handleLateAllowance(employee._id, employee.company, dayStart, punchTime);
+    }
     await notifyCheckIn(employee, loc, punchTime, companyId);
     return;
   }
@@ -255,6 +259,9 @@ async function processLog(
     upd.checkIn = punchTime;
     upd.verifyMode = verifyMode;
     upd.status = await resolveAttendanceStatus(employee, punchTime);
+    if (upd.status === "late") {
+      await handleLateAllowance(employee._id, employee.company, dayStart, punchTime);
+    }
     logType = "check_in";
   } else if (punchTime > existing.checkIn) {
     upd.checkOut = await getEffectiveCheckOut(

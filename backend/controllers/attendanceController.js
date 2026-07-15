@@ -787,4 +787,5 @@ module.exports = {
   updateAttendance,
   bulkMarkAttendance,
   getMonthSummary,
+  handleLateAllowance,
 };

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { leaveAPI, employeeAPI } from "@/services/api";
+import { leaveAPI, employeeAPI, attendanceSettingsAPI } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useConfirm } from "@/hooks/use-confirm";
 import { LeaveRequest, Employee } from "@/types/hrms";
@@ -194,6 +194,9 @@ export default function LeavePage() {
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [myEmployeeId, setMyEmployeeId] = useState("");
+  const [myLeaveBalance, setMyLeaveBalance] = useState<
+    { leaveType: string; daysUsed: number; daysAllowed: number }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
 
@@ -266,6 +269,12 @@ export default function LeavePage() {
         ]);
         if (leavesRes.success) setLeaves(leavesRes.data);
         if (meRes.success) setMyEmployeeId(meRes.data._id);
+        attendanceSettingsAPI
+          .getMyBalance()
+          .then((r) => {
+            if (r.success) setMyLeaveBalance(r.data.leaveUsed);
+          })
+          .catch(() => {});
       } else {
         const [leavesRes, empRes] = await Promise.all([
           leaveAPI.getAll(filter ? { status: filter } : undefined),
@@ -551,6 +560,24 @@ export default function LeavePage() {
           <Plus className="w-4 h-4" /> Apply Leave
         </button>
       </div>
+
+      {isEmployee && myLeaveBalance.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+          {myLeaveBalance.map((l) => (
+            <div
+              key={l.leaveType}
+              className="border-2 border-black bg-white p-4"
+            >
+              <p className="text-xs font-bold uppercase text-muted-foreground">
+                {TYPE_LABELS[l.leaveType] ?? l.leaveType} left
+              </p>
+              <p className="text-2xl font-bold mt-1 text-[#024BAB]">
+                {Math.max(l.daysAllowed - l.daysUsed, 0)}/{l.daysAllowed}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {}
       <div className="grid grid-cols-3 gap-3 mb-5">
