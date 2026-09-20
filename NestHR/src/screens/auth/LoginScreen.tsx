@@ -13,10 +13,14 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Mail, Lock, Eye, EyeOff, LogIn, Smartphone, ArrowRight } from 'lucide-react-native';
+import LottieView from 'lottie-react-native';
+import { Mail, Lock, Eye, EyeOff, LogIn, Smartphone, ArrowRight, Fingerprint } from 'lucide-react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { authAPI } from '../../api/api';
 import { C } from '../../theme';
+
+const loginAnim = require('../../assets/lottie/login.json');
+const otpAnim = require('../../assets/lottie/otp.json');
 
 export default function LoginScreen({ navigation }: any) {
   const { login, loginWithToken } = useAuth();
@@ -24,6 +28,9 @@ export default function LoginScreen({ navigation }: any) {
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Set once the password step succeeded for an account with 2FA on.
+  const [pending2FA, setPending2FA] = useState<string | null>(null);
+  const [tfaCode, setTfaCode] = useState('');
 
   // Phone OTP state
   const [mode, setMode] = useState<'email' | 'phone'>('email');
@@ -40,9 +47,27 @@ export default function LoginScreen({ navigation }: any) {
     setLoading(true);
     const result = await login(email.trim().toLowerCase(), password);
     setLoading(false);
+    if (result.requires2FA) {
+      setPending2FA(result.userId || '');
+      return;
+    }
     if (!result.success)
       Alert.alert('Login Failed', result.error || 'Invalid credentials');
   };
+
+  const handleVerify2FA = async () => {
+    setLoading(true);
+    try {
+      const res = await authAPI.verify2FA(pending2FA || '', tfaCode.trim());
+      const { token, ...userData } = res.data;
+      await loginWithToken(userData, token);
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Invalid authentication code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   const handleSendOtp = async () => {
     if (!phone.trim()) {
@@ -77,6 +102,14 @@ export default function LoginScreen({ navigation }: any) {
     }
   };
 
+  const handleBiometricLogin = async () => {
+    try {
+      Alert.alert('Passkey / Biometric', 'Biometric authentication requires device key registration. Ensure face/fingerprint unlock is enabled on your device.');
+    } catch (err: any) {
+      Alert.alert('Biometric Error', err.message || 'Biometric authentication failed.');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
@@ -87,12 +120,61 @@ export default function LoginScreen({ navigation }: any) {
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Card */}
-          <View style={styles.card}>
+          {pending2FA === null && (
+            <LottieView
+              key={mode}
+              source={mode === 'phone' ? otpAnim : loginAnim}
+              autoPlay
+              loop
+              style={mode === 'phone' ? styles.lottieOtp : styles.lottieLogin}
+            />
+          )}
+          <>
             <Text style={styles.cardTitle}>Welcome back</Text>
             <Text style={styles.cardSub}></Text>
 
-            {mode === 'phone' ? (
+            {pending2FA !== null ? (
+              /* ── 2FA code step ────────────────────────────────── */
+              <>
+                <Text style={styles.cardSub}>
+                  Enter the 6-digit code from your authenticator app, or a backup code.
+                </Text>
+                <View style={styles.field}>
+                  <Text style={styles.label}>Authentication Code</Text>
+                  <TextInput
+                    style={[styles.inputRow, styles.otpInput]}
+                    value={tfaCode}
+                    onChangeText={setTfaCode}
+                    placeholder="000000"
+                    placeholderTextColor={C.textLight}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    maxLength={8}
+                    autoFocus
+                  />
+                </View>
+                <TouchableOpacity
+                  style={styles.btnPrimary}
+                  onPress={handleVerify2FA}
+                  disabled={loading || tfaCode.length < 6}
+                >
+                  {loading ? (
+                    <ActivityIndicator color={C.white} />
+                  ) : (
+                    <>
+                      <ArrowRight size={16} color={C.white} />
+                      <Text style={styles.btnPrimaryText}>Verify Code</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.forgotBtn}
+                  onPress={() => { setPending2FA(null); setTfaCode(''); }}
+                >
+                  <Text style={styles.forgotText}>← Back to login</Text>
+                </TouchableOpacity>
+              </>
+            ) : mode === 'phone' ? (
               /* ── Phone OTP flow ───────────────────────────────── */
               <>
                 {!otpSent ? (
@@ -116,7 +198,7 @@ export default function LoginScreen({ navigation }: any) {
                     <TouchableOpacity
                       style={styles.btnPrimary}
                       onPress={handleSendOtp}
-                      disabled={otpLoading}
+                      disabled={otpLoading || !phone.trim()}
                     >
                       {otpLoading ? (
                         <ActivityIndicator color={C.white} />
@@ -167,13 +249,6 @@ export default function LoginScreen({ navigation }: any) {
                     </TouchableOpacity>
                   </>
                 )}
-
-                <TouchableOpacity
-                  style={styles.forgotBtn}
-                  onPress={() => { setMode('email'); setOtpSent(false); setPhone(''); setOtp(''); }}
-                >
-                  <Text style={styles.forgotText}>← Sign in with Email</Text>
-                </TouchableOpacity>
               </>
             ) : (
               /* ── Email / Password flow ────────────────────────── */
@@ -244,19 +319,58 @@ export default function LoginScreen({ navigation }: any) {
                 >
                   <Text style={styles.forgotText}>Forgot Password?</Text>
                 </TouchableOpacity>
-
-                {/* Phone OTP option */}
-                <TouchableOpacity
-                  style={styles.forgotBtn}
-                  onPress={() => setMode('phone')}
-                >
-                  <Text style={[styles.forgotText, { color: C.primary }]}>
-                   Login using OTP
-                  </Text>
-                </TouchableOpacity>
               </>
             )}
-          </View>
+
+            {pending2FA === null && (
+              <>
+                <View style={styles.orRow}>
+                  <View style={styles.orLine} />
+                  <Text style={styles.orText}>Or login with</Text>
+                  <View style={styles.orLine} />
+                </View>
+
+                <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 20 }}>
+                  <View style={{ alignItems: 'center' }}>
+                    <TouchableOpacity
+                      style={styles.altBtn}
+                      onPress={() => {
+                        if (mode === 'phone') {
+                          setMode('email');
+                          setOtpSent(false);
+                          setPhone('');
+                          setOtp('');
+                        } else {
+                          setMode('phone');
+                        }
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={mode === 'phone' ? 'Sign in with email' : 'Sign in with phone OTP'}
+                    >
+                      {mode === 'phone' ? (
+                        <Mail size={24} color={C.white} />
+                      ) : (
+                        <Smartphone size={24} color={C.white} />
+                      )}
+                    </TouchableOpacity>
+                    <Text style={styles.altLabel}>{mode === 'phone' ? 'Email' : 'Phone'}</Text>
+                  </View>
+
+                  <View style={{ alignItems: 'center' }}>
+                    <TouchableOpacity
+                      style={[styles.altBtn, { backgroundColor: '#10B981' }]}
+                      onPress={handleBiometricLogin}
+                      accessibilityRole="button"
+                      accessibilityLabel="Sign in with Biometrics / Passkey"
+                    >
+                      <Fingerprint size={24} color={C.white} />
+                    </TouchableOpacity>
+                    <Text style={styles.altLabel}>Passkey</Text>
+                  </View>
+                </View>
+              </>
+            )}
+          </>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -269,12 +383,10 @@ const styles = StyleSheet.create({
   logoWrap: { alignItems: 'center', marginBottom: 32 },
   logoImg: { width: 100, height: 100, marginBottom: 8 },
   appSub: { fontSize: 19, color: C.textMuted, fontWeight: '500', marginTop: 4 },
-  card: {
-    backgroundColor: C.white,
-    borderWidth: 2,
-    borderColor: C.black,
-    padding: 24,
-  },
+  // Same box + negative top margin as NestSports' login/OTP screens: both animations have
+  // generous transparent padding in their canvas, so the art floats above the centred form.
+  lottieLogin: { width: '100%', height: 250, marginTop: -74, marginBottom: 24 },
+  lottieOtp: { width: '100%', height: 300, marginTop: -204, marginBottom: 24 },
   cardTitle: {
     fontSize: 30,
     fontWeight: '700',
@@ -335,6 +447,19 @@ const styles = StyleSheet.create({
   },
   forgotBtn: { alignItems: 'center', paddingVertical: 10 },
   forgotText: { fontSize: 13, fontWeight: '700', color: C.primary },
+  orRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20, marginBottom: 12 },
+  orLine: { flex: 1, height: 1, backgroundColor: '#E5E7EB' },
+  orText: { fontSize: 12, fontWeight: '600', color: C.textMuted },
+  altBtn: {
+    alignSelf: 'center',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: C.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  altLabel: { textAlign: 'center', marginTop: 6, fontSize: 12, fontWeight: '600', color: C.textMuted },
   otpInput: {
     borderWidth: 2,
     borderColor: C.black,

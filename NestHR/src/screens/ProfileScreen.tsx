@@ -68,6 +68,98 @@ function AccordionSection({ title, isOpen, onToggle, children, icon: Icon }: any
   );
 }
 
+// Proves the user owns their saved phone via a WhatsApp code; unlocks WhatsApp
+// password reset on the forgot-password screen.
+function PhoneVerifyCard({ phone }: { phone: string }) {
+  const [verified, setVerified] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    setSent(false);
+    authAPI
+      .getMe()
+      .then((r: any) => setVerified(!!r?.data?.phoneVerified))
+      .catch(() => {});
+  }, [phone]);
+
+  if (!phone) return null;
+
+  const send = async () => {
+    setBusy(true);
+    try {
+      await authAPI.sendPhoneVerifyOtp();
+      setSent(true);
+      Alert.alert('Code sent', 'Check WhatsApp for your 6-digit code');
+    } catch (e: any) {
+      Alert.alert('Failed', e?.message || 'Could not send code');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const verify = async () => {
+    setBusy(true);
+    try {
+      await authAPI.verifyPhoneVerifyOtp(otp.trim());
+      setVerified(true);
+      setSent(false);
+      setOtp('');
+      Alert.alert('Verified', 'WhatsApp number verified');
+    } catch (e: any) {
+      Alert.alert('Verification failed', e?.message || 'Invalid code');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <View>
+      <View style={s.sectionHeader}>
+        <Phone size={14} color={C.primary} />
+        <Text style={s.sectionTitle}>WhatsApp Verification</Text>
+      </View>
+      <View style={[s.card, { padding: 14, gap: 10 }]}>
+        <Text style={{ fontSize: 12, color: C.textMuted }}>
+          {verified
+            ? `${phone} is verified. You can reset your password with a WhatsApp code.`
+            : 'Verify your number to reset your password with a WhatsApp code.'}
+        </Text>
+        {!verified && sent && (
+          <View>
+            <Text style={s.fieldLabel}>6-Digit Code</Text>
+            <TextInput
+              style={s.fieldInput}
+              value={otp}
+              onChangeText={setOtp}
+              keyboardType="number-pad"
+              maxLength={6}
+              placeholder="123456"
+              placeholderTextColor={C.textLight}
+            />
+          </View>
+        )}
+        {!verified && (
+          <TouchableOpacity
+            style={s.saveBtn}
+            onPress={sent ? verify : send}
+            disabled={busy}
+          >
+            {busy ? (
+              <ActivityIndicator color={C.white} />
+            ) : (
+              <Text style={s.saveBtnText}>
+                {sent ? 'Verify' : 'Send Verification Code'}
+              </Text>
+            )}
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+}
+
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
   const { user, updateUser } = useAuth();
@@ -206,8 +298,8 @@ export default function ProfileScreen() {
       Alert.alert('Validation', 'All password fields are required');
       return;
     }
-    if (newPw.length < 6) {
-      Alert.alert('Validation', 'New password must be at least 6 characters');
+    if (newPw.length < 8) {
+      Alert.alert('Validation', 'New password must be at least 8 characters');
       return;
     }
     if (newPw !== confirmPw) {
@@ -218,7 +310,7 @@ export default function ProfileScreen() {
     try {
       await authAPI.updateProfile({
         currentPassword: currentPw,
-        newPassword: newPw,
+        password: newPw,
       });
       setCurrentPw('');
       setNewPw('');
@@ -756,6 +848,8 @@ export default function ProfileScreen() {
               </View>
             </AccordionSection>
           </View>
+
+          <PhoneVerifyCard phone={user?.phone || ''} />
 
           {/* Change password */}
           <View>

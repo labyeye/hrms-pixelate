@@ -37,6 +37,9 @@ import SupportScreen from '../screens/SupportScreen';
 import DocumentsScreen from '../screens/DocumentsScreen';
 import ExitManagementScreen from '../screens/ExitManagementScreen';
 import AssetsScreen from '../screens/AssetsScreen';
+import TasksScreen from '../screens/TasksScreen';
+import AnnouncementsScreen from '../screens/AnnouncementsScreen';
+import TrashScreen from '../screens/TrashScreen';
 
 const Tab = createBottomTabNavigator();
 const MoreStack = createNativeStackNavigator();
@@ -76,6 +79,9 @@ function MoreNavigator() {
       <MoreStack.Screen name="Support" component={SupportScreen} />
       <MoreStack.Screen name="Documents" component={DocumentsScreen} />
       <MoreStack.Screen name="Assets" component={AssetsScreen} />
+      <MoreStack.Screen name="Tasks" component={TasksScreen} />
+      <MoreStack.Screen name="Announcements" component={AnnouncementsScreen} />
+      <MoreStack.Screen name="Trash" component={TrashScreen} />
       <MoreStack.Screen
         name="ExitManagement"
         component={ExitManagementScreen}

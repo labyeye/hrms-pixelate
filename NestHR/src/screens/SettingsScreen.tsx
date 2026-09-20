@@ -10,6 +10,7 @@ import {
   TextInput,
   Switch,
   Modal,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -533,7 +534,7 @@ export default function SettingsScreen() {
                   setTwoFALoading(true);
                   try {
                     const res = await authAPI.setup2FA();
-                    setQrUri(res.data?.qrCodeUrl || res.qrCodeUrl || '');
+                    setQrUri(res.data?.qr || '');
                     setSecret2FA(res.data?.secret || res.secret || '');
                     setToken2FA('');
                     setShow2FASetup(true);
@@ -578,7 +579,7 @@ export default function SettingsScreen() {
               <View style={styles.qrContainer}>
                 <Text style={styles.qrLabel}>Scan this QR Code</Text>
                 <View style={styles.qrBox}>
-                  <Text style={styles.qrPlaceholder}>{qrUri}</Text>
+                  <Image source={{ uri: qrUri }} style={{ width: 200, height: 200 }} resizeMode="contain" />
                 </View>
               </View>
             ) : null}
@@ -617,10 +618,13 @@ export default function SettingsScreen() {
                 if (token2FA.length !== 6) { Alert.alert('Validation', 'Enter a 6-digit code'); return; }
                 setTwoFALoading(true);
                 try {
-                  await authAPI.confirm2FA(token2FA);
+                  const r = await authAPI.confirm2FA(token2FA);
                   setTwoFAEnabled(true);
                   setShow2FASetup(false);
-                  Alert.alert('Success', '2FA has been enabled on your account');
+                  Alert.alert(
+                    '2FA enabled',
+                    `Save these backup codes now — each works once if you lose your authenticator:\n\n${(r.data?.backupCodes || []).join('   ')}`,
+                  );
                 } catch (e: any) {
                   Alert.alert('Invalid Code', e.message);
                 } finally {

@@ -34,6 +34,9 @@ import {
   FolderOpen,
   DoorOpen,
   MapPin,
+  ListChecks,
+  Megaphone,
+  Trash2,
 } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { C } from '../theme';
@@ -171,7 +174,28 @@ const MENU_ITEMS = [
     icon: Cpu,
     desc: 'Track company hardware',
   },
+  {
+    key: 'Tasks',
+    label: 'Tasks',
+    icon: ListChecks,
+    desc: 'Assign & track work',
+  },
+  {
+    key: 'Announcements',
+    label: 'Announcements',
+    icon: Megaphone,
+    desc: 'Company news & notices',
+  },
+  {
+    key: 'Trash',
+    label: 'Trash',
+    icon: Trash2,
+    desc: 'Restore deleted items',
+  },
 ];
+
+// Only these roles may open Trash (matches the backend).
+const TRASH_ROLES = ['super_admin', 'hr_manager'];
 
 const EMPLOYEE_MENU_KEYS = new Set([
   'Payroll',
@@ -181,6 +205,8 @@ const EMPLOYEE_MENU_KEYS = new Set([
   'Support',
   'Documents',
   'Assets',
+  'Tasks',
+  'Announcements',
 ]);
 
 export default function MoreScreen({ navigation }: any) {
@@ -267,7 +293,9 @@ export default function MoreScreen({ navigation }: any) {
       >
         <View style={styles.menuCard}>
           {MENU_ITEMS.filter(
-            item => !isEmployee || EMPLOYEE_MENU_KEYS.has(item.key),
+            item =>
+              (!isEmployee || EMPLOYEE_MENU_KEYS.has(item.key)) &&
+              (item.key !== 'Trash' || TRASH_ROLES.includes(user?.role || '')),
           ).map((item, i, arr) => {
             const Icon = item.icon;
             const label =

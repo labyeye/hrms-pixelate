@@ -1707,7 +1707,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: C.primary,
     padding: 4,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#ffffff',
   },
   markBtn: {
     borderWidth: 1.5,

@@ -12,9 +12,33 @@ import {
   BarChart2,
   ShieldCheck,
   Smartphone,
+  KeyRound,
 } from "lucide-react";
 import nesthrlogo from "../../assets/logo.png";
 import { authAPI } from "@/services/api";
+
+function bufferToBase64Url(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+function base64UrlToBuffer(base64url: string): ArrayBuffer {
+  const padding = "=".repeat((4 - (base64url.length % 4)) % 4);
+  const base64 = (base64url + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray.buffer;
+}
 
 export default function LoginPage() {
   const { login, completeLogin } = useAuth();
@@ -36,6 +60,54 @@ export default function LoginPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
+
+  const handlePasskeyLogin = async () => {
+    setError("");
+    setPasskeyLoading(true);
+    try {
+      if (!window.PublicKeyCredential) {
+        throw new Error("Passkeys are not supported on this browser/device.");
+      }
+      const optionsRes = await authAPI.passkeyLoginOptions(email || undefined);
+      const options = optionsRes.data;
+
+      const credential = (await navigator.credentials.get({
+        publicKey: {
+          challenge: base64UrlToBuffer(options.challenge),
+          rpId: options.rpId || window.location.hostname,
+          userVerification: "preferred",
+          allowCredentials: options.allowCredentials?.map((c: any) => ({
+            id: base64UrlToBuffer(c.id),
+            type: c.type || "public-key",
+          })),
+        },
+      })) as PublicKeyCredential;
+
+      if (!credential) throw new Error("Passkey authentication was cancelled.");
+      const response = credential.response as AuthenticatorAssertionResponse;
+
+      const res = await authAPI.passkeyLogin({
+        id: credential.id,
+        rawId: bufferToBase64Url(credential.rawId),
+        response: {
+          clientDataJSON: bufferToBase64Url(response.clientDataJSON),
+          authenticatorData: bufferToBase64Url(response.authenticatorData),
+          signature: bufferToBase64Url(response.signature),
+          userHandle: response.userHandle ? bufferToBase64Url(response.userHandle) : null,
+        },
+        type: credential.type,
+      });
+
+      const { token, ...userData } = res.data;
+      completeLogin(userData, token);
+      navigate("/");
+    } catch (err: any) {
+      setError(err.message || "Passkey login failed.");
+    } finally {
+      setPasskeyLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -459,18 +531,34 @@ export default function LoginPage() {
                 </button>
               </form>
 
-              {}
-              <div className="mt-6 text-center">
+              {/* Alternate login options */}
+              <div className="mt-6 space-y-2 text-center">
                 <button
                   type="button"
                   onClick={() => {
                     setLoginMode("phone");
                     setError("");
                   }}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-[#024BAB] hover:underline"
+                  className="w-full py-2.5 px-4 bg-gray-50 border-2 border-black/10 hover:border-black text-xs font-bold text-black transition-all flex items-center justify-center gap-2"
                 >
-                  <Smartphone className="w-3.5 h-3.5" /> Login with Phone OTP
-                  (WhatsApp)
+                  <Smartphone className="w-4 h-4 text-[#024BAB]" /> Login with Phone OTP (WhatsApp)
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePasskeyLogin}
+                  disabled={passkeyLoading}
+                  className="w-full py-2.5 px-4 bg-gray-50 border-2 border-black/10 hover:border-black text-xs font-bold text-black transition-all flex items-center justify-center gap-2"
+                >
+                  {passkeyLoading ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                      Authenticating Passkey...
+                    </>
+                  ) : (
+                    <>
+                      <KeyRound className="w-4 h-4 text-[#024BAB]" /> Sign in with Passkey / WebAuthn
+                    </>
+                  )}
                 </button>
               </div>
 

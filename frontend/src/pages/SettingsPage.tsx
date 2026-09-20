@@ -294,6 +294,123 @@ function TextAreaField({
   );
 }
 
+// Proves the user owns their profile phone via a WhatsApp code. Once verified,
+// "WhatsApp code" becomes an option on the forgot-password screen.
+function PhoneVerifyPanel() {
+  const { toast } = useToast();
+  const [phone, setPhone] = useState<string | null>(null);
+  const [verified, setVerified] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // Phone is edited under My Profile; this panel only reads the saved one.
+  useEffect(() => {
+    authAPI
+      .getMe()
+      .then((r: any) => {
+        setPhone(r.data?.phone || "");
+        setVerified(!!r.data?.phoneVerified);
+      })
+      .catch(() => setPhone(""));
+  }, []);
+
+  const handleSend = async () => {
+    setLoading(true);
+    try {
+      await authAPI.sendPhoneVerifyOtp();
+      setSent(true);
+      toast({ title: "Code sent via WhatsApp" });
+    } catch (err: any) {
+      toast({
+        title: err.message || "Failed to send code",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await authAPI.verifyPhoneVerifyOtp(otp);
+      setVerified(true);
+      setSent(false);
+      setOtp("");
+      toast({ title: "Phone number verified" });
+    } catch (err: any) {
+      toast({ title: err.message || "Invalid code", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (phone === null)
+    return <div className="p-6 text-sm text-gray-400">Loading...</div>;
+
+  return (
+    <div className="p-6 space-y-6 max-w-lg">
+      <div>
+        <h3 className="text-lg font-bold text-black flex items-center gap-2">
+          <MessageCircle className="w-5 h-5" /> WhatsApp Verification
+        </h3>
+        <p className="text-sm text-gray-500 mt-1">
+          Verify your WhatsApp number to be able to reset your password with a
+          WhatsApp code.
+        </p>
+      </div>
+
+      <div
+        className={`flex items-center gap-3 px-4 py-3 border-2 font-bold text-sm ${verified ? "border-green-400 bg-green-50 text-green-800" : "border-gray-300 bg-gray-50 text-gray-500"}`}
+      >
+        <CheckCircle className="w-4 h-4 shrink-0" />
+        {verified ? `${phone} is verified` : "Phone number not verified"}
+      </div>
+
+      {!phone && (
+        <p className="text-sm text-gray-500">
+          Add your phone number under <strong>My Profile</strong> first.
+        </p>
+      )}
+
+      {phone && !verified && !sent && (
+        <button
+          onClick={handleSend}
+          disabled={loading}
+          className="bg-[#024BAB] text-white px-5 py-2.5 text-sm font-bold border-2 border-black hover:shadow-[4px_4px_0px_#0a0a0a] transition-all disabled:opacity-50"
+        >
+          {loading ? "Sending..." : `Send code to ${phone}`}
+        </button>
+      )}
+
+      {phone && !verified && sent && (
+        <form onSubmit={handleVerify} className="flex gap-2">
+          <input
+            type="text"
+            inputMode="numeric"
+            value={otp}
+            onChange={(e) =>
+              setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+            }
+            placeholder="000000"
+            maxLength={6}
+            className="flex-1 px-3 py-2.5 border-2 border-black text-lg font-bold tracking-[0.4em] text-center focus:outline-none focus:border-[#024BAB]"
+          />
+          <button
+            type="submit"
+            disabled={loading || otp.length < 6}
+            className="bg-[#024BAB] text-white px-5 py-2.5 text-sm font-bold border-2 border-black disabled:opacity-50 hover:shadow-[4px_4px_0px_#0a0a0a] transition-all"
+          >
+            {loading ? "..." : "Verify"}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
 function TwoFactorPanel() {
   const { toast } = useToast();
   const [step, setStep] = useState<"idle" | "setup" | "backup">("idle");
@@ -1094,6 +1211,11 @@ export default function SettingsPage() {
       items: [
         { id: "my_profile", label: "My Profile", icon: UserCircle },
         { id: "two_factor", label: "2FA Security", icon: ShieldCheck },
+        {
+          id: "phone_verify",
+          label: "WhatsApp Verification",
+          icon: MessageCircle,
+        },
       ],
     },
   ];
@@ -2442,7 +2564,7 @@ export default function SettingsPage() {
               )}
             </div>
 
-            {activeTab !== "my_profile" && (
+            {!["my_profile", "two_factor", "phone_verify"].includes(activeTab) && (
               <div className="border-t-2 border-black p-4 flex justify-end bg-gray-50/50">
                 <button
                   onClick={handleSave}
@@ -2470,6 +2592,7 @@ export default function SettingsPage() {
             )}
 
             {activeTab === "two_factor" && <TwoFactorPanel />}
+            {activeTab === "phone_verify" && <PhoneVerifyPanel />}
           </div>
           {}
         </div>

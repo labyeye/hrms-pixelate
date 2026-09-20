@@ -15,7 +15,12 @@ interface AuthContextType {
   login: (
     email: string,
     password: string,
-  ) => Promise<{ success: boolean; error?: string }>;
+  ) => Promise<{
+    success: boolean;
+    error?: string;
+    requires2FA?: boolean;
+    userId?: string;
+  }>;
   register: (data: {
     name: string;
     email: string;
@@ -77,6 +82,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     try {
       const res = await authAPI.login(email, password);
+      if (res.data.requires2FA) {
+        return { success: false, requires2FA: true, userId: res.data.userId };
+      }
       const { token, ...userData } = res.data;
       await setToken(token);
       setUser(mapUser(userData));

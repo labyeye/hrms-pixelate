@@ -108,12 +108,48 @@ export const authAPI = {
     request('/auth/2fa/confirm', { method: 'POST', body: JSON.stringify({ token }) }),
   disable2FA: (token: string) =>
     request('/auth/2fa/disable', { method: 'POST', body: JSON.stringify({ token }) }),
-  verify2FA: (token: string) =>
-    request('/auth/2fa/verify', { method: 'POST', body: JSON.stringify({ token }) }),
+  verify2FA: (userId: string, token: string) =>
+    request('/auth/2fa/verify', { method: 'POST', body: JSON.stringify({ userId, token }) }),
+  // Password reset by WhatsApp code / authenticator app
+  forgotPasswordMethods: (email: string) =>
+    request(`/auth/forgot-password/methods?email=${encodeURIComponent(email)}`),
+  forgotPasswordWhatsapp: (email: string) =>
+    request('/auth/forgot-password/whatsapp', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+  resetPasswordWithOtp: (email: string, otp: string, password: string) =>
+    request('/auth/reset-password/otp/whatsapp', {
+      method: 'POST',
+      body: JSON.stringify({ email, otp, password }),
+    }),
+  resetPasswordWithTotp: (email: string, token: string, password: string) =>
+    request('/auth/reset-password/otp/totp', {
+      method: 'POST',
+      body: JSON.stringify({ email, token, password }),
+    }),
+  // Prove ownership of the profile phone (separate from the login OTP)
+  sendPhoneVerifyOtp: () =>
+    request('/auth/phone/send-otp', { method: 'POST', body: JSON.stringify({}) }),
+  verifyPhoneVerifyOtp: (otp: string) =>
+    request('/auth/phone/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ otp }),
+    }),
   changePassword: (currentPassword: string, newPassword: string) =>
     request('/auth/change-password', {
-      method: 'POST',
+      method: 'PUT',
       body: JSON.stringify({ currentPassword, newPassword }),
+    }),
+  passkeyLoginOptions: (email?: string) =>
+    request('/auth/passkey/login-options', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+  biometricLogin: (credential: any) =>
+    request('/auth/passkey/login', {
+      method: 'POST',
+      body: JSON.stringify(credential),
     }),
 };
 
@@ -744,8 +780,61 @@ export const assetAPI = {
 
 export const announcementAPI = {
   getAll: () => request('/announcements'),
+  create: (body: {
+    title: string;
+    content: string;
+    category?: string;
+    priority?: string;
+    pinned?: boolean;
+    expiryDate?: string;
+    targetAudience?: string;
+    departments?: string[];
+    roles?: string[];
+    acknowledgementRequired?: boolean;
+  }) => request('/announcements', { method: 'POST', body: JSON.stringify(body) }),
+  delete: (id: string) => request(`/announcements/${id}`, { method: 'DELETE' }),
   markRead: (id: string) => request(`/announcements/${id}/read`, { method: 'POST' }),
   acknowledge: (id: string) => request(`/announcements/${id}/acknowledge`, { method: 'POST' }),
+};
+
+export const taskAPI = {
+  getAll: (params?: Record<string, string>) => request(`/tasks${qs(params)}`),
+  getOne: (id: string) => request(`/tasks/${id}`),
+  create: (body: {
+    title: string;
+    description?: string;
+    assignedTo: string;
+    priority?: string;
+    dueDate?: string;
+  }) => request('/tasks', { method: 'POST', body: JSON.stringify(body) }),
+  update: (
+    id: string,
+    body: {
+      title?: string;
+      description?: string;
+      assignedTo?: string;
+      priority?: string;
+      dueDate?: string;
+    },
+  ) => request(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  updateStatus: (id: string, status: string) =>
+    request(`/tasks/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }),
+  addComment: (id: string, message: string) =>
+    request(`/tasks/${id}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    }),
+  delete: (id: string) => request(`/tasks/${id}`, { method: 'DELETE' }),
+};
+
+export const trashAPI = {
+  getAll: (modelName?: string) =>
+    request(`/trash${modelName ? `?modelName=${modelName}` : ''}`),
+  restore: (id: string) => request(`/trash/${id}/restore`, { method: 'POST' }),
+  purge: (id: string) => request(`/trash/${id}`, { method: 'DELETE' }),
 };
 
 

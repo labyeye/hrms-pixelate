@@ -33,6 +33,8 @@ import { C } from '../theme';
 
 const JOB_STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
   open: { color: C.success, bg: '#F0FDF4' },
+  on_hold: { color: C.warning, bg: '#FFF7ED' },
+  cancelled: { color: C.textMuted, bg: '#F3F4F6' },
   closed: { color: C.danger, bg: '#FEF2F2' },
   draft: { color: C.textMuted, bg: '#F3F4F6' },
   paused: { color: C.warning, bg: '#FFF7ED' },
@@ -42,10 +44,18 @@ const CAND_STATUS_CONFIG: Record<string, { color: string }> = {
   applied: { color: C.primary },
   screening: { color: C.warning },
   interview: { color: C.secondary },
+  technical: { color: C.secondary },
+  hr_round: { color: C.warning },
+  offered: { color: C.primary },
   offer: { color: C.primary },
   hired: { color: C.success },
   rejected: { color: C.danger },
 };
+
+// Same lists the backend validates against.
+const STAGES = ['applied', 'screening', 'interview', 'technical', 'hr_round', 'offered', 'hired', 'rejected'];
+const JOB_STATUSES = ['open', 'on_hold', 'closed', 'cancelled'];
+const pretty = (s: string) => s.replace(/_/g, ' ');
 
 export default function RecruitmentScreen() {
   const navigation = useNavigation<any>();
@@ -57,6 +67,9 @@ export default function RecruitmentScreen() {
   const [showJobForm, setShowJobForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
+  const [candJob, setCandJob] = useState<any>(null);
+  const [candForm, setCandForm] = useState({ name: '', email: '', phone: '' });
+  const [stagePick, setStagePick] = useState<any>(null);
   const [jobForm, setJobForm] = useState({
     title: '',
     department: '',
@@ -73,7 +86,9 @@ export default function RecruitmentScreen() {
       const jobList: Job[] = jobsRes.data || [];
       setJobs(jobList);
       // Extract all candidates embedded in jobs
-      const allCands: Candidate[] = jobList.flatMap(j => j.candidates || []);
+      const allCands: Candidate[] = jobList.flatMap(j =>
+        (j.candidates || []).map((c: any) => ({ ...c, _jobId: j._id, _jobTitle: j.title })),
+      );
       setCandidates(allCands);
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -132,6 +147,55 @@ export default function RecruitmentScreen() {
       setSaving(false);
     }
   };
+
+  const addCandidate = async () => {
+    if (!candForm.name.trim() || !candForm.email.trim()) {
+      Alert.alert('Validation', 'Name and email are required');
+      return;
+    }
+    setSaving(true);
+    try {
+      await recruitmentAPI.addCandidate(candJob._id, candForm);
+      setCandJob(null);
+      setCandForm({ name: '', email: '', phone: '' });
+      await load();
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const changeStage = async (stage: string) => {
+    const c = stagePick;
+    setStagePick(null);
+    try {
+      await recruitmentAPI.updateCandidateStage(c._jobId, c._id, { stage });
+      await load();
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    }
+  };
+
+  const changeJobStatus = (j: any) =>
+    Alert.alert(
+      'Job status',
+      j.title,
+      [
+        ...JOB_STATUSES.filter(st => st !== j.status).map(st => ({
+          text: pretty(st),
+          onPress: async () => {
+            try {
+              await recruitmentAPI.update(j._id, { status: st });
+              await load();
+            } catch (e: any) {
+              Alert.alert('Error', e.message);
+            }
+          },
+        })),
+        { text: 'Cancel', style: 'cancel' as const },
+      ],
+    );
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -279,6 +343,15 @@ export default function RecruitmentScreen() {
                     </Text>
                   )}
                 </View>
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                  <TouchableOpacity style={styles.actBtn} onPress={() => setCandJob(j)}>
+                    <Plus size={12} color={C.primary} />
+                    <Text style={styles.actBtnText}>Add Candidate</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.actBtn} onPress={() => changeJobStatus(j)}>
+                    <Text style={styles.actBtnText}>Status</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             );
           }}
@@ -307,7 +380,7 @@ export default function RecruitmentScreen() {
             const stage: string = c.stage || c.status || 'applied';
             const cfg = CAND_STATUS_CONFIG[stage] || { color: C.textMuted };
             return (
-              <View style={styles.card}>
+              <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={() => setStagePick(c)}>
                 <View style={styles.cardTop}>
                   <View style={styles.avatar}>
                     <Text style={styles.avatarText}>
@@ -323,6 +396,7 @@ export default function RecruitmentScreen() {
                     {c.position && (
                       <Text style={styles.candPos}>{c.position}</Text>
                     )}
+                    {c._jobTitle ? <Text style={styles.candPos}>{c._jobTitle}</Text> : null}
                   </View>
                   <View style={{ alignItems: 'flex-end', gap: 4 }}>
                     <View
@@ -334,7 +408,7 @@ export default function RecruitmentScreen() {
                       <Text
                         style={[styles.statusBadgeText, { color: C.white }]}
                       >
-                        {stage.toUpperCase()}
+                        {pretty(stage).toUpperCase()}
                       </Text>
                     </View>
                     {c.rating && (
@@ -345,11 +419,48 @@ export default function RecruitmentScreen() {
                     )}
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           }}
         />
       )}
+
+      {/* Add candidate */}
+      <Modal visible={!!candJob} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setCandJob(null)}>
+        <SafeAreaView style={styles.safe} edges={['top']}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Add Candidate{candJob ? ` · ${candJob.title}` : ''}</Text>
+            <TouchableOpacity onPress={() => setCandJob(null)}>
+              <X size={22} color={C.black} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }} keyboardShouldPersistTaps="handled">
+            <TextInput style={styles.actInput} value={candForm.name} onChangeText={v => setCandForm(f => ({ ...f, name: v }))} placeholder="Full name *" placeholderTextColor={C.textLight} />
+            <TextInput style={styles.actInput} value={candForm.email} onChangeText={v => setCandForm(f => ({ ...f, email: v }))} placeholder="Email *" keyboardType="email-address" autoCapitalize="none" placeholderTextColor={C.textLight} />
+            <TextInput style={styles.actInput} value={candForm.phone} onChangeText={v => setCandForm(f => ({ ...f, phone: v }))} placeholder="Phone" keyboardType="phone-pad" placeholderTextColor={C.textLight} />
+            <TouchableOpacity style={[styles.actSave, saving && { opacity: 0.6 }]} onPress={addCandidate} disabled={saving}>
+              <Text style={styles.actSaveText}>{saving ? 'Adding...' : 'Add to Pipeline'}</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Move candidate to a stage */}
+      <Modal visible={!!stagePick} transparent animationType="fade" onRequestClose={() => setStagePick(null)}>
+        <View style={styles.actBackdrop}>
+          <View style={styles.actSheet}>
+            <Text style={styles.modalTitle}>Move {stagePick?.name || 'candidate'} to…</Text>
+            {STAGES.map(st => (
+              <TouchableOpacity key={st} style={[styles.stageRow, stagePick?.stage === st && styles.stageRowOn]} onPress={() => changeStage(st)}>
+                <Text style={[styles.stageText, stagePick?.stage === st && { color: C.white }]}>{pretty(st).toUpperCase()}</Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.stageCancel} onPress={() => setStagePick(null)}>
+              <Text style={styles.stageText}>CANCEL</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* New Job Modal */}
       <Modal
@@ -465,6 +576,17 @@ export default function RecruitmentScreen() {
 }
 
 const styles = StyleSheet.create({
+  actBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 2, borderColor: C.primary, paddingHorizontal: 10, paddingVertical: 6 },
+  actBtnText: { color: C.primary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
+  actInput: { borderWidth: 2, borderColor: C.black, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: C.black },
+  actSave: { backgroundColor: C.primary, borderWidth: 2, borderColor: C.black, paddingVertical: 12, alignItems: 'center' },
+  actSaveText: { color: C.white, fontSize: 13, fontWeight: '700', textTransform: 'uppercase' },
+  actBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 24 },
+  actSheet: { backgroundColor: C.white, borderWidth: 2, borderColor: C.black, padding: 16, gap: 8 },
+  stageRow: { borderWidth: 2, borderColor: C.black, paddingVertical: 10, alignItems: 'center' },
+  stageRowOn: { backgroundColor: C.primary },
+  stageCancel: { paddingVertical: 10, alignItems: 'center' },
+  stageText: { fontSize: 12, fontWeight: '700', color: C.black },
   safe: { flex: 1, backgroundColor: '#F8F9FA' },
   header: {
     flexDirection: 'row',
