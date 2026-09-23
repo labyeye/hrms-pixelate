@@ -156,6 +156,36 @@ exports.updateTicketStatus = asyncHandler(async (req, res) => {
   res.json({ success: true, data: ticket });
 });
 
+// Called by the Pixelate Nest CRM (final-pixelate) when its support team replies to this ticket
+// from the shared support inbox — no HRMS user, so it's stored with source:"platform".
+exports.webhookReply = asyncHandler(async (req, res) => {
+  const apiKey = req.headers["x-api-key"];
+  if (!apiKey || apiKey !== process.env.CRM_API_SECRET) {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  const { message, authorName } = req.body;
+  if (!message || !message.trim()) {
+    return res.status(400).json({ success: false, message: "Message is required" });
+  }
+
+  const ticket = await SupportTicket.findById(req.params.id);
+  if (!ticket) {
+    return res.status(404).json({ success: false, message: "Ticket not found" });
+  }
+
+  ticket.replies.push({
+    authorName: authorName || "Pixelate Nest Support",
+    source: "platform",
+    message: message.trim(),
+    createdAt: new Date(),
+  });
+  if (ticket.status === "open") ticket.status = "in_progress";
+
+  await ticket.save();
+  res.json({ success: true, data: ticket });
+});
+
 exports.replyToTicket = asyncHandler(async (req, res) => {
   const { message } = req.body;
   if (!message || !message.trim()) {

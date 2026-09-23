@@ -6,6 +6,7 @@ const {
   getMyTickets,
   getTicket,
   updateTicketStatus,
+  webhookReply,
   replyToTicket,
   closeTicket,
   assignTicket,
@@ -22,5 +23,6 @@ router.patch("/:id/assign", protect, authorize(...ADMIN_ROLES), assignTicket);
 
 // Called by CRM (no JWT, uses x-api-key)
 router.patch("/:id/status", updateTicketStatus);
+router.post("/:id/webhook-reply", webhookReply);
 
 module.exports = router;

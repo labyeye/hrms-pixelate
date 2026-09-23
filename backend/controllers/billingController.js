@@ -591,7 +591,7 @@ async function _createCompanyAndActivate({
   }
 
   const invoiceCount = await Invoice.countDocuments();
-  const invoiceNumber = `KHT/HR/${String(invoiceCount + 1).padStart(3, "0")}`;
+  const invoiceNumber = `INV-HRMS-${String(invoiceCount + 1).padStart(4, "0")}`;
   await Invoice.create({
     company: company._id,
     subscription: subscription._id,
@@ -718,7 +718,7 @@ async function _activateSubscription({ lookup, update, invoiceExtra, res }) {
   });
 
   const invoiceCount = await Invoice.countDocuments();
-  const invoiceNumber = `KHT/HR/${String(invoiceCount + 1).padStart(3, "0")}`;
+  const invoiceNumber = `INV-HRMS-${String(invoiceCount + 1).padStart(4, "0")}`;
   await Invoice.create({
     company: company._id,
     subscription: updatedSub._id,

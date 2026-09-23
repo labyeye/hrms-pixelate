@@ -57,11 +57,15 @@ const supportTicketSchema = new mongoose.Schema(
     resolvedNote: { type: String, default: "" },
     replies: [
       {
+        // A normal reply has `user`; a reply pushed in from the Pixelate Nest support team
+        // (via the CRM webhook) has no HRMS user and sets authorName instead.
         user: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "User",
-          required: true,
+          default: null,
         },
+        authorName: { type: String, default: "" },
+        source: { type: String, enum: ["user", "platform"], default: "user" },
         message: { type: String, required: true },
         createdAt: { type: Date, default: Date.now },
       },

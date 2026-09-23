@@ -22,7 +22,7 @@ const STATUS_MAP = {
 exports.getCrmInvoices = async (req, res) => {
   if (!crmAuth(req, res)) return;
 
-  const query = { invoiceNumber: /^KHT\/HR\// };
+  const query = { invoiceNumber: /^(KHT\/HR\/|INV-HRMS-)/ };
 
   if (req.query.status) {
     const mapped = STATUS_MAP[req.query.status];
