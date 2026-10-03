@@ -12,6 +12,8 @@ const {
   downloadEmployeeDocument,
   enrollEmployeeFace,
   enrollMyFace,
+  resetEmployeeFace,
+  resetMyFace,
 } = require("../controllers/employeeController");
 const { protect, authorize } = require("../middleware/auth");
 const {
@@ -23,6 +25,7 @@ const router = express.Router();
 
 router.get("/me", protect, getMyEmployee);
 router.post("/me/face-enroll", protect, uploadFaceEnrollPhoto, enrollMyFace);
+router.delete("/me/face-enroll", protect, resetMyFace);
 
 router
   .route("/")
@@ -69,6 +72,13 @@ router.post(
     await Employee.findByIdAndUpdate(req.params.id, { avatar: avatarUrl });
     res.json({ success: true, avatar: avatarUrl });
   },
+);
+
+router.delete(
+  "/:id/face-enroll",
+  protect,
+  authorize("super_admin", "hr_manager"),
+  resetEmployeeFace,
 );
 
 router.post(

@@ -11,6 +11,7 @@ import {
   CheckCircle,
   Clock,
 } from "lucide-react";
+import { StatCard } from "@/components/ui/StatCard";
 
 const MONTHS = [
   "January",
@@ -168,19 +169,19 @@ export default function EmployeePayrollPage() {
 
         {}
         {payrolls.length > 0 && (
-          <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
             {[
               {
                 label: "Total Earned",
                 value: formatCurrency(totalEarned),
                 icon: IndianRupee,
-                color: "text-[#00C48C]",
+                color: "#00C48C",
               },
               {
                 label: "Slips This Year",
                 value: String(payrolls.length),
                 icon: FileText,
-                color: "text-[#024BAB]",
+                color: "#024BAB",
               },
               {
                 label: "Last Paid",
@@ -188,23 +189,10 @@ export default function EmployeePayrollPage() {
                   ? `${MONTHS[payrolls.find((p) => p.status === "paid")!.month - 1].slice(0, 3)} ${payrolls.find((p) => p.status === "paid")!.year}`
                   : "—",
                 icon: CheckCircle,
-                color: "text-[#FA731C]",
+                color: "#FA731C",
               },
             ].map(({ label, value, icon: Icon, color }) => (
-              <div
-                key={label}
-                className="bg-white border-2 border-black p-4 flex items-center gap-3"
-              >
-                <div className="w-10 h-10 bg-[#F0F6FF] border-2 border-black flex items-center justify-center shrink-0">
-                  <Icon className={`w-5 h-5 ${color}`} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold uppercase text-gray-500">
-                    {label}
-                  </p>
-                  <p className={`text-lg font-bold ${color}`}>{value}</p>
-                </div>
-              </div>
+              <StatCard key={label} label={label} value={value} icon={Icon} color={color} />
             ))}
           </div>
         )}

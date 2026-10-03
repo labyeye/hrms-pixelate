@@ -1427,7 +1427,7 @@ export default function BiometricPage() {
                 <div className="bg-white border-2 border-black overflow-hidden">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b-2 border-black bg-[#024BAB] text-white">
+                      <tr className="border-b-2 border-black bg-[#024BAB]/5">
                         <th className="text-left px-4 py-3 text-xs font-bold uppercase">
                           Employee
                         </th>

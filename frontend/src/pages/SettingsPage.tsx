@@ -1678,14 +1678,14 @@ export default function SettingsPage() {
                       style={{ minWidth: 700 }}
                     >
                       <thead>
-                        <tr className="bg-[#024BAB]">
-                          <th className="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider border-r-2 border-black w-32">
+                        <tr className="bg-[#024BAB]/5">
+                          <th className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider border-r-2 border-black w-32">
                             Resource
                           </th>
                           {HRMS_ROLES.map((role) => (
                             <th
                               key={role.id}
-                              className="px-2 py-3 text-center text-xs font-bold text-white uppercase tracking-wider border-r-2 border-black last:border-r-0"
+                              className="px-2 py-3 text-center text-xs font-bold text-black uppercase tracking-wider border-r-2 border-black last:border-r-0"
                               colSpan={4}
                             >
                               {role.label}

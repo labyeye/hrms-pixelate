@@ -25,7 +25,7 @@ import { getCurrentPosition } from '../utils/location';
 import { C } from '../theme';
 
 // How long a face must be steadily present before we auto-capture + submit.
-const STEADY_MS = 800;
+const STEADY_MS = 500;
 const GUIDE_SIZE = 260;
 
 type Status =
@@ -86,13 +86,16 @@ export default function FaceCheckInScreen({ navigation, route }: any) {
     const t0 = Date.now();
     setStatus('capturing');
     try {
+      // GPS fix runs while the shutter fires instead of after it.
+      const coordsPromise = getCurrentPosition();
+      coordsPromise.catch(() => {});
       const photo = await cameraRef.current?.takePhoto({ flash: 'off' });
       if (!photo?.path) throw new Error('Could not capture photo. Try again.');
       const uri = Platform.OS === 'android' ? `file://${photo.path}` : photo.path;
       const tPhoto = Date.now();
 
       setStatus('submitting');
-      const coords = await getCurrentPosition();
+      const coords = await coordsPromise;
       const tLocation = Date.now();
       await attendanceAPI.selfMark({
         action,
@@ -336,6 +339,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     backgroundColor: C.primary,
     borderWidth: 2,
+    borderRadius: 8,
     borderColor: C.white,
     paddingHorizontal: 20,
     paddingVertical: 10,

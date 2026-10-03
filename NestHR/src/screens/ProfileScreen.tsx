@@ -49,6 +49,7 @@ function AccordionSection({ title, isOpen, onToggle, children, icon: Icon }: any
           paddingHorizontal: 14,
           backgroundColor: '#F9FAFB',
           borderWidth: 2,
+          borderRadius: 8,
           borderColor: C.black,
         }}
         onPress={onToggle}
@@ -954,11 +955,12 @@ const s = StyleSheet.create({
     height: 88,
     backgroundColor: C.primary,
     borderWidth: 2,
+    borderRadius: 8,
     borderColor: C.black,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarImg: { width: 88, height: 88, borderWidth: 2, borderColor: C.black },
+  avatarImg: { width: 88, height: 88, borderWidth: 2, borderRadius: 8, borderColor: C.black },
   avatarText: { fontSize: 30, fontWeight: '700', color: C.white },
   cameraBadge: {
     position: 'absolute',
@@ -976,6 +978,7 @@ const s = StyleSheet.create({
   roleBadge: {
     backgroundColor: C.primary,
     borderWidth: 2,
+    borderRadius: 8,
     borderColor: C.black,
     paddingHorizontal: 12,
     paddingVertical: 4,
@@ -1000,7 +1003,7 @@ const s = StyleSheet.create({
     color: C.black,
     letterSpacing: 0.5,
   },
-  card: { backgroundColor: C.white, borderWidth: 2, borderColor: C.black },
+  card: { backgroundColor: C.white, borderWidth: 2, borderRadius: 8, borderRightWidth: 5, borderBottomWidth: 5, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black },
   fieldRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -1032,6 +1035,11 @@ const s = StyleSheet.create({
     gap: 8,
     backgroundColor: C.primary,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingVertical: 14,
     marginTop: 10,

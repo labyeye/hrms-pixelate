@@ -14,6 +14,7 @@ import {
   XCircle,
   IndianRupee,
 } from "lucide-react";
+import { StatCard } from "@/components/ui/StatCard";
 
 interface Loan {
   _id: string;
@@ -167,39 +168,28 @@ export default function MyLoansPage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
           {[
             {
               label: "Outstanding Balance",
               value: fmt(activeBalance),
               icon: IndianRupee,
-              color: "text-red-600",
+              color: "#EF4444",
             },
             {
               label: "Pending Requests",
               value: String(pendingCount),
               icon: Clock,
-              color: "text-orange-600",
+              color: "#FA731C",
             },
             {
               label: "Total Requests",
               value: String(loans.length),
               icon: Banknote,
-              color: "text-[#024BAB]",
+              color: "#024BAB",
             },
           ].map(({ label, value, icon: Icon, color }) => (
-            <div
-              key={label}
-              className="border-2 border-black bg-white p-4 flex flex-col gap-1"
-            >
-              <div className="flex items-center gap-2">
-                <Icon className={cn("w-4 h-4", color)} />
-                <p className="text-xs font-bold text-gray-500 uppercase">
-                  {label}
-                </p>
-              </div>
-              <p className={cn("text-xl font-black", color)}>{value}</p>
-            </div>
+            <StatCard key={label} label={label} value={value} icon={Icon} color={color} />
           ))}
         </div>
 

@@ -48,5 +48,8 @@ FACE_SERVICE_API_KEY=<same-shared-secret>
 - `POST /enroll` — multipart `file` (single-face photo) → `{ encoding: number[128] }`
 - `POST /verify` — multipart `file` + form field `encoding` (comma-separated floats) → `{ match: boolean, distance: number }`
 
+If the app says "Face recognition service is unavailable" or "API key mismatch", check `pm2 logs hrms-face-service` and that `FACE_SERVICE_API_KEY` is identical in `ecosystem.config.js` and `backend/.env` (the backend logs the exact cause).
+The service warms its models at startup, so after a restart wait for `face models warmed up` in the log.
+
 Both mutating endpoints require an `x-api-key` header matching `FACE_SERVICE_API_KEY`
 if that env var is set.

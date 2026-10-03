@@ -441,6 +441,35 @@ export default function EmployeesPage() {
     }
   };
 
+  const handleResetFace = async () => {
+    if (!editEmp) return;
+    const ok = await confirm({
+      title: "Reset face?",
+      description:
+        "This removes the enrolled face. The employee must enroll again before they can check in from the app.",
+    });
+    if (!ok) return;
+    setFaceEnrolling(true);
+    try {
+      await employeeAPI.resetFace(editEmp._id);
+      setActionModal({
+        show: true,
+        type: "success",
+        title: "Face Reset",
+        message: "Face removed — enroll a new one from the app or by upload.",
+      });
+    } catch (err: any) {
+      setActionModal({
+        show: true,
+        type: "error",
+        title: "Reset Failed",
+        message: err.message || "Could not reset face.",
+      });
+    } finally {
+      setFaceEnrolling(false);
+    }
+  };
+
   const handleSave = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     const ok = await confirm({
@@ -2067,6 +2096,14 @@ export default function EmployeesPage() {
                                 {faceEnrolling
                                   ? "Enrolling…"
                                   : "Upload Face Photo"}
+                              </button>
+                              <button
+                                type="button"
+                                disabled={faceEnrolling}
+                                onClick={handleResetFace}
+                                className="ml-2 text-xs font-bold text-red-600 border-2 border-red-600 px-3 py-2 disabled:opacity-50"
+                              >
+                                Reset Face
                               </button>
                             </div>
                           ) : (

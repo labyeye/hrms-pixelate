@@ -16,12 +16,25 @@ MATCH_THRESHOLD = float(os.environ.get("FACE_MATCH_THRESHOLD", "0.5"))
 # photo. Capping the longest edge here is a defensive floor: the mobile app
 # already captures at ~640x480, but this also protects the web kiosk / older
 # app builds that may still send larger images.
-MAX_DETECTION_DIM = int(os.environ.get("FACE_MAX_DETECTION_DIM", "480"))
+MAX_DETECTION_DIM = int(os.environ.get("FACE_MAX_DETECTION_DIM", "320"))
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("face-service")
 
 app = FastAPI(title="NestHR Face Service")
+
+
+@app.on_event("startup")
+def warm_up():
+    # dlib loads its detector/landmark/encoder models lazily on first use,
+    # which made the first real request after every restart take 1s+.
+    # Run one dummy detect + encode so every request is already "warm".
+    blank = np.zeros((MAX_DETECTION_DIM, MAX_DETECTION_DIM, 3), dtype=np.uint8)
+    face_recognition.face_locations(blank, number_of_times_to_upsample=0)
+    face_recognition.face_encodings(
+        blank, known_face_locations=[(0, MAX_DETECTION_DIM, MAX_DETECTION_DIM, 0)]
+    )
+    logger.info("face models warmed up")
 
 
 def check_api_key(x_api_key: str | None):

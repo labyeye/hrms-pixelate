@@ -11,6 +11,21 @@ export const getToken = async (): Promise<string | null> =>
 export const setToken = (t: string) => storage.setItem(TOKEN_KEY, t);
 export const removeToken = () => storage.removeItem(TOKEN_KEY);
 
+const NETWORK_MSG =
+  'Cannot reach the server. Please check your internet connection and try again.';
+const statusMsg = (s: number) =>
+  s === 429
+    ? 'Too many attempts. Please wait a minute and try again.'
+    : s === 413
+      ? 'That file is too large. Please choose a smaller one.'
+      : s === 403
+        ? 'You do not have permission to do this.'
+        : s === 404
+          ? 'We could not find what you were looking for.'
+          : s >= 500
+            ? 'Something went wrong on our side. Please try again in a moment.'
+            : 'Something went wrong. Please try again.';
+
 const TIMEOUT_MS = 15_000;
 const GET_RETRIES = 2;
 
@@ -47,11 +62,14 @@ async function request<T = any>(
     clearTimeout(timer);
 
     const text = await res.text();
-    const data = text ? JSON.parse(text) : {};
+    let data: any = {};
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {} // gateway HTML page — fall through to statusMsg
 
     if (!res.ok) {
       const err: any = new Error(
-        data.message || `Request failed (${res.status})`,
+        data.message || statusMsg(res.status),
       );
       err.status = res.status;
       throw err;
@@ -71,12 +89,10 @@ async function request<T = any>(
     }
 
     if (err.name === 'AbortError') {
-      throw new Error('Request timed out. Please check your connection.');
+      throw new Error('The server is taking too long to respond. Please check your connection and try again.');
     }
     if (err.message === 'Network request failed') {
-      throw new Error(
-        'Network error. Please check your connection and try again.',
-      );
+      throw new Error(NETWORK_MSG);
     }
     throw err;
   }
@@ -173,6 +189,7 @@ export const employeeAPI = {
       method: 'POST',
       body: JSON.stringify({ password }),
     }),
+  resetMyFace: () => request('/employees/me/face-enroll', { method: 'DELETE' }),
   enrollMyFace: async (uri: string, type: string, fileName: string) => {
     const token = await getToken();
     const formData = new FormData();
@@ -221,8 +238,11 @@ export const employeeAPI = {
       });
       clearTimeout(timer);
       const text = await res.text();
-      const data = text ? JSON.parse(text) : {};
-      if (!res.ok) throw new Error(data.message || `Upload failed (${res.status})`);
+      let data: any = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {} // gateway HTML page — fall through to statusMsg
+      if (!res.ok) throw new Error(data.message || statusMsg(res.status));
       return data;
     } catch (err: any) {
       clearTimeout(timer);
@@ -273,8 +293,11 @@ export const attendanceAPI = {
       });
       clearTimeout(timer);
       const text = await res.text();
-      const data = text ? JSON.parse(text) : {};
-      if (!res.ok) throw new Error(data.message || `Check-in failed (${res.status})`);
+      let data: any = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {} // gateway HTML page — fall through to statusMsg
+      if (!res.ok) throw new Error(data.message || statusMsg(res.status));
       return data;
     } catch (err: any) {
       clearTimeout(timer);
@@ -312,8 +335,11 @@ export const leaveAPI = {
       });
       clearTimeout(timer);
       const text = await res.text();
-      const data = text ? JSON.parse(text) : {};
-      if (!res.ok) throw new Error(data.message || `Request failed (${res.status})`);
+      let data: any = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {} // gateway HTML page — fall through to statusMsg
+      if (!res.ok) throw new Error(data.message || statusMsg(res.status));
       return data;
     } catch (err: any) {
       clearTimeout(timer);
@@ -757,8 +783,11 @@ export const documentAPI = {
       });
       clearTimeout(timer);
       const text = await res.text();
-      const data = text ? JSON.parse(text) : {};
-      if (!res.ok) throw new Error(data.message || `Upload failed (${res.status})`);
+      let data: any = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {} // gateway HTML page — fall through to statusMsg
+      if (!res.ok) throw new Error(data.message || statusMsg(res.status));
       return data;
     } catch (err: any) {
       clearTimeout(timer);

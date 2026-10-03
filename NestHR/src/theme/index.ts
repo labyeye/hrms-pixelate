@@ -39,6 +39,11 @@ export const S = StyleSheet.create({
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     padding: 16,
     marginBottom: 12,
@@ -64,6 +69,11 @@ export const S = StyleSheet.create({
   btnPrimary: {
     backgroundColor: C.primary,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -82,6 +92,11 @@ export const S = StyleSheet.create({
   btnSecondary: {
     backgroundColor: C.white,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -100,6 +115,7 @@ export const S = StyleSheet.create({
   btnDanger: {
     backgroundColor: '#FEF2F2',
     borderWidth: 2,
+    borderRadius: 8,
     borderColor: C.danger,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -113,6 +129,11 @@ export const S = StyleSheet.create({
   input: {
     fontFamily: FONT.medium,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -126,6 +147,7 @@ export const S = StyleSheet.create({
   badgeSuccess: {
     backgroundColor: '#DCFCE7',
     borderWidth: 2,
+    borderRadius: 8,
     borderColor: C.success,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -133,6 +155,7 @@ export const S = StyleSheet.create({
   badgeDanger: {
     backgroundColor: '#FEF2F2',
     borderWidth: 2,
+    borderRadius: 8,
     borderColor: C.danger,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -140,6 +163,7 @@ export const S = StyleSheet.create({
   badgeWarning: {
     backgroundColor: '#FFF7ED',
     borderWidth: 2,
+    borderRadius: 8,
     borderColor: C.warning,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -147,6 +171,7 @@ export const S = StyleSheet.create({
   badgePrimary: {
     backgroundColor: '#ffffff',
     borderWidth: 2,
+    borderRadius: 8,
     borderColor: C.primary,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -154,6 +179,7 @@ export const S = StyleSheet.create({
   badgeGray: {
     backgroundColor: '#F3F4F6',
     borderWidth: 2,
+    borderRadius: 8,
     borderColor: '#9CA3AF',
     paddingHorizontal: 8,
     paddingVertical: 2,

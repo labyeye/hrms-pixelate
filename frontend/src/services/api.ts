@@ -22,22 +22,43 @@ export async function downloadFile(
   URL.revokeObjectURL(url);
 }
 
+const NETWORK_MSG =
+  "Can't reach the server. Please check your internet connection and try again.";
+const statusMsg = (s: number) =>
+  s === 429
+    ? "Too many attempts. Please wait a minute and try again."
+    : s === 413
+      ? "That file is too large. Please choose a smaller one."
+      : s === 403
+        ? "You don't have permission to do this."
+        : s === 404
+          ? "We couldn't find what you were looking for."
+          : s >= 500
+            ? "Something went wrong on our side. Please try again in a moment."
+            : "Something went wrong. Please try again.";
+
 async function request<T = any>(
   endpoint: string,
   options: RequestInit = {},
 ): Promise<T> {
   const token = getToken();
-  const res = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
-    },
-  });
-  const data = await res.json();
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options.headers || {}),
+      },
+    });
+  } catch {
+    throw new Error(NETWORK_MSG);
+  }
+  // Proxies/gateways can answer with HTML — don't surface "Unexpected token <".
+  const data = await res.json().catch(() => ({}) as any);
   if (!res.ok) {
-    const err: any = new Error(data.message || "Request failed");
+    const err: any = new Error(data.message || statusMsg(res.status));
     err.status = res.status;
     throw err;
   }
@@ -173,6 +194,8 @@ export const employeeAPI = {
   },
   getDocumentUrl: (id: string, type: "aadhaar" | "pan" | "resume") =>
     `${BASE_URL}/employees/${id}/documents/${type}`,
+  resetFace: (id: string) =>
+    request(`/employees/${id}/face-enroll`, { method: "DELETE" }),
   enrollFace: (id: string, photo: File) => {
     const form = new FormData();
     form.append("photo", photo);

@@ -772,6 +772,31 @@ const enrollMyFace = asyncHandler(async (req, res) => {
   res.json({ success: true, message: "Face enrolled successfully" });
 });
 
+// Clears the stored face embedding so the employee can enroll a fresh one.
+const resetEmployeeFace = asyncHandler(async (req, res) => {
+  const employee = await Employee.findOneAndUpdate(
+    { _id: req.params.id, company: req.user.company },
+    { $set: { faceDescriptor: [] } },
+  );
+  if (!employee) {
+    res.status(404);
+    throw new Error("Employee not found");
+  }
+  res.json({ success: true, message: "Face reset — please enroll again" });
+});
+
+const resetMyFace = asyncHandler(async (req, res) => {
+  const employee = await Employee.findOneAndUpdate(
+    { user: req.user._id, company: req.user.company },
+    { $set: { faceDescriptor: [] } },
+  );
+  if (!employee) {
+    res.status(404);
+    throw new Error("Employee record not found");
+  }
+  res.json({ success: true, message: "Face reset — please enroll again" });
+});
+
 module.exports = {
   getEmployees,
   getEmployee,
@@ -785,4 +810,6 @@ module.exports = {
   downloadEmployeeDocument,
   enrollEmployeeFace,
   enrollMyFace,
+  resetEmployeeFace,
+  resetMyFace,
 };

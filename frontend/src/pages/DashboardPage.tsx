@@ -37,15 +37,14 @@ import {
   UserX,
   Coffee,
 } from "lucide-react";
+import { StatCard } from "@/components/ui/StatCard";
 import nesthrlogo from "../../assets/nesthr.png";
 function KpiCard({
   title,
   value,
   sub,
-  icon: Icon,
+  icon,
   bg,
-  iconColor = "text-white",
-  trend,
   to,
 }: {
   title: string;
@@ -57,31 +56,9 @@ function KpiCard({
   trend?: "up" | "down";
   to?: string;
 }) {
+  const color = bg.match(/#[0-9A-Fa-f]{6}/)?.[0] ?? "#024BAB";
   const inner = (
-    <div className="border-2 p-4 flex flex-col gap-3 bg-white">
-      <div className="flex items-start justify-between">
-        <div
-          className={cn(
-            "w-10 h-10 border-2 border-black flex items-center justify-center shrink-0",
-            bg,
-          )}
-        >
-          <Icon className={cn("w-5 h-5", iconColor)} />
-        </div>
-        {trend && (
-          <span className="flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 border-2 border-black bg-[#A3E635] text-black">
-            <ArrowUpRight className="w-3 h-3" />
-          </span>
-        )}
-      </div>
-      <div>
-        <p className="font-display font-bold text-3xl text-black">{value}</p>
-        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mt-0.5">
-          {title}
-        </p>
-        {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
-      </div>
-    </div>
+    <StatCard label={title} value={value} icon={icon} color={color} sub={sub} />
   );
   return to ? <Link to={to}>{inner}</Link> : inner;
 }

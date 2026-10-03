@@ -13,6 +13,7 @@ import {
   CalendarCheck,
   ListChecks,
 } from "lucide-react";
+import { StatCard } from "@/components/ui/StatCard";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useAuth } from "@/contexts/AuthContext";
 import { EmployeeCombobox } from "@/components/employees/EmployeeCombobox";
@@ -258,53 +259,25 @@ export default function PerformancePage() {
       </div>
 
       {}
-      <div className="grid grid-cols-3 gap-3 mb-5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
         {[
           {
             label: "Draft",
             count: reviews.filter((r) => r.status === "draft").length,
-            bg: "bg-white",
-            textBg: "bg-black/10",
+            color: "#6B7280",
           },
           {
             label: "In Review",
             count: reviews.filter((r) => r.status === "in_review").length,
-            bg: "bg-[#FA731C]",
-            textBg: "bg-white",
+            color: "#FA731C",
           },
           {
             label: "Completed",
             count: reviews.filter((r) => r.status === "completed").length,
-            bg: "bg-[#024BAB]",
-            textBg: "bg-white",
+            color: "#024BAB",
           },
-        ].map(({ label, count, bg, textBg }) => (
-          <div
-            key={label}
-            className="border-2 bg-white p-4 flex items-center gap-3"
-          >
-            <div
-              className={cn(
-                "w-10 h-10 border-2 border-black flex items-center justify-center shrink-0",
-                bg,
-              )}
-            >
-              <TrendingUp
-                className={cn(
-                  "w-5 h-5",
-                  textBg === "bg-white" ? "text-white" : "text-black",
-                )}
-              />
-            </div>
-            <div>
-              <p className="font-display font-bold text-2xl text-black">
-                {count}
-              </p>
-              <p className="text-xs font-bold text-muted-foreground uppercase">
-                {label}
-              </p>
-            </div>
-          </div>
+        ].map(({ label, count, color }) => (
+          <StatCard key={label} label={label} value={count} icon={TrendingUp} color={color} />
         ))}
       </div>
 

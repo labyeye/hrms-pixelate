@@ -218,12 +218,21 @@ function AdminDashboard({ navigation }: any) {
                   onPress={() => handleCardPress(s.key)}
                 >
                   <View
-                    style={[styles.statIconWrap, { backgroundColor: s.color }]}
+                    style={[
+                      styles.statIconWrap,
+                      { backgroundColor: s.color + '1A', borderColor: s.color },
+                    ]}
                   >
-                    <Icon size={18} color={C.white} />
+                    <Icon size={18} color={s.color} />
                   </View>
-                  <Text style={styles.statValue}>{stats?.[s.key] ?? '—'}</Text>
-                  <Text style={styles.statLabel}>{s.label}</Text>
+                  <View style={styles.statBody}>
+                    <Text style={styles.statLabel} numberOfLines={1}>
+                      {s.label}
+                    </Text>
+                    <Text style={styles.statValue} numberOfLines={1}>
+                      {stats?.[s.key] ?? '—'}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               );
             })}
@@ -990,6 +999,11 @@ const styles = StyleSheet.create({
   essWishCard: {
     backgroundColor: '#FDF2F8',
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     padding: 12,
     marginBottom: 12,
@@ -1014,6 +1028,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: C.white,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     padding: 10,
   },
@@ -1037,6 +1056,11 @@ const styles = StyleSheet.create({
   essAnnounceCard: {
     backgroundColor: C.white,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     padding: 12,
     marginBottom: 12,
@@ -1092,6 +1116,11 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     backgroundColor: C.danger,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -1111,6 +1140,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#FEF2F2',
     borderWidth: 2,
+    borderRadius: 8,
     borderColor: C.danger,
     padding: 10,
     marginBottom: 16,
@@ -1131,26 +1161,45 @@ const styles = StyleSheet.create({
   statCard: {
     width: CARD_WIDTH,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     backgroundColor: C.white,
-    padding: 14,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
+  statBody: { flex: 1, minWidth: 0 },
   statIconWrap: {
     width: 38,
     height: 38,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
     borderWidth: 2,
-    borderColor: C.black,
+    borderRadius: 8,
   },
-  statValue: { fontSize: 28, fontWeight: '700', color: C.black },
-  statLabel: { fontSize: 11, fontWeight: '700', color: C.black, marginTop: 2 },
+  statValue: { fontSize: 22, fontWeight: '700', color: C.black },
+  statLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: C.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
 
   // Shared card
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     marginBottom: 4,
   },
@@ -1176,6 +1225,11 @@ const styles = StyleSheet.create({
   profileBanner: {
     backgroundColor: C.white,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     marginBottom: 4,
   },
@@ -1232,12 +1286,22 @@ const styles = StyleSheet.create({
   todayCard: {
     backgroundColor: C.white,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     padding: 16,
     marginBottom: 4,
   },
   todayRow: { gap: 14 },
   todayStatusBadge: {
+    borderWidth: 2,
+    borderRadius: 999,
+    borderColor: '#0A0A0A',
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 4,
@@ -1266,6 +1330,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: C.white,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     alignItems: 'center',
     paddingVertical: 14,
@@ -1277,6 +1346,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
+    borderRadius: 8,
     borderColor: C.black,
   },
   monthStatVal: { fontSize: 22, fontWeight: '700' },
@@ -1291,6 +1361,11 @@ const styles = StyleSheet.create({
   payslipCard: {
     backgroundColor: C.white,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     flexDirection: 'row',
     alignItems: 'center',
@@ -1302,6 +1377,11 @@ const styles = StyleSheet.create({
   payslipLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   payslipMonth: { fontSize: 15, fontWeight: '700', color: C.black },
   payslipStatus: {
+    borderWidth: 2,
+    borderRadius: 999,
+    borderColor: '#0A0A0A',
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     fontSize: 12,
     fontWeight: '700',
     color: C.success,
@@ -1328,6 +1408,7 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     borderWidth: 2,
+    borderRadius: 8,
     borderColor: C.black,
     backgroundColor: C.white,
     marginBottom: 0,
@@ -1387,6 +1468,11 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 14,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
   },
   quickActionText: {
@@ -1449,6 +1535,7 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: C.primary,
     borderWidth: 2,
+    borderRadius: 8,
     borderColor: C.white,
     paddingHorizontal: 20,
     paddingVertical: 12,
@@ -1459,6 +1546,7 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: C.danger,
     borderWidth: 2,
+    borderRadius: 8,
     borderColor: C.white,
     paddingHorizontal: 20,
     paddingVertical: 12,

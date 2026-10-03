@@ -430,7 +430,7 @@ export default function HolidaysPage() {
           <div className="border-2 border-black bg-white overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b-2 border-black bg-[#024BAB]">
+                <tr className="border-b-2 border-black bg-[#024BAB]/5">
                   {[
                     "Date",
                     "Day",
@@ -442,7 +442,7 @@ export default function HolidaysPage() {
                   ].map((h) => (
                     <th
                       key={h}
-                      className="px-4 py-3 text-left text-xs font-bold text-white uppercase tracking-wider"
+                      className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider"
                     >
                       {h}
                     </th>

@@ -32,10 +32,21 @@ async function callFaceService(
       signal: AbortSignal.timeout(FACE_SERVICE_TIMEOUT_MS),
     });
   } catch (err) {
+    console.error(
+      `[faceService] ${path} unreachable at ${FACE_SERVICE_URL}:`,
+      err.cause?.code || err.name,
+      err.message,
+    );
     throw new Error("Face recognition service is unavailable");
   }
 
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401) {
+    console.error(
+      "[faceService] 401 — FACE_SERVICE_API_KEY on backend and face-service differ",
+    );
+    throw new Error("Face service is misconfigured (API key mismatch)");
+  }
   if (!res.ok) {
     throw new Error(data.detail || `Face service error (${res.status})`);
   }

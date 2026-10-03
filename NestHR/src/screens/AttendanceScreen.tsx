@@ -240,6 +240,28 @@ export default function AttendanceScreen({ navigation }: any) {
     );
   };
 
+  const handleResetFace = () => {
+    Alert.alert(
+      'Reset Face?',
+      'Your enrolled face will be removed and you must enroll again before checking in.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await employeeAPI.resetMyFace();
+              loadMyEmployee();
+            } catch (e: any) {
+              Alert.alert('Error', e.message || 'Could not reset face.');
+            }
+          },
+        },
+      ],
+    );
+  };
+
   // Opens the live face-scan screen, which captures + verifies + submits the
   // check-in/out itself (auto-capture once a steady face is detected).
   const handleSelfMark = async (action: 'checkin' | 'checkout') => {
@@ -631,6 +653,13 @@ export default function AttendanceScreen({ navigation }: any) {
                 Checked in and out for today
               </Text>
             </View>
+          )}
+          {hasFaceEnrolled && (
+            <TouchableOpacity onPress={handleResetFace} style={{ marginTop: 10 }}>
+              <Text style={[styles.selfMarkNoteText, { textDecorationLine: 'underline' }]}>
+                Reset my face
+              </Text>
+            </TouchableOpacity>
           )}
         </View>
       )}
@@ -1493,6 +1522,11 @@ const styles = StyleSheet.create({
     gap: 5,
     backgroundColor: C.primary,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -1533,6 +1567,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderWidth: 2,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 76,
@@ -1544,6 +1579,11 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   } as any,
   summaryStatus: {
+    borderWidth: 2,
+    borderRadius: 999,
+    borderColor: '#0A0A0A',
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -1587,6 +1627,11 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: C.primary,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingVertical: 12,
   },
@@ -1698,11 +1743,15 @@ const styles = StyleSheet.create({
   empName: { fontSize: 15, fontWeight: '800', color: C.black, letterSpacing: 0.2 },
   empSub: { fontSize: 11, color: '#9CA3AF', fontWeight: '600', marginTop: 2 },
   statusTag: {
-    borderWidth: 1.5,
+    borderWidth: 2,
+    borderRadius: 999,
+    borderColor: '#0A0A0A',
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  statusTagText: { fontSize: 9, fontWeight: '700', letterSpacing: 0.3 },
+  statusTagText: { textTransform: 'uppercase', fontSize: 9, fontWeight: '700', letterSpacing: 0.3 },
   editBtn: {
     borderWidth: 1.5,
     borderColor: C.primary,
@@ -1754,6 +1803,7 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 20, fontWeight: '700', color: C.black },
   editInfoBox: {
     borderWidth: 2,
+    borderRadius: 8,
     borderColor: C.primary,
     backgroundColor: '#EFF6FF',
     padding: 12,
@@ -1776,6 +1826,11 @@ const styles = StyleSheet.create({
   },
   fieldInput: {
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
     paddingVertical: 11,
@@ -1800,6 +1855,7 @@ const styles = StyleSheet.create({
   empOptionId: { fontSize: 11, color: C.textMuted },
   selChip: {
     borderWidth: 2,
+    borderRadius: 8,
     borderColor: C.black,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -1809,6 +1865,11 @@ const styles = StyleSheet.create({
   submitBtn: {
     backgroundColor: C.primary,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingVertical: 14,
     alignItems: 'center',
@@ -1827,6 +1888,7 @@ const styles = StyleSheet.create({
     gap: 5,
     backgroundColor: C.white,
     borderWidth: 2,
+    borderRadius: 8,
     borderColor: C.primary,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -1925,10 +1987,16 @@ const styles = StyleSheet.create({
   calCellSelected: {
     backgroundColor: C.primary,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
   },
   calCellToday: {
     borderWidth: 2,
+    borderRadius: 8,
     borderColor: C.primary,
   },
   calCellText: {

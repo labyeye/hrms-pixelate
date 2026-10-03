@@ -493,7 +493,7 @@ export default function SupportScreen({ navigation }: any) {
               {/* Conversation History */}
               <View style={{ marginTop: 24 }}>
                 <Text style={styles.detailCellLabel}>Conversation Chat</Text>
-                <View style={{ borderWidth: 2, borderColor: C.black, padding: 10, gap: 10, marginTop: 8, backgroundColor: '#F9FAFB' }}>
+                <View style={{ borderWidth: 2, borderRadius: 8, borderColor: C.black, padding: 10, gap: 10, marginTop: 8, backgroundColor: '#F9FAFB' }}>
                   {/* Replies list */}
                   {freshTicket?.replies?.map((rep: any, idx: number) => {
                     const isSelf = rep.role === 'employee' || rep.submittedBy === (user as any)?._id;
@@ -504,6 +504,7 @@ export default function SupportScreen({ navigation }: any) {
                           padding: 8,
                           backgroundColor: isSelf ? '#EFF6FF' : '#FFF7ED',
                           borderWidth: 2,
+                          borderRadius: 8,
                           borderColor: C.black,
                           alignSelf: isSelf ? 'flex-end' : 'flex-start',
                           width: '85%',
@@ -544,6 +545,7 @@ export default function SupportScreen({ navigation }: any) {
                       style={{
                         backgroundColor: C.primary,
                         borderWidth: 2,
+                        borderRadius: 8,
                         borderColor: C.black,
                         paddingHorizontal: 16,
                         justifyContent: 'center',
@@ -569,6 +571,7 @@ export default function SupportScreen({ navigation }: any) {
                     style={{
                       backgroundColor: C.danger,
                       borderWidth: 2,
+                      borderRadius: 8,
                       borderColor: C.black,
                       paddingVertical: 12,
                       alignItems: 'center',
@@ -612,6 +615,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: C.primary,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
     paddingVertical: 7,
@@ -625,6 +633,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: C.white,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     alignItems: 'center',
     paddingVertical: 10,
   },
@@ -635,13 +648,18 @@ const styles = StyleSheet.create({
   ticketCard: {
     backgroundColor: C.white,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     padding: 14,
     marginBottom: 10,
   },
   ticketTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   ticketNumber: { fontFamily: 'monospace', fontSize: 11, color: '#6B7280', fontWeight: '700' },
-  statusBadge: { borderWidth: 2, paddingHorizontal: 8, paddingVertical: 2 },
+  statusBadge: { borderWidth: 2, borderRadius: 999, borderColor: '#0A0A0A', borderRightWidth: 4, borderBottomWidth: 4, paddingHorizontal: 8, paddingVertical: 2 },
   statusText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
   ticketSubject: { fontSize: 14, fontWeight: '700', color: C.black, marginBottom: 4 },
   ticketDesc: { fontSize: 12, color: '#6B7280', fontWeight: '500', lineHeight: 18, marginBottom: 8 },
@@ -666,6 +684,11 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, color: C.black, marginBottom: 6 },
   selectBtn: {
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -712,6 +735,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#F0FDF4',
     borderWidth: 2,
+    borderRadius: 8,
     borderColor: C.success,
     padding: 12,
     marginTop: 16,

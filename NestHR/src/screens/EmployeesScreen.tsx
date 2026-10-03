@@ -986,6 +986,7 @@ export default function EmployeesScreen() {
                 <View
                   style={{
                     borderWidth: 2,
+                    borderRadius: 8,
                     borderColor: C.black,
                     backgroundColor: C.white,
                   }}
@@ -1359,6 +1360,7 @@ export default function EmployeesScreen() {
                     padding: 12,
                     backgroundColor: C.primary + '12',
                     borderWidth: 2,
+                    borderRadius: 8,
                     borderColor: C.primary,
                   }}
                 >
@@ -1819,6 +1821,7 @@ export default function EmployeesScreen() {
                                 alignItems: 'center',
                                 padding: 14,
                                 borderWidth: 2,
+                                borderRadius: 8,
                                 borderColor: colors[status],
                                 backgroundColor: colors[status] + '10',
                               }}
@@ -2171,6 +2174,7 @@ export default function EmployeesScreen() {
                       <View
                         style={{
                           borderWidth: 2,
+                          borderRadius: 8,
                           borderColor: C.black,
                           marginTop: 6,
                         }}
@@ -2411,6 +2415,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderWidth: 2,
+    borderRadius: 8,
     borderColor: C.black,
   },
   countText: { color: C.white, fontSize: 12, fontWeight: '700' },
@@ -2420,6 +2425,11 @@ const styles = StyleSheet.create({
     gap: 5,
     backgroundColor: C.primary,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -2456,6 +2466,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderWidth: 2,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 76,
@@ -2467,6 +2478,11 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   } as any,
   summaryStatus: {
+    borderWidth: 2,
+    borderRadius: 999,
+    borderColor: '#0A0A0A',
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     fontSize: 8,
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -2478,6 +2494,11 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     padding: 14,
   },
@@ -2507,7 +2528,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginTop: 1,
   },
-  statusBadge: { borderWidth: 2, paddingHorizontal: 6, paddingVertical: 2 },
+  statusBadge: { borderWidth: 2, borderRadius: 999, borderColor: '#0A0A0A', borderRightWidth: 4, borderBottomWidth: 4, paddingHorizontal: 6, paddingVertical: 2 },
   statusText: { fontSize: 9, fontWeight: '700' },
   editBtn: {
     width: 30,
@@ -2541,6 +2562,7 @@ const styles = StyleSheet.create({
   },
   typePill: {
     borderWidth: 2,
+    borderRadius: 8,
     borderColor: C.primary,
     backgroundColor: '#EFF6FF',
     paddingHorizontal: 8,
@@ -2643,6 +2665,11 @@ const styles = StyleSheet.create({
   },
   fieldInput: {
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
     paddingVertical: 11,
@@ -2653,6 +2680,7 @@ const styles = StyleSheet.create({
   },
   selChip: {
     borderWidth: 2,
+    borderRadius: 8,
     borderColor: C.black,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -2666,6 +2694,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 12,
     borderWidth: 2,
+    borderRadius: 8,
     borderColor: '#E5E7EB',
     backgroundColor: C.white,
   },
@@ -2689,6 +2718,11 @@ const styles = StyleSheet.create({
   },
   navBtn: {
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingVertical: 14,
     paddingHorizontal: 20,
@@ -2700,6 +2734,11 @@ const styles = StyleSheet.create({
   submitBtn: {
     backgroundColor: C.primary,
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingVertical: 14,
     flexDirection: 'row',
@@ -2722,6 +2761,11 @@ const styles = StyleSheet.create({
   actionCell: {
     width: '47%',
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     backgroundColor: C.white,
     padding: 12,
@@ -2746,6 +2790,11 @@ const styles = StyleSheet.create({
   },
   infoSection: {
     borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     backgroundColor: C.white,
   },
