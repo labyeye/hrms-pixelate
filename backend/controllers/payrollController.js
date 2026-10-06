@@ -343,7 +343,7 @@ const processPayroll = asyncHandler(async (req, res) => {
       employee: emp._id,
       company: req.user.company,
       status: "pending",
-      date: { $gte: txMonthStart, $lte: txMonthEnd },
+      date: { $gte: startDate, $lte: endDate },
     });
 
     let totalAllowances = 0;

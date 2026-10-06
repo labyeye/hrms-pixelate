@@ -327,6 +327,18 @@ function AdminDashboard({ navigation }: any) {
                   style={[styles.perfRow, i > 0 && styles.quickBorder]}
                 >
                   <Text style={styles.perfRank}>{i + 1}</Text>
+                  {p.employee.avatar ? (
+                    <Image
+                      source={{ uri: p.employee.avatar }}
+                      style={styles.perfAvatar}
+                    />
+                  ) : (
+                    <View style={[styles.perfAvatar, styles.perfAvatarFallback]}>
+                      <Text style={styles.perfAvatarText}>
+                        {(p.employee.firstName || '?')[0].toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
                   <View style={{ flex: 1 }}>
                     <Text style={styles.perfName} numberOfLines={1}>
                       {p.employee.firstName} {p.employee.lastName}
@@ -1805,12 +1817,31 @@ const styles = StyleSheet.create({
   payLabel: { fontFamily: FONT.bold, fontSize: 12, color: C.black, textTransform: 'uppercase' },
   payValue: { fontFamily: FONT.bold, fontSize: 30, fontWeight: '800', color: C.black, marginVertical: 4 },
   paySub: { fontFamily: FONT.medium, fontSize: 12, color: C.black },
-  perfRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
-  perfRank: { width: 22, fontFamily: FONT.bold, fontSize: 13, color: C.black },
+  perfRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  perfRank: { width: 18, fontFamily: FONT.bold, fontSize: 13, color: C.black },
+  perfAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: C.black,
+  },
+  perfAvatarFallback: {
+    backgroundColor: C.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  perfAvatarText: { color: C.white, fontSize: 14, fontWeight: '700' },
   perfName: { fontFamily: FONT.bold, fontSize: 14, color: C.black },
   perfBarTrack: { height: 8, borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black, borderRadius: 4, marginTop: 4, overflow: 'hidden', backgroundColor: C.white },
   perfBarFill: { height: '100%' },
   perfBadge: { minWidth: 52, alignItems: 'center', paddingVertical: 4, borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black, borderRadius: 8, backgroundColor: C.white },
   perfBadgeText: { fontFamily: FONT.bold, fontSize: 12, color: C.black },
-  perfEmpty: { fontFamily: FONT.medium, fontSize: 13, color: C.black },
+  perfEmpty: { fontFamily: FONT.medium, fontSize: 13, color: C.black, padding: 14 },
 });
