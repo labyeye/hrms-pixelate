@@ -128,7 +128,7 @@ const s = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
+    borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
   },

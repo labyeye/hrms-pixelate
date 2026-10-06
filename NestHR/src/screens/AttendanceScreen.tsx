@@ -42,6 +42,7 @@ import { attendanceAPI, employeeAPI, attendanceCorrectionAPI } from '../api/api'
 import { useAuth } from '../contexts/AuthContext';
 import { AttendanceRecord, Employee } from '../types/hrms';
 import { C } from '../theme';
+import FilterBar from '../components/common/FilterBar';
 import { TimePickerField } from '../components/common/DatePickerField';
 
 function openLocationInMaps(loc: { lat: number; lng: number }) {
@@ -665,48 +666,14 @@ export default function AttendanceScreen({ navigation }: any) {
       )}
 
       {!isEmployee && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.summaryBar}
-          contentContainerStyle={styles.summaryContent}
-        >
-          {Object.entries(summary).map(([status, count]) => {
-            const active = statusFilter === status;
-            const cfg = STATUS_CONFIG[status];
-            return (
-              <TouchableOpacity
-                key={status}
-                style={[
-                  styles.summaryPill,
-                  {
-                    backgroundColor: active ? cfg.color : cfg.bg,
-                    borderColor: cfg.color,
-                  },
-                ]}
-                onPress={() => setStatusFilter(p => (p === status ? '' : status))}
-                activeOpacity={0.8}
-              >
-                <Text
-                  style={[
-                    styles.summaryCount,
-                    { color: active ? C.white : cfg.color },
-                  ]}
-                >
-                  {count}
-                </Text>
-                <Text
-                  style={[
-                    styles.summaryStatus,
-                    { color: active ? C.white : cfg.color },
-                  ]}
-                >
-                  {status.replace('_', ' ')}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+        <FilterBar
+          value={statusFilter}
+          onChange={setStatusFilter}
+          options={[
+            { key: '', label: 'All' },
+            ...Object.keys(summary).map(k => ({ key: k, label: k })),
+          ]}
+        />
       )}
 
       {!isEmployee && (
@@ -1567,6 +1534,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1654,8 +1625,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     backgroundColor: C.white,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
@@ -1667,11 +1638,6 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
     borderWidth: 2,
     padding: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
   },
   cardRow: { flexDirection: 'row', alignItems: 'center' },
   cardActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -1703,15 +1669,10 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   empDeptText: { fontSize: 11, color: '#9CA3AF', fontWeight: '500' },
-  cardDivider: {
-    height: 1,
-    backgroundColor: '#F0F1F3',
-    marginTop: 12,
-    marginBottom: 10,
-  },
-  statsRow: { flexDirection: 'row', alignItems: 'flex-start' },
-  statCol: { flex: 1, gap: 3 },
-  statDivider: { width: 1, backgroundColor: '#F0F1F3', marginHorizontal: 10 },
+  cardDivider: { height: 0, marginTop: 8, marginBottom: 6 },
+  statsRow: { flexDirection: 'row', alignItems: 'stretch', gap: 8 },
+  statCol: { flex: 1, gap: 3, padding: 8, backgroundColor: '#FFFFFF', borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderColor: '#000000', borderRadius: 8 },
+  statDivider: { width: 0 },
   statLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   statIconWrap: {
     width: 22,
@@ -1720,17 +1681,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  statLabel: {
-    fontSize: 10,
-    color: '#9CA3AF',
-    fontWeight: '600',
-  },
-  statValue: { fontSize: 15, fontWeight: '700', color: C.black },
-  statSub: { fontSize: 10, color: '#B0B4BA', fontWeight: '500' },
+  statLabel: { fontSize: 10, color: '#000000', fontWeight: '800', textTransform: 'uppercase' },
+  statValue: { fontSize: 16, fontWeight: '800', color: '#000000' },
+  statSub: { fontSize: 10, color: '#000000', fontWeight: '600' },
   verifyPill: {
     backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderWidth: 2,
+    borderColor: C.black,
     paddingHorizontal: 6,
     paddingVertical: 6,
   },
@@ -1781,8 +1738,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderColor: C.black,
   },
   timeText: { fontSize: 12, fontWeight: '700', color: C.black },
   noteText: {
@@ -1803,6 +1764,10 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 20, fontWeight: '700', color: C.black },
   editInfoBox: {
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.primary,
     backgroundColor: '#EFF6FF',
@@ -1845,8 +1810,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderWidth: 2,
+    borderColor: C.black,
     marginBottom: 4,
     backgroundColor: C.white,
   },
@@ -1855,6 +1820,10 @@ const styles = StyleSheet.create({
   empOptionId: { fontSize: 11, color: C.textMuted },
   selChip: {
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
     paddingHorizontal: 12,
@@ -1888,6 +1857,10 @@ const styles = StyleSheet.create({
     gap: 5,
     backgroundColor: C.white,
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.primary,
     paddingHorizontal: 12,
@@ -1917,8 +1890,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
   },
   bulkCheckbox: {
     width: 22,
@@ -1996,6 +1969,10 @@ const styles = StyleSheet.create({
   },
   calCellToday: {
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.primary,
   },

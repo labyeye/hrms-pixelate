@@ -9,6 +9,7 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
+import MetaChip, { CHIP } from '../components/common/MetaChip';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { ChevronLeft, AlertOctagon, Clock } from 'lucide-react-native';
@@ -100,13 +101,17 @@ export default function LateApprovalsScreen() {
                   {emp?.employeeId || ''} · {new Date(item.date).toLocaleDateString('en-IN')}
                 </Text>
                 <View style={styles.metaRow}>
-                  <Clock size={12} color={C.warning} />
-                  <Text style={styles.metaText}>
-                    {item.minutesLate} min late
-                    {item.checkInTime
-                      ? ` · checked in ${new Date(item.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                      : ''}
-                  </Text>
+                  <MetaChip
+                    icon={<Clock size={12} color={C.black} />}
+                    text={`${item.minutesLate} min late`}
+                    bg={CHIP.blue}
+                  />
+                  {!!item.checkInTime && (
+                    <MetaChip
+                      text={`In ${new Date(item.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                      bg={CHIP.blue}
+                    />
+                  )}
                 </View>
                 {!!item.reason && <Text style={styles.reason}>"{item.reason}"</Text>}
 
@@ -164,7 +169,7 @@ const styles = StyleSheet.create({
   },
   empName: { fontSize: 15, fontWeight: '800', color: C.black },
   empSub: { fontSize: 11, color: '#9CA3AF', fontWeight: '600', marginTop: 2 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, flexWrap: 'wrap' },
   metaText: { fontSize: 12, fontWeight: '600', color: C.warning },
   reason: {
     fontSize: 12,
@@ -178,8 +183,8 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 12,
     paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopWidth: 2,
+    borderTopColor: C.black,
   },
   actionBtn: {
     flexGrow: 1,

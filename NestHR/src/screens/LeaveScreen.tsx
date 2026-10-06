@@ -34,6 +34,7 @@ import { leaveAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import { LeaveRequest } from '../types/hrms';
 import { C } from '../theme';
+import FilterBar from '../components/common/FilterBar';
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> =
   {
@@ -357,43 +358,15 @@ export default function LeaveScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Summary row */}
-      <View style={styles.summaryRow}>
-        {[
-          { key: 'pending', label: 'Pending', color: C.warning },
-          { key: 'approved', label: 'Approved', color: C.success },
-          { key: 'rejected', label: 'Rejected', color: C.danger },
-        ].map(s => (
-          <TouchableOpacity
-            key={s.key}
-            style={[
-              styles.summaryCard,
-              {
-                borderColor: C.black,
-                backgroundColor: statusFilter === s.key ? s.color : C.white,
-              },
-            ]}
-            onPress={() => setStatusFilter(p => (p === s.key ? '' : s.key))}
-          >
-            <Text
-              style={[
-                styles.summaryVal,
-                { color: statusFilter === s.key ? C.white : s.color },
-              ]}
-            >
-              {(counts as any)[s.key]}
-            </Text>
-            <Text
-              style={[
-                styles.summaryLabel,
-                { color: statusFilter === s.key ? C.white : C.textMuted },
-              ]}
-            >
-              {s.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <FilterBar
+        value={statusFilter}
+        onChange={setStatusFilter}
+        options={[
+          { key: 'pending', label: 'Pending' },
+          { key: 'approved', label: 'Approved' },
+          { key: 'rejected', label: 'Rejected' },
+        ]}
+      />
 
       {/* Change 2: Leave balance strip (employee only) */}
       {isEmployee && (
@@ -423,37 +396,14 @@ export default function LeaveScreen() {
       )}
 
       {/* Change 1: Functional filter chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterBar}
-        contentContainerStyle={{ gap: 8, paddingHorizontal: 16 }}
-      >
-        {[
+      <FilterBar
+        value={leaveTypeFilter}
+        onChange={setLeaveTypeFilter}
+        options={[
           { key: '', label: 'All' },
           ...LEAVE_TYPES.map(t => ({ key: t, label: t })),
-        ].map(f => (
-          <TouchableOpacity
-            key={f.key}
-            style={[
-              styles.chip,
-              leaveTypeFilter === f.key && styles.chipActive,
-            ]}
-            onPress={() =>
-              setLeaveTypeFilter(p => (p === f.key ? '' : f.key))
-            }
-          >
-            <Text
-              style={[
-                styles.chipText,
-                leaveTypeFilter === f.key && styles.chipTextActive,
-              ]}
-            >
-              {f.label.toUpperCase()}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+        ]}
+      />
 
       {loading ? (
         <View style={styles.loader}>
@@ -1208,6 +1158,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
   },
@@ -1225,11 +1179,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: C.black,
     padding: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
   },
   cardRow: { flexDirection: 'row', alignItems: 'center' },
   photoWrap: { position: 'relative', width: 48, height: 48 },
@@ -1259,15 +1208,10 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   statusTagText: { textTransform: 'uppercase', fontSize: 9, fontWeight: '700', letterSpacing: 0.3 },
-  cardDivider: {
-    height: 1,
-    backgroundColor: '#F0F1F3',
-    marginTop: 12,
-    marginBottom: 10,
-  },
-  statsRow: { flexDirection: 'row', alignItems: 'flex-start' },
-  statCol: { flex: 1, gap: 3 },
-  statDivider: { width: 1, backgroundColor: '#F0F1F3', marginHorizontal: 10 },
+  cardDivider: { height: 0, marginTop: 8, marginBottom: 6 },
+  statsRow: { flexDirection: 'row', alignItems: 'stretch', gap: 8 },
+  statCol: { flex: 1, gap: 3, padding: 8, backgroundColor: '#FFFFFF', borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderColor: '#000000', borderRadius: 8 },
+  statDivider: { width: 0 },
   statLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   statIconWrap: {
     width: 22,
@@ -1276,8 +1220,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  statLabel: { fontSize: 10, color: '#9CA3AF', fontWeight: '600' },
-  statValue: { fontSize: 15, fontWeight: '700', color: C.black },
+  statLabel: { fontSize: 10, color: '#000000', fontWeight: '800', textTransform: 'uppercase' },
+  statValue: { fontSize: 16, fontWeight: '800', color: '#000000' },
   reason: {
     fontSize: 12,
     color: C.textMuted,
@@ -1308,15 +1252,15 @@ const styles = StyleSheet.create({
     marginTop: 6,
     paddingLeft: 8,
     borderLeftWidth: 2,
-    borderLeftColor: '#E5E7EB',
+    borderLeftColor: C.black,
   },
   actionRow: {
     flexDirection: 'row',
     gap: 8,
     marginTop: 12,
     paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopWidth: 2,
+    borderTopColor: C.black,
   },
   approveBtn: {
     flex: 1,
@@ -1379,6 +1323,10 @@ const styles = StyleSheet.create({
   },
   selChip: {
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
     paddingHorizontal: 12,
@@ -1463,6 +1411,10 @@ const styles = StyleSheet.create({
   toggleOpt: {
     flex: 1,
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',

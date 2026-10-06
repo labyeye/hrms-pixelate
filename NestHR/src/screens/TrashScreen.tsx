@@ -129,10 +129,10 @@ const s = StyleSheet.create({
   backText: { fontFamily: FONT.bold, fontSize: 12, color: C.black, textTransform: 'uppercase' },
   hint: { fontFamily: FONT.medium, fontSize: 12, color: '#374151', paddingHorizontal: 16, paddingTop: 8 },
   card: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 2, borderRadius: 8, borderRightWidth: 5, borderBottomWidth: 5, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black, padding: 12, backgroundColor: '#fff' },
-  tag: { alignSelf: 'flex-start', borderWidth: 2, borderRadius: 8, borderColor: '#6B7280', paddingHorizontal: 8, paddingVertical: 1, marginBottom: 6 },
+  tag: { alignSelf: 'flex-start', borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: '#6B7280', paddingHorizontal: 8, paddingVertical: 1, marginBottom: 6 },
   tagText: { fontFamily: FONT.bold, fontSize: 10, color: '#374151', textTransform: 'uppercase' },
   title: { fontFamily: FONT.bold, fontSize: 15, color: C.black },
   meta: { fontFamily: FONT.medium, fontSize: 12, color: '#374151', marginTop: 4 },
-  btn: { width: 36, height: 36, borderWidth: 2, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  btn: { width: 36, height: 36, borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   empty: { textAlign: 'center', fontFamily: FONT.bold, color: '#6B7280', marginTop: 40 },
 });

@@ -28,6 +28,7 @@ import { useNavigation } from '@react-navigation/native';
 import { performanceAPI } from '../api/api';
 import { PerformanceReview } from '../types/hrms';
 import { C } from '../theme';
+import FilterBar from '../components/common/FilterBar';
 
 const RATING_COLORS: Record<number, string> = {
   1: C.danger,
@@ -154,35 +155,18 @@ export default function PerformanceScreen() {
       </View>
 
       {/* Status filters */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterBar}
-        contentContainerStyle={{ gap: 8, paddingHorizontal: 16 }}
-      >
-        {[
+      <FilterBar
+        value={statusFilter}
+        onChange={setStatusFilter}
+        toggle={false}
+        options={[
           { key: '', label: 'All' },
           { key: 'draft', label: 'Draft' },
           { key: 'submitted', label: 'Submitted' },
           { key: 'reviewed', label: 'Reviewed' },
           { key: 'completed', label: 'Completed' },
-        ].map(f => (
-          <TouchableOpacity
-            key={f.key}
-            style={[styles.chip, statusFilter === f.key && styles.chipActive]}
-            onPress={() => setStatusFilter(f.key)}
-          >
-            <Text
-              style={[
-                styles.chipText,
-                statusFilter === f.key && { color: C.white },
-              ]}
-            >
-              {f.label.toUpperCase()}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+        ]}
+      />
 
       {loading ? (
         <View style={styles.loader}>
@@ -464,6 +448,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
     backgroundColor: C.white,
@@ -489,7 +477,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     backgroundColor: C.primary,
-    borderWidth: 2,
+    borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
     alignItems: 'center',
@@ -519,8 +507,8 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 8,
     paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopWidth: 2,
+    borderTopColor: C.black,
   },
   goalsText: { fontSize: 12, color: C.primary, fontWeight: '600', flex: 1 },
   modalHeader: {
@@ -563,6 +551,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 4,
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: '#F59E0B',
     paddingVertical: 8,

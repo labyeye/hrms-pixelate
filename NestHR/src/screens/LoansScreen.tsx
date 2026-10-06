@@ -28,6 +28,7 @@ import { useNavigation } from '@react-navigation/native';
 import { loanAPI, employeeAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import { C } from '../theme';
+import FilterBar from '../components/common/FilterBar';
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> =
   {
@@ -220,32 +221,15 @@ export default function LoansScreen() {
         </View>
       )}
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterBar}
-        contentContainerStyle={{ gap: 8, paddingHorizontal: 16 }}
-      >
-        {[
+      <FilterBar
+        value={statusFilter}
+        onChange={setStatusFilter}
+        toggle={false}
+        options={[
           { key: '', label: 'All' },
           ...Object.keys(STATUS_CONFIG).map(k => ({ key: k, label: k })),
-        ].map(f => (
-          <TouchableOpacity
-            key={f.key}
-            style={[styles.chip, statusFilter === f.key && styles.chipActive]}
-            onPress={() => setStatusFilter(f.key)}
-          >
-            <Text
-              style={[
-                styles.chipText,
-                statusFilter === f.key && { color: C.white },
-              ]}
-            >
-              {f.label.toUpperCase()}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+        ]}
+      />
 
       {loading ? (
         <View style={styles.loader}>
@@ -614,6 +598,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
     backgroundColor: C.white,
@@ -672,15 +660,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   statusTagText: { textTransform: 'uppercase', fontSize: 9, fontWeight: '700' },
-  detailRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 10,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
-  detail: { fontSize: 12, fontWeight: '700', color: C.textMuted },
+  detailRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  detail: { fontSize: 11, fontWeight: '800', color: '#000000', paddingHorizontal: 8, paddingVertical: 4, backgroundColor: '#FFFFFF', overflow: 'hidden', borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderColor: '#000000', borderRadius: 8 },
   purpose: {
     fontSize: 12,
     color: C.textMuted,
@@ -761,6 +742,10 @@ const styles = StyleSheet.create({
   },
   selChip: {
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
     paddingHorizontal: 12,
@@ -802,8 +787,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
   },
   empPickerRowActive: { backgroundColor: C.primary },
   empPickerPhoto: {

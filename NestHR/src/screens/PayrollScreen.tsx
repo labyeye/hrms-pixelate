@@ -35,6 +35,7 @@ import { buildPayslipHTML } from '../utils/buildPayslipHTML';
 import { useAuth } from '../contexts/AuthContext';
 import { Payroll } from '../types/hrms';
 import { C } from '../theme';
+import FilterBar from '../components/common/FilterBar';
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
   pending: { color: C.warning, bg: '#FFF7ED' },
@@ -392,35 +393,18 @@ export default function PayrollScreen() {
       )}
 
       {/* Status filters */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterBar}
-        contentContainerStyle={{ gap: 8, paddingHorizontal: 16 }}
-      >
-        {[
+      <FilterBar
+        value={statusFilter}
+        onChange={setStatusFilter}
+        toggle={false}
+        options={[
           { key: '', label: 'All' },
           { key: 'pending', label: 'Pending' },
           { key: 'processed', label: 'Processed' },
           { key: 'paid', label: 'Paid' },
           { key: 'cancelled', label: 'Cancelled' },
-        ].map(f => (
-          <TouchableOpacity
-            key={f.key}
-            style={[styles.chip, statusFilter === f.key && styles.chipActive]}
-            onPress={() => setStatusFilter(f.key)}
-          >
-            <Text
-              style={[
-                styles.chipText,
-                statusFilter === f.key && { color: C.white },
-              ]}
-            >
-              {f.label.toUpperCase()}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+        ]}
+      />
 
       {loading ? (
         <View style={styles.loader}>
@@ -1080,6 +1064,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 4,
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
     backgroundColor: C.white,
@@ -1111,7 +1099,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     backgroundColor: C.primary,
-    borderWidth: 2,
+    borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
     alignItems: 'center',
@@ -1122,28 +1110,18 @@ const styles = StyleSheet.create({
   empSub: { fontSize: 11, color: C.textMuted, fontWeight: '500' },
   statusBadge: { borderWidth: 2, borderRadius: 999, borderColor: '#0A0A0A', borderRightWidth: 4, borderBottomWidth: 4, paddingHorizontal: 8, paddingVertical: 2 },
   statusBadgeText: { textTransform: 'uppercase', fontSize: 9, fontWeight: '700' },
-  salaryRow: {
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    paddingTop: 12,
-  },
-  salaryItem: { flex: 1, alignItems: 'center' },
-  salaryLabel: {
-    fontSize: 9,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    color: C.textMuted,
-  },
-  salaryVal: { fontSize: 14, fontWeight: '700', color: C.black, marginTop: 3 },
-  salaryDivider: { width: 1, backgroundColor: '#E5E7EB', marginHorizontal: 4 },
+  salaryRow: { flexDirection: 'row', gap: 8, paddingTop: 12 },
+  salaryItem: { flex: 1, alignItems: 'center', paddingVertical: 8, backgroundColor: '#FFFFFF', borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderColor: '#000000', borderRadius: 8 },
+  salaryLabel: { fontSize: 9, fontWeight: '800', textTransform: 'uppercase', color: '#000000' },
+  salaryVal: { fontSize: 14, fontWeight: '800', color: '#000000', marginTop: 3 },
+  salaryDivider: { width: 0 },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     backgroundColor: C.white,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
@@ -1201,8 +1179,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
   },
   detailSection: {
     borderBottomWidth: 2,
@@ -1245,6 +1223,10 @@ const styles = StyleSheet.create({
   },
   genNote: {
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.success,
     backgroundColor: '#F0FDF4',
@@ -1333,6 +1315,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.success,
     backgroundColor: '#F0FDF4',

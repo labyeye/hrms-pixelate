@@ -34,6 +34,7 @@ import { useNavigation } from '@react-navigation/native';
 import { exitAPI, employeeAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import { C } from '../theme';
+import FilterBar from '../components/common/FilterBar';
 
 const REASONS = [
   { value: 'personal', label: 'Personal' },
@@ -285,19 +286,12 @@ export default function ExitManagementScreen() {
       </View>
 
       {/* Status Filter */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.filterBar} contentContainerStyle={{ padding: 12, gap: 8 }}>
-        {[{ value: '', label: 'All' }, ...STATUSES].map(st => (
-          <TouchableOpacity
-            key={st.value}
-            style={[s.filterChip, statusFilter === st.value && s.filterChipActive]}
-            onPress={() => setStatusFilter(st.value)}
-          >
-            <Text style={[s.filterChipText, statusFilter === st.value && s.filterChipTextActive]}>
-              {st.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <FilterBar
+        value={statusFilter}
+        onChange={setStatusFilter}
+        toggle={false}
+        options={[{ value: '', label: 'All' }, ...STATUSES].map(st => ({ key: st.value, label: st.label }))}
+      />
 
       {loading ? (
         <View style={s.loader}><ActivityIndicator size="large" color={C.primary} /></View>
@@ -609,13 +603,17 @@ const s = StyleSheet.create({
     paddingVertical: 8,
   },
   addBtnText: { color: C.white, fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
-  filterBar: { backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', maxHeight: 56 },
+  filterBar: { backgroundColor: C.white, borderBottomWidth: 2, borderBottomColor: C.black, maxHeight: 56 },
   filterChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
-    borderColor: '#D1D5DB',
+    borderColor: C.black,
     backgroundColor: C.white,
   },
   filterChipActive: { borderColor: C.primary, backgroundColor: '#EFF6FF' },
@@ -640,7 +638,7 @@ const s = StyleSheet.create({
     width: 36,
     height: 36,
     backgroundColor: '#EFF6FF',
-    borderWidth: 2,
+    borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
     alignItems: 'center',
@@ -653,9 +651,9 @@ const s = StyleSheet.create({
   cardBody: { gap: 4, marginBottom: 10 },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   infoText: { fontSize: 12, color: '#6B7280', fontWeight: '500' },
-  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: '#F3F4F6', paddingTop: 10 },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10 },
   checksRow: { flexDirection: 'row', gap: 12 },
-  deleteBtn: { width: 32, height: 32, borderWidth: 2, borderRadius: 8, borderColor: C.danger, alignItems: 'center', justifyContent: 'center' },
+  deleteBtn: { width: 32, height: 32, borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.danger, alignItems: 'center', justifyContent: 'center' },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -684,7 +682,7 @@ const s = StyleSheet.create({
   },
   picker: { borderWidth: 2, borderRadius: 8, borderRightWidth: 5, borderBottomWidth: 5, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black, backgroundColor: C.white },
   pickerPlaceholder: { padding: 12, color: '#9CA3AF', fontSize: 14 },
-  pickerOption: { paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  pickerOption: { paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 2, borderBottomColor: C.black },
   pickerOptionActive: { backgroundColor: '#EFF6FF' },
   pickerOptionText: { fontSize: 14, fontWeight: '500', color: C.black },
   selectBtn: {
@@ -722,7 +720,7 @@ const s = StyleSheet.create({
   pickerSheet: { backgroundColor: C.white, borderTopWidth: 2, borderTopColor: C.black },
   pickerSheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 2, borderBottomColor: C.black },
   pickerSheetTitle: { fontSize: 16, fontWeight: '700', color: C.black },
-  sheetOption: { paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  sheetOption: { paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 2, borderBottomColor: C.black },
   sheetOptionActive: { backgroundColor: '#EFF6FF' },
   sheetOptionText: { fontSize: 15, fontWeight: '600', color: C.black },
   toggleRow: { flexDirection: 'row', gap: 8 },
@@ -731,6 +729,10 @@ const s = StyleSheet.create({
     paddingVertical: 10,
     alignItems: 'center',
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
     backgroundColor: C.white,
@@ -739,6 +741,6 @@ const s = StyleSheet.create({
   toggleBtnText: { fontSize: 12, fontWeight: '700', color: C.black, textTransform: 'uppercase' },
   checkRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   checkbox: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
-  checkboxEmpty: { width: 18, height: 18, borderWidth: 2, borderColor: '#D1D5DB' },
+  checkboxEmpty: { width: 18, height: 18, borderWidth: 2, borderColor: C.black },
   checkLabel: { fontSize: 14, fontWeight: '600', color: C.black },
 });

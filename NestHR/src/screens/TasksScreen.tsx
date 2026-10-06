@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import MetaChip, { CHIP } from '../components/common/MetaChip';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import {
@@ -280,25 +281,16 @@ export default function TasksScreen() {
               <Badge label={t.priority} color={PRIORITY_COLOR[t.priority] || C.primary} />
             </View>
             <View style={s.metaRow}>
-              <Text style={s.meta}>{t.assignedTo?.name || '—'}</Text>
+              <MetaChip text={t.assignedTo?.name || '—'} bg={CHIP.blue} />
               <Badge label={STATUS_LABEL[t.status] || t.status} color={STATUS_COLOR[t.status] || C.primary} />
             </View>
             <View style={s.metaRow}>
-              <View style={s.inline}>
-                <Calendar size={12} color={C.black} />
-                <Text style={s.meta}>{fmt(t.dueDate)}</Text>
-              </View>
+              <MetaChip icon={<Calendar size={12} color={C.black} />} text={fmt(t.dueDate)} bg={CHIP.blue} />
               {isLate(t) && (
-                <View style={s.inline}>
-                  <AlertTriangle size={12} color={C.danger} />
-                  <Text style={[s.meta, { color: C.danger, fontFamily: FONT.bold }]}>LATE</Text>
-                </View>
+                <MetaChip icon={<AlertTriangle size={12} color={C.black} />} text="LATE" bg={CHIP.red} />
               )}
               {t.comments?.length ? (
-                <View style={s.inline}>
-                  <MessageSquare size={12} color={C.black} />
-                  <Text style={s.meta}>{t.comments.length}</Text>
-                </View>
+                <MetaChip icon={<MessageSquare size={12} color={C.black} />} text={String(t.comments.length)} bg={CHIP.blue} />
               ) : null}
             </View>
           </TouchableOpacity>
@@ -497,7 +489,7 @@ const s = StyleSheet.create({
     fontSize: 14,
     color: C.black,
   },
-  pill: { borderWidth: 2, borderRadius: 8, borderColor: C.black, paddingHorizontal: 12, paddingVertical: 6 },
+  pill: { borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black, paddingHorizontal: 12, paddingVertical: 6 },
   pillOn: { backgroundColor: C.primary, borderColor: C.primary },
   pillText: { fontFamily: FONT.bold, fontSize: 11, color: C.black, textTransform: 'uppercase' },
   pillGap: { width: 6 },
@@ -526,7 +518,7 @@ const s = StyleSheet.create({
   body: { fontFamily: FONT.medium, fontSize: 14, color: C.black, marginBottom: 8 },
   section: { fontFamily: FONT.bold, fontSize: 12, color: C.black, textTransform: 'uppercase', marginTop: 18, marginBottom: 8 },
   statusRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  statusBtn: { flex: 1, borderWidth: 2, borderRadius: 8, paddingVertical: 8, alignItems: 'center' },
+  statusBtn: { flex: 1, borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, paddingVertical: 8, alignItems: 'center' },
   statusBtnText: { fontFamily: FONT.bold, fontSize: 11, color: C.black, textTransform: 'uppercase' },
   comment: { borderLeftWidth: 3, borderLeftColor: C.primary, paddingLeft: 10, marginBottom: 10 },
   commentUser: { fontFamily: FONT.bold, fontSize: 11, color: C.black },
@@ -550,7 +542,7 @@ const s = StyleSheet.create({
   label: { fontFamily: FONT.bold, fontSize: 12, color: C.black, textTransform: 'uppercase', marginTop: 12, marginBottom: 6 },
   input: { fontFamily: FONT.medium, borderWidth: 2, borderRadius: 8, borderRightWidth: 5, borderBottomWidth: 5, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: C.black },
   pickList: { borderWidth: 2, borderRadius: 8, borderRightWidth: 5, borderBottomWidth: 5, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black, maxHeight: 180, marginBottom: 4 },
-  pickRow: { paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  pickRow: { paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 2, borderBottomColor: C.black },
   pickRowOn: { backgroundColor: C.primary },
   pickText: { fontFamily: FONT.medium, fontSize: 14, color: C.black },
   saveBtn: { backgroundColor: C.primary, borderWidth: 2, borderRadius: 8, borderRightWidth: 5, borderBottomWidth: 5, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black, paddingVertical: 12, alignItems: 'center', marginTop: 16 },

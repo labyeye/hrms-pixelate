@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import MetaChip, { CHIP } from '../components/common/MetaChip';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { CheckCircle2, ChevronLeft, Pin, Plus, Trash2, X } from 'lucide-react-native';
@@ -212,11 +213,11 @@ export default function AnnouncementsScreen() {
                 <Tag label={a.category} color="#6B7280" />
                 {a.acknowledgementRequired && <Tag label={acked ? 'Acknowledged' : 'Ack required'} color={acked ? C.success : C.danger} />}
               </View>
-              <Text style={s.meta}>
-                {a.postedBy?.name ? `${a.postedBy.name} · ` : ''}
-                {fmt(a.date || a.createdAt)}
-                {a.expiryDate ? ` · expires ${fmt(a.expiryDate)}` : ''}
-              </Text>
+              <View style={[s.row, { marginTop: 8, flexWrap: 'wrap', gap: 6 }]}>
+                {!!a.postedBy?.name && <MetaChip text={a.postedBy.name} bg={CHIP.blue} />}
+                <MetaChip text={fmt(a.date || a.createdAt)} bg={CHIP.blue} />
+                {!!a.expiryDate && <MetaChip text={`Expires ${fmt(a.expiryDate)}`} bg={CHIP.blue} />}
+              </View>
               {open && (
                 <>
                   <Text style={s.content}>{a.content}</Text>
@@ -360,7 +361,7 @@ const s = StyleSheet.create({
   backText: { fontFamily: FONT.bold, fontSize: 12, color: C.black, textTransform: 'uppercase' },
   filters: { paddingHorizontal: 16, paddingTop: 10, gap: 8 },
   search: { fontFamily: FONT.medium, borderWidth: 2, borderRadius: 8, borderRightWidth: 5, borderBottomWidth: 5, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black, paddingHorizontal: 12, paddingVertical: 8, fontSize: 14, color: C.black },
-  pill: { borderWidth: 2, borderRadius: 8, borderColor: C.black, paddingHorizontal: 12, paddingVertical: 6 },
+  pill: { borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black, paddingHorizontal: 12, paddingVertical: 6 },
   pillOn: { backgroundColor: C.primary, borderColor: C.primary },
   pillText: { fontFamily: FONT.bold, fontSize: 11, color: C.black, textTransform: 'uppercase' },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
@@ -369,7 +370,7 @@ const s = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   title: { flex: 1, fontFamily: FONT.bold, fontSize: 15, color: C.black },
   dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: C.primary },
-  tag: { borderWidth: 2, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 1 },
+  tag: { borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 1 },
   tagText: { fontFamily: FONT.bold, fontSize: 10, textTransform: 'uppercase' },
   meta: { fontFamily: FONT.medium, fontSize: 12, color: '#374151', marginTop: 6 },
   content: { fontFamily: FONT.medium, fontSize: 14, color: C.black, marginTop: 10, lineHeight: 20 },

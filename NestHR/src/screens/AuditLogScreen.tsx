@@ -373,8 +373,8 @@ const styles = StyleSheet.create({
   detailBox: {
     marginTop: 10,
     backgroundColor: '#F0F6FF',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderWidth: 2,
+    borderColor: C.black,
     padding: 8,
     gap: 4,
   },

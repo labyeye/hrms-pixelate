@@ -54,6 +54,7 @@ import {
 } from '../api/api';
 import { Employee } from '../types/hrms';
 import { C } from '../theme';
+import FilterBar from '../components/common/FilterBar';
 
 const STATUS_COLOR: Record<string, string> = {
   active: C.success,
@@ -641,78 +642,14 @@ export default function EmployeesScreen() {
         )}
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterBar}
-        contentContainerStyle={styles.filterContent}
-      >
-        {/* ALL pill */}
-        <TouchableOpacity
-          style={[
-            styles.summaryPill,
-            {
-              backgroundColor: statusFilter === '' ? C.primary : '#F3F4F6',
-              borderColor: C.primary,
-            },
-          ]}
-          onPress={() => setStatusFilter('')}
-          activeOpacity={0.8}
-        >
-          <Text
-            style={[
-              styles.summaryCount,
-              { color: statusFilter === '' ? C.white : C.primary },
-            ]}
-          >
-            {employees.length}
-          </Text>
-          <Text
-            style={[
-              styles.summaryStatus,
-              { color: statusFilter === '' ? C.white : C.primary },
-            ]}
-          >
-            All
-          </Text>
-        </TouchableOpacity>
-
-        {Object.entries(STATUS_CONFIG).map(([status, cfg]) => {
-          const count = employees.filter(e => e.status === status).length;
-          const active = statusFilter === status;
-          return (
-            <TouchableOpacity
-              key={status}
-              style={[
-                styles.summaryPill,
-                {
-                  backgroundColor: active ? cfg.color : cfg.bg,
-                  borderColor: cfg.color,
-                },
-              ]}
-              onPress={() => setStatusFilter(p => (p === status ? '' : status))}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={[
-                  styles.summaryCount,
-                  { color: active ? C.white : cfg.color },
-                ]}
-              >
-                {count}
-              </Text>
-              <Text
-                style={[
-                  styles.summaryStatus,
-                  { color: active ? C.white : cfg.color },
-                ]}
-              >
-                {status.replace('_', ' ')}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+      <FilterBar
+        value={statusFilter}
+        onChange={setStatusFilter}
+        options={[
+          { key: '', label: 'All' },
+          ...Object.keys(STATUS_CONFIG).map(k => ({ key: k, label: k })),
+        ]}
+      />
 
       {loading ? (
         <View style={styles.loader}>
@@ -797,23 +734,25 @@ export default function EmployeesScreen() {
                 </View>
                 <View style={styles.cardMeta}>
                   {item.email && (
-                    <View style={styles.metaItem}>
-                      <Mail size={11} color={C.textMuted} />
+                    <View style={[styles.metaItem, { backgroundColor: '#DBEAFE', flex: 1 }]}>
+                      <Mail size={12} color={C.black} />
                       <Text style={styles.metaText} numberOfLines={1}>
                         {item.email}
                       </Text>
                     </View>
                   )}
                   {(item as any).phone && (
-                    <View style={styles.metaItem}>
-                      <Phone size={11} color={C.textMuted} />
-                      <Text style={styles.metaText}>{(item as any).phone}</Text>
+                    <View style={[styles.metaItem, { flexShrink: 0, backgroundColor: '#DCFCE7' }]}>
+                      <Phone size={12} color={C.black} />
+                      <Text style={[styles.metaText, { flex: 0 }]} numberOfLines={1}>
+                        {(item as any).phone}
+                      </Text>
                     </View>
                   )}
                   {(item.salary || (item as any).monthlySalary) && (
-                    <View style={styles.metaItem}>
-                      <Briefcase size={11} color={C.textMuted} />
-                      <Text style={styles.metaText}>
+                    <View style={[styles.metaItem, { flexShrink: 0, backgroundColor: '#FEF08A' }]}>
+                      <Briefcase size={12} color={C.black} />
+                      <Text style={[styles.metaText, { flex: 0 }]} numberOfLines={1}>
                         ₹
                         {(
                           (item as any).monthlySalary ||
@@ -1049,7 +988,7 @@ export default function EmployeesScreen() {
                         paddingHorizontal: 14,
                         paddingVertical: 11,
                         borderBottomWidth: i < arr.length - 1 ? 1 : 0,
-                        borderBottomColor: '#F3F4F6',
+                        borderBottomColor: C.black,
                       }}
                     >
                       <Text
@@ -1151,7 +1090,7 @@ export default function EmployeesScreen() {
                         paddingVertical: 9,
                         paddingHorizontal: 14,
                         borderBottomWidth: i < arr.length - 1 ? 1 : 0,
-                        borderBottomColor: '#F3F4F6',
+                        borderBottomColor: C.black,
                       }}
                     >
                       <Text
@@ -1215,7 +1154,7 @@ export default function EmployeesScreen() {
                         paddingVertical: 9,
                         paddingHorizontal: 14,
                         borderBottomWidth: i < arr.length - 1 ? 1 : 0,
-                        borderBottomColor: '#F3F4F6',
+                        borderBottomColor: C.black,
                       }}
                     >
                       <Text
@@ -1269,7 +1208,7 @@ export default function EmployeesScreen() {
                         paddingVertical: 9,
                         paddingHorizontal: 14,
                         borderBottomWidth: i < arr.length - 1 ? 1 : 0,
-                        borderBottomColor: '#F3F4F6',
+                        borderBottomColor: C.black,
                       }}
                     >
                       <Text style={{ fontSize: 12, fontWeight: '700', color: C.textMuted, textTransform: 'uppercase' }}>
@@ -1304,7 +1243,7 @@ export default function EmployeesScreen() {
                           paddingVertical: 9,
                           paddingHorizontal: 14,
                           borderBottomWidth: i < arr.length - 1 ? 1 : 0,
-                          borderBottomColor: '#F3F4F6',
+                          borderBottomColor: C.black,
                         }}
                       >
                         <Text style={{ fontSize: 12, fontWeight: '700', color: C.textMuted, textTransform: 'uppercase' }}>
@@ -1570,7 +1509,7 @@ export default function EmployeesScreen() {
                       style={{
                         padding: 12,
                         backgroundColor: '#FFF7ED',
-                        borderWidth: 1,
+                        borderWidth: 2,
                         borderColor: C.warning,
                       }}
                     >
@@ -1625,8 +1564,8 @@ export default function EmployeesScreen() {
                         <View
                           key={r._id}
                           style={{
-                            borderWidth: 1,
-                            borderColor: '#E5E7EB',
+                            borderWidth: 2,
+                            borderColor: C.black,
                             padding: 12,
                             backgroundColor: C.white,
                             flexDirection: 'row',
@@ -1701,7 +1640,7 @@ export default function EmployeesScreen() {
                             style={{
                               paddingHorizontal: 8,
                               paddingVertical: 3,
-                              borderWidth: 1,
+                              borderWidth: 2,
                               borderColor: C.black,
                             }}
                           >
@@ -1740,8 +1679,8 @@ export default function EmployeesScreen() {
                         <View
                           key={r._id}
                           style={{
-                            borderWidth: 1,
-                            borderColor: '#E5E7EB',
+                            borderWidth: 2,
+                            borderColor: C.black,
                             padding: 12,
                             backgroundColor: C.white,
                             flexDirection: 'row',
@@ -1773,7 +1712,7 @@ export default function EmployeesScreen() {
                             style={{
                               paddingHorizontal: 8,
                               paddingVertical: 3,
-                              borderWidth: 1,
+                              borderWidth: 2,
                               borderColor:
                                 r.status === 'paid' ? C.success : C.warning,
                               backgroundColor:
@@ -2195,7 +2134,7 @@ export default function EmployeesScreen() {
                                 paddingHorizontal: 12,
                                 paddingVertical: 10,
                                 borderTopWidth: i > 0 ? 1 : 0,
-                                borderTopColor: '#F3F4F6',
+                                borderTopColor: C.black,
                               }}
                             >
                               <Text
@@ -2445,8 +2384,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     backgroundColor: C.white,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
@@ -2466,6 +2405,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderWidth: 2,
+    borderColor: C.black,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
@@ -2478,12 +2418,7 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   } as any,
   summaryStatus: {
-    borderWidth: 2,
-    borderRadius: 999,
-    borderColor: '#0A0A0A',
-    borderRightWidth: 4,
-    borderBottomWidth: 4,
-    fontSize: 8,
+    fontSize: 9,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
@@ -2548,17 +2483,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardMeta: { marginTop: 10, gap: 4 },
-  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  metaText: { fontSize: 12, color: C.textMuted, fontWeight: '500', flex: 1 },
+  cardMeta: {
+    marginTop: 10,
+    flexDirection: 'row',
+    flexWrap: 'nowrap',
+    alignItems: 'stretch',
+    gap: 6,
+  },
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 5,
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderColor: C.black,
+    borderRadius: 6,
+    backgroundColor: C.white,
+  },
+  metaText: { fontSize: 11, color: C.black, fontWeight: '800', flexShrink: 1 },
   cardBottom: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 10,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    marginTop: 12,
   },
   typePill: {
     borderWidth: 2,
@@ -2572,7 +2523,7 @@ const styles = StyleSheet.create({
   joinDate: { fontSize: 11, color: C.textMuted, fontWeight: '500' },
   loanBadge: {
     backgroundColor: '#FEF2F2',
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: C.danger,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -2695,7 +2646,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderWidth: 2,
     borderRadius: 8,
-    borderColor: '#E5E7EB',
+    borderColor: C.black,
     backgroundColor: C.white,
   },
   toggleHint: {

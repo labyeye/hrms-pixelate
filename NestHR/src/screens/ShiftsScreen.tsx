@@ -371,8 +371,8 @@ const s = StyleSheet.create({
   pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
   pill: {
     backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderWidth: 2,
+    borderColor: C.black,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
@@ -380,7 +380,7 @@ const s = StyleSheet.create({
   iconBtn: {
     width: 30,
     height: 30,
-    borderWidth: 2,
+    borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.primary,
     alignItems: 'center',

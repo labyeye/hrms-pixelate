@@ -172,6 +172,8 @@ export const authAPI = {
 export const dashboardAPI = {
   getStats: () => request('/dashboard/stats'),
   getEmployeeStats: () => request('/dashboard/employee'),
+  getPayrollSummary: (range: string) =>
+    request(`/dashboard/payroll-summary?range=${range}`),
 };
 
 export const employeeAPI = {

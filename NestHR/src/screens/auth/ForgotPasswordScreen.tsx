@@ -393,6 +393,10 @@ const styles = StyleSheet.create({
   },
   method: {
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
     padding: 14,
@@ -412,7 +416,7 @@ const styles = StyleSheet.create({
   successIcon: {
     width: 64,
     height: 64,
-    borderWidth: 2,
+    borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.success,
     backgroundColor: '#DCFCE7',

@@ -10,17 +10,13 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import LottieView from 'lottie-react-native';
 import { Mail, Lock, Eye, EyeOff, LogIn, Smartphone, ArrowRight, Fingerprint } from 'lucide-react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { authAPI } from '../../api/api';
 import { C } from '../../theme';
-
-const loginAnim = require('../../assets/lottie/login.json');
-const otpAnim = require('../../assets/lottie/otp.json');
+import AuthBanner from '../../components/AuthBanner';
 
 export default function LoginScreen({ navigation }: any) {
   const { login, loginWithToken } = useAuth();
@@ -111,34 +107,37 @@ export default function LoginScreen({ navigation }: any) {
   };
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.screen} edges={['top']}>
+      <AuthBanner />
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={styles.body}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
         >
-          {pending2FA === null && (
-            <LottieView
-              key={mode}
-              source={mode === 'phone' ? otpAnim : loginAnim}
-              autoPlay
-              loop
-              style={mode === 'phone' ? styles.lottieOtp : styles.lottieLogin}
-            />
-          )}
           <>
-            <Text style={styles.cardTitle}>Welcome back</Text>
-            <Text style={styles.cardSub}></Text>
+            <Text style={styles.cardTitle}>
+              {pending2FA !== null
+                ? 'Two-Factor Authentication'
+                : mode === 'phone'
+                ? 'Login with phone'
+                : 'Login'}
+            </Text>
+            <Text style={styles.cardSub}>
+              {pending2FA !== null
+                ? 'Enter the 6-digit code from your authenticator app, or a backup code.'
+                : mode === 'phone'
+                ? otpSent
+                  ? 'Enter the OTP sent to you on WhatsApp.'
+                  : "We'll send a one-time code to your phone on WhatsApp."
+                : 'Sign in with your email and password to continue.'}
+            </Text>
 
             {pending2FA !== null ? (
               /* ── 2FA code step ────────────────────────────────── */
               <>
-                <Text style={styles.cardSub}>
-                  Enter the 6-digit code from your authenticator app, or a backup code.
-                </Text>
                 <View style={styles.field}>
                   <Text style={styles.label}>Authentication Code</Text>
                   <TextInput
@@ -378,28 +377,25 @@ export default function LoginScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.bg },
-  scroll: { flexGrow: 1, justifyContent: 'center', padding: 20 },
-  logoWrap: { alignItems: 'center', marginBottom: 32 },
-  logoImg: { width: 100, height: 100, marginBottom: 8 },
-  appSub: { fontSize: 19, color: C.textMuted, fontWeight: '500', marginTop: 4 },
-  // Same box + negative top margin as NestSports' login/OTP screens: both animations have
-  // generous transparent padding in their canvas, so the art floats above the centred form.
-  lottieLogin: { width: '100%', height: 250, marginTop: -74, marginBottom: 24 },
-  lottieOtp: { width: '100%', height: 300, marginTop: -204, marginBottom: 24 },
+  // Blue SafeAreaView behind AuthBanner so it also fills the status bar area;
+  // the scrollable body below is white, matching NestSports' auth screens.
+  screen: { flex: 1, backgroundColor: C.primary },
+  body: { flex: 1, backgroundColor: C.bg },
+  scroll: { flexGrow: 1, padding: 20 },
   cardTitle: {
     fontSize: 30,
-    fontWeight: '700',
+    fontWeight: '800',
     color: C.black,
     marginBottom: 4,
-    textAlign: 'center',
-    marginTop: 10,
+    textAlign: 'left',
+    marginTop: 16,
   },
   cardSub: {
-    fontSize: 13,
+    fontSize: 14,
     color: C.textMuted,
     fontWeight: '500',
-    marginBottom: 10,
+    marginBottom: 18,
+    textAlign: 'left',
   },
   field: { marginBottom: 16 },
   label: {

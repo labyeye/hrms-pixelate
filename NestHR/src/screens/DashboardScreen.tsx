@@ -18,8 +18,6 @@ import {
   CheckCircle2,
   CalendarOff,
   Clock,
-  Building2,
-  Briefcase,
   TrendingUp,
   RefreshCw,
   Bell,
@@ -43,7 +41,11 @@ import {
   attendanceSettingsAPI,
 } from '../api/api';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
-import { C, S } from '../theme';
+import { PieChart } from 'react-native-gifted-charts';
+import AnimatedNumber from '../components/motion/AnimatedNumber';
+import FadeInUp from '../components/motion/FadeInUp';
+import AnimatedLineChart from '../components/common/AnimatedLineChart';
+import { C, S, FONT } from '../theme';
 
 const CARD_WIDTH = (Dimensions.get('window').width - 32 - 10) / 2;
 
@@ -74,19 +76,19 @@ const ADMIN_STATS = [
     icon: Clock,
     color: C.danger,
   },
-  {
-    label: 'Departments',
-    key: 'departments',
-    icon: Building2,
-    color: C.primary,
-  },
-  {
-    label: 'Open Positions',
-    key: 'openPositions',
-    icon: Briefcase,
-    color: C.secondary,
-  },
 ];
+
+type RangeKey = 'this' | '3m' | '6m' | '1y';
+// 'this' (this month, till today) is the default view and isn't a pill —
+// the pills just offer wider trend windows to switch to.
+const ALL_RANGES: RangeKey[] = ['this', '3m', '6m', '1y'];
+const RANGE_PILLS: { key: RangeKey; label: string }[] = [
+  { key: '3m', label: '3M' },
+  { key: '6m', label: '6M' },
+  { key: '1y', label: '1Y' },
+];
+
+const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 function AdminDashboard({ navigation }: any) {
   const { user } = useAuth();
@@ -95,6 +97,8 @@ function AdminDashboard({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [range, setRange] = useState<RangeKey>('this');
+  const [summaries, setSummaries] = useState<Record<string, any>>({});
 
   const loadUnread = useCallback(async () => {
     const all = await localNotificationsAPI.getAll();
@@ -106,7 +110,12 @@ function AdminDashboard({ navigation }: any) {
     try {
       const res = await dashboardAPI.getStats();
       const payload = res.data || res;
-      setStats({ ...payload.stats, recentActivity: payload.recentHires });
+      setStats({
+        ...payload.stats,
+        recentActivity: payload.recentHires,
+        attTrend: payload.attTrend || [],
+        payTrend: payload.payTrend || [],
+      });
     } catch (e: any) {
       setError(e.message || 'Failed to load dashboard');
     } finally {
@@ -117,6 +126,22 @@ function AdminDashboard({ navigation }: any) {
   useEffect(() => {
     loadUnread();
   }, [loadUnread]);
+  // Fetch all ranges up front; pill taps then read straight from memory.
+  useEffect(() => {
+    let live = true;
+    ALL_RANGES.forEach(r =>
+      dashboardAPI
+        .getPayrollSummary(r)
+        .then((res: any) => {
+          if (live) setSummaries(p => ({ ...p, [r]: res.data || res }));
+        })
+        .catch(() => {}),
+    );
+    return () => {
+      live = false;
+    };
+  }, []);
+  const paySummary = summaries[range] ?? null;
   useEffect(() => {
     load();
   }, [load]);
@@ -208,35 +233,161 @@ function AdminDashboard({ navigation }: any) {
 
           <Text style={styles.sectionLabel}>Overview</Text>
           <View style={styles.grid}>
-            {ADMIN_STATS.map(s => {
+            {ADMIN_STATS.map((s, i) => {
               const Icon = s.icon;
+              const raw = stats?.[s.key];
+              const numeric = typeof raw === 'number' ? raw : null;
               return (
-                <TouchableOpacity
-                  key={s.key}
-                  style={styles.statCard}
-                  activeOpacity={0.8}
-                  onPress={() => handleCardPress(s.key)}
-                >
-                  <View
-                    style={[
-                      styles.statIconWrap,
-                      { backgroundColor: s.color + '1A', borderColor: s.color },
-                    ]}
+                <FadeInUp key={s.key} delay={i * 70} style={styles.statCardWrap}>
+                  <TouchableOpacity
+                    style={styles.statCard}
+                    activeOpacity={0.8}
+                    onPress={() => handleCardPress(s.key)}
                   >
-                    <Icon size={18} color={s.color} />
-                  </View>
-                  <View style={styles.statBody}>
-                    <Text style={styles.statLabel} numberOfLines={1}>
-                      {s.label}
-                    </Text>
-                    <Text style={styles.statValue} numberOfLines={1}>
-                      {stats?.[s.key] ?? '—'}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
+                    <View
+                      style={[
+                        styles.statIconWrap,
+                        { backgroundColor: s.color + '1A', borderColor: s.color },
+                      ]}
+                    >
+                      <Icon size={18} color={s.color} />
+                    </View>
+                    <View style={styles.statBody}>
+                      <Text style={styles.statLabel} numberOfLines={1}>
+                        {s.label}
+                      </Text>
+                      {numeric !== null ? (
+                        <AnimatedNumber style={styles.statValue} value={numeric} />
+                      ) : (
+                        <Text style={styles.statValue} numberOfLines={1}>
+                          {raw ?? '—'}
+                        </Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                </FadeInUp>
               );
             })}
           </View>
+
+          <View style={styles.rangeRow}>
+            {RANGE_PILLS.map(r => (
+              <TouchableOpacity
+                key={r.key}
+                onPress={() => setRange(r.key)}
+                style={[styles.pill, range === r.key && styles.pillActive]}
+              >
+                <Text
+                  style={[styles.pillText, range === r.key && { color: C.white }]}
+                >
+                  {r.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <FadeInUp delay={ADMIN_STATS.length * 70} style={styles.payCard}>
+            <Text style={styles.payLabel}>Payable till today (after attendance)</Text>
+            {paySummary ? (
+              <AnimatedNumber
+                style={[styles.payValue, { color: C.primary }]}
+                value={paySummary.payable}
+                prefix="₹"
+              />
+            ) : (
+              <Text style={styles.payValue}>—</Text>
+            )}
+            <Text style={styles.paySub}>
+              {paySummary
+                ? `${paySummary.deducted > 0 ? '₹' + paySummary.deducted.toLocaleString('en-IN') + ' saved via absences, late & deductions' : 'No deductions so far'}`
+                : 'Loading…'}
+            </Text>
+          </FadeInUp>
+
+          <FadeInUp delay={ADMIN_STATS.length * 70 + 70} style={styles.payCard}>
+            <Text style={styles.payLabel}>Actual till today (as per database)</Text>
+            {paySummary ? (
+              <AnimatedNumber
+                style={[styles.payValue, { color: C.secondary }]}
+                value={paySummary.actual}
+                prefix="₹"
+              />
+            ) : (
+              <Text style={styles.payValue}>—</Text>
+            )}
+            <Text style={styles.paySub}>Salary to date, before any deductions</Text>
+          </FadeInUp>
+
+          <Text style={styles.sectionLabel}>Performance</Text>
+          <View style={styles.card}>
+            {paySummary?.performance?.length ? (
+              paySummary.performance.map((p: any, i: number) => (
+                <View
+                  key={p.employee._id}
+                  style={[styles.perfRow, i > 0 && styles.quickBorder]}
+                >
+                  <Text style={styles.perfRank}>{i + 1}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.perfName} numberOfLines={1}>
+                      {p.employee.firstName} {p.employee.lastName}
+                    </Text>
+                    <View style={styles.perfBarTrack}>
+                      <View
+                        style={[
+                          styles.perfBarFill,
+                          {
+                            width: `${p.percent}%`,
+                            backgroundColor:
+                              p.percent === 100 ? C.success : C.primary,
+                          },
+                        ]}
+                      />
+                    </View>
+                  </View>
+                  <View
+                    style={[
+                      styles.perfBadge,
+                      p.percent === 100 && { backgroundColor: C.success },
+                    ]}
+                  >
+                    <Text style={styles.perfBadgeText}>{p.percent}%</Text>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.perfEmpty}>No attendance data for this period</Text>
+            )}
+          </View>
+
+          {!!stats?.attTrend?.length && (
+            <>
+              <Text style={styles.sectionLabel}>Attendance Trend</Text>
+              <FadeInUp delay={ADMIN_STATS.length * 70 + 70} style={styles.card}>
+                <AnimatedLineChart
+                  data={stats.attTrend.map((t: any) => ({
+                    label: MONTH_LABELS[t.month - 1],
+                    value: t.count,
+                  }))}
+                />
+              </FadeInUp>
+            </>
+          )}
+
+          {!!stats?.payTrend?.length && (
+            <>
+              <Text style={styles.sectionLabel}>Payroll Trend (₹k)</Text>
+              <FadeInUp delay={ADMIN_STATS.length * 70 + 140} style={styles.card}>
+                <AnimatedLineChart
+                  color={C.secondary}
+                  data={stats.payTrend.map((t: any) => ({
+                    label: MONTH_LABELS[t.month - 1],
+                    value: Math.round(t.total / 1000),
+                  }))}
+                  format={n => `${n}k`}
+                />
+              </FadeInUp>
+            </>
+          )}
 
           <Text style={styles.sectionLabel}>This Month</Text>
           <View style={styles.card}>
@@ -559,7 +710,7 @@ function EmployeeDashboard({ navigation }: any) {
                 </Text>
                 <Text style={styles.profileBannerStatLabel}>Monthly CTC</Text>
               </View>
-              <View style={[styles.profileBannerStat, { borderLeftWidth: 1, borderLeftColor: '#E5E7EB' }]}>
+              <View style={[styles.profileBannerStat, { borderLeftWidth: 2, borderLeftColor: C.black }]}>
                 <Calendar size={12} color={C.success} />
                 <Text style={styles.profileBannerStatVal}>
                   {empProfile?.joinDate
@@ -797,20 +948,69 @@ function EmployeeDashboard({ navigation }: any) {
               { label: 'Present', val: presentDays, color: C.success, icon: CheckCircle2 },
               { label: 'Absent', val: absentDays, color: C.danger, icon: CalendarOff },
               { label: 'Late', val: lateDays, color: C.warning, icon: Clock },
-              { label: 'Att %', val: `${attPct}%`, color: C.primary, icon: TrendingUp },
-            ].map(item => {
+              { label: 'Att %', val: attPct, suffix: '%', color: C.primary, icon: TrendingUp },
+            ].map((item, i) => {
               const Icon = item.icon;
               return (
-                <View key={item.label} style={styles.monthStatCard}>
-                  <View style={[styles.monthStatIcon, { backgroundColor: item.color }]}>
-                    <Icon size={14} color={C.white} />
+                <FadeInUp key={item.label} delay={i * 70} style={styles.monthStatCardWrap}>
+                  <View style={styles.monthStatCard}>
+                    <View style={[styles.monthStatIcon, { backgroundColor: item.color }]}>
+                      <Icon size={14} color={C.white} />
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                      <AnimatedNumber
+                        style={[styles.monthStatVal, { color: item.color }]}
+                        value={item.val}
+                      />
+                      {item.suffix && (
+                        <Text style={[styles.monthStatVal, { color: item.color }]}>
+                          {item.suffix}
+                        </Text>
+                      )}
+                    </View>
+                    <Text style={styles.monthStatLabel}>{item.label}</Text>
                   </View>
-                  <Text style={[styles.monthStatVal, { color: item.color }]}>{item.val}</Text>
-                  <Text style={styles.monthStatLabel}>{item.label}</Text>
-                </View>
+                </FadeInUp>
               );
             })}
           </View>
+
+          {presentDays + absentDays + lateDays > 0 && (
+            <FadeInUp delay={280} style={styles.card}>
+              <View style={styles.donutRow}>
+                <PieChart
+                  data={[
+                    { value: presentDays, color: C.success },
+                    { value: absentDays, color: C.danger },
+                    { value: lateDays, color: C.warning },
+                  ].filter(d => d.value > 0)}
+                  donut
+                  radius={52}
+                  innerRadius={35}
+                  innerCircleColor={C.white}
+                  centerLabelComponent={() => (
+                    <View style={{ alignItems: 'center' }}>
+                      <Text style={styles.donutCenterVal}>{attPct}%</Text>
+                      <Text style={styles.donutCenterLabel}>Attendance</Text>
+                    </View>
+                  )}
+                />
+                <View style={styles.donutLegend}>
+                  {[
+                    { label: 'Present', val: presentDays, color: C.success },
+                    { label: 'Absent', val: absentDays, color: C.danger },
+                    { label: 'Late', val: lateDays, color: C.warning },
+                  ].map(item => (
+                    <View key={item.label} style={styles.donutLegendRow}>
+                      <View style={[styles.donutDot, { backgroundColor: item.color }]} />
+                      <Text style={styles.donutLegendLabel}>{item.label}</Text>
+                      <AnimatedNumber style={styles.donutLegendVal} value={item.val} />
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </FadeInUp>
+          )}
 
           {/* Late/leave balance widget */}
           {myBalance && (
@@ -1073,8 +1273,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   essAnnounceRow: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
     paddingBottom: 8,
     marginBottom: 8,
   },
@@ -1140,6 +1340,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#FEF2F2',
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.danger,
     padding: 10,
@@ -1158,8 +1362,8 @@ const styles = StyleSheet.create({
 
   // Admin grid
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 8 },
+  statCardWrap: { width: CARD_WIDTH },
   statCard: {
-    width: CARD_WIDTH,
     borderWidth: 2,
     borderRadius: 8,
     borderRightWidth: 5,
@@ -1179,10 +1383,10 @@ const styles = StyleSheet.create({
     height: 38,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
+    borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A',
     borderRadius: 8,
   },
-  statValue: { fontSize: 22, fontWeight: '700', color: C.black },
+  statValue: { fontSize: 22, fontWeight: '800', color: C.black },
   statLabel: {
     fontSize: 10,
     fontWeight: '700',
@@ -1190,6 +1394,16 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+
+  // Today's attendance donut
+  donutRow: { flexDirection: 'row', alignItems: 'center', gap: 20 },
+  donutCenterVal: { fontSize: 18, fontWeight: '800', color: C.black },
+  donutCenterLabel: { fontSize: 9, color: C.textMuted, fontWeight: '600' },
+  donutLegend: { flex: 1, gap: 10 },
+  donutLegendRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  donutDot: { width: 10, height: 10, borderRadius: 5 },
+  donutLegendLabel: { flex: 1, fontSize: 13, fontWeight: '600', color: C.black },
+  donutLegendVal: { fontSize: 14, fontWeight: '800', color: C.black },
 
   // Shared card
   card: {
@@ -1210,7 +1424,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 16,
   },
-  quickBorder: { borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  quickBorder: { borderTopWidth: 2, borderTopColor: C.black },
   quickIcon: {
     width: 28,
     height: 28,
@@ -1238,8 +1452,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
   },
   profileBannerAvatar: {
     width: 56,
@@ -1326,6 +1540,7 @@ const styles = StyleSheet.create({
 
   // Employee: Month stats
   monthStats: { flexDirection: 'row', gap: 8, marginBottom: 4 },
+  monthStatCardWrap: { flex: 1 },
   monthStatCard: {
     flex: 1,
     backgroundColor: C.white,
@@ -1345,7 +1560,7 @@ const styles = StyleSheet.create({
     height: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
+    borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
   },
@@ -1397,7 +1612,7 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     gap: 10,
   },
-  attBorder: { borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  attBorder: { borderTopWidth: 2, borderTopColor: C.black },
   attDate: { fontSize: 12, fontWeight: '600', color: C.black, width: 90 },
   attBadge: { paddingHorizontal: 8, paddingVertical: 3 },
   attBadgeText: { fontSize: 9, fontWeight: '700' },
@@ -1408,6 +1623,10 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
     backgroundColor: C.white,
@@ -1417,7 +1636,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     paddingVertical: 10,
-    borderRightWidth: 1,
+    borderRightWidth: 2,
     borderRightColor: C.black,
   },
   tabBtnActive: { backgroundColor: C.primary },
@@ -1453,7 +1672,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   attDayItemVal: { fontSize: 15, fontWeight: '700', color: C.black },
-  attDayDivider: { width: 1, height: 48, backgroundColor: '#E5E7EB' },
+  attDayDivider: { width: 2, height: 48, backgroundColor: '#000000' },
   attDayEmpty: { alignItems: 'center', gap: 6, paddingVertical: 10 },
   attDayEmptyText: { fontSize: 13, fontWeight: '700', color: C.textMuted },
   attDayEmptyDate: { fontSize: 11, color: C.textLight, fontWeight: '500' },
@@ -1535,6 +1754,10 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: C.primary,
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.white,
     paddingHorizontal: 20,
@@ -1546,10 +1769,48 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: C.danger,
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.white,
     paddingHorizontal: 20,
     paddingVertical: 12,
   },
   photoModalBtnText: { color: C.white, fontSize: 13, fontWeight: '700' },
+  rangeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  pill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: C.black,
+    backgroundColor: C.white,
+  },
+  pillActive: { backgroundColor: C.primary },
+  pillText: { fontFamily: FONT.bold, fontSize: 12, color: C.black },
+  payCard: {
+    backgroundColor: C.white,
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderColor: C.black,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    padding: 16,
+    marginBottom: 12,
+  },
+  payLabel: { fontFamily: FONT.bold, fontSize: 12, color: C.black, textTransform: 'uppercase' },
+  payValue: { fontFamily: FONT.bold, fontSize: 30, fontWeight: '800', color: C.black, marginVertical: 4 },
+  paySub: { fontFamily: FONT.medium, fontSize: 12, color: C.black },
+  perfRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
+  perfRank: { width: 22, fontFamily: FONT.bold, fontSize: 13, color: C.black },
+  perfName: { fontFamily: FONT.bold, fontSize: 14, color: C.black },
+  perfBarTrack: { height: 8, borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black, borderRadius: 4, marginTop: 4, overflow: 'hidden', backgroundColor: C.white },
+  perfBarFill: { height: '100%' },
+  perfBadge: { minWidth: 52, alignItems: 'center', paddingVertical: 4, borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black, borderRadius: 8, backgroundColor: C.white },
+  perfBadgeText: { fontFamily: FONT.bold, fontSize: 12, color: C.black },
+  perfEmpty: { fontFamily: FONT.medium, fontSize: 13, color: C.black },
 });

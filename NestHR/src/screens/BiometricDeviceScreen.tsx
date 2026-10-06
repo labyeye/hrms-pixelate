@@ -590,7 +590,7 @@ export default function BiometricDeviceScreen() {
                       </Text>
                     </View>
                   ) : (
-                    <View style={[styles.badge, { borderColor: '#D1D5DB' }]}>
+                    <View style={[styles.badge, { borderColor: C.black }]}>
                       <WifiOff size={10} color="#9CA3AF" />
                       <Text style={[styles.badgeText, { color: '#9CA3AF' }]}>
                         Pending
@@ -1331,14 +1331,14 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     gap: 10,
   },
-  rowBorder: { borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  rowBorder: { borderTopWidth: 2, borderTopColor: C.black },
   rowTitle: { fontSize: 14, fontWeight: '700', color: C.black },
   rowSub: { fontSize: 11, color: '#6B7280', marginTop: 2 },
   locIcon: {
     width: 36,
     height: 36,
     backgroundColor: '#EFF6FF',
-    borderWidth: 2,
+    borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
     alignItems: 'center',
@@ -1361,8 +1361,8 @@ const styles = StyleSheet.create({
   badgeText: { fontSize: 9, fontWeight: '700', textTransform: 'uppercase' },
   devDetail: {
     backgroundColor: '#F8F9FA',
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopWidth: 2,
+    borderTopColor: C.black,
     padding: 14,
   },
   codeBox: {
@@ -1399,6 +1399,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.danger,
     paddingHorizontal: 10,
@@ -1504,8 +1508,12 @@ const styles = StyleSheet.create({
     gap: 6,
     padding: 10,
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
-    borderColor: '#E5E7EB',
+    borderColor: C.black,
     marginBottom: 6,
   },
   locOptionSelected: { borderColor: C.primary, backgroundColor: '#EFF6FF' },
@@ -1639,7 +1647,7 @@ const admsS = StyleSheet.create({
     paddingVertical: 10,
     flexWrap: 'wrap',
   },
-  empRowBorder: { borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  empRowBorder: { borderTopWidth: 2, borderTopColor: C.black },
   empName: { fontSize: 12, fontWeight: '700', color: C.black },
   empId: {
     fontSize: 12,
@@ -1651,6 +1659,10 @@ const admsS = StyleSheet.create({
   bioIdInput: {
     width: 60,
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.primary,
     paddingHorizontal: 6,
@@ -1664,12 +1676,16 @@ const admsS = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     paddingHorizontal: 7,
     paddingVertical: 4,
   },
   idChipSet: { borderColor: C.success, backgroundColor: '#F0FDF4' },
-  idChipUnset: { borderColor: '#D1D5DB', borderStyle: 'dashed' },
+  idChipUnset: { borderColor: C.black, borderStyle: 'dashed' },
   rfidChipSet: { borderColor: C.primary, backgroundColor: '#EFF6FF' },
   idChipText: { fontSize: 12, fontWeight: '700' },
   actionBtn: {
@@ -1717,8 +1733,8 @@ const admsS = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopWidth: 2,
+    borderTopColor: C.black,
   },
   cmdType: {
     fontSize: 11,
@@ -1745,6 +1761,10 @@ const admsS = StyleSheet.create({
   rfidEmpBox: {
     backgroundColor: '#EFF6FF',
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: '#BFDBFE',
     padding: 12,

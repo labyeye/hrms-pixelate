@@ -39,7 +39,7 @@ import { C } from '../theme';
 
 function AccordionSection({ title, isOpen, onToggle, children, icon: Icon }: any) {
   return (
-    <View style={{ borderBottomWidth: 1, borderBottomColor: '#E5E7EB', marginTop: 10 }}>
+    <View style={{ borderBottomWidth: 2, borderBottomColor: C.black, marginTop: 10 }}>
       <TouchableOpacity
         style={{
           flexDirection: 'row',
@@ -456,7 +456,7 @@ export default function ProfileScreen() {
               <View style={{ gap: 10 }}>
                 <Text style={s.fieldLabel}>PAN Number</Text>
                 <TextInput
-                  style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 8, fontSize: 13, color: C.black }}
+                  style={{ borderWidth: 2, borderColor: C.black, padding: 8, fontSize: 13, color: C.black }}
                   value={panNumber}
                   onChangeText={setPanNumber}
                   placeholder="ABCDE1234F"
@@ -464,7 +464,7 @@ export default function ProfileScreen() {
                 />
                 <Text style={s.fieldLabel}>Bank Account Number</Text>
                 <TextInput
-                  style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 8, fontSize: 13, color: C.black }}
+                  style={{ borderWidth: 2, borderColor: C.black, padding: 8, fontSize: 13, color: C.black }}
                   value={bankAccount}
                   onChangeText={setBankAccount}
                   placeholder="Account Number"
@@ -472,7 +472,7 @@ export default function ProfileScreen() {
                 />
                 <Text style={s.fieldLabel}>IFSC Code</Text>
                 <TextInput
-                  style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 8, fontSize: 13, color: C.black }}
+                  style={{ borderWidth: 2, borderColor: C.black, padding: 8, fontSize: 13, color: C.black }}
                   value={ifscCode}
                   onChangeText={setIfscCode}
                   placeholder="IFSC Code"
@@ -491,18 +491,18 @@ export default function ProfileScreen() {
               <View style={{ gap: 12 }}>
                 <Text style={s.fieldLabel}>Emergency Contact</Text>
                 <TextInput
-                  style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 8, fontSize: 13, color: C.black }}
+                  style={{ borderWidth: 2, borderColor: C.black, padding: 8, fontSize: 13, color: C.black }}
                   value={emergencyContact}
                   onChangeText={setEmergencyContact}
                   placeholder="Contact Name & Phone"
                   placeholderTextColor={C.textLight}
                 />
 
-                <Text style={[s.fieldLabel, { borderTopWidth: 1, borderTopColor: '#E5E7EB', paddingTop: 8, marginTop: 8 }]}>Nominees List</Text>
+                <Text style={[s.fieldLabel, { borderTopWidth: 2, borderTopColor: C.black, paddingTop: 8, marginTop: 8 }]}>Nominees List</Text>
                 {nominees.map((n, i) => (
-                  <View key={i} style={{ borderWidth: 1, borderColor: '#E5E7EB', padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
+                  <View key={i} style={{ borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black, padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
                     <TextInput
-                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={n.name}
                       onChangeText={val => {
                         const updated = [...nominees];
@@ -513,7 +513,7 @@ export default function ProfileScreen() {
                       placeholderTextColor={C.textLight}
                     />
                     <TextInput
-                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={n.relationship}
                       onChangeText={val => {
                         const updated = [...nominees];
@@ -524,7 +524,7 @@ export default function ProfileScreen() {
                       placeholderTextColor={C.textLight}
                     />
                     <TextInput
-                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={String(n.percentage || '')}
                       keyboardType="numeric"
                       onChangeText={val => {
@@ -545,7 +545,7 @@ export default function ProfileScreen() {
                 ))}
                 <TouchableOpacity
                   onPress={() => setNominees([...nominees, { name: '', relationship: '', percentage: 100 }])}
-                  style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: C.black, padding: 8, alignItems: 'center', marginTop: 4 }}
+                  style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: C.black, padding: 8, alignItems: 'center', marginTop: 4 }}
                 >
                   <Text style={{ fontSize: 11, fontWeight: '700', color: C.black }}>+ Add Nominee</Text>
                 </TouchableOpacity>
@@ -561,9 +561,9 @@ export default function ProfileScreen() {
             >
               <View style={{ gap: 12 }}>
                 {familyDetails.map((f, i) => (
-                  <View key={i} style={{ borderWidth: 1, borderColor: '#E5E7EB', padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
+                  <View key={i} style={{ borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black, padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
                     <TextInput
-                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={f.name}
                       onChangeText={val => {
                         const updated = [...familyDetails];
@@ -574,7 +574,7 @@ export default function ProfileScreen() {
                       placeholderTextColor={C.textLight}
                     />
                     <TextInput
-                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={f.relationship}
                       onChangeText={val => {
                         const updated = [...familyDetails];
@@ -585,7 +585,7 @@ export default function ProfileScreen() {
                       placeholderTextColor={C.textLight}
                     />
                     <TextInput
-                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={f.phone}
                       onChangeText={val => {
                         const updated = [...familyDetails];
@@ -605,7 +605,7 @@ export default function ProfileScreen() {
                 ))}
                 <TouchableOpacity
                   onPress={() => setFamilyDetails([...familyDetails, { name: '', relationship: '', phone: '' }])}
-                  style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: C.black, padding: 8, alignItems: 'center', marginTop: 4 }}
+                  style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: C.black, padding: 8, alignItems: 'center', marginTop: 4 }}
                 >
                   <Text style={{ fontSize: 11, fontWeight: '700', color: C.black }}>+ Add Family Member</Text>
                 </TouchableOpacity>
@@ -621,9 +621,9 @@ export default function ProfileScreen() {
             >
               <View style={{ gap: 12 }}>
                 {education.map((e, i) => (
-                  <View key={i} style={{ borderWidth: 1, borderColor: '#E5E7EB', padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
+                  <View key={i} style={{ borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black, padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
                     <TextInput
-                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={e.degree}
                       onChangeText={val => {
                         const updated = [...education];
@@ -634,7 +634,7 @@ export default function ProfileScreen() {
                       placeholderTextColor={C.textLight}
                     />
                     <TextInput
-                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={e.school}
                       onChangeText={val => {
                         const updated = [...education];
@@ -645,7 +645,7 @@ export default function ProfileScreen() {
                       placeholderTextColor={C.textLight}
                     />
                     <TextInput
-                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={String(e.passYear || '')}
                       keyboardType="numeric"
                       onChangeText={val => {
@@ -666,7 +666,7 @@ export default function ProfileScreen() {
                 ))}
                 <TouchableOpacity
                   onPress={() => setEducation([...education, { degree: '', school: '', passYear: 2020 }])}
-                  style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: C.black, padding: 8, alignItems: 'center', marginTop: 4 }}
+                  style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: C.black, padding: 8, alignItems: 'center', marginTop: 4 }}
                 >
                   <Text style={{ fontSize: 11, fontWeight: '700', color: C.black }}>+ Add Education Record</Text>
                 </TouchableOpacity>
@@ -682,9 +682,9 @@ export default function ProfileScreen() {
             >
               <View style={{ gap: 12 }}>
                 {experience.map((exp, i) => (
-                  <View key={i} style={{ borderWidth: 1, borderColor: '#E5E7EB', padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
+                  <View key={i} style={{ borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black, padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
                     <TextInput
-                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={exp.company}
                       onChangeText={val => {
                         const updated = [...experience];
@@ -695,7 +695,7 @@ export default function ProfileScreen() {
                       placeholderTextColor={C.textLight}
                     />
                     <TextInput
-                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={exp.role}
                       onChangeText={val => {
                         const updated = [...experience];
@@ -707,7 +707,7 @@ export default function ProfileScreen() {
                     />
                     <View style={{ flexDirection: 'row', gap: 6 }}>
                       <TextInput
-                        style={{ flex: 1, borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                        style={{ flex: 1, borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                         value={exp.start}
                         onChangeText={val => {
                           const updated = [...experience];
@@ -718,7 +718,7 @@ export default function ProfileScreen() {
                         placeholderTextColor={C.textLight}
                       />
                       <TextInput
-                        style={{ flex: 1, borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                        style={{ flex: 1, borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                         value={exp.end}
                         onChangeText={val => {
                           const updated = [...experience];
@@ -739,7 +739,7 @@ export default function ProfileScreen() {
                 ))}
                 <TouchableOpacity
                   onPress={() => setExperience([...experience, { company: '', role: '', start: '', end: '' }])}
-                  style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: C.black, padding: 8, alignItems: 'center', marginTop: 4 }}
+                  style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: C.black, padding: 8, alignItems: 'center', marginTop: 4 }}
                 >
                   <Text style={{ fontSize: 11, fontWeight: '700', color: C.black }}>+ Add Experience Record</Text>
                 </TouchableOpacity>
@@ -756,7 +756,7 @@ export default function ProfileScreen() {
               <View style={{ gap: 10 }}>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <TextInput
-                    style={{ flex: 1, borderWidth: 1, borderColor: '#D1D5DB', padding: 8, fontSize: 13, color: C.black }}
+                    style={{ flex: 1, borderWidth: 2, borderColor: C.black, padding: 8, fontSize: 13, color: C.black }}
                     value={newSkill}
                     onChangeText={setNewSkill}
                     placeholder="e.g. React Native, Swift"
@@ -777,7 +777,7 @@ export default function ProfileScreen() {
 
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
                   {skills.map((s, idx) => (
-                    <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: C.black, paddingHorizontal: 8, paddingVertical: 4, gap: 4 }}>
+                    <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderWidth: 2, borderColor: C.black, paddingHorizontal: 8, paddingVertical: 4, gap: 4 }}>
                       <Text style={{ fontSize: 11, fontWeight: '700', color: C.black }}>{s}</Text>
                       <TouchableOpacity onPress={() => setSkills(skills.filter((_, i) => i !== idx))}>
                         <Text style={{ color: C.danger, fontWeight: '700', fontSize: 13 }}>×</Text>
@@ -798,9 +798,9 @@ export default function ProfileScreen() {
             >
               <View style={{ gap: 12 }}>
                 {certificates.map((cert, i) => (
-                  <View key={i} style={{ borderWidth: 1, borderColor: '#E5E7EB', padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
+                  <View key={i} style={{ borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black, padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
                     <TextInput
-                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={cert.name}
                       onChangeText={val => {
                         const updated = [...certificates];
@@ -811,7 +811,7 @@ export default function ProfileScreen() {
                       placeholderTextColor={C.textLight}
                     />
                     <TextInput
-                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={cert.issuer}
                       onChangeText={val => {
                         const updated = [...certificates];
@@ -822,7 +822,7 @@ export default function ProfileScreen() {
                       placeholderTextColor={C.textLight}
                     />
                     <TextInput
-                      style={{ borderWidth: 1, borderColor: '#D1D5DB', padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={cert.docUrl}
                       onChangeText={val => {
                         const updated = [...certificates];
@@ -842,7 +842,7 @@ export default function ProfileScreen() {
                 ))}
                 <TouchableOpacity
                   onPress={() => setCertificates([...certificates, { name: '', issuer: '', docUrl: '' }])}
-                  style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: C.black, padding: 8, alignItems: 'center', marginTop: 4 }}
+                  style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: C.black, padding: 8, alignItems: 'center', marginTop: 4 }}
                 >
                   <Text style={{ fontSize: 11, fontWeight: '700', color: C.black }}>+ Add Certificate Record</Text>
                 </TouchableOpacity>
@@ -954,13 +954,13 @@ const s = StyleSheet.create({
     width: 88,
     height: 88,
     backgroundColor: C.primary,
-    borderWidth: 2,
+    borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarImg: { width: 88, height: 88, borderWidth: 2, borderRadius: 8, borderColor: C.black },
+  avatarImg: { width: 88, height: 88, borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black },
   avatarText: { fontSize: 30, fontWeight: '700', color: C.white },
   cameraBadge: {
     position: 'absolute',
@@ -978,6 +978,10 @@ const s = StyleSheet.create({
   roleBadge: {
     backgroundColor: C.primary,
     borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
     paddingHorizontal: 12,
@@ -1010,7 +1014,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
-  fieldBorder: { borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  fieldBorder: { borderTopWidth: 2, borderTopColor: C.black },
   fieldIcon: { paddingTop: 4, marginRight: 10 },
   fieldLabel: {
     fontSize: 9,

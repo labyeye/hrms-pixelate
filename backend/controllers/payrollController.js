@@ -339,8 +339,6 @@ const processPayroll = asyncHandler(async (req, res) => {
 
     const earlyCheckoutDeduction = 0;
 
-    const txMonthStart = startDate;
-    const txMonthEnd = endDate;
     const pendingTx = await Transaction.find({
       employee: emp._id,
       company: req.user.company,
@@ -726,34 +724,59 @@ const getMyPayrolls = asyncHandler(async (req, res) => {
   res.json({ success: true, data: payrolls });
 });
 
-const previewPayroll = asyncHandler(async (req, res) => {
-  const { month, year, employeeIds } = req.body;
-  const m = parseInt(month),
-    y = parseInt(year);
-  if (isNaN(m) || m < 1 || m > 12 || isNaN(y) || y < 2000 || y > 2100) {
-    res.status(400);
-    throw new Error("Valid month (1-12) and year are required");
-  }
-
-  const empFilter = { company: req.user.company, status: "active" };
+async function buildPayrollPreviews(companyId, m, y, employeeIds) {
+  const empFilter = { company: companyId, status: "active" };
   if (Array.isArray(employeeIds) && employeeIds.length > 0) {
     empFilter._id = { $in: employeeIds };
   }
-  const employees = await Employee.find(empFilter).populate("shift");
-  const deductionRule = await DeductionRule.findOne({
-    company: req.user.company,
-  });
-  const settings = await Setting.findOne({ company: req.user.company });
+  const [employees, deductionRule, settings] = await Promise.all([
+    Employee.find(empFilter).populate("shift"),
+    DeductionRule.findOne({ company: companyId }).lean(),
+    Setting.findOne({ company: companyId }).lean(),
+  ]);
 
   const { startDate, endDate } = getPayPeriod(y, m, settings);
+
+  // Bulk-load everything once instead of 4 queries per employee.
+  const empIds = employees.map((e) => e._id);
+  const [allAtt, allTx, allLoans, existing] = await Promise.all([
+    Attendance.find({
+      employee: { $in: empIds },
+      date: { $gte: startDate, $lte: endDate },
+    }).lean(),
+    Transaction.find({
+      employee: { $in: empIds },
+      company: companyId,
+      status: "pending",
+      date: { $gte: startDate, $lte: endDate },
+    }).lean(),
+    Loan.find({
+      employee: { $in: empIds },
+      company: companyId,
+      status: "active",
+    }).lean(),
+    Payroll.find({ employee: { $in: empIds }, month: m, year: y })
+      .select("employee")
+      .lean(),
+  ]);
+  const groupBy = (rows) => {
+    const map = new Map();
+    for (const r of rows) {
+      const k = String(r.employee);
+      if (!map.has(k)) map.set(k, []);
+      map.get(k).push(r);
+    }
+    return map;
+  };
+  const attByEmp = groupBy(allAtt);
+  const txByEmp = groupBy(allTx);
+  const loansByEmp = groupBy(allLoans);
+  const processedSet = new Set(existing.map((r) => String(r.employee)));
 
   const previews = [];
 
   for (const emp of employees) {
-    const attendances = await Attendance.find({
-      employee: emp._id,
-      date: { $gte: startDate, $lte: endDate },
-    });
+    const attendances = attByEmp.get(String(emp._id)) || [];
 
     if (attendances.length === 0) continue;
 
@@ -897,12 +920,7 @@ const previewPayroll = asyncHandler(async (req, res) => {
 
     const txMonthStart = startDate;
     const txMonthEnd = endDate;
-    const pendingTx = await Transaction.find({
-      employee: emp._id,
-      company: req.user.company,
-      status: "pending",
-      date: { $gte: txMonthStart, $lte: txMonthEnd },
-    });
+    const pendingTx = txByEmp.get(String(emp._id)) || [];
     let totalAllowances = 0,
       totalPenalties = 0,
       totalOT = 0,
@@ -916,11 +934,7 @@ const previewPayroll = asyncHandler(async (req, res) => {
       }
     }
 
-    const activeLoans = await Loan.find({
-      employee: emp._id,
-      company: req.user.company,
-      status: "active",
-    });
+    const activeLoans = loansByEmp.get(String(emp._id)) || [];
     let loanDeduction = 0;
     const shiftHours = shiftTotalMins > 0 ? shiftTotalMins / 60 : 8;
     const otHourlyRate = (dailyRate / shiftHours) * otMultiplier;
@@ -945,11 +959,13 @@ const previewPayroll = asyncHandler(async (req, res) => {
     }
     const totalDeductions = preDeductions + loanDeduction;
     const netSalary = Math.max(0, grossSalary - totalDeductions);
-    const alreadyProcessed = !!(await Payroll.findOne({
-      employee: emp._id,
-      month: m,
-      year: y,
-    }));
+    const alreadyProcessed = processedSet.has(String(emp._id));
+
+    const elapsedWorkingDays = getWorkingDays(
+      startDate,
+      new Date(Math.min(endDate.getTime(), Date.now())),
+      workDaysPerWeek,
+    );
 
     previews.push({
       employee: {
@@ -970,6 +986,8 @@ const previewPayroll = asyncHandler(async (req, res) => {
       otherAllowances: totalAllowances,
       otPay: attendanceOTPay + totalOT,
       grossSalary,
+      halfDayCount,
+      lateCount,
       lateDeductionAmount: lateDeduction,
       halfDayDeduction,
       absentDays: absentCount,
@@ -979,6 +997,10 @@ const previewPayroll = asyncHandler(async (req, res) => {
       totalDeductions,
       netSalary,
       workingDays,
+      elapsedWorkingDays,
+      salaryToDate: parseFloat(
+        Math.min(salary, dailyRate * elapsedWorkingDays).toFixed(2),
+      ),
       presentDays,
       leaveDays,
       overtimeHours: parseFloat((attendanceOTHours + totalOTHours).toFixed(2)),
@@ -986,6 +1008,23 @@ const previewPayroll = asyncHandler(async (req, res) => {
     });
   }
 
+  return previews;
+}
+
+const previewPayroll = asyncHandler(async (req, res) => {
+  const { month, year, employeeIds } = req.body;
+  const m = parseInt(month),
+    y = parseInt(year);
+  if (isNaN(m) || m < 1 || m > 12 || isNaN(y) || y < 2000 || y > 2100) {
+    res.status(400);
+    throw new Error("Valid month (1-12) and year are required");
+  }
+  const previews = await buildPayrollPreviews(
+    req.user.company,
+    m,
+    y,
+    employeeIds,
+  );
   res.json({ success: true, data: previews });
 });
 
@@ -1020,6 +1059,9 @@ const markSlipReceived = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  buildPayrollPreviews,
+  getWorkingDays,
+  getPayPeriod,
   getPayrolls,
   getMyPayrolls,
   processPayroll,

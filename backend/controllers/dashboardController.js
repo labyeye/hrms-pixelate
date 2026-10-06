@@ -14,6 +14,7 @@ const getStats = asyncHandler(async (req, res) => {
 
   try {
     const companyId = new mongoose.Types.ObjectId(req.user.company);
+    warmSummaries(req.user.company);
     const companyEmployeeIds = await Employee.find({ company: companyId })
       .select("_id")
       .lean()
@@ -346,4 +347,103 @@ const getEmployeeStats = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { getStats, getEmployeeStats };
+
+// Payable-so-far vs. salary-to-date, plus attendance performance table.
+// range: this | last | 3m | 6m | 1y  (3m/6m/1y include the current month)
+const RANGES = ["this", "last", "3m", "6m", "1y"];
+const summaryCache = new Map(); // key -> { at, data, pending }
+const FRESH_MS = 60_000;
+
+async function computeSummary(company, range) {
+  const { buildPayrollPreviews } = require("./payrollController");
+  const now = new Date();
+  const count =
+    range === "3m" ? 3 : range === "6m" ? 6 : range === "1y" ? 12 : 1;
+  const offset = range === "last" ? 1 : 0;
+  const periods = Array.from({ length: count }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - offset - i, 1);
+    return { month: d.getMonth() + 1, year: d.getFullYear() };
+  });
+
+  const byEmp = new Map();
+  let payable = 0;
+  let actual = 0;
+  const monthly = await Promise.all(
+    periods.map(({ month, year }) =>
+      buildPayrollPreviews(company, month, year),
+    ),
+  );
+  for (const previews of monthly) {
+    for (const p of previews) {
+      payable += p.netSalary;
+      actual += p.salaryToDate;
+      const key = String(p.employee._id);
+      const cur = byEmp.get(key) || {
+        employee: p.employee,
+        score: 0,
+        expected: 0,
+        payable: 0,
+      };
+      cur.score += Math.max(0, p.presentDays - p.halfDayCount * 0.5);
+      cur.expected += p.elapsedWorkingDays;
+      cur.payable += p.netSalary;
+      byEmp.set(key, cur);
+    }
+  }
+
+  const performance = [...byEmp.values()]
+    .map((e) => ({
+      employee: e.employee,
+      percent:
+        e.expected > 0
+          ? Math.min(100, Math.round((e.score / e.expected) * 100))
+          : 0,
+      payable: Math.round(e.payable),
+    }))
+    .sort(
+      (a, b) =>
+        b.percent - a.percent ||
+        a.employee.firstName.localeCompare(b.employee.firstName),
+    );
+
+  return {
+    range,
+    payable: Math.round(payable),
+    actual: Math.round(actual),
+    deducted: Math.round(Math.max(0, actual - payable)),
+    performance,
+  };
+}
+
+// Returns cached data instantly; recomputes in the background when stale.
+function getSummary(company, range) {
+  const key = `${company}:${range}`;
+  const entry = summaryCache.get(key) || {};
+  const stale = !entry.at || Date.now() - entry.at > FRESH_MS;
+  if (stale && !entry.pending) {
+    entry.pending = computeSummary(company, range)
+      .then((data) => {
+        summaryCache.set(key, { at: Date.now(), data });
+        return data;
+      })
+      .catch((err) => {
+        summaryCache.set(key, { ...entry, pending: null });
+        throw err;
+      });
+    summaryCache.set(key, entry);
+  }
+  return entry.data ? Promise.resolve(entry.data) : entry.pending;
+}
+
+const getPayrollSummary = asyncHandler(async (req, res) => {
+  const range = RANGES.includes(req.query.range) ? req.query.range : "this";
+  const data = await getSummary(req.user.company, range);
+  res.json({ success: true, data });
+});
+
+// Fire-and-forget: pre-compute every range so the first tap is instant.
+function warmSummaries(company) {
+  RANGES.forEach((r) => getSummary(company, r).catch(() => {}));
+}
+
+module.exports = { getStats, getEmployeeStats, getPayrollSummary };
