@@ -892,7 +892,7 @@ export default function AttendanceScreen({ navigation }: any) {
                           </View>
                           <Text style={styles.statLabel}>Check In</Text>
                         </View>
-                        <Text style={styles.statValue}>
+                        <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
                           {ciTime || '--:--'}
                         </Text>
                         {ciDate && (
@@ -912,7 +912,7 @@ export default function AttendanceScreen({ navigation }: any) {
                           </View>
                           <Text style={styles.statLabel}>Check Out</Text>
                         </View>
-                        <Text style={styles.statValue}>
+                        <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
                           {coTime || '--:--'}
                         </Text>
                         {coDate && (
@@ -934,7 +934,7 @@ export default function AttendanceScreen({ navigation }: any) {
                               </View>
                               <Text style={styles.statLabel}>Method</Text>
                             </View>
-                            <Text style={styles.statValue}>
+                            <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
                               {VERIFY_MODE_LABELS[verifyMode] ||
                                 verifyMode.toUpperCase()}
                             </Text>
@@ -1638,6 +1638,11 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
     borderWidth: 2,
     padding: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   cardRow: { flexDirection: 'row', alignItems: 'center' },
   cardActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -1669,10 +1674,15 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   empDeptText: { fontSize: 11, color: '#9CA3AF', fontWeight: '500' },
-  cardDivider: { height: 0, marginTop: 8, marginBottom: 6 },
-  statsRow: { flexDirection: 'row', alignItems: 'stretch', gap: 8 },
-  statCol: { flex: 1, gap: 3, padding: 8, backgroundColor: '#FFFFFF', borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderColor: '#000000', borderRadius: 8 },
-  statDivider: { width: 0 },
+  cardDivider: {
+    height: 1,
+    backgroundColor: '#F0F1F3',
+    marginTop: 12,
+    marginBottom: 10,
+  },
+  statsRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  statCol: { flex: 1, gap: 3 },
+  statDivider: { width: 1, backgroundColor: '#F0F1F3', marginHorizontal: 10 },
   statLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   statIconWrap: {
     width: 22,
@@ -1681,13 +1691,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  statLabel: { fontSize: 10, color: '#000000', fontWeight: '800', textTransform: 'uppercase' },
-  statValue: { fontSize: 16, fontWeight: '800', color: '#000000' },
-  statSub: { fontSize: 10, color: '#000000', fontWeight: '600' },
+  statLabel: {
+    fontSize: 10,
+    color: '#9CA3AF',
+    fontWeight: '600',
+  },
+  statValue: { fontSize: 15, fontWeight: '700', color: C.black },
+  statSub: { fontSize: 10, color: '#B0B4BA', fontWeight: '500' },
   verifyPill: {
     backgroundColor: '#F3F4F6',
-    borderWidth: 2,
-    borderColor: C.black,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
     paddingHorizontal: 6,
     paddingVertical: 6,
   },
@@ -1700,15 +1714,11 @@ const styles = StyleSheet.create({
   empName: { fontSize: 15, fontWeight: '800', color: C.black, letterSpacing: 0.2 },
   empSub: { fontSize: 11, color: '#9CA3AF', fontWeight: '600', marginTop: 2 },
   statusTag: {
-    borderWidth: 2,
-    borderRadius: 999,
-    borderColor: '#0A0A0A',
-    borderRightWidth: 4,
-    borderBottomWidth: 4,
+    borderWidth: 1.5,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  statusTagText: { textTransform: 'uppercase', fontSize: 9, fontWeight: '700', letterSpacing: 0.3 },
+  statusTagText: { fontSize: 9, fontWeight: '700', letterSpacing: 0.3 },
   editBtn: {
     borderWidth: 1.5,
     borderColor: C.primary,
