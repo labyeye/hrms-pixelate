@@ -38,10 +38,16 @@ import {
   Coffee,
 } from "lucide-react";
 import { StatCard } from "@/components/ui/StatCard";
+import { AnimatedNumber } from "@/components/motion/AnimatedNumber";
+import { FadeIn } from "@/components/motion/FadeIn";
 import nesthrlogo from "../../assets/nesthr.png";
 function KpiCard({
   title,
   value,
+  /** When set, the card counts up to this number instead of rendering `value` as-is. */
+  numericValue,
+  prefix,
+  suffix,
   sub,
   icon,
   bg,
@@ -49,6 +55,9 @@ function KpiCard({
 }: {
   title: string;
   value: string | number;
+  numericValue?: number;
+  prefix?: string;
+  suffix?: string;
   sub?: string;
   icon: React.ElementType;
   bg: string;
@@ -57,8 +66,20 @@ function KpiCard({
   to?: string;
 }) {
   const color = bg.match(/#[0-9A-Fa-f]{6}/)?.[0] ?? "#024BAB";
+  const displayValue =
+    numericValue !== undefined ? (
+      <AnimatedNumber value={numericValue} prefix={prefix} suffix={suffix} />
+    ) : (
+      value
+    );
   const inner = (
-    <StatCard label={title} value={value} icon={icon} color={color} sub={sub} />
+    <StatCard
+      label={title}
+      value={displayValue}
+      icon={icon}
+      color={color}
+      sub={sub}
+    />
   );
   return to ? <Link to={to}>{inner}</Link> : inner;
 }
@@ -248,72 +269,80 @@ export default function DashboardPage() {
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-5">
-        <KpiCard
-          title="Total Employees"
-          value={stats.totalEmployees}
-          sub={`${stats.activeEmployees} active`}
-          icon={Users}
-          bg="bg-[#024BAB]"
-          to="/employees"
-        />
-        <KpiCard
-          title="Today's Attendance"
-          value={`${stats.attendanceRate}%`}
-          sub={`${stats.todayPresent} present`}
-          icon={Clock}
-          bg="bg-[#FA731C]"
-          to="/attendance"
-        />
-        <KpiCard
-          title="Pending Leaves"
-          value={stats.pendingLeaves}
-          sub="Awaiting approval"
-          icon={CalendarDays}
-          bg="bg-[#024BAB]"
-          to="/leave"
-        />
-        <KpiCard
-          title="New Hires"
-          value={stats.newHires}
-          sub="This month"
-          icon={TrendingUp}
-          bg="bg-[#A3E635]"
-          iconColor="text-black"
-          to="/employees"
-          trend="up"
-        />
-        <KpiCard
-          title="Monthly Payroll"
-          value={formatCurrency(stats.monthlyPayroll)}
-          sub="Paid this month"
-          icon={IndianRupee}
-          bg="bg-[#FA731C]"
-          to="/payroll"
-        />
-        <KpiCard
-          title="Open Positions"
-          value={stats.openPositions}
-          sub="Active job listings"
-          icon={Briefcase}
-          bg="bg-[#024BAB]"
-          to="/recruitment"
-        />
-        <KpiCard
-          title="Departments"
-          value={stats.departments}
-          sub="Active teams"
-          icon={Building2}
-          bg="bg-[#00C48C]"
-          to="/departments"
-        />
-        <KpiCard
-          title="Attendance Rate"
-          value={`${stats.attendanceRate}%`}
-          sub="Team health"
-          icon={CheckCircle2}
-          bg="bg-[#024BAB]"
-          to="/attendance"
-        />
+        {[
+          {
+            title: "Total Employees",
+            numericValue: stats.totalEmployees,
+            sub: `${stats.activeEmployees} active`,
+            icon: Users,
+            bg: "bg-[#024BAB]",
+            to: "/employees",
+          },
+          {
+            title: "Today's Attendance",
+            numericValue: stats.attendanceRate,
+            suffix: "%",
+            sub: `${stats.todayPresent} present`,
+            icon: Clock,
+            bg: "bg-[#FA731C]",
+            to: "/attendance",
+          },
+          {
+            title: "Pending Leaves",
+            numericValue: stats.pendingLeaves,
+            sub: "Awaiting approval",
+            icon: CalendarDays,
+            bg: "bg-[#024BAB]",
+            to: "/leave",
+          },
+          {
+            title: "New Hires",
+            numericValue: stats.newHires,
+            sub: "This month",
+            icon: TrendingUp,
+            bg: "bg-[#A3E635]",
+            iconColor: "text-black",
+            to: "/employees",
+            trend: "up" as const,
+          },
+          {
+            title: "Monthly Payroll",
+            value: formatCurrency(stats.monthlyPayroll),
+            sub: "Paid this month",
+            icon: IndianRupee,
+            bg: "bg-[#FA731C]",
+            to: "/payroll",
+          },
+          {
+            title: "Open Positions",
+            numericValue: stats.openPositions,
+            sub: "Active job listings",
+            icon: Briefcase,
+            bg: "bg-[#024BAB]",
+            to: "/recruitment",
+          },
+          {
+            title: "Departments",
+            numericValue: stats.departments,
+            sub: "Active teams",
+            icon: Building2,
+            bg: "bg-[#00C48C]",
+            to: "/departments",
+          },
+          {
+            title: "Attendance Rate",
+            numericValue: stats.attendanceRate,
+            suffix: "%",
+            sub: "Team health",
+            icon: CheckCircle2,
+            bg: "bg-[#024BAB]",
+            to: "/attendance",
+          },
+        ].map((card, i) => (
+          <FadeIn key={card.title} delay={i * 0.05}>
+            <KpiCard value="" {...card} />
+          </FadeIn>
+        ))}
       </div>
 
       {/* Today's attendance breakdown + trend charts */}

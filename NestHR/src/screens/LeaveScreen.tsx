@@ -519,7 +519,7 @@ export default function LeaveScreen() {
                       </View>
                       <Text style={styles.statLabel}>From</Text>
                     </View>
-                    <Text style={styles.statValue}>
+                    <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
                       {formatDate(item.startDate)}
                     </Text>
                   </View>
@@ -536,7 +536,7 @@ export default function LeaveScreen() {
                       </View>
                       <Text style={styles.statLabel}>To</Text>
                     </View>
-                    <Text style={styles.statValue}>
+                    <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
                       {formatDate(item.endDate)}
                     </Text>
                   </View>
@@ -555,7 +555,7 @@ export default function LeaveScreen() {
                           </View>
                           <Text style={styles.statLabel}>Duration</Text>
                         </View>
-                        <Text style={styles.statValue}>{days}d</Text>
+                        <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>{days}d</Text>
                       </View>
                     </>
                   )}

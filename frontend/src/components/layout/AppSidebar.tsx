@@ -92,14 +92,14 @@ export function AppSidebar({ mobileOpen, onClose }: AppSidebarProps) {
                       title={collapsed ? item.title : undefined}
                       onClick={onClose}
                       className={cn(
-                        "flex items-center gap-3 px-3 py-2.5 text-sm font-semibold transition-all duration-100 border-2",
+                        "group flex items-center gap-3 px-3 py-2.5 text-sm font-semibold transition-all duration-150 ease-out border-2",
                         active
                           ? "bg-[#024BAB] border-black text-white border-2"
-                          : "border-transparent text-black hover:bg-[#024BAB]/10 hover:border-black",
+                          : "border-transparent text-black hover:bg-[#024BAB]/10 hover:border-black hover:translate-x-0.5",
                         collapsed && "lg:justify-center lg:px-0",
                       )}
                     >
-                      <item.icon className="w-[18px] h-[18px] shrink-0" />
+                      <item.icon className="w-[18px] h-[18px] shrink-0 transition-transform duration-150 group-hover:scale-110" />
                       <span className={cn(collapsed && "lg:hidden")}>
                         {item.title}
                       </span>

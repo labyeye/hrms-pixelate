@@ -35,7 +35,7 @@ export function StatCard({
       className={cn(
         "border-2 border-black bg-white p-4 flex items-center gap-3 text-left",
         onClick &&
-          "transition-shadow hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]",
+          "transition-all duration-150 ease-out hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-px hover:-translate-y-px active:translate-x-0 active:translate-y-0 active:shadow-none",
         active && "shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]",
         className,
       )}
