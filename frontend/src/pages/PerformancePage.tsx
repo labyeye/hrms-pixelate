@@ -17,25 +17,13 @@ import { StatCard } from "@/components/ui/StatCard";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useAuth } from "@/contexts/AuthContext";
 import { EmployeeCombobox } from "@/components/employees/EmployeeCombobox";
-
-type LiveMetrics = {
-  employeeId?: string;
-  firstName: string;
-  lastName: string;
-  attendancePct: number | null;
-  taskPct: number | null;
-  score: number | null;
-  presentDays: number;
-  totalTasks: number;
-  completedTasks: number;
-};
-
-function scoreColor(score: number | null) {
-  if (score == null) return "bg-gray-100 text-gray-500 border-black/20";
-  if (score >= 80) return "bg-[#00C48C]/10 text-[#00815A] border-[#00C48C]";
-  if (score >= 50) return "bg-[#FA731C]/10 text-[#B5540E] border-[#FA731C]";
-  return "bg-[#EF4444]/10 text-[#B91C1C] border-[#EF4444]";
-}
+import {
+  LiveMetrics,
+  LiveMetricsTable,
+  ProgressBar,
+  Avatar,
+} from "@/components/performance/LiveMetricsTable";
+import { Link } from "react-router-dom";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
@@ -84,6 +72,8 @@ export default function PerformancePage() {
     status: "draft",
   });
   const [saving, setSaving] = useState(false);
+  const now = new Date();
+  const monthTillNow = `${now.toLocaleString("en-IN", { month: "long" })} 1–${now.getDate()}, ${now.getFullYear()} (till now)`;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -166,8 +156,14 @@ export default function PerformancePage() {
         <div className="flex items-center gap-2 mb-3">
           <Activity className="w-4 h-4 text-[#024BAB]" />
           <p className="text-xs font-bold text-black uppercase tracking-wider">
-            Live Performance — This Month
+            Live Performance — {monthTillNow}
           </p>
+          <Link
+            to="/performance/report"
+            className="ml-auto text-xs font-bold text-[#024BAB] hover:underline"
+          >
+            Monthly report →
+          </Link>
         </div>
 
         {liveLoading ? (
@@ -175,13 +171,9 @@ export default function PerformancePage() {
         ) : isEmployee ? (
           liveMetrics && !Array.isArray(liveMetrics) ? (
             <div className="flex flex-wrap items-center gap-4">
-              <div
-                className={cn(
-                  "border-2 px-4 py-2 font-display font-bold text-2xl shrink-0",
-                  scoreColor(liveMetrics.score),
-                )}
-              >
-                {liveMetrics.score != null ? `${liveMetrics.score}%` : "—"}
+              <Avatar m={liveMetrics} />
+              <div className="w-48">
+                <ProgressBar value={liveMetrics.score} />
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <CalendarCheck className="w-3.5 h-3.5" />
@@ -208,51 +200,7 @@ export default function PerformancePage() {
             </p>
           )
         ) : Array.isArray(liveMetrics) && liveMetrics.length > 0 ? (
-          <div className="overflow-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b-2 border-black">
-                  {["Employee", "Score", "Attendance", "Tasks"].map((h) => (
-                    <th
-                      key={h}
-                      className="px-3 py-2 text-left text-xs font-bold text-black uppercase tracking-wider"
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {[...liveMetrics]
-                  .sort((a, b) => (b.score ?? -1) - (a.score ?? -1))
-                  .map((m) => (
-                    <tr key={m.employeeId} className="border-b border-black/10">
-                      <td className="px-3 py-2 text-xs font-bold text-black">
-                        {m.firstName} {m.lastName}
-                      </td>
-                      <td className="px-3 py-2">
-                        <span
-                          className={cn(
-                            "border-2 px-2 py-0.5 text-xs font-bold",
-                            scoreColor(m.score),
-                          )}
-                        >
-                          {m.score != null ? `${m.score}%` : "—"}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 text-xs text-black">
-                        {m.attendancePct != null ? `${m.attendancePct}%` : "—"}
-                      </td>
-                      <td className="px-3 py-2 text-xs text-black">
-                        {m.totalTasks > 0
-                          ? `${m.completedTasks}/${m.totalTasks}`
-                          : "—"}
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
+          <LiveMetricsTable data={liveMetrics} />
         ) : (
           <p className="text-xs text-muted-foreground">No employees to show.</p>
         )}

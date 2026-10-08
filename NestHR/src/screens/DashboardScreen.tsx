@@ -45,6 +45,7 @@ import { PieChart } from 'react-native-gifted-charts';
 import AnimatedNumber from '../components/motion/AnimatedNumber';
 import FadeInUp from '../components/motion/FadeInUp';
 import AnimatedLineChart from '../components/common/AnimatedLineChart';
+import PerformanceList from '../components/common/PerformanceList';
 import { C, S, FONT } from '../theme';
 
 const CARD_WIDTH = (Dimensions.get('window').width - 32 - 10) / 2;
@@ -88,7 +89,20 @@ const RANGE_PILLS: { key: RangeKey; label: string }[] = [
   { key: '1y', label: '1Y' },
 ];
 
-const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTH_LABELS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 
 function AdminDashboard({ navigation }: any) {
   const { user } = useAuth();
@@ -238,7 +252,11 @@ function AdminDashboard({ navigation }: any) {
               const raw = stats?.[s.key];
               const numeric = typeof raw === 'number' ? raw : null;
               return (
-                <FadeInUp key={s.key} delay={i * 70} style={styles.statCardWrap}>
+                <FadeInUp
+                  key={s.key}
+                  delay={i * 70}
+                  style={styles.statCardWrap}
+                >
                   <TouchableOpacity
                     style={styles.statCard}
                     activeOpacity={0.8}
@@ -247,7 +265,10 @@ function AdminDashboard({ navigation }: any) {
                     <View
                       style={[
                         styles.statIconWrap,
-                        { backgroundColor: s.color + '1A', borderColor: s.color },
+                        {
+                          backgroundColor: s.color + '1A',
+                          borderColor: s.color,
+                        },
                       ]}
                     >
                       <Icon size={18} color={s.color} />
@@ -257,7 +278,10 @@ function AdminDashboard({ navigation }: any) {
                         {s.label}
                       </Text>
                       {numeric !== null ? (
-                        <AnimatedNumber style={styles.statValue} value={numeric} />
+                        <AnimatedNumber
+                          style={styles.statValue}
+                          value={numeric}
+                        />
                       ) : (
                         <Text style={styles.statValue} numberOfLines={1}>
                           {raw ?? '—'}
@@ -278,7 +302,10 @@ function AdminDashboard({ navigation }: any) {
                 style={[styles.pill, range === r.key && styles.pillActive]}
               >
                 <Text
-                  style={[styles.pillText, range === r.key && { color: C.white }]}
+                  style={[
+                    styles.pillText,
+                    range === r.key && { color: C.white },
+                  ]}
                 >
                   {r.label}
                 </Text>
@@ -287,7 +314,9 @@ function AdminDashboard({ navigation }: any) {
           </View>
 
           <FadeInUp delay={ADMIN_STATS.length * 70} style={styles.payCard}>
-            <Text style={styles.payLabel}>Payable till today (after attendance)</Text>
+            <Text style={styles.payLabel}>
+              Payable till today (after attendance)
+            </Text>
             {paySummary ? (
               <AnimatedNumber
                 style={[styles.payValue, { color: C.primary }]}
@@ -299,13 +328,21 @@ function AdminDashboard({ navigation }: any) {
             )}
             <Text style={styles.paySub}>
               {paySummary
-                ? `${paySummary.deducted > 0 ? '₹' + paySummary.deducted.toLocaleString('en-IN') + ' saved via absences, late & deductions' : 'No deductions so far'}`
+                ? `${
+                    paySummary.deducted > 0
+                      ? '₹' +
+                        paySummary.deducted.toLocaleString('en-IN') +
+                        ' saved via absences, late & deductions'
+                      : 'No deductions so far'
+                  }`
                 : 'Loading…'}
             </Text>
           </FadeInUp>
 
           <FadeInUp delay={ADMIN_STATS.length * 70 + 70} style={styles.payCard}>
-            <Text style={styles.payLabel}>Actual till today (as per database)</Text>
+            <Text style={styles.payLabel}>
+              Actual till today (as per database)
+            </Text>
             {paySummary ? (
               <AnimatedNumber
                 style={[styles.payValue, { color: C.secondary }]}
@@ -315,66 +352,38 @@ function AdminDashboard({ navigation }: any) {
             ) : (
               <Text style={styles.payValue}>—</Text>
             )}
-            <Text style={styles.paySub}>Salary to date, before any deductions</Text>
+            <Text style={styles.paySub}>
+              Salary to date, before any deductions
+            </Text>
           </FadeInUp>
 
-          <Text style={styles.sectionLabel}>Performance</Text>
+          <View style={styles.perfHeader}>
+            <Text style={styles.sectionLabel}>Performance</Text>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate('More', { screen: 'PerformanceReport' })
+              }
+            >
+              <Text style={styles.perfLink}>Monthly report →</Text>
+            </TouchableOpacity>
+          </View>
           <View style={styles.card}>
             {paySummary?.performance?.length ? (
-              paySummary.performance.map((p: any, i: number) => (
-                <View
-                  key={p.employee._id}
-                  style={[styles.perfRow, i > 0 && styles.quickBorder]}
-                >
-                  <Text style={styles.perfRank}>{i + 1}</Text>
-                  {p.employee.avatar ? (
-                    <Image
-                      source={{ uri: p.employee.avatar }}
-                      style={styles.perfAvatar}
-                    />
-                  ) : (
-                    <View style={[styles.perfAvatar, styles.perfAvatarFallback]}>
-                      <Text style={styles.perfAvatarText}>
-                        {(p.employee.firstName || '?')[0].toUpperCase()}
-                      </Text>
-                    </View>
-                  )}
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.perfName} numberOfLines={1}>
-                      {p.employee.firstName} {p.employee.lastName}
-                    </Text>
-                    <View style={styles.perfBarTrack}>
-                      <View
-                        style={[
-                          styles.perfBarFill,
-                          {
-                            width: `${p.percent}%`,
-                            backgroundColor:
-                              p.percent === 100 ? C.success : C.primary,
-                          },
-                        ]}
-                      />
-                    </View>
-                  </View>
-                  <View
-                    style={[
-                      styles.perfBadge,
-                      p.percent === 100 && { backgroundColor: C.success },
-                    ]}
-                  >
-                    <Text style={styles.perfBadgeText}>{p.percent}%</Text>
-                  </View>
-                </View>
-              ))
+              <PerformanceList data={paySummary.performance} />
             ) : (
-              <Text style={styles.perfEmpty}>No attendance data for this period</Text>
+              <Text style={styles.perfEmpty}>
+                No attendance data for this period
+              </Text>
             )}
           </View>
 
           {!!stats?.attTrend?.length && (
             <>
               <Text style={styles.sectionLabel}>Attendance Trend</Text>
-              <FadeInUp delay={ADMIN_STATS.length * 70 + 70} style={styles.card}>
+              <FadeInUp
+                delay={ADMIN_STATS.length * 70 + 70}
+                style={styles.card}
+              >
                 <AnimatedLineChart
                   data={stats.attTrend.map((t: any) => ({
                     label: MONTH_LABELS[t.month - 1],
@@ -388,7 +397,10 @@ function AdminDashboard({ navigation }: any) {
           {!!stats?.payTrend?.length && (
             <>
               <Text style={styles.sectionLabel}>Payroll Trend (₹k)</Text>
-              <FadeInUp delay={ADMIN_STATS.length * 70 + 140} style={styles.card}>
+              <FadeInUp
+                delay={ADMIN_STATS.length * 70 + 140}
+                style={styles.card}
+              >
                 <AnimatedLineChart
                   color={C.secondary}
                   data={stats.payTrend.map((t: any) => ({
@@ -439,12 +451,16 @@ function AdminDashboard({ navigation }: any) {
 // ─── Employee Dashboard ───────────────────────────────────────────────────────
 
 function localDateStr(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+    2,
+    '0',
+  )}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function fmtTime(iso: string) {
   const d = new Date(iso);
-  let h = d.getHours(), m = d.getMinutes();
+  let h = d.getHours(),
+    m = d.getMinutes();
   const ampm = h < 12 ? 'AM' : 'PM';
   const hh = h % 12 || 12;
   return `${hh}:${m.toString().padStart(2, '0')} ${ampm}`;
@@ -459,7 +475,20 @@ const STATUS_COLOR: Record<string, string> = {
   holiday: '#0891B2',
 };
 
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 
 const TAB_DAYS = [
   { label: 'Today', offset: 0 },
@@ -492,13 +521,18 @@ function EmployeeDashboard({ navigation }: any) {
 
   const load = useCallback(async () => {
     try {
-      const [profileRes, attRes, payRes, essRes, balRes] = await Promise.allSettled([
-        employeeAPI.getMe(),
-        attendanceAPI.getAll({ month: String(month), year: String(year), limit: '200' }),
-        payrollAPI.getMy(),
-        dashboardAPI.getEmployeeStats(),
-        attendanceSettingsAPI.getMyBalance(),
-      ]);
+      const [profileRes, attRes, payRes, essRes, balRes] =
+        await Promise.allSettled([
+          employeeAPI.getMe(),
+          attendanceAPI.getAll({
+            month: String(month),
+            year: String(year),
+            limit: '200',
+          }),
+          payrollAPI.getMy(),
+          dashboardAPI.getEmployeeStats(),
+          attendanceSettingsAPI.getMyBalance(),
+        ]);
       if (profileRes.status === 'fulfilled') {
         setEmpProfile(profileRes.value?.data || profileRes.value);
       }
@@ -521,8 +555,12 @@ function EmployeeDashboard({ navigation }: any) {
     }
   }, [month, year]);
 
-  useEffect(() => { loadUnread(); }, [loadUnread]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    loadUnread();
+  }, [loadUnread]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -558,18 +596,24 @@ function EmployeeDashboard({ navigation }: any) {
       {
         text: 'Camera',
         onPress: () =>
-          launchCamera({ mediaType: 'photo', quality: 0.7, includeBase64: true }, r => {
-            if (r.assets?.[0]?.base64)
-              savePhoto(`data:image/jpeg;base64,${r.assets[0].base64}`);
-          }),
+          launchCamera(
+            { mediaType: 'photo', quality: 0.7, includeBase64: true },
+            r => {
+              if (r.assets?.[0]?.base64)
+                savePhoto(`data:image/jpeg;base64,${r.assets[0].base64}`);
+            },
+          ),
       },
       {
         text: 'Gallery',
         onPress: () =>
-          launchImageLibrary({ mediaType: 'photo', quality: 0.7, includeBase64: true }, r => {
-            if (r.assets?.[0]?.base64)
-              savePhoto(`data:image/jpeg;base64,${r.assets[0].base64}`);
-          }),
+          launchImageLibrary(
+            { mediaType: 'photo', quality: 0.7, includeBase64: true },
+            r => {
+              if (r.assets?.[0]?.base64)
+                savePhoto(`data:image/jpeg;base64,${r.assets[0].base64}`);
+            },
+          ),
       },
       { text: 'Cancel', style: 'cancel' },
     ]);
@@ -605,7 +649,8 @@ function EmployeeDashboard({ navigation }: any) {
   const absentDays = myAttendance.filter(a => a.status === 'absent').length;
   const lateDays = myAttendance.filter(a => a.status === 'late').length;
   const totalMarked = presentDays + absentDays;
-  const attPct = totalMarked > 0 ? Math.round((presentDays / totalMarked) * 100) : 100;
+  const attPct =
+    totalMarked > 0 ? Math.round((presentDays / totalMarked) * 100) : 100;
 
   // Record for each tab day
   const recordFor = (offset: number) => {
@@ -618,7 +663,11 @@ function EmployeeDashboard({ navigation }: any) {
   const tabDate = (offset: number) => {
     const d = new Date(now);
     d.setDate(d.getDate() - offset);
-    return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+    return d.toLocaleDateString('en-IN', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    });
   };
 
   const activeRecord = recordFor(activeTab);
@@ -650,7 +699,9 @@ function EmployeeDashboard({ navigation }: any) {
           ) : null}
         </View>
         <TouchableOpacity
-          onPress={() => navigation.navigate('More', { screen: 'Notifications' })}
+          onPress={() =>
+            navigation.navigate('More', { screen: 'Notifications' })
+          }
           style={styles.bellBtn}
         >
           <Bell size={25} color={C.black} />
@@ -672,18 +723,33 @@ function EmployeeDashboard({ navigation }: any) {
         <ScrollView
           contentContainerStyle={styles.scroll}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={C.primary}
+            />
           }
           showsVerticalScrollIndicator={false}
         >
           {/* Profile banner */}
           <View style={styles.profileBanner}>
             <View style={styles.profileBannerLeft}>
-              <TouchableOpacity onPress={() => setShowPhotoModal(true)} activeOpacity={0.8}>
+              <TouchableOpacity
+                onPress={() => setShowPhotoModal(true)}
+                activeOpacity={0.8}
+              >
                 {avatarUri ? (
-                  <Image source={{ uri: avatarUri }} style={styles.profileBannerAvatar} />
+                  <Image
+                    source={{ uri: avatarUri }}
+                    style={styles.profileBannerAvatar}
+                  />
                 ) : (
-                  <View style={[styles.profileBannerAvatar, styles.profileBannerAvatarFb]}>
+                  <View
+                    style={[
+                      styles.profileBannerAvatar,
+                      styles.profileBannerAvatarFb,
+                    ]}
+                  >
                     <Text style={styles.profileBannerAvatarText}>
                       {(user?.name || 'U')
                         .split(' ')
@@ -708,7 +774,9 @@ function EmployeeDashboard({ navigation }: any) {
                     'Employee'}
                 </Text>
                 {empProfile?.employeeId ? (
-                  <Text style={styles.profileBannerEmpId}>{empProfile.employeeId}</Text>
+                  <Text style={styles.profileBannerEmpId}>
+                    {empProfile.employeeId}
+                  </Text>
                 ) : null}
               </View>
             </View>
@@ -717,18 +785,32 @@ function EmployeeDashboard({ navigation }: any) {
                 <IndianRupee size={12} color={C.primary} />
                 <Text style={styles.profileBannerStatVal}>
                   {empProfile?.salary || latestPayroll?.basicSalary
-                    ? `₹${(empProfile?.salary || latestPayroll?.basicSalary || 0).toLocaleString()}`
+                    ? `₹${(
+                        empProfile?.salary ||
+                        latestPayroll?.basicSalary ||
+                        0
+                      ).toLocaleString()}`
                     : 'Not set'}
                 </Text>
                 <Text style={styles.profileBannerStatLabel}>Monthly CTC</Text>
               </View>
-              <View style={[styles.profileBannerStat, { borderLeftWidth: 2, borderLeftColor: C.black }]}>
+              <View
+                style={[
+                  styles.profileBannerStat,
+                  { borderLeftWidth: 2, borderLeftColor: C.black },
+                ]}
+              >
                 <Calendar size={12} color={C.success} />
                 <Text style={styles.profileBannerStatVal}>
                   {empProfile?.joinDate
-                    ? new Date(empProfile.joinDate).toLocaleDateString('en-IN', {
-                        day: '2-digit', month: 'short', year: 'numeric',
-                      })
+                    ? new Date(empProfile.joinDate).toLocaleDateString(
+                        'en-IN',
+                        {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        },
+                      )
                     : '—'}
                 </Text>
                 <Text style={styles.profileBannerStatLabel}>Joined</Text>
@@ -741,12 +823,16 @@ function EmployeeDashboard({ navigation }: any) {
             <View style={{ marginBottom: 16 }}>
               {/* Birthday & Anniversary Banners */}
               {(essStats.birthdayWishes?.isTodayUserBirthday ||
-                (essStats.birthdayWishes?.todayBirthdays && essStats.birthdayWishes.todayBirthdays.length > 0) ||
+                (essStats.birthdayWishes?.todayBirthdays &&
+                  essStats.birthdayWishes.todayBirthdays.length > 0) ||
                 essStats.workAnniversary?.isTodayUserAnniversary ||
-                (essStats.workAnniversary?.todayAnniversaries && essStats.workAnniversary.todayAnniversaries.length > 0)) && (
+                (essStats.workAnniversary?.todayAnniversaries &&
+                  essStats.workAnniversary.todayAnniversaries.length > 0)) && (
                 <View style={styles.essWishCard}>
                   {essStats.birthdayWishes?.isTodayUserBirthday && (
-                    <Text style={styles.essWishTitle}>🎂 Happy Birthday to You! 🎉</Text>
+                    <Text style={styles.essWishTitle}>
+                      🎂 Happy Birthday to You! 🎉
+                    </Text>
                   )}
                   {essStats.birthdayWishes?.todayBirthdays?.map((b: any) => (
                     <Text key={b._id} style={styles.essWishText}>
@@ -754,13 +840,17 @@ function EmployeeDashboard({ navigation }: any) {
                     </Text>
                   ))}
                   {essStats.workAnniversary?.isTodayUserAnniversary && (
-                    <Text style={[styles.essWishTitle, { marginTop: 8 }]}>🎖️ Happy Work Anniversary! 👏</Text>
-                  )}
-                  {essStats.workAnniversary?.todayAnniversaries?.map((a: any) => (
-                    <Text key={a._id} style={styles.essWishText}>
-                      Happy Work Anniversary to {a.firstName} {a.lastName}! 🎖️
+                    <Text style={[styles.essWishTitle, { marginTop: 8 }]}>
+                      🎖️ Happy Work Anniversary! 👏
                     </Text>
-                  ))}
+                  )}
+                  {essStats.workAnniversary?.todayAnniversaries?.map(
+                    (a: any) => (
+                      <Text key={a._id} style={styles.essWishText}>
+                        Happy Work Anniversary to {a.firstName} {a.lastName}! 🎖️
+                      </Text>
+                    ),
+                  )}
                 </View>
               )}
 
@@ -769,9 +859,12 @@ function EmployeeDashboard({ navigation }: any) {
                 <View style={styles.essGridCard}>
                   <Clock size={16} color={C.primary} />
                   <Text style={styles.essGridCardLabel}>TODAY'S SHIFT</Text>
-                  <Text style={styles.essGridCardVal}>{essStats.todayShift?.name || "General"}</Text>
+                  <Text style={styles.essGridCardVal}>
+                    {essStats.todayShift?.name || 'General'}
+                  </Text>
                   <Text style={styles.essGridCardSub}>
-                    {essStats.todayShift?.startTime} - {essStats.todayShift?.endTime}
+                    {essStats.todayShift?.startTime} -{' '}
+                    {essStats.todayShift?.endTime}
                   </Text>
                 </View>
 
@@ -779,7 +872,9 @@ function EmployeeDashboard({ navigation }: any) {
                   <CheckCircle2 size={16} color={C.warning} />
                   <Text style={styles.essGridCardLabel}>APPROVALS</Text>
                   <Text style={styles.essGridCardVal}>
-                    {essStats.pendingApprovalsCount > 0 ? `${essStats.pendingApprovalsCount} Pending` : "None"}
+                    {essStats.pendingApprovalsCount > 0
+                      ? `${essStats.pendingApprovalsCount} Pending`
+                      : 'None'}
                   </Text>
                   <Text style={styles.essGridCardSub}>Requires action</Text>
                 </View>
@@ -788,7 +883,9 @@ function EmployeeDashboard({ navigation }: any) {
                   <IndianRupee size={16} color={C.success} />
                   <Text style={styles.essGridCardLabel}>UNPAID SALARY</Text>
                   <Text style={styles.essGridCardVal}>
-                    {essStats.pendingSalary?.length > 0 ? `${essStats.pendingSalary.length} Slips` : "None"}
+                    {essStats.pendingSalary?.length > 0
+                      ? `${essStats.pendingSalary.length} Slips`
+                      : 'None'}
                   </Text>
                   <Text style={styles.essGridCardSub}>Pending release</Text>
                 </View>
@@ -799,8 +896,12 @@ function EmployeeDashboard({ navigation }: any) {
                 <View style={styles.essAnnounceCard}>
                   <Text style={styles.essSectionTitle}>📢 Announcements</Text>
                   {essStats.announcements.map((a: any) => {
-                    const isRead = a.readBy?.some((id: string) => id === user?.id);
-                    const acked = a.acknowledgedBy?.some((id: string) => id === user?.id);
+                    const isRead = a.readBy?.some(
+                      (id: string) => id === user?.id,
+                    );
+                    const acked = a.acknowledgedBy?.some(
+                      (id: string) => id === user?.id,
+                    );
                     return (
                       <TouchableOpacity
                         key={a._id}
@@ -813,7 +914,10 @@ function EmployeeDashboard({ navigation }: any) {
                               ...prev,
                               announcements: prev.announcements.map((x: any) =>
                                 x._id === a._id
-                                  ? { ...x, readBy: [...(x.readBy || []), user?.id] }
+                                  ? {
+                                      ...x,
+                                      readBy: [...(x.readBy || []), user?.id],
+                                    }
                                   : x,
                               ),
                             }));
@@ -822,14 +926,17 @@ function EmployeeDashboard({ navigation }: any) {
                       >
                         <View style={S.rowBetween}>
                           <View style={S.rowCenter}>
-                            {a.pinned && <Text style={{ marginRight: 4 }}>📌</Text>}
+                            {a.pinned && (
+                              <Text style={{ marginRight: 4 }}>📌</Text>
+                            )}
                             {!!a.priority && a.priority !== 'medium' && (
                               <View
                                 style={[
                                   styles.essAnnounceBadge,
                                   {
                                     borderColor:
-                                      a.priority === 'critical' || a.priority === 'high'
+                                      a.priority === 'critical' ||
+                                      a.priority === 'high'
                                         ? C.danger
                                         : C.success,
                                   },
@@ -840,7 +947,8 @@ function EmployeeDashboard({ navigation }: any) {
                                     styles.essAnnounceBadgeText,
                                     {
                                       color:
-                                        a.priority === 'critical' || a.priority === 'high'
+                                        a.priority === 'critical' ||
+                                        a.priority === 'high'
                                           ? C.danger
                                           : C.success,
                                     },
@@ -855,22 +963,36 @@ function EmployeeDashboard({ navigation }: any) {
                         </View>
                         <Text style={styles.essAnnounceTitle}>{a.title}</Text>
                         <Text style={styles.essAnnounceBody}>{a.content}</Text>
-                        <Text style={styles.essAnnounceDate}>{new Date(a.date).toLocaleDateString('en-IN')}</Text>
+                        <Text style={styles.essAnnounceDate}>
+                          {new Date(a.date).toLocaleDateString('en-IN')}
+                        </Text>
                         {a.acknowledgementRequired && (
                           <TouchableOpacity
                             disabled={acked}
                             onPress={() => {
-                              announcementAPI.acknowledge(a._id).catch(() => {});
+                              announcementAPI
+                                .acknowledge(a._id)
+                                .catch(() => {});
                               setEssStats((prev: any) => ({
                                 ...prev,
-                                announcements: prev.announcements.map((x: any) =>
-                                  x._id === a._id
-                                    ? { ...x, acknowledgedBy: [...(x.acknowledgedBy || []), user?.id] }
-                                    : x,
+                                announcements: prev.announcements.map(
+                                  (x: any) =>
+                                    x._id === a._id
+                                      ? {
+                                          ...x,
+                                          acknowledgedBy: [
+                                            ...(x.acknowledgedBy || []),
+                                            user?.id,
+                                          ],
+                                        }
+                                      : x,
                                 ),
                               }));
                             }}
-                            style={[styles.essAckBtn, acked && { opacity: 0.5 }]}
+                            style={[
+                              styles.essAckBtn,
+                              acked && { opacity: 0.5 },
+                            ]}
                           >
                             <Text style={styles.essAckBtnText}>
                               {acked ? '✓ Acknowledged' : 'Acknowledge'}
@@ -882,8 +1004,6 @@ function EmployeeDashboard({ navigation }: any) {
                   })}
                 </View>
               )}
-
-
             </View>
           )}
 
@@ -897,10 +1017,20 @@ function EmployeeDashboard({ navigation }: any) {
                 onPress={() => setActiveTab(i)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.tabBtnText, activeTab === i && styles.tabBtnTextActive]}>
+                <Text
+                  style={[
+                    styles.tabBtnText,
+                    activeTab === i && styles.tabBtnTextActive,
+                  ]}
+                >
                   {t.label}
                 </Text>
-                <Text style={[styles.tabBtnDate, activeTab === i && styles.tabBtnDateActive]}>
+                <Text
+                  style={[
+                    styles.tabBtnDate,
+                    activeTab === i && styles.tabBtnDateActive,
+                  ]}
+                >
                   {tabDate(t.offset)}
                 </Text>
               </TouchableOpacity>
@@ -910,10 +1040,15 @@ function EmployeeDashboard({ navigation }: any) {
           <View style={styles.attDayCard}>
             {activeRecord ? (
               <>
-                <View style={[
-                  styles.attDayStatusBadge,
-                  { backgroundColor: STATUS_COLOR[activeRecord.status] || C.textMuted },
-                ]}>
+                <View
+                  style={[
+                    styles.attDayStatusBadge,
+                    {
+                      backgroundColor:
+                        STATUS_COLOR[activeRecord.status] || C.textMuted,
+                    },
+                  ]}
+                >
                   <Text style={styles.attDayStatusText}>
                     {activeRecord.status.replace(/_/g, ' ').toUpperCase()}
                   </Text>
@@ -923,15 +1058,23 @@ function EmployeeDashboard({ navigation }: any) {
                     <LogIn size={16} color={C.success} />
                     <Text style={styles.attDayItemLabel}>Check In</Text>
                     <Text style={styles.attDayItemVal}>
-                      {activeRecord.checkIn ? fmtTime(activeRecord.checkIn) : '—'}
+                      {activeRecord.checkIn
+                        ? fmtTime(activeRecord.checkIn)
+                        : '—'}
                     </Text>
                   </View>
                   <View style={styles.attDayDivider} />
                   <View style={styles.attDayItem}>
-                    <LogIn size={16} color={C.danger} style={{ transform: [{ scaleX: -1 }] }} />
+                    <LogIn
+                      size={16}
+                      color={C.danger}
+                      style={{ transform: [{ scaleX: -1 }] }}
+                    />
                     <Text style={styles.attDayItemLabel}>Check Out</Text>
                     <Text style={styles.attDayItemVal}>
-                      {activeRecord.checkOut ? fmtTime(activeRecord.checkOut) : '—'}
+                      {activeRecord.checkOut
+                        ? fmtTime(activeRecord.checkOut)
+                        : '—'}
                     </Text>
                   </View>
                   <View style={styles.attDayDivider} />
@@ -939,7 +1082,9 @@ function EmployeeDashboard({ navigation }: any) {
                     <Clock size={16} color={C.primary} />
                     <Text style={styles.attDayItemLabel}>Hours</Text>
                     <Text style={styles.attDayItemVal}>
-                      {activeRecord.workHours > 0 ? `${activeRecord.workHours.toFixed(1)}h` : '—'}
+                      {activeRecord.workHours > 0
+                        ? `${activeRecord.workHours.toFixed(1)}h`
+                        : '—'}
                     </Text>
                   </View>
                 </View>
@@ -954,28 +1099,59 @@ function EmployeeDashboard({ navigation }: any) {
           </View>
 
           {/* This month stats */}
-          <Text style={styles.sectionLabel}>{`${MONTHS[month - 1]} ${year} — Attendance`}</Text>
+          <Text style={styles.sectionLabel}>{`${
+            MONTHS[month - 1]
+          } ${year} — Attendance`}</Text>
           <View style={styles.monthStats}>
             {[
-              { label: 'Present', val: presentDays, color: C.success, icon: CheckCircle2 },
-              { label: 'Absent', val: absentDays, color: C.danger, icon: CalendarOff },
+              {
+                label: 'Present',
+                val: presentDays,
+                color: C.success,
+                icon: CheckCircle2,
+              },
+              {
+                label: 'Absent',
+                val: absentDays,
+                color: C.danger,
+                icon: CalendarOff,
+              },
               { label: 'Late', val: lateDays, color: C.warning, icon: Clock },
-              { label: 'Att %', val: attPct, suffix: '%', color: C.primary, icon: TrendingUp },
+              {
+                label: 'Att %',
+                val: attPct,
+                suffix: '%',
+                color: C.primary,
+                icon: TrendingUp,
+              },
             ].map((item, i) => {
               const Icon = item.icon;
               return (
-                <FadeInUp key={item.label} delay={i * 70} style={styles.monthStatCardWrap}>
+                <FadeInUp
+                  key={item.label}
+                  delay={i * 70}
+                  style={styles.monthStatCardWrap}
+                >
                   <View style={styles.monthStatCard}>
-                    <View style={[styles.monthStatIcon, { backgroundColor: item.color }]}>
+                    <View
+                      style={[
+                        styles.monthStatIcon,
+                        { backgroundColor: item.color },
+                      ]}
+                    >
                       <Icon size={14} color={C.white} />
                     </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                    <View
+                      style={{ flexDirection: 'row', alignItems: 'baseline' }}
+                    >
                       <AnimatedNumber
                         style={[styles.monthStatVal, { color: item.color }]}
                         value={item.val}
                       />
                       {item.suffix && (
-                        <Text style={[styles.monthStatVal, { color: item.color }]}>
+                        <Text
+                          style={[styles.monthStatVal, { color: item.color }]}
+                        >
                           {item.suffix}
                         </Text>
                       )}
@@ -1014,9 +1190,17 @@ function EmployeeDashboard({ navigation }: any) {
                     { label: 'Late', val: lateDays, color: C.warning },
                   ].map(item => (
                     <View key={item.label} style={styles.donutLegendRow}>
-                      <View style={[styles.donutDot, { backgroundColor: item.color }]} />
+                      <View
+                        style={[
+                          styles.donutDot,
+                          { backgroundColor: item.color },
+                        ]}
+                      />
                       <Text style={styles.donutLegendLabel}>{item.label}</Text>
-                      <AnimatedNumber style={styles.donutLegendVal} value={item.val} />
+                      <AnimatedNumber
+                        style={styles.donutLegendVal}
+                        value={item.val}
+                      />
                     </View>
                   ))}
                 </View>
@@ -1039,7 +1223,10 @@ function EmployeeDashboard({ navigation }: any) {
                   </Text>
                 </View>
                 {(myBalance.leaveUsed || []).map((l: any) => (
-                  <View key={l.leaveType} style={[styles.quickRow, styles.quickBorder]}>
+                  <View
+                    key={l.leaveType}
+                    style={[styles.quickRow, styles.quickBorder]}
+                  >
                     <View style={styles.quickIcon}>
                       <CalendarOff size={14} color={C.primary} />
                     </View>
@@ -1061,16 +1248,21 @@ function EmployeeDashboard({ navigation }: any) {
               <Text style={styles.sectionLabel}>Latest Payslip</Text>
               <TouchableOpacity
                 style={styles.payslipCard}
-                onPress={() => navigation.navigate('More', { screen: 'Payroll' })}
+                onPress={() =>
+                  navigation.navigate('More', { screen: 'Payroll' })
+                }
                 activeOpacity={0.8}
               >
                 <View style={styles.payslipLeft}>
                   <IndianRupee size={20} color={C.primary} />
                   <View>
                     <Text style={styles.payslipMonth}>
-                      {MONTHS[(latestPayroll.month || 1) - 1]} {latestPayroll.year}
+                      {MONTHS[(latestPayroll.month || 1) - 1]}{' '}
+                      {latestPayroll.year}
                     </Text>
-                    <Text style={styles.payslipStatus}>{latestPayroll.status?.toUpperCase()}</Text>
+                    <Text style={styles.payslipStatus}>
+                      {latestPayroll.status?.toUpperCase()}
+                    </Text>
                   </View>
                 </View>
                 <Text style={styles.payslipNet}>
@@ -1104,7 +1296,10 @@ function EmployeeDashboard({ navigation }: any) {
       {/* Photo Modal */}
       <Modal visible={showPhotoModal} transparent animationType="fade">
         <View style={styles.photoOverlay}>
-          <TouchableOpacity style={styles.photoOverlayClose} onPress={() => setShowPhotoModal(false)}>
+          <TouchableOpacity
+            style={styles.photoOverlayClose}
+            onPress={() => setShowPhotoModal(false)}
+          >
             <X size={24} color={C.white} />
           </TouchableOpacity>
 
@@ -1133,12 +1328,18 @@ function EmployeeDashboard({ navigation }: any) {
             <ActivityIndicator color={C.white} style={{ marginTop: 24 }} />
           ) : (
             <View style={styles.photoModalBtns}>
-              <TouchableOpacity style={styles.photoModalEditBtn} onPress={handlePickPhoto}>
+              <TouchableOpacity
+                style={styles.photoModalEditBtn}
+                onPress={handlePickPhoto}
+              >
                 <Camera size={18} color={C.white} />
                 <Text style={styles.photoModalBtnText}>Edit Photo</Text>
               </TouchableOpacity>
               {!!avatarUri && (
-                <TouchableOpacity style={styles.photoModalRemoveBtn} onPress={handleRemovePhoto}>
+                <TouchableOpacity
+                  style={styles.photoModalRemoveBtn}
+                  onPress={handleRemovePhoto}
+                >
                   <Trash2 size={18} color={C.white} />
                   <Text style={styles.photoModalBtnText}>Remove</Text>
                 </TouchableOpacity>
@@ -1395,7 +1596,11 @@ const styles = StyleSheet.create({
     height: 38,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A',
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
   },
   statValue: { fontSize: 22, fontWeight: '800', color: C.black },
@@ -1414,7 +1619,12 @@ const styles = StyleSheet.create({
   donutLegend: { flex: 1, gap: 10 },
   donutLegendRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   donutDot: { width: 10, height: 10, borderRadius: 5 },
-  donutLegendLabel: { flex: 1, fontSize: 13, fontWeight: '600', color: C.black },
+  donutLegendLabel: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: C.black,
+  },
   donutLegendVal: { fontSize: 14, fontWeight: '800', color: C.black },
 
   // Shared card
@@ -1572,7 +1782,11 @@ const styles = StyleSheet.create({
     height: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A',
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
   },
@@ -1652,9 +1866,19 @@ const styles = StyleSheet.create({
     borderRightColor: C.black,
   },
   tabBtnActive: { backgroundColor: C.primary },
-  tabBtnText: { fontSize: 11, fontWeight: '700', color: C.black, textTransform: 'uppercase' },
+  tabBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: C.black,
+    textTransform: 'uppercase',
+  },
   tabBtnTextActive: { color: C.white },
-  tabBtnDate: { fontSize: 10, color: C.textMuted, fontWeight: '500', marginTop: 2 },
+  tabBtnDate: {
+    fontSize: 10,
+    color: C.textMuted,
+    fontWeight: '500',
+    marginTop: 2,
+  },
   tabBtnDateActive: { color: '#93C5FD' },
 
   // Employee: Attendance day card
@@ -1673,7 +1897,12 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     marginBottom: 16,
   },
-  attDayStatusText: { color: C.white, fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
+  attDayStatusText: {
+    color: C.white,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
   attDayRow: { flexDirection: 'row', alignItems: 'center' },
   attDayItem: { flex: 1, alignItems: 'center', gap: 5 },
   attDayItemLabel: {
@@ -1791,7 +2020,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   photoModalBtnText: { color: C.white, fontSize: 13, fontWeight: '700' },
-  rangeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  rangeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'flex-end',
+    marginBottom: 12,
+    marginTop: 10,
+  },
   pill: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -1814,9 +2050,26 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
   },
-  payLabel: { fontFamily: FONT.bold, fontSize: 12, color: C.black, textTransform: 'uppercase' },
-  payValue: { fontFamily: FONT.bold, fontSize: 30, fontWeight: '800', color: C.black, marginVertical: 4 },
+  payLabel: {
+    fontFamily: FONT.bold,
+    fontSize: 12,
+    color: C.black,
+    textTransform: 'uppercase',
+  },
+  payValue: {
+    fontFamily: FONT.bold,
+    fontSize: 30,
+    fontWeight: '800',
+    color: C.black,
+    marginVertical: 4,
+  },
   paySub: { fontFamily: FONT.medium, fontSize: 12, color: C.black },
+  perfHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  perfLink: { fontFamily: FONT.bold, fontSize: 12, color: C.primary },
   perfRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1839,9 +2092,38 @@ const styles = StyleSheet.create({
   },
   perfAvatarText: { color: C.white, fontSize: 14, fontWeight: '700' },
   perfName: { fontFamily: FONT.bold, fontSize: 14, color: C.black },
-  perfBarTrack: { height: 8, borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black, borderRadius: 4, marginTop: 4, overflow: 'hidden', backgroundColor: C.white },
+  perfBarTrack: {
+    height: 8,
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderColor: C.black,
+    borderRadius: 4,
+    marginTop: 4,
+    overflow: 'hidden',
+    backgroundColor: C.white,
+  },
   perfBarFill: { height: '100%' },
-  perfBadge: { minWidth: 52, alignItems: 'center', paddingVertical: 4, borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black, borderRadius: 8, backgroundColor: C.white },
+  perfBadge: {
+    minWidth: 52,
+    alignItems: 'center',
+    paddingVertical: 4,
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderColor: C.black,
+    borderRadius: 8,
+    backgroundColor: C.white,
+  },
   perfBadgeText: { fontFamily: FONT.bold, fontSize: 12, color: C.black },
-  perfEmpty: { fontFamily: FONT.medium, fontSize: 13, color: C.black, padding: 14 },
+  perfEmpty: {
+    fontFamily: FONT.medium,
+    fontSize: 13,
+    color: C.black,
+    padding: 14,
+  },
 });

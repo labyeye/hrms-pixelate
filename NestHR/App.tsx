@@ -5,6 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from './src/contexts/AuthContext';
 import RootNavigator from './src/navigation/RootNavigator';
 import AnimatedSplashScreen from './src/screens/AnimatedSplashScreen';
+import UpdatePrompt from './src/components/common/UpdatePrompt';
 import { FONT } from './src/theme';
 
 // App-wide default so any Text/TextInput that doesn't set an explicit
@@ -32,6 +33,7 @@ export default function App() {
         <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
         <AuthProvider>
           <RootNavigator />
+          <UpdatePrompt />
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

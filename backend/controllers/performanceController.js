@@ -87,6 +87,7 @@ const getLiveMetrics = asyncHandler(async (req, res) => {
         ...metrics,
         firstName: selfEmp.firstName,
         lastName: selfEmp.lastName,
+        avatar: selfEmp.avatar,
       },
     });
   }
@@ -100,20 +101,27 @@ const getLiveMetrics = asyncHandler(async (req, res) => {
     const metrics = await computeLiveMetrics(emp, start, end);
     return res.json({
       success: true,
-      data: { ...metrics, firstName: emp.firstName, lastName: emp.lastName },
+      data: {
+        ...metrics,
+        firstName: emp.firstName,
+        lastName: emp.lastName,
+        avatar: emp.avatar,
+      },
     });
   }
 
   const employees = await Employee.find({
     company: req.user.company,
     status: "active",
-  }).select("firstName lastName user");
+  }).select("firstName lastName user avatar designation");
 
   const data = await Promise.all(
     employees.map(async (emp) => ({
       ...(await computeLiveMetrics(emp, start, end)),
       firstName: emp.firstName,
       lastName: emp.lastName,
+      avatar: emp.avatar,
+      designation: emp.designation,
     })),
   );
 

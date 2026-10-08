@@ -11,6 +11,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  Animated,
+  Easing,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -30,6 +34,16 @@ import {
   BookOpen,
   Award,
   Briefcase,
+  ChevronDown,
+  IdCard,
+  Landmark,
+  Building,
+  MapPin,
+  GraduationCap,
+  CalendarDays,
+  Percent,
+  Pencil,
+  Link2,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
@@ -37,34 +51,149 @@ import { useAuth } from '../contexts/AuthContext';
 import { authAPI, employeeAPI } from '../api/api';
 import { C } from '../theme';
 
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const BRUTAL = {
+  borderWidth: 2,
+  borderRadius: 8,
+  borderRightWidth: 4,
+  borderBottomWidth: 4,
+  borderRightColor: '#0A0A0A',
+  borderBottomColor: '#0A0A0A',
+  borderColor: C.black,
+} as const;
+
 function AccordionSection({ title, isOpen, onToggle, children, icon: Icon }: any) {
+  const rot = React.useRef(new Animated.Value(isOpen ? 1 : 0)).current;
+  const fade = React.useRef(new Animated.Value(isOpen ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(rot, {
+      toValue: isOpen ? 1 : 0,
+      duration: 250,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+    Animated.timing(fade, {
+      toValue: isOpen ? 1 : 0,
+      duration: isOpen ? 300 : 120,
+      useNativeDriver: true,
+    }).start();
+  }, [isOpen, rot, fade]);
+
+  const handleToggle = () => {
+    LayoutAnimation.configureNext({
+      duration: 280,
+      create: { type: 'easeInEaseOut', property: 'opacity' },
+      update: { type: 'easeInEaseOut' },
+      delete: { type: 'easeInEaseOut', property: 'opacity' },
+    });
+    onToggle();
+  };
+
   return (
-    <View style={{ borderBottomWidth: 2, borderBottomColor: C.black, marginTop: 10 }}>
+    <View style={{ marginTop: 10 }}>
       <TouchableOpacity
+        activeOpacity={0.8}
         style={{
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
           paddingVertical: 12,
           paddingHorizontal: 14,
-          backgroundColor: '#F9FAFB',
-          borderWidth: 2,
-          borderRadius: 8,
-          borderColor: C.black,
+          backgroundColor: isOpen ? C.primary + '10' : C.white,
+          ...BRUTAL,
         }}
-        onPress={onToggle}
+        onPress={handleToggle}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           {Icon && <Icon size={16} color={C.primary} />}
           <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>{title}</Text>
         </View>
-        <Text style={{ fontSize: 16, fontWeight: '700', color: C.textMuted }}>{isOpen ? '−' : '+'}</Text>
+        <Animated.View
+          style={{
+            transform: [
+              {
+                rotate: rot.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0deg', '180deg'],
+                }),
+              },
+            ],
+          }}
+        >
+          <ChevronDown size={18} color={C.black} />
+        </Animated.View>
       </TouchableOpacity>
       {isOpen && (
-        <View style={{ padding: 14, backgroundColor: C.white, borderWidth: 2, borderTopWidth: 0, borderColor: C.black }}>
+        <Animated.View
+          style={{
+            opacity: fade,
+            marginTop: 8,
+            padding: 14,
+            backgroundColor: C.white,
+            ...BRUTAL,
+          }}
+        >
           {children}
-        </View>
+        </Animated.View>
       )}
+    </View>
+  );
+}
+
+const INPUT_ICONS: [RegExp, React.ComponentType<any>][] = [
+  [/pan/i, IdCard],
+  [/account/i, CreditCard],
+  [/ifsc/i, Landmark],
+  [/phone|contact/i, Phone],
+  [/relationship/i, Heart],
+  [/percent/i, Percent],
+  [/url|link/i, Link2],
+  [/name/i, User],
+  [/school|university|college/i, GraduationCap],
+  [/degree|course/i, BookOpen],
+  [/year|date/i, CalendarDays],
+  [/company|issuer/i, Building],
+  [/role|designation|position/i, Briefcase],
+  [/location|city/i, MapPin],
+  [/skill|react/i, Award],
+];
+
+// Brutalist input with a leading icon picked from its placeholder.
+function BInput({
+  style,
+  placeholder,
+  ...rest
+}: React.ComponentProps<typeof TextInput>) {
+  const flat: any = StyleSheet.flatten(style) || {};
+  const Icon =
+    INPUT_ICONS.find(([re]) => re.test(placeholder || ''))?.[1] || Pencil;
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingHorizontal: 10,
+        backgroundColor: flat.backgroundColor || C.white,
+        ...(flat.flex ? { flex: flat.flex } : {}),
+        ...BRUTAL,
+      }}
+    >
+      <Icon size={15} color={C.primary} />
+      <TextInput
+        {...rest}
+        placeholder={placeholder}
+        style={{
+          flex: 1,
+          fontSize: flat.fontSize || 13,
+          color: C.black,
+          paddingVertical: 9,
+        }}
+      />
     </View>
   );
 }
@@ -455,7 +584,7 @@ export default function ProfileScreen() {
             >
               <View style={{ gap: 10 }}>
                 <Text style={s.fieldLabel}>PAN Number</Text>
-                <TextInput
+                <BInput
                   style={{ borderWidth: 2, borderColor: C.black, padding: 8, fontSize: 13, color: C.black }}
                   value={panNumber}
                   onChangeText={setPanNumber}
@@ -463,7 +592,7 @@ export default function ProfileScreen() {
                   placeholderTextColor={C.textLight}
                 />
                 <Text style={s.fieldLabel}>Bank Account Number</Text>
-                <TextInput
+                <BInput
                   style={{ borderWidth: 2, borderColor: C.black, padding: 8, fontSize: 13, color: C.black }}
                   value={bankAccount}
                   onChangeText={setBankAccount}
@@ -471,7 +600,7 @@ export default function ProfileScreen() {
                   placeholderTextColor={C.textLight}
                 />
                 <Text style={s.fieldLabel}>IFSC Code</Text>
-                <TextInput
+                <BInput
                   style={{ borderWidth: 2, borderColor: C.black, padding: 8, fontSize: 13, color: C.black }}
                   value={ifscCode}
                   onChangeText={setIfscCode}
@@ -490,7 +619,7 @@ export default function ProfileScreen() {
             >
               <View style={{ gap: 12 }}>
                 <Text style={s.fieldLabel}>Emergency Contact</Text>
-                <TextInput
+                <BInput
                   style={{ borderWidth: 2, borderColor: C.black, padding: 8, fontSize: 13, color: C.black }}
                   value={emergencyContact}
                   onChangeText={setEmergencyContact}
@@ -501,7 +630,7 @@ export default function ProfileScreen() {
                 <Text style={[s.fieldLabel, { borderTopWidth: 2, borderTopColor: C.black, paddingTop: 8, marginTop: 8 }]}>Nominees List</Text>
                 {nominees.map((n, i) => (
                   <View key={i} style={{ borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black, padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
-                    <TextInput
+                    <BInput
                       style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={n.name}
                       onChangeText={val => {
@@ -512,7 +641,7 @@ export default function ProfileScreen() {
                       placeholder="Nominee Name"
                       placeholderTextColor={C.textLight}
                     />
-                    <TextInput
+                    <BInput
                       style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={n.relationship}
                       onChangeText={val => {
@@ -523,7 +652,7 @@ export default function ProfileScreen() {
                       placeholder="Relationship"
                       placeholderTextColor={C.textLight}
                     />
-                    <TextInput
+                    <BInput
                       style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={String(n.percentage || '')}
                       keyboardType="numeric"
@@ -562,7 +691,7 @@ export default function ProfileScreen() {
               <View style={{ gap: 12 }}>
                 {familyDetails.map((f, i) => (
                   <View key={i} style={{ borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black, padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
-                    <TextInput
+                    <BInput
                       style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={f.name}
                       onChangeText={val => {
@@ -573,7 +702,7 @@ export default function ProfileScreen() {
                       placeholder="Member Name"
                       placeholderTextColor={C.textLight}
                     />
-                    <TextInput
+                    <BInput
                       style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={f.relationship}
                       onChangeText={val => {
@@ -584,7 +713,7 @@ export default function ProfileScreen() {
                       placeholder="Relationship"
                       placeholderTextColor={C.textLight}
                     />
-                    <TextInput
+                    <BInput
                       style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={f.phone}
                       onChangeText={val => {
@@ -622,7 +751,7 @@ export default function ProfileScreen() {
               <View style={{ gap: 12 }}>
                 {education.map((e, i) => (
                   <View key={i} style={{ borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black, padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
-                    <TextInput
+                    <BInput
                       style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={e.degree}
                       onChangeText={val => {
@@ -633,7 +762,7 @@ export default function ProfileScreen() {
                       placeholder="Degree / Course"
                       placeholderTextColor={C.textLight}
                     />
-                    <TextInput
+                    <BInput
                       style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={e.school}
                       onChangeText={val => {
@@ -644,7 +773,7 @@ export default function ProfileScreen() {
                       placeholder="School / University"
                       placeholderTextColor={C.textLight}
                     />
-                    <TextInput
+                    <BInput
                       style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={String(e.passYear || '')}
                       keyboardType="numeric"
@@ -683,7 +812,7 @@ export default function ProfileScreen() {
               <View style={{ gap: 12 }}>
                 {experience.map((exp, i) => (
                   <View key={i} style={{ borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black, padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
-                    <TextInput
+                    <BInput
                       style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={exp.company}
                       onChangeText={val => {
@@ -694,7 +823,7 @@ export default function ProfileScreen() {
                       placeholder="Company"
                       placeholderTextColor={C.textLight}
                     />
-                    <TextInput
+                    <BInput
                       style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={exp.role}
                       onChangeText={val => {
@@ -706,7 +835,7 @@ export default function ProfileScreen() {
                       placeholderTextColor={C.textLight}
                     />
                     <View style={{ flexDirection: 'row', gap: 6 }}>
-                      <TextInput
+                      <BInput
                         style={{ flex: 1, borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                         value={exp.start}
                         onChangeText={val => {
@@ -717,7 +846,7 @@ export default function ProfileScreen() {
                         placeholder="Start Date"
                         placeholderTextColor={C.textLight}
                       />
-                      <TextInput
+                      <BInput
                         style={{ flex: 1, borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                         value={exp.end}
                         onChangeText={val => {
@@ -755,7 +884,7 @@ export default function ProfileScreen() {
             >
               <View style={{ gap: 10 }}>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <TextInput
+                  <BInput
                     style={{ flex: 1, borderWidth: 2, borderColor: C.black, padding: 8, fontSize: 13, color: C.black }}
                     value={newSkill}
                     onChangeText={setNewSkill}
@@ -799,7 +928,7 @@ export default function ProfileScreen() {
               <View style={{ gap: 12 }}>
                 {certificates.map((cert, i) => (
                   <View key={i} style={{ borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black, padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
-                    <TextInput
+                    <BInput
                       style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={cert.name}
                       onChangeText={val => {
@@ -810,7 +939,7 @@ export default function ProfileScreen() {
                       placeholder="Certificate Name"
                       placeholderTextColor={C.textLight}
                     />
-                    <TextInput
+                    <BInput
                       style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={cert.issuer}
                       onChangeText={val => {
@@ -821,7 +950,7 @@ export default function ProfileScreen() {
                       placeholder="Issuer"
                       placeholderTextColor={C.textLight}
                     />
-                    <TextInput
+                    <BInput
                       style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
                       value={cert.docUrl}
                       onChangeText={val => {

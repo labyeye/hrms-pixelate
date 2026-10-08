@@ -1,6 +1,17 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { attendanceAPI } from "@/services/api";
-import { Bell, Search, Menu, LogIn, LogOut, Clock } from "lucide-react";
+import { dashboardAPI } from "@/services/api";
+import { useNavigate } from "react-router-dom";
+import {
+  Bell,
+  Search,
+  Menu,
+  LogIn,
+  LogOut,
+  Clock,
+  CalendarDays,
+  FileEdit,
+  AlarmClock,
+} from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 
 interface AppHeaderProps {
@@ -8,13 +19,31 @@ interface AppHeaderProps {
   onMenuOpen: () => void;
 }
 
+type Kind = "checkin" | "checkout" | "leave" | "correction" | "late";
+
 interface NotifEntry {
   id: string;
+  kind: Kind;
   name: string;
   avatar?: string;
-  type: "checkin" | "checkout";
+  status?: "pending" | "approved" | "rejected" | "cancelled";
+  detail?: string;
   time: Date;
 }
+
+const FILTERS: { key: "all" | "attendance" | "requests"; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "attendance", label: "Check-ins" },
+  { key: "requests", label: "Requests" },
+];
+
+const KIND_LINK: Record<Kind, string> = {
+  checkin: "/attendance",
+  checkout: "/attendance",
+  leave: "/leave",
+  correction: "/attendance",
+  late: "/late-approvals",
+};
 
 function timeAgo(date: Date): string {
   const diff = Math.floor((Date.now() - date.getTime()) / 1000);
@@ -32,58 +61,59 @@ function fmt12(date: Date): string {
   });
 }
 
+function describe(n: NotifEntry): { icon: JSX.Element; text: string; color: string } {
+  const st = n.status;
+  const verb =
+    st === "pending" ? "requested" : st === "approved" ? "approved" : st === "rejected" ? "rejected" : st ?? "";
+  const color =
+    st === "approved" ? "text-[#00C48C]" : st === "rejected" ? "text-red-600" : "text-[#FA731C]";
+  switch (n.kind) {
+    case "checkin":
+      return { icon: <LogIn className="w-3 h-3 shrink-0" />, text: `Checked in at ${fmt12(n.time)}`, color: "text-[#00C48C]" };
+    case "checkout":
+      return { icon: <LogOut className="w-3 h-3 shrink-0" />, text: `Checked out at ${fmt12(n.time)}`, color: "text-[#FA731C]" };
+    case "leave":
+      return { icon: <CalendarDays className="w-3 h-3 shrink-0" />, text: `Leave ${verb} · ${n.detail}`, color };
+    case "correction":
+      return { icon: <FileEdit className="w-3 h-3 shrink-0" />, text: `Correction ${verb} · ${n.detail}`, color };
+    default:
+      return { icon: <AlarmClock className="w-3 h-3 shrink-0" />, text: `Late approval ${verb} · ${n.detail}`, color };
+  }
+}
+
 export function AppHeader({ title, onMenuOpen }: AppHeaderProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchVal, setSearchVal] = useState("");
   const [open, setOpen] = useState(false);
   const [notifs, setNotifs] = useState<NotifEntry[]>([]);
+  const [pending, setPending] = useState(0);
   const [loading, setLoading] = useState(false);
   const [seen, setSeen] = useState(false);
+  const [filter, setFilter] = useState<"all" | "attendance" | "requests">("all");
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const fetchToday = useCallback(async () => {
+  const fetchFeed = useCallback(async () => {
     setLoading(true);
     try {
-      const today = new Date().toISOString().split("T")[0];
-      const res: any = await attendanceAPI.getAll({ date: today, limit: "50" });
+      const res: any = await dashboardAPI.getActivity();
       if (!res.success) return;
-
-      const entries: NotifEntry[] = [];
-      for (const rec of res.data ?? []) {
-        const firstName = rec.employee?.firstName ?? rec.employee?.name ?? "";
-        const lastName = rec.employee?.lastName ?? "";
-        const name = `${firstName} ${lastName}`.trim() || "Unknown";
-        const avatar = rec.employee?.avatar;
-
-        if (rec.checkIn) {
-          entries.push({
-            id: `${rec._id}-in`,
-            name,
-            avatar,
-            type: "checkin",
-            time: new Date(rec.checkIn),
-          });
-        }
-        if (rec.checkOut) {
-          entries.push({
-            id: `${rec._id}-out`,
-            name,
-            avatar,
-            type: "checkout",
-            time: new Date(rec.checkOut),
-          });
-        }
-      }
-
-      entries.sort((a, b) => b.time.getTime() - a.time.getTime());
-      setNotifs(entries.slice(0, 30));
+      setNotifs(
+        (res.data ?? []).map((n: any) => ({ ...n, time: new Date(n.time) })),
+      );
+      setPending(res.pending ?? 0);
     } catch {}
     setLoading(false);
   }, []);
 
+  // Pull once on mount so the badge reflects pending requests before opening.
+  useEffect(() => {
+    if (user) fetchFeed();
+  }, [user, fetchFeed]);
+
   const handleBell = () => {
     if (!open) {
-      fetchToday();
+      fetchFeed();
       setSeen(true);
     }
     setOpen((v) => !v);
@@ -100,6 +130,14 @@ export function AppHeader({ title, onMenuOpen }: AppHeaderProps) {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
+
+  const visible = notifs.filter((n) =>
+    filter === "all"
+      ? true
+      : filter === "attendance"
+        ? n.kind === "checkin" || n.kind === "checkout"
+        : n.kind !== "checkin" && n.kind !== "checkout",
+  );
 
   if (!user) return null;
 
@@ -138,8 +176,10 @@ export function AppHeader({ title, onMenuOpen }: AppHeaderProps) {
             aria-label="Notifications"
           >
             <Bell className="w-[18px] h-[18px] text-black" />
-            {!seen && (
-              <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-[#FA731C] border border-black rounded-xl" />
+            {(pending > 0 || !seen) && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 bg-[#FA731C] border border-black rounded-xl text-[9px] font-bold text-white flex items-center justify-center">
+                {pending > 0 ? (pending > 9 ? "9+" : pending) : ""}
+              </span>
             )}
           </button>
 
@@ -150,7 +190,7 @@ export function AppHeader({ title, onMenuOpen }: AppHeaderProps) {
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-white" />
                   <span className="text-sm font-bold text-white">
-                    Today's Activity
+                    Notifications
                   </span>
                 </div>
                 <span className="text-xs text-white/70 font-medium">
@@ -161,89 +201,82 @@ export function AppHeader({ title, onMenuOpen }: AppHeaderProps) {
                 </span>
               </div>
 
+              {/* Filters */}
+              <div className="flex border-b-2 border-black">
+                {FILTERS.map((f) => (
+                  <button
+                    key={f.key}
+                    onClick={() => setFilter(f.key)}
+                    className={`flex-1 py-2 text-[11px] font-bold transition-colors ${filter === f.key ? "bg-black text-white" : "bg-white text-black hover:bg-[#024BAB]/10"}`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
               {/* Body */}
               <div className="max-h-80 overflow-y-auto">
-                {loading ? (
+                {loading && notifs.length === 0 ? (
                   <div className="flex items-center justify-center py-10 gap-2">
                     <div className="w-4 h-4 border-2 border-[#024BAB] border-t-transparent rounded-full animate-spin" />
                     <span className="text-xs text-muted-foreground font-medium">
                       Loading...
                     </span>
                   </div>
-                ) : notifs.length === 0 ? (
+                ) : visible.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-10 gap-2">
                     <Bell className="w-8 h-8 text-muted-foreground/30" />
                     <p className="text-xs font-bold text-muted-foreground">
-                      No activity today
+                      No activity
                     </p>
                   </div>
                 ) : (
-                  notifs.map((n) => (
-                    <div
-                      key={n.id}
-                      className="flex items-center gap-3 px-4 py-3 border-b border-black/10 last:border-0 hover:bg-[#024BAB]/5 transition-colors"
-                    >
-                      {/* Avatar */}
-                      <div className="w-8 h-8 rounded-full border-2 border-black shrink-0 overflow-hidden bg-[#024BAB] flex items-center justify-center text-xs font-bold text-white">
-                        {n.avatar ? (
-                          <img
-                            src={n.avatar}
-                            alt={n.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          n.name[0]?.toUpperCase()
-                        )}
-                      </div>
-
-                      {/* Text */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-black truncate">
-                          {n.name}
-                        </p>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          {n.type === "checkin" ? (
-                            <LogIn className="w-3 h-3 text-[#00C48C] shrink-0" />
+                  visible.map((n) => {
+                    const d = describe(n);
+                    return (
+                      <button
+                        key={n.id}
+                        onClick={() => {
+                          setOpen(false);
+                          navigate(KIND_LINK[n.kind]);
+                        }}
+                        className="w-full text-left flex items-center gap-3 px-4 py-3 border-b border-black/10 last:border-0 hover:bg-[#024BAB]/5 transition-colors"
+                      >
+                        <div className="w-8 h-8 rounded-full border-2 border-black shrink-0 overflow-hidden bg-[#024BAB] flex items-center justify-center text-xs font-bold text-white">
+                          {n.avatar ? (
+                            <img src={n.avatar} alt={n.name} className="w-full h-full object-cover" />
                           ) : (
-                            <LogOut className="w-3 h-3 text-[#FA731C] shrink-0" />
+                            n.name[0]?.toUpperCase()
                           )}
-                          <span
-                            className={`text-[11px] font-semibold ${n.type === "checkin" ? "text-[#00C48C]" : "text-[#FA731C]"}`}
-                          >
-                            {n.type === "checkin"
-                              ? "Checked in"
-                              : "Checked out"}{" "}
-                            at {fmt12(n.time)}
-                          </span>
                         </div>
-                      </div>
-
-                      {/* Time ago */}
-                      <span className="text-[10px] text-muted-foreground font-medium shrink-0">
-                        {timeAgo(n.time)}
-                      </span>
-                    </div>
-                  ))
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-black truncate">{n.name}</p>
+                          <div className={`flex items-center gap-1 mt-0.5 ${d.color}`}>
+                            {d.icon}
+                            <span className="text-[11px] font-semibold capitalize truncate">{d.text}</span>
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground font-medium shrink-0">
+                          {timeAgo(n.time)}
+                        </span>
+                      </button>
+                    );
+                  })
                 )}
               </div>
 
               {/* Footer */}
-              {notifs.length > 0 && (
-                <div className="border-t-2 border-black px-4 py-2.5 bg-[#F8FAFF] flex items-center justify-between">
-                  <span className="text-[11px] text-muted-foreground font-medium">
-                    {notifs.filter((n) => n.type === "checkin").length}{" "}
-                    check-ins ·{" "}
-                    {notifs.filter((n) => n.type === "checkout").length}{" "}
-                    check-outs
-                  </span>
-                  <button
-                    onClick={fetchToday}
-                    className="text-[11px] font-bold text-[#024BAB] hover:underline"
-                  >
-                    Refresh
-                  </button>
-                </div>
-              )}
+              <div className="border-t-2 border-black px-4 py-2.5 bg-[#F8FAFF] flex items-center justify-between">
+                <span className="text-[11px] text-muted-foreground font-medium">
+                  {pending} pending request{pending === 1 ? "" : "s"}
+                </span>
+                <button
+                  onClick={fetchFeed}
+                  className="text-[11px] font-bold text-[#024BAB] hover:underline"
+                >
+                  Refresh
+                </button>
+              </div>
             </div>
           )}
         </div>

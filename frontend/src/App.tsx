@@ -14,6 +14,7 @@ import LeavePage from "./pages/LeavePage";
 import PayrollPage from "./pages/PayrollPage";
 import RecruitmentPage from "./pages/RecruitmentPage";
 import PerformancePage from "./pages/PerformancePage";
+import PerformanceReportPage from "./pages/PerformanceReportPage";
 import DepartmentsPage from "./pages/DepartmentsPage";
 import SettingsPage from "./pages/SettingsPage";
 import LoginPage from "./pages/LoginPage";
@@ -233,6 +234,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <PerformancePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/performance/report"
+          element={
+            <ProtectedRoute>
+              <PerformanceReportPage />
             </ProtectedRoute>
           }
         />

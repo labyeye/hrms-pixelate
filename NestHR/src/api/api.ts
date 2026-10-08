@@ -174,6 +174,8 @@ export const dashboardAPI = {
   getEmployeeStats: () => request('/dashboard/employee'),
   getPayrollSummary: (range: string) =>
     request(`/dashboard/payroll-summary?range=${range}`),
+  getMonthlyPerformance: (month: number, year: number) =>
+    request(`/dashboard/payroll-summary?month=${month}&year=${year}`),
 };
 
 export const employeeAPI = {

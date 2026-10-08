@@ -4,6 +4,7 @@ const {
   getEmployeeStats,
   getPayrollSummary,
 } = require("../controllers/dashboardController");
+const { getActivityFeed } = require("../controllers/activityFeedController");
 const { protect, authorize } = require("../middleware/auth");
 const router = express.Router();
 
@@ -19,5 +20,6 @@ router.get("/payroll-summary",
   protect,
   authorize("super_admin", "hr_manager"),
   noCache, getPayrollSummary);
+router.get("/activity", protect, noCache, getActivityFeed);
 router.get("/employee", protect, noCache, getEmployeeStats);
 module.exports = router;

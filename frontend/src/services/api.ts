@@ -153,6 +153,7 @@ export const authAPI = {
 export const dashboardAPI = {
   getStats: () => request("/dashboard/stats"),
   getEmployeeStats: () => request("/dashboard/employee"),
+  getActivity: () => request("/dashboard/activity"),
 };
 
 export const employeeAPI = {

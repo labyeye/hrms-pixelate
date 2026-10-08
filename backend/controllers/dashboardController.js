@@ -354,16 +354,18 @@ const RANGES = ["this", "last", "3m", "6m", "1y"];
 const summaryCache = new Map(); // key -> { at, data, pending }
 const FRESH_MS = 60_000;
 
-async function computeSummary(company, range) {
+async function computeSummary(company, range, ym) {
   const { buildPayrollPreviews } = require("./payrollController");
   const now = new Date();
   const count =
     range === "3m" ? 3 : range === "6m" ? 6 : range === "1y" ? 12 : 1;
   const offset = range === "last" ? 1 : 0;
-  const periods = Array.from({ length: count }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - offset - i, 1);
-    return { month: d.getMonth() + 1, year: d.getFullYear() };
-  });
+  const periods = ym
+    ? [ym]
+    : Array.from({ length: count }, (_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - offset - i, 1);
+        return { month: d.getMonth() + 1, year: d.getFullYear() };
+      });
 
   const byEmp = new Map();
   let payable = 0;
@@ -416,12 +418,12 @@ async function computeSummary(company, range) {
 }
 
 // Returns cached data instantly; recomputes in the background when stale.
-function getSummary(company, range) {
-  const key = `${company}:${range}`;
+function getSummary(company, range, ym) {
+  const key = ym ? `${company}:${ym.year}-${ym.month}` : `${company}:${range}`;
   const entry = summaryCache.get(key) || {};
   const stale = !entry.at || Date.now() - entry.at > FRESH_MS;
   if (stale && !entry.pending) {
-    entry.pending = computeSummary(company, range)
+    entry.pending = computeSummary(company, range, ym)
       .then((data) => {
         summaryCache.set(key, { at: Date.now(), data });
         return data;
@@ -437,7 +439,13 @@ function getSummary(company, range) {
 
 const getPayrollSummary = asyncHandler(async (req, res) => {
   const range = RANGES.includes(req.query.range) ? req.query.range : "this";
-  const data = await getSummary(req.user.company, range);
+  const month = parseInt(req.query.month);
+  const year = parseInt(req.query.year);
+  const ym =
+    month >= 1 && month <= 12 && year >= 2000 && year <= 2100
+      ? { month, year }
+      : undefined;
+  const data = await getSummary(req.user.company, range, ym);
   res.json({ success: true, data });
 });
 

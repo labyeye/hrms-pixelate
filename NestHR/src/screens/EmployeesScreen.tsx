@@ -14,6 +14,7 @@ import {
   Switch,
   Image,
   Platform,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DatePickerField } from '../components/common/DatePickerField';
@@ -40,6 +41,28 @@ import {
   KeyRound,
   LogIn,
   LogOut,
+  PhoneCall,
+  User,
+  Siren,
+  House,
+  MapPin,
+  Building2,
+  Building,
+  Map,
+  Hash,
+  CreditCard,
+  UserCheck,
+  IdCard,
+  Fingerprint,
+  FileText,
+  ShieldCheck,
+  Heart,
+  HeartHandshake,
+  Droplet,
+  Globe,
+  Church,
+  GraduationCap,
+  ArrowLeft,
 } from 'lucide-react-native';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import {
@@ -150,6 +173,10 @@ export default function EmployeesScreen() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [detailEmp, setDetailEmp] = useState<Employee | null>(null);
   const [actionModal, setActionModal] = useState<string | null>(null);
+  const [showMore, setShowMore] = useState(false);
+  useEffect(() => {
+    if (!detailEmp) setShowMore(false);
+  }, [detailEmp]);
   const [actionForm, setActionForm] = useState<Record<string, any>>({});
   const [actionLoading, setActionLoading] = useState(false);
   const [actionRecords, setActionRecords] = useState<any[]>([]);
@@ -805,6 +832,8 @@ export default function EmployeesScreen() {
         onRequestClose={() => {
           if (actionModal) {
             setActionModal(null);
+          } else if (showMore) {
+            setShowMore(false);
           } else {
             setDetailEmp(null);
           }
@@ -828,195 +857,148 @@ export default function EmployeesScreen() {
                     {ACTION_ITEMS.find(a => a.key === actionModal)?.label}
                   </Text>
                 </TouchableOpacity>
+              ) : showMore ? (
+                <TouchableOpacity
+                  onPress={() => setShowMore(false)}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                >
+                  <ArrowLeft size={20} color={C.black} />
+                  <Text style={[styles.modalTitle, { fontSize: 16 }]}>
+                    More Details
+                  </Text>
+                </TouchableOpacity>
               ) : (
-                <Text style={styles.modalTitle}>Employee Detail</Text>
+                <TouchableOpacity onPress={() => setDetailEmp(null)}>
+                  <ArrowLeft size={22} color={C.black} />
+                </TouchableOpacity>
               )}
-              <TouchableOpacity
-                onPress={() => {
-                  setActionModal(null);
-                  setDetailEmp(null);
-                }}
-              >
-                <X size={22} color={C.black} />
-              </TouchableOpacity>
+              {!actionModal && !showMore ? (
+                <TouchableOpacity onPress={() => setShowMore(true)}>
+                  <FileText size={22} color={C.black} />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  onPress={() => {
+                    setActionModal(null);
+                    setShowMore(false);
+                    setDetailEmp(null);
+                  }}
+                >
+                  <X size={22} color={C.black} />
+                </TouchableOpacity>
+              )}
             </View>
 
             {/* ── MAIN DETAIL VIEW ── */}
-            {!actionModal && (
+            {!actionModal && !showMore && (
               <ScrollView
-                contentContainerStyle={{
-                  padding: 16,
-                  gap: 14,
-                  paddingBottom: 40,
-                }}
+                contentContainerStyle={{ paddingBottom: 40 }}
                 showsVerticalScrollIndicator={false}
               >
-                {/* Profile header */}
-                <View
-                  style={{ alignItems: 'center', paddingVertical: 12, gap: 8 }}
-                >
+                {/* Photo */}
+                <View style={{ borderBottomWidth: 2, borderBottomColor: C.black }}>
                   {(detailEmp as any).avatar ? (
                     <Image
                       source={{ uri: (detailEmp as any).avatar }}
-                      style={{
-                        width: 80,
-                        height: 80,
-                        borderRadius: 40,
-                        borderWidth: 3,
-                        borderColor: STATUS_COLOR[detailEmp.status] || C.black,
-                      }}
+                      style={{ width: '100%', height: 260 }}
+                      resizeMode="cover"
                     />
                   ) : (
                     <View
                       style={{
-                        width: 80,
-                        height: 80,
-                        borderRadius: 40,
+                        width: '100%',
+                        height: 260,
                         backgroundColor: C.primary,
-                        borderWidth: 3,
-                        borderColor: STATUS_COLOR[detailEmp.status] || C.black,
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
                     >
-                      <Text
-                        style={{
-                          color: C.white,
-                          fontSize: 26,
-                          fontWeight: '700',
-                        }}
-                      >
+                      <Text style={{ color: C.white, fontSize: 64, fontWeight: '700' }}>
                         {detailEmp.firstName[0]}
                         {detailEmp.lastName[0]}
                       </Text>
                     </View>
                   )}
-                  <Text
-                    style={{ fontSize: 20, fontWeight: '700', color: C.black }}
-                  >
-                    {detailEmp.firstName} {detailEmp.lastName}
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      color: C.textMuted,
-                      fontFamily: 'monospace',
-                    }}
-                  >
-                    {detailEmp.employeeId}
-                  </Text>
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      {
-                        backgroundColor:
-                          STATUS_COLOR[detailEmp.status] || '#9CA3AF',
-                        borderColor: C.black,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.statusText, { color: C.white }]}>
-                      {detailEmp.status.replace('_', ' ').toUpperCase()}
-                    </Text>
-                  </View>
                 </View>
 
-                {/* Info table */}
-                <View
-                  style={{
-                    borderWidth: 2,
-                    borderRadius: 8,
-                    borderColor: C.black,
-                    backgroundColor: C.white,
-                  }}
-                >
-                  {(
-                    [
-                      ['Designation', detailEmp.designation || '—'],
-                      ['Department', getDeptName(detailEmp.department)],
-                      [
-                        'Employment Type',
-                        detailEmp.employmentType
-                          ?.replace('_', ' ')
-                          .toUpperCase() || '—',
-                      ],
-                      [
-                        'Joining Date',
-                        detailEmp.joiningDate
-                          ? new Date(detailEmp.joiningDate).toLocaleDateString(
-                              'en-IN',
-                              {
-                                day: '2-digit',
-                                month: 'short',
-                                year: 'numeric',
-                              },
-                            )
-                          : '—',
-                      ],
-                      ['Email', detailEmp.email || '—'],
-                      ['Phone', (detailEmp as any).phone || '—'],
-                      ...(detailEmp.salary || (detailEmp as any).monthlySalary
-                        ? [
-                            [
-                              'Monthly Salary',
-                              `₹${((detailEmp as any).monthlySalary || detailEmp.salary || 0).toLocaleString()}`,
-                            ],
-                          ]
-                        : []),
-                      ...((detailEmp as any).loanBalance > 0
-                        ? [
-                            [
-                              'Loan Balance',
-                              `₹${(detailEmp as any).loanBalance.toLocaleString()}`,
-                            ],
-                          ]
-                        : []),
-                      ...((detailEmp as any).advanceBalance > 0
-                        ? [
-                            [
-                              'Advance Balance',
-                              `₹${(detailEmp as any).advanceBalance.toLocaleString()}`,
-                            ],
-                          ]
-                        : []),
-                    ] as [string, string][]
-                  ).map(([label, value], i, arr) => (
+                <View style={{ padding: 16, gap: 14 }}>
+                  {/* Name + Emp ID */}
+                  <View>
                     <View
-                      key={label}
                       style={{
                         flexDirection: 'row',
-                        paddingHorizontal: 14,
-                        paddingVertical: 11,
-                        borderBottomWidth: i < arr.length - 1 ? 1 : 0,
-                        borderBottomColor: C.black,
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: 10,
                       }}
                     >
                       <Text
-                        style={{
-                          fontSize: 11,
-                          fontWeight: '700',
-                          color: C.textMuted,
-                          textTransform: 'uppercase',
-                          width: 130,
-                        }}
+                        style={{ flex: 1, fontSize: 22, fontWeight: '800', color: C.black }}
+                        numberOfLines={2}
                       >
-                        {label}
+                        {detailEmp.firstName} {detailEmp.lastName}
                       </Text>
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          fontWeight: '500',
-                          color: C.black,
-                          flex: 1,
-                        }}
-                      >
-                        {value}
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>
+                        {detailEmp.employeeId}
                       </Text>
                     </View>
-                  ))}
-                </View>
+                    <Text style={{ fontSize: 13, color: C.textMuted, marginTop: 2 }}>
+                      {detailEmp.designation || '—'}
+                    </Text>
+                  </View>
 
-                {/* Action grid */}
+                  {/* Email / Phone / Salary chips */}
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                    {(
+                      [
+                        [
+                          Mail,
+                          detailEmp.email,
+                          detailEmp.email ? () => Linking.openURL(`mailto:${detailEmp.email}`) : undefined,
+                        ],
+                        [
+                          Phone,
+                          (detailEmp as any).phone,
+                          (detailEmp as any).phone ? () => Linking.openURL(`tel:${(detailEmp as any).phone}`) : undefined,
+                        ],
+                        [
+                          IndianRupee,
+                          (detailEmp as any).monthlySalary || detailEmp.salary || 0 ? Number((detailEmp as any).monthlySalary || detailEmp.salary || 0).toLocaleString('en-IN') : '',
+                          undefined,
+                        ],
+                      ] as [React.ComponentType<any>, string, (() => void) | undefined][]
+                    )
+                      .filter(([, v]) => !!v)
+                      .map(([Icon, value, onPress], i) => (
+                        <TouchableOpacity
+                          key={i}
+                          disabled={!onPress}
+                          onPress={onPress}
+                          activeOpacity={0.7}
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 6,
+                            paddingVertical: 6,
+                            paddingHorizontal: 12,
+                            borderWidth: 2,
+                            borderColor: C.black,
+                            borderRadius: 999,
+                            maxWidth: '100%',
+                          }}
+                        >
+                          <Icon size={13} color={C.primary} />
+                          <Text
+                            style={{ fontSize: 12, fontWeight: '700', color: C.black, flexShrink: 1 }}
+                            numberOfLines={1}
+                          >
+                            {value}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                  </View>
+
+                {/* Quick actions */}
                 <View>
                   <Text style={styles.sectionDividerText}>Quick Actions</Text>
                   <View style={styles.actionGrid}>
@@ -1044,218 +1026,115 @@ export default function EmployeesScreen() {
                   </View>
                 </View>
 
-                {/* Contact Information */}
-                <View style={styles.infoSection}>
-                  <View style={styles.infoSectionHeader}>
-                    <Phone size={14} color={C.primary} />
-                    <Text style={styles.infoSectionTitle}>
-                      Contact Information
-                    </Text>
-                  </View>
-                  {(
-                    [
-                      ['Email', detailEmp.email || '—'],
-                      ['Phone', (detailEmp as any).phone || '—'],
-                      ['Alternate Phone', (detailEmp as any).alternatePhone || '—'],
-                      ['Personal Email', (detailEmp as any).personalEmail || '—'],
-                      ['Gender', (detailEmp as any).gender || '—'],
-                      [
-                        'Date of Birth',
-                        (detailEmp as any).dateOfBirth
-                          ? new Date(
-                              (detailEmp as any).dateOfBirth,
-                            ).toLocaleDateString('en-IN', {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
-                            })
-                          : '—',
-                      ],
-                      [
-                        'Emergency Contact',
-                        (detailEmp as any).emergencyContact || '—',
-                      ],
-                      ['Address', (detailEmp as any).address || '—'],
-                      ['Permanent Address', (detailEmp as any).permanentAddress || '—'],
-                      ['City', (detailEmp as any).city || '—'],
-                      ['State', (detailEmp as any).state || '—'],
-                      ['Pincode', (detailEmp as any).pincode || '—'],
-                    ] as [string, string][]
-                  ).map(([label, value], i, arr) => (
-                    <View
-                      key={label}
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        paddingVertical: 9,
-                        paddingHorizontal: 14,
-                        borderBottomWidth: i < arr.length - 1 ? 1 : 0,
-                        borderBottomColor: C.black,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          fontWeight: '700',
-                          color: C.textMuted,
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        {label}
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          fontWeight: '600',
-                          color: C.black,
-                          textAlign: 'right',
-                          flex: 1,
-                          marginLeft: 12,
-                        }}
-                      >
-                        {value}
-                      </Text>
-                    </View>
-                  ))}
                 </View>
+              </ScrollView>
+            )}
+
+            {/* ── MORE DETAILS VIEW ── */}
+            {!actionModal && showMore && (
+              <ScrollView
+                contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }}
+                showsVerticalScrollIndicator={false}
+              >
+                <InfoSection
+                  title="Employment"
+                  icon={Briefcase}
+                  rows={[
+                    [Briefcase, 'Designation', detailEmp.designation],
+                    [Building2, 'Department', getDeptName(detailEmp.department)],
+                    [Timer, 'Employment Type', detailEmp.employmentType?.replace('_', ' ').toUpperCase()],
+                    [
+                      CalendarDays,
+                      'Joining Date',
+                      detailEmp.joiningDate
+                        ? new Date(detailEmp.joiningDate).toLocaleDateString('en-IN', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })
+                        : '',
+                    ],
+                    [UserCheck, 'Status', detailEmp.status.replace('_', ' ').toUpperCase()],
+                    [IndianRupee, 'Monthly Salary', (detailEmp as any).monthlySalary || detailEmp.salary || 0 ? `₹${Number((detailEmp as any).monthlySalary || detailEmp.salary || 0).toLocaleString('en-IN')}` : ''],
+                    [Landmark, 'Loan Balance', (detailEmp as any).loanBalance > 0 ? `₹${(detailEmp as any).loanBalance.toLocaleString('en-IN')}` : ''],
+                    [Wallet, 'Advance Balance', (detailEmp as any).advanceBalance > 0 ? `₹${(detailEmp as any).advanceBalance.toLocaleString('en-IN')}` : ''],
+                  ]}
+                />
+
+                {/* Contact Information */}
+                <InfoSection
+                  title="Contact Information"
+                  icon={Phone}
+                  rows={[
+                    [Mail, 'Email', detailEmp.email],
+                    [Phone, 'Phone', (detailEmp as any).phone],
+                    [PhoneCall, 'Alternate Phone', (detailEmp as any).alternatePhone],
+                    [Mail, 'Personal Email', (detailEmp as any).personalEmail],
+                    [User, 'Gender', (detailEmp as any).gender],
+                    [
+                      CalendarDays,
+                      'Date of Birth',
+                      (detailEmp as any).dateOfBirth
+                        ? new Date((detailEmp as any).dateOfBirth).toLocaleDateString('en-IN', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                          })
+                        : '',
+                    ],
+                    [Siren, 'Emergency Contact', (detailEmp as any).emergencyContact],
+                    [House, 'Address', (detailEmp as any).address],
+                    [MapPin, 'Permanent Address', (detailEmp as any).permanentAddress],
+                    [Building2, 'City', (detailEmp as any).city],
+                    [Map, 'State', (detailEmp as any).state],
+                    [Hash, 'Pincode', (detailEmp as any).pincode],
+                  ]}
+                />
 
                 {/* Banking & Compliance */}
-                <View style={styles.infoSection}>
-                  <View style={styles.infoSectionHeader}>
-                    <Briefcase size={14} color={C.primary} />
-                    <Text style={styles.infoSectionTitle}>
-                      Banking & Compliance
-                    </Text>
-                  </View>
-                  {(
-                    [
-                      ['Bank', (detailEmp as any).bankName || '—'],
-                      [
-                        'Account No.',
-                        (detailEmp as any).bankAccountNumber || '—',
-                      ],
-                      [
-                        'Account Holder',
-                        (detailEmp as any).accountHolderName || '—',
-                      ],
-                      ['IFSC', (detailEmp as any).ifscCode || '—'],
-                      ['PAN', (detailEmp as any).panNumber || '—'],
-                      ['Aadhar', (detailEmp as any).aadharNumber || '—'],
-                      ['PF No.', (detailEmp as any).pfNumber || '—'],
-                      ['UAN', (detailEmp as any).uanNumber || '—'],
-                      ['ESIC', (detailEmp as any).esicNumber || '—'],
-                    ] as [string, string][]
-                  ).map(([label, value], i, arr) => (
-                    <View
-                      key={label}
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        paddingVertical: 9,
-                        paddingHorizontal: 14,
-                        borderBottomWidth: i < arr.length - 1 ? 1 : 0,
-                        borderBottomColor: C.black,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          fontWeight: '700',
-                          color: C.textMuted,
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        {label}
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          fontWeight: '600',
-                          color: C.black,
-                          textAlign: 'right',
-                          flex: 1,
-                          marginLeft: 12,
-                        }}
-                      >
-                        {value}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
+                <InfoSection
+                  title="Banking & Compliance"
+                  icon={Briefcase}
+                  rows={[
+                    [Landmark, 'Bank', (detailEmp as any).bankName],
+                    [CreditCard, 'Account No.', (detailEmp as any).bankAccountNumber],
+                    [UserCheck, 'Account Holder', (detailEmp as any).accountHolderName],
+                    [Hash, 'IFSC', (detailEmp as any).ifscCode],
+                    [IdCard, 'PAN', (detailEmp as any).panNumber],
+                    [Fingerprint, 'Aadhar', (detailEmp as any).aadharNumber],
+                    [FileText, 'PF No.', (detailEmp as any).pfNumber],
+                    [ShieldCheck, 'UAN', (detailEmp as any).uanNumber],
+                    [ShieldCheck, 'ESIC', (detailEmp as any).esicNumber],
+                  ]}
+                />
 
                 {/* Personal Details */}
-                <View style={styles.infoSection}>
-                  <View style={styles.infoSectionHeader}>
-                    <Users size={14} color={C.primary} />
-                    <Text style={styles.infoSectionTitle}>Personal Details</Text>
-                  </View>
-                  {(
-                    [
-                      ['Father', (detailEmp as any).fatherName || '—'],
-                      ['Mother', (detailEmp as any).motherName || '—'],
-                      ['Spouse', (detailEmp as any).spouseName || '—'],
-                      ['Marital Status', (detailEmp as any).maritalStatus || '—'],
-                      ['Blood Group', (detailEmp as any).bloodGroup || '—'],
-                      ['Nationality', (detailEmp as any).nationality || '—'],
-                      ['Religion', (detailEmp as any).religion || '—'],
-                    ] as [string, string][]
-                  ).filter(([, v]) => v && v !== '—').map(([label, value], i, arr) => (
-                    <View
-                      key={label}
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        paddingVertical: 9,
-                        paddingHorizontal: 14,
-                        borderBottomWidth: i < arr.length - 1 ? 1 : 0,
-                        borderBottomColor: C.black,
-                      }}
-                    >
-                      <Text style={{ fontSize: 12, fontWeight: '700', color: C.textMuted, textTransform: 'uppercase' }}>
-                        {label}
-                      </Text>
-                      <Text style={{ fontSize: 12, fontWeight: '600', color: C.black, textAlign: 'right', flex: 1, marginLeft: 12 }}>
-                        {value}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
+                <InfoSection
+                  title="Personal Details"
+                  icon={Users}
+                  hideEmpty
+                  rows={[
+                    [User, 'Father', (detailEmp as any).fatherName],
+                    [User, 'Mother', (detailEmp as any).motherName],
+                    [Heart, 'Spouse', (detailEmp as any).spouseName],
+                    [HeartHandshake, 'Marital Status', (detailEmp as any).maritalStatus],
+                    [Droplet, 'Blood Group', (detailEmp as any).bloodGroup],
+                    [Globe, 'Nationality', (detailEmp as any).nationality],
+                    [Church, 'Religion', (detailEmp as any).religion],
+                  ]}
+                />
 
                 {/* Professional Background */}
-                {((detailEmp as any).qualification || (detailEmp as any).totalExperience || (detailEmp as any).previousCompany) && (
-                  <View style={styles.infoSection}>
-                    <View style={styles.infoSectionHeader}>
-                      <Briefcase size={14} color={C.primary} />
-                      <Text style={styles.infoSectionTitle}>Professional Background</Text>
-                    </View>
-                    {(
-                      [
-                        ['Qualification', (detailEmp as any).qualification || '—'],
-                        ['Experience', (detailEmp as any).totalExperience || '—'],
-                        ['Previous Company', (detailEmp as any).previousCompany || '—'],
-                      ] as [string, string][]
-                    ).filter(([, v]) => v && v !== '—').map(([label, value], i, arr) => (
-                      <View
-                        key={label}
-                        style={{
-                          flexDirection: 'row',
-                          justifyContent: 'space-between',
-                          paddingVertical: 9,
-                          paddingHorizontal: 14,
-                          borderBottomWidth: i < arr.length - 1 ? 1 : 0,
-                          borderBottomColor: C.black,
-                        }}
-                      >
-                        <Text style={{ fontSize: 12, fontWeight: '700', color: C.textMuted, textTransform: 'uppercase' }}>
-                          {label}
-                        </Text>
-                        <Text style={{ fontSize: 12, fontWeight: '600', color: C.black, textAlign: 'right', flex: 1, marginLeft: 12 }}>
-                          {value}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
+                <InfoSection
+                  title="Professional Background"
+                  icon={Briefcase}
+                  hideEmpty
+                  rows={[
+                    [GraduationCap, 'Qualification', (detailEmp as any).qualification],
+                    [Briefcase, 'Experience', (detailEmp as any).totalExperience],
+                    [Building, 'Previous Company', (detailEmp as any).previousCompany],
+                  ]}
+                />
 
                 {/* Edit profile button */}
                 <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -2335,6 +2214,43 @@ export default function EmployeesScreen() {
   );
 }
 
+type InfoRow = [React.ComponentType<any>, string, string | undefined];
+
+// Section title + one separate card per field (icon, label, value).
+function InfoSection({
+  title,
+  icon: HeaderIcon,
+  rows,
+  hideEmpty,
+}: {
+  title: string;
+  icon: React.ComponentType<any>;
+  rows: InfoRow[];
+  hideEmpty?: boolean;
+}) {
+  const visible = hideEmpty ? rows.filter(r => !!r[2]) : rows;
+  if (hideEmpty && visible.length === 0) return null;
+  return (
+    <View style={{ gap: 8 }}>
+      <View style={styles.infoSectionHeader}>
+        <HeaderIcon size={14} color={C.primary} />
+        <Text style={styles.infoSectionTitle}>{title}</Text>
+      </View>
+      {visible.map(([Icon, label, value]) => (
+        <View key={label} style={styles.infoRowCard}>
+          <View style={styles.infoRowIcon}>
+            <Icon size={16} color={C.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.infoRowLabel}>{label}</Text>
+            <Text style={styles.infoRowValue}>{value || '—'}</Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   header: {
@@ -2755,10 +2671,46 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderBottomWidth: 2,
-    borderBottomColor: C.black,
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderColor: C.black,
     backgroundColor: C.primary + '10',
   },
+  infoRowCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderColor: C.black,
+    backgroundColor: C.white,
+  },
+  infoRowIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: C.primary + '14',
+  },
+  infoRowLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: C.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  infoRowValue: { fontSize: 14, fontWeight: '600', color: C.black, marginTop: 1 },
   infoSectionTitle: {
     fontSize: 11,
     fontWeight: '800',
