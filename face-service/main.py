@@ -6,7 +6,7 @@ import time
 import face_recognition
 import numpy as np
 from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
-from PIL import Image
+from PIL import Image, ImageOps
 from starlette.concurrency import run_in_threadpool
 
 API_KEY = os.environ.get("FACE_SERVICE_API_KEY", "")
@@ -44,7 +44,10 @@ def check_api_key(x_api_key: str | None):
 
 def load_image(raw: bytes) -> np.ndarray:
     try:
-        img = Image.open(io.BytesIO(raw)).convert("RGB")
+        # Phone cameras (vision-camera on Android especially) store portrait
+        # selfies as landscape pixels + an EXIF orientation tag; dlib's
+        # detector only finds upright faces, so apply the tag first.
+        img = ImageOps.exif_transpose(Image.open(io.BytesIO(raw))).convert("RGB")
     except Exception:
         raise HTTPException(status_code=400, detail="Could not decode image")
     if max(img.size) > MAX_DETECTION_DIM:
@@ -60,6 +63,17 @@ def get_single_encoding(raw: bytes) -> list[float]:
     # before detecting (to catch small/distant faces), which roughly doubles
     # detection cost — unnecessary for a close-up verification selfie.
     locations = face_recognition.face_locations(image, number_of_times_to_upsample=0)
+    if not locations:
+        # No/lost EXIF tag (e.g. stripped by a proxy): try the other
+        # orientations. Only runs on the failure path, so happy path is free.
+        for k in (1, 3, 2):
+            rotated = np.ascontiguousarray(np.rot90(image, k))
+            locations = face_recognition.face_locations(
+                rotated, number_of_times_to_upsample=0
+            )
+            if locations:
+                image = rotated
+                break
     t2 = time.perf_counter()
     if len(locations) == 0:
         raise HTTPException(status_code=422, detail="No face detected in image")

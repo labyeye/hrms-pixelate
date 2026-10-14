@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
 import FaceCheckInScreen from '../screens/FaceCheckInScreen';
+import FaceEnrollScreen from '../screens/FaceEnrollScreen';
 import { C } from '../theme';
 
 const Stack = createNativeStackNavigator();
@@ -36,6 +37,11 @@ export default function RootNavigator() {
           <Stack.Screen
             name="FaceCheckIn"
             component={FaceCheckInScreen}
+            options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+          />
+          <Stack.Screen
+            name="FaceEnroll"
+            component={FaceEnrollScreen}
             options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
           />
         </Stack.Navigator>

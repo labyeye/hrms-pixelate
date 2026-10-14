@@ -224,6 +224,15 @@ export const employeeAPI = {
       return data;
     } catch (err: any) {
       clearTimeout(timer);
+      // RN reports our own 30s timeout as a bare "Aborted" — say what happened.
+      if (err?.name === 'AbortError' || /abort/i.test(err?.message || '')) {
+        const e: any = new Error(
+          'The server took too long to respond. Check your connection and try again.',
+        );
+        e.retryable = true;
+        throw e;
+      }
+      if (/network request failed/i.test(err?.message || '')) err.retryable = true;
       throw err;
     }
   },

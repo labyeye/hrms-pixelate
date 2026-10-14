@@ -17,7 +17,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { launchCamera } from 'react-native-image-picker';
 import { requestSelfMarkPermissions } from '../utils/location';
 import {
   Clock,
@@ -181,7 +180,6 @@ export default function AttendanceScreen({ navigation }: any) {
   // Self check-in/out (geofenced mobile attendance)
   const [myEmployee, setMyEmployee] = useState<Employee | null>(null);
   const [selfMarking, setSelfMarking] = useState<'checkin' | 'checkout' | null>(null);
-  const [enrolling, setEnrolling] = useState(false);
 
   const loadMyEmployee = useCallback(() => {
     if (!isEmployee) return;
@@ -203,42 +201,14 @@ export default function AttendanceScreen({ navigation }: any) {
   const todayRecord =
     isEmployee && dateFilter === todayStr ? records[0] : undefined;
 
+  // Face ID–style live enrollment screen (captures + uploads itself).
   const handleEnrollFace = async () => {
     const ok = await requestSelfMarkPermissions();
     if (!ok) {
       Alert.alert('Permission Required', 'Camera access is required to enroll your face.');
       return;
     }
-
-    launchCamera(
-      {
-        mediaType: 'photo',
-        quality: 0.8,
-        cameraType: 'front',
-        saveToPhotos: false,
-        maxWidth: 1280,
-        maxHeight: 1280,
-      },
-      async result => {
-        const asset = result.assets?.[0];
-        if (!asset?.uri) return;
-
-        setEnrolling(true);
-        try {
-          await employeeAPI.enrollMyFace(
-            asset.uri,
-            asset.type || 'image/jpeg',
-            asset.fileName || `face_${Date.now()}.jpg`,
-          );
-          Alert.alert('Success', 'Face enrolled — you can now check in via the app.');
-          loadMyEmployee();
-        } catch (e: any) {
-          Alert.alert('Error', e.message || 'Face enrollment failed. Try a clear, well-lit photo.');
-        } finally {
-          setEnrolling(false);
-        }
-      },
-    );
+    navigation.navigate('FaceEnroll');
   };
 
   const handleResetFace = () => {
@@ -366,8 +336,11 @@ export default function AttendanceScreen({ navigation }: any) {
   // Refresh today's record when returning from the face-scan check-in/out screen.
   useFocusEffect(
     useCallback(() => {
-      if (isEmployee) load(false);
-    }, [isEmployee, load]),
+      if (isEmployee) {
+        load(false);
+        loadMyEmployee(); // pick up a face enrolled on the FaceEnroll screen
+      }
+    }, [isEmployee, load, loadMyEmployee]),
   );
 
   const onRefresh = async () => {
@@ -605,16 +578,9 @@ export default function AttendanceScreen({ navigation }: any) {
               <TouchableOpacity
                 style={styles.selfMarkBtn}
                 onPress={handleEnrollFace}
-                disabled={enrolling}
               >
-                {enrolling ? (
-                  <ActivityIndicator color={C.white} />
-                ) : (
-                  <>
-                    <Camera size={16} color={C.white} />
-                    <Text style={styles.selfMarkBtnText}>Enroll My Face</Text>
-                  </>
-                )}
+                <Camera size={16} color={C.white} />
+                <Text style={styles.selfMarkBtnText}>Enroll My Face</Text>
               </TouchableOpacity>
             </>
           ) : !todayRecord?.checkIn ? (
