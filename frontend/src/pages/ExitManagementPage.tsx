@@ -10,14 +10,10 @@ import {
   Plus,
   X,
   ChevronRight,
-  Calendar,
-  Clock,
   CheckCircle2,
-  AlertCircle,
   FileText,
   Package,
   DollarSign,
-  User,
 } from "lucide-react";
 
 const REASON_LABELS: Record<string, string> = {
@@ -183,7 +179,7 @@ export default function ExitManagementPage() {
   };
 
   return (
-    <AppLayout>
+    <AppLayout title="Exit Management">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

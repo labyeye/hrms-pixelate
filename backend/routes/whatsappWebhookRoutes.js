@@ -4,7 +4,23 @@ const router = express.Router();
 const Employee = require("../models/Employee");
 const Payroll = require("../models/Payroll");
 
-const VERIFY_TOKEN = process.env.META_WA_VERIFY_TOKEN || "nesthr_verify_token";
+const crypto = require("crypto");
+const safeEqual = require("../utils/safeEqual");
+
+// No hard-coded fallback: with META_WA_VERIFY_TOKEN unset the subscription handshake simply fails.
+const VERIFY_TOKEN = process.env.META_WA_VERIFY_TOKEN;
+const APP_SECRET = process.env.META_WA_APP_SECRET;
+if (!APP_SECRET) console.warn("[WA-Webhook] META_WA_APP_SECRET is not set: incoming webhooks are NOT signature-verified");
+
+// Meta signs the raw request body with the app secret (X-Hub-Signature-256: sha256=<hmac>).
+function validSignature(req) {
+  if (!APP_SECRET) return true;
+  const sig = String(req.headers["x-hub-signature-256"] || "");
+  if (!sig.startsWith("sha256=") || !req.rawBody) return false;
+  const a = Buffer.from(sig.slice(7), "hex");
+  const b = crypto.createHmac("sha256", APP_SECRET).update(req.rawBody).digest();
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
 
 //
 // ─────────────────────────────────────────────────────────────
@@ -16,19 +32,11 @@ router.get("/", (req, res) => {
   const token = req.query["hub.verify_token"];
   const challenge = req.query["hub.challenge"];
 
-  console.log("[WA-Webhook] Verification Request");
-  console.log({
-    mode,
-    token,
-    expected: VERIFY_TOKEN,
-  });
-
-  if (mode === "subscribe" && token === VERIFY_TOKEN) {
-    console.log("[WA-Webhook] ✅ Verification successful");
-    return res.status(200).send(challenge);
+  if (mode === "subscribe" && safeEqual(token, VERIFY_TOKEN)) {
+    return res.status(200).send(String(challenge ?? ""));
   }
 
-  console.warn("[WA-Webhook] ❌ Verification failed");
+  console.warn("[WA-Webhook] verification failed");
   return res.sendStatus(403);
 });
 
@@ -38,15 +46,8 @@ router.get("/", (req, res) => {
 // ─────────────────────────────────────────────────────────────
 //
 router.post("/", async (req, res) => {
-  console.log("\n🔥🔥🔥 WHATSAPP WEBHOOK HIT 🔥🔥🔥");
-  console.log("Time:", new Date().toISOString());
-  console.log("Headers:", JSON.stringify(req.headers, null, 2));
-  console.log("Body:", JSON.stringify(req.body, null, 2));
+  if (!validSignature(req)) return res.sendStatus(401);
   res.sendStatus(200);
-
-  console.log("\n================ WEBHOOK RECEIVED ================");
-  console.log(JSON.stringify(req.body, null, 2));
-  console.log("=================================================\n");
 
   try {
     const entry = req.body?.entry?.[0];
@@ -76,9 +77,6 @@ router.post("/", async (req, res) => {
     }
 
     for (const msg of messages) {
-      console.log("\n----------- Incoming Message -----------");
-      console.log(JSON.stringify(msg, null, 2));
-      console.log("----------------------------------------");
 
       const fromPhone = msg.from;
 
@@ -105,7 +103,7 @@ router.post("/", async (req, res) => {
       // Text message
       //
       if (msg.type === "text") {
-        console.log("[WA] Text:", msg.text?.body);
+        console.log("[WA] text message received");
       }
 
       if (!payload) {
@@ -113,9 +111,7 @@ router.post("/", async (req, res) => {
         continue;
       }
 
-      console.log(
-        `[WA] Button Clicked -> Phone=${fromPhone} Payload=${payload}`,
-      );
+      console.log(`[WA] Button clicked: ${payload}`);
 
       if (
         payload !== "PAYSLIP_RECEIVED" &&

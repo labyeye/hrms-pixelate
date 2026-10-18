@@ -1,26 +1,24 @@
 const asyncHandler = require("express-async-handler");
 const Designation = require("../models/Designation");
 const Employee = require("../models/Employee");
+const bodyFor = require("../utils/bodyFor");
 
 const getDesignations = asyncHandler(async (req, res) => {
   const desigs = await Designation.find({ company: req.user.company })
     .populate("department", "name")
     .sort({ createdAt: -1 });
-  const withCounts = await Promise.all(
-    desigs.map(async (d) => {
-      const count = await Employee.countDocuments({
-        company: req.user.company,
-        designation: d.name,
-      });
-      return { ...d.toObject(), employeeCount: count };
-    }),
-  );
+  const counts = await Employee.aggregate([
+    { $match: { company: req.user.company, designation: { $in: desigs.map((d) => d.name) } } },
+    { $group: { _id: "$designation", n: { $sum: 1 } } },
+  ]);
+  const byName = new Map(counts.map((c) => [c._id, c.n]));
+  const withCounts = desigs.map((d) => ({ ...d.toObject(), employeeCount: byName.get(d.name) || 0 }));
   res.json({ success: true, data: withCounts });
 });
 
 const createDesignation = asyncHandler(async (req, res) => {
   const desig = await Designation.create({
-    ...req.body,
+    ...bodyFor(Designation, req.body),
     company: req.user.company,
   });
   const populated = await Designation.findById(desig._id).populate(
@@ -36,7 +34,7 @@ const createDesignation = asyncHandler(async (req, res) => {
 const updateDesignation = asyncHandler(async (req, res) => {
   const desig = await Designation.findOneAndUpdate(
     { _id: req.params.id, company: req.user.company },
-    req.body,
+    bodyFor(Designation, req.body),
     { new: true },
   ).populate("department", "name");
   if (!desig)

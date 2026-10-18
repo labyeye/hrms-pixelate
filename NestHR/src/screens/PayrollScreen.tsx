@@ -159,9 +159,29 @@ export default function PayrollScreen() {
 
   const handleSharePayslip = async (payroll: any) => {
     const emp = payroll.employee as any;
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const period = payroll.month && payroll.year ? `${months[(payroll.month||1)-1]} ${payroll.year}` : '—';
-    const name = isEmployee ? (user?.name || 'Employee') : (emp ? `${emp.firstName} ${emp.lastName}` : 'Employee');
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    const period =
+      payroll.month && payroll.year
+        ? `${months[(payroll.month || 1) - 1]} ${payroll.year}`
+        : '—';
+    const name = isEmployee
+      ? user?.name || 'Employee'
+      : emp
+        ? `${emp.firstName} ${emp.lastName}`
+        : 'Employee';
     const text = [
       `━━━━━━━━━━━━━━━━━━━━`,
       `SALARY SLIP — ${period}`,
@@ -170,25 +190,25 @@ export default function PayrollScreen() {
       `Designation: ${emp?.designation || '—'}`,
       ``,
       `EARNINGS`,
-      `Basic Salary   : ₹${(payroll.basicSalary||0).toLocaleString()}`,
-      `Earned Basic   : ₹${(payroll.earnedBasic||0).toLocaleString()}`,
-      `Allowances     : ₹${(payroll.otherAllowances||0).toLocaleString()}`,
-      `Overtime       : ₹${(payroll.otPay||0).toLocaleString()}`,
-      `Gross Salary   : ₹${(payroll.grossSalary||0).toLocaleString()}`,
+      `Basic Salary   : ₹${(payroll.basicSalary || 0).toLocaleString()}`,
+      `Earned Basic   : ₹${(payroll.earnedBasic || 0).toLocaleString()}`,
+      `Allowances     : ₹${(payroll.otherAllowances || 0).toLocaleString()}`,
+      `Overtime       : ₹${(payroll.otPay || 0).toLocaleString()}`,
+      `Gross Salary   : ₹${(payroll.grossSalary || 0).toLocaleString()}`,
       ``,
       `DEDUCTIONS`,
-      `Absent (${payroll.absentDays||0}d): -₹${(payroll.absentDeduction||0).toLocaleString()}`,
-      `Late           : -₹${(payroll.lateDeductionAmount||0).toLocaleString()}`,
-      `Half Day       : -₹${(payroll.halfDayDeduction||0).toLocaleString()}`,
-      `Penalty        : -₹${(payroll.penaltyAmount||0).toLocaleString()}`,
-      `Loan EMI       : -₹${(payroll.loanDeduction||0).toLocaleString()}`,
-      `Total Deductions: -₹${(payroll.totalDeductions||0).toLocaleString()}`,
+      `Absent (${payroll.absentDays || 0}d): -₹${(payroll.absentDeduction || 0).toLocaleString()}`,
+      `Late           : -₹${(payroll.lateDeductionAmount || 0).toLocaleString()}`,
+      `Half Day       : -₹${(payroll.halfDayDeduction || 0).toLocaleString()}`,
+      `Penalty        : -₹${(payroll.penaltyAmount || 0).toLocaleString()}`,
+      `Loan EMI       : -₹${(payroll.loanDeduction || 0).toLocaleString()}`,
+      `Total Deductions: -₹${(payroll.totalDeductions || 0).toLocaleString()}`,
       ``,
       `━━━━━━━━━━━━━━━━━━━━`,
-      `NET PAY : ₹${(payroll.netSalary||0).toLocaleString()}`,
+      `NET PAY : ₹${(payroll.netSalary || 0).toLocaleString()}`,
       `━━━━━━━━━━━━━━━━━━━━`,
-      `Days: ${payroll.presentDays||0}/${payroll.workingDays||0} present`,
-      `Status: ${(payroll.status||'').toUpperCase()}`,
+      `Days: ${payroll.presentDays || 0}/${payroll.workingDays || 0} present`,
+      `Status: ${(payroll.status || '').toUpperCase()}`,
     ].join('\n');
     await Share.share({ message: text, title: `Payslip — ${period}` });
   };
@@ -207,8 +227,22 @@ export default function PayrollScreen() {
       Alert.alert('No Data', 'No payroll records to export.');
       return;
     }
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const header = 'Employee Name,Employee ID,Designation,Department,Basic Salary,Earned Basic,Allowances,Overtime,Gross Salary,Absent Deduction,Late Deduction,Half Day Deduction,Penalty,Loan EMI,Total Deductions,Net Salary,Working Days,Days Present,Leave Days,Absent Days,Hours Worked,Status';
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    const header =
+      'Employee Name,Employee ID,Designation,Department,Basic Salary,Earned Basic,Allowances,Overtime,Gross Salary,Absent Deduction,Late Deduction,Half Day Deduction,Penalty,Loan EMI,Total Deductions,Net Salary,Working Days,Days Present,Leave Days,Absent Days,Hours Worked,Status';
     const rows = payrolls.map(p => {
       const emp = p.employee as any;
       const name = `${emp?.firstName || ''} ${emp?.lastName || ''}`.trim();
@@ -235,12 +269,15 @@ export default function PayrollScreen() {
         (p as any).absentDays || 0,
         Number((p as any).totalWorkHours ?? 0).toFixed(2),
         p.status || '',
-      ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
+      ]
+        .map(v => `"${String(v).replace(/"/g, '""')}"`)
+        .join(',');
     });
     const csv = [header, ...rows].join('\n');
-    const period = payrolls[0] && (payrolls[0] as any).month
-      ? `${months[((payrolls[0] as any).month||1)-1]}_${(payrolls[0] as any).year}`
-      : 'Export';
+    const period =
+      payrolls[0] && (payrolls[0] as any).month
+        ? `${months[((payrolls[0] as any).month || 1) - 1]}_${(payrolls[0] as any).year}`
+        : 'Export';
     await Share.share({
       message: csv,
       title: `Payroll_${period}_Tally.csv`,
@@ -340,25 +377,51 @@ export default function PayrollScreen() {
       {isEmployee && (
         <View style={styles.taxCard}>
           <Text style={styles.taxTitle}>📄 Tax & Form 16 Vault</Text>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              marginTop: 10,
+            }}
+          >
             <View>
-              <Text style={{ fontSize: 9, fontWeight: '700', color: C.textMuted }}>PROJECTED TAX</Text>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>₹14,500</Text>
+              <Text
+                style={{ fontSize: 9, fontWeight: '700', color: C.textMuted }}
+              >
+                PROJECTED TAX
+              </Text>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>
+                ₹14,500
+              </Text>
             </View>
             <View>
-              <Text style={{ fontSize: 9, fontWeight: '700', color: C.textMuted }}>TDS DEDUCTED</Text>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>₹4,500</Text>
+              <Text
+                style={{ fontSize: 9, fontWeight: '700', color: C.textMuted }}
+              >
+                TDS DEDUCTED
+              </Text>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>
+                ₹4,500
+              </Text>
             </View>
             <View>
-              <Text style={{ fontSize: 9, fontWeight: '700', color: C.textMuted }}>TAX REGIME</Text>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>New Regime</Text>
+              <Text
+                style={{ fontSize: 9, fontWeight: '700', color: C.textMuted }}
+              >
+                TAX REGIME
+              </Text>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>
+                New Regime
+              </Text>
             </View>
           </View>
 
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
             <TouchableOpacity
               style={styles.taxBtn}
-              onPress={() => Alert.alert('Form 16', 'Form 16 PDF downloaded successfully.')}
+              onPress={() =>
+                Alert.alert('Form 16', 'Form 16 PDF downloaded successfully.')
+              }
             >
               <FileText size={12} color="#fff" />
               <Text style={styles.taxBtnText}>Form 16</Text>
@@ -547,9 +610,17 @@ export default function PayrollScreen() {
           <SafeAreaView style={styles.safe} edges={['top']}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
-                {previewStep === 'preview' ? 'Payroll Preview' : 'Generate Payroll'}
+                {previewStep === 'preview'
+                  ? 'Payroll Preview'
+                  : 'Generate Payroll'}
               </Text>
-              <TouchableOpacity onPress={() => { setShowGenModal(false); setPreviewStep('form'); setPreviewData([]); }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowGenModal(false);
+                  setPreviewStep('form');
+                  setPreviewData([]);
+                }}
+              >
                 <X size={22} color={C.black} />
               </TouchableOpacity>
             </View>
@@ -562,7 +633,8 @@ export default function PayrollScreen() {
                 <>
                   <View style={styles.genNote}>
                     <Text style={styles.genNoteText}>
-                      Preview payroll calculations before processing, or generate directly.
+                      Preview payroll calculations before processing, or
+                      generate directly.
                     </Text>
                   </View>
                   <View>
@@ -588,7 +660,10 @@ export default function PayrollScreen() {
                     />
                   </View>
                   <TouchableOpacity
-                    style={[styles.genSubmitBtn, { backgroundColor: C.primary }]}
+                    style={[
+                      styles.genSubmitBtn,
+                      { backgroundColor: C.primary },
+                    ]}
                     onPress={handlePreviewPayroll}
                     disabled={loadingPreview}
                   >
@@ -597,7 +672,9 @@ export default function PayrollScreen() {
                     ) : (
                       <>
                         <Eye size={14} color={C.white} />
-                        <Text style={styles.genSubmitBtnText}>Preview First</Text>
+                        <Text style={styles.genSubmitBtnText}>
+                          Preview First
+                        </Text>
                       </>
                     )}
                   </TouchableOpacity>
@@ -611,61 +688,154 @@ export default function PayrollScreen() {
                     ) : (
                       <>
                         <Zap size={14} color={C.white} />
-                        <Text style={styles.genSubmitBtnText}>Generate Directly</Text>
+                        <Text style={styles.genSubmitBtnText}>
+                          Generate Directly
+                        </Text>
                       </>
                     )}
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.genSubmitBtn, { backgroundColor: C.danger, marginTop: 0 }]}
+                    style={[
+                      styles.genSubmitBtn,
+                      { backgroundColor: C.danger, marginTop: 0 },
+                    ]}
                     onPress={() => handleGenerate(true)}
                     disabled={generating}
                   >
                     <>
                       <Zap size={14} color={C.white} />
-                      <Text style={styles.genSubmitBtnText}>Force Reprocess</Text>
+                      <Text style={styles.genSubmitBtnText}>
+                        Force Reprocess
+                      </Text>
                     </>
                   </TouchableOpacity>
-                  <Text style={{ fontSize: 11, color: C.textMuted, textAlign: 'center' }}>
-                    Force Reprocess deletes and recalculates existing payroll (not paid ones)
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      color: C.textMuted,
+                      textAlign: 'center',
+                    }}
+                  >
+                    Force Reprocess deletes and recalculates existing payroll
+                    (not paid ones)
                   </Text>
                 </>
               ) : (
                 <>
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: C.textMuted }}>
-                    {previewData.length} employee{previewData.length !== 1 ? 's' : ''} · {genMonth}/{genYear}
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: '600',
+                      color: C.textMuted,
+                    }}
+                  >
+                    {previewData.length} employee
+                    {previewData.length !== 1 ? 's' : ''} · {genMonth}/{genYear}
                   </Text>
                   {previewData.map(p => (
                     <View key={p.employee._id} style={styles.previewRow}>
                       <View style={{ flex: 1, marginRight: 10 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                          <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 6,
+                            flexWrap: 'wrap',
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 13,
+                              fontWeight: '700',
+                              color: C.black,
+                            }}
+                          >
                             {p.employee.firstName} {p.employee.lastName}
                           </Text>
                           {p.alreadyProcessed && (
-                            <View style={{ backgroundColor: '#FEF3C7', borderWidth: 1.5, borderColor: '#D97706', paddingHorizontal: 6, paddingVertical: 1 }}>
-                              <Text style={{ fontSize: 9, fontWeight: '700', color: '#92400E' }}>⚠ EXISTS</Text>
+                            <View
+                              style={{
+                                backgroundColor: '#FEF3C7',
+                                borderWidth: 1.5,
+                                borderColor: '#D97706',
+                                paddingHorizontal: 6,
+                                paddingVertical: 1,
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  fontSize: 9,
+                                  fontWeight: '700',
+                                  color: '#92400E',
+                                }}
+                              >
+                                ⚠ EXISTS
+                              </Text>
                             </View>
                           )}
                           {!p.alreadyProcessed && (
-                            <View style={{ backgroundColor: '#F0FDF4', borderWidth: 1.5, borderColor: C.success, paddingHorizontal: 6, paddingVertical: 1 }}>
-                              <Text style={{ fontSize: 9, fontWeight: '700', color: C.success }}>✓ NEW</Text>
+                            <View
+                              style={{
+                                backgroundColor: '#F0FDF4',
+                                borderWidth: 1.5,
+                                borderColor: C.success,
+                                paddingHorizontal: 6,
+                                paddingVertical: 1,
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  fontSize: 9,
+                                  fontWeight: '700',
+                                  color: C.success,
+                                }}
+                              >
+                                ✓ NEW
+                              </Text>
                             </View>
                           )}
                         </View>
-                        <Text style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>
-                          {p.employee.employeeId ? `${p.employee.employeeId} · ` : ''}
-                          {p.presentDays}/{p.workingDays}d · {p.absentDays || 0} absent
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            color: C.textMuted,
+                            marginTop: 2,
+                          }}
+                        >
+                          {p.employee.employeeId
+                            ? `${p.employee.employeeId} · `
+                            : ''}
+                          {p.presentDays}/{p.workingDays}d · {p.absentDays || 0}{' '}
+                          absent
                         </Text>
                       </View>
                       <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={{ fontSize: 11, color: C.textMuted, textDecorationLine: 'line-through' }}>
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            color: C.textMuted,
+                            textDecorationLine: 'line-through',
+                          }}
+                        >
                           ₹{(p.grossSalary || 0).toLocaleString()}
                         </Text>
-                        <Text style={{ fontSize: 14, fontWeight: '700', color: C.success }}>
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            fontWeight: '700',
+                            color: C.success,
+                          }}
+                        >
                           ₹{(p.netSalary || 0).toLocaleString()}
                         </Text>
                         {(p.totalDeductions || 0) > 0 && (
-                          <Text style={{ fontSize: 10, color: C.danger, fontWeight: '600' }}>
+                          <Text
+                            style={{
+                              fontSize: 10,
+                              color: C.danger,
+                              fontWeight: '600',
+                            }}
+                          >
                             -₹{(p.totalDeductions || 0).toLocaleString()}
                           </Text>
                         )}
@@ -674,7 +844,10 @@ export default function PayrollScreen() {
                   ))}
                   <TouchableOpacity
                     style={[styles.genSubmitBtn, { backgroundColor: '#000' }]}
-                    onPress={() => { setPreviewStep('form'); setPreviewData([]); }}
+                    onPress={() => {
+                      setPreviewStep('form');
+                      setPreviewData([]);
+                    }}
                   >
                     <Text style={styles.genSubmitBtnText}>← Back</Text>
                   </TouchableOpacity>
@@ -688,7 +861,9 @@ export default function PayrollScreen() {
                     ) : (
                       <>
                         <Zap size={14} color={C.white} />
-                        <Text style={styles.genSubmitBtnText}>Confirm & Generate</Text>
+                        <Text style={styles.genSubmitBtnText}>
+                          Confirm & Generate
+                        </Text>
                       </>
                     )}
                   </TouchableOpacity>
@@ -841,12 +1016,16 @@ export default function PayrollScreen() {
               </TouchableOpacity>
 
               {/* Mark Slip Received — HR only, on paid payrolls */}
-              {!isEmployee && (selected as any).status === 'paid' && (
-                (selected as any).slipReceivedAt ? (
+              {!isEmployee &&
+                (selected as any).status === 'paid' &&
+                ((selected as any).slipReceivedAt ? (
                   <View style={styles.slipReceivedBadge}>
                     <CheckCircle2 size={15} color={C.success} />
                     <Text style={styles.slipReceivedText}>
-                      Slip acknowledged · {new Date((selected as any).slipReceivedAt).toLocaleDateString('en-IN')}
+                      Slip acknowledged ·{' '}
+                      {new Date(
+                        (selected as any).slipReceivedAt,
+                      ).toLocaleDateString('en-IN')}
                     </Text>
                   </View>
                 ) : (
@@ -854,7 +1033,9 @@ export default function PayrollScreen() {
                     style={styles.slipBtn}
                     onPress={async () => {
                       try {
-                        await payrollAPI.markSlipReceived((selected as any)._id);
+                        await payrollAPI.markSlipReceived(
+                          (selected as any)._id,
+                        );
                         setSelected(null);
                         load();
                       } catch (e: any) {
@@ -863,10 +1044,11 @@ export default function PayrollScreen() {
                     }}
                   >
                     <CheckCircle2 size={15} color={C.white} />
-                    <Text style={styles.processBtnText}>Mark Slip Received</Text>
+                    <Text style={styles.processBtnText}>
+                      Mark Slip Received
+                    </Text>
                   </TouchableOpacity>
-                )
-              )}
+                ))}
             </ScrollView>
           </SafeAreaView>
         )}
@@ -893,29 +1075,42 @@ export default function PayrollScreen() {
             >
               <View style={styles.genNote}>
                 <Text style={styles.genNoteText}>
-                  Submit investment details under Section 80C, 80D and HRA Rent for verification.
+                  Submit investment details under Section 80C, 80D and HRA Rent
+                  for verification.
                 </Text>
               </View>
 
               <View>
-                <Text style={styles.fieldLabel}>Section 80C (PPF, LIC, ELSS) *</Text>
+                <Text style={styles.fieldLabel}>
+                  Section 80C (PPF, LIC, ELSS) *
+                </Text>
                 <TextInput
                   style={styles.fieldInput}
                   value={declarations.sec80C}
-                  onChangeText={v => setDeclarations(p => ({ ...p, sec80C: v }))}
+                  onChangeText={v =>
+                    setDeclarations(p => ({ ...p, sec80C: v }))
+                  }
                   keyboardType="numeric"
                   placeholder="e.g. 150000"
                   placeholderTextColor={C.textLight}
                 />
-                <Text style={{ fontSize: 10, color: C.textMuted, marginTop: 4 }}>Maximum deduction limit is ₹1,50,000</Text>
+                <Text
+                  style={{ fontSize: 10, color: C.textMuted, marginTop: 4 }}
+                >
+                  Maximum deduction limit is ₹1,50,000
+                </Text>
               </View>
 
               <View>
-                <Text style={styles.fieldLabel}>Section 80D (Medical Insurance) *</Text>
+                <Text style={styles.fieldLabel}>
+                  Section 80D (Medical Insurance) *
+                </Text>
                 <TextInput
                   style={styles.fieldInput}
                   value={declarations.sec80D}
-                  onChangeText={v => setDeclarations(p => ({ ...p, sec80D: v }))}
+                  onChangeText={v =>
+                    setDeclarations(p => ({ ...p, sec80D: v }))
+                  }
                   keyboardType="numeric"
                   placeholder="e.g. 25000"
                   placeholderTextColor={C.textLight}
@@ -923,7 +1118,9 @@ export default function PayrollScreen() {
               </View>
 
               <View>
-                <Text style={styles.fieldLabel}>House Rent Allowance (HRA Rent Paid) *</Text>
+                <Text style={styles.fieldLabel}>
+                  House Rent Allowance (HRA Rent Paid) *
+                </Text>
                 <TextInput
                   style={styles.fieldInput}
                   value={declarations.hra}
@@ -937,7 +1134,10 @@ export default function PayrollScreen() {
               <TouchableOpacity
                 style={styles.submitBtn}
                 onPress={() => {
-                  Alert.alert('Success', 'Declarations submitted successfully for verification.');
+                  Alert.alert(
+                    'Success',
+                    'Declarations submitted successfully for verification.',
+                  );
                   setShowTaxModal(false);
                 }}
               >
@@ -1099,7 +1299,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     backgroundColor: C.primary,
-    borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A',
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
     alignItems: 'center',
@@ -1108,12 +1312,44 @@ const styles = StyleSheet.create({
   empAvatarText: { color: C.white, fontSize: 16, fontWeight: '700' },
   empName: { fontSize: 15, fontWeight: '700', color: C.black },
   empSub: { fontSize: 11, color: C.textMuted, fontWeight: '500' },
-  statusBadge: { borderWidth: 2, borderRadius: 999, borderColor: '#0A0A0A', borderRightWidth: 4, borderBottomWidth: 4, paddingHorizontal: 8, paddingVertical: 2 },
-  statusBadgeText: { textTransform: 'uppercase', fontSize: 9, fontWeight: '700' },
+  statusBadge: {
+    borderWidth: 2,
+    borderRadius: 999,
+    borderColor: '#0A0A0A',
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  statusBadgeText: {
+    textTransform: 'uppercase',
+    fontSize: 9,
+    fontWeight: '700',
+  },
   salaryRow: { flexDirection: 'row', gap: 8, paddingTop: 12 },
-  salaryItem: { flex: 1, alignItems: 'center', paddingVertical: 8, backgroundColor: '#FFFFFF', borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderColor: '#000000', borderRadius: 8 },
-  salaryLabel: { fontSize: 9, fontWeight: '800', textTransform: 'uppercase', color: '#000000' },
-  salaryVal: { fontSize: 14, fontWeight: '800', color: '#000000', marginTop: 3 },
+  salaryItem: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderColor: '#000000',
+    borderRadius: 8,
+  },
+  salaryLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    color: '#000000',
+  },
+  salaryVal: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#000000',
+    marginTop: 3,
+  },
   salaryDivider: { width: 0 },
   searchWrap: {
     flexDirection: 'row',

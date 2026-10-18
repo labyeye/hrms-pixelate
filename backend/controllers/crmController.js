@@ -3,10 +3,11 @@ const OfferCode = require("../models/OfferCode");
 const Attendance = require("../models/Attendance");
 const Company = require("../models/Company");
 const Subscription = require("../models/Subscription");
+const safeEqual = require("../utils/safeEqual");
 
 const crmAuth = (req, res) => {
   const apiKey = req.headers["x-api-key"];
-  if (!apiKey || apiKey !== process.env.CRM_API_SECRET) {
+  if (!safeEqual(apiKey, process.env.CRM_API_SECRET)) {
     res.status(401).json({ success: false, message: "Unauthorized" });
     return false;
   }
@@ -222,12 +223,10 @@ exports.updateCrmSubscription = async (req, res) => {
         .json({ success: false, message: "Company not found" });
     }
     if (!company.subscription) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: "Company has no subscription to update",
-        });
+      return res.status(404).json({
+        success: false,
+        message: "Company has no subscription to update",
+      });
     }
 
     const updates = {};

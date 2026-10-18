@@ -314,11 +314,12 @@ export default function LoansScreen() {
                   {monthlyEmi ? (
                     <Text style={styles.detail}>EMI: ₹{monthlyEmi}</Text>
                   ) : null}
-                  {item.remainingBalance != null && item.status === 'active' && (
-                    <Text style={styles.detail}>
-                      Balance: ₹{item.remainingBalance.toLocaleString()}
-                    </Text>
-                  )}
+                  {item.remainingBalance != null &&
+                    item.status === 'active' && (
+                      <Text style={styles.detail}>
+                        Balance: ₹{item.remainingBalance.toLocaleString()}
+                      </Text>
+                    )}
                 </View>
                 {item.reason && (
                   <Text style={styles.purpose} numberOfLines={1}>
@@ -326,7 +327,10 @@ export default function LoansScreen() {
                   </Text>
                 )}
                 {item.status === 'rejected' && item.rejectionReason && (
-                  <Text style={[styles.purpose, { color: C.danger }]} numberOfLines={2}>
+                  <Text
+                    style={[styles.purpose, { color: C.danger }]}
+                    numberOfLines={2}
+                  >
                     Reason: {item.rejectionReason}
                   </Text>
                 )}
@@ -374,58 +378,58 @@ export default function LoansScreen() {
             showsVerticalScrollIndicator={false}
           >
             {!isEmployee && (
-            <View>
-              <Text style={styles.fieldLabel}>Employee *</Text>
-              <View style={styles.empPicker}>
-                {employees.map(e => {
-                  const isSelected = selectedEmpId === e._id;
-                  return (
-                    <TouchableOpacity
-                      key={e._id}
-                      style={[
-                        styles.empPickerRow,
-                        isSelected && styles.empPickerRowActive,
-                      ]}
-                      onPress={() => setSelectedEmpId(e._id)}
-                    >
-                      {e.avatar ? (
-                        <Image
-                          source={{ uri: e.avatar }}
-                          style={styles.empPickerPhoto}
-                        />
-                      ) : (
-                        <View style={styles.empPickerInitials}>
-                          <Text style={styles.empPickerInitialsText}>
-                            {`${(e.firstName || '')[0] || ''}${(e.lastName || '')[0] || ''}`}
-                          </Text>
-                        </View>
-                      )}
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={[
-                            styles.empPickerName,
-                            isSelected && { color: C.white },
-                          ]}
-                        >
-                          {e.firstName} {e.lastName}
-                        </Text>
-                        {e.employeeId && (
+              <View>
+                <Text style={styles.fieldLabel}>Employee *</Text>
+                <View style={styles.empPicker}>
+                  {employees.map(e => {
+                    const isSelected = selectedEmpId === e._id;
+                    return (
+                      <TouchableOpacity
+                        key={e._id}
+                        style={[
+                          styles.empPickerRow,
+                          isSelected && styles.empPickerRowActive,
+                        ]}
+                        onPress={() => setSelectedEmpId(e._id)}
+                      >
+                        {e.avatar ? (
+                          <Image
+                            source={{ uri: e.avatar }}
+                            style={styles.empPickerPhoto}
+                          />
+                        ) : (
+                          <View style={styles.empPickerInitials}>
+                            <Text style={styles.empPickerInitialsText}>
+                              {`${(e.firstName || '')[0] || ''}${(e.lastName || '')[0] || ''}`}
+                            </Text>
+                          </View>
+                        )}
+                        <View style={{ flex: 1 }}>
                           <Text
                             style={[
-                              styles.empPickerSub,
-                              isSelected && { color: C.white + 'CC' },
+                              styles.empPickerName,
+                              isSelected && { color: C.white },
                             ]}
                           >
-                            {e.employeeId}
+                            {e.firstName} {e.lastName}
                           </Text>
-                        )}
-                      </View>
-                      {isSelected && <Check size={14} color={C.white} />}
-                    </TouchableOpacity>
-                  );
-                })}
+                          {e.employeeId && (
+                            <Text
+                              style={[
+                                styles.empPickerSub,
+                                isSelected && { color: C.white + 'CC' },
+                              ]}
+                            >
+                              {e.employeeId}
+                            </Text>
+                          )}
+                        </View>
+                        {isSelected && <Check size={14} color={C.white} />}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
-            </View>
             )}
             <View>
               <Text style={styles.fieldLabel}>Type</Text>
@@ -661,7 +665,20 @@ const styles = StyleSheet.create({
   },
   statusTagText: { textTransform: 'uppercase', fontSize: 9, fontWeight: '700' },
   detailRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
-  detail: { fontSize: 11, fontWeight: '800', color: '#000000', paddingHorizontal: 8, paddingVertical: 4, backgroundColor: '#FFFFFF', overflow: 'hidden', borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderColor: '#000000', borderRadius: 8 },
+  detail: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#000000',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderColor: '#000000',
+    borderRadius: 8,
+  },
   purpose: {
     fontSize: 12,
     color: C.textMuted,

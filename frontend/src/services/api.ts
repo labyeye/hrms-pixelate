@@ -74,8 +74,12 @@ export const authAPI = {
   register: (body: { name: string; email: string; password: string }) =>
     request("/auth/register", { method: "POST", body: JSON.stringify(body) }),
   getMe: () => request("/auth/me"),
-  updateProfile: (body: object) =>
-    request("/auth/profile", { method: "PUT", body: JSON.stringify(body) }),
+  // A password change retires old tokens server-side and answers with a fresh one, so keep the session alive.
+  updateProfile: async (body: object) => {
+    const res = await request("/auth/profile", { method: "PUT", body: JSON.stringify(body) });
+    if (res?.token) setToken(res.token);
+    return res;
+  },
   forgotPassword: (email: string) =>
     request("/auth/forgot-password", {
       method: "POST",
@@ -97,10 +101,10 @@ export const authAPI = {
       method: "POST",
       body: JSON.stringify({ token }),
     }),
-  verify2FA: (userId: string, token: string) =>
+  verify2FA: (pendingToken: string, token: string) =>
     request("/auth/2fa/verify", {
       method: "POST",
-      body: JSON.stringify({ userId, token }),
+      body: JSON.stringify({ pendingToken, token }),
     }),
   sendPhoneOtp: (phone: string) =>
     request("/auth/otp/send", {
@@ -195,6 +199,17 @@ export const employeeAPI = {
   },
   getDocumentUrl: (id: string, type: "aadhaar" | "pan" | "resume") =>
     `${BASE_URL}/employees/${id}/documents/${type}`,
+  // The endpoint needs the Bearer token, which a plain link can't send: fetch it, then open the blob.
+  openDocument: async (id: string, type: "aadhaar" | "pan" | "resume") => {
+    const token = getToken();
+    const res = await fetch(`${BASE_URL}/employees/${id}/documents/${type}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new Error("Could not open the document");
+    const url = URL.createObjectURL(await res.blob());
+    window.open(url, "_blank", "noopener");
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  },
   resetFace: (id: string) =>
     request(`/employees/${id}/face-enroll`, { method: "DELETE" }),
   enrollFace: (id: string, photo: File) => {
@@ -684,6 +699,9 @@ export const loanAPI = {
       method: "PUT",
       body: JSON.stringify(body),
     }),
+  // Employee self-service request (starts as "pending"; HR approves it).
+  request: (body: object) =>
+    request("/loans/request", { method: "POST", body: JSON.stringify(body) }),
   delete: (id: string) => request(`/loans/${id}`, { method: "DELETE" }),
 };
 

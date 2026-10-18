@@ -94,7 +94,9 @@ export default function LoginPage() {
           clientDataJSON: bufferToBase64Url(response.clientDataJSON),
           authenticatorData: bufferToBase64Url(response.authenticatorData),
           signature: bufferToBase64Url(response.signature),
-          userHandle: response.userHandle ? bufferToBase64Url(response.userHandle) : null,
+          userHandle: response.userHandle
+            ? bufferToBase64Url(response.userHandle)
+            : null,
         },
         type: credential.type,
       });
@@ -119,7 +121,7 @@ export default function LoginPage() {
       navigate("/");
     } else if (result.requires2FA) {
       setNeeds2FA(true);
-      setPending2FAUserId(result.userId || "");
+      setPending2FAUserId(result.pendingToken || ""); // holds the pending-2FA token
     } else {
       setError(result.error || "Login failed. Please check your credentials.");
     }
@@ -541,7 +543,8 @@ export default function LoginPage() {
                   }}
                   className="w-full py-2.5 px-4 bg-gray-50 border-2 border-black/10 hover:border-black text-xs font-bold text-black transition-all flex items-center justify-center gap-2"
                 >
-                  <WhatsAppIcon className="w-4 h-4 text-[#25D366]" /> Login with Phone OTP (WhatsApp)
+                  <WhatsAppIcon className="w-4 h-4 text-[#25D366]" /> Login with
+                  Phone OTP (WhatsApp)
                 </button>
                 <button
                   type="button"
@@ -556,7 +559,8 @@ export default function LoginPage() {
                     </>
                   ) : (
                     <>
-                      <KeyRound className="w-4 h-4 text-[#024BAB]" /> Sign in with Passkey / WebAuthn
+                      <KeyRound className="w-4 h-4 text-[#024BAB]" /> Sign in
+                      with Passkey / WebAuthn
                     </>
                   )}
                 </button>

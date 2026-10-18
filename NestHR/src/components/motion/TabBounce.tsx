@@ -24,8 +24,18 @@ export default function TabBounce({
     <Animated.View
       style={{
         transform: [
-          { translateY: v.interpolate({ inputRange: [0, 1], outputRange: [0, -3] }) },
-          { scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.15] }) },
+          {
+            translateY: v.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, -3],
+            }),
+          },
+          {
+            scale: v.interpolate({
+              inputRange: [0, 1],
+              outputRange: [1, 1.15],
+            }),
+          },
         ],
       }}
     >

@@ -2,13 +2,35 @@ import { PIXELATE_NEST_LOGO } from './invoiceLogo';
 
 export function buildPayslipHTML(payroll: any, companyName?: string): string {
   const emp = payroll.employee as any;
-  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const monthName = payroll.month ? months[(payroll.month - 1)] : '—';
-  const period = payroll.month && payroll.year ? `${monthName} ${payroll.year}` : '—';
-  const empName = emp ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim() : '—';
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  const monthName = payroll.month ? months[payroll.month - 1] : '—';
+  const period =
+    payroll.month && payroll.year ? `${monthName} ${payroll.year}` : '—';
+  const empName = emp
+    ? `${emp.firstName || ''} ${emp.lastName || ''}`.trim()
+    : '—';
 
   function fmt(n: number): string {
-    return '₹' + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return (
+      '₹' +
+      Number(n || 0).toLocaleString('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+    );
   }
 
   const earnings = [
@@ -19,15 +41,28 @@ export function buildPayslipHTML(payroll: any, companyName?: string): string {
   ];
 
   const deductions = [
-    { label: `Absent (${payroll.absentDays || 0} days)`, value: payroll.absentDeduction || 0 },
+    {
+      label: `Absent (${payroll.absentDays || 0} days)`,
+      value: payroll.absentDeduction || 0,
+    },
     { label: 'Late Deduction', value: payroll.lateDeductionAmount || 0 },
     { label: 'Half-Day Deduction', value: payroll.halfDayDeduction || 0 },
     { label: 'Penalty', value: payroll.penaltyAmount || 0 },
     { label: 'Loan / Advance EMI', value: payroll.loanDeduction || 0 },
   ];
 
-  const earningsRows = earnings.map(e => `<tr><td>${e.label}</td><td class="amount">${fmt(e.value)}</td></tr>`).join('');
-  const deductionsRows = deductions.map(d => `<tr><td>${d.label}</td><td class="amount neg">${fmt(d.value)}</td></tr>`).join('');
+  const earningsRows = earnings
+    .map(
+      e =>
+        `<tr><td>${e.label}</td><td class="amount">${fmt(e.value)}</td></tr>`,
+    )
+    .join('');
+  const deductionsRows = deductions
+    .map(
+      d =>
+        `<tr><td>${d.label}</td><td class="amount neg">${fmt(d.value)}</td></tr>`,
+    )
+    .join('');
 
   return `<!DOCTYPE html>
 <html>

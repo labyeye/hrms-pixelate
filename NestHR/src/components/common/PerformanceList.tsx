@@ -56,7 +56,9 @@ export default function PerformanceList({
           onPress={() => setShowAll(v => !v)}
         >
           <Text style={styles.moreText}>
-            {showAll ? 'Show less' : `View more (${data.length - initialCount})`}
+            {showAll
+              ? 'Show less'
+              : `View more (${data.length - initialCount})`}
           </Text>
         </TouchableOpacity>
       )}

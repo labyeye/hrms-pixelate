@@ -18,12 +18,12 @@ router
   .route("/:id")
   .patch(
     protect,
-    authorize("employee", "super_admin", "admin", "hr_manager"),
+    authorize("employee", "super_admin", "hr_manager"),
     updateLeave,
   )
   .put(
     protect,
-    authorize("super_admin", "admin", "hr_manager"),
+    authorize("super_admin", "hr_manager"),
     updateLeaveStatus,
   )
   .delete(protect, deleteLeave);

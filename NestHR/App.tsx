@@ -11,9 +11,15 @@ import { FONT } from './src/theme';
 // App-wide default so any Text/TextInput that doesn't set an explicit
 // style still renders in DM Sans instead of the OS default font.
 (Text as any).defaultProps = (Text as any).defaultProps || {};
-(Text as any).defaultProps.style = [{ fontFamily: FONT.regular }, (Text as any).defaultProps.style];
+(Text as any).defaultProps.style = [
+  { fontFamily: FONT.regular },
+  (Text as any).defaultProps.style,
+];
 (TextInput as any).defaultProps = (TextInput as any).defaultProps || {};
-(TextInput as any).defaultProps.style = [{ fontFamily: FONT.regular }, (TextInput as any).defaultProps.style];
+(TextInput as any).defaultProps.style = [
+  { fontFamily: FONT.regular },
+  (TextInput as any).defaultProps.style,
+];
 
 export default function App() {
   const [splashDone, setSplashDone] = useState(false);

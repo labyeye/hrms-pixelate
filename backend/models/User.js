@@ -36,13 +36,23 @@ const userSchema = new mongoose.Schema(
     phoneVerifyOtpExpire: { type: Date, select: false },
     resetOtp: { type: String, select: false },
     resetOtpExpire: { type: Date, select: false },
+    // Wrong-code counters: a 6-digit code is burned after a handful of misses.
+    phoneOtpTries: { type: Number, default: 0, select: false },
+    phoneVerifyOtpTries: { type: Number, default: 0, select: false },
+    resetOtpTries: { type: Number, default: 0, select: false },
+    // Password brute-force throttle (per account, on top of the per-IP limiter).
+    loginFailedAttempts: { type: Number, default: 0, select: false },
+    loginLockUntil: { type: Date, select: false },
+    // Bumped on every password change; tokens carry it and are rejected when it moves on.
+    tokenVersion: { type: Number, default: 0 },
   },
   { timestamps: true },
 );
 
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 10);
+  this.password = await bcrypt.hash(this.password, 12);
+  if (!this.isNew) this.tokenVersion = (this.tokenVersion || 0) + 1; // revoke sessions issued before this change
   next();
 });
 

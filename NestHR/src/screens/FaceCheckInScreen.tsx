@@ -91,7 +91,8 @@ export default function FaceCheckInScreen({ navigation, route }: any) {
       coordsPromise.catch(() => {});
       const photo = await cameraRef.current?.takePhoto({ flash: 'off' });
       if (!photo?.path) throw new Error('Could not capture photo. Try again.');
-      const uri = Platform.OS === 'android' ? `file://${photo.path}` : photo.path;
+      const uri =
+        Platform.OS === 'android' ? `file://${photo.path}` : photo.path;
       const tPhoto = Date.now();
 
       setStatus('submitting');
@@ -182,7 +183,10 @@ export default function FaceCheckInScreen({ navigation, route }: any) {
           <Text style={styles.msgBody}>
             Please allow camera access to verify your face.
           </Text>
-          <TouchableOpacity style={styles.settingsBtn} onPress={() => Linking.openSettings()}>
+          <TouchableOpacity
+            style={styles.settingsBtn}
+            onPress={() => Linking.openSettings()}
+          >
             <Text style={styles.settingsBtnText}>Open Settings</Text>
           </TouchableOpacity>
         </View>
@@ -225,14 +229,18 @@ export default function FaceCheckInScreen({ navigation, route }: any) {
             style={StyleSheet.absoluteFill}
             device={device}
             format={format}
-            isActive={isFocused && (status === 'scanning' || status === 'capturing')}
+            isActive={
+              isFocused && (status === 'scanning' || status === 'capturing')
+            }
             photo
             frameProcessor={frameProcessor}
           />
         )}
 
         {/* Face guide ring + progress */}
-        {(status === 'scanning' || status === 'capturing' || status === 'submitting') && (
+        {(status === 'scanning' ||
+          status === 'capturing' ||
+          status === 'submitting') && (
           <View pointerEvents="none" style={styles.guideWrap}>
             <View
               style={[
@@ -267,7 +275,9 @@ export default function FaceCheckInScreen({ navigation, route }: any) {
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          {status === 'scanning' && progress === 0 && 'Position your face in the frame'}
+          {status === 'scanning' &&
+            progress === 0 &&
+            'Position your face in the frame'}
           {status === 'scanning' && progress > 0 && 'Hold still…'}
           {status === 'capturing' && 'Capturing…'}
           {status === 'submitting' && 'Verifying…'}
@@ -277,7 +287,9 @@ export default function FaceCheckInScreen({ navigation, route }: any) {
         )}
         {status === 'scanning' && (
           <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+            <View
+              style={[styles.progressFill, { width: `${progress * 100}%` }]}
+            />
           </View>
         )}
       </View>

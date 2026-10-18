@@ -1,3 +1,4 @@
+import { escapeHtml as esc } from "./escapeHtml";
 import { NESTHR_LOGO_B64 } from "./nesthrLogoB64";
 
 export interface ReportCompany {
@@ -66,18 +67,18 @@ function cellHTML(
   if (isStatusCol) {
     const style = getStatusStyle(val);
     if (style) {
-      return `<span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;text-transform:uppercase;${style}">${val}</span>`;
+      return `<span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;text-transform:uppercase;${style}">${esc(val)}</span>`;
     }
   }
   if (isNameCol && val && val !== "—") {
     const initials = getInitials(val);
     const bg = avatarColor(val);
     return `<span style="display:inline-flex;align-items:center;gap:6px;">
-      <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${bg};color:#fff;font-size:9px;font-weight:700;flex-shrink:0;">${initials}</span>
-      <span>${val}</span>
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${bg};color:#fff;font-size:9px;font-weight:700;flex-shrink:0;">${esc(initials)}</span>
+      <span>${esc(val)}</span>
     </span>`;
   }
-  return val;
+  return esc(val);
 }
 
 export function buildReportHTML(
@@ -91,7 +92,11 @@ export function buildReportHTML(
     generatedFor?: string; // employee name or "All Employees"
   } = {},
 ): string {
-  const { company, reportCategory = "", generatedFor = "" } = opts;
+  const { company } = opts;
+  const reportCategory = esc(opts.reportCategory ?? "");
+  const generatedFor = esc(opts.generatedFor ?? "");
+  title = esc(title);
+  period = esc(period);
 
   const nameColIdx = headers.findIndex((h) =>
     ["employee", "name", "employee name"].includes(h.toLowerCase()),
@@ -103,7 +108,7 @@ export function buildReportHTML(
   const thCells = headers
     .map(
       (h) =>
-        `<th style="background:#024BAB;color:#fff;padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;">${h}</th>`,
+        `<th style="background:#024BAB;color:#fff;padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;">${esc(h)}</th>`,
     )
     .join("");
 
@@ -134,8 +139,8 @@ export function buildReportHTML(
     hour12: true,
   });
 
-  const companyLogo = company?.logo || NESTHR_LOGO_B64;
-  const companyName = company?.name || "NestHR";
+  const companyLogo = esc(company?.logo || NESTHR_LOGO_B64);
+  const companyName = esc(company?.name || "NestHR");
 
   const categoryBadge = reportCategory
     ? `<span style="display:inline-block;background:#EFF6FF;color:#024BAB;border:1px solid #BFDBFE;border-radius:3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;padding:2px 7px;margin-bottom:4px;">${reportCategory}</span>`
@@ -320,7 +325,6 @@ export function buildReportHTML(
     <span>${title} · ${period}</span>
   </div>
 
-  <script>window.onload = function() { window.print(); }</script>
 </body>
 </html>`;
 }

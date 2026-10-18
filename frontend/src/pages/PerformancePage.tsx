@@ -225,7 +225,13 @@ export default function PerformancePage() {
             color: "#024BAB",
           },
         ].map(({ label, count, color }) => (
-          <StatCard key={label} label={label} value={count} icon={TrendingUp} color={color} />
+          <StatCard
+            key={label}
+            label={label}
+            value={count}
+            icon={TrendingUp}
+            color={color}
+          />
         ))}
       </div>
 

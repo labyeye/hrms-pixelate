@@ -323,7 +323,9 @@ export default function SettingsScreen() {
                 </View>
                 <View>
                   <Text style={styles.navRowLabel}>Payroll Configuration</Text>
-                  <Text style={styles.navRowDesc}>Shift timings, late rules & deductions</Text>
+                  <Text style={styles.navRowDesc}>
+                    Shift timings, late rules & deductions
+                  </Text>
                 </View>
               </View>
               <ChevronRight size={16} color={C.textMuted} />
@@ -360,7 +362,7 @@ export default function SettingsScreen() {
                           styles.selChipActive,
                       ]}
                       onPress={() =>
-                        setForm(p => ({ ...p, salaryMode: o.value } as any))
+                        setForm(p => ({ ...p, salaryMode: o.value }) as any)
                       }
                     >
                       <Text
@@ -396,7 +398,7 @@ export default function SettingsScreen() {
                             styles.selChipActive,
                         ]}
                         onPress={() =>
-                          setForm(p => ({ ...p, salaryPayDay: d } as any))
+                          setForm(p => ({ ...p, salaryPayDay: d }) as any)
                         }
                       >
                         <Text
@@ -419,9 +421,9 @@ export default function SettingsScreen() {
               <View style={[styles.fieldRow, styles.fieldBorder]}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.toggleDesc}>
-                    Attendance from the start day of the previous month
-                    through the end day of the payroll month will be used to
-                    calculate salary.
+                    Attendance from the start day of the previous month through
+                    the end day of the payroll month will be used to calculate
+                    salary.
                   </Text>
                   <Text style={[styles.fieldLabel, { marginTop: 10 }]}>
                     Period Start Day
@@ -436,7 +438,7 @@ export default function SettingsScreen() {
                             ...p,
                             salaryCycleStartDay:
                               Number(v.replace(/\D/g, '')) || 1,
-                          } as any),
+                          }) as any,
                       )
                     }
                     keyboardType="numeric"
@@ -455,7 +457,7 @@ export default function SettingsScreen() {
                             ...p,
                             salaryCycleEndDay:
                               Number(v.replace(/\D/g, '')) || 31,
-                          } as any),
+                          }) as any,
                       )
                     }
                     keyboardType="numeric"
@@ -505,15 +507,30 @@ export default function SettingsScreen() {
           <View style={styles.card}>
             <View style={styles.toggleRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.toggleLabel}>Two-Factor Authentication (2FA)</Text>
+                <Text style={styles.toggleLabel}>
+                  Two-Factor Authentication (2FA)
+                </Text>
                 <Text style={styles.toggleDesc}>
                   {twoFAEnabled
                     ? 'Your account is protected with an authenticator app'
                     : 'Add an extra layer of security to your account'}
                 </Text>
               </View>
-              <View style={[styles.twoFABadge, { backgroundColor: twoFAEnabled ? '#F0FDF4' : '#FEF2F2', borderColor: twoFAEnabled ? C.success : C.danger }]}>
-                <Text style={[styles.twoFABadgeText, { color: twoFAEnabled ? C.success : C.danger }]}>
+              <View
+                style={[
+                  styles.twoFABadge,
+                  {
+                    backgroundColor: twoFAEnabled ? '#F0FDF4' : '#FEF2F2',
+                    borderColor: twoFAEnabled ? C.success : C.danger,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.twoFABadgeText,
+                    { color: twoFAEnabled ? C.success : C.danger },
+                  ]}
+                >
                   {twoFAEnabled ? 'ON' : 'OFF'}
                 </Text>
               </View>
@@ -521,15 +538,26 @@ export default function SettingsScreen() {
 
             {twoFAEnabled ? (
               <TouchableOpacity
-                style={[styles.twoFABtn, { borderColor: C.danger, backgroundColor: '#FEF2F2' }]}
-                onPress={() => { setDisable2FAToken(''); setShow2FADisable(true); }}
+                style={[
+                  styles.twoFABtn,
+                  { borderColor: C.danger, backgroundColor: '#FEF2F2' },
+                ]}
+                onPress={() => {
+                  setDisable2FAToken('');
+                  setShow2FADisable(true);
+                }}
               >
                 <ShieldOff size={15} color={C.danger} />
-                <Text style={[styles.twoFABtnText, { color: C.danger }]}>Disable 2FA</Text>
+                <Text style={[styles.twoFABtnText, { color: C.danger }]}>
+                  Disable 2FA
+                </Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
-                style={[styles.twoFABtn, { borderColor: C.success, backgroundColor: '#F0FDF4' }]}
+                style={[
+                  styles.twoFABtn,
+                  { borderColor: C.success, backgroundColor: '#F0FDF4' },
+                ]}
                 onPress={async () => {
                   setTwoFALoading(true);
                   try {
@@ -546,10 +574,14 @@ export default function SettingsScreen() {
                 }}
                 disabled={twoFALoading}
               >
-                {twoFALoading ? <ActivityIndicator size="small" color={C.success} /> : (
+                {twoFALoading ? (
+                  <ActivityIndicator size="small" color={C.success} />
+                ) : (
                   <>
                     <ShieldCheck size={15} color={C.success} />
-                    <Text style={[styles.twoFABtnText, { color: C.success }]}>Enable 2FA</Text>
+                    <Text style={[styles.twoFABtnText, { color: C.success }]}>
+                      Enable 2FA
+                    </Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -559,7 +591,11 @@ export default function SettingsScreen() {
       </ScrollView>
 
       {/* 2FA Setup Modal */}
-      <Modal visible={show2FASetup} animationType="slide" presentationStyle="formSheet">
+      <Modal
+        visible={show2FASetup}
+        animationType="slide"
+        presentationStyle="formSheet"
+      >
         <SafeAreaView style={styles.safe} edges={['top']}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Enable 2FA</Text>
@@ -567,11 +603,15 @@ export default function SettingsScreen() {
               <X size={22} color={C.black} />
             </TouchableOpacity>
           </View>
-          <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            contentContainerStyle={{ padding: 20, gap: 16 }}
+            keyboardShouldPersistTaps="handled"
+          >
             <View style={styles.twoFANote}>
               <ShieldCheck size={20} color={C.primary} />
               <Text style={styles.twoFANoteText}>
-                Scan the QR code with Google Authenticator, Authy, or any TOTP app. Then enter the 6-digit code to confirm.
+                Scan the QR code with Google Authenticator, Authy, or any TOTP
+                app. Then enter the 6-digit code to confirm.
               </Text>
             </View>
 
@@ -579,7 +619,11 @@ export default function SettingsScreen() {
               <View style={styles.qrContainer}>
                 <Text style={styles.qrLabel}>Scan this QR Code</Text>
                 <View style={styles.qrBox}>
-                  <Image source={{ uri: qrUri }} style={{ width: 200, height: 200 }} resizeMode="contain" />
+                  <Image
+                    source={{ uri: qrUri }}
+                    style={{ width: 200, height: 200 }}
+                    resizeMode="contain"
+                  />
                 </View>
               </View>
             ) : null}
@@ -591,16 +635,25 @@ export default function SettingsScreen() {
                   style={styles.secretRow}
                   onPress={() => setShowSecret(s => !s)}
                 >
-                  <Text style={styles.secretText} numberOfLines={showSecret ? undefined : 1}>
+                  <Text
+                    style={styles.secretText}
+                    numberOfLines={showSecret ? undefined : 1}
+                  >
                     {showSecret ? secret2FA : '••••••••••••••••••••'}
                   </Text>
-                  {showSecret ? <EyeOff size={16} color="#6B7280" /> : <Eye size={16} color="#6B7280" />}
+                  {showSecret ? (
+                    <EyeOff size={16} color="#6B7280" />
+                  ) : (
+                    <Eye size={16} color="#6B7280" />
+                  )}
                 </TouchableOpacity>
               </View>
             ) : null}
 
             <View>
-              <Text style={styles.fieldLabel2FA}>Enter 6-digit code from your app *</Text>
+              <Text style={styles.fieldLabel2FA}>
+                Enter 6-digit code from your app *
+              </Text>
               <TextInput
                 style={styles.codeInput}
                 value={token2FA}
@@ -613,9 +666,15 @@ export default function SettingsScreen() {
             </View>
 
             <TouchableOpacity
-              style={[styles.twoFASubmitBtn, { backgroundColor: twoFALoading ? '#9CA3AF' : C.primary }]}
+              style={[
+                styles.twoFASubmitBtn,
+                { backgroundColor: twoFALoading ? '#9CA3AF' : C.primary },
+              ]}
               onPress={async () => {
-                if (token2FA.length !== 6) { Alert.alert('Validation', 'Enter a 6-digit code'); return; }
+                if (token2FA.length !== 6) {
+                  Alert.alert('Validation', 'Enter a 6-digit code');
+                  return;
+                }
                 setTwoFALoading(true);
                 try {
                   const r = await authAPI.confirm2FA(token2FA);
@@ -633,14 +692,24 @@ export default function SettingsScreen() {
               }}
               disabled={twoFALoading}
             >
-              {twoFALoading ? <ActivityIndicator color={C.white} /> : <Text style={styles.twoFASubmitBtnText}>Confirm & Enable 2FA</Text>}
+              {twoFALoading ? (
+                <ActivityIndicator color={C.white} />
+              ) : (
+                <Text style={styles.twoFASubmitBtnText}>
+                  Confirm & Enable 2FA
+                </Text>
+              )}
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
       </Modal>
 
       {/* 2FA Disable Modal */}
-      <Modal visible={show2FADisable} animationType="slide" presentationStyle="formSheet">
+      <Modal
+        visible={show2FADisable}
+        animationType="slide"
+        presentationStyle="formSheet"
+      >
         <SafeAreaView style={styles.safe} edges={['top']}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Disable 2FA</Text>
@@ -648,16 +717,27 @@ export default function SettingsScreen() {
               <X size={22} color={C.black} />
             </TouchableOpacity>
           </View>
-          <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }} keyboardShouldPersistTaps="handled">
-            <View style={[styles.twoFANote, { borderColor: C.danger, backgroundColor: '#FEF2F2' }]}>
+          <ScrollView
+            contentContainerStyle={{ padding: 20, gap: 16 }}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View
+              style={[
+                styles.twoFANote,
+                { borderColor: C.danger, backgroundColor: '#FEF2F2' },
+              ]}
+            >
               <ShieldOff size={20} color={C.danger} />
               <Text style={[styles.twoFANoteText, { color: C.danger }]}>
-                You will lose the extra protection 2FA provides. Enter your current 6-digit code to confirm.
+                You will lose the extra protection 2FA provides. Enter your
+                current 6-digit code to confirm.
               </Text>
             </View>
 
             <View>
-              <Text style={styles.fieldLabel2FA}>Enter 6-digit code from your authenticator app *</Text>
+              <Text style={styles.fieldLabel2FA}>
+                Enter 6-digit code from your authenticator app *
+              </Text>
               <TextInput
                 style={styles.codeInput}
                 value={disable2FAToken}
@@ -672,7 +752,10 @@ export default function SettingsScreen() {
             <TouchableOpacity
               style={[styles.twoFASubmitBtn, { backgroundColor: C.danger }]}
               onPress={async () => {
-                if (disable2FAToken.length !== 6) { Alert.alert('Validation', 'Enter a 6-digit code'); return; }
+                if (disable2FAToken.length !== 6) {
+                  Alert.alert('Validation', 'Enter a 6-digit code');
+                  return;
+                }
                 setTwoFALoading(true);
                 try {
                   await authAPI.disable2FA(disable2FAToken);
@@ -687,7 +770,13 @@ export default function SettingsScreen() {
               }}
               disabled={twoFALoading}
             >
-              {twoFALoading ? <ActivityIndicator color={C.white} /> : <Text style={styles.twoFASubmitBtnText}>Confirm Disable 2FA</Text>}
+              {twoFALoading ? (
+                <ActivityIndicator color={C.white} />
+              ) : (
+                <Text style={styles.twoFASubmitBtnText}>
+                  Confirm Disable 2FA
+                </Text>
+              )}
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
@@ -745,7 +834,16 @@ const styles = StyleSheet.create({
     color: C.primary,
     letterSpacing: 0.5,
   },
-  card: { backgroundColor: C.white, borderWidth: 2, borderRadius: 8, borderRightWidth: 5, borderBottomWidth: 5, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black },
+  card: {
+    backgroundColor: C.white,
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderColor: C.black,
+  },
   fieldRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -808,8 +906,21 @@ const styles = StyleSheet.create({
   },
   navRowLabel: { fontSize: 13, fontWeight: '700', color: C.black },
   navRowDesc: { fontSize: 11, color: C.textMuted, marginTop: 2 },
-  twoFABadge: { borderWidth: 2, borderRadius: 999, borderColor: '#0A0A0A', borderRightWidth: 4, borderBottomWidth: 4, paddingHorizontal: 8, paddingVertical: 3 },
-  twoFABadgeText: { textTransform: 'uppercase', fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
+  twoFABadge: {
+    borderWidth: 2,
+    borderRadius: 999,
+    borderColor: '#0A0A0A',
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  twoFABadgeText: {
+    textTransform: 'uppercase',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
   twoFABtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -852,7 +963,12 @@ const styles = StyleSheet.create({
   },
   twoFANoteText: { flex: 1, fontSize: 13, fontWeight: '500', color: C.black },
   qrContainer: { alignItems: 'center', gap: 8 },
-  qrLabel: { fontSize: 12, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase' },
+  qrLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+  },
   qrBox: {
     borderWidth: 2,
     borderRadius: 8,
@@ -865,8 +981,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
     maxWidth: '100%',
   },
-  qrPlaceholder: { fontSize: 11, color: C.primary, fontFamily: 'monospace', textAlign: 'center' },
-  fieldLabel2FA: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', color: C.black, marginBottom: 6, letterSpacing: 0.5 },
+  qrPlaceholder: {
+    fontSize: 11,
+    color: C.primary,
+    fontFamily: 'monospace',
+    textAlign: 'center',
+  },
+  fieldLabel2FA: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    color: C.black,
+    marginBottom: 6,
+    letterSpacing: 0.5,
+  },
   secretRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -882,7 +1010,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
     gap: 8,
   },
-  secretText: { flex: 1, fontSize: 13, fontFamily: 'monospace', color: C.black, fontWeight: '600' },
+  secretText: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: 'monospace',
+    color: C.black,
+    fontWeight: '600',
+  },
   codeInput: {
     borderWidth: 2,
     borderRadius: 8,
@@ -913,5 +1047,10 @@ const styles = StyleSheet.create({
     borderColor: C.black,
     marginTop: 4,
   },
-  twoFASubmitBtnText: { color: C.white, fontWeight: '700', fontSize: 14, textTransform: 'uppercase' },
+  twoFASubmitBtnText: {
+    color: C.white,
+    fontWeight: '700',
+    fontSize: 14,
+    textTransform: 'uppercase',
+  },
 });

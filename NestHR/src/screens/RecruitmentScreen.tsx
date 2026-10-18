@@ -53,7 +53,16 @@ const CAND_STATUS_CONFIG: Record<string, { color: string }> = {
 };
 
 // Same lists the backend validates against.
-const STAGES = ['applied', 'screening', 'interview', 'technical', 'hr_round', 'offered', 'hired', 'rejected'];
+const STAGES = [
+  'applied',
+  'screening',
+  'interview',
+  'technical',
+  'hr_round',
+  'offered',
+  'hired',
+  'rejected',
+];
 const JOB_STATUSES = ['open', 'on_hold', 'closed', 'cancelled'];
 const pretty = (s: string) => s.replace(/_/g, ' ');
 
@@ -87,7 +96,11 @@ export default function RecruitmentScreen() {
       setJobs(jobList);
       // Extract all candidates embedded in jobs
       const allCands: Candidate[] = jobList.flatMap(j =>
-        (j.candidates || []).map((c: any) => ({ ...c, _jobId: j._id, _jobTitle: j.title })),
+        (j.candidates || []).map((c: any) => ({
+          ...c,
+          _jobId: j._id,
+          _jobTitle: j.title,
+        })),
       );
       setCandidates(allCands);
     } catch (e: any) {
@@ -178,24 +191,20 @@ export default function RecruitmentScreen() {
   };
 
   const changeJobStatus = (j: any) =>
-    Alert.alert(
-      'Job status',
-      j.title,
-      [
-        ...JOB_STATUSES.filter(st => st !== j.status).map(st => ({
-          text: pretty(st),
-          onPress: async () => {
-            try {
-              await recruitmentAPI.update(j._id, { status: st });
-              await load();
-            } catch (e: any) {
-              Alert.alert('Error', e.message);
-            }
-          },
-        })),
-        { text: 'Cancel', style: 'cancel' as const },
-      ],
-    );
+    Alert.alert('Job status', j.title, [
+      ...JOB_STATUSES.filter(st => st !== j.status).map(st => ({
+        text: pretty(st),
+        onPress: async () => {
+          try {
+            await recruitmentAPI.update(j._id, { status: st });
+            await load();
+          } catch (e: any) {
+            Alert.alert('Error', e.message);
+          }
+        },
+      })),
+      { text: 'Cancel', style: 'cancel' as const },
+    ]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -344,11 +353,17 @@ export default function RecruitmentScreen() {
                   )}
                 </View>
                 <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-                  <TouchableOpacity style={styles.actBtn} onPress={() => setCandJob(j)}>
+                  <TouchableOpacity
+                    style={styles.actBtn}
+                    onPress={() => setCandJob(j)}
+                  >
                     <Plus size={12} color={C.primary} />
                     <Text style={styles.actBtnText}>Add Candidate</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.actBtn} onPress={() => changeJobStatus(j)}>
+                  <TouchableOpacity
+                    style={styles.actBtn}
+                    onPress={() => changeJobStatus(j)}
+                  >
                     <Text style={styles.actBtnText}>Status</Text>
                   </TouchableOpacity>
                 </View>
@@ -380,7 +395,11 @@ export default function RecruitmentScreen() {
             const stage: string = c.stage || c.status || 'applied';
             const cfg = CAND_STATUS_CONFIG[stage] || { color: C.textMuted };
             return (
-              <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={() => setStagePick(c)}>
+              <TouchableOpacity
+                style={styles.card}
+                activeOpacity={0.85}
+                onPress={() => setStagePick(c)}
+              >
                 <View style={styles.cardTop}>
                   <View style={styles.avatar}>
                     <Text style={styles.avatarText}>
@@ -396,7 +415,9 @@ export default function RecruitmentScreen() {
                     {c.position && (
                       <Text style={styles.candPos}>{c.position}</Text>
                     )}
-                    {c._jobTitle ? <Text style={styles.candPos}>{c._jobTitle}</Text> : null}
+                    {c._jobTitle ? (
+                      <Text style={styles.candPos}>{c._jobTitle}</Text>
+                    ) : null}
                   </View>
                   <View style={{ alignItems: 'flex-end', gap: 4 }}>
                     <View
@@ -426,36 +447,97 @@ export default function RecruitmentScreen() {
       )}
 
       {/* Add candidate */}
-      <Modal visible={!!candJob} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setCandJob(null)}>
+      <Modal
+        visible={!!candJob}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setCandJob(null)}
+      >
         <SafeAreaView style={styles.safe} edges={['top']}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Add Candidate{candJob ? ` · ${candJob.title}` : ''}</Text>
+            <Text style={styles.modalTitle}>
+              Add Candidate{candJob ? ` · ${candJob.title}` : ''}
+            </Text>
             <TouchableOpacity onPress={() => setCandJob(null)}>
               <X size={22} color={C.black} />
             </TouchableOpacity>
           </View>
-          <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }} keyboardShouldPersistTaps="handled">
-            <TextInput style={styles.actInput} value={candForm.name} onChangeText={v => setCandForm(f => ({ ...f, name: v }))} placeholder="Full name *" placeholderTextColor={C.textLight} />
-            <TextInput style={styles.actInput} value={candForm.email} onChangeText={v => setCandForm(f => ({ ...f, email: v }))} placeholder="Email *" keyboardType="email-address" autoCapitalize="none" placeholderTextColor={C.textLight} />
-            <TextInput style={styles.actInput} value={candForm.phone} onChangeText={v => setCandForm(f => ({ ...f, phone: v }))} placeholder="Phone" keyboardType="phone-pad" placeholderTextColor={C.textLight} />
-            <TouchableOpacity style={[styles.actSave, saving && { opacity: 0.6 }]} onPress={addCandidate} disabled={saving}>
-              <Text style={styles.actSaveText}>{saving ? 'Adding...' : 'Add to Pipeline'}</Text>
+          <ScrollView
+            contentContainerStyle={{ padding: 16, gap: 12 }}
+            keyboardShouldPersistTaps="handled"
+          >
+            <TextInput
+              style={styles.actInput}
+              value={candForm.name}
+              onChangeText={v => setCandForm(f => ({ ...f, name: v }))}
+              placeholder="Full name *"
+              placeholderTextColor={C.textLight}
+            />
+            <TextInput
+              style={styles.actInput}
+              value={candForm.email}
+              onChangeText={v => setCandForm(f => ({ ...f, email: v }))}
+              placeholder="Email *"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              placeholderTextColor={C.textLight}
+            />
+            <TextInput
+              style={styles.actInput}
+              value={candForm.phone}
+              onChangeText={v => setCandForm(f => ({ ...f, phone: v }))}
+              placeholder="Phone"
+              keyboardType="phone-pad"
+              placeholderTextColor={C.textLight}
+            />
+            <TouchableOpacity
+              style={[styles.actSave, saving && { opacity: 0.6 }]}
+              onPress={addCandidate}
+              disabled={saving}
+            >
+              <Text style={styles.actSaveText}>
+                {saving ? 'Adding...' : 'Add to Pipeline'}
+              </Text>
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
       </Modal>
 
       {/* Move candidate to a stage */}
-      <Modal visible={!!stagePick} transparent animationType="fade" onRequestClose={() => setStagePick(null)}>
+      <Modal
+        visible={!!stagePick}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setStagePick(null)}
+      >
         <View style={styles.actBackdrop}>
           <View style={styles.actSheet}>
-            <Text style={styles.modalTitle}>Move {stagePick?.name || 'candidate'} to…</Text>
+            <Text style={styles.modalTitle}>
+              Move {stagePick?.name || 'candidate'} to…
+            </Text>
             {STAGES.map(st => (
-              <TouchableOpacity key={st} style={[styles.stageRow, stagePick?.stage === st && styles.stageRowOn]} onPress={() => changeStage(st)}>
-                <Text style={[styles.stageText, stagePick?.stage === st && { color: C.white }]}>{pretty(st).toUpperCase()}</Text>
+              <TouchableOpacity
+                key={st}
+                style={[
+                  styles.stageRow,
+                  stagePick?.stage === st && styles.stageRowOn,
+                ]}
+                onPress={() => changeStage(st)}
+              >
+                <Text
+                  style={[
+                    styles.stageText,
+                    stagePick?.stage === st && { color: C.white },
+                  ]}
+                >
+                  {pretty(st).toUpperCase()}
+                </Text>
               </TouchableOpacity>
             ))}
-            <TouchableOpacity style={styles.stageCancel} onPress={() => setStagePick(null)}>
+            <TouchableOpacity
+              style={styles.stageCancel}
+              onPress={() => setStagePick(null)}
+            >
               <Text style={styles.stageText}>CANCEL</Text>
             </TouchableOpacity>
           </View>
@@ -576,14 +658,86 @@ export default function RecruitmentScreen() {
 }
 
 const styles = StyleSheet.create({
-  actBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.primary, paddingHorizontal: 10, paddingVertical: 6 },
-  actBtnText: { color: C.primary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
-  actInput: { borderWidth: 2, borderRadius: 8, borderRightWidth: 5, borderBottomWidth: 5, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: C.black },
-  actSave: { backgroundColor: C.primary, borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black, paddingVertical: 12, alignItems: 'center' },
-  actSaveText: { color: C.white, fontSize: 13, fontWeight: '700', textTransform: 'uppercase' },
-  actBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 24 },
-  actSheet: { backgroundColor: C.white, borderWidth: 2, borderRadius: 8, borderRightWidth: 5, borderBottomWidth: 5, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black, padding: 16, gap: 8 },
-  stageRow: { borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black, paddingVertical: 10, alignItems: 'center' },
+  actBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderRadius: 8,
+    borderColor: C.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  actBtnText: {
+    color: C.primary,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  actInput: {
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderColor: C.black,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: C.black,
+  },
+  actSave: {
+    backgroundColor: C.primary,
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderRadius: 8,
+    borderColor: C.black,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  actSaveText: {
+    color: C.white,
+    fontSize: 13,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  actBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  actSheet: {
+    backgroundColor: C.white,
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderColor: C.black,
+    padding: 16,
+    gap: 8,
+  },
+  stageRow: {
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderRadius: 8,
+    borderColor: C.black,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
   stageRowOn: { backgroundColor: C.primary },
   stageCancel: { paddingVertical: 10, alignItems: 'center' },
   stageText: { fontSize: 12, fontWeight: '700', color: C.black },
@@ -712,13 +866,29 @@ const styles = StyleSheet.create({
   },
   appsPillText: { fontSize: 11, fontWeight: '700', color: C.primary },
   salaryText: { fontSize: 13, fontWeight: '700', color: C.success },
-  statusBadge: { borderWidth: 2, borderRadius: 999, borderColor: '#0A0A0A', borderRightWidth: 4, borderBottomWidth: 4, paddingHorizontal: 8, paddingVertical: 3 },
-  statusBadgeText: { textTransform: 'uppercase', fontSize: 9, fontWeight: '700' },
+  statusBadge: {
+    borderWidth: 2,
+    borderRadius: 999,
+    borderColor: '#0A0A0A',
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  statusBadgeText: {
+    textTransform: 'uppercase',
+    fontSize: 9,
+    fontWeight: '700',
+  },
   avatar: {
     width: 40,
     height: 40,
     backgroundColor: C.primary,
-    borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A',
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
     alignItems: 'center',

@@ -9,8 +9,18 @@ import {
 } from "@/components/performance/LiveMetricsTable";
 
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 export default function PerformanceReportPage() {
@@ -43,14 +53,23 @@ export default function PerformanceReportPage() {
 
   const scored = (data ?? []).filter((m) => m.score != null);
   const avg = scored.length
-    ? Math.round(scored.reduce((s, m) => s + (m.score as number), 0) / scored.length)
+    ? Math.round(
+        scored.reduce((s, m) => s + (m.score as number), 0) / scored.length,
+      )
     : null;
 
   const downloadCsv = () => {
     if (!data) return;
     const rows = [...data].sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
     const csv = [
-      ["Rank", "Employee", "Score %", "Attendance %", "Tasks Done", "Tasks Total"],
+      [
+        "Rank",
+        "Employee",
+        "Score %",
+        "Attendance %",
+        "Tasks Done",
+        "Tasks Total",
+      ],
       ...rows.map((m, i) => [
         i + 1,
         `${m.firstName} ${m.lastName}`,
@@ -80,7 +99,9 @@ export default function PerformanceReportPage() {
 
       <div className="border-2 bg-white p-4 mb-5 flex flex-wrap items-end gap-3">
         <div>
-          <label className="block text-xs font-bold text-black mb-1">Month</label>
+          <label className="block text-xs font-bold text-black mb-1">
+            Month
+          </label>
           <select
             value={month}
             onChange={(e) => setMonth(Number(e.target.value))}
@@ -94,7 +115,9 @@ export default function PerformanceReportPage() {
           </select>
         </div>
         <div>
-          <label className="block text-xs font-bold text-black mb-1">Year</label>
+          <label className="block text-xs font-bold text-black mb-1">
+            Year
+          </label>
           <select
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}

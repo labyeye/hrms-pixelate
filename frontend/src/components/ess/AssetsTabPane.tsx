@@ -7,9 +7,7 @@ import {
   RefreshCw,
   Smartphone,
   Laptop,
-  Check,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface Props {
   toast: any;

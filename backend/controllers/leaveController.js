@@ -399,7 +399,9 @@ const createLeave = asyncHandler(async (req, res) => {
           reason: leave.reason,
         });
     }
-  } catch {}
+  } catch (err) {
+    console.error("[notify] failed:", err.message);
+  }
 
   res.status(201).json({ success: true, data: leave, noBalanceLeft });
 });
@@ -500,7 +502,9 @@ const updateLeaveStatus = asyncHandler(async (req, res) => {
         rejectionReason,
       });
     }
-  } catch {}
+  } catch (err) {
+    console.error("[notify] failed:", err.message);
+  }
 
   await logAudit(req, `leave_${status}`, "Leave", leave._id, {
     employeeName: `${leave.employee?.firstName} ${leave.employee?.lastName}`,
@@ -513,7 +517,7 @@ const updateLeaveStatus = asyncHandler(async (req, res) => {
 
 // Edit a leave — employee can only edit own pending; admins can edit any
 const updateLeave = asyncHandler(async (req, res) => {
-  const isAdmin = ["super_admin", "admin", "hr_manager"].includes(
+  const isAdmin = ["super_admin", "hr_manager"].includes(
     req.user.role,
   );
 
@@ -599,7 +603,7 @@ const updateLeave = asyncHandler(async (req, res) => {
 
 const deleteLeave = asyncHandler(async (req, res) => {
   const { cancellationReason } = req.body || {};
-  const isAdmin = ["super_admin", "admin", "hr_manager"].includes(
+  const isAdmin = ["super_admin", "hr_manager"].includes(
     req.user.role,
   );
   const filter = { _id: req.params.id, company: req.user.company };
@@ -659,7 +663,9 @@ const deleteLeave = asyncHandler(async (req, res) => {
           req.user.company,
         );
       }
-    } catch {}
+    } catch (err) {
+    console.error("[notify] failed:", err.message);
+  }
 
     return res.json({
       success: true,

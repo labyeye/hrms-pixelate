@@ -11,7 +11,13 @@ type Props = {
 };
 
 // Neo-brutalist info chip: thick black border, hard bottom/right shadow edge, pastel fill.
-export default function MetaChip({ icon, text, bg = '#FFFFFF', grow, style }: Props) {
+export default function MetaChip({
+  icon,
+  text,
+  bg = '#FFFFFF',
+  grow,
+  style,
+}: Props) {
   return (
     <View
       style={[

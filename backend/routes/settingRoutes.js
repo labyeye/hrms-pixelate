@@ -13,11 +13,11 @@ router.use(protect);
 router
   .route("/")
   .get(getSettings)
-  .put(authorize("super_admin", "admin", "hr_manager"), updateSettings);
+  .put(authorize("super_admin", "hr_manager"), updateSettings);
 
 router.post(
   "/logo",
-  authorize("super_admin", "admin", "hr_manager"),
+  authorize("super_admin", "hr_manager"),
   (req, res, next) => {
     logoMulter(req, res, (err) => {
       if (err) {

@@ -239,7 +239,12 @@ async function processLog(
       `[ADMS] Created attendance checkIn=${punchTime.toISOString()} status=${status} verifyMode=${verifyMode} for ${employee.firstName}`,
     );
     if (status === "late") {
-      await handleLateAllowance(employee._id, employee.company, dayStart, punchTime);
+      await handleLateAllowance(
+        employee._id,
+        employee.company,
+        dayStart,
+        punchTime,
+      );
     }
     await notifyCheckIn(employee, loc, punchTime, companyId);
     return;
@@ -260,7 +265,12 @@ async function processLog(
     upd.verifyMode = verifyMode;
     upd.status = await resolveAttendanceStatus(employee, punchTime);
     if (upd.status === "late") {
-      await handleLateAllowance(employee._id, employee.company, dayStart, punchTime);
+      await handleLateAllowance(
+        employee._id,
+        employee.company,
+        dayStart,
+        punchTime,
+      );
     }
     logType = "check_in";
   } else if (punchTime > existing.checkIn) {
@@ -298,7 +308,7 @@ async function processLog(
 }
 
 async function resolveDevice(sn) {
-  if (!sn) return null;
+  if (!sn || typeof sn !== "string") return null;
   // Find by SN regardless of isActive — if the device is polling, it IS active.
   // Auto-heal isActive so admin routes also see it correctly.
   return BiometricDevice.findOneAndUpdate(
@@ -313,7 +323,7 @@ router.get(["/cdata", "/cdata.aspx"], async (req, res) => {
   res.set("Content-Type", "text/plain");
 
   let attlogStamp = "None";
-  if (SN) {
+  if (SN && typeof SN === "string") {
     const device = await BiometricDevice.findOneAndUpdate(
       { serialNumber: SN },
       { lastSeenAt: new Date() },

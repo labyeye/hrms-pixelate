@@ -23,10 +23,28 @@ import {
 import { assetAPI } from '../api/api';
 import { C } from '../theme';
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: any }> = {
-  assigned: { label: 'Assigned', color: C.primary, bg: '#EFF6FF', icon: CheckCircle2 },
-  returned: { label: 'Returned', color: C.textMuted, bg: '#F3F4F6', icon: XCircle },
-  return_requested: { label: 'Return Pending', color: C.warning, bg: '#FFF7ED', icon: Clock },
+const STATUS_CONFIG: Record<
+  string,
+  { label: string; color: string; bg: string; icon: any }
+> = {
+  assigned: {
+    label: 'Assigned',
+    color: C.primary,
+    bg: '#EFF6FF',
+    icon: CheckCircle2,
+  },
+  returned: {
+    label: 'Returned',
+    color: C.textMuted,
+    bg: '#F3F4F6',
+    icon: XCircle,
+  },
+  return_requested: {
+    label: 'Return Pending',
+    color: C.warning,
+    bg: '#FFF7ED',
+    icon: Clock,
+  },
 };
 
 export default function AssetsScreen() {
@@ -49,7 +67,7 @@ export default function AssetsScreen() {
   useFocusEffect(
     useCallback(() => {
       load();
-    }, [load])
+    }, [load]),
   );
 
   const onRefresh = async () => {
@@ -89,9 +107,16 @@ export default function AssetsScreen() {
       <View style={styles.card}>
         <View style={styles.cardTop}>
           <Text style={styles.assetName}>{item.name}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: statusMeta.bg, borderColor: statusMeta.color }]}>
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: statusMeta.bg, borderColor: statusMeta.color },
+            ]}
+          >
             <StatusIcon size={10} color={statusMeta.color} />
-            <Text style={[styles.statusText, { color: statusMeta.color }]}>{statusMeta.label}</Text>
+            <Text style={[styles.statusText, { color: statusMeta.color }]}>
+              {statusMeta.label}
+            </Text>
           </View>
         </View>
 
@@ -110,12 +135,17 @@ export default function AssetsScreen() {
           <View>
             <Text style={styles.infoLabel}>Date Assigned</Text>
             <Text style={styles.date}>
-              {item.assignedDate ? new Date(item.assignedDate).toLocaleDateString('en-IN') : '—'}
+              {item.assignedDate
+                ? new Date(item.assignedDate).toLocaleDateString('en-IN')
+                : '—'}
             </Text>
           </View>
 
           {item.status === 'assigned' && (
-            <TouchableOpacity style={styles.returnBtn} onPress={() => handleReturn(item._id, item.name)}>
+            <TouchableOpacity
+              style={styles.returnBtn}
+              onPress={() => handleReturn(item._id, item.name)}
+            >
               <RefreshCw size={11} color="#fff" />
               <Text style={styles.returnBtnText}>Return</Text>
             </TouchableOpacity>
@@ -129,7 +159,10 @@ export default function AssetsScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backBtn}
+        >
           <ChevronLeft size={22} color={C.black} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Assets</Text>
@@ -143,7 +176,9 @@ export default function AssetsScreen() {
         <View style={styles.center}>
           <Cpu size={48} color="#D1D5DB" />
           <Text style={styles.emptyTitle}>No assets assigned</Text>
-          <Text style={styles.emptySubtitle}>You currently do not have any company hardware assigned.</Text>
+          <Text style={styles.emptySubtitle}>
+            You currently do not have any company hardware assigned.
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -151,7 +186,14 @@ export default function AssetsScreen() {
           keyExtractor={item => item._id}
           renderItem={renderAsset}
           contentContainerStyle={{ padding: 16 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[C.primary]} tintColor={C.primary} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[C.primary]}
+              tintColor={C.primary}
+            />
+          }
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
           showsVerticalScrollIndicator={false}
         />
@@ -174,9 +216,25 @@ const styles = StyleSheet.create({
   },
   backBtn: { padding: 4 },
   headerTitle: { fontSize: 20, fontWeight: '700', color: C.black },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  emptyTitle: { fontSize: 15, fontWeight: '700', color: '#6B7280', marginTop: 12 },
-  emptySubtitle: { fontSize: 13, color: '#9CA3AF', fontWeight: '500', textAlign: 'center', marginTop: 6 },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#6B7280',
+    marginTop: 12,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: '#9CA3AF',
+    fontWeight: '500',
+    textAlign: 'center',
+    marginTop: 6,
+  },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
@@ -188,15 +246,53 @@ const styles = StyleSheet.create({
     borderColor: C.black,
     padding: 14,
   },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 12 },
+  cardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginBottom: 12,
+  },
   assetName: { fontSize: 15, fontWeight: '700', color: C.black, flex: 1 },
-  statusBadge: { borderWidth: 2, borderRadius: 999, borderColor: '#0A0A0A', borderRightWidth: 4, borderBottomWidth: 4, paddingHorizontal: 8, paddingVertical: 2, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  statusBadge: {
+    borderWidth: 2,
+    borderRadius: 999,
+    borderColor: '#0A0A0A',
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   statusText: { fontSize: 9, fontWeight: '800', textTransform: 'uppercase' },
   infoRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
-  infoCol: { flex: 1, padding: 8, backgroundColor: '#FFFFFF', borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderColor: '#000000', borderRadius: 8 },
-  infoLabel: { fontSize: 9, fontWeight: '800', textTransform: 'uppercase', color: '#000000', marginBottom: 2 },
+  infoCol: {
+    flex: 1,
+    padding: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderColor: '#000000',
+    borderRadius: 8,
+  },
+  infoLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    color: '#000000',
+    marginBottom: 2,
+  },
   infoVal: { fontSize: 12, fontWeight: '600', color: C.black },
-  cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: 10, marginTop: 4 },
+  cardBottom: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    paddingTop: 10,
+    marginTop: 4,
+  },
   date: { fontSize: 12, fontWeight: '600', color: C.black },
   returnBtn: {
     flexDirection: 'row',
@@ -213,5 +309,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  returnBtnText: { color: C.white, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
+  returnBtnText: {
+    color: C.white,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
 });

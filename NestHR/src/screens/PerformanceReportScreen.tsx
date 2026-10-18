@@ -15,8 +15,18 @@ import PerformanceList from '../components/common/PerformanceList';
 import { C, FONT } from '../theme';
 
 const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 export default function PerformanceReportScreen() {
@@ -50,8 +60,14 @@ export default function PerformanceReportScreen() {
   const shift = (d: number) => {
     let m = month + d;
     let y = year;
-    if (m < 1) { m = 12; y -= 1; }
-    if (m > 12) { m = 1; y += 1; }
+    if (m < 1) {
+      m = 12;
+      y -= 1;
+    }
+    if (m > 12) {
+      m = 1;
+      y += 1;
+    }
     setMonth(m);
     setYear(y);
   };
@@ -64,7 +80,10 @@ export default function PerformanceReportScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 4 }}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{ padding: 4 }}
+        >
           <ChevronLeft size={22} color={C.black} />
         </TouchableOpacity>
         <Text style={styles.title}>Performance Report</Text>
@@ -78,7 +97,9 @@ export default function PerformanceReportScreen() {
           <Text style={styles.monthText}>
             {MONTHS[month - 1]} {year}
           </Text>
-          {isCurrent && <Text style={styles.sub}>1–{now.getDate()} (till now)</Text>}
+          {isCurrent && (
+            <Text style={styles.sub}>1–{now.getDate()} (till now)</Text>
+          )}
         </View>
         <TouchableOpacity
           onPress={() => shift(1)}
@@ -133,7 +154,22 @@ const styles = StyleSheet.create({
   },
   arrow: { padding: 6, borderWidth: 1, borderColor: C.black, borderRadius: 8 },
   monthText: { fontFamily: FONT.bold, fontSize: 16, color: C.black },
-  sub: { fontFamily: FONT.medium, fontSize: 12, color: C.black, marginBottom: 8 },
-  card: { borderWidth: 2, borderRadius: 8, borderRightWidth: 5, borderBottomWidth: 5, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black, overflow: 'hidden', backgroundColor: C.white },
+  sub: {
+    fontFamily: FONT.medium,
+    fontSize: 12,
+    color: C.black,
+    marginBottom: 8,
+  },
+  card: {
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderColor: C.black,
+    overflow: 'hidden',
+    backgroundColor: C.white,
+  },
   empty: { fontFamily: FONT.medium, fontSize: 13, color: C.black, padding: 14 },
 });

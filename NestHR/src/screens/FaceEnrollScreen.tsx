@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   View,
   Text,
@@ -38,13 +44,23 @@ const MIN_TILT_DEG = 8; // below this the head isn't pointing anywhere yet
 const STEADY_MS = 700;
 const UPLOAD_ATTEMPTS = 2;
 
-type Phase = 'loading' | 'no-permission' | 'no-camera' | 'circle' | 'straight' | 'uploading' | 'success' | 'error';
+type Phase =
+  | 'loading'
+  | 'no-permission'
+  | 'no-camera'
+  | 'circle'
+  | 'straight'
+  | 'uploading'
+  | 'success'
+  | 'error';
 
 export default function FaceEnrollScreen({ navigation }: any) {
   const isFocused = useIsFocused();
   const device = useCameraDevice('front');
   // Small photo = fast upload; the face service downsizes to 320px anyway.
-  const format = useCameraFormat(device, [{ photoResolution: { width: 640, height: 480 } }]);
+  const format = useCameraFormat(device, [
+    { photoResolution: { width: 640, height: 480 } },
+  ]);
   const { hasPermission, requestPermission } = useCameraPermission();
 
   const cameraRef = useRef<Camera>(null);
@@ -80,8 +96,18 @@ export default function FaceEnrollScreen({ navigation }: any) {
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, { toValue: 1, duration: 1100, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 0, duration: 1100, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 1100,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 0,
+          duration: 1100,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
       ]),
     );
     loop.start();
@@ -100,7 +126,8 @@ export default function FaceEnrollScreen({ navigation }: any) {
     try {
       const photo = await cameraRef.current?.takePhoto({ flash: 'off' });
       if (!photo?.path) throw new Error('Could not capture photo. Try again.');
-      const uri = Platform.OS === 'android' ? `file://${photo.path}` : photo.path;
+      const uri =
+        Platform.OS === 'android' ? `file://${photo.path}` : photo.path;
       const name = `face_${Date.now()}.jpg`;
 
       // First request after a server restart can be slow (model warm-up) or hit
@@ -147,11 +174,16 @@ export default function FaceEnrollScreen({ navigation }: any) {
         if (tilt >= MIN_TILT_DEG) {
           // Front camera mirrors yaw, so flip it to match what the user sees.
           const ang = Math.atan2(-pitch, -yaw); // -PI..PI, 0 = right, PI/2 = down
-          const idx = Math.round(((ang + Math.PI) / (2 * Math.PI)) * SEGMENTS) % SEGMENTS;
+          const idx =
+            Math.round(((ang + Math.PI) / (2 * Math.PI)) * SEGMENTS) % SEGMENTS;
           const f = filledRef.current;
           // Fill the hit tick and its neighbours so sweeping feels smooth.
           let changed = false;
-          for (const k of [idx, (idx + 1) % SEGMENTS, (idx + SEGMENTS - 1) % SEGMENTS]) {
+          for (const k of [
+            idx,
+            (idx + 1) % SEGMENTS,
+            (idx + SEGMENTS - 1) % SEGMENTS,
+          ]) {
             if (!f[k]) {
               f[k] = true;
               changed = true;
@@ -166,7 +198,8 @@ export default function FaceEnrollScreen({ navigation }: any) {
           }
         }
       } else {
-        const straight = Math.abs(yaw) < STRAIGHT_DEG && Math.abs(pitch) < STRAIGHT_DEG;
+        const straight =
+          Math.abs(yaw) < STRAIGHT_DEG && Math.abs(pitch) < STRAIGHT_DEG;
         if (!straight) {
           steadySinceRef.current = null;
         } else {
@@ -215,7 +248,10 @@ export default function FaceEnrollScreen({ navigation }: any) {
 
   const done = phase === 'success';
   const count = filled.filter(Boolean).length;
-  const ringScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.025] });
+  const ringScale = pulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.025],
+  });
 
   const title =
     phase === 'circle'
@@ -234,7 +270,10 @@ export default function FaceEnrollScreen({ navigation }: any) {
         <View style={styles.centerMsg}>
           <AlertCircle size={32} color={C.white} />
           <Text style={styles.msgTitle}>Camera permission required</Text>
-          <TouchableOpacity style={styles.btn} onPress={() => Linking.openSettings()}>
+          <TouchableOpacity
+            style={styles.btn}
+            onPress={() => Linking.openSettings()}
+          >
             <Text style={styles.btnText}>Open Settings</Text>
           </TouchableOpacity>
         </View>
@@ -284,7 +323,12 @@ export default function FaceEnrollScreen({ navigation }: any) {
               style={StyleSheet.absoluteFill}
               device={device}
               format={format}
-              isActive={isFocused && (phase === 'circle' || phase === 'straight' || phase === 'uploading')}
+              isActive={
+                isFocused &&
+                (phase === 'circle' ||
+                  phase === 'straight' ||
+                  phase === 'uploading')
+              }
               photo
               frameProcessor={frameProcessor}
             />
@@ -296,19 +340,32 @@ export default function FaceEnrollScreen({ navigation }: any) {
           pointerEvents="none"
           style={[
             styles.ring,
-            { transform: [{ scale: phase === 'circle' || phase === 'straight' ? ringScale : 1 }] },
+            {
+              transform: [
+                {
+                  scale:
+                    phase === 'circle' || phase === 'straight' ? ringScale : 1,
+                },
+              ],
+            },
           ]}
         >
           {ticks.map(t => (
             <View
               key={t.i}
-              style={[styles.tickHolder, { transform: [{ rotate: `${t.rot}deg` }] }]}
+              style={[
+                styles.tickHolder,
+                { transform: [{ rotate: `${t.rot}deg` }] },
+              ]}
             >
               <View
                 style={[
                   styles.tick,
                   {
-                    backgroundColor: done || filled[t.i] ? C.success : 'rgba(255,255,255,0.28)',
+                    backgroundColor:
+                      done || filled[t.i]
+                        ? C.success
+                        : 'rgba(255,255,255,0.28)',
                     height: filled[t.i] || done ? TICK_H + 4 : TICK_H,
                   },
                 ]}
@@ -326,11 +383,18 @@ export default function FaceEnrollScreen({ navigation }: any) {
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.footerTitle}>{done ? 'Face ID set up' : title}</Text>
+        <Text style={styles.footerTitle}>
+          {done ? 'Face ID set up' : title}
+        </Text>
         {phase === 'circle' && (
-          <Text style={styles.footerSub}>{Math.min(100, Math.round((count / SEGMENTS / NEEDED) * 100))}% complete</Text>
+          <Text style={styles.footerSub}>
+            {Math.min(100, Math.round((count / SEGMENTS / NEEDED) * 100))}%
+            complete
+          </Text>
         )}
-        {phase === 'uploading' && <ActivityIndicator color={C.white} style={{ marginTop: 10 }} />}
+        {phase === 'uploading' && (
+          <ActivityIndicator color={C.white} style={{ marginTop: 10 }} />
+        )}
       </View>
     </SafeAreaView>
   );
@@ -392,7 +456,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     gap: 10,
   },
-  msgTitle: { color: C.white, fontWeight: '700', fontSize: 16, textAlign: 'center' },
+  msgTitle: {
+    color: C.white,
+    fontWeight: '700',
+    fontSize: 16,
+    textAlign: 'center',
+  },
   btn: {
     marginTop: 8,
     backgroundColor: C.primary,
@@ -401,7 +470,17 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   btnText: { color: C.white, fontWeight: '700', fontSize: 13 },
-  footer: { paddingHorizontal: 24, paddingVertical: 28, alignItems: 'center', minHeight: 110 },
-  footerTitle: { color: C.white, fontSize: 18, fontWeight: '700', textAlign: 'center' },
+  footer: {
+    paddingHorizontal: 24,
+    paddingVertical: 28,
+    alignItems: 'center',
+    minHeight: 110,
+  },
+  footerTitle: {
+    color: C.white,
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
   footerSub: { color: '#9CA3AF', fontSize: 13, marginTop: 6 },
 });

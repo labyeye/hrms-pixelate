@@ -42,7 +42,9 @@ export function ProgressBar({ value }: { value: number | null }) {
           }}
         />
       </div>
-      <span className={cn("text-xs font-bold w-9 text-right", scoreColor(value))}>
+      <span
+        className={cn("text-xs font-bold w-9 text-right", scoreColor(value))}
+      >
         {value != null ? `${value}%` : "—"}
       </span>
     </div>
@@ -132,7 +134,9 @@ export function LiveMetricsTable({
           onClick={() => setShowAll((v) => !v)}
           className="mt-3 text-xs font-bold text-[#024BAB] hover:underline"
         >
-          {showAll ? "Show less" : `View more (${sorted.length - initialCount})`}
+          {showAll
+            ? "Show less"
+            : `View more (${sorted.length - initialCount})`}
         </button>
       )}
     </>

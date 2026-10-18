@@ -71,7 +71,9 @@ const fmt = (d?: string) =>
 
 const isLate = (t: any) =>
   t.late ||
-  (t.status !== 'completed' && !!t.dueDate && new Date(t.dueDate).getTime() < Date.now());
+  (t.status !== 'completed' &&
+    !!t.dueDate &&
+    new Date(t.dueDate).getTime() < Date.now());
 
 export default function TasksScreen() {
   const navigation = useNavigation<any>();
@@ -183,22 +185,26 @@ export default function TasksScreen() {
   };
 
   const remove = (t: any) =>
-    Alert.alert('Delete task', 'This moves it to Trash. You can restore it later.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await taskAPI.delete(t._id);
-            setSelected(null);
-            await load();
-          } catch (e: any) {
-            Alert.alert('Error', e?.message || 'Failed to delete task');
-          }
+    Alert.alert(
+      'Delete task',
+      'This moves it to Trash. You can restore it later.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await taskAPI.delete(t._id);
+              setSelected(null);
+              await load();
+            } catch (e: any) {
+              Alert.alert('Error', e?.message || 'Failed to delete task');
+            }
+          },
         },
-      },
-    ]);
+      ],
+    );
 
   const sendComment = async () => {
     if (!comment.trim() || !selected) return;
@@ -218,12 +224,20 @@ export default function TasksScreen() {
       loading={loading}
       right={
         canAssign ? (
-          <HeaderBtn label="Assign" icon={<Plus size={14} color="#fff" />} onPress={openCreate} />
+          <HeaderBtn
+            label="Assign"
+            icon={<Plus size={14} color="#fff" />}
+            onPress={openCreate}
+          />
         ) : undefined
       }
     >
       <View style={s.topBar}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10} style={s.back}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          hitSlop={10}
+          style={s.back}
+        >
           <ChevronLeft size={18} color={C.black} />
           <Text style={s.backText}>Back</Text>
         </TouchableOpacity>
@@ -232,7 +246,9 @@ export default function TasksScreen() {
       <View style={s.kpis}>
         {STATUSES.map(st => (
           <View key={st.key} style={[s.kpi, { borderColor: st.color }]}>
-            <Text style={[s.kpiValue, { color: st.color }]}>{count(st.key)}</Text>
+            <Text style={[s.kpiValue, { color: st.color }]}>
+              {count(st.key)}
+            </Text>
             <Text style={s.kpiLabel}>{st.label}</Text>
           </View>
         ))}
@@ -250,9 +266,18 @@ export default function TasksScreen() {
           placeholder="Search tasks..."
           placeholderTextColor="#6B7280"
         />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8 }}
+        >
           {[{ key: 'all', label: 'All' }, ...STATUSES].map(x => (
-            <Pill key={x.key} label={x.label} on={statusFilter === x.key} onPress={() => setStatusFilter(x.key)} />
+            <Pill
+              key={x.key}
+              label={x.label}
+              on={statusFilter === x.key}
+              onPress={() => setStatusFilter(x.key)}
+            />
           ))}
           <View style={s.pillGap} />
           {['all', ...PRIORITIES].map(p => (
@@ -270,27 +295,51 @@ export default function TasksScreen() {
         data={shown}
         keyExtractor={t => t._id}
         contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 10 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         ListEmptyComponent={<Text style={s.empty}>No tasks found</Text>}
         renderItem={({ item: t }) => (
-          <TouchableOpacity style={s.card} activeOpacity={0.85} onPress={() => setSelected(t)}>
+          <TouchableOpacity
+            style={s.card}
+            activeOpacity={0.85}
+            onPress={() => setSelected(t)}
+          >
             <View style={s.cardTop}>
               <Text style={s.cardTitle} numberOfLines={2}>
                 {t.title}
               </Text>
-              <Badge label={t.priority} color={PRIORITY_COLOR[t.priority] || C.primary} />
+              <Badge
+                label={t.priority}
+                color={PRIORITY_COLOR[t.priority] || C.primary}
+              />
             </View>
             <View style={s.metaRow}>
               <MetaChip text={t.assignedTo?.name || '—'} bg={CHIP.blue} />
-              <Badge label={STATUS_LABEL[t.status] || t.status} color={STATUS_COLOR[t.status] || C.primary} />
+              <Badge
+                label={STATUS_LABEL[t.status] || t.status}
+                color={STATUS_COLOR[t.status] || C.primary}
+              />
             </View>
             <View style={s.metaRow}>
-              <MetaChip icon={<Calendar size={12} color={C.black} />} text={fmt(t.dueDate)} bg={CHIP.blue} />
+              <MetaChip
+                icon={<Calendar size={12} color={C.black} />}
+                text={fmt(t.dueDate)}
+                bg={CHIP.blue}
+              />
               {isLate(t) && (
-                <MetaChip icon={<AlertTriangle size={12} color={C.black} />} text="LATE" bg={CHIP.red} />
+                <MetaChip
+                  icon={<AlertTriangle size={12} color={C.black} />}
+                  text="LATE"
+                  bg={CHIP.red}
+                />
               )}
               {t.comments?.length ? (
-                <MetaChip icon={<MessageSquare size={12} color={C.black} />} text={String(t.comments.length)} bg={CHIP.blue} />
+                <MetaChip
+                  icon={<MessageSquare size={12} color={C.black} />}
+                  text={String(t.comments.length)}
+                  bg={CHIP.blue}
+                />
               ) : null}
             </View>
           </TouchableOpacity>
@@ -298,7 +347,12 @@ export default function TasksScreen() {
       />
 
       {/* Detail */}
-      <Modal visible={!!selected} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setSelected(null)}>
+      <Modal
+        visible={!!selected}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setSelected(null)}
+      >
         <SafeAreaView edges={['top']} style={s.sheet}>
           <View style={s.sheetHeader}>
             <Text style={s.sheetTitle} numberOfLines={1}>
@@ -307,10 +361,16 @@ export default function TasksScreen() {
             <View style={s.headerActions}>
               {canAssign && selected && (
                 <>
-                  <TouchableOpacity onPress={() => openEdit(selected)} hitSlop={8}>
+                  <TouchableOpacity
+                    onPress={() => openEdit(selected)}
+                    hitSlop={8}
+                  >
                     <Pencil size={18} color={C.primary} />
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => remove(selected)} hitSlop={8}>
+                  <TouchableOpacity
+                    onPress={() => remove(selected)}
+                    hitSlop={8}
+                  >
                     <Trash2 size={18} color={C.danger} />
                   </TouchableOpacity>
                 </>
@@ -321,16 +381,31 @@ export default function TasksScreen() {
             </View>
           </View>
           {selected && (
-            <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+            <ScrollView
+              contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+              keyboardShouldPersistTaps="handled"
+            >
               <Text style={s.detailTitle}>{selected.title}</Text>
               <View style={[s.metaRow, { marginVertical: 8 }]}>
-                <Badge label={selected.priority} color={PRIORITY_COLOR[selected.priority] || C.primary} />
-                <Badge label={STATUS_LABEL[selected.status] || selected.status} color={STATUS_COLOR[selected.status] || C.primary} />
+                <Badge
+                  label={selected.priority}
+                  color={PRIORITY_COLOR[selected.priority] || C.primary}
+                />
+                <Badge
+                  label={STATUS_LABEL[selected.status] || selected.status}
+                  color={STATUS_COLOR[selected.status] || C.primary}
+                />
                 {isLate(selected) && <Badge label="Late" color={C.danger} />}
               </View>
-              {selected.description ? <Text style={s.body}>{selected.description}</Text> : null}
-              <Text style={s.meta}>Assigned to: {selected.assignedTo?.name || '—'}</Text>
-              <Text style={s.meta}>Assigned by: {selected.assignedBy?.name || '—'}</Text>
+              {selected.description ? (
+                <Text style={s.body}>{selected.description}</Text>
+              ) : null}
+              <Text style={s.meta}>
+                Assigned to: {selected.assignedTo?.name || '—'}
+              </Text>
+              <Text style={s.meta}>
+                Assigned by: {selected.assignedBy?.name || '—'}
+              </Text>
               <Text style={s.meta}>Due: {fmt(selected.dueDate)}</Text>
 
               <Text style={s.section}>Update status</Text>
@@ -338,10 +413,23 @@ export default function TasksScreen() {
                 {STATUSES.map(st => (
                   <TouchableOpacity
                     key={st.key}
-                    style={[s.statusBtn, { borderColor: st.color }, selected.status === st.key && { backgroundColor: st.color }]}
+                    style={[
+                      s.statusBtn,
+                      { borderColor: st.color },
+                      selected.status === st.key && {
+                        backgroundColor: st.color,
+                      },
+                    ]}
                     onPress={() => setStatus(selected, st.key)}
                   >
-                    <Text style={[s.statusBtnText, selected.status === st.key && { color: '#fff' }]}>{st.label}</Text>
+                    <Text
+                      style={[
+                        s.statusBtnText,
+                        selected.status === st.key && { color: '#fff' },
+                      ]}
+                    >
+                      {st.label}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -368,7 +456,11 @@ export default function TasksScreen() {
                   placeholderTextColor="#6B7280"
                   multiline
                 />
-                <TouchableOpacity style={s.sendBtn} onPress={sendComment} hitSlop={6}>
+                <TouchableOpacity
+                  style={s.sendBtn}
+                  onPress={sendComment}
+                  hitSlop={6}
+                >
                   <Send size={18} color="#fff" />
                 </TouchableOpacity>
               </View>
@@ -378,7 +470,8 @@ export default function TasksScreen() {
                   <Text style={s.section}>History</Text>
                   {selected.statusHistory.map((h: any, i: number) => (
                     <Text key={i} style={s.meta}>
-                      {STATUS_LABEL[h.status] || h.status} · {h.changedBy?.name || '—'} · {fmt(h.changedAt)}
+                      {STATUS_LABEL[h.status] || h.status} ·{' '}
+                      {h.changedBy?.name || '—'} · {fmt(h.changedAt)}
                     </Text>
                   ))}
                 </>
@@ -389,17 +482,32 @@ export default function TasksScreen() {
       </Modal>
 
       {/* Create / edit */}
-      <Modal visible={formOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setFormOpen(false)}>
+      <Modal
+        visible={formOpen}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setFormOpen(false)}
+      >
         <SafeAreaView edges={['top']} style={s.sheet}>
           <View style={s.sheetHeader}>
-            <Text style={s.sheetTitle}>{editing ? 'Edit Task' : 'Assign Task'}</Text>
+            <Text style={s.sheetTitle}>
+              {editing ? 'Edit Task' : 'Assign Task'}
+            </Text>
             <TouchableOpacity onPress={() => setFormOpen(false)} hitSlop={8}>
               <X size={22} color={C.black} />
             </TouchableOpacity>
           </View>
-          <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+            keyboardShouldPersistTaps="handled"
+          >
             <Text style={s.label}>Title *</Text>
-            <TextInput style={s.input} value={form.title} onChangeText={v => setForm(f => ({ ...f, title: v }))} maxLength={200} />
+            <TextInput
+              style={s.input}
+              value={form.title}
+              onChangeText={v => setForm(f => ({ ...f, title: v }))}
+              maxLength={200}
+            />
             <Text style={s.label}>Description</Text>
             <TextInput
               style={[s.input, { height: 90, textAlignVertical: 'top' }]}
@@ -418,7 +526,9 @@ export default function TasksScreen() {
                     <TouchableOpacity
                       key={e._id}
                       style={[s.pickRow, on && s.pickRowOn]}
-                      onPress={() => setForm(f => ({ ...f, assignedTo: e.user }))}
+                      onPress={() =>
+                        setForm(f => ({ ...f, assignedTo: e.user }))
+                      }
                     >
                       <Text style={[s.pickText, on && { color: '#fff' }]}>
                         {e.firstName} {e.lastName}
@@ -432,16 +542,43 @@ export default function TasksScreen() {
               {PRIORITIES.map(p => (
                 <TouchableOpacity
                   key={p}
-                  style={[s.statusBtn, { borderColor: PRIORITY_COLOR[p] }, form.priority === p && { backgroundColor: PRIORITY_COLOR[p] }]}
+                  style={[
+                    s.statusBtn,
+                    { borderColor: PRIORITY_COLOR[p] },
+                    form.priority === p && {
+                      backgroundColor: PRIORITY_COLOR[p],
+                    },
+                  ]}
                   onPress={() => setForm(f => ({ ...f, priority: p }))}
                 >
-                  <Text style={[s.statusBtnText, form.priority === p && { color: '#fff' }]}>{p}</Text>
+                  <Text
+                    style={[
+                      s.statusBtnText,
+                      form.priority === p && { color: '#fff' },
+                    ]}
+                  >
+                    {p}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
-            <DatePickerField label="Due date" value={form.dueDate} onChange={v => setForm(f => ({ ...f, dueDate: v }))} />
-            <TouchableOpacity style={[s.saveBtn, saving && { opacity: 0.6 }]} onPress={save} disabled={saving}>
-              <Text style={s.saveText}>{saving ? 'Saving...' : editing ? 'Save Changes' : 'Assign Task'}</Text>
+            <DatePickerField
+              label="Due date"
+              value={form.dueDate}
+              onChange={v => setForm(f => ({ ...f, dueDate: v }))}
+            />
+            <TouchableOpacity
+              style={[s.saveBtn, saving && { opacity: 0.6 }]}
+              onPress={save}
+              disabled={saving}
+            >
+              <Text style={s.saveText}>
+                {saving
+                  ? 'Saving...'
+                  : editing
+                    ? 'Save Changes'
+                    : 'Assign Task'}
+              </Text>
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
@@ -450,7 +587,15 @@ export default function TasksScreen() {
   );
 }
 
-function Pill({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+function Pill({
+  label,
+  on,
+  onPress,
+}: {
+  label: string;
+  on: boolean;
+  onPress: () => void;
+}) {
   return (
     <TouchableOpacity onPress={onPress} style={[s.pill, on && s.pillOn]}>
       <Text style={[s.pillText, on && { color: '#fff' }]}>{label}</Text>
@@ -469,11 +614,31 @@ function Badge({ label, color }: { label: string; color: string }) {
 const s = StyleSheet.create({
   topBar: { paddingHorizontal: 16, paddingTop: 10 },
   back: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start' },
-  backText: { fontFamily: FONT.bold, fontSize: 12, color: C.black, textTransform: 'uppercase' },
+  backText: {
+    fontFamily: FONT.bold,
+    fontSize: 12,
+    color: C.black,
+    textTransform: 'uppercase',
+  },
   kpis: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingTop: 10 },
-  kpi: { flex: 1, borderWidth: 2, borderRadius: 8, borderRightWidth: 5, borderBottomWidth: 5, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', paddingVertical: 8, alignItems: 'center' },
+  kpi: {
+    flex: 1,
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
   kpiValue: { fontFamily: FONT.bold, fontSize: 20 },
-  kpiLabel: { fontFamily: FONT.bold, fontSize: 9, color: C.black, textTransform: 'uppercase' },
+  kpiLabel: {
+    fontFamily: FONT.bold,
+    fontSize: 9,
+    color: C.black,
+    textTransform: 'uppercase',
+  },
   filters: { paddingHorizontal: 16, paddingTop: 10, gap: 8 },
   search: {
     fontFamily: FONT.medium,
@@ -489,19 +654,68 @@ const s = StyleSheet.create({
     fontSize: 14,
     color: C.black,
   },
-  pill: { borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black, paddingHorizontal: 12, paddingVertical: 6 },
+  pill: {
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderRadius: 8,
+    borderColor: C.black,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
   pillOn: { backgroundColor: C.primary, borderColor: C.primary },
-  pillText: { fontFamily: FONT.bold, fontSize: 11, color: C.black, textTransform: 'uppercase' },
+  pillText: {
+    fontFamily: FONT.bold,
+    fontSize: 11,
+    color: C.black,
+    textTransform: 'uppercase',
+  },
   pillGap: { width: 6 },
-  card: { borderWidth: 2, borderRadius: 8, borderRightWidth: 5, borderBottomWidth: 5, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black, padding: 12, backgroundColor: '#fff' },
+  card: {
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderColor: C.black,
+    padding: 12,
+    backgroundColor: '#fff',
+  },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
   cardTitle: { flex: 1, fontFamily: FONT.bold, fontSize: 15, color: C.black },
-  metaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, gap: 8, flexWrap: 'wrap' },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    gap: 8,
+    flexWrap: 'wrap',
+  },
   inline: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   meta: { fontFamily: FONT.medium, fontSize: 12, color: C.black },
-  empty: { textAlign: 'center', fontFamily: FONT.bold, color: '#6B7280', marginTop: 40 },
-  badge: { borderWidth: 2, borderRadius: 999, borderColor: '#0A0A0A', borderRightWidth: 4, borderBottomWidth: 4, paddingHorizontal: 8, paddingVertical: 1 },
-  badgeText: { fontFamily: FONT.bold, fontSize: 10, textTransform: 'uppercase' },
+  empty: {
+    textAlign: 'center',
+    fontFamily: FONT.bold,
+    color: '#6B7280',
+    marginTop: 40,
+  },
+  badge: {
+    borderWidth: 2,
+    borderRadius: 999,
+    borderColor: '#0A0A0A',
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 1,
+  },
+  badgeText: {
+    fontFamily: FONT.bold,
+    fontSize: 10,
+    textTransform: 'uppercase',
+  },
   sheet: { flex: 1, backgroundColor: '#fff' },
   sheetHeader: {
     flexDirection: 'row',
@@ -515,14 +729,51 @@ const s = StyleSheet.create({
   sheetTitle: { fontFamily: FONT.bold, fontSize: 17, color: C.black },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   detailTitle: { fontFamily: FONT.bold, fontSize: 18, color: C.black },
-  body: { fontFamily: FONT.medium, fontSize: 14, color: C.black, marginBottom: 8 },
-  section: { fontFamily: FONT.bold, fontSize: 12, color: C.black, textTransform: 'uppercase', marginTop: 18, marginBottom: 8 },
+  body: {
+    fontFamily: FONT.medium,
+    fontSize: 14,
+    color: C.black,
+    marginBottom: 8,
+  },
+  section: {
+    fontFamily: FONT.bold,
+    fontSize: 12,
+    color: C.black,
+    textTransform: 'uppercase',
+    marginTop: 18,
+    marginBottom: 8,
+  },
   statusRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  statusBtn: { flex: 1, borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, paddingVertical: 8, alignItems: 'center' },
-  statusBtnText: { fontFamily: FONT.bold, fontSize: 11, color: C.black, textTransform: 'uppercase' },
-  comment: { borderLeftWidth: 3, borderLeftColor: C.primary, paddingLeft: 10, marginBottom: 10 },
+  statusBtn: {
+    flex: 1,
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderRadius: 8,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  statusBtnText: {
+    fontFamily: FONT.bold,
+    fontSize: 11,
+    color: C.black,
+    textTransform: 'uppercase',
+  },
+  comment: {
+    borderLeftWidth: 3,
+    borderLeftColor: C.primary,
+    paddingLeft: 10,
+    marginBottom: 10,
+  },
   commentUser: { fontFamily: FONT.bold, fontSize: 11, color: C.black },
-  commentBox: { flexDirection: 'row', gap: 8, alignItems: 'flex-end', marginTop: 8 },
+  commentBox: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'flex-end',
+    marginTop: 8,
+  },
   commentInput: {
     flex: 1,
     fontFamily: FONT.medium,
@@ -538,13 +789,75 @@ const s = StyleSheet.create({
     maxHeight: 100,
     color: C.black,
   },
-  sendBtn: { backgroundColor: C.primary, borderWidth: 2, borderRadius: 8, borderRightWidth: 5, borderBottomWidth: 5, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black, padding: 10 },
-  label: { fontFamily: FONT.bold, fontSize: 12, color: C.black, textTransform: 'uppercase', marginTop: 12, marginBottom: 6 },
-  input: { fontFamily: FONT.medium, borderWidth: 2, borderRadius: 8, borderRightWidth: 5, borderBottomWidth: 5, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: C.black },
-  pickList: { borderWidth: 2, borderRadius: 8, borderRightWidth: 5, borderBottomWidth: 5, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black, maxHeight: 180, marginBottom: 4 },
-  pickRow: { paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 2, borderBottomColor: C.black },
+  sendBtn: {
+    backgroundColor: C.primary,
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderColor: C.black,
+    padding: 10,
+  },
+  label: {
+    fontFamily: FONT.bold,
+    fontSize: 12,
+    color: C.black,
+    textTransform: 'uppercase',
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  input: {
+    fontFamily: FONT.medium,
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderColor: C.black,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: C.black,
+  },
+  pickList: {
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderColor: C.black,
+    maxHeight: 180,
+    marginBottom: 4,
+  },
+  pickRow: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
+  },
   pickRowOn: { backgroundColor: C.primary },
   pickText: { fontFamily: FONT.medium, fontSize: 14, color: C.black },
-  saveBtn: { backgroundColor: C.primary, borderWidth: 2, borderRadius: 8, borderRightWidth: 5, borderBottomWidth: 5, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black, paddingVertical: 12, alignItems: 'center', marginTop: 16 },
-  saveText: { fontFamily: FONT.bold, color: '#fff', fontSize: 13, textTransform: 'uppercase' },
+  saveBtn: {
+    backgroundColor: C.primary,
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderColor: C.black,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  saveText: {
+    fontFamily: FONT.bold,
+    color: '#fff',
+    fontSize: 13,
+    textTransform: 'uppercase',
+  },
 });

@@ -9,10 +9,23 @@ const {
   escapeRegex,
   safePagination,
   validateBody,
-  validateMongoId,
 } = require("../middleware/validate");
 const { logAudit } = require("../utils/auditLogger");
 const { validateMagicBytes } = require("../middleware/upload");
+const Counter = require("../models/Counter");
+
+// EMP#### from an atomic per-company sequence; the first call seeds it from the highest id already issued.
+async function nextEmployeeId(company) {
+  const seq = await Counter.next(`employee-${company}`, async () => {
+    const last = await Employee.findOne({ company }).sort({ createdAt: -1 });
+    return last ? parseInt(last.employeeId?.replace(/\D/g, "") || "0") : 0;
+  });
+  return `EMP${String(seq).padStart(4, "0")}`;
+}
+
+// Passwords an admin types for someone else: 8-128 chars with at least one letter and one digit.
+const PASSWORD_OK = (pw) => typeof pw === "string" && pw.length >= 8 && pw.length <= 128 && /[A-Za-z]/.test(pw) && /\d/.test(pw);
+const PASSWORD_MSG = "Password must be 8-128 characters with at least one letter and one number";
 const { enrollFace } = require("../services/faceService");
 
 const createSchema = {
@@ -173,6 +186,11 @@ const createEmployee = [
       res.status(400);
       throw new Error("Invalid role");
     }
+    // Only a super_admin may hand out the privileged roles.
+    if (["super_admin", "hr_manager"].includes(role) && req.user.role !== "super_admin") {
+      res.status(403);
+      throw new Error("Only a super admin can assign this role");
+    }
     if (role === "department_head" && !headOfDepartment) {
       res.status(400);
       throw new Error(
@@ -187,6 +205,11 @@ const createEmployee = [
 
     let userId;
     const existingUser = await User.findOne({ email: normalizedEmail });
+    // An email that already belongs to a login in ANOTHER organisation must never be linked or re-roled from here.
+    if (existingUser && String(existingUser.company || "") !== String(req.user.company || "")) {
+      res.status(409);
+      throw new Error("An account with this email already exists in another organisation");
+    }
     if (existingUser) {
       userId = existingUser._id;
       if (role) {
@@ -197,10 +220,11 @@ const createEmployee = [
       }
     } else {
       const { password: providedPassword } = req.body;
-      const tempPassword =
-        providedPassword && providedPassword.length >= 6
-          ? providedPassword
-          : crypto.randomBytes(8).toString("hex") + "A1";
+      if (providedPassword && !PASSWORD_OK(providedPassword)) {
+        res.status(400);
+        throw new Error(PASSWORD_MSG);
+      }
+      const tempPassword = providedPassword ? providedPassword : crypto.randomBytes(8).toString("hex") + "A1";
       const user = await User.create({
         name: `${firstName.trim()} ${lastName.trim()}`,
         email: normalizedEmail,
@@ -219,13 +243,7 @@ const createEmployee = [
       );
     }
 
-    const lastEmp = await Employee.findOne({ company: req.user.company }).sort({
-      createdAt: -1,
-    });
-    const lastNum = lastEmp
-      ? parseInt(lastEmp.employeeId?.replace(/\D/g, "") || "0")
-      : 0;
-    const empId = `EMP${String(lastNum + 1).padStart(4, "0")}`;
+    const empId = await nextEmployeeId(req.user.company);
 
     const employee = await Employee.create({
       user: userId,
@@ -424,6 +442,10 @@ const updateEmployee = [
         res.status(400);
         throw new Error("Invalid role");
       }
+      if (["super_admin", "hr_manager"].includes(req.body.role) && req.user.role !== "super_admin") {
+        res.status(403);
+        throw new Error("Only a super admin can assign this role");
+      }
       if (req.body.role === "department_head" && !req.body.headOfDepartment) {
         res.status(400);
         throw new Error(
@@ -485,13 +507,9 @@ const resetEmployeePassword = asyncHandler(async (req, res) => {
   }
 
   const { password } = req.body;
-  if (!password || typeof password !== "string" || password.length < 6) {
+  if (!PASSWORD_OK(password)) {
     res.status(400);
-    throw new Error("Password must be at least 6 characters");
-  }
-  if (password.length > 128) {
-    res.status(400);
-    throw new Error("Password too long");
+    throw new Error(PASSWORD_MSG);
   }
 
   const linkedUser = await User.findOne({ email: employee.email });
@@ -525,13 +543,6 @@ const bulkImportEmployees = asyncHandler(async (req, res) => {
     Shift.find({ company: req.user.company }),
   ]);
 
-  const lastEmp = await Employee.findOne({ company: req.user.company }).sort({
-    createdAt: -1,
-  });
-  let lastNum = lastEmp
-    ? parseInt(lastEmp.employeeId?.replace(/\D/g, "") || "0")
-    : 0;
-
   const results = [];
 
   for (let i = 0; i < rows.length; i++) {
@@ -562,11 +573,15 @@ const bulkImportEmployees = asyncHandler(async (req, res) => {
 
       let userId;
       const existingUser = await User.findOne({ email });
+      if (existingUser && String(existingUser.company || "") !== String(req.user.company || "")) {
+        results.push({ row: i + 1, status: "error", message: "Email already belongs to another organisation" });
+        continue;
+      }
       if (existingUser) {
         userId = existingUser._id;
       } else {
         const tempPassword =
-          row.password && row.password.length >= 6
+          row.password && PASSWORD_OK(row.password)
             ? row.password
             : crypto.randomBytes(8).toString("hex") + "A1";
         const user = await User.create({
@@ -579,8 +594,7 @@ const bulkImportEmployees = asyncHandler(async (req, res) => {
         userId = user._id;
       }
 
-      lastNum += 1;
-      const empId = `EMP${String(lastNum).padStart(4, "0")}`;
+      const empId = await nextEmployeeId(req.user.company);
 
       const employee = await Employee.create({
         user: userId,

@@ -66,7 +66,12 @@ export default function DocumentsScreen() {
   const [showUpload, setShowUpload] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [pickedFile, setPickedFile] = useState<any>(null);
-  const [uploadForm, setUploadForm] = useState({ name: '', docType: 'other', employeeId: '', expiryDate: '' });
+  const [uploadForm, setUploadForm] = useState({
+    name: '',
+    docType: 'other',
+    employeeId: '',
+    expiryDate: '',
+  });
   const [showDocTypePicker, setShowDocTypePicker] = useState(false);
   const [showEmpPicker, setShowEmpPicker] = useState(false);
   const [filterEmp, setFilterEmp] = useState('');
@@ -89,7 +94,11 @@ export default function DocumentsScreen() {
     }
   }, [isEmployee, filterEmp]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -125,7 +134,10 @@ export default function DocumentsScreen() {
       const asset = result.assets[0];
       setPickedFile(asset);
       if (!uploadForm.name && asset.fileName) {
-        setUploadForm(p => ({ ...p, name: asset.fileName!.replace(/\.[^.]+$/, '') }));
+        setUploadForm(p => ({
+          ...p,
+          name: asset.fileName!.replace(/\.[^.]+$/, ''),
+        }));
       }
     }
   };
@@ -160,7 +172,12 @@ export default function DocumentsScreen() {
       await documentAPI.upload(formData);
       setShowUpload(false);
       setPickedFile(null);
-      setUploadForm({ name: '', docType: 'other', employeeId: '', expiryDate: '' });
+      setUploadForm({
+        name: '',
+        docType: 'other',
+        employeeId: '',
+        expiryDate: '',
+      });
       load();
     } catch (e: any) {
       Alert.alert('Upload Failed', e.message);
@@ -170,15 +187,22 @@ export default function DocumentsScreen() {
   };
 
   const renderItem = ({ item }: { item: any }) => (
-    <TouchableOpacity style={styles.card} onPress={() => setPreviewDoc(item)} activeOpacity={0.85}>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => setPreviewDoc(item)}
+      activeOpacity={0.85}
+    >
       <View style={styles.cardLeft}>
         <View style={styles.iconBox}>
           <FileText size={18} color={C.primary} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.docName} numberOfLines={1}>{item.name}</Text>
+          <Text style={styles.docName} numberOfLines={1}>
+            {item.name}
+          </Text>
           <Text style={styles.docMeta}>
-            {DOC_TYPES.find(t => t.value === item.docType)?.label ?? item.docType}
+            {DOC_TYPES.find(t => t.value === item.docType)?.label ??
+              item.docType}
             {item.sizeBytes ? ` · ${formatBytes(item.sizeBytes)}` : ''}
           </Text>
           {!isEmployee && item.employee && (
@@ -190,7 +214,17 @@ export default function DocumentsScreen() {
             {new Date(item.createdAt).toLocaleDateString('en-IN')}
           </Text>
           {item.expiryDate && (
-            <Text style={[styles.docDate, { color: new Date(item.expiryDate) < new Date() ? C.danger : C.textMuted }]}>
+            <Text
+              style={[
+                styles.docDate,
+                {
+                  color:
+                    new Date(item.expiryDate) < new Date()
+                      ? C.danger
+                      : C.textMuted,
+                },
+              ]}
+            >
               Expires: {new Date(item.expiryDate).toLocaleDateString('en-IN')}
             </Text>
           )}
@@ -204,7 +238,10 @@ export default function DocumentsScreen() {
             if (url) {
               Share.share({ url, title: item.name, message: item.name });
             } else {
-              Alert.alert('Share', 'No shareable link available for this document.');
+              Alert.alert(
+                'Share',
+                'No shareable link available for this document.',
+              );
             }
           }}
         >
@@ -223,14 +260,26 @@ export default function DocumentsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backBtn}
+        >
           <ChevronLeft size={22} color={C.black} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Document Vault</Text>
         <View style={{ flex: 1 }} />
         <TouchableOpacity
           style={styles.addBtn}
-          onPress={() => { setPickedFile(null); setUploadForm({ name: '', docType: 'other', employeeId: '', expiryDate: '' }); setShowUpload(true); }}
+          onPress={() => {
+            setPickedFile(null);
+            setUploadForm({
+              name: '',
+              docType: 'other',
+              employeeId: '',
+              expiryDate: '',
+            });
+            setShowUpload(true);
+          }}
         >
           <Plus size={14} color={C.white} />
           <Text style={styles.addBtnText}>Upload</Text>
@@ -249,15 +298,26 @@ export default function DocumentsScreen() {
             style={[styles.chip, !filterEmp && styles.chipActive]}
             onPress={() => setFilterEmp('')}
           >
-            <Text style={[styles.chipText, !filterEmp && styles.chipTextActive]}>All</Text>
+            <Text
+              style={[styles.chipText, !filterEmp && styles.chipTextActive]}
+            >
+              All
+            </Text>
           </TouchableOpacity>
           {employees.slice(0, 15).map(e => (
             <TouchableOpacity
               key={e._id}
               style={[styles.chip, filterEmp === e._id && styles.chipActive]}
-              onPress={() => setFilterEmp(prev => prev === e._id ? '' : e._id)}
+              onPress={() =>
+                setFilterEmp(prev => (prev === e._id ? '' : e._id))
+              }
             >
-              <Text style={[styles.chipText, filterEmp === e._id && styles.chipTextActive]}>
+              <Text
+                style={[
+                  styles.chipText,
+                  filterEmp === e._id && styles.chipTextActive,
+                ]}
+              >
                 {e.firstName} {e.lastName}
               </Text>
             </TouchableOpacity>
@@ -274,7 +334,9 @@ export default function DocumentsScreen() {
           <FolderOpen size={48} color="#D1D5DB" />
           <Text style={styles.emptyTitle}>No documents</Text>
           <Text style={styles.emptySubtitle}>
-            {isEmployee ? 'No documents have been uploaded for you yet' : 'Upload a document to get started'}
+            {isEmployee
+              ? 'No documents have been uploaded for you yet'
+              : 'Upload a document to get started'}
           </Text>
         </View>
       ) : (
@@ -283,33 +345,54 @@ export default function DocumentsScreen() {
           keyExtractor={d => d._id}
           renderItem={renderItem}
           contentContainerStyle={{ padding: 16 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[C.primary]} tintColor={C.primary} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[C.primary]}
+              tintColor={C.primary}
+            />
+          }
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
           showsVerticalScrollIndicator={false}
         />
       )}
 
       {/* Upload Modal */}
-      <Modal visible={showUpload} animationType="slide" presentationStyle="formSheet">
+      <Modal
+        visible={showUpload}
+        animationType="slide"
+        presentationStyle="formSheet"
+      >
         <SafeAreaView style={styles.safe} edges={['top']}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Upload Document</Text>
-            <TouchableOpacity onPress={() => setShowUpload(false)}><X size={22} color={C.black} /></TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowUpload(false)}>
+              <X size={22} color={C.black} />
+            </TouchableOpacity>
           </View>
-          <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }} keyboardShouldPersistTaps="handled">
-
+          <ScrollView
+            contentContainerStyle={{ padding: 20, gap: 16 }}
+            keyboardShouldPersistTaps="handled"
+          >
             {/* File picker */}
             <TouchableOpacity style={styles.filePicker} onPress={pickImage}>
               {pickedFile ? (
                 <>
                   <ImageIcon size={24} color={C.primary} />
-                  <Text style={styles.filePickerName} numberOfLines={1}>{pickedFile.fileName || 'Image selected'}</Text>
-                  <Text style={styles.filePickerSize}>{formatBytes(pickedFile.fileSize || 0)}</Text>
+                  <Text style={styles.filePickerName} numberOfLines={1}>
+                    {pickedFile.fileName || 'Image selected'}
+                  </Text>
+                  <Text style={styles.filePickerSize}>
+                    {formatBytes(pickedFile.fileSize || 0)}
+                  </Text>
                 </>
               ) : (
                 <>
                   <Upload size={24} color="#9CA3AF" />
-                  <Text style={styles.filePickerPlaceholder}>Tap to pick an image</Text>
+                  <Text style={styles.filePickerPlaceholder}>
+                    Tap to pick an image
+                  </Text>
                   <Text style={styles.filePickerHint}>JPG, PNG supported</Text>
                 </>
               )}
@@ -328,9 +411,13 @@ export default function DocumentsScreen() {
 
             <View>
               <Text style={styles.fieldLabel}>Document Type</Text>
-              <TouchableOpacity style={styles.selectBtn} onPress={() => setShowDocTypePicker(true)}>
+              <TouchableOpacity
+                style={styles.selectBtn}
+                onPress={() => setShowDocTypePicker(true)}
+              >
                 <Text style={styles.selectBtnText}>
-                  {DOC_TYPES.find(t => t.value === uploadForm.docType)?.label || 'Other'}
+                  {DOC_TYPES.find(t => t.value === uploadForm.docType)?.label ||
+                    'Other'}
                 </Text>
                 <ChevronDown size={16} color={C.black} />
               </TouchableOpacity>
@@ -345,12 +432,19 @@ export default function DocumentsScreen() {
             {!isEmployee && employees.length > 0 && (
               <View>
                 <Text style={styles.fieldLabel}>Employee (optional)</Text>
-                <TouchableOpacity style={styles.selectBtn} onPress={() => setShowEmpPicker(true)}>
+                <TouchableOpacity
+                  style={styles.selectBtn}
+                  onPress={() => setShowEmpPicker(true)}
+                >
                   <Text style={styles.selectBtnText}>
                     {uploadForm.employeeId
                       ? (() => {
-                          const e = employees.find(x => x._id === uploadForm.employeeId);
-                          return e ? `${e.firstName} ${e.lastName}` : 'Select employee';
+                          const e = employees.find(
+                            x => x._id === uploadForm.employeeId,
+                          );
+                          return e
+                            ? `${e.firstName} ${e.lastName}`
+                            : 'Select employee';
                         })()
                       : 'Select employee'}
                   </Text>
@@ -359,7 +453,11 @@ export default function DocumentsScreen() {
               </View>
             )}
 
-            <TouchableOpacity style={styles.submitBtn} onPress={handleUpload} disabled={uploading}>
+            <TouchableOpacity
+              style={styles.submitBtn}
+              onPress={handleUpload}
+              disabled={uploading}
+            >
               {uploading ? (
                 <ActivityIndicator color={C.white} />
               ) : (
@@ -379,15 +477,30 @@ export default function DocumentsScreen() {
           <View style={styles.sheet}>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>Document Type</Text>
-              <TouchableOpacity onPress={() => setShowDocTypePicker(false)}><X size={20} color={C.black} /></TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowDocTypePicker(false)}>
+                <X size={20} color={C.black} />
+              </TouchableOpacity>
             </View>
             {DOC_TYPES.map(t => (
               <TouchableOpacity
                 key={t.value}
-                style={[styles.sheetOption, uploadForm.docType === t.value && styles.sheetOptionActive]}
-                onPress={() => { setUploadForm(p => ({ ...p, docType: t.value })); setShowDocTypePicker(false); }}
+                style={[
+                  styles.sheetOption,
+                  uploadForm.docType === t.value && styles.sheetOptionActive,
+                ]}
+                onPress={() => {
+                  setUploadForm(p => ({ ...p, docType: t.value }));
+                  setShowDocTypePicker(false);
+                }}
               >
-                <Text style={[styles.sheetOptionText, uploadForm.docType === t.value && { color: C.primary }]}>{t.label}</Text>
+                <Text
+                  style={[
+                    styles.sheetOptionText,
+                    uploadForm.docType === t.value && { color: C.primary },
+                  ]}
+                >
+                  {t.label}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -400,22 +513,48 @@ export default function DocumentsScreen() {
           <View style={[styles.sheet, { maxHeight: '70%' }]}>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>Select Employee</Text>
-              <TouchableOpacity onPress={() => setShowEmpPicker(false)}><X size={20} color={C.black} /></TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowEmpPicker(false)}>
+                <X size={20} color={C.black} />
+              </TouchableOpacity>
             </View>
             <ScrollView>
               <TouchableOpacity
-                style={[styles.sheetOption, !uploadForm.employeeId && styles.sheetOptionActive]}
-                onPress={() => { setUploadForm(p => ({ ...p, employeeId: '' })); setShowEmpPicker(false); }}
+                style={[
+                  styles.sheetOption,
+                  !uploadForm.employeeId && styles.sheetOptionActive,
+                ]}
+                onPress={() => {
+                  setUploadForm(p => ({ ...p, employeeId: '' }));
+                  setShowEmpPicker(false);
+                }}
               >
-                <Text style={[styles.sheetOptionText, !uploadForm.employeeId && { color: C.primary }]}>No specific employee</Text>
+                <Text
+                  style={[
+                    styles.sheetOptionText,
+                    !uploadForm.employeeId && { color: C.primary },
+                  ]}
+                >
+                  No specific employee
+                </Text>
               </TouchableOpacity>
               {employees.map(e => (
                 <TouchableOpacity
                   key={e._id}
-                  style={[styles.sheetOption, uploadForm.employeeId === e._id && styles.sheetOptionActive]}
-                  onPress={() => { setUploadForm(p => ({ ...p, employeeId: e._id })); setShowEmpPicker(false); }}
+                  style={[
+                    styles.sheetOption,
+                    uploadForm.employeeId === e._id && styles.sheetOptionActive,
+                  ]}
+                  onPress={() => {
+                    setUploadForm(p => ({ ...p, employeeId: e._id }));
+                    setShowEmpPicker(false);
+                  }}
                 >
-                  <Text style={[styles.sheetOptionText, uploadForm.employeeId === e._id && { color: C.primary }]}>
+                  <Text
+                    style={[
+                      styles.sheetOptionText,
+                      uploadForm.employeeId === e._id && { color: C.primary },
+                    ]}
+                  >
                     {e.firstName} {e.lastName}
                   </Text>
                 </TouchableOpacity>
@@ -427,28 +566,59 @@ export default function DocumentsScreen() {
 
       {/* Image Preview Modal */}
       <Modal visible={!!previewDoc} animationType="fade" statusBarTranslucent>
-        <View style={{ flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: '#000',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
           <TouchableOpacity
-            style={{ position: 'absolute', top: 50, right: 20, zIndex: 10, padding: 10 }}
+            style={{
+              position: 'absolute',
+              top: 50,
+              right: 20,
+              zIndex: 10,
+              padding: 10,
+            }}
             onPress={() => setPreviewDoc(null)}
           >
             <X size={28} color="#fff" />
           </TouchableOpacity>
           {previewDoc && (
             <>
-              <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700', position: 'absolute', top: 52, left: 20, right: 60 }} numberOfLines={1}>
+              <Text
+                style={{
+                  color: '#fff',
+                  fontSize: 14,
+                  fontWeight: '700',
+                  position: 'absolute',
+                  top: 52,
+                  left: 20,
+                  right: 60,
+                }}
+                numberOfLines={1}
+              >
                 {previewDoc.name}
               </Text>
-              {(previewDoc.url || previewDoc.fileUrl || previewDoc.filePath) ? (
+              {previewDoc.url || previewDoc.fileUrl || previewDoc.filePath ? (
                 <Image
-                  source={{ uri: previewDoc.url || previewDoc.fileUrl || previewDoc.filePath }}
+                  source={{
+                    uri:
+                      previewDoc.url ||
+                      previewDoc.fileUrl ||
+                      previewDoc.filePath,
+                  }}
                   style={{ width: '90%', height: '70%' }}
                   resizeMode="contain"
                 />
               ) : (
                 <View style={{ alignItems: 'center', gap: 12 }}>
                   <FileText size={60} color="#fff" />
-                  <Text style={{ color: '#aaa', fontSize: 13 }}>Preview not available for this file type</Text>
+                  <Text style={{ color: '#aaa', fontSize: 13 }}>
+                    Preview not available for this file type
+                  </Text>
                 </View>
               )}
             </>
@@ -488,15 +658,57 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  addBtnText: { color: C.white, fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
-  filterBar: { backgroundColor: C.white, borderBottomWidth: 2, borderBottomColor: C.black, maxHeight: 52 },
-  chip: { paddingHorizontal: 12, paddingVertical: 6, borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black, backgroundColor: C.white },
+  addBtnText: {
+    color: C.white,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  filterBar: {
+    backgroundColor: C.white,
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
+    maxHeight: 52,
+  },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderRadius: 8,
+    borderColor: C.black,
+    backgroundColor: C.white,
+  },
   chipActive: { borderColor: C.primary, backgroundColor: '#EFF6FF' },
-  chipText: { fontSize: 12, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase' },
+  chipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+  },
   chipTextActive: { color: C.primary },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  emptyTitle: { fontSize: 15, fontWeight: '700', color: '#6B7280', marginTop: 12 },
-  emptySubtitle: { fontSize: 13, color: '#9CA3AF', fontWeight: '500', textAlign: 'center', marginTop: 6 },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 40,
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#6B7280',
+    marginTop: 12,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: '#9CA3AF',
+    fontWeight: '500',
+    textAlign: 'center',
+    marginTop: 6,
+  },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
@@ -511,12 +723,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
-  cardLeft: { flex: 1, flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  cardLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
   iconBox: {
     width: 36,
     height: 36,
     backgroundColor: '#EFF6FF',
-    borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A',
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
     alignItems: 'center',
@@ -527,7 +748,19 @@ const styles = StyleSheet.create({
   docEmp: { fontSize: 11, color: C.primary, fontWeight: '600', marginTop: 1 },
   docDate: { fontSize: 10, color: '#9CA3AF', marginTop: 1 },
   cardActions: { flexDirection: 'row', gap: 6 },
-  actionBtn: { width: 32, height: 32, borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black, alignItems: 'center', justifyContent: 'center' },
+  actionBtn: {
+    width: 32,
+    height: 32,
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderRadius: 8,
+    borderColor: C.black,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   deleteBtn: { borderColor: C.danger },
   modalHeader: {
     flexDirection: 'row',
@@ -553,11 +786,23 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: '#F9FAFB',
   },
-  filePickerName: { fontSize: 14, fontWeight: '700', color: C.primary, textAlign: 'center' },
+  filePickerName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: C.primary,
+    textAlign: 'center',
+  },
   filePickerSize: { fontSize: 12, color: '#6B7280' },
   filePickerPlaceholder: { fontSize: 14, fontWeight: '600', color: '#9CA3AF' },
   filePickerHint: { fontSize: 12, color: '#D1D5DB' },
-  fieldLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', color: C.black, marginBottom: 6, letterSpacing: 0.5 },
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    color: C.black,
+    marginBottom: 6,
+    letterSpacing: 0.5,
+  },
   fieldInput: {
     borderWidth: 2,
     borderRadius: 8,
@@ -605,12 +850,37 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 8,
   },
-  submitBtnText: { color: C.white, fontWeight: '700', fontSize: 14, textTransform: 'uppercase' },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: C.white, borderTopWidth: 2, borderTopColor: C.black },
-  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 2, borderBottomColor: C.black },
+  submitBtnText: {
+    color: C.white,
+    fontWeight: '700',
+    fontSize: 14,
+    textTransform: 'uppercase',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    backgroundColor: C.white,
+    borderTopWidth: 2,
+    borderTopColor: C.black,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
+  },
   sheetTitle: { fontSize: 16, fontWeight: '700', color: C.black },
-  sheetOption: { paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 2, borderBottomColor: C.black },
+  sheetOption: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
+  },
   sheetOptionActive: { backgroundColor: '#EFF6FF' },
   sheetOptionText: { fontSize: 15, fontWeight: '600', color: C.black },
 });

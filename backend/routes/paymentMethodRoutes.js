@@ -6,7 +6,7 @@ const {
   deletePaymentMethod,
   getDefaultPaymentMethod,
 } = require("../controllers/paymentMethodController");
-const { protect } = require("../middleware/auth");
+const { protect, authorize } = require("../middleware/auth");
 
 const router = express.Router();
 
@@ -16,10 +16,10 @@ router.get("/", getPaymentMethods);
 
 router.get("/default", getDefaultPaymentMethod);
 
-router.post("/", addPaymentMethod);
+router.post("/", authorize("super_admin"), addPaymentMethod);
 
-router.patch("/:id", updatePaymentMethod);
+router.patch("/:id", authorize("super_admin"), updatePaymentMethod);
 
-router.delete("/:id", deletePaymentMethod);
+router.delete("/:id", authorize("super_admin"), deletePaymentMethod);
 
 module.exports = router;

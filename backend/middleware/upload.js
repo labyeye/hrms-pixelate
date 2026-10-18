@@ -47,6 +47,14 @@ const ALLOWED_MIME = [
 ];
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 
+// Extensions come from the (magic-byte checked) type, never from the client's file name; SVG is not accepted
+// because it can carry script.
+const IMAGE_EXT = { "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp" };
+const DOC_EXT = { ...IMAGE_EXT, "application/pdf": ".pdf" };
+const imageFilter = (_req, file, cb) =>
+  IMAGE_EXT[file.mimetype] ? cb(null, true) : cb(new Error("Only JPG, PNG or WEBP images are allowed"), false);
+const safeId = (v) => String(v || "").replace(/[^a-fA-F0-9]/g, "");
+
 const employeeDocStorage = multer.diskStorage({
   destination(req, file, cb) {
     const folderMap = {
@@ -60,8 +68,8 @@ const employeeDocStorage = multer.diskStorage({
     );
   },
   filename(req, file, cb) {
-    const ext = path.extname(file.originalname).toLowerCase() || ".pdf";
-    const safe = `${req.user.company}_${req.params.id}_${file.fieldname}${ext}`;
+    const ext = DOC_EXT[file.mimetype] || ".pdf";
+    const safe = `${safeId(req.user.company)}_${safeId(req.params.id)}_${file.fieldname}${ext}`;
     cb(null, safe);
   },
 });
@@ -86,18 +94,14 @@ const companyLogoStorage = multer.diskStorage({
     cb(null, path.join(UPLOAD_BASE, "company-logos"));
   },
   filename(req, file, cb) {
-    const ext = path.extname(file.originalname).toLowerCase() || ".png";
-    const safe = `company_${req.user.company}${ext}`;
+    const safe = `company_${safeId(req.user.company)}${IMAGE_EXT[file.mimetype] || ".png"}`;
     cb(null, safe);
   },
 });
 
 const uploadCompanyLogo = multer({
   storage: companyLogoStorage,
-  fileFilter(req, file, cb) {
-    if (file.mimetype.startsWith("image/")) cb(null, true);
-    else cb(new Error("Only image files are allowed"), false);
-  },
+  fileFilter: imageFilter,
   limits: { fileSize: 5 * 1024 * 1024 },
 }).single("logo");
 
@@ -109,17 +113,13 @@ const avatarStorage = multer.diskStorage({
     cb(null, dir);
   },
   filename(req, file, cb) {
-    const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
-    cb(null, `avatar_${req.params.id}_${Date.now()}${ext}`);
+    cb(null, `avatar_${crypto.randomUUID()}${IMAGE_EXT[file.mimetype] || ".jpg"}`);
   },
 });
 
 const uploadAvatar = multer({
   storage: avatarStorage,
-  fileFilter(req, file, cb) {
-    if (file.mimetype.startsWith("image/")) cb(null, true);
-    else cb(new Error("Only image files are allowed"), false);
-  },
+  fileFilter: imageFilter,
   limits: { fileSize: 5 * 1024 * 1024 },
 }).single("avatar");
 
@@ -129,8 +129,7 @@ const documentVaultStorage = multer.diskStorage({
     cb(null, path.join(UPLOAD_BASE, "employee-docs"));
   },
   filename(_req, file, cb) {
-    const ext = path.extname(file.originalname).toLowerCase() || ".bin";
-    const safe = `${Date.now()}_${crypto.randomUUID()}${ext}`;
+    const safe = `${Date.now()}_${crypto.randomUUID()}${DOC_EXT[file.mimetype] || ".bin"}`;
     cb(null, safe);
   },
 });
@@ -149,8 +148,7 @@ const leaveDocStorage = multer.diskStorage({
     cb(null, dir);
   },
   filename(_req, file, cb) {
-    const ext = path.extname(file.originalname).toLowerCase() || ".bin";
-    const safe = `${Date.now()}_${crypto.randomUUID()}${ext}`;
+    const safe = `${Date.now()}_${crypto.randomUUID()}${DOC_EXT[file.mimetype] || ".bin"}`;
     cb(null, safe);
   },
 });
@@ -169,18 +167,15 @@ const attendanceSelfieStorage = multer.diskStorage({
     cb(null, dir);
   },
   filename(req, file, cb) {
-    const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
-    const safe = `${req.user.company}_${req.user._id}_${Date.now()}${ext}`;
+    // Unguessable: selfies are served publicly so <img> tags work, the name is the only secret.
+    const safe = `${safeId(req.user.company)}_${safeId(req.user._id)}_${Date.now()}_${crypto.randomBytes(8).toString("hex")}${IMAGE_EXT[file.mimetype] || ".jpg"}`;
     cb(null, safe);
   },
 });
 
 const uploadAttendanceSelfie = multer({
   storage: attendanceSelfieStorage,
-  fileFilter(req, file, cb) {
-    if (file.mimetype.startsWith("image/")) cb(null, true);
-    else cb(new Error("Only image files are allowed"), false);
-  },
+  fileFilter: imageFilter,
   limits: { fileSize: 5 * 1024 * 1024 },
 }).single("selfie");
 
@@ -188,10 +183,7 @@ const uploadAttendanceSelfie = multer({
 // service and discarded (only the resulting embedding is persisted).
 const uploadFaceEnrollPhoto = multer({
   storage: multer.memoryStorage(),
-  fileFilter(_req, file, cb) {
-    if (file.mimetype.startsWith("image/")) cb(null, true);
-    else cb(new Error("Only image files are allowed"), false);
-  },
+  fileFilter: imageFilter,
   limits: { fileSize: 5 * 1024 * 1024 },
 }).single("photo");
 

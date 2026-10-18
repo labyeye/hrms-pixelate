@@ -37,12 +37,18 @@ export default function RootNavigator() {
           <Stack.Screen
             name="FaceCheckIn"
             component={FaceCheckInScreen}
-            options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+            options={{
+              presentation: 'fullScreenModal',
+              animation: 'slide_from_bottom',
+            }}
           />
           <Stack.Screen
             name="FaceEnroll"
             component={FaceEnrollScreen}
-            options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+            options={{
+              presentation: 'fullScreenModal',
+              animation: 'slide_from_bottom',
+            }}
           />
         </Stack.Navigator>
       ) : (

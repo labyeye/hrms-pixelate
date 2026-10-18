@@ -68,9 +68,7 @@ async function request<T = any>(
     } catch {} // gateway HTML page — fall through to statusMsg
 
     if (!res.ok) {
-      const err: any = new Error(
-        data.message || statusMsg(res.status),
-      );
+      const err: any = new Error(data.message || statusMsg(res.status));
       err.status = res.status;
       throw err;
     }
@@ -89,7 +87,9 @@ async function request<T = any>(
     }
 
     if (err.name === 'AbortError') {
-      throw new Error('The server is taking too long to respond. Please check your connection and try again.');
+      throw new Error(
+        'The server is taking too long to respond. Please check your connection and try again.',
+      );
     }
     if (err.message === 'Network request failed') {
       throw new Error(NETWORK_MSG);
@@ -116,16 +116,32 @@ export const authAPI = {
   updateProfile: (body: object) =>
     request('/auth/profile', { method: 'PUT', body: JSON.stringify(body) }),
   sendPhoneOtp: (phone: string) =>
-    request('/auth/otp/send', { method: 'POST', body: JSON.stringify({ phone }) }),
+    request('/auth/otp/send', {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    }),
   verifyPhoneOtp: (phone: string, otp: string) =>
-    request('/auth/otp/verify', { method: 'POST', body: JSON.stringify({ phone, otp }) }),
-  setup2FA: () => request('/auth/2fa/setup', { method: 'POST', body: JSON.stringify({}) }),
+    request('/auth/otp/verify', {
+      method: 'POST',
+      body: JSON.stringify({ phone, otp }),
+    }),
+  setup2FA: () =>
+    request('/auth/2fa/setup', { method: 'POST', body: JSON.stringify({}) }),
   confirm2FA: (token: string) =>
-    request('/auth/2fa/confirm', { method: 'POST', body: JSON.stringify({ token }) }),
+    request('/auth/2fa/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    }),
   disable2FA: (token: string) =>
-    request('/auth/2fa/disable', { method: 'POST', body: JSON.stringify({ token }) }),
-  verify2FA: (userId: string, token: string) =>
-    request('/auth/2fa/verify', { method: 'POST', body: JSON.stringify({ userId, token }) }),
+    request('/auth/2fa/disable', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    }),
+  verify2FA: (pendingToken: string, token: string) =>
+    request('/auth/2fa/verify', {
+      method: 'POST',
+      body: JSON.stringify({ pendingToken, token }),
+    }),
   // Password reset by WhatsApp code / authenticator app
   forgotPasswordMethods: (email: string) =>
     request(`/auth/forgot-password/methods?email=${encodeURIComponent(email)}`),
@@ -146,7 +162,10 @@ export const authAPI = {
     }),
   // Prove ownership of the profile phone (separate from the login OTP)
   sendPhoneVerifyOtp: () =>
-    request('/auth/phone/send-otp', { method: 'POST', body: JSON.stringify({}) }),
+    request('/auth/phone/send-otp', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
   verifyPhoneVerifyOtp: (otp: string) =>
     request('/auth/phone/verify-otp', {
       method: 'POST',
@@ -213,14 +232,19 @@ export const employeeAPI = {
       try {
         data = text ? JSON.parse(text) : {};
       } catch {
-        console.error('Face enroll: non-JSON response', res.status, text.slice(0, 500));
+        console.error(
+          'Face enroll: non-JSON response',
+          res.status,
+          text.slice(0, 500),
+        );
         throw new Error(
           `Server returned an unexpected response (status ${res.status}). ` +
             'This usually means the photo was rejected by the server before reaching the app ' +
             '(e.g. file too large) — try again with better lighting or contact support.',
         );
       }
-      if (!res.ok) throw new Error(data.message || `Enrollment failed (${res.status})`);
+      if (!res.ok)
+        throw new Error(data.message || `Enrollment failed (${res.status})`);
       return data;
     } catch (err: any) {
       clearTimeout(timer);
@@ -232,11 +256,17 @@ export const employeeAPI = {
         e.retryable = true;
         throw e;
       }
-      if (/network request failed/i.test(err?.message || '')) err.retryable = true;
+      if (/network request failed/i.test(err?.message || ''))
+        err.retryable = true;
       throw err;
     }
   },
-  uploadAvatar: async (id: string, uri: string, type: string, fileName: string) => {
+  uploadAvatar: async (
+    id: string,
+    uri: string,
+    type: string,
+    fileName: string,
+  ) => {
     const token = await getToken();
     const formData = new FormData();
     formData.append('avatar', { uri, type, name: fileName } as any);
@@ -289,7 +319,8 @@ export const attendanceAPI = {
     formData.append('action', params.action);
     formData.append('lat', String(params.lat));
     formData.append('lng', String(params.lng));
-    if (params.accuracy != null) formData.append('accuracy', String(params.accuracy));
+    if (params.accuracy != null)
+      formData.append('accuracy', String(params.accuracy));
     formData.append('selfie', {
       uri: params.selfieUri,
       type: params.selfieType,
@@ -326,11 +357,14 @@ export const leaveAPI = {
   // Multipart variant used when a supporting document is attached (required
   // for sick/casual leave). Mirrors documentAPI.upload's fetch pattern since
   // FormData can't go through the JSON `request()` helper.
-  createWithDocument: async (body: Record<string, any>, file: {
-    uri: string;
-    type: string;
-    name: string;
-  }) => {
+  createWithDocument: async (
+    body: Record<string, any>,
+    file: {
+      uri: string;
+      type: string;
+      name: string;
+    },
+  ) => {
     const token = await getToken();
     const formData = new FormData();
     Object.entries(body).forEach(([k, v]) => {
@@ -376,7 +410,10 @@ export const payrollAPI = {
     request(`/payroll/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   markPaid: (id: string) => request(`/payroll/${id}/paid`, { method: 'PUT' }),
   markSlipReceived: (id: string) =>
-    request(`/payroll/${id}/slip-received`, { method: 'PATCH', body: JSON.stringify({}) }),
+    request(`/payroll/${id}/slip-received`, {
+      method: 'PATCH',
+      body: JSON.stringify({}),
+    }),
   bulkMarkPaid: (month: number, year: number) =>
     request('/payroll/bulk-paid', {
       method: 'POST',
@@ -473,7 +510,10 @@ export const loanAPI = {
   request: (body: object) =>
     request('/loans/request', { method: 'POST', body: JSON.stringify(body) }),
   updateStatus: (id: string, body: object) =>
-    request(`/loans/${id}/status`, { method: 'PUT', body: JSON.stringify(body) }),
+    request(`/loans/${id}/status`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
   update: (id: string, body: object) =>
     request(`/loans/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   delete: (id: string) => request(`/loans/${id}`, { method: 'DELETE' }),
@@ -543,7 +583,10 @@ export const payrollConfigAPI = {
 export const attendanceSettingsAPI = {
   get: () => request('/attendance-settings'),
   update: (body: object) =>
-    request('/attendance-settings', { method: 'PUT', body: JSON.stringify(body) }),
+    request('/attendance-settings', {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
   upsertLateAllowance: (body: {
     mode: 'bulk' | 'custom';
     bulkCount?: number;
@@ -765,15 +808,18 @@ export const auditAPI = {
 export const supportAPI = {
   getAll: () => request('/support'),
   getOne: (id: string) => request(`/support/${id}`),
-  create: (body: { subject: string; issueType: string; priority: string; description: string }) =>
-    request('/support', { method: 'POST', body: JSON.stringify(body) }),
+  create: (body: {
+    subject: string;
+    issueType: string;
+    priority: string;
+    description: string;
+  }) => request('/support', { method: 'POST', body: JSON.stringify(body) }),
   reply: (id: string, message: string) =>
     request(`/support/${id}/reply`, {
       method: 'POST',
       body: JSON.stringify({ message }),
     }),
-  close: (id: string) =>
-    request(`/support/${id}/close`, { method: 'POST' }),
+  close: (id: string) => request(`/support/${id}/close`, { method: 'POST' }),
 };
 
 export const documentAPI = {
@@ -815,8 +861,7 @@ export const payrollPreviewAPI = {
 };
 
 export const assetAPI = {
-  getAll: (params?: Record<string, string>) =>
-    request(`/assets${qs(params)}`),
+  getAll: (params?: Record<string, string>) => request(`/assets${qs(params)}`),
   return: (id: string) => request(`/assets/${id}/return`, { method: 'POST' }),
 };
 
@@ -833,10 +878,13 @@ export const announcementAPI = {
     departments?: string[];
     roles?: string[];
     acknowledgementRequired?: boolean;
-  }) => request('/announcements', { method: 'POST', body: JSON.stringify(body) }),
+  }) =>
+    request('/announcements', { method: 'POST', body: JSON.stringify(body) }),
   delete: (id: string) => request(`/announcements/${id}`, { method: 'DELETE' }),
-  markRead: (id: string) => request(`/announcements/${id}/read`, { method: 'POST' }),
-  acknowledge: (id: string) => request(`/announcements/${id}/acknowledge`, { method: 'POST' }),
+  markRead: (id: string) =>
+    request(`/announcements/${id}/read`, { method: 'POST' }),
+  acknowledge: (id: string) =>
+    request(`/announcements/${id}/acknowledge`, { method: 'POST' }),
 };
 
 export const taskAPI = {
@@ -878,8 +926,6 @@ export const trashAPI = {
   restore: (id: string) => request(`/trash/${id}/restore`, { method: 'POST' }),
   purge: (id: string) => request(`/trash/${id}`, { method: 'DELETE' }),
 };
-
-
 
 export const attendanceCorrectionAPI = {
   getAll: (params?: Record<string, string>) =>

@@ -21,6 +21,7 @@ const {
   uploadAvatar,
   uploadFaceEnrollPhoto,
 } = require("../middleware/upload");
+const { validateMongoId } = require("../middleware/validate");
 const router = express.Router();
 
 router.get("/me", protect, getMyEmployee);
@@ -53,6 +54,7 @@ router.post(
 
 router.post(
   "/:id/documents",
+  validateMongoId("id"),
   protect,
   authorize("super_admin", "hr_manager"),
   uploadEmployeeDocs,
@@ -61,16 +63,31 @@ router.post(
 
 router.post(
   "/:id/avatar",
+  validateMongoId("id"),
   protect,
   authorize("super_admin", "hr_manager"),
   uploadAvatar,
-  async (req, res) => {
+  async (req, res, next) => {
+    const fs = require("fs");
     const Employee = require("../models/Employee");
-    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
-    const avatarUrl = `${baseUrl}/uploads/avatars/${req.file.filename}`;
-    await Employee.findByIdAndUpdate(req.params.id, { avatar: avatarUrl });
-    res.json({ success: true, avatar: avatarUrl });
+    const { validateMagicBytes } = require("../middleware/upload");
+    try {
+      if (!req.file) return res.status(400).json({ success: false, message: "No file uploaded" });
+      // Only employees of the caller's own company; the stray upload is removed otherwise.
+      const employee = await Employee.findOne({ _id: req.params.id, company: req.user.company }).select("_id");
+      if (!employee) {
+        fs.unlink(req.file.path, () => {});
+        return res.status(404).json({ success: false, message: "Employee not found" });
+      }
+      await validateMagicBytes(req.file.path); // throws and deletes the file when it isn't really an image
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      const avatarUrl = `${baseUrl}/uploads/avatars/${req.file.filename}`;
+      await Employee.updateOne({ _id: employee._id }, { avatar: avatarUrl });
+      res.json({ success: true, avatar: avatarUrl });
+    } catch (err) {
+      res.status(400);
+      next(err);
+    }
   },
 );
 
@@ -83,6 +100,7 @@ router.delete(
 
 router.post(
   "/:id/face-enroll",
+  validateMongoId("id"),
   protect,
   authorize("super_admin", "hr_manager"),
   uploadFaceEnrollPhoto,

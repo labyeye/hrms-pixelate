@@ -16,7 +16,12 @@ interface Props {
 }
 
 /** White pills with black border; the selected one is blue. */
-export default function FilterBar({ options, value, onChange, toggle = true }: Props) {
+export default function FilterBar({
+  options,
+  value,
+  onChange,
+  toggle = true,
+}: Props) {
   return (
     <ScrollView
       horizontal

@@ -5,12 +5,12 @@ const {
   updateDesignation,
   deleteDesignation,
 } = require("../controllers/designationController");
-const { protect } = require("../middleware/auth");
+const { protect, authorize } = require("../middleware/auth");
 const router = express.Router();
 
 router.get("/", protect, getDesignations);
-router.post("/", protect, createDesignation);
-router.put("/:id", protect, updateDesignation);
-router.delete("/:id", protect, deleteDesignation);
+router.post("/", protect, authorize("super_admin", "hr_manager"), createDesignation);
+router.put("/:id", protect, authorize("super_admin", "hr_manager"), updateDesignation);
+router.delete("/:id", protect, authorize("super_admin", "hr_manager"), deleteDesignation);
 
 module.exports = router;

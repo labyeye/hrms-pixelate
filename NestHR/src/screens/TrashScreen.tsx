@@ -1,5 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ChevronLeft, RotateCcw, Trash2 } from 'lucide-react-native';
 import { trashAPI } from '../api/api';
@@ -19,7 +27,13 @@ const labelOf = (item: any) => {
 };
 
 const fmt = (d?: string) =>
-  d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
+  d
+    ? new Date(d).toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
+    : '';
 
 export default function TrashScreen() {
   const navigation = useNavigation<any>();
@@ -49,58 +63,77 @@ export default function TrashScreen() {
   };
 
   const restore = (item: any) =>
-    Alert.alert('Restore item?', `"${labelOf(item)}" will be restored to ${TYPE_LABEL[item.modelName] || item.modelName}.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Restore',
-        onPress: async () => {
-          try {
-            await trashAPI.restore(item._id);
-            await load();
-          } catch (e: any) {
-            Alert.alert('Error', e?.message || 'Failed to restore');
-          }
+    Alert.alert(
+      'Restore item?',
+      `"${labelOf(item)}" will be restored to ${TYPE_LABEL[item.modelName] || item.modelName}.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Restore',
+          onPress: async () => {
+            try {
+              await trashAPI.restore(item._id);
+              await load();
+            } catch (e: any) {
+              Alert.alert('Error', e?.message || 'Failed to restore');
+            }
+          },
         },
-      },
-    ]);
+      ],
+    );
 
   const purge = (item: any) =>
-    Alert.alert('Permanently delete?', `"${labelOf(item)}" will be deleted forever. This cannot be undone.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete forever',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await trashAPI.purge(item._id);
-            await load();
-          } catch (e: any) {
-            Alert.alert('Error', e?.message || 'Failed to delete');
-          }
+    Alert.alert(
+      'Permanently delete?',
+      `"${labelOf(item)}" will be deleted forever. This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete forever',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await trashAPI.purge(item._id);
+              await load();
+            } catch (e: any) {
+              Alert.alert('Error', e?.message || 'Failed to delete');
+            }
+          },
         },
-      },
-    ]);
+      ],
+    );
 
   return (
     <ScreenLayout title="Trash" loading={loading}>
       <View style={s.topBar}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10} style={s.back}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          hitSlop={10}
+          style={s.back}
+        >
           <ChevronLeft size={18} color={C.black} />
           <Text style={s.backText}>Back</Text>
         </TouchableOpacity>
       </View>
-      <Text style={s.hint}>Deleted tasks, announcements, documents and leave requests land here. Restore them or delete them forever.</Text>
+      <Text style={s.hint}>
+        Deleted tasks, announcements, documents and leave requests land here.
+        Restore them or delete them forever.
+      </Text>
       <FlatList
         data={items}
         keyExtractor={i => i._id}
         contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 10 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
         ListEmptyComponent={<Text style={s.empty}>Trash is empty</Text>}
         renderItem={({ item }) => (
           <View style={s.card}>
             <View style={{ flex: 1, minWidth: 0 }}>
               <View style={s.tag}>
-                <Text style={s.tagText}>{TYPE_LABEL[item.modelName] || item.modelName}</Text>
+                <Text style={s.tagText}>
+                  {TYPE_LABEL[item.modelName] || item.modelName}
+                </Text>
               </View>
               <Text style={s.title} numberOfLines={2}>
                 {labelOf(item)}
@@ -110,10 +143,18 @@ export default function TrashScreen() {
                 {item.deletedByName ? ` by ${item.deletedByName}` : ''}
               </Text>
             </View>
-            <TouchableOpacity style={[s.btn, { borderColor: C.primary }]} onPress={() => restore(item)} hitSlop={6}>
+            <TouchableOpacity
+              style={[s.btn, { borderColor: C.primary }]}
+              onPress={() => restore(item)}
+              hitSlop={6}
+            >
               <RotateCcw size={16} color={C.primary} />
             </TouchableOpacity>
-            <TouchableOpacity style={[s.btn, { borderColor: C.danger }]} onPress={() => purge(item)} hitSlop={6}>
+            <TouchableOpacity
+              style={[s.btn, { borderColor: C.danger }]}
+              onPress={() => purge(item)}
+              hitSlop={6}
+            >
               <Trash2 size={16} color={C.danger} />
             </TouchableOpacity>
           </View>
@@ -126,13 +167,75 @@ export default function TrashScreen() {
 const s = StyleSheet.create({
   topBar: { paddingHorizontal: 16, paddingTop: 10 },
   back: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start' },
-  backText: { fontFamily: FONT.bold, fontSize: 12, color: C.black, textTransform: 'uppercase' },
-  hint: { fontFamily: FONT.medium, fontSize: 12, color: '#374151', paddingHorizontal: 16, paddingTop: 8 },
-  card: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 2, borderRadius: 8, borderRightWidth: 5, borderBottomWidth: 5, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black, padding: 12, backgroundColor: '#fff' },
-  tag: { alignSelf: 'flex-start', borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: '#6B7280', paddingHorizontal: 8, paddingVertical: 1, marginBottom: 6 },
-  tagText: { fontFamily: FONT.bold, fontSize: 10, color: '#374151', textTransform: 'uppercase' },
+  backText: {
+    fontFamily: FONT.bold,
+    fontSize: 12,
+    color: C.black,
+    textTransform: 'uppercase',
+  },
+  hint: {
+    fontFamily: FONT.medium,
+    fontSize: 12,
+    color: '#374151',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderColor: C.black,
+    padding: 12,
+    backgroundColor: '#fff',
+  },
+  tag: {
+    alignSelf: 'flex-start',
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderRadius: 8,
+    borderColor: '#6B7280',
+    paddingHorizontal: 8,
+    paddingVertical: 1,
+    marginBottom: 6,
+  },
+  tagText: {
+    fontFamily: FONT.bold,
+    fontSize: 10,
+    color: '#374151',
+    textTransform: 'uppercase',
+  },
   title: { fontFamily: FONT.bold, fontSize: 15, color: C.black },
-  meta: { fontFamily: FONT.medium, fontSize: 12, color: '#374151', marginTop: 4 },
-  btn: { width: 36, height: 36, borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  empty: { textAlign: 'center', fontFamily: FONT.bold, color: '#6B7280', marginTop: 40 },
+  meta: {
+    fontFamily: FONT.medium,
+    fontSize: 12,
+    color: '#374151',
+    marginTop: 4,
+  },
+  btn: {
+    width: 36,
+    height: 36,
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  empty: {
+    textAlign: 'center',
+    fontFamily: FONT.bold,
+    color: '#6B7280',
+    marginTop: 40,
+  },
 });

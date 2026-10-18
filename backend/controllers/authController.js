@@ -5,7 +5,9 @@ const QRCode = require("qrcode");
 const User = require("../models/User");
 const Employee = require("../models/Employee");
 const Subscription = require("../models/Subscription");
+const bcrypt = require("bcryptjs");
 const generateToken = require("../utils/generateToken");
+const { generatePendingToken, verifyPendingToken } = generateToken;
 const { validateBody } = require("../middleware/validate");
 const { sendPasswordResetEmail } = require("../services/notificationService");
 const { sendPhoneOtp } = require("../services/whatsappService");
@@ -26,8 +28,36 @@ const loginSchema = {
 const STRONG_PASSWORD_RE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
 const generateOtp = () => String(crypto.randomInt(100000, 1000000));
+// Keyed hash: a leaked database can't be turned back into the 6-digit codes with a rainbow table.
 const hashOtp = (otp) =>
-  crypto.createHash("sha256").update(String(otp).trim()).digest("hex");
+  crypto.createHmac("sha256", process.env.JWT_SECRET).update(String(otp).trim()).digest("hex");
+const otpMatches = (stored, otp) => {
+  const a = Buffer.from(String(stored || ""), "hex");
+  const b = Buffer.from(hashOtp(otp), "hex");
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+};
+const MAX_OTP_TRIES = 5;
+
+// Compares `otp` with the code stored on `user`, counting wrong tries in user[triesField]; after MAX_OTP_TRIES
+// misses the code is burned and a new one must be requested. Resolves true only for a live, matching code.
+async function checkOtp(user, otp, { hashField, expireField, triesField }) {
+  const live = user[hashField] && user[expireField] && user[expireField] > new Date() && (user[triesField] || 0) < MAX_OTP_TRIES;
+  if (!live) return false;
+  if (otpMatches(user[hashField], otp)) return true;
+  user[triesField] = (user[triesField] || 0) + 1;
+  if (user[triesField] >= MAX_OTP_TRIES) {
+    user[hashField] = undefined;
+    user[expireField] = undefined;
+    user[triesField] = 0;
+  }
+  await user.save();
+  return false;
+}
+
+// Equalises timing between "no such user" and "wrong password".
+const DUMMY_HASH = bcrypt.hashSync("not-a-real-password", 12);
+const MAX_LOGIN_FAILS = 10;
+const LOGIN_LOCK_MS = 15 * 60 * 1000;
 // 10-digit national number, which is what sendPhoneOtp expects (it adds 91).
 const to10 = (phone) =>
   String(phone).replace(/\s/g, "").replace(/^\+91/, "").slice(-10);
@@ -111,7 +141,7 @@ const register = [
         name: user.name,
         email: user.email,
         role: user.role,
-        token: generateToken(user._id),
+        token: generateToken(user._id, user.tokenVersion),
       },
     });
   }),
@@ -122,7 +152,9 @@ const login = [
   asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email: email.toLowerCase() }).populate({
+    const user = await User.findOne({ email: email.toLowerCase() })
+      .select("+loginFailedAttempts +loginLockUntil")
+      .populate({
       path: "company",
       select: "name email phone status subscription industry website",
       populate: {
@@ -132,7 +164,21 @@ const login = [
       },
     });
 
-    if (!user || !(await user.matchPassword(password))) {
+    if (user?.loginLockUntil && user.loginLockUntil > new Date()) {
+      res.status(429);
+      throw new Error("Too many failed attempts. Please try again in a few minutes.");
+    }
+
+    const passwordOk = user ? await user.matchPassword(password) : (await bcrypt.compare(String(password), DUMMY_HASH), false);
+    if (!passwordOk) {
+      if (user) {
+        user.loginFailedAttempts = (user.loginFailedAttempts || 0) + 1;
+        if (user.loginFailedAttempts >= MAX_LOGIN_FAILS) {
+          user.loginLockUntil = new Date(Date.now() + LOGIN_LOCK_MS);
+          user.loginFailedAttempts = 0;
+        }
+        await user.save();
+      }
       res.status(401);
       throw new Error("Invalid email or password");
     }
@@ -175,13 +221,21 @@ const login = [
       }
     }
 
+    user.loginFailedAttempts = 0;
+    user.loginLockUntil = undefined;
     user.lastLogin = new Date();
     await user.save();
 
     if (user.twoFactorEnabled) {
+      // The code step must present this token, so 2FA can't be attempted without first knowing the password.
+      // LEGACY_2FA_USERID=true also returns the bare userId for app builds that predate pendingToken (temporary).
       return res.json({
         success: true,
-        data: { requires2FA: true, userId: user._id },
+        data: {
+          requires2FA: true,
+          pendingToken: generatePendingToken(user._id),
+          ...(process.env.LEGACY_2FA_USERID === "true" && { userId: user._id }),
+        },
       });
     }
 
@@ -197,7 +251,7 @@ const login = [
         status: user.status,
         department: user.department,
         company: user.company,
-        token: generateToken(user._id),
+        token: generateToken(user._id, user.tokenVersion),
       },
     });
   }),
@@ -277,10 +331,15 @@ const updateProfile = asyncHandler(async (req, res) => {
     user.avatar = avatar;
   }
 
+  const rotated = user.isModified("password");
   await user.save();
   const updated = user.toObject();
   delete updated.password;
-  res.json({ success: true, data: updated });
+  res.json({
+    success: true,
+    data: updated,
+    ...(rotated && { token: generateToken(user._id, user.tokenVersion) }),
+  });
 });
 
 const forgotPassword = asyncHandler(async (req, res) => {
@@ -313,7 +372,9 @@ const forgotPassword = asyncHandler(async (req, res) => {
       toName: user.name,
       resetUrl,
     });
-  } catch {}
+  } catch (err) {
+    console.error("[notify] failed:", err.message);
+  }
 
   res.json({
     success: true,
@@ -436,23 +497,38 @@ const disable2FA = asyncHandler(async (req, res) => {
 
 // 2FA verify — called after first-step login when 2FA is enabled
 const verify2FA = asyncHandler(async (req, res) => {
-  const { userId, token } = req.body;
-  if (!userId || !token) {
+  const { pendingToken, token } = req.body;
+  if (!token || typeof token !== "string") {
     res.status(400);
-    throw new Error("userId and token are required");
+    throw new Error("A code is required");
+  }
+
+  let userId;
+  if (pendingToken) {
+    try {
+      userId = verifyPendingToken(String(pendingToken)).id;
+    } catch {
+      res.status(401);
+      throw new Error("Your sign-in session expired. Please sign in again.");
+    }
+  } else if (process.env.LEGACY_2FA_USERID === "true" && typeof req.body.userId === "string") {
+    userId = req.body.userId; // temporary compatibility for old app builds
+  } else {
+    res.status(400);
+    throw new Error("pendingToken is required");
   }
 
   const user = await User.findById(userId)
     .select("+twoFactorSecret +twoFactorBackupCodes")
     .populate({
-    path: "company",
-    select: "name email phone status subscription industry website",
-    populate: {
-      path: "subscription",
-      select:
-        "status plan paymentStatus billingCycle monthlyPrice yearlyPrice maxEmployees currentEmployeeCount renewalDate isTrial trialEndDate",
-    },
-  });
+      path: "company",
+      select: "name email phone status subscription industry website",
+      populate: {
+        path: "subscription",
+        select:
+          "status plan paymentStatus billingCycle monthlyPrice yearlyPrice maxEmployees currentEmployeeCount renewalDate isTrial trialEndDate",
+      },
+    });
   if (!user || !user.twoFactorEnabled) {
     res.status(400);
     throw new Error("Invalid request");
@@ -473,7 +549,7 @@ const verify2FA = asyncHandler(async (req, res) => {
       status: user.status,
       department: user.department,
       company: user.company,
-      token: generateToken(user._id),
+      token: generateToken(user._id, user.tokenVersion),
     },
   });
 });
@@ -508,6 +584,7 @@ const sendOtp = asyncHandler(async (req, res) => {
 
   const otp = generateOtp();
   user.phoneOtp = hashOtp(otp);
+  user.phoneOtpTries = 0;
   user.phoneOtpExpire = new Date(Date.now() + 10 * 60 * 1000); // 10 min
   await user.save();
 
@@ -535,11 +612,9 @@ const verifyOtp = asyncHandler(async (req, res) => {
     throw new Error("Invalid or expired OTP");
   }
 
-  const user = await User.findOne({
-    _id: target._id,
-    phoneOtp: hashOtp(otp),
-    phoneOtpExpire: { $gt: new Date() },
-  }).populate({
+  const user = await User.findById(target._id)
+    .select("+phoneOtp +phoneOtpExpire +phoneOtpTries")
+    .populate({
     path: "company",
     select: "name email phone status subscription industry website",
     populate: {
@@ -549,7 +624,7 @@ const verifyOtp = asyncHandler(async (req, res) => {
     },
   });
 
-  if (!user) {
+  if (!user || !(await checkOtp(user, otp, { hashField: "phoneOtp", expireField: "phoneOtpExpire", triesField: "phoneOtpTries" }))) {
     res.status(401);
     throw new Error("Invalid or expired OTP");
   }
@@ -584,6 +659,7 @@ const verifyOtp = asyncHandler(async (req, res) => {
 
   user.phoneOtp = undefined;
   user.phoneOtpExpire = undefined;
+  user.phoneOtpTries = 0;
   user.lastLogin = new Date();
   await user.save();
 
@@ -599,7 +675,7 @@ const verifyOtp = asyncHandler(async (req, res) => {
       status: user.status,
       department: user.department,
       company: user.company,
-      token: generateToken(user._id),
+      token: generateToken(user._id, user.tokenVersion),
     },
   });
 });
@@ -638,6 +714,7 @@ const forgotPasswordWhatsapp = asyncHandler(async (req, res) => {
   if (user?.phoneVerified && user.phone && user.status !== "inactive") {
     const otp = generateOtp();
     user.resetOtp = hashOtp(otp);
+    user.resetOtpTries = 0;
     user.resetOtpExpire = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
     try {
@@ -664,12 +741,8 @@ const resetPasswordWithOtp = asyncHandler(async (req, res) => {
     throw new Error(STRONG_PASSWORD_MSG);
   }
 
-  const user = await User.findOne({
-    email: email.toLowerCase().trim(),
-    resetOtp: hashOtp(otp),
-    resetOtpExpire: { $gt: new Date() },
-  });
-  if (!user) {
+  const user = await User.findOne({ email: email.toLowerCase().trim() }).select("+resetOtp +resetOtpExpire +resetOtpTries");
+  if (!user || !(await checkOtp(user, otp, { hashField: "resetOtp", expireField: "resetOtpExpire", triesField: "resetOtpTries" }))) {
     res.status(400);
     throw new Error("This code is invalid or has expired");
   }
@@ -677,6 +750,7 @@ const resetPasswordWithOtp = asyncHandler(async (req, res) => {
   user.password = password;
   user.resetOtp = undefined;
   user.resetOtpExpire = undefined;
+  user.resetOtpTries = 0;
   await user.save();
 
   res.json({
@@ -727,6 +801,7 @@ const sendPhoneVerifyOtp = asyncHandler(async (req, res) => {
 
   const otp = generateOtp();
   user.phoneVerifyOtp = hashOtp(otp);
+  user.phoneVerifyOtpTries = 0;
   user.phoneVerifyOtpExpire = new Date(Date.now() + 10 * 60 * 1000);
   await user.save();
 
@@ -736,12 +811,8 @@ const sendPhoneVerifyOtp = asyncHandler(async (req, res) => {
 });
 
 const verifyPhoneVerifyOtp = asyncHandler(async (req, res) => {
-  const user = await User.findOne({
-    _id: req.user._id,
-    phoneVerifyOtp: hashOtp(req.body.otp || ""),
-    phoneVerifyOtpExpire: { $gt: new Date() },
-  });
-  if (!user) {
+  const user = await User.findById(req.user._id).select("+phoneVerifyOtp +phoneVerifyOtpExpire +phoneVerifyOtpTries");
+  if (!user || !(await checkOtp(user, String(req.body.otp || ""), { hashField: "phoneVerifyOtp", expireField: "phoneVerifyOtpExpire", triesField: "phoneVerifyOtpTries" }))) {
     res.status(400);
     throw new Error("This code is invalid or has expired");
   }

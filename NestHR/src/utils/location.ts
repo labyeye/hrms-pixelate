@@ -8,7 +8,8 @@ export async function requestSelfMarkPermissions(): Promise<boolean> {
     PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
   ]);
   return (
-    results[PermissionsAndroid.PERMISSIONS.CAMERA] === PermissionsAndroid.RESULTS.GRANTED &&
+    results[PermissionsAndroid.PERMISSIONS.CAMERA] ===
+      PermissionsAndroid.RESULTS.GRANTED &&
     results[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION] ===
       PermissionsAndroid.RESULTS.GRANTED
   );

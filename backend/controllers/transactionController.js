@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const Transaction = require("../models/Transaction");
 const Employee = require("../models/Employee");
 const DeductionRule = require("../models/DeductionRule");
+const bodyFor = require("../utils/bodyFor");
 
 const getTransactions = asyncHandler(async (req, res) => {
   const { employee, type } = req.query;
@@ -21,6 +22,12 @@ const createTransaction = asyncHandler(async (req, res) => {
     throw new Error("employee, type and date are required");
   }
 
+  const target = await Employee.findOne({ _id: employee, company: req.user.company }).populate("shift");
+  if (!target) {
+    res.status(404);
+    throw new Error("Employee not found");
+  }
+
   let finalAmount = Number(amount) || 0;
   let finalHours = 0;
 
@@ -32,8 +39,8 @@ const createTransaction = asyncHandler(async (req, res) => {
     finalHours = Number(hours);
 
     if (!finalAmount) {
-      const emp = await Employee.findById(employee).populate("shift");
-      const rule = await DeductionRule.findOne({ company: emp?.company });
+      const emp = target;
+      const rule = await DeductionRule.findOne({ company: emp.company });
 
       let shiftStartH, shiftStartM, shiftEndH, shiftEndM;
       if (emp?.shift?.startTime) {
@@ -99,7 +106,7 @@ const createTransaction = asyncHandler(async (req, res) => {
 const updateTransaction = asyncHandler(async (req, res) => {
   const transaction = await Transaction.findOneAndUpdate(
     { _id: req.params.id, company: req.user.company },
-    req.body,
+    bodyFor(Transaction, req.body, ["employee"]),
     { new: true },
   ).populate("employee", "firstName lastName employeeId");
   if (!transaction) {

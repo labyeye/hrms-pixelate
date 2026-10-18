@@ -9,32 +9,6 @@ const CHEQUE_PATH = path.join(
   "../../frontend/assets/payrollcheque.pdf",
 );
 
-const MONTHS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
-function fmt(n) {
-  return (
-    "Rs. " +
-    new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n || 0)
-  );
-}
-
-function fmtNum(n) {
-  return Number(n || 0).toLocaleString("en-IN");
-}
-
 function toIndianWords(n) {
   const ones = [
     "",
@@ -130,7 +104,6 @@ async function generatePayslipPdf(payroll, employee, company) {
   }
 
   const [chequePage] = pdfDoc.getPages();
-  const { height: ph } = chequePage.getSize();
   // MediaBox may have a non-zero y origin (this template has y≈7.71).
   // pdfjs accounts for this when rendering on canvas; pdf-lib getSize() does not.
   // Top of visible page in PDF coords = mediaBox.y + mediaBox.height.

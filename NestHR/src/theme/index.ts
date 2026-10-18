@@ -50,9 +50,24 @@ export const S = StyleSheet.create({
   },
 
   // Typography
-  h1: { fontFamily: FONT.bold, fontSize: 22, fontWeight: '700', color: C.black },
-  h2: { fontFamily: FONT.bold, fontSize: 18, fontWeight: '700', color: C.black },
-  h3: { fontFamily: FONT.bold, fontSize: 15, fontWeight: '700', color: C.black },
+  h1: {
+    fontFamily: FONT.bold,
+    fontSize: 22,
+    fontWeight: '700',
+    color: C.black,
+  },
+  h2: {
+    fontFamily: FONT.bold,
+    fontSize: 18,
+    fontWeight: '700',
+    color: C.black,
+  },
+  h3: {
+    fontFamily: FONT.bold,
+    fontSize: 15,
+    fontWeight: '700',
+    color: C.black,
+  },
   label: {
     fontFamily: FONT.bold,
     fontSize: 12,
@@ -61,8 +76,18 @@ export const S = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  body: { fontFamily: FONT.medium, fontSize: 14, fontWeight: '500', color: C.black },
-  small: { fontFamily: FONT.medium, fontSize: 12, fontWeight: '500', color: C.textMuted },
+  body: {
+    fontFamily: FONT.medium,
+    fontSize: 14,
+    fontWeight: '500',
+    color: C.black,
+  },
+  small: {
+    fontFamily: FONT.medium,
+    fontSize: 12,
+    fontWeight: '500',
+    color: C.textMuted,
+  },
   mono: { fontFamily: 'monospace', fontSize: 12 },
 
   // Buttons
@@ -184,7 +209,12 @@ export const S = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
-  badgeText: { fontFamily: FONT.bold, fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
+  badgeText: {
+    fontFamily: FONT.bold,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
 
   // Divider
   divider: { height: 2, backgroundColor: C.black, marginVertical: 12 },

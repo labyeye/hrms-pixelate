@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Modal,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { ChevronUp, ChevronDown } from 'lucide-react-native';
 import { C } from '../../theme';
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 
 // Reusable up/down spinner column
 function SpinCol({
@@ -31,13 +38,23 @@ function SpinCol({
   const dec = () => onChange(value <= min ? max : value - 1);
   return (
     <View style={s.col}>
-      <TouchableOpacity onPress={inc} style={s.arrow} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+      <TouchableOpacity
+        onPress={inc}
+        style={s.arrow}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
         <ChevronUp size={22} color={C.primary} />
       </TouchableOpacity>
       <View style={s.valBox}>
-        <Text style={s.valText}>{format ? format(value) : String(value).padStart(2, '0')}</Text>
+        <Text style={s.valText}>
+          {format ? format(value) : String(value).padStart(2, '0')}
+        </Text>
       </View>
-      <TouchableOpacity onPress={dec} style={s.arrow} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+      <TouchableOpacity
+        onPress={dec}
+        style={s.arrow}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
         <ChevronDown size={22} color={C.primary} />
       </TouchableOpacity>
       <Text style={s.colLabel}>{label}</Text>
@@ -56,15 +73,23 @@ interface DatePickerFieldProps {
   minimumDate?: Date;
 }
 
-export function DatePickerField({ label, value, onChange }: DatePickerFieldProps) {
+export function DatePickerField({
+  label,
+  value,
+  onChange,
+}: DatePickerFieldProps) {
   const now = new Date();
   const parsed = value ? new Date(value + 'T00:00:00') : now;
   const isValid = !!value && !isNaN(parsed.getTime());
 
   const [show, setShow] = useState(false);
   const [day, setDay] = useState(isValid ? parsed.getDate() : now.getDate());
-  const [month, setMonth] = useState(isValid ? parsed.getMonth() + 1 : now.getMonth() + 1);
-  const [year, setYear] = useState(isValid ? parsed.getFullYear() : now.getFullYear());
+  const [month, setMonth] = useState(
+    isValid ? parsed.getMonth() + 1 : now.getMonth() + 1,
+  );
+  const [year, setYear] = useState(
+    isValid ? parsed.getFullYear() : now.getFullYear(),
+  );
 
   const openPicker = () => {
     const d = isValid ? parsed : now;
@@ -83,14 +108,24 @@ export function DatePickerField({ label, value, onChange }: DatePickerFieldProps
   };
 
   const displayValue = isValid
-    ? parsed.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+    ? parsed.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
     : `Select ${label.replace(' *', '')}`;
 
   return (
     <View>
       <Text style={s.label}>{label}</Text>
-      <TouchableOpacity style={s.input} onPress={openPicker} activeOpacity={0.8}>
-        <Text style={[s.inputText, !isValid && s.placeholder]}>{displayValue}</Text>
+      <TouchableOpacity
+        style={s.input}
+        onPress={openPicker}
+        activeOpacity={0.8}
+      >
+        <Text style={[s.inputText, !isValid && s.placeholder]}>
+          {displayValue}
+        </Text>
       </TouchableOpacity>
 
       <Modal visible={show} transparent animationType="slide">
@@ -106,7 +141,13 @@ export function DatePickerField({ label, value, onChange }: DatePickerFieldProps
               </TouchableOpacity>
             </View>
             <View style={s.spinRow}>
-              <SpinCol label="Day" value={day} min={1} max={new Date(year, month, 0).getDate()} onChange={setDay} />
+              <SpinCol
+                label="Day"
+                value={day}
+                min={1}
+                max={new Date(year, month, 0).getDate()}
+                onChange={setDay}
+              />
               <View style={s.sep} />
               <SpinCol
                 label="Month"
@@ -117,7 +158,14 @@ export function DatePickerField({ label, value, onChange }: DatePickerFieldProps
                 format={v => MONTHS[v - 1]}
               />
               <View style={s.sep} />
-              <SpinCol label="Year" value={year} min={1950} max={2100} onChange={setYear} format={v => String(v)} />
+              <SpinCol
+                label="Year"
+                value={year}
+                min={1950}
+                max={2100}
+                onChange={setYear}
+                format={v => String(v)}
+              />
             </View>
           </View>
         </View>
@@ -134,7 +182,11 @@ interface TimePickerFieldProps {
   onChange: (val: string) => void;
 }
 
-export function TimePickerField({ label, value, onChange }: TimePickerFieldProps) {
+export function TimePickerField({
+  label,
+  value,
+  onChange,
+}: TimePickerFieldProps) {
   const parts = (value || '09:00').split(':').map(Number);
   const [show, setShow] = useState(false);
   const [hour, setHour] = useState(parts[0] || 9);
@@ -148,14 +200,20 @@ export function TimePickerField({ label, value, onChange }: TimePickerFieldProps
   };
 
   const handleDone = () => {
-    onChange(`${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
+    onChange(
+      `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
+    );
     setShow(false);
   };
 
   return (
     <View>
       <Text style={s.label}>{label}</Text>
-      <TouchableOpacity style={s.input} onPress={openPicker} activeOpacity={0.8}>
+      <TouchableOpacity
+        style={s.input}
+        onPress={openPicker}
+        activeOpacity={0.8}
+      >
         <Text style={[s.inputText, !value && s.placeholder]}>
           {value || `Select ${label.replace(' *', '')}`}
         </Text>
@@ -174,7 +232,13 @@ export function TimePickerField({ label, value, onChange }: TimePickerFieldProps
               </TouchableOpacity>
             </View>
             <View style={s.spinRow}>
-              <SpinCol label="Hour" value={hour} min={0} max={23} onChange={setHour} />
+              <SpinCol
+                label="Hour"
+                value={hour}
+                min={0}
+                max={23}
+                onChange={setHour}
+              />
               <View style={s.timeSep}>
                 <Text style={s.timeColon}>:</Text>
               </View>

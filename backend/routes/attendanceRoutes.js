@@ -39,7 +39,7 @@ router.post(
   protect,
   authorize("super_admin", "hr_manager"),
   async (req, res) => {
-    await runAutoMark();
+    await runAutoMark(req.user.company); // never touch other tenants
     res.json({ success: true, message: "Auto-mark job completed" });
   },
 );

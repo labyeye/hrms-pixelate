@@ -14,11 +14,6 @@ import {
   performanceAPI,
   authAPI,
   dashboardAPI,
-  assetAPI,
-  announcementAPI,
-  attendanceCorrectionAPI,
-  documentAPI,
-  supportAPI,
   attendanceSettingsAPI,
 } from "@/services/api";
 import { cn, formatDate, formatCurrency } from "@/lib/utils";
@@ -53,13 +48,8 @@ import {
   Cpu,
   Gift,
   Award,
-  BookOpen,
-  Heart,
   Megaphone,
   UserCheck,
-  RefreshCw,
-  FileText,
-  Check,
 } from "lucide-react";
 
 interface AttendanceStats {

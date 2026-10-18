@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { attendanceAPI, employeeAPI, attendanceSettingsAPI } from "@/services/api";
+import {
+  attendanceAPI,
+  employeeAPI,
+  attendanceSettingsAPI,
+} from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useConfirm } from "@/hooks/use-confirm";
@@ -588,7 +592,11 @@ export default function AttendancePage() {
               icon={icon}
               color={color}
               active={isActive}
-              onClick={() => setActiveFilter(isActive || filterKey === "total" ? null : filterKey)}
+              onClick={() =>
+                setActiveFilter(
+                  isActive || filterKey === "total" ? null : filterKey,
+                )
+              }
             />
           );
         })}

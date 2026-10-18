@@ -61,23 +61,57 @@ function fmt12(date: Date): string {
   });
 }
 
-function describe(n: NotifEntry): { icon: JSX.Element; text: string; color: string } {
+function describe(n: NotifEntry): {
+  icon: JSX.Element;
+  text: string;
+  color: string;
+} {
   const st = n.status;
   const verb =
-    st === "pending" ? "requested" : st === "approved" ? "approved" : st === "rejected" ? "rejected" : st ?? "";
+    st === "pending"
+      ? "requested"
+      : st === "approved"
+        ? "approved"
+        : st === "rejected"
+          ? "rejected"
+          : (st ?? "");
   const color =
-    st === "approved" ? "text-[#00C48C]" : st === "rejected" ? "text-red-600" : "text-[#FA731C]";
+    st === "approved"
+      ? "text-[#00C48C]"
+      : st === "rejected"
+        ? "text-red-600"
+        : "text-[#FA731C]";
   switch (n.kind) {
     case "checkin":
-      return { icon: <LogIn className="w-3 h-3 shrink-0" />, text: `Checked in at ${fmt12(n.time)}`, color: "text-[#00C48C]" };
+      return {
+        icon: <LogIn className="w-3 h-3 shrink-0" />,
+        text: `Checked in at ${fmt12(n.time)}`,
+        color: "text-[#00C48C]",
+      };
     case "checkout":
-      return { icon: <LogOut className="w-3 h-3 shrink-0" />, text: `Checked out at ${fmt12(n.time)}`, color: "text-[#FA731C]" };
+      return {
+        icon: <LogOut className="w-3 h-3 shrink-0" />,
+        text: `Checked out at ${fmt12(n.time)}`,
+        color: "text-[#FA731C]",
+      };
     case "leave":
-      return { icon: <CalendarDays className="w-3 h-3 shrink-0" />, text: `Leave ${verb} · ${n.detail}`, color };
+      return {
+        icon: <CalendarDays className="w-3 h-3 shrink-0" />,
+        text: `Leave ${verb} · ${n.detail}`,
+        color,
+      };
     case "correction":
-      return { icon: <FileEdit className="w-3 h-3 shrink-0" />, text: `Correction ${verb} · ${n.detail}`, color };
+      return {
+        icon: <FileEdit className="w-3 h-3 shrink-0" />,
+        text: `Correction ${verb} · ${n.detail}`,
+        color,
+      };
     default:
-      return { icon: <AlarmClock className="w-3 h-3 shrink-0" />, text: `Late approval ${verb} · ${n.detail}`, color };
+      return {
+        icon: <AlarmClock className="w-3 h-3 shrink-0" />,
+        text: `Late approval ${verb} · ${n.detail}`,
+        color,
+      };
   }
 }
 
@@ -90,7 +124,9 @@ export function AppHeader({ title, onMenuOpen }: AppHeaderProps) {
   const [pending, setPending] = useState(0);
   const [loading, setLoading] = useState(false);
   const [seen, setSeen] = useState(false);
-  const [filter, setFilter] = useState<"all" | "attendance" | "requests">("all");
+  const [filter, setFilter] = useState<"all" | "attendance" | "requests">(
+    "all",
+  );
   const panelRef = useRef<HTMLDivElement>(null);
 
   const fetchFeed = useCallback(async () => {
@@ -244,16 +280,26 @@ export function AppHeader({ title, onMenuOpen }: AppHeaderProps) {
                       >
                         <div className="w-8 h-8 rounded-full border-2 border-black shrink-0 overflow-hidden bg-[#024BAB] flex items-center justify-center text-xs font-bold text-white">
                           {n.avatar ? (
-                            <img src={n.avatar} alt={n.name} className="w-full h-full object-cover" />
+                            <img
+                              src={n.avatar}
+                              alt={n.name}
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
                             n.name[0]?.toUpperCase()
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-bold text-black truncate">{n.name}</p>
-                          <div className={`flex items-center gap-1 mt-0.5 ${d.color}`}>
+                          <p className="text-xs font-bold text-black truncate">
+                            {n.name}
+                          </p>
+                          <div
+                            className={`flex items-center gap-1 mt-0.5 ${d.color}`}
+                          >
                             {d.icon}
-                            <span className="text-[11px] font-semibold capitalize truncate">{d.text}</span>
+                            <span className="text-[11px] font-semibold capitalize truncate">
+                              {d.text}
+                            </span>
                           </div>
                         </div>
                         <span className="text-[10px] text-muted-foreground font-medium shrink-0">

@@ -1,7 +1,8 @@
 const asyncHandler = require("express-async-handler");
-const path = require("path");
 const Setting = require("../models/Setting");
 const Company = require("../models/Company");
+const bodyFor = require("../utils/bodyFor");
+const { validateMagicBytes } = require("../middleware/upload");
 
 const getSettings = asyncHandler(async (req, res) => {
   const company = req.user.company;
@@ -18,7 +19,7 @@ const updateSettings = asyncHandler(async (req, res) => {
   const company = req.user.company;
   const setting = await Setting.findOneAndUpdate(
     { company },
-    { $set: { ...req.body, company } },
+    { $set: { ...bodyFor(Setting, req.body), company } },
     { new: true, upsert: true, runValidators: true },
   );
 
@@ -33,22 +34,24 @@ const updateSettings = asyncHandler(async (req, res) => {
   res.json({ success: true, data: setting });
 });
 
-const uploadCompanyLogo = (req, res) => {
+const uploadCompanyLogo = asyncHandler(async (req, res) => {
   if (!req.file) {
     res.status(400);
     throw new Error("No file uploaded");
   }
+  try {
+    await validateMagicBytes(req.file.path); // deletes the file and throws when it isn't a real image
+  } catch (err) {
+    res.status(400);
+    throw err;
+  }
   const logoUrl = `/uploads/company-logos/${req.file.filename}`;
-  Setting.findOneAndUpdate(
+  const setting = await Setting.findOneAndUpdate(
     { company: req.user.company },
     { $set: { logoUrl, company: req.user.company } },
     { new: true, upsert: true },
-  )
-    .then((setting) => res.json({ success: true, logoUrl, data: setting }))
-    .catch((err) => {
-      res.status(500);
-      throw err;
-    });
-};
+  );
+  res.json({ success: true, logoUrl, data: setting });
+});
 
 module.exports = { getSettings, updateSettings, uploadCompanyLogo };

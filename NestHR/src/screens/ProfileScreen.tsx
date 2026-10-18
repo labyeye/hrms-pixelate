@@ -51,7 +51,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { authAPI, employeeAPI } from '../api/api';
 import { C } from '../theme';
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
@@ -65,7 +68,13 @@ const BRUTAL = {
   borderColor: C.black,
 } as const;
 
-function AccordionSection({ title, isOpen, onToggle, children, icon: Icon }: any) {
+function AccordionSection({
+  title,
+  isOpen,
+  onToggle,
+  children,
+  icon: Icon,
+}: any) {
   const rot = React.useRef(new Animated.Value(isOpen ? 1 : 0)).current;
   const fade = React.useRef(new Animated.Value(isOpen ? 1 : 0)).current;
 
@@ -110,7 +119,9 @@ function AccordionSection({ title, isOpen, onToggle, children, icon: Icon }: any
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           {Icon && <Icon size={16} color={C.primary} />}
-          <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>{title}</Text>
+          <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>
+            {title}
+          </Text>
         </View>
         <Animated.View
           style={{
@@ -317,7 +328,8 @@ export default function ProfileScreen() {
   const [newSkill, setNewSkill] = useState('');
 
   useEffect(() => {
-    employeeAPI.getMe()
+    employeeAPI
+      .getMe()
       .then(res => {
         const emp = res?.data || res;
         setEmpProfile(emp);
@@ -579,13 +591,21 @@ export default function ProfileScreen() {
             <AccordionSection
               title="Bank & Identification"
               isOpen={openSection === 'bank'}
-              onToggle={() => setOpenSection(openSection === 'bank' ? null : 'bank')}
+              onToggle={() =>
+                setOpenSection(openSection === 'bank' ? null : 'bank')
+              }
               icon={CreditCard}
             >
               <View style={{ gap: 10 }}>
                 <Text style={s.fieldLabel}>PAN Number</Text>
                 <BInput
-                  style={{ borderWidth: 2, borderColor: C.black, padding: 8, fontSize: 13, color: C.black }}
+                  style={{
+                    borderWidth: 2,
+                    borderColor: C.black,
+                    padding: 8,
+                    fontSize: 13,
+                    color: C.black,
+                  }}
                   value={panNumber}
                   onChangeText={setPanNumber}
                   placeholder="ABCDE1234F"
@@ -593,7 +613,13 @@ export default function ProfileScreen() {
                 />
                 <Text style={s.fieldLabel}>Bank Account Number</Text>
                 <BInput
-                  style={{ borderWidth: 2, borderColor: C.black, padding: 8, fontSize: 13, color: C.black }}
+                  style={{
+                    borderWidth: 2,
+                    borderColor: C.black,
+                    padding: 8,
+                    fontSize: 13,
+                    color: C.black,
+                  }}
                   value={bankAccount}
                   onChangeText={setBankAccount}
                   placeholder="Account Number"
@@ -601,7 +627,13 @@ export default function ProfileScreen() {
                 />
                 <Text style={s.fieldLabel}>IFSC Code</Text>
                 <BInput
-                  style={{ borderWidth: 2, borderColor: C.black, padding: 8, fontSize: 13, color: C.black }}
+                  style={{
+                    borderWidth: 2,
+                    borderColor: C.black,
+                    padding: 8,
+                    fontSize: 13,
+                    color: C.black,
+                  }}
                   value={ifscCode}
                   onChangeText={setIfscCode}
                   placeholder="IFSC Code"
@@ -614,24 +646,65 @@ export default function ProfileScreen() {
             <AccordionSection
               title="Emergency & Nominees"
               isOpen={openSection === 'nominees'}
-              onToggle={() => setOpenSection(openSection === 'nominees' ? null : 'nominees')}
+              onToggle={() =>
+                setOpenSection(openSection === 'nominees' ? null : 'nominees')
+              }
               icon={Heart}
             >
               <View style={{ gap: 12 }}>
                 <Text style={s.fieldLabel}>Emergency Contact</Text>
                 <BInput
-                  style={{ borderWidth: 2, borderColor: C.black, padding: 8, fontSize: 13, color: C.black }}
+                  style={{
+                    borderWidth: 2,
+                    borderColor: C.black,
+                    padding: 8,
+                    fontSize: 13,
+                    color: C.black,
+                  }}
                   value={emergencyContact}
                   onChangeText={setEmergencyContact}
                   placeholder="Contact Name & Phone"
                   placeholderTextColor={C.textLight}
                 />
 
-                <Text style={[s.fieldLabel, { borderTopWidth: 2, borderTopColor: C.black, paddingTop: 8, marginTop: 8 }]}>Nominees List</Text>
+                <Text
+                  style={[
+                    s.fieldLabel,
+                    {
+                      borderTopWidth: 2,
+                      borderTopColor: C.black,
+                      paddingTop: 8,
+                      marginTop: 8,
+                    },
+                  ]}
+                >
+                  Nominees List
+                </Text>
                 {nominees.map((n, i) => (
-                  <View key={i} style={{ borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black, padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
+                  <View
+                    key={i}
+                    style={{
+                      borderWidth: 2,
+                      borderRightWidth: 4,
+                      borderBottomWidth: 4,
+                      borderRightColor: '#0A0A0A',
+                      borderBottomColor: '#0A0A0A',
+                      borderRadius: 8,
+                      borderColor: C.black,
+                      padding: 10,
+                      gap: 8,
+                      backgroundColor: '#F9FAFB',
+                    }}
+                  >
                     <BInput
-                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{
+                        borderWidth: 2,
+                        borderColor: C.black,
+                        padding: 6,
+                        fontSize: 12,
+                        backgroundColor: '#fff',
+                        color: C.black,
+                      }}
                       value={n.name}
                       onChangeText={val => {
                         const updated = [...nominees];
@@ -642,7 +715,14 @@ export default function ProfileScreen() {
                       placeholderTextColor={C.textLight}
                     />
                     <BInput
-                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{
+                        borderWidth: 2,
+                        borderColor: C.black,
+                        padding: 6,
+                        fontSize: 12,
+                        backgroundColor: '#fff',
+                        color: C.black,
+                      }}
                       value={n.relationship}
                       onChangeText={val => {
                         const updated = [...nominees];
@@ -653,7 +733,14 @@ export default function ProfileScreen() {
                       placeholderTextColor={C.textLight}
                     />
                     <BInput
-                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{
+                        borderWidth: 2,
+                        borderColor: C.black,
+                        padding: 6,
+                        fontSize: 12,
+                        backgroundColor: '#fff',
+                        color: C.black,
+                      }}
                       value={String(n.percentage || '')}
                       keyboardType="numeric"
                       onChangeText={val => {
@@ -665,18 +752,49 @@ export default function ProfileScreen() {
                       placeholderTextColor={C.textLight}
                     />
                     <TouchableOpacity
-                      onPress={() => setNominees(nominees.filter((_, idx) => idx !== i))}
-                      style={{ alignSelf: 'flex-end', backgroundColor: C.danger, paddingHorizontal: 10, paddingVertical: 4 }}
+                      onPress={() =>
+                        setNominees(nominees.filter((_, idx) => idx !== i))
+                      }
+                      style={{
+                        alignSelf: 'flex-end',
+                        backgroundColor: C.danger,
+                        paddingHorizontal: 10,
+                        paddingVertical: 4,
+                      }}
                     >
-                      <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>Remove</Text>
+                      <Text
+                        style={{
+                          color: '#fff',
+                          fontSize: 10,
+                          fontWeight: '700',
+                        }}
+                      >
+                        Remove
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 ))}
                 <TouchableOpacity
-                  onPress={() => setNominees([...nominees, { name: '', relationship: '', percentage: 100 }])}
-                  style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: C.black, padding: 8, alignItems: 'center', marginTop: 4 }}
+                  onPress={() =>
+                    setNominees([
+                      ...nominees,
+                      { name: '', relationship: '', percentage: 100 },
+                    ])
+                  }
+                  style={{
+                    borderWidth: 2,
+                    borderStyle: 'dashed',
+                    borderColor: C.black,
+                    padding: 8,
+                    alignItems: 'center',
+                    marginTop: 4,
+                  }}
                 >
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: C.black }}>+ Add Nominee</Text>
+                  <Text
+                    style={{ fontSize: 11, fontWeight: '700', color: C.black }}
+                  >
+                    + Add Nominee
+                  </Text>
                 </TouchableOpacity>
               </View>
             </AccordionSection>
@@ -685,14 +803,37 @@ export default function ProfileScreen() {
             <AccordionSection
               title="Family Details"
               isOpen={openSection === 'family'}
-              onToggle={() => setOpenSection(openSection === 'family' ? null : 'family')}
+              onToggle={() =>
+                setOpenSection(openSection === 'family' ? null : 'family')
+              }
               icon={Heart}
             >
               <View style={{ gap: 12 }}>
                 {familyDetails.map((f, i) => (
-                  <View key={i} style={{ borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black, padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
+                  <View
+                    key={i}
+                    style={{
+                      borderWidth: 2,
+                      borderRightWidth: 4,
+                      borderBottomWidth: 4,
+                      borderRightColor: '#0A0A0A',
+                      borderBottomColor: '#0A0A0A',
+                      borderRadius: 8,
+                      borderColor: C.black,
+                      padding: 10,
+                      gap: 8,
+                      backgroundColor: '#F9FAFB',
+                    }}
+                  >
                     <BInput
-                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{
+                        borderWidth: 2,
+                        borderColor: C.black,
+                        padding: 6,
+                        fontSize: 12,
+                        backgroundColor: '#fff',
+                        color: C.black,
+                      }}
                       value={f.name}
                       onChangeText={val => {
                         const updated = [...familyDetails];
@@ -703,7 +844,14 @@ export default function ProfileScreen() {
                       placeholderTextColor={C.textLight}
                     />
                     <BInput
-                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{
+                        borderWidth: 2,
+                        borderColor: C.black,
+                        padding: 6,
+                        fontSize: 12,
+                        backgroundColor: '#fff',
+                        color: C.black,
+                      }}
                       value={f.relationship}
                       onChangeText={val => {
                         const updated = [...familyDetails];
@@ -714,7 +862,14 @@ export default function ProfileScreen() {
                       placeholderTextColor={C.textLight}
                     />
                     <BInput
-                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{
+                        borderWidth: 2,
+                        borderColor: C.black,
+                        padding: 6,
+                        fontSize: 12,
+                        backgroundColor: '#fff',
+                        color: C.black,
+                      }}
                       value={f.phone}
                       onChangeText={val => {
                         const updated = [...familyDetails];
@@ -725,18 +880,51 @@ export default function ProfileScreen() {
                       placeholderTextColor={C.textLight}
                     />
                     <TouchableOpacity
-                      onPress={() => setFamilyDetails(familyDetails.filter((_, idx) => idx !== i))}
-                      style={{ alignSelf: 'flex-end', backgroundColor: C.danger, paddingHorizontal: 10, paddingVertical: 4 }}
+                      onPress={() =>
+                        setFamilyDetails(
+                          familyDetails.filter((_, idx) => idx !== i),
+                        )
+                      }
+                      style={{
+                        alignSelf: 'flex-end',
+                        backgroundColor: C.danger,
+                        paddingHorizontal: 10,
+                        paddingVertical: 4,
+                      }}
                     >
-                      <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>Remove</Text>
+                      <Text
+                        style={{
+                          color: '#fff',
+                          fontSize: 10,
+                          fontWeight: '700',
+                        }}
+                      >
+                        Remove
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 ))}
                 <TouchableOpacity
-                  onPress={() => setFamilyDetails([...familyDetails, { name: '', relationship: '', phone: '' }])}
-                  style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: C.black, padding: 8, alignItems: 'center', marginTop: 4 }}
+                  onPress={() =>
+                    setFamilyDetails([
+                      ...familyDetails,
+                      { name: '', relationship: '', phone: '' },
+                    ])
+                  }
+                  style={{
+                    borderWidth: 2,
+                    borderStyle: 'dashed',
+                    borderColor: C.black,
+                    padding: 8,
+                    alignItems: 'center',
+                    marginTop: 4,
+                  }}
                 >
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: C.black }}>+ Add Family Member</Text>
+                  <Text
+                    style={{ fontSize: 11, fontWeight: '700', color: C.black }}
+                  >
+                    + Add Family Member
+                  </Text>
                 </TouchableOpacity>
               </View>
             </AccordionSection>
@@ -745,14 +933,37 @@ export default function ProfileScreen() {
             <AccordionSection
               title="Education Records"
               isOpen={openSection === 'education'}
-              onToggle={() => setOpenSection(openSection === 'education' ? null : 'education')}
+              onToggle={() =>
+                setOpenSection(openSection === 'education' ? null : 'education')
+              }
               icon={BookOpen}
             >
               <View style={{ gap: 12 }}>
                 {education.map((e, i) => (
-                  <View key={i} style={{ borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black, padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
+                  <View
+                    key={i}
+                    style={{
+                      borderWidth: 2,
+                      borderRightWidth: 4,
+                      borderBottomWidth: 4,
+                      borderRightColor: '#0A0A0A',
+                      borderBottomColor: '#0A0A0A',
+                      borderRadius: 8,
+                      borderColor: C.black,
+                      padding: 10,
+                      gap: 8,
+                      backgroundColor: '#F9FAFB',
+                    }}
+                  >
                     <BInput
-                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{
+                        borderWidth: 2,
+                        borderColor: C.black,
+                        padding: 6,
+                        fontSize: 12,
+                        backgroundColor: '#fff',
+                        color: C.black,
+                      }}
                       value={e.degree}
                       onChangeText={val => {
                         const updated = [...education];
@@ -763,7 +974,14 @@ export default function ProfileScreen() {
                       placeholderTextColor={C.textLight}
                     />
                     <BInput
-                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{
+                        borderWidth: 2,
+                        borderColor: C.black,
+                        padding: 6,
+                        fontSize: 12,
+                        backgroundColor: '#fff',
+                        color: C.black,
+                      }}
                       value={e.school}
                       onChangeText={val => {
                         const updated = [...education];
@@ -774,7 +992,14 @@ export default function ProfileScreen() {
                       placeholderTextColor={C.textLight}
                     />
                     <BInput
-                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{
+                        borderWidth: 2,
+                        borderColor: C.black,
+                        padding: 6,
+                        fontSize: 12,
+                        backgroundColor: '#fff',
+                        color: C.black,
+                      }}
                       value={String(e.passYear || '')}
                       keyboardType="numeric"
                       onChangeText={val => {
@@ -786,18 +1011,49 @@ export default function ProfileScreen() {
                       placeholderTextColor={C.textLight}
                     />
                     <TouchableOpacity
-                      onPress={() => setEducation(education.filter((_, idx) => idx !== i))}
-                      style={{ alignSelf: 'flex-end', backgroundColor: C.danger, paddingHorizontal: 10, paddingVertical: 4 }}
+                      onPress={() =>
+                        setEducation(education.filter((_, idx) => idx !== i))
+                      }
+                      style={{
+                        alignSelf: 'flex-end',
+                        backgroundColor: C.danger,
+                        paddingHorizontal: 10,
+                        paddingVertical: 4,
+                      }}
                     >
-                      <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>Remove</Text>
+                      <Text
+                        style={{
+                          color: '#fff',
+                          fontSize: 10,
+                          fontWeight: '700',
+                        }}
+                      >
+                        Remove
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 ))}
                 <TouchableOpacity
-                  onPress={() => setEducation([...education, { degree: '', school: '', passYear: 2020 }])}
-                  style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: C.black, padding: 8, alignItems: 'center', marginTop: 4 }}
+                  onPress={() =>
+                    setEducation([
+                      ...education,
+                      { degree: '', school: '', passYear: 2020 },
+                    ])
+                  }
+                  style={{
+                    borderWidth: 2,
+                    borderStyle: 'dashed',
+                    borderColor: C.black,
+                    padding: 8,
+                    alignItems: 'center',
+                    marginTop: 4,
+                  }}
                 >
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: C.black }}>+ Add Education Record</Text>
+                  <Text
+                    style={{ fontSize: 11, fontWeight: '700', color: C.black }}
+                  >
+                    + Add Education Record
+                  </Text>
                 </TouchableOpacity>
               </View>
             </AccordionSection>
@@ -806,14 +1062,39 @@ export default function ProfileScreen() {
             <AccordionSection
               title="Work Experience"
               isOpen={openSection === 'experience'}
-              onToggle={() => setOpenSection(openSection === 'experience' ? null : 'experience')}
+              onToggle={() =>
+                setOpenSection(
+                  openSection === 'experience' ? null : 'experience',
+                )
+              }
               icon={Briefcase}
             >
               <View style={{ gap: 12 }}>
                 {experience.map((exp, i) => (
-                  <View key={i} style={{ borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black, padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
+                  <View
+                    key={i}
+                    style={{
+                      borderWidth: 2,
+                      borderRightWidth: 4,
+                      borderBottomWidth: 4,
+                      borderRightColor: '#0A0A0A',
+                      borderBottomColor: '#0A0A0A',
+                      borderRadius: 8,
+                      borderColor: C.black,
+                      padding: 10,
+                      gap: 8,
+                      backgroundColor: '#F9FAFB',
+                    }}
+                  >
                     <BInput
-                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{
+                        borderWidth: 2,
+                        borderColor: C.black,
+                        padding: 6,
+                        fontSize: 12,
+                        backgroundColor: '#fff',
+                        color: C.black,
+                      }}
                       value={exp.company}
                       onChangeText={val => {
                         const updated = [...experience];
@@ -824,7 +1105,14 @@ export default function ProfileScreen() {
                       placeholderTextColor={C.textLight}
                     />
                     <BInput
-                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{
+                        borderWidth: 2,
+                        borderColor: C.black,
+                        padding: 6,
+                        fontSize: 12,
+                        backgroundColor: '#fff',
+                        color: C.black,
+                      }}
                       value={exp.role}
                       onChangeText={val => {
                         const updated = [...experience];
@@ -836,7 +1124,15 @@ export default function ProfileScreen() {
                     />
                     <View style={{ flexDirection: 'row', gap: 6 }}>
                       <BInput
-                        style={{ flex: 1, borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                        style={{
+                          flex: 1,
+                          borderWidth: 2,
+                          borderColor: C.black,
+                          padding: 6,
+                          fontSize: 12,
+                          backgroundColor: '#fff',
+                          color: C.black,
+                        }}
                         value={exp.start}
                         onChangeText={val => {
                           const updated = [...experience];
@@ -847,7 +1143,15 @@ export default function ProfileScreen() {
                         placeholderTextColor={C.textLight}
                       />
                       <BInput
-                        style={{ flex: 1, borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                        style={{
+                          flex: 1,
+                          borderWidth: 2,
+                          borderColor: C.black,
+                          padding: 6,
+                          fontSize: 12,
+                          backgroundColor: '#fff',
+                          color: C.black,
+                        }}
                         value={exp.end}
                         onChangeText={val => {
                           const updated = [...experience];
@@ -859,18 +1163,49 @@ export default function ProfileScreen() {
                       />
                     </View>
                     <TouchableOpacity
-                      onPress={() => setExperience(experience.filter((_, idx) => idx !== i))}
-                      style={{ alignSelf: 'flex-end', backgroundColor: C.danger, paddingHorizontal: 10, paddingVertical: 4 }}
+                      onPress={() =>
+                        setExperience(experience.filter((_, idx) => idx !== i))
+                      }
+                      style={{
+                        alignSelf: 'flex-end',
+                        backgroundColor: C.danger,
+                        paddingHorizontal: 10,
+                        paddingVertical: 4,
+                      }}
                     >
-                      <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>Remove</Text>
+                      <Text
+                        style={{
+                          color: '#fff',
+                          fontSize: 10,
+                          fontWeight: '700',
+                        }}
+                      >
+                        Remove
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 ))}
                 <TouchableOpacity
-                  onPress={() => setExperience([...experience, { company: '', role: '', start: '', end: '' }])}
-                  style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: C.black, padding: 8, alignItems: 'center', marginTop: 4 }}
+                  onPress={() =>
+                    setExperience([
+                      ...experience,
+                      { company: '', role: '', start: '', end: '' },
+                    ])
+                  }
+                  style={{
+                    borderWidth: 2,
+                    borderStyle: 'dashed',
+                    borderColor: C.black,
+                    padding: 8,
+                    alignItems: 'center',
+                    marginTop: 4,
+                  }}
                 >
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: C.black }}>+ Add Experience Record</Text>
+                  <Text
+                    style={{ fontSize: 11, fontWeight: '700', color: C.black }}
+                  >
+                    + Add Experience Record
+                  </Text>
                 </TouchableOpacity>
               </View>
             </AccordionSection>
@@ -879,13 +1214,22 @@ export default function ProfileScreen() {
             <AccordionSection
               title="Skills Tags"
               isOpen={openSection === 'skills'}
-              onToggle={() => setOpenSection(openSection === 'skills' ? null : 'skills')}
+              onToggle={() =>
+                setOpenSection(openSection === 'skills' ? null : 'skills')
+              }
               icon={Award}
             >
               <View style={{ gap: 10 }}>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                   <BInput
-                    style={{ flex: 1, borderWidth: 2, borderColor: C.black, padding: 8, fontSize: 13, color: C.black }}
+                    style={{
+                      flex: 1,
+                      borderWidth: 2,
+                      borderColor: C.black,
+                      padding: 8,
+                      fontSize: 13,
+                      color: C.black,
+                    }}
                     value={newSkill}
                     onChangeText={setNewSkill}
                     placeholder="e.g. React Native, Swift"
@@ -893,27 +1237,81 @@ export default function ProfileScreen() {
                   />
                   <TouchableOpacity
                     onPress={() => {
-                      if (newSkill.trim() && !skills.includes(newSkill.trim())) {
+                      if (
+                        newSkill.trim() &&
+                        !skills.includes(newSkill.trim())
+                      ) {
                         setSkills([...skills, newSkill.trim()]);
                         setNewSkill('');
                       }
                     }}
-                    style={{ backgroundColor: C.black, paddingHorizontal: 16, justifyContent: 'center' }}
+                    style={{
+                      backgroundColor: C.black,
+                      paddingHorizontal: 16,
+                      justifyContent: 'center',
+                    }}
                   >
-                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Add</Text>
+                    <Text
+                      style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}
+                    >
+                      Add
+                    </Text>
                   </TouchableOpacity>
                 </View>
 
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    gap: 8,
+                    marginTop: 8,
+                  }}
+                >
                   {skills.map((s, idx) => (
-                    <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderWidth: 2, borderColor: C.black, paddingHorizontal: 8, paddingVertical: 4, gap: 4 }}>
-                      <Text style={{ fontSize: 11, fontWeight: '700', color: C.black }}>{s}</Text>
-                      <TouchableOpacity onPress={() => setSkills(skills.filter((_, i) => i !== idx))}>
-                        <Text style={{ color: C.danger, fontWeight: '700', fontSize: 13 }}>×</Text>
+                    <View
+                      key={idx}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        backgroundColor: '#F3F4F6',
+                        borderWidth: 2,
+                        borderColor: C.black,
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
+                        gap: 4,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          fontWeight: '700',
+                          color: C.black,
+                        }}
+                      >
+                        {s}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() =>
+                          setSkills(skills.filter((_, i) => i !== idx))
+                        }
+                      >
+                        <Text
+                          style={{
+                            color: C.danger,
+                            fontWeight: '700',
+                            fontSize: 13,
+                          }}
+                        >
+                          ×
+                        </Text>
                       </TouchableOpacity>
                     </View>
                   ))}
-                  {skills.length === 0 && <Text style={{ fontSize: 11, color: C.textMuted }}>No skills tags listed.</Text>}
+                  {skills.length === 0 && (
+                    <Text style={{ fontSize: 11, color: C.textMuted }}>
+                      No skills tags listed.
+                    </Text>
+                  )}
                 </View>
               </View>
             </AccordionSection>
@@ -922,14 +1320,39 @@ export default function ProfileScreen() {
             <AccordionSection
               title="Certificates"
               isOpen={openSection === 'certificates'}
-              onToggle={() => setOpenSection(openSection === 'certificates' ? null : 'certificates')}
+              onToggle={() =>
+                setOpenSection(
+                  openSection === 'certificates' ? null : 'certificates',
+                )
+              }
               icon={Award}
             >
               <View style={{ gap: 12 }}>
                 {certificates.map((cert, i) => (
-                  <View key={i} style={{ borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black, padding: 10, gap: 8, backgroundColor: '#F9FAFB' }}>
+                  <View
+                    key={i}
+                    style={{
+                      borderWidth: 2,
+                      borderRightWidth: 4,
+                      borderBottomWidth: 4,
+                      borderRightColor: '#0A0A0A',
+                      borderBottomColor: '#0A0A0A',
+                      borderRadius: 8,
+                      borderColor: C.black,
+                      padding: 10,
+                      gap: 8,
+                      backgroundColor: '#F9FAFB',
+                    }}
+                  >
                     <BInput
-                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{
+                        borderWidth: 2,
+                        borderColor: C.black,
+                        padding: 6,
+                        fontSize: 12,
+                        backgroundColor: '#fff',
+                        color: C.black,
+                      }}
                       value={cert.name}
                       onChangeText={val => {
                         const updated = [...certificates];
@@ -940,7 +1363,14 @@ export default function ProfileScreen() {
                       placeholderTextColor={C.textLight}
                     />
                     <BInput
-                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{
+                        borderWidth: 2,
+                        borderColor: C.black,
+                        padding: 6,
+                        fontSize: 12,
+                        backgroundColor: '#fff',
+                        color: C.black,
+                      }}
                       value={cert.issuer}
                       onChangeText={val => {
                         const updated = [...certificates];
@@ -951,7 +1381,14 @@ export default function ProfileScreen() {
                       placeholderTextColor={C.textLight}
                     />
                     <BInput
-                      style={{ borderWidth: 2, borderColor: C.black, padding: 6, fontSize: 12, backgroundColor: '#fff', color: C.black }}
+                      style={{
+                        borderWidth: 2,
+                        borderColor: C.black,
+                        padding: 6,
+                        fontSize: 12,
+                        backgroundColor: '#fff',
+                        color: C.black,
+                      }}
                       value={cert.docUrl}
                       onChangeText={val => {
                         const updated = [...certificates];
@@ -962,18 +1399,51 @@ export default function ProfileScreen() {
                       placeholderTextColor={C.textLight}
                     />
                     <TouchableOpacity
-                      onPress={() => setCertificates(certificates.filter((_, idx) => idx !== i))}
-                      style={{ alignSelf: 'flex-end', backgroundColor: C.danger, paddingHorizontal: 10, paddingVertical: 4 }}
+                      onPress={() =>
+                        setCertificates(
+                          certificates.filter((_, idx) => idx !== i),
+                        )
+                      }
+                      style={{
+                        alignSelf: 'flex-end',
+                        backgroundColor: C.danger,
+                        paddingHorizontal: 10,
+                        paddingVertical: 4,
+                      }}
                     >
-                      <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>Remove</Text>
+                      <Text
+                        style={{
+                          color: '#fff',
+                          fontSize: 10,
+                          fontWeight: '700',
+                        }}
+                      >
+                        Remove
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 ))}
                 <TouchableOpacity
-                  onPress={() => setCertificates([...certificates, { name: '', issuer: '', docUrl: '' }])}
-                  style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: C.black, padding: 8, alignItems: 'center', marginTop: 4 }}
+                  onPress={() =>
+                    setCertificates([
+                      ...certificates,
+                      { name: '', issuer: '', docUrl: '' },
+                    ])
+                  }
+                  style={{
+                    borderWidth: 2,
+                    borderStyle: 'dashed',
+                    borderColor: C.black,
+                    padding: 8,
+                    alignItems: 'center',
+                    marginTop: 4,
+                  }}
                 >
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: C.black }}>+ Add Certificate Record</Text>
+                  <Text
+                    style={{ fontSize: 11, fontWeight: '700', color: C.black }}
+                  >
+                    + Add Certificate Record
+                  </Text>
                 </TouchableOpacity>
               </View>
             </AccordionSection>
@@ -1083,13 +1553,27 @@ const s = StyleSheet.create({
     width: 88,
     height: 88,
     backgroundColor: C.primary,
-    borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A',
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarImg: { width: 88, height: 88, borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black },
+  avatarImg: {
+    width: 88,
+    height: 88,
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderRadius: 8,
+    borderColor: C.black,
+  },
   avatarText: { fontSize: 30, fontWeight: '700', color: C.white },
   cameraBadge: {
     position: 'absolute',
@@ -1136,7 +1620,16 @@ const s = StyleSheet.create({
     color: C.black,
     letterSpacing: 0.5,
   },
-  card: { backgroundColor: C.white, borderWidth: 2, borderRadius: 8, borderRightWidth: 5, borderBottomWidth: 5, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black },
+  card: {
+    backgroundColor: C.white,
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderColor: C.black,
+  },
   fieldRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',

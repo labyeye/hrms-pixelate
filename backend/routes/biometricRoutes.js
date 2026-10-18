@@ -135,8 +135,9 @@ router.post(
   authorize("super_admin", "hr_manager"),
   saveFaceDescriptor,
 );
-router.get("/face-descriptors", getFaceDescriptors);
-router.post("/face-attendance", faceAttendance);
+// Face data is biometric PII and the kiosk is operated by HR: employees must not read templates or punch for others.
+router.get("/face-descriptors", authorize("super_admin", "hr_manager"), getFaceDescriptors);
+router.post("/face-attendance", authorize("super_admin", "hr_manager"), faceAttendance);
 
 router.post(
   "/devices/:id/enroll-fingerprint",

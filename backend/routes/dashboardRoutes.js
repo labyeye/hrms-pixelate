@@ -16,10 +16,13 @@ const noCache = (_req, res, next) => {
 };
 
 router.get("/stats", protect, noCache, getStats);
-router.get("/payroll-summary",
+router.get(
+  "/payroll-summary",
   protect,
   authorize("super_admin", "hr_manager"),
-  noCache, getPayrollSummary);
+  noCache,
+  getPayrollSummary,
+);
 router.get("/activity", protect, noCache, getActivityFeed);
 router.get("/employee", protect, noCache, getEmployeeStats);
 module.exports = router;

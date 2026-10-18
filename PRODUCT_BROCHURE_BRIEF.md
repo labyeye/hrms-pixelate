@@ -34,20 +34,20 @@ NestHR is an all-in-one Human Resource Management System with a web admin dashbo
 
 Organize as a 3x4 or 4x3 icon grid:
 
-| Feature | One-liner |
-|---|---|
-| Employee Management | Centralized employee records, documents & profiles |
-| Attendance | Biometric + geo/app-based check-in, real-time tracking |
-| Leave Management | Configurable leave policies, approvals & balances |
-| Payroll | Automated salary processing, salary heads & payslips |
-| Loan Management | Employee loan requests, approvals & repayment tracking |
-| Recruitment | Job postings, candidate pipeline, offer letters |
-| Performance | Reviews, goals & performance tracking |
-| Shift Management | Flexible shift scheduling & rosters |
-| Exit Management | Structured offboarding & clearance workflow |
-| Departments & Designations | Org structure & hierarchy management |
-| Document Management | Secure storage for employee & company documents |
-| Reports & Dashboard | Real-time analytics & statistics for admins |
+| Feature                    | One-liner                                              |
+| -------------------------- | ------------------------------------------------------ |
+| Employee Management        | Centralized employee records, documents & profiles     |
+| Attendance                 | Biometric + geo/app-based check-in, real-time tracking |
+| Leave Management           | Configurable leave policies, approvals & balances      |
+| Payroll                    | Automated salary processing, salary heads & payslips   |
+| Loan Management            | Employee loan requests, approvals & repayment tracking |
+| Recruitment                | Job postings, candidate pipeline, offer letters        |
+| Performance                | Reviews, goals & performance tracking                  |
+| Shift Management           | Flexible shift scheduling & rosters                    |
+| Exit Management            | Structured offboarding & clearance workflow            |
+| Departments & Designations | Org structure & hierarchy management                   |
+| Document Management        | Secure storage for employee & company documents        |
+| Reports & Dashboard        | Real-time analytics & statistics for admins            |
 
 **[PHOTO]** One screenshot per feature (or a representative subset of 4–6) as small inset images
 

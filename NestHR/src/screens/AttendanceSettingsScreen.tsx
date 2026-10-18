@@ -94,10 +94,7 @@ export default function AttendanceSettingsScreen() {
   const [showSummary, setShowSummary] = useState(false);
 
   useEffect(() => {
-    Promise.all([
-      attendanceSettingsAPI.get(),
-      employeeAPI.getAll(),
-    ])
+    Promise.all([attendanceSettingsAPI.get(), employeeAPI.getAll()])
       .then(([settingsRes, empRes]) => {
         if (settingsRes?.data) setRules({ ...DEFAULT, ...settingsRes.data });
         setEmployees(empRes?.data || []);
@@ -155,10 +152,12 @@ export default function AttendanceSettingsScreen() {
           ? { mode: 'bulk', bulkCount: Number(lateBulk) || 0 }
           : {
               mode: 'custom',
-              perEmployee: Object.entries(latePerEmp).map(([employee, count]) => ({
-                employee,
-                count: Number(count) || 0,
-              })),
+              perEmployee: Object.entries(latePerEmp).map(
+                ([employee, count]) => ({
+                  employee,
+                  count: Number(count) || 0,
+                }),
+              ),
             },
       );
       Alert.alert('Saved', 'Late allowance updated');
@@ -178,10 +177,12 @@ export default function AttendanceSettingsScreen() {
           : {
               leaveType,
               mode: 'custom',
-              perEmployee: Object.entries(leavePerEmp).map(([employee, days]) => ({
-                employee,
-                days: Number(days) || 0,
-              })),
+              perEmployee: Object.entries(leavePerEmp).map(
+                ([employee, days]) => ({
+                  employee,
+                  days: Number(days) || 0,
+                }),
+              ),
             },
       );
       Alert.alert('Saved', `Leave allowance updated for ${leaveType}`);
@@ -463,18 +464,34 @@ export default function AttendanceSettingsScreen() {
           <View style={styles.card}>
             <View style={styles.typeRow}>
               <TouchableOpacity
-                style={[styles.typeBtn, lateMode === 'bulk' && styles.typeBtnActive]}
+                style={[
+                  styles.typeBtn,
+                  lateMode === 'bulk' && styles.typeBtnActive,
+                ]}
                 onPress={() => setLateMode('bulk')}
               >
-                <Text style={[styles.typeBtnText, lateMode === 'bulk' && styles.typeBtnTextActive]}>
+                <Text
+                  style={[
+                    styles.typeBtnText,
+                    lateMode === 'bulk' && styles.typeBtnTextActive,
+                  ]}
+                >
                   Bulk (all employees)
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.typeBtn, lateMode === 'custom' && styles.typeBtnActive]}
+                style={[
+                  styles.typeBtn,
+                  lateMode === 'custom' && styles.typeBtnActive,
+                ]}
                 onPress={() => setLateMode('custom')}
               >
-                <Text style={[styles.typeBtnText, lateMode === 'custom' && styles.typeBtnTextActive]}>
+                <Text
+                  style={[
+                    styles.typeBtnText,
+                    lateMode === 'custom' && styles.typeBtnTextActive,
+                  ]}
+                >
                   Custom (per employee)
                 </Text>
               </TouchableOpacity>
@@ -482,7 +499,9 @@ export default function AttendanceSettingsScreen() {
 
             {lateMode === 'bulk' ? (
               <View style={[styles.field, styles.fieldBorder]}>
-                <Text style={styles.fieldLabel}>Max lates/month (no deduction)</Text>
+                <Text style={styles.fieldLabel}>
+                  Max lates/month (no deduction)
+                </Text>
                 <TextInput
                   style={styles.standaloneInput}
                   value={lateBulk}
@@ -545,7 +564,12 @@ export default function AttendanceSettingsScreen() {
                   style={[styles.chip, leaveType === t && styles.chipActive]}
                   onPress={() => setLeaveType(t)}
                 >
-                  <Text style={[styles.chipText, leaveType === t && styles.chipTextActive]}>
+                  <Text
+                    style={[
+                      styles.chipText,
+                      leaveType === t && styles.chipTextActive,
+                    ]}
+                  >
                     {t.toUpperCase()}
                   </Text>
                 </TouchableOpacity>
@@ -554,18 +578,34 @@ export default function AttendanceSettingsScreen() {
 
             <View style={[styles.typeRow, styles.fieldBorder]}>
               <TouchableOpacity
-                style={[styles.typeBtn, leaveMode === 'bulk' && styles.typeBtnActive]}
+                style={[
+                  styles.typeBtn,
+                  leaveMode === 'bulk' && styles.typeBtnActive,
+                ]}
                 onPress={() => setLeaveMode('bulk')}
               >
-                <Text style={[styles.typeBtnText, leaveMode === 'bulk' && styles.typeBtnTextActive]}>
+                <Text
+                  style={[
+                    styles.typeBtnText,
+                    leaveMode === 'bulk' && styles.typeBtnTextActive,
+                  ]}
+                >
                   Bulk (all employees)
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.typeBtn, leaveMode === 'custom' && styles.typeBtnActive]}
+                style={[
+                  styles.typeBtn,
+                  leaveMode === 'custom' && styles.typeBtnActive,
+                ]}
                 onPress={() => setLeaveMode('custom')}
               >
-                <Text style={[styles.typeBtnText, leaveMode === 'custom' && styles.typeBtnTextActive]}>
+                <Text
+                  style={[
+                    styles.typeBtnText,
+                    leaveMode === 'custom' && styles.typeBtnTextActive,
+                  ]}
+                >
                   Custom (per employee)
                 </Text>
               </TouchableOpacity>
@@ -573,7 +613,9 @@ export default function AttendanceSettingsScreen() {
 
             {leaveMode === 'bulk' ? (
               <View style={[styles.field, styles.fieldBorder]}>
-                <Text style={styles.fieldLabel}>No-deduction days/month for {leaveType}</Text>
+                <Text style={styles.fieldLabel}>
+                  No-deduction days/month for {leaveType}
+                </Text>
                 <TextInput
                   style={styles.standaloneInput}
                   value={leaveBulk}
@@ -612,7 +654,9 @@ export default function AttendanceSettingsScreen() {
               {savingLeave ? (
                 <ActivityIndicator size="small" color={C.white} />
               ) : (
-                <Text style={styles.smallSaveBtnText}>Save Leave Allowance</Text>
+                <Text style={styles.smallSaveBtnText}>
+                  Save Leave Allowance
+                </Text>
               )}
             </TouchableOpacity>
           </View>
@@ -629,18 +673,28 @@ export default function AttendanceSettingsScreen() {
           {showSummary && (
             <View style={styles.card}>
               {summary.length === 0 ? (
-                <Text style={styles.hint}>No usage recorded this month yet.</Text>
+                <Text style={styles.hint}>
+                  No usage recorded this month yet.
+                </Text>
               ) : (
                 summary.map((row, i) => (
                   <View
                     key={row.employee?._id || i}
                     style={[styles.field, i > 0 && styles.fieldBorder]}
                   >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 8,
+                      }}
+                    >
                       <Users size={13} color={C.primary} />
                       <Text style={styles.perEmpName}>
                         {row.employee?.firstName} {row.employee?.lastName}
-                        {row.employee?.employeeId ? ` (${row.employee.employeeId})` : ''}
+                        {row.employee?.employeeId
+                          ? ` (${row.employee.employeeId})`
+                          : ''}
                       </Text>
                     </View>
                     <Text style={styles.hint}>

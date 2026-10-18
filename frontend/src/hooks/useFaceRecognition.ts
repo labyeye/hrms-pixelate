@@ -116,7 +116,9 @@ export function useFaceRecognition() {
 
   // Watches for a natural blink over a short window, then immediately captures the
   // descriptor — keeps the total scan-to-result time low while blocking photo spoofing.
-  const captureFaceDescriptorWithLiveness = useCallback(async (): Promise<number[]> => {
+  const captureFaceDescriptorWithLiveness = useCallback(async (): Promise<
+    number[]
+  > => {
     if (!videoRef.current || loadState !== "ready") {
       throw new Error("Camera or models not ready");
     }

@@ -19,7 +19,7 @@ interface AuthContextType {
     success: boolean;
     error?: string;
     requires2FA?: boolean;
-    userId?: string;
+    pendingToken?: string;
   }>;
   register: (data: {
     name: string;
@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await authAPI.login(email, password);
       if (res.data.requires2FA) {
-        return { success: false, requires2FA: true, userId: res.data.userId };
+        return { success: false, requires2FA: true, pendingToken: res.data.pendingToken };
       }
       const { token, ...userData } = res.data;
       await setToken(token);

@@ -129,7 +129,7 @@ const getLiveMetrics = asyncHandler(async (req, res) => {
 });
 
 const getReviews = asyncHandler(async (req, res) => {
-  const { page, limit, skip } = safePagination(req.query);
+  const { limit, skip } = safePagination(req.query);
   const { employeeId, year, status } = req.query;
 
   const filter = { company: req.user.company };

@@ -37,7 +37,11 @@ import {
   CreditCard,
   KeyRound,
 } from 'lucide-react-native';
-import { attendanceAPI, employeeAPI, attendanceCorrectionAPI } from '../api/api';
+import {
+  attendanceAPI,
+  employeeAPI,
+  attendanceCorrectionAPI,
+} from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import { AttendanceRecord, Employee } from '../types/hrms';
 import { C } from '../theme';
@@ -179,7 +183,9 @@ export default function AttendanceScreen({ navigation }: any) {
 
   // Self check-in/out (geofenced mobile attendance)
   const [myEmployee, setMyEmployee] = useState<Employee | null>(null);
-  const [selfMarking, setSelfMarking] = useState<'checkin' | 'checkout' | null>(null);
+  const [selfMarking, setSelfMarking] = useState<'checkin' | 'checkout' | null>(
+    null,
+  );
 
   const loadMyEmployee = useCallback(() => {
     if (!isEmployee) return;
@@ -205,7 +211,10 @@ export default function AttendanceScreen({ navigation }: any) {
   const handleEnrollFace = async () => {
     const ok = await requestSelfMarkPermissions();
     if (!ok) {
-      Alert.alert('Permission Required', 'Camera access is required to enroll your face.');
+      Alert.alert(
+        'Permission Required',
+        'Camera access is required to enroll your face.',
+      );
       return;
     }
     navigation.navigate('FaceEnroll');
@@ -263,10 +272,14 @@ export default function AttendanceScreen({ navigation }: any) {
       let checkOutISO = undefined;
 
       if (correctionForm.checkIn) {
-        checkInISO = new Date(`${correctionForm.date}T${correctionForm.checkIn}:00`).toISOString();
+        checkInISO = new Date(
+          `${correctionForm.date}T${correctionForm.checkIn}:00`,
+        ).toISOString();
       }
       if (correctionForm.checkOut) {
-        checkOutISO = new Date(`${correctionForm.date}T${correctionForm.checkOut}:00`).toISOString();
+        checkOutISO = new Date(
+          `${correctionForm.date}T${correctionForm.checkOut}:00`,
+        ).toISOString();
       }
 
       await attendanceCorrectionAPI.create({
@@ -511,7 +524,10 @@ export default function AttendanceScreen({ navigation }: any) {
           </View>
         )}
         {isEmployee && (
-          <TouchableOpacity style={styles.addBtn} onPress={() => setShowCorrectionModal(true)}>
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={() => setShowCorrectionModal(true)}
+          >
             <Clock size={14} color={C.white} />
             <Text style={styles.addBtnText}>Correction</Text>
           </TouchableOpacity>
@@ -556,80 +572,95 @@ export default function AttendanceScreen({ navigation }: any) {
         <View style={styles.approvalBanner}>
           <AlertCircle size={14} color={C.warning} />
           <Text style={styles.approvalBannerText}>
-            Today's attendance is pending HR approval (late check-in exceeded your monthly allowance)
+            Today's attendance is pending HR approval (late check-in exceeded
+            your monthly allowance)
           </Text>
         </View>
       )}
 
-      {isEmployee && myEmployee?.geofenceAttendanceEnabled && dateFilter === todayStr && (
-        <View style={styles.selfMarkCard}>
-          <View style={styles.selfMarkHeader}>
-            <MapPin size={14} color={C.primary} />
-            <Text style={styles.selfMarkHeaderText}>
-              Geofenced Mobile Check-in
-            </Text>
-          </View>
-          {!hasFaceEnrolled ? (
-            <>
-              <Text style={styles.selfMarkNoteText}>
-                Enroll your face first using the camera — this is required
-                before you can check in from the app.
-              </Text>
-              <TouchableOpacity
-                style={styles.selfMarkBtn}
-                onPress={handleEnrollFace}
-              >
-                <Camera size={16} color={C.white} />
-                <Text style={styles.selfMarkBtnText}>Enroll My Face</Text>
-              </TouchableOpacity>
-            </>
-          ) : !todayRecord?.checkIn ? (
-            <TouchableOpacity
-              style={styles.selfMarkBtn}
-              onPress={() => handleSelfMark('checkin')}
-              disabled={selfMarking !== null}
-            >
-              {selfMarking === 'checkin' ? (
-                <ActivityIndicator color={C.white} />
-              ) : (
-                <>
-                  <Camera size={16} color={C.white} />
-                  <Text style={styles.selfMarkBtnText}>Check In with Camera</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          ) : !todayRecord?.checkOut ? (
-            <TouchableOpacity
-              style={[styles.selfMarkBtn, { backgroundColor: C.danger }]}
-              onPress={() => handleSelfMark('checkout')}
-              disabled={selfMarking !== null}
-            >
-              {selfMarking === 'checkout' ? (
-                <ActivityIndicator color={C.white} />
-              ) : (
-                <>
-                  <Camera size={16} color={C.white} />
-                  <Text style={styles.selfMarkBtnText}>Check Out with Camera</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.selfMarkDoneRow}>
-              <CheckCircle2 size={16} color={C.success} />
-              <Text style={styles.selfMarkDoneText}>
-                Checked in and out for today
+      {isEmployee &&
+        myEmployee?.geofenceAttendanceEnabled &&
+        dateFilter === todayStr && (
+          <View style={styles.selfMarkCard}>
+            <View style={styles.selfMarkHeader}>
+              <MapPin size={14} color={C.primary} />
+              <Text style={styles.selfMarkHeaderText}>
+                Geofenced Mobile Check-in
               </Text>
             </View>
-          )}
-          {hasFaceEnrolled && (
-            <TouchableOpacity onPress={handleResetFace} style={{ marginTop: 10 }}>
-              <Text style={[styles.selfMarkNoteText, { textDecorationLine: 'underline' }]}>
-                Reset my face
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
+            {!hasFaceEnrolled ? (
+              <>
+                <Text style={styles.selfMarkNoteText}>
+                  Enroll your face first using the camera — this is required
+                  before you can check in from the app.
+                </Text>
+                <TouchableOpacity
+                  style={styles.selfMarkBtn}
+                  onPress={handleEnrollFace}
+                >
+                  <Camera size={16} color={C.white} />
+                  <Text style={styles.selfMarkBtnText}>Enroll My Face</Text>
+                </TouchableOpacity>
+              </>
+            ) : !todayRecord?.checkIn ? (
+              <TouchableOpacity
+                style={styles.selfMarkBtn}
+                onPress={() => handleSelfMark('checkin')}
+                disabled={selfMarking !== null}
+              >
+                {selfMarking === 'checkin' ? (
+                  <ActivityIndicator color={C.white} />
+                ) : (
+                  <>
+                    <Camera size={16} color={C.white} />
+                    <Text style={styles.selfMarkBtnText}>
+                      Check In with Camera
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            ) : !todayRecord?.checkOut ? (
+              <TouchableOpacity
+                style={[styles.selfMarkBtn, { backgroundColor: C.danger }]}
+                onPress={() => handleSelfMark('checkout')}
+                disabled={selfMarking !== null}
+              >
+                {selfMarking === 'checkout' ? (
+                  <ActivityIndicator color={C.white} />
+                ) : (
+                  <>
+                    <Camera size={16} color={C.white} />
+                    <Text style={styles.selfMarkBtnText}>
+                      Check Out with Camera
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.selfMarkDoneRow}>
+                <CheckCircle2 size={16} color={C.success} />
+                <Text style={styles.selfMarkDoneText}>
+                  Checked in and out for today
+                </Text>
+              </View>
+            )}
+            {hasFaceEnrolled && (
+              <TouchableOpacity
+                onPress={handleResetFace}
+                style={{ marginTop: 10 }}
+              >
+                <Text
+                  style={[
+                    styles.selfMarkNoteText,
+                    { textDecorationLine: 'underline' },
+                  ]}
+                >
+                  Reset my face
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
       {!isEmployee && (
         <FilterBar
@@ -739,9 +770,7 @@ export default function AttendanceScreen({ navigation }: any) {
                     .toUpperCase()
                 : item.status.replace(/_/g, ' ').toUpperCase();
             return (
-              <View
-                style={[styles.card, { borderLeftColor: cfg.color }]}
-              >
+              <View style={[styles.card, { borderLeftColor: cfg.color }]}>
                 <View style={styles.cardRow}>
                   <View style={styles.photoWrap}>
                     {emp?.avatar ? (
@@ -809,26 +838,26 @@ export default function AttendanceScreen({ navigation }: any) {
                     {!isEmployee &&
                       (item._id.startsWith('v_') ? (
                         item.status === 'weekend' ? null : (
-                        <View style={{ flexDirection: 'row', gap: 6 }}>
-                          <TouchableOpacity
-                            style={styles.absentBtn}
-                            onPress={() =>
-                              markAbsent((item.employee as any)?._id)
-                            }
-                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                          >
-                            <XCircle size={13} color={C.white} />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={styles.markBtn}
-                            onPress={() =>
-                              openMarkForEmp((item.employee as any)?._id)
-                            }
-                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                          >
-                            <CheckCircle2 size={13} color={C.white} />
-                          </TouchableOpacity>
-                        </View>
+                          <View style={{ flexDirection: 'row', gap: 6 }}>
+                            <TouchableOpacity
+                              style={styles.absentBtn}
+                              onPress={() =>
+                                markAbsent((item.employee as any)?._id)
+                              }
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            >
+                              <XCircle size={13} color={C.white} />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={styles.markBtn}
+                              onPress={() =>
+                                openMarkForEmp((item.employee as any)?._id)
+                              }
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            >
+                              <CheckCircle2 size={13} color={C.white} />
+                            </TouchableOpacity>
+                          </View>
                         )
                       ) : (
                         <TouchableOpacity
@@ -858,12 +887,14 @@ export default function AttendanceScreen({ navigation }: any) {
                           </View>
                           <Text style={styles.statLabel}>Check In</Text>
                         </View>
-                        <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
+                        <Text
+                          style={styles.statValue}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                        >
                           {ciTime || '--:--'}
                         </Text>
-                        {ciDate && (
-                          <Text style={styles.statSub}>{ciDate}</Text>
-                        )}
+                        {ciDate && <Text style={styles.statSub}>{ciDate}</Text>}
                       </View>
                       <View style={styles.statDivider} />
                       <View style={styles.statCol}>
@@ -878,12 +909,14 @@ export default function AttendanceScreen({ navigation }: any) {
                           </View>
                           <Text style={styles.statLabel}>Check Out</Text>
                         </View>
-                        <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
+                        <Text
+                          style={styles.statValue}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                        >
                           {coTime || '--:--'}
                         </Text>
-                        {coDate && (
-                          <Text style={styles.statSub}>{coDate}</Text>
-                        )}
+                        {coDate && <Text style={styles.statSub}>{coDate}</Text>}
                       </View>
                       {verifyMode && (
                         <>
@@ -900,7 +933,11 @@ export default function AttendanceScreen({ navigation }: any) {
                               </View>
                               <Text style={styles.statLabel}>Method</Text>
                             </View>
-                            <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
+                            <Text
+                              style={styles.statValue}
+                              numberOfLines={1}
+                              adjustsFontSizeToFit
+                            >
                               {VERIFY_MODE_LABELS[verifyMode] ||
                                 verifyMode.toUpperCase()}
                             </Text>
@@ -911,7 +948,9 @@ export default function AttendanceScreen({ navigation }: any) {
                   </>
                 )}
 
-                {(workHours || overtime > 0 || (item as any).earlyLeaving ||
+                {(workHours ||
+                  overtime > 0 ||
+                  (item as any).earlyLeaving ||
                   item.checkInLocation ||
                   item.checkOutLocation) && (
                   <View style={styles.timeRow}>
@@ -988,10 +1027,14 @@ export default function AttendanceScreen({ navigation }: any) {
                 <Text style={styles.calNavArrow}>‹</Text>
               </TouchableOpacity>
               <Text style={styles.calMonthLabel}>
-                {new Date(calendarMonth.year, calendarMonth.month, 1).toLocaleDateString(
-                  'en-IN',
-                  { month: 'long', year: 'numeric' },
-                )}
+                {new Date(
+                  calendarMonth.year,
+                  calendarMonth.month,
+                  1,
+                ).toLocaleDateString('en-IN', {
+                  month: 'long',
+                  year: 'numeric',
+                })}
               </Text>
               <TouchableOpacity
                 style={styles.calNavBtn}
@@ -1009,7 +1052,9 @@ export default function AttendanceScreen({ navigation }: any) {
             {/* Day-of-week headers */}
             <View style={styles.calDowRow}>
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                <Text key={d} style={styles.calDowText}>{d}</Text>
+                <Text key={d} style={styles.calDowText}>
+                  {d}
+                </Text>
               ))}
             </View>
 
@@ -1024,11 +1069,13 @@ export default function AttendanceScreen({ navigation }: any) {
               for (let d = 1; d <= daysInMonth; d++) cells.push(d);
               while (cells.length % 7 !== 0) cells.push(0);
               const rows: number[][] = [];
-              for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
+              for (let i = 0; i < cells.length; i += 7)
+                rows.push(cells.slice(i, i + 7));
               return rows.map((row, ri) => (
                 <View key={ri} style={styles.calGridRow}>
                   {row.map((day, ci) => {
-                    if (day === 0) return <View key={ci} style={styles.calCell} />;
+                    if (day === 0)
+                      return <View key={ci} style={styles.calCell} />;
                     const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                     const isSelected = dayStr === dateFilter;
                     const isToday = dayStr === todayStr;
@@ -1081,22 +1128,41 @@ export default function AttendanceScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
             <ScrollView
-              contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 32 }}
+              contentContainerStyle={{
+                padding: 16,
+                gap: 14,
+                paddingBottom: 32,
+              }}
               showsVerticalScrollIndicator={false}
             >
               {/* Status selector */}
               <View>
                 <Text style={styles.fieldLabel}>Status *</Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    gap: 8,
+                    marginTop: 6,
+                  }}
+                >
                   {Object.keys(STATUS_CONFIG)
                     .filter(s => s !== 'not_checked_in' && s !== 'weekend')
                     .map(s => (
                       <TouchableOpacity
                         key={s}
-                        style={[styles.selChip, bulkStatus === s && styles.selChipActive]}
+                        style={[
+                          styles.selChip,
+                          bulkStatus === s && styles.selChipActive,
+                        ]}
                         onPress={() => setBulkStatus(s)}
                       >
-                        <Text style={[styles.selChipText, bulkStatus === s && { color: C.white }]}>
+                        <Text
+                          style={[
+                            styles.selChipText,
+                            bulkStatus === s && { color: C.white },
+                          ]}
+                        >
                           {s.replace(/_/g, ' ').toUpperCase()}
                         </Text>
                       </TouchableOpacity>
@@ -1120,10 +1186,10 @@ export default function AttendanceScreen({ navigation }: any) {
               >
                 <View style={styles.bulkCheckbox}>
                   {bulkSelected.length ===
-                    employees.filter(e => !isWeekendForEmployee(dateFilter, e)).length &&
-                    employees.filter(e => !isWeekendForEmployee(dateFilter, e)).length > 0 && (
-                      <View style={styles.bulkCheckboxInner} />
-                    )}
+                    employees.filter(e => !isWeekendForEmployee(dateFilter, e))
+                      .length &&
+                    employees.filter(e => !isWeekendForEmployee(dateFilter, e))
+                      .length > 0 && <View style={styles.bulkCheckboxInner} />}
                 </View>
                 <Text style={styles.bulkSelectAllText}>Select All</Text>
               </TouchableOpacity>
@@ -1139,12 +1205,19 @@ export default function AttendanceScreen({ navigation }: any) {
                     style={styles.bulkEmpRow}
                     onPress={() =>
                       setBulkSelected(p =>
-                        checked ? p.filter(id => id !== emp._id) : [...p, emp._id],
+                        checked
+                          ? p.filter(id => id !== emp._id)
+                          : [...p, emp._id],
                       )
                     }
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.bulkCheckbox, checked && styles.bulkCheckboxChecked]}>
+                    <View
+                      style={[
+                        styles.bulkCheckbox,
+                        checked && styles.bulkCheckboxChecked,
+                      ]}
+                    >
                       {checked && <View style={styles.bulkCheckboxInner} />}
                     </View>
                     <View style={{ flex: 1, marginLeft: 10 }}>
@@ -1159,9 +1232,19 @@ export default function AttendanceScreen({ navigation }: any) {
             </ScrollView>
 
             {/* Mark selected button */}
-            <View style={{ padding: 16, backgroundColor: C.white, borderTopWidth: 2, borderTopColor: C.black }}>
+            <View
+              style={{
+                padding: 16,
+                backgroundColor: C.white,
+                borderTopWidth: 2,
+                borderTopColor: C.black,
+              }}
+            >
               <TouchableOpacity
-                style={[styles.submitBtn, bulkSelected.length === 0 && { opacity: 0.5 }]}
+                style={[
+                  styles.submitBtn,
+                  bulkSelected.length === 0 && { opacity: 0.5 },
+                ]}
                 disabled={bulkSelected.length === 0 || bulkSaving}
                 onPress={async () => {
                   if (bulkSelected.length === 0) return;
@@ -1364,7 +1447,9 @@ export default function AttendanceScreen({ navigation }: any) {
                 <TextInput
                   style={styles.fieldInput}
                   value={correctionForm.date}
-                  onChangeText={v => setCorrectionForm(p => ({ ...p, date: v }))}
+                  onChangeText={v =>
+                    setCorrectionForm(p => ({ ...p, date: v }))
+                  }
                   placeholder="YYYY-MM-DD"
                   placeholderTextColor={C.textLight}
                 />
@@ -1376,10 +1461,20 @@ export default function AttendanceScreen({ navigation }: any) {
                   {['regularization', 'missed_punch'].map(t => (
                     <TouchableOpacity
                       key={t}
-                      style={[styles.selChip, correctionForm.type === t && styles.selChipActive]}
-                      onPress={() => setCorrectionForm(p => ({ ...p, type: t }))}
+                      style={[
+                        styles.selChip,
+                        correctionForm.type === t && styles.selChipActive,
+                      ]}
+                      onPress={() =>
+                        setCorrectionForm(p => ({ ...p, type: t }))
+                      }
                     >
-                      <Text style={[styles.selChipText, correctionForm.type === t && { color: C.white }]}>
+                      <Text
+                        style={[
+                          styles.selChipText,
+                          correctionForm.type === t && { color: C.white },
+                        ]}
+                      >
                         {t.replace('_', ' ').toUpperCase()}
                       </Text>
                     </TouchableOpacity>
@@ -1392,14 +1487,18 @@ export default function AttendanceScreen({ navigation }: any) {
                   <TimePickerField
                     label="Proposed Check In"
                     value={correctionForm.checkIn}
-                    onChange={v => setCorrectionForm(p => ({ ...p, checkIn: v }))}
+                    onChange={v =>
+                      setCorrectionForm(p => ({ ...p, checkIn: v }))
+                    }
                   />
                 </View>
                 <View style={{ flex: 1 }}>
                   <TimePickerField
                     label="Proposed Check Out"
                     value={correctionForm.checkOut}
-                    onChange={v => setCorrectionForm(p => ({ ...p, checkOut: v }))}
+                    onChange={v =>
+                      setCorrectionForm(p => ({ ...p, checkOut: v }))
+                    }
                   />
                 </View>
               </View>
@@ -1409,7 +1508,9 @@ export default function AttendanceScreen({ navigation }: any) {
                 <TextInput
                   style={[styles.fieldInput, { minHeight: 80 }]}
                   value={correctionForm.reason}
-                  onChangeText={v => setCorrectionForm(p => ({ ...p, reason: v }))}
+                  onChangeText={v =>
+                    setCorrectionForm(p => ({ ...p, reason: v }))
+                  }
                   placeholder="Explain the correction request details..."
                   placeholderTextColor={C.textLight}
                   multiline
@@ -1620,7 +1721,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   photoWrap: { position: 'relative', width: 48, height: 48 },
-  empPhoto: { width: 48, height: 48, borderRadius: 24,borderWidth: 2, borderColor: '#000000ff' },
+  empPhoto: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: '#000000ff',
+  },
   empPhotoFallback: { alignItems: 'center', justifyContent: 'center' },
   empPhotoInitials: { fontSize: 16, fontWeight: '700' },
   statusBadgeOverlay: {
@@ -1678,7 +1785,12 @@ const styles = StyleSheet.create({
     color: C.textMuted,
     textTransform: 'uppercase',
   },
-  empName: { fontSize: 15, fontWeight: '800', color: C.black, letterSpacing: 0.2 },
+  empName: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: C.black,
+    letterSpacing: 0.2,
+  },
   empSub: { fontSize: 11, color: '#9CA3AF', fontWeight: '600', marginTop: 2 },
   statusTag: {
     borderWidth: 1.5,

@@ -1,9 +1,10 @@
+import type { LucideIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Link } from "react-router-dom";
 import { dashboardAPI } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
-import { cn, formatCurrency } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import {
   BarChart,
   Bar,
@@ -15,8 +16,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  LineChart,
-  Line,
   Area,
   AreaChart,
 } from "recharts";
@@ -27,7 +26,6 @@ import {
   IndianRupee,
   Briefcase,
   Building2,
-  ArrowUpRight,
   TrendingUp,
   CheckCircle2,
   AlertTriangle,
@@ -76,7 +74,7 @@ function KpiCard({
     <StatCard
       label={title}
       value={displayValue}
-      icon={icon}
+      icon={icon as LucideIcon}
       color={color}
       sub={sub}
     />

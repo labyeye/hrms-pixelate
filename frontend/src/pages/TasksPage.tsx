@@ -85,9 +85,13 @@ interface Task {
 }
 
 interface EmployeeOption {
+  _id: string;
   user: string;
   firstName: string;
   lastName: string;
+  designation?: string;
+  employeeId?: string;
+  avatar?: string;
 }
 
 function isLate(task: Task) {

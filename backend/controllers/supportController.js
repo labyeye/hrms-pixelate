@@ -1,3 +1,4 @@
+const safeEqual = require("../utils/safeEqual");
 const asyncHandler = require("express-async-handler");
 const SupportTicket = require("../models/SupportTicket");
 const Company = require("../models/Company");
@@ -133,7 +134,7 @@ exports.getTicket = asyncHandler(async (req, res) => {
 // Called by CRM via webhook to update ticket status
 exports.updateTicketStatus = asyncHandler(async (req, res) => {
   const apiKey = req.headers["x-api-key"];
-  if (!apiKey || apiKey !== process.env.CRM_API_SECRET) {
+  if (!safeEqual(apiKey, process.env.CRM_API_SECRET)) {
     return res.status(401).json({ success: false, message: "Unauthorized" });
   }
 
@@ -160,18 +161,22 @@ exports.updateTicketStatus = asyncHandler(async (req, res) => {
 // from the shared support inbox — no HRMS user, so it's stored with source:"platform".
 exports.webhookReply = asyncHandler(async (req, res) => {
   const apiKey = req.headers["x-api-key"];
-  if (!apiKey || apiKey !== process.env.CRM_API_SECRET) {
+  if (!safeEqual(apiKey, process.env.CRM_API_SECRET)) {
     return res.status(401).json({ success: false, message: "Unauthorized" });
   }
 
   const { message, authorName } = req.body;
   if (!message || !message.trim()) {
-    return res.status(400).json({ success: false, message: "Message is required" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Message is required" });
   }
 
   const ticket = await SupportTicket.findById(req.params.id);
   if (!ticket) {
-    return res.status(404).json({ success: false, message: "Ticket not found" });
+    return res
+      .status(404)
+      .json({ success: false, message: "Ticket not found" });
   }
 
   ticket.replies.push({

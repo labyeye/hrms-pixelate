@@ -8,7 +8,9 @@ const LateApproval = require("../models/LateApproval");
 const EMP_FIELDS = "firstName lastName avatar";
 const LIMIT = 40;
 const nameOf = (e) =>
-  e ? `${e.firstName || ""} ${e.lastName || ""}`.trim() || "Unknown" : "Unknown";
+  e
+    ? `${e.firstName || ""} ${e.lastName || ""}`.trim() || "Unknown"
+    : "Unknown";
 
 // Unified activity feed for the header bell: check-ins/outs (today), leave
 // requests, attendance corrections and late approvals. Admin/HR see the whole

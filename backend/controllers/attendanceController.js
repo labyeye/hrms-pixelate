@@ -595,16 +595,12 @@ const selfMarkAttendance = asyncHandler(async (req, res) => {
 
 const updateAttendance = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { status, checkIn, checkOut, notes, overtime, date, verifyMode } =
-    req.body;
-
-  const companyEmployees = await Employee.find({
-    company: req.user.company,
-  }).select("_id");
-  const companyEmpIds = new Set(companyEmployees.map((e) => e._id.toString()));
+  const { status, checkIn, checkOut, notes, overtime, verifyMode } = req.body;
 
   const record = await Attendance.findById(id).populate("employee", "_id");
-  if (!record || !companyEmpIds.has(record.employee._id.toString())) {
+  const inCompany =
+    record?.employee && (await Employee.exists({ _id: record.employee._id, company: req.user.company }));
+  if (!record || !inCompany) {
     res.status(404);
     throw new Error("Attendance record not found");
   }

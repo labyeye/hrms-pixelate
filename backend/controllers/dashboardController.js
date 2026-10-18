@@ -347,7 +347,6 @@ const getEmployeeStats = asyncHandler(async (req, res) => {
   });
 });
 
-
 // Payable-so-far vs. salary-to-date, plus attendance performance table.
 // range: this | last | 3m | 6m | 1y  (3m/6m/1y include the current month)
 const RANGES = ["this", "last", "3m", "6m", "1y"];

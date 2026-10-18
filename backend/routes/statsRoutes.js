@@ -8,9 +8,10 @@ const Invoice = require("../models/Invoice");
 const Leave = require("../models/Leave");
 const Attendance = require("../models/Attendance");
 const Payroll = require("../models/Payroll");
+const safeEqual = require("../utils/safeEqual");
 
 // Simple secret-key guard — no JWT, but not wide-open either.
-// Set CRM_API_SECRET in .env. Pass as ?key=<secret> or X-Stats-Key header.
+// Set CRM_API_SECRET in .env and send it in the X-Stats-Key header (a ?key= query string would end up in logs).
 function statsGuard(req, res, next) {
   const secret = process.env.CRM_API_SECRET;
   if (!secret) {
@@ -19,8 +20,7 @@ function statsGuard(req, res, next) {
       message: "Stats endpoint not configured (CRM_API_SECRET missing)",
     });
   }
-  const provided = req.query.key || req.headers["x-stats-key"];
-  if (provided !== secret) {
+  if (!safeEqual(req.headers["x-stats-key"], secret)) {
     return res.status(401).json({ success: false, message: "Unauthorized" });
   }
   next();

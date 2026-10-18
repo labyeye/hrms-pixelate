@@ -4,6 +4,7 @@ const Loan = require("../models/Loan");
 const Employee = require("../models/Employee");
 const User = require("../models/User");
 const Company = require("../models/Company");
+const bodyFor = require("../utils/bodyFor");
 const {
   sendLoanSubmitted,
   sendLoanApproved,
@@ -56,8 +57,13 @@ const getLoans = asyncHandler(async (req, res) => {
 });
 
 const createLoan = asyncHandler(async (req, res) => {
+  const target = await Employee.exists({ _id: req.body.employee, company: req.user.company });
+  if (!target) {
+    res.status(404);
+    throw new Error("Employee not found");
+  }
   const loan = await Loan.create({
-    ...req.body,
+    ...bodyFor(Loan, req.body, ["approvedBy", "approvedAt", "remainingBalance"]),
     company: req.user.company,
     remainingBalance: req.body.amount,
   });
@@ -225,7 +231,7 @@ const updateLoanStatus = asyncHandler(async (req, res) => {
 const updateLoan = asyncHandler(async (req, res) => {
   const loan = await Loan.findOneAndUpdate(
     { _id: req.params.id, company: req.user.company },
-    req.body,
+    bodyFor(Loan, req.body, ["employee", "approvedBy", "approvedAt"]),
     { new: true },
   ).populate("employee", "firstName lastName employeeId avatar");
   if (!loan)

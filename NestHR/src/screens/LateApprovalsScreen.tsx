@@ -41,7 +41,11 @@ export default function LateApprovalsScreen() {
     }
   }, []);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -64,7 +68,10 @@ export default function LateApprovalsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 4, marginRight: 4 }}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{ padding: 4, marginRight: 4 }}
+        >
           <ChevronLeft size={22} color={C.black} />
         </TouchableOpacity>
         <AlertOctagon size={20} color={C.primary} />
@@ -81,7 +88,11 @@ export default function LateApprovalsScreen() {
           keyExtractor={item => item._id}
           contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 32 }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={C.primary}
+            />
           }
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
@@ -95,10 +106,13 @@ export default function LateApprovalsScreen() {
             return (
               <View style={styles.card}>
                 <Text style={styles.empName}>
-                  {emp ? `${emp.firstName} ${emp.lastName}` : 'Unknown employee'}
+                  {emp
+                    ? `${emp.firstName} ${emp.lastName}`
+                    : 'Unknown employee'}
                 </Text>
                 <Text style={styles.empSub}>
-                  {emp?.employeeId || ''} · {new Date(item.date).toLocaleDateString('en-IN')}
+                  {emp?.employeeId || ''} ·{' '}
+                  {new Date(item.date).toLocaleDateString('en-IN')}
                 </Text>
                 <View style={styles.metaRow}>
                   <MetaChip
@@ -113,7 +127,9 @@ export default function LateApprovalsScreen() {
                     />
                   )}
                 </View>
-                {!!item.reason && <Text style={styles.reason}>"{item.reason}"</Text>}
+                {!!item.reason && (
+                  <Text style={styles.reason}>"{item.reason}"</Text>
+                )}
 
                 <View style={styles.actionRow}>
                   {RESOLUTIONS.map(r => (
@@ -169,7 +185,13 @@ const styles = StyleSheet.create({
   },
   empName: { fontSize: 15, fontWeight: '800', color: C.black },
   empSub: { fontSize: 11, color: '#9CA3AF', fontWeight: '600', marginTop: 2 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, flexWrap: 'wrap' },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    flexWrap: 'wrap',
+  },
   metaText: { fontSize: 12, fontWeight: '600', color: C.warning },
   reason: {
     fontSize: 12,

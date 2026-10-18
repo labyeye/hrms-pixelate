@@ -314,26 +314,6 @@ async function seed() {
     ifscCode: "SBIN0001234",
   });
 
-  const hrExecEmp = await Employee.create({
-    user: hrExec._id,
-    employeeId: "EMP-003",
-    firstName: "Ankit",
-    lastName: "Verma",
-    email: hrExec.email,
-    phone: "9000000003",
-    department: deptHR._id,
-    designation: "HR Executive",
-    salary: 45000,
-    joinDate: joinBase,
-    gender: "male",
-    status: "active",
-    reportingTo: hrManagerEmp._id,
-    address: "34, Koramangala, Bengaluru",
-    emergencyContact: "9100000002",
-    bankAccount: "SB00000002",
-    ifscCode: "SBIN0001235",
-  });
-
   const empRecords = [];
   const firstNames = [
     "Siddharth",
@@ -398,7 +378,7 @@ async function seed() {
   deptFinance.headcount = 1;
   await deptFinance.save();
 
-  const allEmpRecords = [hrManagerEmp, hrExecEmp, ...empRecords];
+  const allEmpRecords = [hrManagerEmp, ...empRecords];
   console.log(`✅ ${allEmpRecords.length} Employee records created\n`);
 
   console.log("📅 Seeding attendance (60 days)...");
@@ -506,7 +486,6 @@ async function seed() {
       );
       if (matchedUser) basicSalary = matchedUser.salary;
       else if (emp._id.equals(hrManagerEmp._id)) basicSalary = 75000;
-      else if (emp._id.equals(hrExecEmp._id)) basicSalary = 45000;
 
       const hra = Math.round(basicSalary * 0.4);
       const da = Math.round(basicSalary * 0.1);

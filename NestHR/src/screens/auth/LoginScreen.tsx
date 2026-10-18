@@ -12,7 +12,16 @@ import {
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Mail, Lock, Eye, EyeOff, LogIn, Smartphone, ArrowRight, Fingerprint } from 'lucide-react-native';
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  LogIn,
+  Smartphone,
+  ArrowRight,
+  Fingerprint,
+} from 'lucide-react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { authAPI } from '../../api/api';
 import { C } from '../../theme';
@@ -44,7 +53,7 @@ export default function LoginScreen({ navigation }: any) {
     const result = await login(email.trim().toLowerCase(), password);
     setLoading(false);
     if (result.requires2FA) {
-      setPending2FA(result.userId || '');
+      setPending2FA(result.pendingToken || ''); // pending-2FA token from the password step
       return;
     }
     if (!result.success)
@@ -64,7 +73,6 @@ export default function LoginScreen({ navigation }: any) {
     }
   };
 
-
   const handleSendOtp = async () => {
     if (!phone.trim()) {
       Alert.alert('Validation', 'Phone number is required');
@@ -75,7 +83,10 @@ export default function LoginScreen({ navigation }: any) {
       await authAPI.sendPhoneOtp(phone.trim());
       setOtpSent(true);
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to send OTP. Please try again.');
+      Alert.alert(
+        'Error',
+        err.message || 'Failed to send OTP. Please try again.',
+      );
     } finally {
       setOtpLoading(false);
     }
@@ -100,9 +111,15 @@ export default function LoginScreen({ navigation }: any) {
 
   const handleBiometricLogin = async () => {
     try {
-      Alert.alert('Passkey / Biometric', 'Biometric authentication requires device key registration. Ensure face/fingerprint unlock is enabled on your device.');
+      Alert.alert(
+        'Passkey / Biometric',
+        'Biometric authentication requires device key registration. Ensure face/fingerprint unlock is enabled on your device.',
+      );
     } catch (err: any) {
-      Alert.alert('Biometric Error', err.message || 'Biometric authentication failed.');
+      Alert.alert(
+        'Biometric Error',
+        err.message || 'Biometric authentication failed.',
+      );
     }
   };
 
@@ -122,17 +139,17 @@ export default function LoginScreen({ navigation }: any) {
               {pending2FA !== null
                 ? 'Two-Factor Authentication'
                 : mode === 'phone'
-                ? 'Login with phone'
-                : 'Login'}
+                  ? 'Login with phone'
+                  : 'Login'}
             </Text>
             <Text style={styles.cardSub}>
               {pending2FA !== null
                 ? 'Enter the 6-digit code from your authenticator app, or a backup code.'
                 : mode === 'phone'
-                ? otpSent
-                  ? 'Enter the OTP sent to you on WhatsApp.'
-                  : "We'll send a one-time code to your phone on WhatsApp."
-                : 'Sign in with your email and password to continue.'}
+                  ? otpSent
+                    ? 'Enter the OTP sent to you on WhatsApp.'
+                    : "We'll send a one-time code to your phone on WhatsApp."
+                  : 'Sign in with your email and password to continue.'}
             </Text>
 
             {pending2FA !== null ? (
@@ -168,7 +185,10 @@ export default function LoginScreen({ navigation }: any) {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.forgotBtn}
-                  onPress={() => { setPending2FA(null); setTfaCode(''); }}
+                  onPress={() => {
+                    setPending2FA(null);
+                    setTfaCode('');
+                  }}
                 >
                   <Text style={styles.forgotText}>← Back to login</Text>
                 </TouchableOpacity>
@@ -181,7 +201,11 @@ export default function LoginScreen({ navigation }: any) {
                     <View style={styles.field}>
                       <Text style={styles.label}>Phone Number</Text>
                       <View style={styles.inputRow}>
-                        <Smartphone size={16} color={C.textMuted} style={styles.inputIcon} />
+                        <Smartphone
+                          size={16}
+                          color={C.textMuted}
+                          style={styles.inputIcon}
+                        />
                         <TextInput
                           style={styles.input}
                           value={phone}
@@ -204,7 +228,9 @@ export default function LoginScreen({ navigation }: any) {
                       ) : (
                         <>
                           <ArrowRight size={16} color={C.white} />
-                          <Text style={styles.btnPrimaryText}>Send OTP on WhatsApp</Text>
+                          <Text style={styles.btnPrimaryText}>
+                            Send OTP on WhatsApp
+                          </Text>
                         </>
                       )}
                     </TouchableOpacity>
@@ -212,11 +238,15 @@ export default function LoginScreen({ navigation }: any) {
                 ) : (
                   <>
                     <View style={styles.field}>
-                      <Text style={styles.label}>Enter OTP (from WhatsApp)</Text>
+                      <Text style={styles.label}>
+                        Enter OTP (from WhatsApp)
+                      </Text>
                       <TextInput
                         style={[styles.inputRow, styles.otpInput]}
                         value={otp}
-                        onChangeText={t => setOtp(t.replace(/\D/g, '').slice(0, 6))}
+                        onChangeText={t =>
+                          setOtp(t.replace(/\D/g, '').slice(0, 6))
+                        }
                         placeholder="000000"
                         placeholderTextColor={C.textLight}
                         keyboardType="number-pad"
@@ -242,9 +272,14 @@ export default function LoginScreen({ navigation }: any) {
 
                     <TouchableOpacity
                       style={styles.forgotBtn}
-                      onPress={() => { setOtpSent(false); setOtp(''); }}
+                      onPress={() => {
+                        setOtpSent(false);
+                        setOtp('');
+                      }}
                     >
-                      <Text style={styles.forgotText}>← Change number / Resend</Text>
+                      <Text style={styles.forgotText}>
+                        ← Change number / Resend
+                      </Text>
                     </TouchableOpacity>
                   </>
                 )}
@@ -256,7 +291,11 @@ export default function LoginScreen({ navigation }: any) {
                 <View style={styles.field}>
                   <Text style={styles.label}>Email Address</Text>
                   <View style={styles.inputRow}>
-                    <Mail size={16} color={C.textMuted} style={styles.inputIcon} />
+                    <Mail
+                      size={16}
+                      color={C.textMuted}
+                      style={styles.inputIcon}
+                    />
                     <TextInput
                       style={styles.input}
                       value={email}
@@ -274,7 +313,11 @@ export default function LoginScreen({ navigation }: any) {
                 <View style={styles.field}>
                   <Text style={styles.label}>Password</Text>
                   <View style={styles.inputRow}>
-                    <Lock size={16} color={C.textMuted} style={styles.inputIcon} />
+                    <Lock
+                      size={16}
+                      color={C.textMuted}
+                      style={styles.inputIcon}
+                    />
                     <TextInput
                       style={[styles.input, { flex: 1 }]}
                       value={password}
@@ -329,7 +372,13 @@ export default function LoginScreen({ navigation }: any) {
                   <View style={styles.orLine} />
                 </View>
 
-                <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 20 }}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    gap: 20,
+                  }}
+                >
                   <View style={{ alignItems: 'center' }}>
                     <TouchableOpacity
                       style={styles.altBtn}
@@ -344,7 +393,11 @@ export default function LoginScreen({ navigation }: any) {
                         }
                       }}
                       accessibilityRole="button"
-                      accessibilityLabel={mode === 'phone' ? 'Sign in with email' : 'Sign in with phone OTP'}
+                      accessibilityLabel={
+                        mode === 'phone'
+                          ? 'Sign in with email'
+                          : 'Sign in with phone OTP'
+                      }
                     >
                       {mode === 'phone' ? (
                         <Mail size={24} color={C.white} />
@@ -352,7 +405,9 @@ export default function LoginScreen({ navigation }: any) {
                         <Smartphone size={24} color={C.white} />
                       )}
                     </TouchableOpacity>
-                    <Text style={styles.altLabel}>{mode === 'phone' ? 'Email' : 'Phone'}</Text>
+                    <Text style={styles.altLabel}>
+                      {mode === 'phone' ? 'Email' : 'Phone'}
+                    </Text>
                   </View>
 
                   <View style={{ alignItems: 'center' }}>
@@ -453,7 +508,13 @@ const styles = StyleSheet.create({
   },
   forgotBtn: { alignItems: 'center', paddingVertical: 10 },
   forgotText: { fontSize: 13, fontWeight: '700', color: C.primary },
-  orRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20, marginBottom: 12 },
+  orRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 20,
+    marginBottom: 12,
+  },
   orLine: { flex: 1, height: 1, backgroundColor: '#E5E7EB' },
   orText: { fontSize: 12, fontWeight: '600', color: C.textMuted },
   altBtn: {
@@ -465,7 +526,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  altLabel: { textAlign: 'center', marginTop: 6, fontSize: 12, fontWeight: '600', color: C.textMuted },
+  altLabel: {
+    textAlign: 'center',
+    marginTop: 6,
+    fontSize: 12,
+    fontWeight: '600',
+    color: C.textMuted,
+  },
   otpInput: {
     borderWidth: 2,
     borderRadius: 8,

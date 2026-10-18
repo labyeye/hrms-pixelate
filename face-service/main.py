@@ -1,3 +1,4 @@
+import hmac
 import io
 import logging
 import os
@@ -37,8 +38,15 @@ def warm_up():
     logger.info("face models warmed up")
 
 
+if not API_KEY:
+    logging.getLogger("face-service").error(
+        "FACE_SERVICE_API_KEY is not set: every request will be rejected until it is configured"
+    )
+
+
 def check_api_key(x_api_key: str | None):
-    if API_KEY and x_api_key != API_KEY:
+    # Fail closed (an unset key must not mean "no authentication") and compare in constant time.
+    if not API_KEY or not hmac.compare_digest(x_api_key or "", API_KEY):
         raise HTTPException(status_code=401, detail="Invalid API key")
 
 

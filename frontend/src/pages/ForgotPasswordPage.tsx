@@ -243,7 +243,9 @@ export default function ForgotPasswordPage() {
               <form onSubmit={handleReset} className="space-y-4">
                 <div>
                   <label className={labelCls}>
-                    {method === "whatsapp" ? "WhatsApp code" : "Authenticator code"}
+                    {method === "whatsapp"
+                      ? "WhatsApp code"
+                      : "Authenticator code"}
                   </label>
                   <input
                     type="text"

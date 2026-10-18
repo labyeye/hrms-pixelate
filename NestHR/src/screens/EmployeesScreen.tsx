@@ -168,7 +168,11 @@ export default function EmployeesScreen() {
   const [form, setForm] = useState<typeof EMPTY_FORM>({ ...EMPTY_FORM });
   const [activeTab, setActiveTab] = useState(0);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
-  const [avatarAsset, setAvatarAsset] = useState<{ uri: string; type: string; fileName: string } | null>(null);
+  const [avatarAsset, setAvatarAsset] = useState<{
+    uri: string;
+    type: string;
+    fileName: string;
+  } | null>(null);
   const [formDirty, setFormDirty] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [detailEmp, setDetailEmp] = useState<Employee | null>(null);
@@ -248,12 +252,18 @@ export default function EmployeesScreen() {
       {
         text: 'Camera',
         onPress: () =>
-          launchCamera({ mediaType: 'photo', quality: 0.8, includeBase64: false }, handleAsset),
+          launchCamera(
+            { mediaType: 'photo', quality: 0.8, includeBase64: false },
+            handleAsset,
+          ),
       },
       {
         text: 'Gallery',
         onPress: () =>
-          launchImageLibrary({ mediaType: 'photo', quality: 0.8, includeBase64: false }, handleAsset),
+          launchImageLibrary(
+            { mediaType: 'photo', quality: 0.8, includeBase64: false },
+            handleAsset,
+          ),
       },
       { text: 'Cancel', style: 'cancel' },
     ]);
@@ -362,7 +372,9 @@ export default function EmployeesScreen() {
     try {
       const body: any = {
         ...form,
-        monthlySalary: form.monthlySalary ? parseFloat(form.monthlySalary) : undefined,
+        monthlySalary: form.monthlySalary
+          ? parseFloat(form.monthlySalary)
+          : undefined,
         otRate: form.otRate ? parseFloat(form.otRate) : undefined,
         salary: form.monthlySalary ? parseFloat(form.monthlySalary) : undefined,
       };
@@ -380,10 +392,18 @@ export default function EmployeesScreen() {
       // Upload avatar via multipart if a new photo was picked
       if (avatarAsset && savedId) {
         try {
-          await employeeAPI.uploadAvatar(savedId, avatarAsset.uri, avatarAsset.type, avatarAsset.fileName);
+          await employeeAPI.uploadAvatar(
+            savedId,
+            avatarAsset.uri,
+            avatarAsset.type,
+            avatarAsset.fileName,
+          );
           await load();
         } catch {
-          Alert.alert('Photo', 'Employee saved but photo upload failed. You can retry later.');
+          Alert.alert(
+            'Photo',
+            'Employee saved but photo upload failed. You can retry later.',
+          );
         }
       }
       setFormDirty(false);
@@ -560,10 +580,18 @@ export default function EmployeesScreen() {
 
   const closeForm = () => {
     if (formDirty) {
-      Alert.alert('Unsaved Changes', 'You have unsaved changes. Discard them?', [
-        { text: 'Keep Editing', style: 'cancel' },
-        { text: 'Discard', style: 'destructive', onPress: () => setShowForm(false) },
-      ]);
+      Alert.alert(
+        'Unsaved Changes',
+        'You have unsaved changes. Discard them?',
+        [
+          { text: 'Keep Editing', style: 'cancel' },
+          {
+            text: 'Discard',
+            style: 'destructive',
+            onPress: () => setShowForm(false),
+          },
+        ],
+      );
     } else {
       setShowForm(false);
     }
@@ -761,7 +789,12 @@ export default function EmployeesScreen() {
                 </View>
                 <View style={styles.cardMeta}>
                   {item.email && (
-                    <View style={[styles.metaItem, { backgroundColor: '#DBEAFE', flex: 1 }]}>
+                    <View
+                      style={[
+                        styles.metaItem,
+                        { backgroundColor: '#DBEAFE', flex: 1 },
+                      ]}
+                    >
                       <Mail size={12} color={C.black} />
                       <Text style={styles.metaText} numberOfLines={1}>
                         {item.email}
@@ -769,17 +802,33 @@ export default function EmployeesScreen() {
                     </View>
                   )}
                   {(item as any).phone && (
-                    <View style={[styles.metaItem, { flexShrink: 0, backgroundColor: '#DCFCE7' }]}>
+                    <View
+                      style={[
+                        styles.metaItem,
+                        { flexShrink: 0, backgroundColor: '#DCFCE7' },
+                      ]}
+                    >
                       <Phone size={12} color={C.black} />
-                      <Text style={[styles.metaText, { flex: 0 }]} numberOfLines={1}>
+                      <Text
+                        style={[styles.metaText, { flex: 0 }]}
+                        numberOfLines={1}
+                      >
                         {(item as any).phone}
                       </Text>
                     </View>
                   )}
                   {(item.salary || (item as any).monthlySalary) && (
-                    <View style={[styles.metaItem, { flexShrink: 0, backgroundColor: '#FEF08A' }]}>
+                    <View
+                      style={[
+                        styles.metaItem,
+                        { flexShrink: 0, backgroundColor: '#FEF08A' },
+                      ]}
+                    >
                       <Briefcase size={12} color={C.black} />
-                      <Text style={[styles.metaText, { flex: 0 }]} numberOfLines={1}>
+                      <Text
+                        style={[styles.metaText, { flex: 0 }]}
+                        numberOfLines={1}
+                      >
                         ₹
                         {(
                           (item as any).monthlySalary ||
@@ -896,7 +945,9 @@ export default function EmployeesScreen() {
                 showsVerticalScrollIndicator={false}
               >
                 {/* Photo */}
-                <View style={{ borderBottomWidth: 2, borderBottomColor: C.black }}>
+                <View
+                  style={{ borderBottomWidth: 2, borderBottomColor: C.black }}
+                >
                   {(detailEmp as any).avatar ? (
                     <Image
                       source={{ uri: (detailEmp as any).avatar }}
@@ -913,7 +964,13 @@ export default function EmployeesScreen() {
                         justifyContent: 'center',
                       }}
                     >
-                      <Text style={{ color: C.white, fontSize: 64, fontWeight: '700' }}>
+                      <Text
+                        style={{
+                          color: C.white,
+                          fontSize: 64,
+                          fontWeight: '700',
+                        }}
+                      >
                         {detailEmp.firstName[0]}
                         {detailEmp.lastName[0]}
                       </Text>
@@ -933,40 +990,74 @@ export default function EmployeesScreen() {
                       }}
                     >
                       <Text
-                        style={{ flex: 1, fontSize: 22, fontWeight: '800', color: C.black }}
+                        style={{
+                          flex: 1,
+                          fontSize: 22,
+                          fontWeight: '800',
+                          color: C.black,
+                        }}
                         numberOfLines={2}
                       >
                         {detailEmp.firstName} {detailEmp.lastName}
                       </Text>
-                      <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          fontWeight: '700',
+                          color: C.black,
+                        }}
+                      >
                         {detailEmp.employeeId}
                       </Text>
                     </View>
-                    <Text style={{ fontSize: 13, color: C.textMuted, marginTop: 2 }}>
+                    <Text
+                      style={{ fontSize: 13, color: C.textMuted, marginTop: 2 }}
+                    >
                       {detailEmp.designation || '—'}
                     </Text>
                   </View>
 
                   {/* Email / Phone / Salary chips */}
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  <View
+                    style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
+                  >
                     {(
                       [
                         [
                           Mail,
                           detailEmp.email,
-                          detailEmp.email ? () => Linking.openURL(`mailto:${detailEmp.email}`) : undefined,
+                          detailEmp.email
+                            ? () => Linking.openURL(`mailto:${detailEmp.email}`)
+                            : undefined,
                         ],
                         [
                           Phone,
                           (detailEmp as any).phone,
-                          (detailEmp as any).phone ? () => Linking.openURL(`tel:${(detailEmp as any).phone}`) : undefined,
+                          (detailEmp as any).phone
+                            ? () =>
+                                Linking.openURL(
+                                  `tel:${(detailEmp as any).phone}`,
+                                )
+                            : undefined,
                         ],
                         [
                           IndianRupee,
-                          (detailEmp as any).monthlySalary || detailEmp.salary || 0 ? Number((detailEmp as any).monthlySalary || detailEmp.salary || 0).toLocaleString('en-IN') : '',
+                          (detailEmp as any).monthlySalary ||
+                          detailEmp.salary ||
+                          0
+                            ? Number(
+                                (detailEmp as any).monthlySalary ||
+                                  detailEmp.salary ||
+                                  0,
+                              ).toLocaleString('en-IN')
+                            : '',
                           undefined,
                         ],
-                      ] as [React.ComponentType<any>, string, (() => void) | undefined][]
+                      ] as [
+                        React.ComponentType<any>,
+                        string,
+                        (() => void) | undefined,
+                      ][]
                     )
                       .filter(([, v]) => !!v)
                       .map(([Icon, value, onPress], i) => (
@@ -989,7 +1080,12 @@ export default function EmployeesScreen() {
                         >
                           <Icon size={13} color={C.primary} />
                           <Text
-                            style={{ fontSize: 12, fontWeight: '700', color: C.black, flexShrink: 1 }}
+                            style={{
+                              fontSize: 12,
+                              fontWeight: '700',
+                              color: C.black,
+                              flexShrink: 1,
+                            }}
                             numberOfLines={1}
                           >
                             {value}
@@ -998,34 +1094,33 @@ export default function EmployeesScreen() {
                       ))}
                   </View>
 
-                {/* Quick actions */}
-                <View>
-                  <Text style={styles.sectionDividerText}>Quick Actions</Text>
-                  <View style={styles.actionGrid}>
-                    {ACTION_ITEMS.map(({ key, label, icon: Icon, color }) => (
-                      <TouchableOpacity
-                        key={key}
-                        style={styles.actionCell}
-                        onPress={() => openAction(key)}
-                        activeOpacity={0.75}
-                      >
-                        <View
-                          style={[
-                            styles.actionIcon,
-                            {
-                              backgroundColor: color + '18',
-                              borderColor: color,
-                            },
-                          ]}
+                  {/* Quick actions */}
+                  <View>
+                    <Text style={styles.sectionDividerText}>Quick Actions</Text>
+                    <View style={styles.actionGrid}>
+                      {ACTION_ITEMS.map(({ key, label, icon: Icon, color }) => (
+                        <TouchableOpacity
+                          key={key}
+                          style={styles.actionCell}
+                          onPress={() => openAction(key)}
+                          activeOpacity={0.75}
                         >
-                          <Icon size={20} color={color} />
-                        </View>
-                        <Text style={styles.actionLabel}>{label}</Text>
-                      </TouchableOpacity>
-                    ))}
+                          <View
+                            style={[
+                              styles.actionIcon,
+                              {
+                                backgroundColor: color + '18',
+                                borderColor: color,
+                              },
+                            ]}
+                          >
+                            <Icon size={20} color={color} />
+                          </View>
+                          <Text style={styles.actionLabel}>{label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
                   </View>
-                </View>
-
                 </View>
               </ScrollView>
             )}
@@ -1033,7 +1128,11 @@ export default function EmployeesScreen() {
             {/* ── MORE DETAILS VIEW ── */}
             {!actionModal && showMore && (
               <ScrollView
-                contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }}
+                contentContainerStyle={{
+                  padding: 16,
+                  gap: 14,
+                  paddingBottom: 40,
+                }}
                 showsVerticalScrollIndicator={false}
               >
                 <InfoSection
@@ -1041,23 +1140,56 @@ export default function EmployeesScreen() {
                   icon={Briefcase}
                   rows={[
                     [Briefcase, 'Designation', detailEmp.designation],
-                    [Building2, 'Department', getDeptName(detailEmp.department)],
-                    [Timer, 'Employment Type', detailEmp.employmentType?.replace('_', ' ').toUpperCase()],
+                    [
+                      Building2,
+                      'Department',
+                      getDeptName(detailEmp.department),
+                    ],
+                    [
+                      Timer,
+                      'Employment Type',
+                      detailEmp.employmentType?.replace('_', ' ').toUpperCase(),
+                    ],
                     [
                       CalendarDays,
                       'Joining Date',
                       detailEmp.joiningDate
-                        ? new Date(detailEmp.joiningDate).toLocaleDateString('en-IN', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
-                          })
+                        ? new Date(detailEmp.joiningDate).toLocaleDateString(
+                            'en-IN',
+                            {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                            },
+                          )
                         : '',
                     ],
-                    [UserCheck, 'Status', detailEmp.status.replace('_', ' ').toUpperCase()],
-                    [IndianRupee, 'Monthly Salary', (detailEmp as any).monthlySalary || detailEmp.salary || 0 ? `₹${Number((detailEmp as any).monthlySalary || detailEmp.salary || 0).toLocaleString('en-IN')}` : ''],
-                    [Landmark, 'Loan Balance', (detailEmp as any).loanBalance > 0 ? `₹${(detailEmp as any).loanBalance.toLocaleString('en-IN')}` : ''],
-                    [Wallet, 'Advance Balance', (detailEmp as any).advanceBalance > 0 ? `₹${(detailEmp as any).advanceBalance.toLocaleString('en-IN')}` : ''],
+                    [
+                      UserCheck,
+                      'Status',
+                      detailEmp.status.replace('_', ' ').toUpperCase(),
+                    ],
+                    [
+                      IndianRupee,
+                      'Monthly Salary',
+                      (detailEmp as any).monthlySalary || detailEmp.salary || 0
+                        ? `₹${Number((detailEmp as any).monthlySalary || detailEmp.salary || 0).toLocaleString('en-IN')}`
+                        : '',
+                    ],
+                    [
+                      Landmark,
+                      'Loan Balance',
+                      (detailEmp as any).loanBalance > 0
+                        ? `₹${(detailEmp as any).loanBalance.toLocaleString('en-IN')}`
+                        : '',
+                    ],
+                    [
+                      Wallet,
+                      'Advance Balance',
+                      (detailEmp as any).advanceBalance > 0
+                        ? `₹${(detailEmp as any).advanceBalance.toLocaleString('en-IN')}`
+                        : '',
+                    ],
                   ]}
                 />
 
@@ -1068,23 +1200,37 @@ export default function EmployeesScreen() {
                   rows={[
                     [Mail, 'Email', detailEmp.email],
                     [Phone, 'Phone', (detailEmp as any).phone],
-                    [PhoneCall, 'Alternate Phone', (detailEmp as any).alternatePhone],
+                    [
+                      PhoneCall,
+                      'Alternate Phone',
+                      (detailEmp as any).alternatePhone,
+                    ],
                     [Mail, 'Personal Email', (detailEmp as any).personalEmail],
                     [User, 'Gender', (detailEmp as any).gender],
                     [
                       CalendarDays,
                       'Date of Birth',
                       (detailEmp as any).dateOfBirth
-                        ? new Date((detailEmp as any).dateOfBirth).toLocaleDateString('en-IN', {
+                        ? new Date(
+                            (detailEmp as any).dateOfBirth,
+                          ).toLocaleDateString('en-IN', {
                             day: '2-digit',
                             month: 'short',
                             year: 'numeric',
                           })
                         : '',
                     ],
-                    [Siren, 'Emergency Contact', (detailEmp as any).emergencyContact],
+                    [
+                      Siren,
+                      'Emergency Contact',
+                      (detailEmp as any).emergencyContact,
+                    ],
                     [House, 'Address', (detailEmp as any).address],
-                    [MapPin, 'Permanent Address', (detailEmp as any).permanentAddress],
+                    [
+                      MapPin,
+                      'Permanent Address',
+                      (detailEmp as any).permanentAddress,
+                    ],
                     [Building2, 'City', (detailEmp as any).city],
                     [Map, 'State', (detailEmp as any).state],
                     [Hash, 'Pincode', (detailEmp as any).pincode],
@@ -1097,8 +1243,16 @@ export default function EmployeesScreen() {
                   icon={Briefcase}
                   rows={[
                     [Landmark, 'Bank', (detailEmp as any).bankName],
-                    [CreditCard, 'Account No.', (detailEmp as any).bankAccountNumber],
-                    [UserCheck, 'Account Holder', (detailEmp as any).accountHolderName],
+                    [
+                      CreditCard,
+                      'Account No.',
+                      (detailEmp as any).bankAccountNumber,
+                    ],
+                    [
+                      UserCheck,
+                      'Account Holder',
+                      (detailEmp as any).accountHolderName,
+                    ],
                     [Hash, 'IFSC', (detailEmp as any).ifscCode],
                     [IdCard, 'PAN', (detailEmp as any).panNumber],
                     [Fingerprint, 'Aadhar', (detailEmp as any).aadharNumber],
@@ -1117,7 +1271,11 @@ export default function EmployeesScreen() {
                     [User, 'Father', (detailEmp as any).fatherName],
                     [User, 'Mother', (detailEmp as any).motherName],
                     [Heart, 'Spouse', (detailEmp as any).spouseName],
-                    [HeartHandshake, 'Marital Status', (detailEmp as any).maritalStatus],
+                    [
+                      HeartHandshake,
+                      'Marital Status',
+                      (detailEmp as any).maritalStatus,
+                    ],
                     [Droplet, 'Blood Group', (detailEmp as any).bloodGroup],
                     [Globe, 'Nationality', (detailEmp as any).nationality],
                     [Church, 'Religion', (detailEmp as any).religion],
@@ -1130,9 +1288,21 @@ export default function EmployeesScreen() {
                   icon={Briefcase}
                   hideEmpty
                   rows={[
-                    [GraduationCap, 'Qualification', (detailEmp as any).qualification],
-                    [Briefcase, 'Experience', (detailEmp as any).totalExperience],
-                    [Building, 'Previous Company', (detailEmp as any).previousCompany],
+                    [
+                      GraduationCap,
+                      'Qualification',
+                      (detailEmp as any).qualification,
+                    ],
+                    [
+                      Briefcase,
+                      'Experience',
+                      (detailEmp as any).totalExperience,
+                    ],
+                    [
+                      Building,
+                      'Previous Company',
+                      (detailEmp as any).previousCompany,
+                    ],
                   ]}
                 />
 
@@ -1256,7 +1426,9 @@ export default function EmployeesScreen() {
                     <DatePickerField
                       label="Date *"
                       value={actionForm.date || ''}
-                      onChange={v => setActionForm((p: any) => ({ ...p, date: v }))}
+                      onChange={v =>
+                        setActionForm((p: any) => ({ ...p, date: v }))
+                      }
                     />
                     <View>
                       <Text style={styles.fieldLabel}>Remark</Text>
@@ -1787,7 +1959,7 @@ export default function EmployeesScreen() {
                 </View>
 
                 <View style={{ flexDirection: 'row', gap: 12 }}>
-                  <View style={{ flex: 1,  }}>
+                  <View style={{ flex: 1 }}>
                     {F('First Name *', 'firstName', { placeholder: 'John' })}
                   </View>
                   <View style={{ flex: 1 }}>
@@ -2019,13 +2191,14 @@ export default function EmployeesScreen() {
                               <Text
                                 style={{ fontSize: 12, color: C.textMuted }}
                               >
-                                {new Date(
-                                  h.effectiveFrom,
-                                ).toLocaleDateString('en-IN', {
-                                  day: '2-digit',
-                                  month: 'short',
-                                  year: 'numeric',
-                                })}
+                                {new Date(h.effectiveFrom).toLocaleDateString(
+                                  'en-IN',
+                                  {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric',
+                                  },
+                                )}
                                 {h.changedByName ? ` — ${h.changedByName}` : ''}
                               </Text>
                               <Text
@@ -2098,14 +2271,20 @@ export default function EmployeesScreen() {
                 })}
 
                 <View style={styles.sectionDivider}>
-                  <Text style={styles.sectionDividerText}>Personal Details</Text>
+                  <Text style={styles.sectionDividerText}>
+                    Personal Details
+                  </Text>
                 </View>
                 <View style={{ flexDirection: 'row', gap: 12 }}>
                   <View style={{ flex: 1 }}>
-                    {F('Father Name', 'fatherName', { placeholder: "Father's name" })}
+                    {F('Father Name', 'fatherName', {
+                      placeholder: "Father's name",
+                    })}
                   </View>
                   <View style={{ flex: 1 }}>
-                    {F('Mother Name', 'motherName', { placeholder: "Mother's name" })}
+                    {F('Mother Name', 'motherName', {
+                      placeholder: "Mother's name",
+                    })}
                   </View>
                 </View>
                 {Select('Marital Status', 'maritalStatus', [
@@ -2115,7 +2294,9 @@ export default function EmployeesScreen() {
                   { value: 'widowed', label: 'Widowed' },
                 ])}
                 {form.maritalStatus === 'married' &&
-                  F('Spouse Name', 'spouseName', { placeholder: "Spouse's name" })}
+                  F('Spouse Name', 'spouseName', {
+                    placeholder: "Spouse's name",
+                  })}
                 {Select('Blood Group', 'bloodGroup', [
                   { value: 'A+', label: 'A+' },
                   { value: 'A-', label: 'A-' },
@@ -2126,7 +2307,9 @@ export default function EmployeesScreen() {
                   { value: 'AB+', label: 'AB+' },
                   { value: 'AB-', label: 'AB-' },
                 ])}
-                {F('Nationality', 'nationality', { placeholder: 'e.g. Indian' })}
+                {F('Nationality', 'nationality', {
+                  placeholder: 'e.g. Indian',
+                })}
                 {F('Religion', 'religion', { placeholder: 'e.g. Hindu' })}
                 {F('Personal Email', 'personalEmail', {
                   placeholder: 'personal@email.com',
@@ -2139,7 +2322,9 @@ export default function EmployeesScreen() {
                 })}
 
                 <View style={styles.sectionDivider}>
-                  <Text style={styles.sectionDividerText}>Professional Background</Text>
+                  <Text style={styles.sectionDividerText}>
+                    Professional Background
+                  </Text>
                 </View>
                 {F('Qualification', 'qualification', {
                   placeholder: 'e.g. B.Tech, MBA',
@@ -2379,7 +2564,15 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginTop: 1,
   },
-  statusBadge: { borderWidth: 2, borderRadius: 999, borderColor: '#0A0A0A', borderRightWidth: 4, borderBottomWidth: 4, paddingHorizontal: 6, paddingVertical: 2 },
+  statusBadge: {
+    borderWidth: 2,
+    borderRadius: 999,
+    borderColor: '#0A0A0A',
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
   statusText: { fontSize: 9, fontWeight: '700' },
   editBtn: {
     width: 30,
@@ -2710,7 +2903,12 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
-  infoRowValue: { fontSize: 14, fontWeight: '600', color: C.black, marginTop: 1 },
+  infoRowValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: C.black,
+    marginTop: 1,
+  },
   infoSectionTitle: {
     fontSize: 11,
     fontWeight: '800',

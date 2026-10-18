@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const Shift = require("../models/Shift");
+const bodyFor = require("../utils/bodyFor");
 
 const getShifts = asyncHandler(async (req, res) => {
   const shifts = await Shift.find({ company: req.user.company }).sort({
@@ -10,14 +11,14 @@ const getShifts = asyncHandler(async (req, res) => {
 });
 
 const createShift = asyncHandler(async (req, res) => {
-  const shift = await Shift.create({ ...req.body, company: req.user.company });
+  const shift = await Shift.create({ ...bodyFor(Shift, req.body), company: req.user.company });
   res.status(201).json({ success: true, data: shift });
 });
 
 const updateShift = asyncHandler(async (req, res) => {
   const shift = await Shift.findOneAndUpdate(
     { _id: req.params.id, company: req.user.company },
-    req.body,
+    bodyFor(Shift, req.body),
     { new: true },
   );
   if (!shift)

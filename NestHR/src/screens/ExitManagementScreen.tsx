@@ -49,7 +49,12 @@ const REASONS = [
 
 const STATUSES = [
   { value: 'pending', label: 'Pending', color: C.warning, bg: '#FFF7ED' },
-  { value: 'notice_period', label: 'Notice Period', color: C.primary, bg: '#EFF6FF' },
+  {
+    value: 'notice_period',
+    label: 'Notice Period',
+    color: C.primary,
+    bg: '#EFF6FF',
+  },
   { value: 'cleared', label: 'Cleared', color: '#7C3AED', bg: '#F5F3FF' },
   { value: 'completed', label: 'Completed', color: C.success, bg: '#F0FDF4' },
 ];
@@ -124,7 +129,11 @@ export default function ExitManagementScreen() {
     }
   }, [statusFilter, isHR]);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -210,7 +219,11 @@ export default function ExitManagementScreen() {
     const cfg = statusCfg(item.status);
     const emp = item.employee;
     return (
-      <TouchableOpacity style={s.card} onPress={() => openDetail(item)} activeOpacity={0.8}>
+      <TouchableOpacity
+        style={s.card}
+        onPress={() => openDetail(item)}
+        activeOpacity={0.8}
+      >
         <View style={s.cardHeader}>
           <View style={s.empIcon}>
             <User size={16} color={C.primary} />
@@ -220,10 +233,16 @@ export default function ExitManagementScreen() {
               {emp ? `${emp.firstName} ${emp.lastName}` : '—'}
             </Text>
             <Text style={s.empSub}>
-              {emp?.designation || ''} {emp?.department?.name ? `· ${emp.department.name}` : ''}
+              {emp?.designation || ''}{' '}
+              {emp?.department?.name ? `· ${emp.department.name}` : ''}
             </Text>
           </View>
-          <View style={[s.badge, { backgroundColor: cfg.bg, borderColor: cfg.color }]}>
+          <View
+            style={[
+              s.badge,
+              { backgroundColor: cfg.bg, borderColor: cfg.color },
+            ]}
+          >
             <Text style={[s.badgeText, { color: cfg.color }]}>
               {cfg.label.toUpperCase()}
             </Text>
@@ -233,18 +252,23 @@ export default function ExitManagementScreen() {
         <View style={s.cardBody}>
           <View style={s.infoRow}>
             <Calendar size={12} color="#6B7280" />
-            <Text style={s.infoText}>Resignation: {fmt(item.resignationDate)}</Text>
+            <Text style={s.infoText}>
+              Resignation: {fmt(item.resignationDate)}
+            </Text>
           </View>
           {item.lastWorkingDay && (
             <View style={s.infoRow}>
               <Clock size={12} color="#6B7280" />
-              <Text style={s.infoText}>Last Day: {fmt(item.lastWorkingDay)}</Text>
+              <Text style={s.infoText}>
+                Last Day: {fmt(item.lastWorkingDay)}
+              </Text>
             </View>
           )}
           <View style={s.infoRow}>
             <FileText size={12} color="#6B7280" />
             <Text style={s.infoText}>
-              Reason: {REASONS.find(r => r.value === item.reason)?.label || item.reason}
+              Reason:{' '}
+              {REASONS.find(r => r.value === item.reason)?.label || item.reason}
             </Text>
           </View>
         </View>
@@ -271,14 +295,23 @@ export default function ExitManagementScreen() {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 4, marginRight: 4 }}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{ padding: 4, marginRight: 4 }}
+        >
           <ChevronLeft size={22} color={C.black} />
         </TouchableOpacity>
         <LogOut size={20} color={C.primary} />
         <Text style={s.title}>Exit Management</Text>
         <View style={{ flex: 1 }} />
         {isHR && (
-          <TouchableOpacity style={s.addBtn} onPress={() => { setForm(EMPTY_FORM); setShowCreate(true); }}>
+          <TouchableOpacity
+            style={s.addBtn}
+            onPress={() => {
+              setForm(EMPTY_FORM);
+              setShowCreate(true);
+            }}
+          >
             <Plus size={14} color={C.white} />
             <Text style={s.addBtnText}>New</Text>
           </TouchableOpacity>
@@ -290,18 +323,29 @@ export default function ExitManagementScreen() {
         value={statusFilter}
         onChange={setStatusFilter}
         toggle={false}
-        options={[{ value: '', label: 'All' }, ...STATUSES].map(st => ({ key: st.value, label: st.label }))}
+        options={[{ value: '', label: 'All' }, ...STATUSES].map(st => ({
+          key: st.value,
+          label: st.label,
+        }))}
       />
 
       {loading ? (
-        <View style={s.loader}><ActivityIndicator size="large" color={C.primary} /></View>
+        <View style={s.loader}>
+          <ActivityIndicator size="large" color={C.primary} />
+        </View>
       ) : (
         <FlatList
           data={records}
           keyExtractor={i => i._id}
           renderItem={renderRecord}
           contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 40 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={C.primary}
+            />
+          }
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={s.empty}>
@@ -313,7 +357,11 @@ export default function ExitManagementScreen() {
       )}
 
       {/* Create Modal */}
-      <Modal visible={showCreate} animationType="slide" presentationStyle="formSheet">
+      <Modal
+        visible={showCreate}
+        animationType="slide"
+        presentationStyle="formSheet"
+      >
         <SafeAreaView style={s.safe} edges={['top']}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>Initiate Exit</Text>
@@ -321,7 +369,10 @@ export default function ExitManagementScreen() {
               <X size={22} color={C.black} />
             </TouchableOpacity>
           </View>
-          <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }} keyboardShouldPersistTaps="handled">
+          <ScrollView
+            contentContainerStyle={{ padding: 20, gap: 16 }}
+            keyboardShouldPersistTaps="handled"
+          >
             <View>
               <Text style={s.label}>Employee *</Text>
               <View style={s.picker}>
@@ -332,11 +383,22 @@ export default function ExitManagementScreen() {
                     {employees.map(e => (
                       <TouchableOpacity
                         key={e._id}
-                        style={[s.pickerOption, form.employee === e._id && s.pickerOptionActive]}
-                        onPress={() => setForm((p: any) => ({ ...p, employee: e._id }))}
+                        style={[
+                          s.pickerOption,
+                          form.employee === e._id && s.pickerOptionActive,
+                        ]}
+                        onPress={() =>
+                          setForm((p: any) => ({ ...p, employee: e._id }))
+                        }
                       >
-                        <Text style={[s.pickerOptionText, form.employee === e._id && { color: C.primary }]}>
-                          {e.firstName} {e.lastName} ({e.employeeId || e._id.slice(-4)})
+                        <Text
+                          style={[
+                            s.pickerOptionText,
+                            form.employee === e._id && { color: C.primary },
+                          ]}
+                        >
+                          {e.firstName} {e.lastName} (
+                          {e.employeeId || e._id.slice(-4)})
                         </Text>
                       </TouchableOpacity>
                     ))}
@@ -348,7 +410,9 @@ export default function ExitManagementScreen() {
             <DatePickerField
               label="Resignation Date *"
               value={form.resignationDate}
-              onChange={v => setForm((p: any) => ({ ...p, resignationDate: v }))}
+              onChange={v =>
+                setForm((p: any) => ({ ...p, resignationDate: v }))
+              }
             />
 
             <View>
@@ -356,7 +420,9 @@ export default function ExitManagementScreen() {
               <TextInput
                 style={s.input}
                 value={form.noticePeriodDays}
-                onChangeText={v => setForm((p: any) => ({ ...p, noticePeriodDays: v }))}
+                onChangeText={v =>
+                  setForm((p: any) => ({ ...p, noticePeriodDays: v }))
+                }
                 keyboardType="numeric"
                 placeholder="30"
                 placeholderTextColor="#9CA3AF"
@@ -365,9 +431,13 @@ export default function ExitManagementScreen() {
 
             <View>
               <Text style={s.label}>Reason *</Text>
-              <TouchableOpacity style={s.selectBtn} onPress={() => setShowReasonPicker(true)}>
+              <TouchableOpacity
+                style={s.selectBtn}
+                onPress={() => setShowReasonPicker(true)}
+              >
                 <Text style={s.selectBtnText}>
-                  {REASONS.find(r => r.value === form.reason)?.label || 'Select reason'}
+                  {REASONS.find(r => r.value === form.reason)?.label ||
+                    'Select reason'}
                 </Text>
                 <ChevronDown size={16} color={C.black} />
               </TouchableOpacity>
@@ -378,15 +448,25 @@ export default function ExitManagementScreen() {
               <TextInput
                 style={[s.input, { minHeight: 70, textAlignVertical: 'top' }]}
                 value={form.reasonDetails}
-                onChangeText={v => setForm((p: any) => ({ ...p, reasonDetails: v }))}
+                onChangeText={v =>
+                  setForm((p: any) => ({ ...p, reasonDetails: v }))
+                }
                 multiline
                 placeholder="Additional details..."
                 placeholderTextColor="#9CA3AF"
               />
             </View>
 
-            <TouchableOpacity style={s.submitBtn} onPress={handleCreate} disabled={saving}>
-              {saving ? <ActivityIndicator color={C.white} /> : <Text style={s.submitBtnText}>Initiate Exit Process</Text>}
+            <TouchableOpacity
+              style={s.submitBtn}
+              onPress={handleCreate}
+              disabled={saving}
+            >
+              {saving ? (
+                <ActivityIndicator color={C.white} />
+              ) : (
+                <Text style={s.submitBtnText}>Initiate Exit Process</Text>
+              )}
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
@@ -398,15 +478,30 @@ export default function ExitManagementScreen() {
           <View style={s.pickerSheet}>
             <View style={s.pickerSheetHeader}>
               <Text style={s.pickerSheetTitle}>Select Reason</Text>
-              <TouchableOpacity onPress={() => setShowReasonPicker(false)}><X size={20} color={C.black} /></TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowReasonPicker(false)}>
+                <X size={20} color={C.black} />
+              </TouchableOpacity>
             </View>
             {REASONS.map(r => (
               <TouchableOpacity
                 key={r.value}
-                style={[s.sheetOption, form.reason === r.value && s.sheetOptionActive]}
-                onPress={() => { setForm((p: any) => ({ ...p, reason: r.value })); setShowReasonPicker(false); }}
+                style={[
+                  s.sheetOption,
+                  form.reason === r.value && s.sheetOptionActive,
+                ]}
+                onPress={() => {
+                  setForm((p: any) => ({ ...p, reason: r.value }));
+                  setShowReasonPicker(false);
+                }}
               >
-                <Text style={[s.sheetOptionText, form.reason === r.value && { color: C.primary }]}>{r.label}</Text>
+                <Text
+                  style={[
+                    s.sheetOptionText,
+                    form.reason === r.value && { color: C.primary },
+                  ]}
+                >
+                  {r.label}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -414,25 +509,39 @@ export default function ExitManagementScreen() {
       </Modal>
 
       {/* Detail / Update Modal */}
-      <Modal visible={!!selected} animationType="slide" presentationStyle="formSheet">
+      <Modal
+        visible={!!selected}
+        animationType="slide"
+        presentationStyle="formSheet"
+      >
         {selected && (
           <SafeAreaView style={s.safe} edges={['top']}>
             <View style={s.modalHeader}>
               <Text style={s.modalTitle}>
-                {selected.employee ? `${selected.employee.firstName} ${selected.employee.lastName}` : 'Exit Record'}
+                {selected.employee
+                  ? `${selected.employee.firstName} ${selected.employee.lastName}`
+                  : 'Exit Record'}
               </Text>
-              <TouchableOpacity onPress={() => setSelected(null)}><X size={22} color={C.black} /></TouchableOpacity>
+              <TouchableOpacity onPress={() => setSelected(null)}>
+                <X size={22} color={C.black} />
+              </TouchableOpacity>
             </View>
-            <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }} keyboardShouldPersistTaps="handled">
-
+            <ScrollView
+              contentContainerStyle={{ padding: 20, gap: 16 }}
+              keyboardShouldPersistTaps="handled"
+            >
               {/* Status update */}
               {isHR && (
                 <>
                   <View>
                     <Text style={s.label}>Status</Text>
-                    <TouchableOpacity style={s.selectBtn} onPress={() => setShowStatusPicker(true)}>
+                    <TouchableOpacity
+                      style={s.selectBtn}
+                      onPress={() => setShowStatusPicker(true)}
+                    >
                       <Text style={s.selectBtnText}>
-                        {STATUSES.find(s2 => s2.value === editStatusVal)?.label || editStatusVal}
+                        {STATUSES.find(s2 => s2.value === editStatusVal)
+                          ?.label || editStatusVal}
                       </Text>
                       <ChevronDown size={16} color={C.black} />
                     </TouchableOpacity>
@@ -462,10 +571,18 @@ export default function ExitManagementScreen() {
                       {FNF_STATUSES.map(fs => (
                         <TouchableOpacity
                           key={fs.value}
-                          style={[s.toggleBtn, editFnfStatus === fs.value && s.toggleBtnActive]}
+                          style={[
+                            s.toggleBtn,
+                            editFnfStatus === fs.value && s.toggleBtnActive,
+                          ]}
                           onPress={() => setEditFnfStatus(fs.value)}
                         >
-                          <Text style={[s.toggleBtnText, editFnfStatus === fs.value && { color: C.white }]}>
+                          <Text
+                            style={[
+                              s.toggleBtnText,
+                              editFnfStatus === fs.value && { color: C.white },
+                            ]}
+                          >
                             {fs.label}
                           </Text>
                         </TouchableOpacity>
@@ -474,24 +591,39 @@ export default function ExitManagementScreen() {
                   </View>
 
                   <View style={s.checkRow}>
-                    <TouchableOpacity onPress={() => setEditInterviewDone(p => !p)} style={s.checkbox}>
-                      {editInterviewDone && <CheckCircle2 size={18} color={C.success} />}
+                    <TouchableOpacity
+                      onPress={() => setEditInterviewDone(p => !p)}
+                      style={s.checkbox}
+                    >
+                      {editInterviewDone && (
+                        <CheckCircle2 size={18} color={C.success} />
+                      )}
                       {!editInterviewDone && <View style={s.checkboxEmpty} />}
                     </TouchableOpacity>
                     <Text style={s.checkLabel}>Exit Interview Done</Text>
                   </View>
 
                   <View style={s.checkRow}>
-                    <TouchableOpacity onPress={() => setEditAssetsReturned(p => !p)} style={s.checkbox}>
-                      {editAssetsReturned && <CheckCircle2 size={18} color={C.success} />}
+                    <TouchableOpacity
+                      onPress={() => setEditAssetsReturned(p => !p)}
+                      style={s.checkbox}
+                    >
+                      {editAssetsReturned && (
+                        <CheckCircle2 size={18} color={C.success} />
+                      )}
                       {!editAssetsReturned && <View style={s.checkboxEmpty} />}
                     </TouchableOpacity>
                     <Text style={s.checkLabel}>Assets Returned</Text>
                   </View>
 
                   <View style={s.checkRow}>
-                    <TouchableOpacity onPress={() => setEditExpLetter(p => !p)} style={s.checkbox}>
-                      {editExpLetter && <CheckCircle2 size={18} color={C.success} />}
+                    <TouchableOpacity
+                      onPress={() => setEditExpLetter(p => !p)}
+                      style={s.checkbox}
+                    >
+                      {editExpLetter && (
+                        <CheckCircle2 size={18} color={C.success} />
+                      )}
                       {!editExpLetter && <View style={s.checkboxEmpty} />}
                     </TouchableOpacity>
                     <Text style={s.checkLabel}>Experience Letter Issued</Text>
@@ -500,7 +632,10 @@ export default function ExitManagementScreen() {
                   <View>
                     <Text style={s.label}>Exit Interview Notes</Text>
                     <TextInput
-                      style={[s.input, { minHeight: 70, textAlignVertical: 'top' }]}
+                      style={[
+                        s.input,
+                        { minHeight: 70, textAlignVertical: 'top' },
+                      ]}
                       value={editNotes}
                       onChangeText={setEditNotes}
                       multiline
@@ -509,8 +644,16 @@ export default function ExitManagementScreen() {
                     />
                   </View>
 
-                  <TouchableOpacity style={s.submitBtn} onPress={handleUpdateStatus} disabled={updatingStatus}>
-                    {updatingStatus ? <ActivityIndicator color={C.white} /> : <Text style={s.submitBtnText}>Update Exit Record</Text>}
+                  <TouchableOpacity
+                    style={s.submitBtn}
+                    onPress={handleUpdateStatus}
+                    disabled={updatingStatus}
+                  >
+                    {updatingStatus ? (
+                      <ActivityIndicator color={C.white} />
+                    ) : (
+                      <Text style={s.submitBtnText}>Update Exit Record</Text>
+                    )}
                   </TouchableOpacity>
                 </>
               )}
@@ -518,13 +661,37 @@ export default function ExitManagementScreen() {
               {/* Read-only info for non-HR */}
               {!isHR && (
                 <>
-                  <InfoRow label="Resignation Date" value={fmt(selected.resignationDate)} />
-                  <InfoRow label="Last Working Day" value={fmt(selected.lastWorkingDay)} />
-                  <InfoRow label="Notice Period" value={`${selected.noticePeriodDays} days`} />
-                  <InfoRow label="Reason" value={REASONS.find(r => r.value === selected.reason)?.label || selected.reason} />
-                  <InfoRow label="Status" value={statusCfg(selected.status).label} />
-                  <InfoRow label="FnF Amount" value={`₹${(selected.fnfAmount || 0).toLocaleString('en-IN')}`} />
-                  <InfoRow label="FnF Status" value={selected.fnfStatus || '—'} />
+                  <InfoRow
+                    label="Resignation Date"
+                    value={fmt(selected.resignationDate)}
+                  />
+                  <InfoRow
+                    label="Last Working Day"
+                    value={fmt(selected.lastWorkingDay)}
+                  />
+                  <InfoRow
+                    label="Notice Period"
+                    value={`${selected.noticePeriodDays} days`}
+                  />
+                  <InfoRow
+                    label="Reason"
+                    value={
+                      REASONS.find(r => r.value === selected.reason)?.label ||
+                      selected.reason
+                    }
+                  />
+                  <InfoRow
+                    label="Status"
+                    value={statusCfg(selected.status).label}
+                  />
+                  <InfoRow
+                    label="FnF Amount"
+                    value={`₹${(selected.fnfAmount || 0).toLocaleString('en-IN')}`}
+                  />
+                  <InfoRow
+                    label="FnF Status"
+                    value={selected.fnfStatus || '—'}
+                  />
                 </>
               )}
             </ScrollView>
@@ -538,15 +705,30 @@ export default function ExitManagementScreen() {
           <View style={s.pickerSheet}>
             <View style={s.pickerSheetHeader}>
               <Text style={s.pickerSheetTitle}>Update Status</Text>
-              <TouchableOpacity onPress={() => setShowStatusPicker(false)}><X size={20} color={C.black} /></TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowStatusPicker(false)}>
+                <X size={20} color={C.black} />
+              </TouchableOpacity>
             </View>
             {STATUSES.map(st => (
               <TouchableOpacity
                 key={st.value}
-                style={[s.sheetOption, editStatusVal === st.value && s.sheetOptionActive]}
-                onPress={() => { setEditStatusVal(st.value); setShowStatusPicker(false); }}
+                style={[
+                  s.sheetOption,
+                  editStatusVal === st.value && s.sheetOptionActive,
+                ]}
+                onPress={() => {
+                  setEditStatusVal(st.value);
+                  setShowStatusPicker(false);
+                }}
               >
-                <Text style={[s.sheetOptionText, editStatusVal === st.value && { color: C.primary }]}>{st.label}</Text>
+                <Text
+                  style={[
+                    s.sheetOptionText,
+                    editStatusVal === st.value && { color: C.primary },
+                  ]}
+                >
+                  {st.label}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -560,7 +742,15 @@ function CheckItem({ label, done }: { label: string; done: boolean }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
       <CheckCircle2 size={12} color={done ? C.success : '#D1D5DB'} />
-      <Text style={{ fontSize: 10, color: done ? C.success : '#9CA3AF', fontWeight: '600' }}>{label}</Text>
+      <Text
+        style={{
+          fontSize: 10,
+          color: done ? C.success : '#9CA3AF',
+          fontWeight: '600',
+        }}
+      >
+        {label}
+      </Text>
     </View>
   );
 }
@@ -568,8 +758,27 @@ function CheckItem({ label, done }: { label: string; done: boolean }) {
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <View style={{ marginBottom: 8 }}>
-      <Text style={{ fontSize: 11, fontWeight: '700', textTransform: 'uppercase', color: '#6B7280', letterSpacing: 0.5 }}>{label}</Text>
-      <Text style={{ fontSize: 14, fontWeight: '600', color: C.black, marginTop: 2 }}>{value}</Text>
+      <Text
+        style={{
+          fontSize: 11,
+          fontWeight: '700',
+          textTransform: 'uppercase',
+          color: '#6B7280',
+          letterSpacing: 0.5,
+        }}
+      >
+        {label}
+      </Text>
+      <Text
+        style={{
+          fontSize: 14,
+          fontWeight: '600',
+          color: C.black,
+          marginTop: 2,
+        }}
+      >
+        {value}
+      </Text>
     </View>
   );
 }
@@ -602,8 +811,18 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  addBtnText: { color: C.white, fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
-  filterBar: { backgroundColor: C.white, borderBottomWidth: 2, borderBottomColor: C.black, maxHeight: 56 },
+  addBtnText: {
+    color: C.white,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  filterBar: {
+    backgroundColor: C.white,
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
+    maxHeight: 56,
+  },
   filterChip: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -617,7 +836,12 @@ const s = StyleSheet.create({
     backgroundColor: C.white,
   },
   filterChipActive: { borderColor: C.primary, backgroundColor: '#EFF6FF' },
-  filterChipText: { fontSize: 12, fontWeight: '700', color: '#6B7280', textTransform: 'uppercase' },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+  },
   filterChipTextActive: { color: C.primary },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
@@ -633,12 +857,20 @@ const s = StyleSheet.create({
     borderColor: C.black,
     padding: 14,
   },
-  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
   empIcon: {
     width: 36,
     height: 36,
     backgroundColor: '#EFF6FF',
-    borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A',
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
     alignItems: 'center',
@@ -646,14 +878,44 @@ const s = StyleSheet.create({
   },
   empName: { fontSize: 14, fontWeight: '700', color: C.black },
   empSub: { fontSize: 11, color: '#6B7280', fontWeight: '500', marginTop: 2 },
-  badge: { borderWidth: 2, borderRadius: 999, borderColor: '#0A0A0A', borderRightWidth: 4, borderBottomWidth: 4, paddingHorizontal: 8, paddingVertical: 3 },
-  badgeText: { textTransform: 'uppercase', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+  badge: {
+    borderWidth: 2,
+    borderRadius: 999,
+    borderColor: '#0A0A0A',
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  badgeText: {
+    textTransform: 'uppercase',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
   cardBody: { gap: 4, marginBottom: 10 },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   infoText: { fontSize: 12, color: '#6B7280', fontWeight: '500' },
-  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10 },
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 10,
+  },
   checksRow: { flexDirection: 'row', gap: 12 },
-  deleteBtn: { width: 32, height: 32, borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.danger, alignItems: 'center', justifyContent: 'center' },
+  deleteBtn: {
+    width: 32,
+    height: 32,
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderRadius: 8,
+    borderColor: C.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -664,7 +926,14 @@ const s = StyleSheet.create({
     borderBottomColor: C.black,
   },
   modalTitle: { fontSize: 18, fontWeight: '700', color: C.black },
-  label: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', color: C.black, marginBottom: 6, letterSpacing: 0.5 },
+  label: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    color: C.black,
+    marginBottom: 6,
+    letterSpacing: 0.5,
+  },
   input: {
     borderWidth: 2,
     borderRadius: 8,
@@ -680,9 +949,23 @@ const s = StyleSheet.create({
     color: C.black,
     backgroundColor: C.white,
   },
-  picker: { borderWidth: 2, borderRadius: 8, borderRightWidth: 5, borderBottomWidth: 5, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderColor: C.black, backgroundColor: C.white },
+  picker: {
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderColor: C.black,
+    backgroundColor: C.white,
+  },
   pickerPlaceholder: { padding: 12, color: '#9CA3AF', fontSize: 14 },
-  pickerOption: { paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 2, borderBottomColor: C.black },
+  pickerOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
+  },
   pickerOptionActive: { backgroundColor: '#EFF6FF' },
   pickerOptionText: { fontSize: 14, fontWeight: '500', color: C.black },
   selectBtn: {
@@ -715,12 +998,37 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 8,
   },
-  submitBtnText: { color: C.white, fontWeight: '700', fontSize: 14, textTransform: 'uppercase' },
-  pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  pickerSheet: { backgroundColor: C.white, borderTopWidth: 2, borderTopColor: C.black },
-  pickerSheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 2, borderBottomColor: C.black },
+  submitBtnText: {
+    color: C.white,
+    fontWeight: '700',
+    fontSize: 14,
+    textTransform: 'uppercase',
+  },
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  pickerSheet: {
+    backgroundColor: C.white,
+    borderTopWidth: 2,
+    borderTopColor: C.black,
+  },
+  pickerSheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
+  },
   pickerSheetTitle: { fontSize: 16, fontWeight: '700', color: C.black },
-  sheetOption: { paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 2, borderBottomColor: C.black },
+  sheetOption: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
+  },
   sheetOptionActive: { backgroundColor: '#EFF6FF' },
   sheetOptionText: { fontSize: 15, fontWeight: '600', color: C.black },
   toggleRow: { flexDirection: 'row', gap: 8 },
@@ -738,9 +1046,24 @@ const s = StyleSheet.create({
     backgroundColor: C.white,
   },
   toggleBtnActive: { backgroundColor: C.primary },
-  toggleBtnText: { fontSize: 12, fontWeight: '700', color: C.black, textTransform: 'uppercase' },
+  toggleBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: C.black,
+    textTransform: 'uppercase',
+  },
   checkRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  checkbox: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
-  checkboxEmpty: { width: 18, height: 18, borderWidth: 2, borderColor: C.black },
+  checkbox: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxEmpty: {
+    width: 18,
+    height: 18,
+    borderWidth: 2,
+    borderColor: C.black,
+  },
   checkLabel: { fontSize: 14, fontWeight: '600', color: C.black },
 });

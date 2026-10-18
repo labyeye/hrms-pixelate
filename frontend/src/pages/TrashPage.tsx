@@ -90,7 +90,7 @@ export default function TrashPage() {
   };
 
   return (
-    <AppLayout>
+    <AppLayout title="Trash">
       <div className="p-6 space-y-4">
         <div className="flex items-center gap-2">
           <Trash2 className="h-5 w-5 text-muted-foreground" />

@@ -5,12 +5,12 @@ const {
   updateShift,
   deleteShift,
 } = require("../controllers/shiftController");
-const { protect } = require("../middleware/auth");
+const { protect, authorize } = require("../middleware/auth");
 const router = express.Router();
 
 router.get("/", protect, getShifts);
-router.post("/", protect, createShift);
-router.put("/:id", protect, updateShift);
-router.delete("/:id", protect, deleteShift);
+router.post("/", protect, authorize("super_admin", "hr_manager"), createShift);
+router.put("/:id", protect, authorize("super_admin", "hr_manager"), updateShift);
+router.delete("/:id", protect, authorize("super_admin", "hr_manager"), deleteShift);
 
 module.exports = router;

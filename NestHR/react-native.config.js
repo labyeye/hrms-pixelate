@@ -6,6 +6,10 @@ const skipFaceDetectorOnIos = process.env.NESTHR_SIM === '1';
 module.exports = {
   assets: ['./src/assets/fonts'],
   dependencies: skipFaceDetectorOnIos
-    ? {'react-native-vision-camera-face-detector': {platforms: {ios: null}}}
+    ? {
+        'react-native-vision-camera-face-detector': {
+          platforms: { ios: null },
+        },
+      }
     : {},
 };

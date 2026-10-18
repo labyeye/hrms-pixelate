@@ -55,7 +55,10 @@ const PRIORITIES = [
   { value: 'critical', label: 'Critical' },
 ];
 
-const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
+const STATUS_META: Record<
+  string,
+  { label: string; color: string; bg: string }
+> = {
   open: { label: 'Open', color: '#6B7280', bg: '#F3F4F6' },
   in_progress: { label: 'In Progress', color: C.primary, bg: '#EFF6FF' },
   resolved: { label: 'Resolved', color: C.success, bg: '#DCFCE7' },
@@ -124,7 +127,8 @@ export default function SupportScreen({ navigation }: any) {
 
   useEffect(() => {
     if (selectedTicket) {
-      supportAPI.getOne(selectedTicket._id)
+      supportAPI
+        .getOne(selectedTicket._id)
         .then(res => {
           setFreshTicket(res.data || res);
         })
@@ -149,7 +153,11 @@ export default function SupportScreen({ navigation }: any) {
     }
   }, []);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   const resetForm = () => {
     setSubject('');
@@ -173,8 +181,16 @@ export default function SupportScreen({ navigation }: any) {
     }
     setSubmitting(true);
     try {
-      await supportAPI.create({ subject: subject.trim(), issueType, priority, description: description.trim() });
-      Alert.alert('Success', 'Your ticket has been submitted. We will get back to you shortly.');
+      await supportAPI.create({
+        subject: subject.trim(),
+        issueType,
+        priority,
+        description: description.trim(),
+      });
+      Alert.alert(
+        'Success',
+        'Your ticket has been submitted. We will get back to you shortly.',
+      );
       setShowForm(false);
       resetForm();
       load();
@@ -203,22 +219,41 @@ export default function SupportScreen({ navigation }: any) {
       >
         <View style={styles.ticketTop}>
           <Text style={styles.ticketNumber}>{item.ticketNumber}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: sm.bg, borderColor: sm.color }]}>
-            <Text style={[styles.statusText, { color: sm.color }]}>{sm.label}</Text>
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: sm.bg, borderColor: sm.color },
+            ]}
+          >
+            <Text style={[styles.statusText, { color: sm.color }]}>
+              {sm.label}
+            </Text>
           </View>
         </View>
-        <Text style={styles.ticketSubject} numberOfLines={1}>{item.subject}</Text>
-        <Text style={styles.ticketDesc} numberOfLines={2}>{item.description}</Text>
+        <Text style={styles.ticketSubject} numberOfLines={1}>
+          {item.subject}
+        </Text>
+        <Text style={styles.ticketDesc} numberOfLines={2}>
+          {item.description}
+        </Text>
         <View style={styles.ticketMeta}>
           <View style={[styles.priorityDot, { backgroundColor: pColor }]} />
-          <Text style={styles.ticketMetaText}>{priorityLabel(item.priority)}</Text>
+          <Text style={styles.ticketMetaText}>
+            {priorityLabel(item.priority)}
+          </Text>
           <Text style={styles.ticketMetaDot}>·</Text>
-          <Text style={styles.ticketMetaText}>{issueLabel(item.issueType)}</Text>
+          <Text style={styles.ticketMetaText}>
+            {issueLabel(item.issueType)}
+          </Text>
           <Text style={styles.ticketMetaDot}>·</Text>
-          <Text style={styles.ticketMetaText}>{formatDate(item.createdAt)}</Text>
+          <Text style={styles.ticketMetaText}>
+            {formatDate(item.createdAt)}
+          </Text>
         </View>
         {isAdmin && item.submittedBy && (
-          <Text style={styles.ticketBy}>By {item.submittedBy.name || item.submittedBy.email}</Text>
+          <Text style={styles.ticketBy}>
+            By {item.submittedBy.name || item.submittedBy.email}
+          </Text>
         )}
       </TouchableOpacity>
     );
@@ -242,7 +277,12 @@ export default function SupportScreen({ navigation }: any) {
       </View>
 
       <ScrollView
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => load(true)}
+          />
+        }
         contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
@@ -251,8 +291,13 @@ export default function SupportScreen({ navigation }: any) {
           {Object.entries(statusCounts).map(([status, count]) => {
             const sm = STATUS_META[status];
             return (
-              <View key={status} style={[styles.summaryCard, { borderColor: sm.color }]}>
-                <Text style={[styles.summaryCount, { color: sm.color }]}>{count}</Text>
+              <View
+                key={status}
+                style={[styles.summaryCard, { borderColor: sm.color }]}
+              >
+                <Text style={[styles.summaryCount, { color: sm.color }]}>
+                  {count}
+                </Text>
                 <Text style={styles.summaryLabel}>{sm.label}</Text>
               </View>
             );
@@ -282,11 +327,20 @@ export default function SupportScreen({ navigation }: any) {
       </ScrollView>
 
       {/* Create Ticket Modal */}
-      <Modal visible={showForm} animationType="slide" presentationStyle="pageSheet">
+      <Modal
+        visible={showForm}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
         <SafeAreaView style={styles.modalSafe} edges={['top', 'bottom']}>
           <View style={styles.modalHeader}>
             <Text style={S.h3}>New Support Ticket</Text>
-            <TouchableOpacity onPress={() => { setShowForm(false); resetForm(); }}>
+            <TouchableOpacity
+              onPress={() => {
+                setShowForm(false);
+                resetForm();
+              }}
+            >
               <X size={22} color={C.black} />
             </TouchableOpacity>
           </View>
@@ -311,19 +365,28 @@ export default function SupportScreen({ navigation }: any) {
               />
 
               {/* Issue Type */}
-              <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Issue Type *</Text>
+              <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
+                Issue Type *
+              </Text>
               <TouchableOpacity
                 style={styles.selectBtn}
                 onPress={() => setShowIssueTypePicker(true)}
               >
-                <Text style={[styles.selectText, !issueType && { color: '#9CA3AF' }]}>
+                <Text
+                  style={[
+                    styles.selectText,
+                    !issueType && { color: '#9CA3AF' },
+                  ]}
+                >
                   {issueType ? issueLabel(issueType) : 'Select issue type'}
                 </Text>
                 <ChevronDown size={16} color={C.black} />
               </TouchableOpacity>
 
               {/* Priority */}
-              <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Priority</Text>
+              <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
+                Priority
+              </Text>
               <TouchableOpacity
                 style={styles.selectBtn}
                 onPress={() => setShowPriorityPicker(true)}
@@ -333,7 +396,9 @@ export default function SupportScreen({ navigation }: any) {
               </TouchableOpacity>
 
               {/* Description */}
-              <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Description *</Text>
+              <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
+                Description *
+              </Text>
               <TextInput
                 style={[S.input, styles.textArea]}
                 placeholder="Describe the issue in detail — steps to reproduce, error messages, affected records, etc."
@@ -380,12 +445,22 @@ export default function SupportScreen({ navigation }: any) {
                     styles.pickerRow,
                     item.value === issueType && styles.pickerRowActive,
                   ]}
-                  onPress={() => { setIssueType(item.value); setShowIssueTypePicker(false); }}
+                  onPress={() => {
+                    setIssueType(item.value);
+                    setShowIssueTypePicker(false);
+                  }}
                 >
-                  <Text style={[
-                    styles.pickerRowText,
-                    item.value === issueType && { color: C.primary, fontWeight: '700' },
-                  ]}>{item.label}</Text>
+                  <Text
+                    style={[
+                      styles.pickerRowText,
+                      item.value === issueType && {
+                        color: C.primary,
+                        fontWeight: '700',
+                      },
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
                 </TouchableOpacity>
               )}
             />
@@ -410,13 +485,28 @@ export default function SupportScreen({ navigation }: any) {
                   styles.pickerRow,
                   item.value === priority && styles.pickerRowActive,
                 ]}
-                onPress={() => { setPriority(item.value); setShowPriorityPicker(false); }}
+                onPress={() => {
+                  setPriority(item.value);
+                  setShowPriorityPicker(false);
+                }}
               >
-                <View style={[styles.priorityDot, { backgroundColor: PRIORITY_COLORS[item.value] }]} />
-                <Text style={[
-                  styles.pickerRowText,
-                  item.value === priority && { color: C.primary, fontWeight: '700' },
-                ]}>{item.label}</Text>
+                <View
+                  style={[
+                    styles.priorityDot,
+                    { backgroundColor: PRIORITY_COLORS[item.value] },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.pickerRowText,
+                    item.value === priority && {
+                      color: C.primary,
+                      fontWeight: '700',
+                    },
+                  ]}
+                >
+                  {item.label}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -424,22 +514,35 @@ export default function SupportScreen({ navigation }: any) {
       </Modal>
 
       {/* Ticket Detail Modal */}
-      <Modal visible={!!selectedTicket} animationType="slide" presentationStyle="pageSheet">
+      <Modal
+        visible={!!selectedTicket}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
         {selectedTicket && (
           <SafeAreaView style={styles.modalSafe} edges={['top', 'bottom']}>
             <View style={styles.modalHeader}>
               <View>
-                <Text style={styles.detailTicketNum}>{selectedTicket.ticketNumber}</Text>
-                <View style={[
-                  styles.statusBadge,
-                  {
-                    backgroundColor: STATUS_META[selectedTicket.status]?.bg,
-                    borderColor: STATUS_META[selectedTicket.status]?.color,
-                    alignSelf: 'flex-start',
-                    marginTop: 4,
-                  },
-                ]}>
-                  <Text style={[styles.statusText, { color: STATUS_META[selectedTicket.status]?.color }]}>
+                <Text style={styles.detailTicketNum}>
+                  {selectedTicket.ticketNumber}
+                </Text>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    {
+                      backgroundColor: STATUS_META[selectedTicket.status]?.bg,
+                      borderColor: STATUS_META[selectedTicket.status]?.color,
+                      alignSelf: 'flex-start',
+                      marginTop: 4,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.statusText,
+                      { color: STATUS_META[selectedTicket.status]?.color },
+                    ]}
+                  >
                     {STATUS_META[selectedTicket.status]?.label}
                   </Text>
                 </View>
@@ -448,29 +551,42 @@ export default function SupportScreen({ navigation }: any) {
                 <X size={22} color={C.black} />
               </TouchableOpacity>
             </View>
-            <ScrollView contentContainerStyle={styles.detailContent} showsVerticalScrollIndicator={false}>
+            <ScrollView
+              contentContainerStyle={styles.detailContent}
+              showsVerticalScrollIndicator={false}
+            >
               <Text style={S.h3}>{selectedTicket.subject}</Text>
 
               <View style={styles.detailGrid}>
                 <View style={styles.detailCell}>
                   <Text style={styles.detailCellLabel}>Issue Type</Text>
-                  <Text style={styles.detailCellValue}>{issueLabel(selectedTicket.issueType)}</Text>
+                  <Text style={styles.detailCellValue}>
+                    {issueLabel(selectedTicket.issueType)}
+                  </Text>
                 </View>
                 <View style={styles.detailCell}>
                   <Text style={styles.detailCellLabel}>Priority</Text>
-                  <Text style={[styles.detailCellValue, { color: PRIORITY_COLORS[selectedTicket.priority] }]}>
+                  <Text
+                    style={[
+                      styles.detailCellValue,
+                      { color: PRIORITY_COLORS[selectedTicket.priority] },
+                    ]}
+                  >
                     {priorityLabel(selectedTicket.priority)}
                   </Text>
                 </View>
                 <View style={styles.detailCell}>
                   <Text style={styles.detailCellLabel}>Submitted</Text>
-                  <Text style={styles.detailCellValue}>{formatDate(selectedTicket.createdAt)}</Text>
+                  <Text style={styles.detailCellValue}>
+                    {formatDate(selectedTicket.createdAt)}
+                  </Text>
                 </View>
                 {isAdmin && selectedTicket.submittedBy && (
                   <View style={styles.detailCell}>
                     <Text style={styles.detailCellLabel}>Submitted By</Text>
                     <Text style={styles.detailCellValue}>
-                      {selectedTicket.submittedBy.name || selectedTicket.submittedBy.email}
+                      {selectedTicket.submittedBy.name ||
+                        selectedTicket.submittedBy.email}
                     </Text>
                   </View>
                 )}
@@ -478,14 +594,20 @@ export default function SupportScreen({ navigation }: any) {
 
               <View style={S.divider} />
               <Text style={styles.detailCellLabel}>Description</Text>
-              <Text style={[S.body, { marginTop: 6, lineHeight: 22 }]}>{selectedTicket.description}</Text>
+              <Text style={[S.body, { marginTop: 6, lineHeight: 22 }]}>
+                {selectedTicket.description}
+              </Text>
 
               {selectedTicket.resolvedNote ? (
                 <View style={styles.resolvedNote}>
                   <CheckCircle2 size={16} color={C.success} />
                   <View style={{ flex: 1, marginLeft: 8 }}>
-                    <Text style={styles.resolvedNoteTitle}>Resolution Note</Text>
-                    <Text style={styles.resolvedNoteText}>{selectedTicket.resolvedNote}</Text>
+                    <Text style={styles.resolvedNoteTitle}>
+                      Resolution Note
+                    </Text>
+                    <Text style={styles.resolvedNoteText}>
+                      {selectedTicket.resolvedNote}
+                    </Text>
                   </View>
                 </View>
               ) : null}
@@ -493,10 +615,22 @@ export default function SupportScreen({ navigation }: any) {
               {/* Conversation History */}
               <View style={{ marginTop: 24 }}>
                 <Text style={styles.detailCellLabel}>Conversation Chat</Text>
-                <View style={{ borderWidth: 2, borderRadius: 8, borderColor: C.black, padding: 10, gap: 10, marginTop: 8, backgroundColor: '#F9FAFB' }}>
+                <View
+                  style={{
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderColor: C.black,
+                    padding: 10,
+                    gap: 10,
+                    marginTop: 8,
+                    backgroundColor: '#F9FAFB',
+                  }}
+                >
                   {/* Replies list */}
                   {freshTicket?.replies?.map((rep: any, idx: number) => {
-                    const isSelf = rep.role === 'employee' || rep.submittedBy === (user as any)?._id;
+                    const isSelf =
+                      rep.role === 'employee' ||
+                      rep.submittedBy === (user as any)?._id;
                     return (
                       <View
                         key={idx}
@@ -510,19 +644,53 @@ export default function SupportScreen({ navigation }: any) {
                           width: '85%',
                         }}
                       >
-                        <Text style={{ fontSize: 9, fontWeight: '800', color: isSelf ? C.primary : C.secondary, textTransform: 'uppercase' }}>
+                        <Text
+                          style={{
+                            fontSize: 9,
+                            fontWeight: '800',
+                            color: isSelf ? C.primary : C.secondary,
+                            textTransform: 'uppercase',
+                          }}
+                        >
                           {isSelf ? 'You' : 'Support / HR'}
                         </Text>
-                        <Text style={{ fontSize: 12, color: C.black, marginTop: 3, fontWeight: '500' }}>{rep.message}</Text>
-                        <Text style={{ fontSize: 8, color: C.textLight, marginTop: 4, fontFamily: 'monospace' }}>
-                          {new Date(rep.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: C.black,
+                            marginTop: 3,
+                            fontWeight: '500',
+                          }}
+                        >
+                          {rep.message}
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: 8,
+                            color: C.textLight,
+                            marginTop: 4,
+                            fontFamily: 'monospace',
+                          }}
+                        >
+                          {new Date(rep.createdAt).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
                         </Text>
                       </View>
                     );
                   })}
 
-                  {(!freshTicket?.replies || freshTicket.replies.length === 0) && (
-                    <Text style={{ fontSize: 11, color: C.textMuted, textAlign: 'center', paddingVertical: 10 }}>
+                  {(!freshTicket?.replies ||
+                    freshTicket.replies.length === 0) && (
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        color: C.textMuted,
+                        textAlign: 'center',
+                        paddingVertical: 10,
+                      }}
+                    >
                       No replies in this conversation yet.
                     </Text>
                   )}
@@ -535,7 +703,15 @@ export default function SupportScreen({ navigation }: any) {
                   <Text style={styles.detailCellLabel}>Send Reply</Text>
                   <View style={{ flexDirection: 'row', gap: 8 }}>
                     <TextInput
-                      style={[S.input, { flex: 1, minHeight: 44, marginVertical: 0, paddingVertical: 0 }]}
+                      style={[
+                        S.input,
+                        {
+                          flex: 1,
+                          minHeight: 44,
+                          marginVertical: 0,
+                          paddingVertical: 0,
+                        },
+                      ]}
                       value={replyMsg}
                       onChangeText={setReplyMsg}
                       placeholder="Type reply message..."
@@ -554,7 +730,10 @@ export default function SupportScreen({ navigation }: any) {
                       onPress={async () => {
                         if (!replyMsg.trim()) return;
                         try {
-                          await supportAPI.reply(freshTicket._id, replyMsg.trim());
+                          await supportAPI.reply(
+                            freshTicket._id,
+                            replyMsg.trim(),
+                          );
                           setReplyMsg('');
                           const res = await supportAPI.getOne(freshTicket._id);
                           setFreshTicket(res.data || res);
@@ -563,7 +742,16 @@ export default function SupportScreen({ navigation }: any) {
                         }
                       }}
                     >
-                      <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700', textTransform: 'uppercase' }}>Send</Text>
+                      <Text
+                        style={{
+                          color: '#fff',
+                          fontSize: 12,
+                          fontWeight: '700',
+                          textTransform: 'uppercase',
+                        }}
+                      >
+                        Send
+                      </Text>
                     </TouchableOpacity>
                   </View>
 
@@ -578,25 +766,38 @@ export default function SupportScreen({ navigation }: any) {
                       marginTop: 8,
                     }}
                     onPress={async () => {
-                      Alert.alert('Close Ticket', 'Are you sure you want to close this ticket?', [
-                        { text: 'Cancel', style: 'cancel' },
-                        {
-                          text: 'Close Ticket',
-                          style: 'destructive',
-                          onPress: async () => {
-                            try {
-                              await supportAPI.close(freshTicket._id);
-                              setSelectedTicket(null);
-                              load();
-                            } catch (err: any) {
-                              Alert.alert('Error', err.message);
-                            }
+                      Alert.alert(
+                        'Close Ticket',
+                        'Are you sure you want to close this ticket?',
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Close Ticket',
+                            style: 'destructive',
+                            onPress: async () => {
+                              try {
+                                await supportAPI.close(freshTicket._id);
+                                setSelectedTicket(null);
+                                load();
+                              } catch (err: any) {
+                                Alert.alert('Error', err.message);
+                              }
+                            },
                           },
-                        },
-                      ]);
+                        ],
+                      );
                     }}
                   >
-                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700', textTransform: 'uppercase' }}>Close Ticket</Text>
+                    <Text
+                      style={{
+                        color: '#fff',
+                        fontSize: 12,
+                        fontWeight: '700',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Close Ticket
+                    </Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -625,7 +826,12 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     gap: 5,
   },
-  newBtnText: { color: C.white, fontWeight: '700', fontSize: 12, textTransform: 'uppercase' },
+  newBtnText: {
+    color: C.white,
+    fontWeight: '700',
+    fontSize: 12,
+    textTransform: 'uppercase',
+  },
 
   // Summary
   summaryRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
@@ -642,7 +848,13 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   summaryCount: { fontSize: 20, fontWeight: '700' },
-  summaryLabel: { fontSize: 9, fontWeight: '700', textTransform: 'uppercase', color: '#6B7280', marginTop: 2 },
+  summaryLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    color: '#6B7280',
+    marginTop: 2,
+  },
 
   // Ticket card
   ticketCard: {
@@ -657,13 +869,47 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 10,
   },
-  ticketTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  ticketNumber: { fontFamily: 'monospace', fontSize: 11, color: '#6B7280', fontWeight: '700' },
-  statusBadge: { borderWidth: 2, borderRadius: 999, borderColor: '#0A0A0A', borderRightWidth: 4, borderBottomWidth: 4, paddingHorizontal: 8, paddingVertical: 2 },
+  ticketTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  ticketNumber: {
+    fontFamily: 'monospace',
+    fontSize: 11,
+    color: '#6B7280',
+    fontWeight: '700',
+  },
+  statusBadge: {
+    borderWidth: 2,
+    borderRadius: 999,
+    borderColor: '#0A0A0A',
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
   statusText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
-  ticketSubject: { fontSize: 14, fontWeight: '700', color: C.black, marginBottom: 4 },
-  ticketDesc: { fontSize: 12, color: '#6B7280', fontWeight: '500', lineHeight: 18, marginBottom: 8 },
-  ticketMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' },
+  ticketSubject: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: C.black,
+    marginBottom: 4,
+  },
+  ticketDesc: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+    lineHeight: 18,
+    marginBottom: 8,
+  },
+  ticketMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexWrap: 'wrap',
+  },
   priorityDot: { width: 8, height: 8, borderRadius: 4 },
   ticketMetaText: { fontSize: 11, color: '#6B7280', fontWeight: '500' },
   ticketMetaDot: { fontSize: 11, color: '#D1D5DB' },
@@ -681,7 +927,14 @@ const styles = StyleSheet.create({
     borderBottomColor: C.black,
   },
   formContent: { padding: 16, paddingBottom: 40 },
-  fieldLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, color: C.black, marginBottom: 6 },
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    color: C.black,
+    marginBottom: 6,
+  },
   selectBtn: {
     borderWidth: 2,
     borderRadius: 8,
@@ -699,11 +952,26 @@ const styles = StyleSheet.create({
   },
   selectText: { fontSize: 14, fontWeight: '500', color: C.black },
   textArea: { height: 130, paddingTop: 10 },
-  charCount: { fontSize: 11, color: '#9CA3AF', fontWeight: '500', textAlign: 'right', marginTop: 4 },
+  charCount: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontWeight: '500',
+    textAlign: 'right',
+    marginTop: 4,
+  },
 
   // Picker bottom sheet
-  pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  pickerSheet: { backgroundColor: C.white, borderTopWidth: 2, borderTopColor: C.black, maxHeight: '60%' },
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  pickerSheet: {
+    backgroundColor: C.white,
+    borderTopWidth: 2,
+    borderTopColor: C.black,
+    maxHeight: '60%',
+  },
   pickerHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -726,10 +994,37 @@ const styles = StyleSheet.create({
 
   // Detail modal
   detailContent: { padding: 16, paddingBottom: 40 },
-  detailTicketNum: { fontFamily: 'monospace', fontSize: 13, fontWeight: '700', color: '#6B7280' },
-  detailGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 16, marginBottom: 16 },
-  detailCell: { width: '47%', padding: 8, backgroundColor: '#FFFFFF', borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderColor: '#000000', borderRadius: 8 },
-  detailCellLabel: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase', color: '#000000', letterSpacing: 0.5, marginBottom: 3 },
+  detailTicketNum: {
+    fontFamily: 'monospace',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#6B7280',
+  },
+  detailGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  detailCell: {
+    width: '47%',
+    padding: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderColor: '#000000',
+    borderRadius: 8,
+  },
+  detailCellLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    color: '#000000',
+    letterSpacing: 0.5,
+    marginBottom: 3,
+  },
   detailCellValue: { fontSize: 14, fontWeight: '600', color: C.black },
   resolvedNote: {
     flexDirection: 'row',
@@ -744,6 +1039,18 @@ const styles = StyleSheet.create({
     padding: 12,
     marginTop: 16,
   },
-  resolvedNoteTitle: { fontSize: 12, fontWeight: '700', color: C.success, textTransform: 'uppercase', letterSpacing: 0.5 },
-  resolvedNoteText: { fontSize: 13, color: '#166534', fontWeight: '500', marginTop: 4, lineHeight: 20 },
+  resolvedNoteTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: C.success,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  resolvedNoteText: {
+    fontSize: 13,
+    color: '#166534',
+    fontWeight: '500',
+    marginTop: 4,
+    lineHeight: 20,
+  },
 });

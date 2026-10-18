@@ -34,7 +34,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { C } from '../theme';
 import RNPrint from 'react-native-print';
 
-const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string }> = {
+const STATUS_CONFIG: Record<
+  string,
+  { color: string; bg: string; label: string }
+> = {
   draft: { color: '#6B7280', bg: '#F9FAFB', label: 'Draft' },
   sent: { color: C.primary, bg: '#EFF6FF', label: 'Sent' },
   accepted: { color: C.success, bg: '#F0FDF4', label: 'Accepted' },
@@ -42,7 +45,13 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string; label: string }
   expired: { color: C.warning, bg: '#FFF7ED', label: 'Expired' },
 };
 
-const EMP_TYPES = ['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance'];
+const EMP_TYPES = [
+  'Full-time',
+  'Part-time',
+  'Contract',
+  'Internship',
+  'Freelance',
+];
 
 const EMPTY_FORM = {
   candidateName: '',
@@ -132,7 +141,11 @@ export default function OfferLettersScreen() {
     }
   }, []);
 
-  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -170,7 +183,10 @@ export default function OfferLettersScreen() {
     setSaving(true);
     try {
       if (editing) {
-        await offerLetterAPI.update(editing._id, { ...form, ctc: Number(form.ctc) || 0 });
+        await offerLetterAPI.update(editing._id, {
+          ...form,
+          ctc: Number(form.ctc) || 0,
+        });
       } else {
         await offerLetterAPI.create({ ...form, ctc: Number(form.ctc) || 0 });
       }
@@ -232,21 +248,36 @@ export default function OfferLettersScreen() {
     return (
       <View style={s.card}>
         <View style={s.cardTop}>
-          <View style={s.cardIcon}><FileText size={18} color={C.primary} /></View>
+          <View style={s.cardIcon}>
+            <FileText size={18} color={C.primary} />
+          </View>
           <View style={{ flex: 1, marginLeft: 12 }}>
             <Text style={s.cardName}>{item.candidateName}</Text>
-            <Text style={s.cardSub}>{item.designation}{item.department ? ` · ${item.department}` : ''}</Text>
+            <Text style={s.cardSub}>
+              {item.designation}
+              {item.department ? ` · ${item.department}` : ''}
+            </Text>
             {item.joiningDate && (
               <Text style={s.cardDate}>
-                Joining: {new Date(item.joiningDate).toLocaleDateString('en-IN')}
+                Joining:{' '}
+                {new Date(item.joiningDate).toLocaleDateString('en-IN')}
               </Text>
             )}
             {item.ctc > 0 && (
-              <Text style={s.cardDate}>CTC: ₹{Number(item.ctc).toLocaleString('en-IN')}/mo</Text>
+              <Text style={s.cardDate}>
+                CTC: ₹{Number(item.ctc).toLocaleString('en-IN')}/mo
+              </Text>
             )}
           </View>
-          <View style={[s.badge, { backgroundColor: cfg.bg, borderColor: cfg.color }]}>
-            <Text style={[s.badgeText, { color: cfg.color }]}>{cfg.label.toUpperCase()}</Text>
+          <View
+            style={[
+              s.badge,
+              { backgroundColor: cfg.bg, borderColor: cfg.color },
+            ]}
+          >
+            <Text style={[s.badgeText, { color: cfg.color }]}>
+              {cfg.label.toUpperCase()}
+            </Text>
           </View>
         </View>
 
@@ -268,7 +299,10 @@ export default function OfferLettersScreen() {
 
           {isHR && (
             <>
-              <TouchableOpacity style={s.actionBtn} onPress={() => openEdit(item)}>
+              <TouchableOpacity
+                style={s.actionBtn}
+                onPress={() => openEdit(item)}
+              >
                 <Pencil size={12} color={C.primary} />
                 <Text style={s.actionBtnText}>Edit</Text>
               </TouchableOpacity>
@@ -277,7 +311,9 @@ export default function OfferLettersScreen() {
                 onPress={() => handleDelete(item._id, item.candidateName)}
               >
                 <Trash2 size={12} color={C.danger} />
-                <Text style={[s.actionBtnText, { color: C.danger }]}>Delete</Text>
+                <Text style={[s.actionBtnText, { color: C.danger }]}>
+                  Delete
+                </Text>
               </TouchableOpacity>
             </>
           )}
@@ -289,7 +325,10 @@ export default function OfferLettersScreen() {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <View style={s.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 4, marginRight: 4 }}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{ padding: 4, marginRight: 4 }}
+        >
           <ChevronLeft size={22} color={C.black} />
         </TouchableOpacity>
         <FileText size={20} color={C.primary} />
@@ -304,36 +343,67 @@ export default function OfferLettersScreen() {
       </View>
 
       {loading ? (
-        <View style={s.loader}><ActivityIndicator size="large" color={C.primary} /></View>
+        <View style={s.loader}>
+          <ActivityIndicator size="large" color={C.primary} />
+        </View>
       ) : (
         <FlatList
           data={letters}
           keyExtractor={i => i._id}
           renderItem={renderItem}
           contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 32 }}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={C.primary}
+            />
+          }
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={s.empty}>
               <FileText size={40} color="#D1D5DB" />
               <Text style={s.emptyText}>No offer letters yet</Text>
-              {isHR && <Text style={s.emptyHint}>Tap "New" to create an offer letter</Text>}
+              {isHR && (
+                <Text style={s.emptyHint}>
+                  Tap "New" to create an offer letter
+                </Text>
+              )}
             </View>
           }
         />
       )}
 
       {/* Create / Edit Modal */}
-      <Modal visible={showForm} animationType="slide" presentationStyle="formSheet">
+      <Modal
+        visible={showForm}
+        animationType="slide"
+        presentationStyle="formSheet"
+      >
         <SafeAreaView style={s.safe} edges={['top']}>
           <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>{editing ? 'Edit Offer Letter' : 'New Offer Letter'}</Text>
-            <TouchableOpacity onPress={() => setShowForm(false)}><X size={22} color={C.black} /></TouchableOpacity>
+            <Text style={s.modalTitle}>
+              {editing ? 'Edit Offer Letter' : 'New Offer Letter'}
+            </Text>
+            <TouchableOpacity onPress={() => setShowForm(false)}>
+              <X size={22} color={C.black} />
+            </TouchableOpacity>
           </View>
-          <ScrollView contentContainerStyle={{ padding: 20, gap: 16 }} keyboardShouldPersistTaps="handled">
-            {F('Candidate Name *', 'candidateName', { placeholder: 'Full name' })}
-            {F('Email', 'candidateEmail', { placeholder: 'candidate@email.com', keyboardType: 'email-address', autoCapitalize: 'none' })}
-            {F('Designation *', 'designation', { placeholder: 'e.g. Software Engineer' })}
+          <ScrollView
+            contentContainerStyle={{ padding: 20, gap: 16 }}
+            keyboardShouldPersistTaps="handled"
+          >
+            {F('Candidate Name *', 'candidateName', {
+              placeholder: 'Full name',
+            })}
+            {F('Email', 'candidateEmail', {
+              placeholder: 'candidate@email.com',
+              keyboardType: 'email-address',
+              autoCapitalize: 'none',
+            })}
+            {F('Designation *', 'designation', {
+              placeholder: 'e.g. Software Engineer',
+            })}
             {F('Department', 'department', { placeholder: 'e.g. Engineering' })}
 
             <View style={{ flexDirection: 'row', gap: 12 }}>
@@ -341,11 +411,16 @@ export default function OfferLettersScreen() {
                 <DatePickerField
                   label="Joining Date"
                   value={form.joiningDate}
-                  onChange={v => setForm((p: any) => ({ ...p, joiningDate: v }))}
+                  onChange={v =>
+                    setForm((p: any) => ({ ...p, joiningDate: v }))
+                  }
                 />
               </View>
               <View style={{ flex: 1 }}>
-                {F('Monthly CTC (₹)', 'ctc', { keyboardType: 'numeric', placeholder: '50000' })}
+                {F('Monthly CTC (₹)', 'ctc', {
+                  keyboardType: 'numeric',
+                  placeholder: '50000',
+                })}
               </View>
             </View>
 
@@ -360,15 +435,24 @@ export default function OfferLettersScreen() {
             </View>
 
             {F('Work Location', 'location', { placeholder: 'e.g. Mumbai' })}
-            {F('Validity (days)', 'validityDays', { keyboardType: 'numeric', placeholder: '7' })}
+            {F('Validity (days)', 'validityDays', {
+              keyboardType: 'numeric',
+              placeholder: '7',
+            })}
 
-            <TouchableOpacity style={s.submitBtn} onPress={handleSave} disabled={saving}>
+            <TouchableOpacity
+              style={s.submitBtn}
+              onPress={handleSave}
+              disabled={saving}
+            >
               {saving ? (
                 <ActivityIndicator color={C.white} />
               ) : (
                 <>
                   <Send size={16} color={C.white} />
-                  <Text style={s.submitBtnText}>{editing ? 'Update Offer Letter' : 'Create Offer Letter'}</Text>
+                  <Text style={s.submitBtnText}>
+                    {editing ? 'Update Offer Letter' : 'Create Offer Letter'}
+                  </Text>
                 </>
               )}
             </TouchableOpacity>
@@ -382,15 +466,30 @@ export default function OfferLettersScreen() {
           <View style={s.pickerSheet}>
             <View style={s.pickerSheetHeader}>
               <Text style={s.pickerSheetTitle}>Employment Type</Text>
-              <TouchableOpacity onPress={() => setShowEmpTypePicker(false)}><X size={20} color={C.black} /></TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowEmpTypePicker(false)}>
+                <X size={20} color={C.black} />
+              </TouchableOpacity>
             </View>
             {EMP_TYPES.map(t => (
               <TouchableOpacity
                 key={t}
-                style={[s.sheetOption, form.employmentType === t && s.sheetOptionActive]}
-                onPress={() => { setForm((p: any) => ({ ...p, employmentType: t })); setShowEmpTypePicker(false); }}
+                style={[
+                  s.sheetOption,
+                  form.employmentType === t && s.sheetOptionActive,
+                ]}
+                onPress={() => {
+                  setForm((p: any) => ({ ...p, employmentType: t }));
+                  setShowEmpTypePicker(false);
+                }}
               >
-                <Text style={[s.sheetOptionText, form.employmentType === t && { color: C.primary }]}>{t}</Text>
+                <Text
+                  style={[
+                    s.sheetOptionText,
+                    form.employmentType === t && { color: C.primary },
+                  ]}
+                >
+                  {t}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -428,7 +527,12 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  addBtnText: { color: C.white, fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
+  addBtnText: {
+    color: C.white,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
   emptyText: { fontSize: 14, fontWeight: '700', color: '#9CA3AF' },
@@ -451,15 +555,32 @@ const s = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A',
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.black,
   },
   cardName: { fontSize: 14, fontWeight: '700', color: C.black },
   cardSub: { fontSize: 11, color: C.primary, fontWeight: '700', marginTop: 2 },
   cardDate: { fontSize: 12, color: '#6B7280', marginTop: 2 },
-  badge: { borderWidth: 2, borderRadius: 999, borderColor: '#0A0A0A', borderRightWidth: 4, borderBottomWidth: 4, paddingHorizontal: 8, paddingVertical: 3 },
-  badgeText: { textTransform: 'uppercase', fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+  badge: {
+    borderWidth: 2,
+    borderRadius: 999,
+    borderColor: '#0A0A0A',
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  badgeText: {
+    textTransform: 'uppercase',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
   cardActions: { flexDirection: 'row', gap: 8, paddingTop: 10 },
   actionBtn: {
     flexDirection: 'row',
@@ -475,7 +596,12 @@ const s = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
-  actionBtnText: { color: C.primary, fontSize: 11, fontWeight: '700', textTransform: 'uppercase' },
+  actionBtnText: {
+    color: C.primary,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -486,7 +612,14 @@ const s = StyleSheet.create({
     borderBottomColor: C.black,
   },
   modalTitle: { fontSize: 18, fontWeight: '700', color: C.black },
-  fieldLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', color: C.black, marginBottom: 6, letterSpacing: 0.5 },
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    color: C.black,
+    marginBottom: 6,
+    letterSpacing: 0.5,
+  },
   fieldInput: {
     borderWidth: 2,
     borderRadius: 8,
@@ -531,12 +664,37 @@ const s = StyleSheet.create({
     gap: 8,
     marginTop: 8,
   },
-  submitBtnText: { color: C.white, fontWeight: '700', fontSize: 14, textTransform: 'uppercase' },
-  pickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  pickerSheet: { backgroundColor: C.white, borderTopWidth: 2, borderTopColor: C.black },
-  pickerSheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 2, borderBottomColor: C.black },
+  submitBtnText: {
+    color: C.white,
+    fontWeight: '700',
+    fontSize: 14,
+    textTransform: 'uppercase',
+  },
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  pickerSheet: {
+    backgroundColor: C.white,
+    borderTopWidth: 2,
+    borderTopColor: C.black,
+  },
+  pickerSheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
+  },
   pickerSheetTitle: { fontSize: 16, fontWeight: '700', color: C.black },
-  sheetOption: { paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 2, borderBottomColor: C.black },
+  sheetOption: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
+  },
   sheetOptionActive: { backgroundColor: '#EFF6FF' },
   sheetOptionText: { fontSize: 15, fontWeight: '600', color: C.black },
 });

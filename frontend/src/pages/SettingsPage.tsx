@@ -10,7 +10,6 @@ import {
   Landmark,
   Loader2,
   Save,
-  Plus,
   Trash2,
   CheckCircle,
   AlertCircle,
@@ -354,7 +353,8 @@ function PhoneVerifyPanel() {
     <div className="p-6 space-y-6 max-w-lg">
       <div>
         <h3 className="text-lg font-bold text-black flex items-center gap-2">
-          <WhatsAppIcon className="w-5 h-5 text-[#25D366]" /> WhatsApp Verification
+          <WhatsAppIcon className="w-5 h-5 text-[#25D366]" /> WhatsApp
+          Verification
         </h3>
         <p className="text-sm text-gray-500 mt-1">
           Verify your WhatsApp number to be able to reset your password with a
@@ -2564,7 +2564,9 @@ export default function SettingsPage() {
               )}
             </div>
 
-            {!["my_profile", "two_factor", "phone_verify"].includes(activeTab) && (
+            {!["my_profile", "two_factor", "phone_verify"].includes(
+              activeTab,
+            ) && (
               <div className="border-t-2 border-black p-4 flex justify-end bg-gray-50/50">
                 <button
                   onClick={handleSave}

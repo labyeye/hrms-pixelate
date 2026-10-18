@@ -245,7 +245,7 @@ const removeNfcCard = asyncHandler(async (req, res) => {
 
 const registerDevice = asyncHandler(async (req, res) => {
   const { activationCode, model, mac, ip } = req.body;
-  if (!activationCode) {
+  if (typeof activationCode !== "string" || !activationCode) {
     res.status(400);
     throw new Error("activationCode is required");
   }
@@ -306,6 +306,10 @@ const getDeviceInfo = asyncHandler(async (req, res) => {
 
 const recordBiometric = asyncHandler(async (req, res) => {
   const { deviceToken, method, nfcUid, employeeId, type } = req.body;
+  if (typeof deviceToken !== "string" || !deviceToken) {
+    res.status(400);
+    throw new Error("deviceToken is required");
+  }
 
   const device = await BiometricDevice.findOne({
     deviceToken,
@@ -507,7 +511,9 @@ const recordBiometric = asyncHandler(async (req, res) => {
           );
       }
     }
-  } catch {}
+  } catch (err) {
+    console.error("[notify] failed:", err.message);
+  }
 
   try {
     const timeStr = now.toLocaleTimeString("en-IN", {
@@ -532,7 +538,9 @@ const recordBiometric = asyncHandler(async (req, res) => {
         url: "/dashboard",
       });
     }
-  } catch {}
+  } catch (err) {
+    console.error("[notify] failed:", err.message);
+  }
 
   res.json({
     success: true,
@@ -1070,7 +1078,9 @@ const faceAttendance = asyncHandler(async (req, res) => {
           );
       }
     }
-  } catch {}
+  } catch (err) {
+    console.error("[notify] failed:", err.message);
+  }
 
   res.json({
     success: true,
@@ -1227,6 +1237,10 @@ const getDeviceEmployees = asyncHandler(async (req, res) => {
 
 const enrollFaceFromDevice = asyncHandler(async (req, res) => {
   const { deviceToken, employeeId, descriptor } = req.body;
+  if (typeof deviceToken !== "string" || !deviceToken) {
+    res.status(400);
+    throw new Error("deviceToken is required");
+  }
 
   const device = await BiometricDevice.findOne({ deviceToken, isActive: true });
   if (!device) {

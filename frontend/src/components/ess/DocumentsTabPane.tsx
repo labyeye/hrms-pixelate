@@ -5,12 +5,10 @@ import {
   Upload,
   Trash2,
   Download,
-  Eye,
   FileText,
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface Props {
   employee: any;

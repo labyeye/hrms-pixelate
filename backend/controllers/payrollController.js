@@ -15,14 +15,6 @@ const PAYROLL_STATUS = ["processed", "paid", "cancelled"];
 
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000; // UTC+5:30
 
-// Returns minutes-since-midnight in IST for any Date or ISO string.
-// All shift times (e.g. "09:00") are IST — so we compare apples-to-apples.
-function istMinutes(date) {
-  const d = new Date(date);
-  const ist = new Date(d.getTime() + IST_OFFSET_MS);
-  return ist.getUTCHours() * 60 + ist.getUTCMinutes();
-}
-
 const getPayrolls = asyncHandler(async (req, res) => {
   const { page, limit, skip } = safePagination(req.query);
   const { month, year, employeeId, status } = req.query;
@@ -148,21 +140,39 @@ const processPayroll = asyncHandler(async (req, res) => {
   }
 
   const payrolls = [];
+  const skipped = []; // reported back so HR sees who got no payroll and why
+
+  // One query per collection for the whole run (was 4 sequential queries per employee).
+  const empIdList = employees.map((e) => e._id);
+  const [existingRows, attRows, txRows, loanRows] = await Promise.all([
+    Payroll.find({ employee: { $in: empIdList }, month: m, year: y }).select("employee").lean(),
+    Attendance.find({ employee: { $in: empIdList }, date: { $gte: startDate, $lte: endDate } }),
+    Transaction.find({ employee: { $in: empIdList }, company: req.user.company, status: "pending", date: { $gte: startDate, $lte: endDate } }),
+    Loan.find({ employee: { $in: empIdList }, company: req.user.company, status: "active" }),
+  ]);
+  const groupByEmployee = (rows) => {
+    const map = new Map();
+    for (const r of rows) {
+      const k = String(r.employee);
+      if (!map.has(k)) map.set(k, []);
+      map.get(k).push(r);
+    }
+    return map;
+  };
+  const alreadyProcessed = new Set(existingRows.map((r) => String(r.employee)));
+  const attByEmp = groupByEmployee(attRows);
+  const txByEmp = groupByEmployee(txRows);
+  const loansByEmp = groupByEmployee(loanRows);
 
   for (const emp of employees) {
-    const existing = await Payroll.findOne({
-      employee: emp._id,
-      month: m,
-      year: y,
-    });
-    if (existing) continue;
+    if (alreadyProcessed.has(String(emp._id))) continue;
 
-    const attendances = await Attendance.find({
-      employee: emp._id,
-      date: { $gte: startDate, $lte: endDate },
-    });
+    const attendances = attByEmp.get(String(emp._id)) || [];
 
-    if (attendances.length === 0) continue;
+    if (attendances.length === 0) {
+      skipped.push({ employee: emp._id, name: `${emp.firstName} ${emp.lastName}`, reason: "No attendance records in the pay period" });
+      continue;
+    }
 
     const workDaysPerWeek = emp.workDaysPerWeek ?? 6;
     const workingDays = getWorkingDays(startDate, endDate, workDaysPerWeek);
@@ -339,12 +349,7 @@ const processPayroll = asyncHandler(async (req, res) => {
 
     const earlyCheckoutDeduction = 0;
 
-    const pendingTx = await Transaction.find({
-      employee: emp._id,
-      company: req.user.company,
-      status: "pending",
-      date: { $gte: startDate, $lte: endDate },
-    });
+    const pendingTx = txByEmp.get(String(emp._id)) || [];
 
     let totalAllowances = 0;
     let totalPenalties = 0;
@@ -361,11 +366,7 @@ const processPayroll = asyncHandler(async (req, res) => {
       txIds.push(tx._id);
     }
 
-    const activeLoans = await Loan.find({
-      employee: emp._id,
-      company: req.user.company,
-      status: "active",
-    });
+    const activeLoans = loansByEmp.get(String(emp._id)) || [];
 
     let loanDeduction = 0;
     const loanUpdates = [];
@@ -467,7 +468,7 @@ const processPayroll = asyncHandler(async (req, res) => {
   if (payrolls.length) {
     await Payroll.insertMany(payrolls);
   }
-  res.json({ success: true, message: `${payrolls.length} payrolls processed` });
+  res.json({ success: true, message: `${payrolls.length} payrolls processed`, skipped });
 });
 
 const updatePayroll = asyncHandler(async (req, res) => {
@@ -918,8 +919,6 @@ async function buildPayrollPreviews(companyId, m, y, employeeIds) {
       lateDeduction += parseFloat(ruleFine.toFixed(2));
     }
 
-    const txMonthStart = startDate;
-    const txMonthEnd = endDate;
     const pendingTx = txByEmp.get(String(emp._id)) || [];
     let totalAllowances = 0,
       totalPenalties = 0,

@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const OfferLetter = require("../models/OfferLetter");
+const bodyFor = require("../utils/bodyFor");
 
 const DEFAULT_TEMPLATES = [
   {
@@ -38,7 +39,7 @@ const getOfferLetters = asyncHandler(async (req, res) => {
 
 const createOfferLetter = asyncHandler(async (req, res) => {
   const letter = await OfferLetter.create({
-    ...req.body,
+    ...bodyFor(OfferLetter, req.body),
     company: req.user.company,
   });
   res.status(201).json({ success: true, data: letter });
@@ -47,7 +48,7 @@ const createOfferLetter = asyncHandler(async (req, res) => {
 const updateOfferLetter = asyncHandler(async (req, res) => {
   const letter = await OfferLetter.findOneAndUpdate(
     { _id: req.params.id, company: req.user.company },
-    req.body,
+    bodyFor(OfferLetter, req.body),
     { new: true },
   );
   if (!letter)

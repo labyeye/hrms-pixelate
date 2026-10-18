@@ -12,7 +12,6 @@ if (process.env.NODE_ENV === "production" && !process.env.ALLOWED_ORIGINS) {
 }
 
 const express = require("express");
-const path = require("path");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
@@ -20,6 +19,8 @@ const rateLimit = require("express-rate-limit");
 const connectDB = require("./config/db");
 const timeout = require("connect-timeout");
 const errorHandler = require("./middleware/errorHandler");
+const sanitizeRequest = require("./middleware/sanitize");
+const compression = require("compression");
 
 connectDB();
 
@@ -29,6 +30,7 @@ startAttendanceAutoMarkJob();
 const app = express();
 
 app.set("trust proxy", 1);
+app.use(compression());
 
 app.use(
   helmet({
@@ -67,9 +69,28 @@ app.use(
   }),
 );
 app.use(timeout("30s"));
-app.use(morgan("dev"));
-app.use(express.json({ limit: "5mb" }));
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// Access log without query strings and with device tokens masked (they travel in the URL and must not hit the logs).
+app.use(
+  morgan((tokens, req, res) =>
+    [
+      tokens.method(req, res),
+      req.originalUrl.split("?")[0].replace(/(\/device\/)[^/]+/, "$1***"),
+      tokens.status(req, res),
+      `${tokens["response-time"](req, res)}ms`,
+    ].join(" "),
+  ),
+);
+// rawBody is kept for the WhatsApp webhook so its X-Hub-Signature-256 can be verified.
+app.use(
+  express.json({
+    limit: "5mb",
+    verify: (req, _res, buf) => {
+      if (req.originalUrl.includes("whatsapp-webhook")) req.rawBody = buf;
+    },
+  }),
+);
+app.use(sanitizeRequest); // strips $operators / dotted keys (NoSQL injection)
+app.use("/uploads", ...require("./middleware/publicUploads")()); // images only; KYC/vault files need the authenticated endpoints
 
 app.use("/iclock", require("./routes/admsRoutes"));
 app.use("/internal/stats", require("./routes/statsRoutes"));

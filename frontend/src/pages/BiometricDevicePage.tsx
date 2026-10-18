@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
 import { useParams } from "react-router-dom";
 import { biometricAPI } from "@/services/api";
@@ -12,7 +12,6 @@ import {
   Loader2,
   Wifi,
   WifiOff,
-  Clock,
   LogIn,
   LogOut,
   Zap,

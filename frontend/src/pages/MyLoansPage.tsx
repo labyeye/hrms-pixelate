@@ -189,7 +189,13 @@ export default function MyLoansPage() {
               color: "#024BAB",
             },
           ].map(({ label, value, icon: Icon, color }) => (
-            <StatCard key={label} label={label} value={value} icon={Icon} color={color} />
+            <StatCard
+              key={label}
+              label={label}
+              value={value}
+              icon={Icon}
+              color={color}
+            />
           ))}
         </div>
 

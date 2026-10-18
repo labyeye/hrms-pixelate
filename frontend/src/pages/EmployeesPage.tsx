@@ -138,8 +138,8 @@ interface EmployeeFormData {
   qualification: string;
   totalExperience: string;
   previousCompany: string;
-  role: string;
-  headOfDepartment: string;
+  role?: string; // undefined while editing = keep the current role
+  headOfDepartment?: string;
 }
 
 const EMPTY_FORM: EmployeeFormData = {
@@ -243,6 +243,7 @@ export default function EmployeesPage() {
   const [docFiles, setDocFiles] = useState<{
     aadhaarDoc?: File;
     panDoc?: File;
+    resumeDoc?: File;
   }>({});
   const [faceEnrolling, setFaceEnrolling] = useState(false);
   const faceEnrollInputRef = useRef<HTMLInputElement>(null);
@@ -3597,40 +3598,43 @@ export default function EmployeesPage() {
                     (viewEmp as any).resumeDoc) && (
                     <div className="pt-2 flex flex-wrap gap-2">
                       {(viewEmp as any).panDoc && (
-                        <a
-                          href={employeeAPI.getDocumentUrl(viewEmp._id, "pan")}
-                          target="_blank"
-                          rel="noreferrer"
+                        <button
+                          type="button"
+                          onClick={() =>
+                            employeeAPI
+                              .openDocument(viewEmp._id, "pan")
+                              .catch((e: Error) => window.alert(e.message))
+                          }
                           className="text-[10px] font-bold border-2 border-[#024BAB] text-[#024BAB] px-2 py-1 hover:bg-[#024BAB]/10"
                         >
                           📄 PAN Doc
-                        </a>
+                        </button>
                       )}
                       {(viewEmp as any).aadhaarDoc && (
-                        <a
-                          href={employeeAPI.getDocumentUrl(
-                            viewEmp._id,
-                            "aadhaar",
-                          )}
-                          target="_blank"
-                          rel="noreferrer"
+                        <button
+                          type="button"
+                          onClick={() =>
+                            employeeAPI
+                              .openDocument(viewEmp._id, "aadhaar")
+                              .catch((e: Error) => window.alert(e.message))
+                          }
                           className="text-[10px] font-bold border-2 border-[#024BAB] text-[#024BAB] px-2 py-1 hover:bg-[#024BAB]/10"
                         >
                           📄 Aadhaar Doc
-                        </a>
+                        </button>
                       )}
                       {(viewEmp as any).resumeDoc && (
-                        <a
-                          href={employeeAPI.getDocumentUrl(
-                            viewEmp._id,
-                            "resume",
-                          )}
-                          target="_blank"
-                          rel="noreferrer"
+                        <button
+                          type="button"
+                          onClick={() =>
+                            employeeAPI
+                              .openDocument(viewEmp._id, "resume")
+                              .catch((e: Error) => window.alert(e.message))
+                          }
                           className="text-[10px] font-bold border-2 border-[#00C48C] text-[#00C48C] px-2 py-1 hover:bg-[#00C48C]/10"
                         >
                           📄 Resume
-                        </a>
+                        </button>
                       )}
                     </div>
                   )}

@@ -20,7 +20,10 @@ type Step = 'email' | 'choose' | 'code' | 'done';
 
 // Only methods the account has actually set up are offered (see /methods).
 const METHOD_INFO: Record<string, { label: string; desc: string }> = {
-  email: { label: 'Email link', desc: 'Get a password reset link in your inbox' },
+  email: {
+    label: 'Email link',
+    desc: 'Get a password reset link in your inbox',
+  },
   whatsapp: {
     label: 'WhatsApp code',
     desc: 'Get a 6-digit code on your verified WhatsApp number',
@@ -121,23 +124,23 @@ export default function ForgotPasswordScreen({ navigation }: any) {
     step === 'email'
       ? 'Forgot password?'
       : step === 'choose'
-      ? 'How do you want to reset it?'
-      : step === 'code'
-      ? method === 'whatsapp'
-        ? 'Enter WhatsApp code'
-        : 'Enter authenticator code'
-      : 'All set';
+        ? 'How do you want to reset it?'
+        : step === 'code'
+          ? method === 'whatsapp'
+            ? 'Enter WhatsApp code'
+            : 'Enter authenticator code'
+          : 'All set';
 
   const sub =
     step === 'email'
       ? 'Enter the email address you registered with to see how you can reset your password.'
       : step === 'choose'
-      ? 'Choose one of the methods set up on your account.'
-      : step === 'code'
-      ? method === 'whatsapp'
-        ? 'We sent a 6-digit code to your verified WhatsApp number.'
-        : 'Open your authenticator app and enter the current 6-digit code (or a backup code).'
-      : '';
+        ? 'Choose one of the methods set up on your account.'
+        : step === 'code'
+          ? method === 'whatsapp'
+            ? 'We sent a 6-digit code to your verified WhatsApp number.'
+            : 'Open your authenticator app and enter the current 6-digit code (or a backup code).'
+          : '';
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -209,7 +212,11 @@ export default function ForgotPasswordScreen({ navigation }: any) {
                         />
                       </View>
                     </View>
-                    <Primary title="Continue" loading={loading} onPress={onContinue} />
+                    <Primary
+                      title="Continue"
+                      loading={loading}
+                      onPress={onContinue}
+                    />
                   </>
                 )}
 
@@ -224,7 +231,9 @@ export default function ForgotPasswordScreen({ navigation }: any) {
                       <Text style={styles.methodLabel}>
                         {METHOD_INFO[m]?.label ?? m}
                       </Text>
-                      <Text style={styles.methodDesc}>{METHOD_INFO[m]?.desc}</Text>
+                      <Text style={styles.methodDesc}>
+                        {METHOD_INFO[m]?.desc}
+                      </Text>
                     </TouchableOpacity>
                   ))}
 
@@ -238,7 +247,9 @@ export default function ForgotPasswordScreen({ navigation }: any) {
                       }
                       value={code}
                       onChangeText={setCode}
-                      keyboardType={method === 'whatsapp' ? 'number-pad' : 'default'}
+                      keyboardType={
+                        method === 'whatsapp' ? 'number-pad' : 'default'
+                      }
                       placeholder="123456"
                     />
                     <Field
@@ -276,8 +287,8 @@ export default function ForgotPasswordScreen({ navigation }: any) {
                     {step === 'code'
                       ? 'Choose a different method'
                       : step === 'choose'
-                      ? 'Back'
-                      : 'Back to Sign In'}
+                        ? 'Back'
+                        : 'Back to Sign In'}
                   </Text>
                 </TouchableOpacity>
               </>
@@ -299,7 +310,11 @@ function Primary({
   onPress: () => void;
 }) {
   return (
-    <TouchableOpacity style={styles.btnPrimary} onPress={onPress} disabled={loading}>
+    <TouchableOpacity
+      style={styles.btnPrimary}
+      onPress={onPress}
+      disabled={loading}
+    >
       {loading ? (
         <ActivityIndicator color={C.white} />
       ) : (
@@ -339,7 +354,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     lineHeight: 20,
   },
-  errorText: { color: C.danger, fontWeight: '600', fontSize: 13, marginBottom: 12 },
+  errorText: {
+    color: C.danger,
+    fontWeight: '600',
+    fontSize: 13,
+    marginBottom: 12,
+  },
   field: { marginBottom: 16 },
   label: {
     fontSize: 12,
@@ -416,7 +436,11 @@ const styles = StyleSheet.create({
   successIcon: {
     width: 64,
     height: 64,
-    borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A',
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.success,
     backgroundColor: '#DCFCE7',

@@ -9,7 +9,6 @@ import {
   Trash2,
   X,
   Search,
-  FileText,
   File,
   IdCard,
   Award,

@@ -52,7 +52,9 @@ export async function requestNotificationPermission(): Promise<boolean> {
   return false;
 }
 
-export async function setupPushNotifications(onNotification?: (data: any) => void) {
+export async function setupPushNotifications(
+  onNotification?: (data: any) => void,
+) {
   // Uncomment after installing @react-native-firebase/messaging:
 
   // const granted = await requestNotificationPermission();
@@ -87,5 +89,7 @@ export async function setupPushNotifications(onNotification?: (data: any) => voi
   //   onNotification?.(initialNotification.data);
   // }
 
-  console.log('[Push] FCM not configured yet — install @react-native-firebase packages first');
+  console.log(
+    '[Push] FCM not configured yet — install @react-native-firebase packages first',
+  );
 }

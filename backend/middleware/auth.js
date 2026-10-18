@@ -14,11 +14,20 @@ const protect = asyncHandler(async (req, res, next) => {
     throw new Error("Not authorized, no token");
   }
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] });
+    if (decoded.purpose) {
+      res.status(401); // 2FA pending tokens are not sessions
+      throw new Error("Not authorized");
+    }
     req.user = await User.findById(decoded.id).select("-password");
     if (!req.user || req.user.status === "inactive") {
       res.status(401);
       throw new Error("Not authorized");
+    }
+    // A password change/reset bumps tokenVersion, which retires every token issued before it.
+    if ((decoded.tv || 0) !== (req.user.tokenVersion || 0)) {
+      res.status(401);
+      throw new Error("Session expired, please log in again");
     }
     next();
   } catch (err) {
@@ -37,7 +46,11 @@ const protectCompany = asyncHandler(async (req, res, next) => {
     throw new Error("Not authorized, no token");
   }
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] });
+    if (decoded.purpose) {
+      res.status(401);
+      throw new Error("Not authorized");
+    }
     req.company = await Company.findById(decoded.id).select("-password");
     if (!req.company) {
       res.status(401);
@@ -83,7 +96,7 @@ const protectPlatformAdmin = (req, res, next) => {
   if (!token)
     return res.status(401).json({ success: false, message: "No token" });
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] });
     if (decoded.role !== "platform_admin" || decoded.iss !== "nesthr-platform")
       return res.status(403).json({ success: false, message: "Forbidden" });
     next();

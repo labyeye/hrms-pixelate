@@ -924,16 +924,26 @@ async function generateEmployeeReport(
 ): Promise<{ headers: string[]; rows: string[][] }> {
   switch (subType) {
     case 'attendance': {
-      const r = await attendanceAPI.getAll({ employeeId: empId, month, year, limit: '60' });
+      const r = await attendanceAPI.getAll({
+        employeeId: empId,
+        month,
+        year,
+        limit: '60',
+      });
       const data: any[] = (r.data || []).sort(
-        (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+        (a: any, b: any) =>
+          new Date(a.date).getTime() - new Date(b.date).getTime(),
       );
       return {
         headers: ['Date', 'Status', 'Check In', 'Check Out', 'Hours'],
         rows: data.map((rec: any) => {
           const hours =
             rec.checkIn && rec.checkOut
-              ? ((new Date(rec.checkOut).getTime() - new Date(rec.checkIn).getTime()) / 3600000).toFixed(1) + 'h'
+              ? (
+                  (new Date(rec.checkOut).getTime() -
+                    new Date(rec.checkIn).getTime()) /
+                  3600000
+                ).toFixed(1) + 'h'
               : '—';
           return [
             fmtDate(rec.date),
@@ -968,7 +978,11 @@ async function generateEmployeeReport(
       };
     }
     case 'leave': {
-      const r = await leaveAPI.getAll({ employeeId: empId, year, limit: '200' });
+      const r = await leaveAPI.getAll({
+        employeeId: empId,
+        year,
+        limit: '200',
+      });
       const data: any[] = r.data || [];
       return {
         headers: ['From', 'To', 'Days', 'Type', 'Reason', 'Status'],
@@ -976,7 +990,9 @@ async function generateEmployeeReport(
           fmtDate(l.startDate),
           fmtDate(l.endDate),
           String(l.days || 0),
-          l.leaveType ? l.leaveType.charAt(0).toUpperCase() + l.leaveType.slice(1) : '—',
+          l.leaveType
+            ? l.leaveType.charAt(0).toUpperCase() + l.leaveType.slice(1)
+            : '—',
           l.reason || '—',
           (l.status || '').toUpperCase(),
         ]),
@@ -988,19 +1004,44 @@ async function generateEmployeeReport(
 }
 
 const EMP_REPORT_SUB_TYPES = [
-  { id: 'attendance', label: 'Attendance', desc: 'Monthly attendance — daily status & times' },
-  { id: 'salary-slip', label: 'Salary Slip', desc: 'Earnings, deductions & net pay' },
-  { id: 'leave', label: 'Leave Report', desc: 'Yearly leave history & approval' },
+  {
+    id: 'attendance',
+    label: 'Attendance',
+    desc: 'Monthly attendance — daily status & times',
+  },
+  {
+    id: 'salary-slip',
+    label: 'Salary Slip',
+    desc: 'Earnings, deductions & net pay',
+  },
+  {
+    id: 'leave',
+    label: 'Leave Report',
+    desc: 'Yearly leave history & approval',
+  },
 ];
 
-const AVATAR_PALETTE_M = ['#024BAB','#00C48C','#FA731C','#7C3AED','#0891B2','#DC2626'];
+const AVATAR_PALETTE_M = [
+  '#024BAB',
+  '#00C48C',
+  '#FA731C',
+  '#7C3AED',
+  '#0891B2',
+  '#DC2626',
+];
 function avatarBgM(name: string) {
   let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
+  for (let i = 0; i < name.length; i++)
+    h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
   return AVATAR_PALETTE_M[Math.abs(h) % AVATAR_PALETTE_M.length];
 }
 function initialsM(name: string) {
-  return name.split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(w => w[0].toUpperCase())
+    .join('');
 }
 
 // ── Report Detail Modal ─────────────────────────────────────────────────────────
@@ -1065,7 +1106,12 @@ function ReportModal({
     try {
       let result: { headers: string[]; rows: string[][] };
       if (isEmpReport && selectedEmp) {
-        result = await generateEmployeeReport(empSubType, selectedEmp._id, month, year);
+        result = await generateEmployeeReport(
+          empSubType,
+          selectedEmp._id,
+          month,
+          year,
+        );
       } else {
         result = await generateReport(report.id, month, year, dept);
       }
@@ -1098,9 +1144,9 @@ function ReportModal({
       late: 'background:#FFF7ED;color:#C2410C;border:1px solid #FED7AA',
       absent: 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA',
       'half day': 'background:#FEFCE8;color:#A16207;border:1px solid #FDE68A',
-      'half_day': 'background:#FEFCE8;color:#A16207;border:1px solid #FDE68A',
+      half_day: 'background:#FEFCE8;color:#A16207;border:1px solid #FDE68A',
       'on leave': 'background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE',
-      'on_leave': 'background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE',
+      on_leave: 'background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE',
       leave: 'background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE',
       holiday: 'background:#FAF5FF;color:#7C3AED;border:1px solid #DDD6FE',
       weekend: 'background:#F9FAFB;color:#6B7280;border:1px solid #E5E7EB',
@@ -1114,42 +1160,74 @@ function ReportModal({
       terminated: 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA',
       missing: 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA',
     };
-    const AVATAR_PALETTE = ['#024BAB','#00C48C','#FA731C','#7C3AED','#0891B2','#DC2626'];
+    const AVATAR_PALETTE = [
+      '#024BAB',
+      '#00C48C',
+      '#FA731C',
+      '#7C3AED',
+      '#0891B2',
+      '#DC2626',
+    ];
     function avatarBg(name: string) {
       let h = 0;
-      for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
+      for (let i = 0; i < name.length; i++)
+        h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
       return AVATAR_PALETTE[Math.abs(h) % AVATAR_PALETTE.length];
     }
     function initials(name: string) {
-      return name.split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
+      return name
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(w => w[0].toUpperCase())
+        .join('');
     }
 
-    const nameColIdx = headers.findIndex(h => ['employee','name','employee name'].includes(h.toLowerCase()));
-    const statusColIdx = headers.findIndex(h => ['status','payment status'].includes(h.toLowerCase()));
+    const nameColIdx = headers.findIndex(h =>
+      ['employee', 'name', 'employee name'].includes(h.toLowerCase()),
+    );
+    const statusColIdx = headers.findIndex(h =>
+      ['status', 'payment status'].includes(h.toLowerCase()),
+    );
 
-    const thCells = headers.map(h =>
-      `<th style="background:#024BAB;color:#fff;padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;">${h}</th>`
-    ).join('');
+    const thCells = headers
+      .map(
+        h =>
+          `<th style="background:#024BAB;color:#fff;padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;">${h}</th>`,
+      )
+      .join('');
 
-    const trRows = rows.map((row, i) =>
-      `<tr style="background:${i % 2 === 0 ? '#fff' : '#F8FAFF'}">
-        ${row.map((cell, ci) => {
-          let content = cell;
-          if (ci === statusColIdx) {
-            const key = cell.toLowerCase().trim();
-            const style = STATUS_COLORS[key];
-            if (style) content = `<span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;text-transform:uppercase;${style}">${cell}</span>`;
-          } else if (ci === nameColIdx && cell && cell !== '—') {
-            const bg = avatarBg(cell);
-            const ini = initials(cell);
-            content = `<span style="display:inline-flex;align-items:center;gap:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:${bg};color:#fff;font-size:9px;font-weight:700;flex-shrink:0;">${ini}</span><span>${cell}</span></span>`;
-          }
-          return `<td style="padding:7px 10px;border-bottom:1px solid #E5E7EB;font-size:11px;white-space:nowrap;vertical-align:middle;">${content}</td>`;
-        }).join('')}
-      </tr>`
-    ).join('');
+    const trRows = rows
+      .map(
+        (row, i) =>
+          `<tr style="background:${i % 2 === 0 ? '#fff' : '#F8FAFF'}">
+        ${row
+          .map((cell, ci) => {
+            let content = cell;
+            if (ci === statusColIdx) {
+              const key = cell.toLowerCase().trim();
+              const style = STATUS_COLORS[key];
+              if (style)
+                content = `<span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;text-transform:uppercase;${style}">${cell}</span>`;
+            } else if (ci === nameColIdx && cell && cell !== '—') {
+              const bg = avatarBg(cell);
+              const ini = initials(cell);
+              content = `<span style="display:inline-flex;align-items:center;gap:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:${bg};color:#fff;font-size:9px;font-weight:700;flex-shrink:0;">${ini}</span><span>${cell}</span></span>`;
+            }
+            return `<td style="padding:7px 10px;border-bottom:1px solid #E5E7EB;font-size:11px;white-space:nowrap;vertical-align:middle;">${content}</td>`;
+          })
+          .join('')}
+      </tr>`,
+      )
+      .join('');
 
-    const now = new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    const now = new Date().toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
 
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${label}</title>
     <style>
@@ -1244,15 +1322,25 @@ function ReportModal({
                 />
               </View>
               {empLoading ? (
-                <ActivityIndicator color={C.primary} style={{ marginVertical: 12 }} />
+                <ActivityIndicator
+                  color={C.primary}
+                  style={{ marginVertical: 12 }}
+                />
               ) : (
-                <ScrollView style={{ maxHeight: 200 }} showsVerticalScrollIndicator={false}>
+                <ScrollView
+                  style={{ maxHeight: 200 }}
+                  showsVerticalScrollIndicator={false}
+                >
                   {allEmployees
                     .filter(e => {
                       const q = empSearch.toLowerCase();
-                      return !q ||
-                        `${e.firstName} ${e.lastName}`.toLowerCase().includes(q) ||
-                        (e.employeeId || '').toLowerCase().includes(q);
+                      return (
+                        !q ||
+                        `${e.firstName} ${e.lastName}`
+                          .toLowerCase()
+                          .includes(q) ||
+                        (e.employeeId || '').toLowerCase().includes(q)
+                      );
                     })
                     .map(emp => {
                       const name = `${emp.firstName} ${emp.lastName}`;
@@ -1263,15 +1351,31 @@ function ReportModal({
                         <TouchableOpacity
                           key={emp._id}
                           style={[ms.empRow, isSelected && ms.empRowSelected]}
-                          onPress={() => { setSelectedEmp(emp); setGenerated(false); }}
+                          onPress={() => {
+                            setSelectedEmp(emp);
+                            setGenerated(false);
+                          }}
                         >
                           <View style={[ms.empAvatar, { backgroundColor: bg }]}>
                             <Text style={ms.empAvatarText}>{ini}</Text>
                           </View>
                           <View style={{ flex: 1 }}>
-                            <Text style={[ms.empName, isSelected && { color: C.white }]}>{name}</Text>
-                            <Text style={[ms.empSub, isSelected && { color: C.white + 'cc' }]}>
-                              {emp.employeeId} · {emp.department?.name || emp.designation}
+                            <Text
+                              style={[
+                                ms.empName,
+                                isSelected && { color: C.white },
+                              ]}
+                            >
+                              {name}
+                            </Text>
+                            <Text
+                              style={[
+                                ms.empSub,
+                                isSelected && { color: C.white + 'cc' },
+                              ]}
+                            >
+                              {emp.employeeId} ·{' '}
+                              {emp.department?.name || emp.designation}
                             </Text>
                           </View>
                           {isSelected && <User size={14} color={C.white} />}
@@ -1283,18 +1387,43 @@ function ReportModal({
 
               {selectedEmp && (
                 <>
-                  <Text style={[ms.filterLabel, { marginTop: 14 }]}>Step 2 — Report Type</Text>
+                  <Text style={[ms.filterLabel, { marginTop: 14 }]}>
+                    Step 2 — Report Type
+                  </Text>
                   <View style={{ gap: 8 }}>
                     {EMP_REPORT_SUB_TYPES.map(sub => {
                       const active = empSubType === sub.id;
                       return (
                         <TouchableOpacity
                           key={sub.id}
-                          style={[ms.subTypeBtn, active && { backgroundColor: C.primary, borderColor: C.primary }]}
-                          onPress={() => { setEmpSubType(sub.id); setGenerated(false); }}
+                          style={[
+                            ms.subTypeBtn,
+                            active && {
+                              backgroundColor: C.primary,
+                              borderColor: C.primary,
+                            },
+                          ]}
+                          onPress={() => {
+                            setEmpSubType(sub.id);
+                            setGenerated(false);
+                          }}
                         >
-                          <Text style={[ms.subTypeBtnLabel, active && { color: C.white }]}>{sub.label}</Text>
-                          <Text style={[ms.subTypeBtnDesc, active && { color: C.white + 'cc' }]}>{sub.desc}</Text>
+                          <Text
+                            style={[
+                              ms.subTypeBtnLabel,
+                              active && { color: C.white },
+                            ]}
+                          >
+                            {sub.label}
+                          </Text>
+                          <Text
+                            style={[
+                              ms.subTypeBtnDesc,
+                              active && { color: C.white + 'cc' },
+                            ]}
+                          >
+                            {sub.desc}
+                          </Text>
                         </TouchableOpacity>
                       );
                     })}
@@ -1305,112 +1434,123 @@ function ReportModal({
           )}
 
           {/* Filters — hidden for employee-report (uses picker above) */}
-          {!isEmpReport && (<View style={ms.filterBlock}>
-            {needsMonth && (
-              <>
-                <Text style={ms.filterLabel}>Month</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: 6 }}
-                >
-                  {MONTHS.map((m, i) => {
-                    const val = String(i + 1);
-                    const active = month === val;
-                    return (
-                      <TouchableOpacity
-                        key={m}
-                        style={[ms.chip, active && ms.chipActive]}
-                        onPress={() => {
-                          setMonth(val);
-                          setGenerated(false);
-                        }}
-                      >
-                        <Text
-                          style={[ms.chipText, active && { color: C.white }]}
-                        >
-                          {m}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              </>
-            )}
-            {(needsMonth || needsYear) && (
-              <>
-                <Text
-                  style={[ms.filterLabel, { marginTop: needsMonth ? 10 : 0 }]}
-                >
-                  Year
-                </Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: 6 }}
-                >
-                  {YEARS.map(y => {
-                    const val = String(y);
-                    const active = year === val;
-                    return (
-                      <TouchableOpacity
-                        key={y}
-                        style={[ms.chip, active && ms.chipActive]}
-                        onPress={() => {
-                          setYear(val);
-                          setGenerated(false);
-                        }}
-                      >
-                        <Text
-                          style={[ms.chipText, active && { color: C.white }]}
-                        >
-                          {y}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              </>
-            )}
-            {needsDept && departments.length > 0 && (
-              <>
-                <Text style={[ms.filterLabel, { marginTop: 10 }]}>
-                  Department
-                </Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: 6 }}
-                >
-                  {[{ _id: 'all', name: 'All Depts' }, ...departments].map(
-                    d => {
-                      const active = dept === d._id;
+          {!isEmpReport && (
+            <View style={ms.filterBlock}>
+              {needsMonth && (
+                <>
+                  <Text style={ms.filterLabel}>Month</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 6 }}
+                  >
+                    {MONTHS.map((m, i) => {
+                      const val = String(i + 1);
+                      const active = month === val;
                       return (
                         <TouchableOpacity
-                          key={d._id}
+                          key={m}
                           style={[ms.chip, active && ms.chipActive]}
                           onPress={() => {
-                            setDept(d._id);
+                            setMonth(val);
                             setGenerated(false);
                           }}
                         >
                           <Text
                             style={[ms.chipText, active && { color: C.white }]}
                           >
-                            {d.name}
+                            {m}
                           </Text>
                         </TouchableOpacity>
                       );
-                    },
-                  )}
-                </ScrollView>
-              </>
-            )}
-          </View>)}
+                    })}
+                  </ScrollView>
+                </>
+              )}
+              {(needsMonth || needsYear) && (
+                <>
+                  <Text
+                    style={[ms.filterLabel, { marginTop: needsMonth ? 10 : 0 }]}
+                  >
+                    Year
+                  </Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 6 }}
+                  >
+                    {YEARS.map(y => {
+                      const val = String(y);
+                      const active = year === val;
+                      return (
+                        <TouchableOpacity
+                          key={y}
+                          style={[ms.chip, active && ms.chipActive]}
+                          onPress={() => {
+                            setYear(val);
+                            setGenerated(false);
+                          }}
+                        >
+                          <Text
+                            style={[ms.chipText, active && { color: C.white }]}
+                          >
+                            {y}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </>
+              )}
+              {needsDept && departments.length > 0 && (
+                <>
+                  <Text style={[ms.filterLabel, { marginTop: 10 }]}>
+                    Department
+                  </Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 6 }}
+                  >
+                    {[{ _id: 'all', name: 'All Depts' }, ...departments].map(
+                      d => {
+                        const active = dept === d._id;
+                        return (
+                          <TouchableOpacity
+                            key={d._id}
+                            style={[ms.chip, active && ms.chipActive]}
+                            onPress={() => {
+                              setDept(d._id);
+                              setGenerated(false);
+                            }}
+                          >
+                            <Text
+                              style={[
+                                ms.chipText,
+                                active && { color: C.white },
+                              ]}
+                            >
+                              {d.name}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      },
+                    )}
+                  </ScrollView>
+                </>
+              )}
+            </View>
+          )}
 
           {/* Generate button */}
           <TouchableOpacity
-            style={[ms.genBtn, { backgroundColor: report.color, opacity: (isEmpReport && !selectedEmp) ? 0.4 : 1 }]}
+            style={[
+              ms.genBtn,
+              {
+                backgroundColor: report.color,
+                opacity: isEmpReport && !selectedEmp ? 0.4 : 1,
+              },
+            ]}
             onPress={handleGenerate}
             disabled={loading || (isEmpReport && !selectedEmp)}
           >
@@ -1559,12 +1699,12 @@ export default function ReportsScreen() {
         data={visible}
         keyExtractor={item => item.id}
         style={{ flex: 1 }}
-  contentContainerStyle={{
-    padding: 16,
-    gap: 10,
-    paddingBottom: 32,
-    flexGrow: 1,
-  }}
+        contentContainerStyle={{
+          padding: 16,
+          gap: 10,
+          paddingBottom: 32,
+          flexGrow: 1,
+        }}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => {
           const Icon = item.icon;
@@ -1795,7 +1935,15 @@ const ms = StyleSheet.create({
   },
   empty: { alignItems: 'center', paddingVertical: 40, gap: 10 },
   emptyText: { fontSize: 14, fontWeight: '700', color: C.textMuted },
-  tableOuter: { borderWidth: 2, borderRightWidth: 4, borderBottomWidth: 4, borderRightColor: '#0A0A0A', borderBottomColor: '#0A0A0A', borderRadius: 8, borderColor: C.black },
+  tableOuter: {
+    borderWidth: 2,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderRadius: 8,
+    borderColor: C.black,
+  },
   tableHeaderRow: {
     flexDirection: 'row',
     backgroundColor: '#EFF6FF',

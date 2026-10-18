@@ -13,7 +13,14 @@ import {
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Home, Users, Clock, Calendar, Grid, LucideIcon } from 'lucide-react-native';
+import {
+  Home,
+  Users,
+  Clock,
+  Calendar,
+  Grid,
+  LucideIcon,
+} from 'lucide-react-native';
 import { C } from '../theme';
 import { useAuth } from '../contexts/AuthContext';
 import TabBounce from '../components/motion/TabBounce';
@@ -169,7 +176,7 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
           const label =
             typeof options.tabBarLabel === 'string'
               ? options.tabBarLabel
-              : options.title ?? route.name;
+              : (options.title ?? route.name);
           const onPress = () => {
             const event = navigation.emit({
               type: 'tabPress',
@@ -198,7 +205,9 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                 </>
               ) : (
                 <TabBounce focused={focused}>
-                  <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
+                  <View
+                    style={[styles.iconWrap, focused && styles.iconWrapActive]}
+                  >
                     <Icon size={20} color={color} />
                   </View>
                 </TabBounce>
@@ -206,7 +215,11 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               <Text
                 numberOfLines={1}
                 adjustsFontSizeToFit
-                style={[styles.tabLabel, raised && styles.tabLabelRaised, { color }]}
+                style={[
+                  styles.tabLabel,
+                  raised && styles.tabLabelRaised,
+                  { color },
+                ]}
               >
                 {label}
               </Text>

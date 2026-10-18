@@ -1,3 +1,4 @@
+import { writePrintDocument } from "@/lib/printWindow";
 import { useState, useEffect, useCallback } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
 import { payrollAPI } from "@/services/api";
@@ -6,7 +7,6 @@ import {
   IndianRupee,
   Calendar,
   Download,
-  Loader2,
   FileText,
   CheckCircle,
   Clock,
@@ -97,7 +97,7 @@ export default function EmployeePayrollPage() {
   const handlePrint = (p: PayrollRecord) => {
     const win = window.open("", "_blank");
     if (!win) return;
-    win.document.write(`
+    writePrintDocument(win, `
       <html>
       <head><title>Salary Slip — ${MONTHS[p.month - 1]} ${p.year}</title>
       <style>
@@ -129,10 +129,8 @@ export default function EmployeePayrollPage() {
           <tr><td>Days Present</td><td>${p.presentDays}</td></tr>
           ${p.paidAt ? `<tr><td>Paid On</td><td>${new Date(p.paidAt).toLocaleDateString("en-IN")}</td></tr>` : ""}
         </table>
-        <button onclick="window.print()">Print</button>
       </body></html>
-    `);
-    win.document.close();
+    `, true);
   };
 
   const totalEarned = payrolls
@@ -192,7 +190,13 @@ export default function EmployeePayrollPage() {
                 color: "#FA731C",
               },
             ].map(({ label, value, icon: Icon, color }) => (
-              <StatCard key={label} label={label} value={value} icon={Icon} color={color} />
+              <StatCard
+                key={label}
+                label={label}
+                value={value}
+                icon={Icon}
+                color={color}
+              />
             ))}
           </div>
         )}

@@ -14,7 +14,10 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { DatePickerField, TimePickerField } from '../components/common/DatePickerField';
+import {
+  DatePickerField,
+  TimePickerField,
+} from '../components/common/DatePickerField';
 import {
   Calendar,
   Plus,
@@ -127,12 +130,17 @@ export default function LeaveScreen() {
   });
 
   // Change 2: leave usage per type (for employee balance strip)
-  const leaveUsage = LEAVE_TYPES.reduce((acc, t) => {
-    const approved = leaves.filter(l => l.leaveType === t && l.status === 'approved');
-    const days = approved.reduce((s, l) => s + (l.days || 0), 0);
-    acc[t] = days;
-    return acc;
-  }, {} as Record<string, number>);
+  const leaveUsage = LEAVE_TYPES.reduce(
+    (acc, t) => {
+      const approved = leaves.filter(
+        l => l.leaveType === t && l.status === 'approved',
+      );
+      const days = approved.reduce((s, l) => s + (l.days || 0), 0);
+      acc[t] = days;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   const pickDocument = () => {
     Alert.alert('Attach Document', 'Choose source', [
@@ -157,25 +165,41 @@ export default function LeaveScreen() {
   const handleApply = async () => {
     const isHourly = form.leaveType === 'hourly';
     if (isHourly) {
-      if (!form.startDate || !form.startHour || !form.endHour || !form.reason.trim()) {
-        Alert.alert('Validation', 'Date, start hour, end hour and reason are required');
+      if (
+        !form.startDate ||
+        !form.startHour ||
+        !form.endHour ||
+        !form.reason.trim()
+      ) {
+        Alert.alert(
+          'Validation',
+          'Date, start hour, end hour and reason are required',
+        );
         return;
       }
     } else {
       if (!form.startDate || !form.endDate || !form.reason.trim()) {
-        Alert.alert('Validation', 'Start date, end date and reason are required');
+        Alert.alert(
+          'Validation',
+          'Start date, end date and reason are required',
+        );
         return;
       }
     }
     if (DOC_REQUIRED_TYPES.includes(form.leaveType) && !pickedDoc) {
-      Alert.alert('Validation', 'A supporting document is required for sick/casual leave');
+      Alert.alert(
+        'Validation',
+        'A supporting document is required for sick/casual leave',
+      );
       return;
     }
     setSaving(true);
     try {
       const start = new Date(form.startDate);
       const end = isHourly ? start : new Date(form.endDate);
-      const days = isHourly ? 0.125 : Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+      const days = isHourly
+        ? 0.125
+        : Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
       const body = {
         ...form,
         endDate: isHourly ? form.startDate : form.endDate,
@@ -189,7 +213,14 @@ export default function LeaveScreen() {
           })
         : await leaveAPI.create(body);
       setShowForm(false);
-      setForm({ leaveType: 'casual', startDate: '', endDate: '', reason: '', startHour: '', endHour: '' });
+      setForm({
+        leaveType: 'casual',
+        startDate: '',
+        endDate: '',
+        reason: '',
+        startHour: '',
+        endHour: '',
+      });
       setPickedDoc(null);
       await load();
       if (res?.noBalanceLeft) {
@@ -233,7 +264,12 @@ export default function LeaveScreen() {
         deductSalary: approveModal.deductSalary,
         comment: approveModal.comment || undefined,
       });
-      setApproveModal({ visible: false, leave: null, deductSalary: false, comment: '' });
+      setApproveModal({
+        visible: false,
+        leave: null,
+        deductSalary: false,
+        comment: '',
+      });
       await load();
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -275,13 +311,24 @@ export default function LeaveScreen() {
     if (!editLeave) return;
     const isHourly = editForm.leaveType === 'hourly';
     if (isHourly) {
-      if (!editForm.startDate || !editForm.startHour || !editForm.endHour || !editForm.reason.trim()) {
-        Alert.alert('Validation', 'Date, start hour, end hour and reason are required');
+      if (
+        !editForm.startDate ||
+        !editForm.startHour ||
+        !editForm.endHour ||
+        !editForm.reason.trim()
+      ) {
+        Alert.alert(
+          'Validation',
+          'Date, start hour, end hour and reason are required',
+        );
         return;
       }
     } else {
       if (!editForm.startDate || !editForm.endDate || !editForm.reason.trim()) {
-        Alert.alert('Validation', 'Start date, end date and reason are required');
+        Alert.alert(
+          'Validation',
+          'Start date, end date and reason are required',
+        );
         return;
       }
     }
@@ -289,7 +336,9 @@ export default function LeaveScreen() {
     try {
       const start = new Date(editForm.startDate);
       const end = isHourly ? start : new Date(editForm.endDate);
-      const days = isHourly ? 0.125 : Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+      const days = isHourly
+        ? 0.125
+        : Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
       await leaveAPI.update(editLeave._id, {
         ...editForm,
         endDate: isHourly ? editForm.startDate : editForm.endDate,
@@ -351,7 +400,10 @@ export default function LeaveScreen() {
         </View>
         <TouchableOpacity
           style={styles.addBtn}
-          onPress={() => { setPickedDoc(null); setShowForm(true); }}
+          onPress={() => {
+            setPickedDoc(null);
+            setShowForm(true);
+          }}
         >
           <Plus size={14} color={C.white} />
           <Text style={styles.addBtnText}>Apply</Text>
@@ -519,7 +571,11 @@ export default function LeaveScreen() {
                       </View>
                       <Text style={styles.statLabel}>From</Text>
                     </View>
-                    <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
+                    <Text
+                      style={styles.statValue}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                    >
                       {formatDate(item.startDate)}
                     </Text>
                   </View>
@@ -536,7 +592,11 @@ export default function LeaveScreen() {
                       </View>
                       <Text style={styles.statLabel}>To</Text>
                     </View>
-                    <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>
+                    <Text
+                      style={styles.statValue}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                    >
                       {formatDate(item.endDate)}
                     </Text>
                   </View>
@@ -555,7 +615,13 @@ export default function LeaveScreen() {
                           </View>
                           <Text style={styles.statLabel}>Duration</Text>
                         </View>
-                        <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>{days}d</Text>
+                        <Text
+                          style={styles.statValue}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                        >
+                          {days}d
+                        </Text>
                       </View>
                     </>
                   )}
@@ -622,7 +688,12 @@ export default function LeaveScreen() {
         transparent
         animationType="fade"
         onRequestClose={() =>
-          setApproveModal({ visible: false, leave: null, deductSalary: false, comment: '' })
+          setApproveModal({
+            visible: false,
+            leave: null,
+            deductSalary: false,
+            comment: '',
+          })
         }
       >
         <View style={styles.overlay}>
@@ -768,7 +839,10 @@ export default function LeaveScreen() {
                 <Text style={styles.approveModalCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.approveModalConfirm, { backgroundColor: C.danger }]}
+                style={[
+                  styles.approveModalConfirm,
+                  { backgroundColor: C.danger },
+                ]}
                 onPress={confirmReject}
               >
                 <X size={14} color={C.white} />
@@ -1011,7 +1085,10 @@ export default function LeaveScreen() {
             </View>
             <View>
               <Text style={styles.fieldLabel}>
-                Supporting Document{DOC_REQUIRED_TYPES.includes(form.leaveType) ? ' *' : ' (optional)'}
+                Supporting Document
+                {DOC_REQUIRED_TYPES.includes(form.leaveType)
+                  ? ' *'
+                  : ' (optional)'}
               </Text>
               <TouchableOpacity style={styles.docPicker} onPress={pickDocument}>
                 {pickedDoc ? (
@@ -1032,7 +1109,8 @@ export default function LeaveScreen() {
               </TouchableOpacity>
               {DOC_REQUIRED_TYPES.includes(form.leaveType) && (
                 <Text style={styles.hint}>
-                  Required for sick/casual leave — retake the photo to correct a mistake.
+                  Required for sick/casual leave — retake the photo to correct a
+                  mistake.
                 </Text>
               )}
             </View>
@@ -1201,7 +1279,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  empName: { fontSize: 15, fontWeight: '800', color: C.black, letterSpacing: 0.2 },
+  empName: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: C.black,
+    letterSpacing: 0.2,
+  },
   empSub: { fontSize: 11, color: '#9CA3AF', fontWeight: '600', marginTop: 2 },
   statusTag: {
     borderWidth: 1.5,

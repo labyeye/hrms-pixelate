@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const SalaryHead = require("../models/SalaryHead");
+const bodyFor = require("../utils/bodyFor");
 
 const DEFAULT_HEADS = [
   {
@@ -107,7 +108,7 @@ const getSalaryHeads = asyncHandler(async (req, res) => {
 
 const createSalaryHead = asyncHandler(async (req, res) => {
   const head = await SalaryHead.create({
-    ...req.body,
+    ...bodyFor(SalaryHead, req.body),
     company: req.user.company,
   });
   res.status(201).json({ success: true, data: head });
@@ -116,7 +117,7 @@ const createSalaryHead = asyncHandler(async (req, res) => {
 const updateSalaryHead = asyncHandler(async (req, res) => {
   const head = await SalaryHead.findOneAndUpdate(
     { _id: req.params.id, company: req.user.company },
-    req.body,
+    bodyFor(SalaryHead, req.body),
     { new: true },
   );
   if (!head)

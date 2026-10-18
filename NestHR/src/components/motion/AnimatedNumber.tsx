@@ -10,7 +10,12 @@ interface Props {
 }
 
 /** Counts up to `value`. JS-driven (text can't use the native driver). Ported from NestLeads. */
-export default function AnimatedNumber({ value, duration = 1400, style, prefix = '' }: Props) {
+export default function AnimatedNumber({
+  value,
+  duration = 1400,
+  style,
+  prefix = '',
+}: Props) {
   const reduce = useReduceMotion();
   const anim = useRef(new Animated.Value(0)).current;
   const [display, setDisplay] = useState(0);
@@ -32,7 +37,9 @@ export default function AnimatedNumber({ value, duration = 1400, style, prefix =
 
   return (
     <Text style={style}>
-      {Number.isFinite(value) ? prefix + display.toLocaleString('en-IN') : String(value)}
+      {Number.isFinite(value)
+        ? prefix + display.toLocaleString('en-IN')
+        : String(value)}
     </Text>
   );
 }

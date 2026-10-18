@@ -29,6 +29,7 @@ interface Loan {
     lastName: string;
     employeeId: string;
     department?: any;
+    avatar?: string;
   };
   type: "loan" | "advance";
   amount: number;
@@ -81,7 +82,7 @@ export default function LoansPage() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [modal, setModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [form, setForm] = useState<Omit<typeof EMPTY_FORM, "status"> & { status: Loan["status"] }>({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
