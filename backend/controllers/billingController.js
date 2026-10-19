@@ -11,17 +11,13 @@ const Counter = require("../models/Counter");
 const hdfcPayment = require("../services/hdfcPaymentService");
 const razorpayService = require("../services/razorpayService");
 const { sendPaymentConfirmations } = require("../services/notificationService");
-const {
-  TIER_RATES,
-  TIER_LABELS,
-  calculatePricing,
-} = require("../utils/pricing");
+const { PLAN_SLABS, PLAN_LABEL, calculatePricing } = require("../utils/pricing");
 
 const getPlans = asyncHandler(async (req, res) => {
-  const plans = Object.keys(TIER_RATES).map((tier) => ({
-    tier,
-    label: TIER_LABELS[tier],
-    ratePerEmployee: TIER_RATES[tier],
+  const plans = PLAN_SLABS.map((slab) => ({
+    label: PLAN_LABEL,
+    maxEmployees: slab.maxEmployees,
+    yearlyPrice: slab.yearlyPrice,
   }));
   res.json({ success: true, data: plans });
 });
@@ -131,8 +127,6 @@ const validateOfferCode = asyncHandler(async (req, res) => {
 const createOrder = asyncHandler(async (req, res) => {
   const {
     employeeCount,
-    tier,
-    billingCycle = "monthly",
     gateway = "razorpay",
     offerCode,
     company: companyDetails,
@@ -143,38 +137,42 @@ const createOrder = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("Please provide a valid number of employees");
   }
-  if (!Object.keys(TIER_RATES).includes(tier)) {
-    res.status(400);
-    throw new Error(
-      `Invalid plan. Choose one of: ${Object.keys(TIER_RATES).join(", ")}`,
-    );
-  }
-  if (!["monthly", "yearly"].includes(billingCycle)) {
-    res.status(400);
-    throw new Error("Invalid billing cycle");
-  }
+  const billingCycle = "yearly"; // yearly billing only
   if (!["razorpay", "hdfc"].includes(gateway)) {
     res.status(400);
     throw new Error("Invalid gateway. Use razorpay or hdfc");
   }
 
-  const pricing = calculatePricing(empCount, tier);
+  let pricing;
+  try {
+    pricing = calculatePricing(empCount);
+  } catch (e) {
+    res.status(400);
+    throw e;
+  }
+  const tier = pricing.tier;
 
   const existingCompany = await Company.findOne({ createdBy: req.user._id });
   const existingSubscription = existingCompany
     ? await Subscription.findOne({ company: existingCompany._id })
     : null;
 
-  // Adding seats to an already-active plan (same tier) should only bill for
-  // the new seats, not re-bill the whole headcount the customer already paid for.
+  // Moving up a slab on an already-active plan (same tier) bills only the
+  // difference to the new slab, not the whole price again.
   const isSeatTopUp =
     existingSubscription &&
     existingSubscription.status === "active" &&
     existingSubscription.tier === tier &&
     empCount > (existingSubscription.maxEmployees || 0);
-  const chargePricing = isSeatTopUp
-    ? calculatePricing(empCount - existingSubscription.maxEmployees, tier)
-    : pricing;
+  let chargePricing = pricing;
+  if (isSeatTopUp) {
+    const diff = pricing.yearlyPrice - (existingSubscription.yearlyPrice || 0);
+    if (diff <= 0) {
+      res.status(400);
+      throw new Error("Your current plan already covers this many employees.");
+    }
+    chargePricing = { ...pricing, yearlyPrice: diff, monthlyPrice: Math.round(diff / 12) };
+  }
 
   // Validate offer code if provided
   let validatedOffer = null;
@@ -253,7 +251,7 @@ const createOrder = asyncHandler(async (req, res) => {
           ratePerEmployee: pricing.ratePerEmployee,
           monthlyPrice: pricing.monthlyPrice,
           yearlyPrice: pricing.yearlyPrice,
-          maxEmployees: empCount,
+          maxEmployees: pricing.maxEmployees,
           billingCycle,
           startDate: new Date(),
           renewalDate: new Date(),
@@ -347,7 +345,7 @@ const createOrder = asyncHandler(async (req, res) => {
           ratePerEmployee: pricing.ratePerEmployee,
           monthlyPrice: pricing.monthlyPrice,
           yearlyPrice: pricing.yearlyPrice,
-          maxEmployees: empCount,
+          maxEmployees: pricing.maxEmployees,
           billingCycle,
           startDate: new Date(),
           renewalDate: new Date(),
@@ -567,7 +565,7 @@ async function _createCompanyAndActivate({
     ratePerEmployee: pendingOrder.ratePerEmployee,
     monthlyPrice: pendingOrder.monthlyPrice,
     yearlyPrice: pendingOrder.yearlyPrice,
-    maxEmployees: pendingOrder.employeeCount,
+    maxEmployees: calculatePricing(pendingOrder.employeeCount).maxEmployees,
     billingCycle: pendingOrder.billingCycle,
     startDate,
     renewalDate,

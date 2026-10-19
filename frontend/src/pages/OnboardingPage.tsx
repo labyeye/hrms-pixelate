@@ -1,4 +1,10 @@
 import { useState, useEffect } from "react";
+import {
+  PLAN_SLABS,
+  MAX_SELF_SERVE_EMPLOYEES,
+  SALES_URL,
+  slabFor,
+} from "@/lib/planSlabs";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { billingAPI } from "@/services/api";
@@ -33,46 +39,24 @@ interface CompanyFormData {
   panNumber: string;
 }
 
-type Tier = "web_mobile" | "web_mobile_whatsapp";
-
-const PLANS: {
-  tier: Tier;
-  name: string;
-  rate: number;
-  blurb: string;
-  features: string[];
-}[] = [
-  {
-    tier: "web_mobile",
-    name: "Web + Mobile",
-    rate: 299,
-    blurb: "For office-based and frontline teams",
-    features: [
-      "Employee management",
-      "Web / biometric-hardware attendance",
-      "Mobile app self check-in (face + geofence)",
-      "Leave management",
-      "Payroll processing",
-      "Performance reviews",
-      "Exit management",
-      "Basic reports",
-      "Email notifications",
-    ],
-  },
-  {
-    tier: "web_mobile_whatsapp",
-    name: "Web + Mobile + WhatsApp",
-    rate: 499,
-    blurb: "The full suite",
-    features: [
-      "Everything in Web + Mobile, plus:",
-      "WhatsApp notifications",
-      "2FA & audit log",
-      "Recruitment",
-      "Priority support",
-    ],
-  },
-];
+const PLAN = {
+  tier: "web_mobile_whatsapp" as const,
+  name: "NestHR",
+  features: [
+    "Employee management",
+    "Web / biometric-hardware attendance",
+    "Mobile app self check-in (face + geofence)",
+    "Leave management",
+    "Payroll processing",
+    "Performance reviews",
+    "Exit management",
+    "Reports & analytics",
+    "WhatsApp notifications",
+    "2FA & audit log",
+    "Recruitment",
+    "Priority support",
+  ],
+};
 
 const STEPS: { id: Step; label: string }[] = [
   { id: "company", label: "Company" },
@@ -137,7 +121,6 @@ export default function OnboardingPage() {
   const [step, setStep] = useState<Step>(
     user?.company ? "employees" : "company",
   );
-  const [selectedTier, setSelectedTier] = useState<Tier>("web_mobile");
   const [employeeCount, setEmployeeCount] = useState<number | "">("");
   const [paying, setPaying] = useState(false);
   const [companyError, setCompanyError] = useState("");
@@ -150,8 +133,8 @@ export default function OnboardingPage() {
   }, [user?.company, user?.subscription?.status, navigate]);
 
   const empCount = Number(employeeCount) || 0;
-  const plan = PLANS.find((p) => p.tier === selectedTier)!;
-  const yearlyPrice = empCount * plan.rate;
+  const slab = slabFor(empCount);
+  const yearlyPrice = slab?.yearlyPrice ?? 0;
   const monthlyEquiv = Math.round(yearlyPrice / 12);
 
   const handleCreateCompany = async (formData: CompanyFormData) => {
@@ -171,6 +154,14 @@ export default function OnboardingPage() {
         description: "How many people will use NestHR?",
         variant: "destructive",
       });
+      return;
+    }
+    if (!slabFor(count)) {
+      toast({
+        title: "Contact sales",
+        description: `For more than ${MAX_SELF_SERVE_EMPLOYEES} employees we'll prepare a custom quote.`,
+      });
+      window.open(SALES_URL, "_blank", "noopener");
       return;
     }
     setStep("plan");
@@ -200,7 +191,7 @@ export default function OnboardingPage() {
     try {
       const res = await billingAPI.createOrder(
         count,
-        selectedTier,
+        PLAN.tier,
         "yearly",
         "razorpay",
         user?.company ? undefined : companyForm!,
@@ -221,7 +212,7 @@ export default function OnboardingPage() {
           amount: order.amount * 100,
           currency: order.currency || "INR",
           name: "NestHR",
-          description: `NestHR — ${plan.name} — ${count} employees`,
+          description: `NestHR — ${PLAN.name} — ${count} employees`,
           theme: { color: "#024BAB" },
           handler: async (response: any) => {
             try {
@@ -334,7 +325,7 @@ export default function OnboardingPage() {
                 How big is your team?
               </h1>
               <p className="text-gray-500 font-medium text-sm">
-                We'll recommend the right plan based on your team size
+                Pricing is a flat yearly fee based on your team size
               </p>
             </div>
 
@@ -398,62 +389,62 @@ export default function OnboardingPage() {
                 Choose your plan
               </h1>
               <p className="text-gray-500 font-medium text-sm">
-                Priced per employee, per year — for your team of {employeeCount}
+                Flat yearly price for your team of {employeeCount}
               </p>
             </div>
 
-            {/* Plan cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-              {PLANS.map((p) => {
-                const isSelected = selectedTier === p.tier;
-                const total = empCount * p.rate;
+            {/* Slab cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              {PLAN_SLABS.map((sl) => {
+                const isSelected = slab?.maxEmployees === sl.maxEmployees;
                 return (
-                  <button
-                    key={p.tier}
-                    onClick={() => setSelectedTier(p.tier)}
+                  <div
+                    key={sl.maxEmployees}
                     className={cn(
-                      "text-left border-2 bg-white p-5 flex flex-col transition-all",
+                      "border-2 bg-white p-5",
                       isSelected
                         ? "border-[#024BAB] ring-2 ring-[#024BAB]"
-                        : "border-black hover:border-[#024BAB]",
+                        : "border-black opacity-60",
                     )}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <h3 className="font-display font-bold text-lg text-black">
-                        {p.name}
+                        Up to {sl.maxEmployees} employees
                       </h3>
                       {isSelected && (
                         <Check className="w-5 h-5 text-[#024BAB] shrink-0" />
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 font-medium mb-4">
-                      {p.blurb}
-                    </p>
-
-                    <div className="mb-4 pb-4 border-b-2 border-black">
-                      <div className="font-display font-bold text-2xl text-[#024BAB]">
-                        ₹{p.rate}
-                      </div>
-                      <div className="text-xs text-gray-500 font-medium">
-                        /employee/year
-                      </div>
-                      <div className="text-xs text-gray-600 font-bold mt-1">
-                        ₹{total.toLocaleString("en-IN")} total/year
-                      </div>
+                    <div className="font-display font-bold text-2xl text-[#024BAB]">
+                      ₹{sl.yearlyPrice.toLocaleString("en-IN")}
                     </div>
-
-                    <ul className="space-y-2">
-                      {p.features.map((f) => (
-                        <li key={f} className="flex items-start gap-2 text-xs">
-                          <Check className="w-3.5 h-3.5 text-[#024BAB] shrink-0 mt-0.5" />
-                          <span className="text-gray-700 font-medium">{f}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </button>
+                    <div className="text-xs text-gray-500 font-medium">
+                      /year
+                    </div>
+                  </div>
                 );
               })}
             </div>
+
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mb-4 max-w-2xl mx-auto">
+              {PLAN.features.map((f) => (
+                <li key={f} className="flex items-start gap-2 text-xs">
+                  <Check className="w-3.5 h-3.5 text-[#024BAB] shrink-0 mt-0.5" />
+                  <span className="text-gray-700 font-medium">{f}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-center text-xs text-gray-500 font-medium mb-8">
+              More than {MAX_SELF_SERVE_EMPLOYEES} employees?{" "}
+              <a
+                href={SALES_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-[#024BAB] hover:underline"
+              >
+                Contact sales
+              </a>
+            </p>
 
             <div className="max-w-sm mx-auto">
               <button
@@ -496,12 +487,12 @@ export default function OnboardingPage() {
                 <div className="p-5 space-y-3">
                   <div className="flex justify-between items-center text-sm">
                     <span className="font-bold text-gray-600">Plan</span>
-                    <span className="font-bold text-black">{plan.name}</span>
+                    <span className="font-bold text-black">{PLAN.name}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="font-bold text-gray-600">Rate</span>
+                    <span className="font-bold text-gray-600">Covers</span>
                     <span className="font-bold text-black">
-                      ₹{plan.rate}/employee/year
+                      Up to {slab?.maxEmployees} employees
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">

@@ -56,8 +56,10 @@ async function checkOtp(user, otp, { hashField, expireField, triesField }) {
 
 // Equalises timing between "no such user" and "wrong password".
 const DUMMY_HASH = bcrypt.hashSync("not-a-real-password", 12);
-const MAX_LOGIN_FAILS = 10;
-const LOGIN_LOCK_MS = 15 * 60 * 1000;
+// 3 wrong passwords are allowed; the 4th wrong one locks the account for 30 min.
+// A WhatsApp OTP login or reset (verifyOtp / resetPasswordWithOtp) lifts the lock.
+const MAX_LOGIN_FAILS = 4;
+const LOGIN_LOCK_MS = 30 * 60 * 1000;
 // 10-digit national number, which is what sendPhoneOtp expects (it adds 91).
 const to10 = (phone) =>
   String(phone).replace(/\s/g, "").replace(/^\+91/, "").slice(-10);
@@ -166,7 +168,7 @@ const login = [
 
     if (user?.loginLockUntil && user.loginLockUntil > new Date()) {
       res.status(429);
-      throw new Error("Too many failed attempts. Please try again in a few minutes.");
+      throw new Error("Account locked for 30 minutes after too many wrong passwords. Unlock it now with a WhatsApp OTP.");
     }
 
     const passwordOk = user ? await user.matchPassword(password) : (await bcrypt.compare(String(password), DUMMY_HASH), false);
@@ -176,6 +178,9 @@ const login = [
         if (user.loginFailedAttempts >= MAX_LOGIN_FAILS) {
           user.loginLockUntil = new Date(Date.now() + LOGIN_LOCK_MS);
           user.loginFailedAttempts = 0;
+          await user.save();
+          res.status(429);
+          throw new Error("Account locked for 30 minutes after too many wrong passwords. Unlock it now with a WhatsApp OTP.");
         }
         await user.save();
       }
@@ -660,6 +665,8 @@ const verifyOtp = asyncHandler(async (req, res) => {
   user.phoneOtp = undefined;
   user.phoneOtpExpire = undefined;
   user.phoneOtpTries = 0;
+  user.loginFailedAttempts = 0;
+  user.loginLockUntil = undefined;
   user.lastLogin = new Date();
   await user.save();
 
@@ -751,6 +758,8 @@ const resetPasswordWithOtp = asyncHandler(async (req, res) => {
   user.resetOtp = undefined;
   user.resetOtpExpire = undefined;
   user.resetOtpTries = 0;
+  user.loginFailedAttempts = 0;
+  user.loginLockUntil = undefined;
   await user.save();
 
   res.json({

@@ -83,9 +83,14 @@ const login = (body) => call((req, res, next) => c.login[0](req, res, (e) => (e 
   assert.strictEqual((await call(c.verifyOtp, { body: { phone: ot.phone, otp: lastOtp.otp } })).status, 200, "a fresh code works again");
 
   // ---- per-account lockout
-  mkUser({ email: "lk@x.com", pw: "Passw0rd!" });
-  for (let i = 0; i < 10; i++) assert.strictEqual((await login({ email: "lk@x.com", password: "wrong" })).status, 401);
+  const lk = mkUser({ email: "lk@x.com", pw: "Passw0rd!", phone: "9444444444" });
+  for (let i = 0; i < 3; i++) assert.strictEqual((await login({ email: "lk@x.com", password: "wrong" })).status, 401);
+  assert.strictEqual((await login({ email: "lk@x.com", password: "wrong" })).status, 429, "4th wrong password locks");
   assert.strictEqual((await login({ email: "lk@x.com", password: "Passw0rd!" })).status, 429, "locked even with the right password");
+  assert.ok(Math.abs(lk.loginLockUntil - Date.now() - 30 * 60 * 1000) < 5000, "lock is 30 minutes");
+  await call(c.sendOtp, { body: { phone: lk.phone } });
+  assert.strictEqual((await call(c.verifyOtp, { body: { phone: lk.phone, otp: lastOtp.otp } })).status, 200, "WhatsApp OTP works while locked");
+  assert.strictEqual((await login({ email: "lk@x.com", password: "Passw0rd!" })).status, 200, "OTP login lifted the lock");
   assert.strictEqual((await login({ email: "nobody@x.com", password: "whatever1" })).status, 401, "unknown user looks like a bad password");
 
   console.log("auth hardening checks passed");

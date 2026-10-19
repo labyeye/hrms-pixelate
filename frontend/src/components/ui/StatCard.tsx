@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AnimatedValue } from "@/components/ui/AnimatedValue";
 
 interface StatCardProps {
   label: string;
@@ -33,22 +34,24 @@ export function StatCard({
     <Tag
       onClick={onClick}
       className={cn(
-        "border-2 border-black bg-white p-4 flex items-center gap-3 text-left",
-        onClick &&
-          "transition-all duration-150 ease-out hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:-translate-x-px hover:-translate-y-px active:translate-x-0 active:translate-y-0 active:shadow-none",
+        "nb-rise nb-lift border-2 border-black bg-white p-4 flex items-center gap-3 text-left",
+        !onClick &&
+          "hover:!shadow-none hover:!translate-x-0 hover:!translate-y-0",
         active && "shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]",
         className,
       )}
       style={active ? { backgroundColor: `${color}12` } : undefined}
     >
       <div
-        className="w-10 h-10 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center shrink-0"
+        className="nb-chip nb-chip-hover w-10 h-10 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center shrink-0"
         style={{ backgroundColor: color }}
       >
         <Icon className="w-5 h-5 text-white" />
       </div>
       <div className="min-w-0">
-        <p className="text-2xl font-bold text-black leading-tight">{value}</p>
+        <p className="text-2xl font-bold text-black leading-tight tabular-nums">
+          <AnimatedValue value={value} />
+        </p>
         <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider truncate">
           {label}
         </p>

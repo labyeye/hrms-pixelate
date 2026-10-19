@@ -14,6 +14,7 @@ import {
   KeyRound,
 } from "lucide-react";
 import nesthrlogo from "../../assets/logo.png";
+import loginDash from "../../assets/login-dash.png";
 import { authAPI } from "@/services/api";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 
@@ -38,6 +39,31 @@ function base64UrlToBuffer(base64url: string): ArrayBuffer {
     outputArray[i] = rawData.charCodeAt(i);
   }
   return outputArray.buffer;
+}
+
+function PrivacyLink() {
+  return (
+    <p className="text-xs text-gray-500 mt-4 text-center">
+      © 2026 Pixelate Nest. All rights reserved.{" "}
+      <a
+        href="https://www.pixelatenest.com/legal/privacy-policy.html"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-bold text-[#024BAB] hover:underline"
+      >
+        Privacy Policy
+      </a>
+      {" · "}
+      <a
+        href="https://www.pixelatenest.com/legal/terms-of-service.html"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-bold text-[#024BAB] hover:underline"
+      >
+        Terms of Service
+      </a>
+    </p>
+  );
 }
 
 export default function LoginPage() {
@@ -197,13 +223,19 @@ export default function LoginPage() {
           />
         </div>
 
+        <img
+          src={loginDash}
+          alt="NestHR dashboard preview"
+          className="relative z-10 max-w-3xl mx-auto"
+        />
+
         {}
         <div className="relative z-10">
-          <h1 className="text-4xl xl:text-5xl font-display font-bold text-white leading-tight mb-5">
+          <h1 className="text-4xl xl:text-3xl font-display font-bold text-white leading-tight mb-5">
             Every employee.
-            <br />
+            
             Every payslip.
-            <br />
+            
             One place.
           </h1>
           <p className="text-white/70 text-base font-medium max-w-sm">
@@ -260,7 +292,7 @@ export default function LoginPage() {
                 </div>
               )}
 
-              <form onSubmit={handle2FASubmit} className="space-y-5">
+              <form onSubmit={handle2FASubmit} className="space-y-5 login-anim">
                 <div>
                   <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
                     Authenticator Code
@@ -335,7 +367,7 @@ export default function LoginPage() {
               )}
 
               {!otpSent ? (
-                <form onSubmit={handleSendOtp} className="space-y-5">
+                <form onSubmit={handleSendOtp} className="space-y-5 login-anim">
                   <div>
                     <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
                       Phone Number
@@ -382,7 +414,7 @@ export default function LoginPage() {
                   </button>
                 </form>
               ) : (
-                <form onSubmit={handleVerifyOtp} className="space-y-5">
+                <form onSubmit={handleVerifyOtp} className="space-y-5 login-anim">
                   <div>
                     <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
                       WhatsApp OTP
@@ -451,7 +483,7 @@ export default function LoginPage() {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-5 login-anim">
                 {}
                 <div>
                   <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
@@ -534,7 +566,7 @@ export default function LoginPage() {
               </form>
 
               {/* Alternate login options */}
-              <div className="mt-6 space-y-2 text-center">
+              <div className="mt-6 text-center grid grid-cols-2 gap-4">
                 <button
                   type="button"
                   onClick={() => {
@@ -544,7 +576,7 @@ export default function LoginPage() {
                   className="w-full py-2.5 px-4 bg-gray-50 border-2 border-black/10 hover:border-black text-xs font-bold text-black transition-all flex items-center justify-center gap-2"
                 >
                   <WhatsAppIcon className="w-4 h-4 text-[#25D366]" /> Login with
-                  Phone OTP (WhatsApp)
+                  WhatsApp
                 </button>
                 <button
                   type="button"
@@ -560,7 +592,7 @@ export default function LoginPage() {
                   ) : (
                     <>
                       <KeyRound className="w-4 h-4 text-[#024BAB]" /> Sign in
-                      with Passkey / WebAuthn
+                      with Passkey
                     </>
                   )}
                 </button>
@@ -577,9 +609,11 @@ export default function LoginPage() {
                     Create an account
                   </Link>
                 </p>
+                <PrivacyLink />
               </div>
             </>
           )}
+          {(needs2FA || loginMode === "phone") && <PrivacyLink />}
         </div>
       </div>
     </div>

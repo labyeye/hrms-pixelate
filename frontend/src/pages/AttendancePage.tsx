@@ -163,6 +163,14 @@ export default function AttendancePage() {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [stripCount, setStripCount] = useState(7);
+  const stripRef = useCallback((el: HTMLDivElement | null) => {
+    if (!el) return;
+    const fit = () =>
+      setStripCount(Math.min(31, Math.max(3, Math.floor(el.clientWidth / 120))));
+    fit();
+    new ResizeObserver(fit).observe(el); // dies with the element
+  }, []);
   const [windowStart, setWindowStart] = useState<number>(1);
   const [markingAbsent, setMarkingAbsent] = useState(false);
   const [locationRecord, setLocationRecord] = useState<AttendanceRecord | null>(
@@ -389,8 +397,8 @@ export default function AttendancePage() {
     setSelectedDate(null);
   }, [month, year]);
 
-  // 7 days shown in the strip
-  const stripDays = Array.from({ length: 7 }, (_, i) => {
+  // As many days as fit the strip's width (~120px each)
+  const stripDays = Array.from({ length: stripCount }, (_, i) => {
     const day = windowStart + i;
     if (day > daysInMonth) return null;
     const date = new Date(year, month - 1, day);
@@ -518,7 +526,7 @@ export default function AttendancePage() {
       </div>
 
       {isEmployee && myLateBalance && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-3 mb-5">
           <div className="border-2 border-black bg-white p-4">
             <p className="text-xs font-bold uppercase text-muted-foreground">
               Late allowance left
@@ -531,7 +539,7 @@ export default function AttendancePage() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-3 mb-5">
         {[
           {
             label: "Total",
@@ -603,10 +611,10 @@ export default function AttendancePage() {
       </div>
 
       {/* Date strip */}
-      <div className="border-2 border-black bg-white mb-5 flex items-stretch">
+      <div ref={stripRef} className="border-2 border-black bg-white mb-5 flex items-stretch">
         {/* Left arrow */}
         <button
-          onClick={() => setWindowStart((s) => Math.max(1, s - 7))}
+          onClick={() => setWindowStart((s) => Math.max(1, s - stripCount))}
           disabled={windowStart <= 1}
           className="px-3 border-r-2 border-black hover:bg-[#024BAB]/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors shrink-0"
         >
@@ -705,9 +713,9 @@ export default function AttendancePage() {
         {/* Right arrow */}
         <button
           onClick={() =>
-            setWindowStart((s) => Math.min(daysInMonth - 6, s + 7))
+            setWindowStart((s) => Math.max(1, Math.min(daysInMonth - stripCount + 1, s + stripCount)))
           }
-          disabled={windowStart + 7 > daysInMonth}
+          disabled={windowStart + stripCount > daysInMonth}
           className="px-3 border-l-2 border-black hover:bg-[#024BAB]/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors shrink-0"
         >
           <ChevronRight className="w-4 h-4" />

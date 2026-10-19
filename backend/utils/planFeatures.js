@@ -24,10 +24,13 @@ const FEATURES_BY_TIER = {
   },
 };
 
-const TIER_RATES = {
-  web_mobile: 299,
-  web_mobile_whatsapp: 499,
-};
+// Flat yearly price per employee-count slab. Single plan with every feature
+// (tier "web_mobile_whatsapp"); above the last slab → contact sales.
+const PLAN_SLABS = [
+  { maxEmployees: 25, yearlyPrice: 6499 },
+  { maxEmployees: 50, yearlyPrice: 11999 },
+  { maxEmployees: 100, yearlyPrice: 18999 },
+];
 
 // Fail-closed: no company doc or no subscription at all → most restrictive
 // feature set ("web_mobile"). But a subscription that predates the `tier`
@@ -46,4 +49,4 @@ async function getCompanyFeatures(companyId) {
   return FEATURES_BY_TIER[tier] || FEATURES_BY_TIER.web_mobile;
 }
 
-module.exports = { FEATURES_BY_TIER, TIER_RATES, getCompanyFeatures };
+module.exports = { FEATURES_BY_TIER, PLAN_SLABS, getCompanyFeatures };

@@ -1,4 +1,10 @@
 import { writePrintDocument } from "@/lib/printWindow";
+import {
+  PLAN_SLABS,
+  MAX_SELF_SERVE_EMPLOYEES,
+  SALES_URL,
+  slabFor,
+} from "@/lib/planSlabs";
 import { useState, useEffect, useCallback } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -30,19 +36,11 @@ declare global {
   }
 }
 
-type Tier = "web_mobile" | "web_mobile_whatsapp";
-
-const PLANS: { tier: Tier; name: string; rate: number }[] = [
-  { tier: "web_mobile", name: "NestHR Starter", rate: 299 },
-  { tier: "web_mobile_whatsapp", name: "NestHR Professional", rate: 499 },
-];
-
 export default function BillingPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const confirm = useConfirm();
 
-  const [selectedTier, setSelectedTier] = useState<Tier>("web_mobile");
   const [subscription, setSubscription] = useState<any>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,7 +60,6 @@ export default function BillingPage() {
             setNewEmployeeCount(
               r.data.currentEmployeeCount || r.data.maxEmployees || "",
             );
-            if (r.data.tier) setSelectedTier(r.data.tier);
           }
         })
         .catch(() => {}),
@@ -144,6 +141,10 @@ export default function BillingPage() {
       });
       return;
     }
+    if (!slabFor(count)) {
+      window.open(SALES_URL, "_blank", "noopener");
+      return;
+    }
     setGatewayModal(true);
   };
 
@@ -181,7 +182,7 @@ export default function BillingPage() {
     try {
       const res = await billingAPI.createOrder(
         count,
-        selectedTier,
+        "web_mobile_whatsapp",
         "yearly",
         gateway,
       );
@@ -441,24 +442,27 @@ export default function BillingPage() {
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 max-w-2xl">
-            {PLANS.map((p) => {
-              const isSelected = selectedTier === p.tier;
+            {PLAN_SLABS.map((sl) => {
+              const isSelected =
+                slabFor(Number(newEmployeeCount))?.maxEmployees ===
+                sl.maxEmployees;
               return (
-                <button
-                  key={p.tier}
-                  onClick={() => setSelectedTier(p.tier)}
+                <div
+                  key={sl.maxEmployees}
                   className={cn(
-                    "text-left border-2 bg-white p-4 transition-all",
+                    "border-2 bg-white p-4",
                     isSelected
                       ? "border-[#024BAB] ring-2 ring-[#024BAB]"
-                      : "border-black hover:border-[#024BAB]",
+                      : "border-black opacity-60",
                   )}
                 >
-                  <p className="font-bold text-sm text-black">{p.name}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    ₹{p.rate}/employee/year
+                  <p className="font-bold text-sm text-black">
+                    Up to {sl.maxEmployees} employees
                   </p>
-                </button>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    ₹{sl.yearlyPrice.toLocaleString("en-IN")}/year
+                  </p>
+                </div>
               );
             })}
           </div>
@@ -485,18 +489,31 @@ export default function BillingPage() {
               <div className="mb-4">
                 {(() => {
                   const count = Number(newEmployeeCount);
-                  const plan = PLANS.find((p) => p.tier === selectedTier)!;
-                  const yearly = count * plan.rate;
+                  const slab = slabFor(count);
+                  if (!slab)
+                    return (
+                      <p className="text-sm font-bold text-black">
+                        More than {MAX_SELF_SERVE_EMPLOYEES} employees —{" "}
+                        <a
+                          href={SALES_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#024BAB] hover:underline"
+                        >
+                          contact sales
+                        </a>
+                      </p>
+                    );
                   return (
                     <>
                       <span className="font-display font-bold text-3xl text-black">
-                        ₹{yearly.toLocaleString("en-IN")}
+                        ₹{slab.yearlyPrice.toLocaleString("en-IN")}
                       </span>
                       <span className="text-sm font-medium text-muted-foreground">
                         /yr
                       </span>
                       <p className="text-xs text-muted-foreground mt-1">
-                        ₹{plan.rate}/employee/year · {plan.name}
+                        Up to {slab.maxEmployees} employees · NestHR
                       </p>
                     </>
                   );
@@ -508,13 +525,15 @@ export default function BillingPage() {
               onClick={handleUpdateTeamSize}
               disabled={
                 upgrading ||
-                (Number(newEmployeeCount) === empMax &&
-                  selectedTier === sub?.tier)
+                (Number(newEmployeeCount) <= empMax &&
+                  sub?.tier === "web_mobile_whatsapp")
               }
               className="border-2 w-full py-2.5 text-sm flex items-center justify-center gap-2 bg-black text-white hover:bg-black/80 disabled:opacity-50"
             >
               {upgrading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
+              ) : !slabFor(Number(newEmployeeCount)) ? (
+                "Contact sales"
               ) : (
                 <>
                   Update & Pay

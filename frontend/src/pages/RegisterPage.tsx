@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import { AlertCircle, Users2 } from "lucide-react";
+import loginDash from "../../assets/login-dash.png";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -23,6 +24,11 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-[#F0F6FF] flex items-center justify-center p-8">
       <div className="w-full max-w-sm">
+        <img
+          src={loginDash}
+          alt="NestHR dashboard preview"
+          className="w-full mb-6 bg-white border-2 border-black"
+        />
         <div className="flex items-center gap-2 mb-8">
           <div className="w-9 h-9 bg-[#024BAB] border-2 border-black flex items-center justify-center">
             <Users2 className="w-4 h-4 text-white" />
@@ -109,6 +115,26 @@ export default function RegisterPage() {
             )}
           </button>
         </form>
+        <p className="text-xs text-gray-500 mt-4 text-center">
+          © 2026 Pixelate Nest. All rights reserved.{" "}
+          <a
+            href="https://www.pixelatenest.com/legal/privacy-policy.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-bold text-[#024BAB] hover:underline"
+          >
+            Privacy Policy
+          </a>
+          {" · "}
+          <a
+            href="https://www.pixelatenest.com/legal/terms-of-service.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-bold text-[#024BAB] hover:underline"
+          >
+            Terms of Service
+          </a>
+        </p>
       </div>
     </div>
   );

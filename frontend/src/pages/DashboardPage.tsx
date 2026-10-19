@@ -266,7 +266,7 @@ export default function DashboardPage() {
       )}
 
       {/* KPI cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-5">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-3 mb-5">
         {[
           {
             title: "Total Employees",

@@ -1,26 +1,29 @@
-const { TIER_RATES } = require("./planFeatures");
+const { PLAN_SLABS } = require("./planFeatures");
 
-const TIER_LABELS = {
-  web_mobile: "Web + Mobile",
-  web_mobile_whatsapp: "Web + Mobile + WhatsApp",
-};
+const PLAN_TIER = "web_mobile_whatsapp";
+const PLAN_LABEL = "NestHR";
 
-// Flat per-employee-per-year rate by tier. Monthly is just the yearly price
-// prorated over 12 months — there's no separate monthly-billing discount.
-function calculatePricing(employeeCount, tier) {
-  const rate = TIER_RATES[tier];
-  if (!rate) throw new Error(`Unknown tier: ${tier}`);
-
-  const yearlyPrice = employeeCount * rate;
-  const monthlyPrice = Math.round(yearlyPrice / 12);
+// Flat yearly price by employee-count slab; yearly billing only. monthlyPrice
+// is kept (yearly/12) only because the Subscription schema stores it.
+function calculatePricing(employeeCount) {
+  const slab = PLAN_SLABS.find((s) => employeeCount <= s.maxEmployees);
+  if (!slab) {
+    const err = new Error(
+      `More than ${PLAN_SLABS[PLAN_SLABS.length - 1].maxEmployees} employees — please contact sales for a custom quote.`,
+    );
+    err.statusCode = 400;
+    throw err;
+  }
 
   return {
-    tier,
-    tierLabel: TIER_LABELS[tier],
-    ratePerEmployee: rate,
-    monthlyPrice,
-    yearlyPrice,
+    tier: PLAN_TIER,
+    tierLabel: PLAN_LABEL,
+    maxEmployees: slab.maxEmployees,
+    // effective per-seat rate, informational (schema field is required)
+    ratePerEmployee: Math.round((slab.yearlyPrice / slab.maxEmployees) * 100) / 100,
+    monthlyPrice: Math.round(slab.yearlyPrice / 12),
+    yearlyPrice: slab.yearlyPrice,
   };
 }
 
-module.exports = { TIER_RATES, TIER_LABELS, calculatePricing };
+module.exports = { PLAN_SLABS, PLAN_TIER, PLAN_LABEL, calculatePricing };

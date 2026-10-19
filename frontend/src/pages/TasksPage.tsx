@@ -347,7 +347,7 @@ export default function TasksPage() {
       </div>
 
       {/* Stat tiles */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-3 mb-5">
         {COLUMNS.map((c) => (
           <div
             key={c.key}
