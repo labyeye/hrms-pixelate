@@ -29,7 +29,9 @@ import { employeeAPI, taskAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import { DatePickerField } from '../components/common/DatePickerField';
 import ScreenLayout, { HeaderBtn } from '../components/common/ScreenLayout';
+import ExportButton from '../components/common/ExportButton';
 import { C, FONT } from '../theme';
+import { CENTER } from '../components/common/centerModal';
 
 // Same rule as the web page and the backend: only these roles assign/edit/delete.
 const ASSIGN_ROLES = ['super_admin', 'hr_manager', 'department_head'];
@@ -223,13 +225,29 @@ export default function TasksScreen() {
       title="Tasks"
       loading={loading}
       right={
-        canAssign ? (
-          <HeaderBtn
-            label="Assign"
-            icon={<Plus size={14} color="#fff" />}
-            onPress={openCreate}
+        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+          <ExportButton
+            name="tasks"
+            label=""
+            rows={shown}
+            cols={[
+              { header: 'Title', value: (t: any) => t.title },
+              { header: 'Description', value: (t: any) => t.description },
+              { header: 'Assigned To', value: (t: any) => t.assignedTo?.name },
+              { header: 'Assigned By', value: (t: any) => t.assignedBy?.name },
+              { header: 'Priority', value: (t: any) => t.priority },
+              { header: 'Status', value: (t: any) => String(t.status || '').replace('_', ' ') },
+              { header: 'Due Date', value: (t: any) => (t.dueDate ? String(t.dueDate).slice(0, 10) : '') },
+            ]}
           />
-        ) : undefined
+          {canAssign ? (
+            <HeaderBtn
+              label="Assign"
+              icon={<Plus size={14} color="#fff" />}
+              onPress={openCreate}
+            />
+          ) : null}
+        </View>
       }
     >
       <View style={s.topBar}>
@@ -349,11 +367,12 @@ export default function TasksScreen() {
       {/* Detail */}
       <Modal
         visible={!!selected}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
+        animationType="fade"
         onRequestClose={() => setSelected(null)}
       >
-        <SafeAreaView edges={['top']} style={s.sheet}>
+<View style={CENTER.overlay}><View style={CENTER.card}>
+        <SafeAreaView edges={[]} style={s.sheet}>
           <View style={s.sheetHeader}>
             <Text style={s.sheetTitle} numberOfLines={1}>
               Task
@@ -479,16 +498,18 @@ export default function TasksScreen() {
             </ScrollView>
           )}
         </SafeAreaView>
-      </Modal>
+      </View></View>
+</Modal>
 
       {/* Create / edit */}
       <Modal
         visible={formOpen}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
+        animationType="fade"
         onRequestClose={() => setFormOpen(false)}
       >
-        <SafeAreaView edges={['top']} style={s.sheet}>
+<View style={CENTER.overlay}><View style={CENTER.card}>
+        <SafeAreaView edges={[]} style={s.sheet}>
           <View style={s.sheetHeader}>
             <Text style={s.sheetTitle}>
               {editing ? 'Edit Task' : 'Assign Task'}
@@ -582,7 +603,8 @@ export default function TasksScreen() {
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
-      </Modal>
+      </View></View>
+</Modal>
     </ScreenLayout>
   );
 }

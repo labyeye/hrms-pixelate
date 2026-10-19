@@ -16,6 +16,7 @@ import {
 import nesthrlogo from "../../assets/logo.png";
 import loginDash from "../../assets/login-dash.png";
 import { authAPI } from "@/services/api";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 
 function bufferToBase64Url(buffer: ArrayBuffer): string {
@@ -305,7 +306,7 @@ export default function LoginPage() {
                       setError("");
                     }}
                     placeholder="000000"
-                    className="w-full px-4 py-3 border-2 border-black text-lg font-bold tracking-[0.5em] text-center bg-white focus:outline-none focus:border-[#024BAB] transition-colors"
+                    className="w-full px-4 py-3 border-2 border-black text-lg font-bold tracking-[0.5em] text-center bg-white focus:outline-none transition-colors"
                     autoFocus
                     maxLength={8}
                   />
@@ -372,17 +373,14 @@ export default function LoginPage() {
                     <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
                       Phone Number
                     </label>
-                    <input
-                      type="tel"
+                    <PhoneInput
                       value={phone}
-                      onChange={(e) => {
-                        setPhone(e.target.value);
+                      onChange={(v) => {
+                        setPhone(v);
                         setError("");
                       }}
-                      placeholder="+91 98765 43210"
-                      className="w-full px-4 py-3 border-2 border-black text-sm font-medium bg-white focus:outline-none focus:border-[#024BAB] transition-colors"
-                      required
-                      autoFocus
+                      placeholder="Phone number"
+                      className="[&_input]:py-3 [&_button]:py-3"
                     />
                   </div>
                   <button
@@ -427,7 +425,7 @@ export default function LoginPage() {
                         setError("");
                       }}
                       placeholder="000000"
-                      className="w-full px-4 py-3 border-2 border-black text-lg font-bold tracking-[0.5em] text-center bg-white focus:outline-none focus:border-[#024BAB] transition-colors"
+                      className="w-full px-4 py-3 border-2 border-black text-lg font-bold tracking-[0.5em] text-center bg-white focus:outline-none transition-colors"
                       autoFocus
                       maxLength={6}
                     />
@@ -497,7 +495,7 @@ export default function LoginPage() {
                       setError("");
                     }}
                     placeholder="you@company.com"
-                    className="w-full px-4 py-3 border-2 border-black text-sm font-medium bg-white focus:outline-none focus:border-[#024BAB] transition-colors"
+                    className="w-full px-4 py-3 border-2 border-black text-sm font-medium bg-white focus:outline-none transition-colors"
                     required
                     autoComplete="email"
                     autoFocus
@@ -509,7 +507,7 @@ export default function LoginPage() {
                   <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
                     Password
                   </label>
-                  <div className="flex border-2 border-black focus-within:border-[#024BAB] transition-colors">
+                  <div className="flex border-2 border-black transition-colors">
                     <input
                       type={showPw ? "text" : "password"}
                       value={password}

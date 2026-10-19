@@ -607,12 +607,14 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    padding: 20,
   },
   modal: {
     backgroundColor: C.white,
-    borderTopWidth: 2,
-    borderTopColor: C.black,
+    borderWidth: 2,
+    borderColor: C.black,
+    borderRadius: 8,
     padding: 20,
     paddingBottom: 40,
     maxHeight: '80%',

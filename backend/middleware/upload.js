@@ -123,6 +123,24 @@ const uploadAvatar = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
 }).single("avatar");
 
+// Announcement poster (shown in the web + mobile apps and in the push notification)
+const posterStorage = multer.diskStorage({
+  destination(_req, _file, cb) {
+    const dir = path.join(UPLOAD_BASE, "announcement-posters");
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename(_req, file, cb) {
+    cb(null, `poster_${crypto.randomUUID()}${IMAGE_EXT[file.mimetype] || ".jpg"}`);
+  },
+});
+
+const uploadAnnouncementPoster = multer({
+  storage: posterStorage,
+  fileFilter: imageFilter,
+  limits: { fileSize: 5 * 1024 * 1024 },
+}).single("poster");
+
 // Document vault — generic file upload to disk
 const documentVaultStorage = multer.diskStorage({
   destination(_req, _file, cb) {
@@ -193,6 +211,7 @@ module.exports = {
   uploadDocumentVault,
   uploadLeaveDocument,
   uploadAvatar,
+  uploadAnnouncementPoster,
   uploadAttendanceSelfie,
   uploadFaceEnrollPhoto,
   validateMagicBytes,

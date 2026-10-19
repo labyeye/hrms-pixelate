@@ -6,6 +6,8 @@ import { useConfirm } from "@/hooks/use-confirm";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn, formatDate } from "@/lib/utils";
 import { EmployeeCombobox } from "@/components/employees/EmployeeCombobox";
+import { ExportMenu } from "@/components/ui/ExportMenu";
+import { ImportButton } from "@/components/ui/ImportButton";
 import {
   Dialog,
   DialogContent,
@@ -336,14 +338,65 @@ export default function TasksPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h1 className="font-display font-bold text-2xl text-black">Tasks</h1>
-        {canAssign && (
-          <button
-            onClick={openCreate}
-            className="border-2 border-black bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5 font-bold hover:bg-[#01368A] transition-colors"
-          >
-            <Plus className="w-4 h-4" /> Assign Task
-          </button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {canAssign && (
+            <ImportButton
+              name="tasks"
+              headers={["Title", "Description", "Assignee Emp ID", "Priority (low/medium/high)", "Due Date (YYYY-MM-DD)"]}
+              example={["Prepare monthly report", "Compile attendance numbers", "EMP0001", "medium", new Date().toISOString().slice(0, 10)]}
+              onRows={async (rows) => {
+                let ok = 0;
+                const bad: string[] = [];
+                for (const r of rows) {
+                  const title = String(r["Title"] || "").trim();
+                  const code = String(r["Assignee Emp ID"] || "").trim().toLowerCase();
+                  const emp = employees.find((e) => e.employeeId?.toLowerCase() === code);
+                  if (!title || !emp) {
+                    bad.push(title || "(no title)");
+                    continue;
+                  }
+                  const pr = String(r["Priority (low/medium/high)"] || "medium").toLowerCase();
+                  try {
+                    await taskAPI.create({
+                      title,
+                      description: String(r["Description"] || ""),
+                      assignedTo: emp.user,
+                      priority: ["low", "medium", "high"].includes(pr) ? pr : "medium",
+                      dueDate: String(r["Due Date (YYYY-MM-DD)"] || "").slice(0, 10),
+                    });
+                    ok++;
+                  } catch {
+                    bad.push(title);
+                  }
+                }
+                fetchTasks();
+                return `${ok} of ${rows.length} tasks imported${bad.length ? `. Skipped: ${bad.slice(0, 5).join(", ")}` : ""}`;
+              }}
+            />
+          )}
+          <ExportMenu
+            name="tasks"
+            rows={filtered}
+            cols={[
+              { header: "Title", value: (t) => t.title },
+              { header: "Description", value: (t) => t.description },
+              { header: "Assigned To", value: (t) => t.assignedTo?.name },
+              { header: "Assigned By", value: (t) => t.assignedBy?.name },
+              { header: "Priority", value: (t) => t.priority },
+              { header: "Status", value: (t) => t.status.replace("_", " ") },
+              { header: "Due Date", value: (t) => (t.dueDate ? String(t.dueDate).slice(0, 10) : "") },
+              { header: "Late", value: (t) => (t.late ? "Yes" : "") },
+            ]}
+          />
+          {canAssign && (
+            <button
+              onClick={openCreate}
+              className="border-2 border-black bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5 font-bold hover:bg-[#01368A] transition-colors"
+            >
+              <Plus className="w-4 h-4" /> Assign Task
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Stat tiles */}

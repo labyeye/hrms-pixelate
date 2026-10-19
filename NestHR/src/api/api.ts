@@ -198,8 +198,9 @@ export const dashboardAPI = {
 };
 
 export const employeeAPI = {
+  // The server pages at 20 by default, which silently hid employees beyond the first 20.
   getAll: (params?: Record<string, string>) =>
-    request(`/employees${qs(params)}`),
+    request(`/employees${qs({ limit: '5000', ...params })}`),
   getMe: () => request('/employees/me'),
   getOne: (id: string) => request(`/employees/${id}`),
   create: (body: object) =>
@@ -421,28 +422,6 @@ export const payrollAPI = {
     }),
 };
 
-export const recruitmentAPI = {
-  getAll: (params?: Record<string, string>) =>
-    request(`/recruitment${qs(params)}`),
-  create: (body: object) =>
-    request('/recruitment', { method: 'POST', body: JSON.stringify(body) }),
-  update: (id: string, body: object) =>
-    request(`/recruitment/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(body),
-    }),
-  addCandidate: (id: string, body: object) =>
-    request(`/recruitment/${id}/candidates`, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    }),
-  updateCandidateStage: (id: string, candidateId: string, body: object) =>
-    request(`/recruitment/${id}/candidates/${candidateId}`, {
-      method: 'PUT',
-      body: JSON.stringify(body),
-    }),
-};
-
 export const departmentAPI = {
   getAll: () => request('/departments'),
   create: (body: object) =>
@@ -458,6 +437,9 @@ export const departmentAPI = {
 export const performanceAPI = {
   getAll: (params?: Record<string, string>) =>
     request(`/performance${qs(params)}`),
+  // HR/admin: every active employee's month performance in one call
+  getOverview: (params?: Record<string, string>) =>
+    request(`/performance/overview${qs(params)}`),
   create: (body: object) =>
     request('/performance', { method: 'POST', body: JSON.stringify(body) }),
   update: (id: string, body: object) =>
@@ -611,7 +593,8 @@ export const attendanceSettingsAPI = {
 };
 
 export const lateApprovalAPI = {
-  getAll: () => request('/late-approvals'),
+  getAll: (params?: Record<string, string>) =>
+    request(`/late-approvals${qs(params)}`),
   resolve: (id: string, resolvedStatus: string) =>
     request(`/late-approvals/${id}/resolve`, {
       method: 'POST',
@@ -648,6 +631,9 @@ export const biometricAPI = {
     request(`/biometric/devices/${id}`, { method: 'DELETE' }),
   getLogs: (params?: Record<string, string>) =>
     request(`/biometric/logs${qs(params)}`),
+  // What the hardware device sent and what the server answered (handshakes, punch pushes, commands)
+  getDeviceLogs: (params?: Record<string, string>) =>
+    request(`/biometric/device-logs${qs(params)}`),
   assignNfc: (deviceId: string, body: object) =>
     request(`/biometric/devices/${deviceId}/nfc`, {
       method: 'POST',
@@ -825,6 +811,17 @@ export const supportAPI = {
 export const documentAPI = {
   getAll: (params?: Record<string, string>) =>
     request(`/documents${qs(params)}`),
+  // Confidential files: an OTP-issued access token must be sent with every download.
+  requestOtp: () => request('/documents/otp/request', { method: 'POST' }),
+  verifyOtp: (otp: string) =>
+    request('/documents/otp/verify', {
+      method: 'POST',
+      body: JSON.stringify({ otp }),
+    }),
+  download: (id: string, docToken: string) =>
+    request(`/documents/${id}/download`, {
+      headers: { 'X-Doc-Token': docToken },
+    }),
   delete: (id: string) => request(`/documents/${id}`, { method: 'DELETE' }),
   upload: async (formData: FormData) => {
     const token = await getToken();
@@ -878,8 +875,27 @@ export const announcementAPI = {
     departments?: string[];
     roles?: string[];
     acknowledgementRequired?: boolean;
+    posterUrl?: string;
   }) =>
     request('/announcements', { method: 'POST', body: JSON.stringify(body) }),
+  // Uploads the poster image; resolves with { url } to pass as posterUrl in create().
+  uploadPoster: async (uri: string, type: string, name: string) => {
+    const token = await getToken();
+    const formData = new FormData();
+    formData.append('poster', { uri, type, name } as any);
+    const res = await fetch(`${BASE_URL}/announcements/poster`, {
+      method: 'POST',
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: formData,
+    });
+    const text = await res.text();
+    let data: any = {};
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {}
+    if (!res.ok) throw new Error(data.message || statusMsg(res.status));
+    return data as { url: string };
+  },
   delete: (id: string) => request(`/announcements/${id}`, { method: 'DELETE' }),
   markRead: (id: string) =>
     request(`/announcements/${id}/read`, { method: 'POST' }),

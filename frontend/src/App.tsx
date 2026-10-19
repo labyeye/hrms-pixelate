@@ -12,13 +12,12 @@ const EmployeeDashboard = lazy(() => import("./pages/EmployeeDashboard"));
 const AttendancePage = lazy(() => import("./pages/AttendancePage"));
 const LeavePage = lazy(() => import("./pages/LeavePage"));
 const PayrollPage = lazy(() => import("./pages/PayrollPage"));
-const RecruitmentPage = lazy(() => import("./pages/RecruitmentPage"));
 const PerformancePage = lazy(() => import("./pages/PerformancePage"));
 const PerformanceReportPage = lazy(() => import("./pages/PerformanceReportPage"));
 const DepartmentsPage = lazy(() => import("./pages/DepartmentsPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 import LoginPage from "./pages/LoginPage";
-const RegisterPage = lazy(() => import("./pages/RegisterPage"));
+import RegisterPage from "./pages/RegisterPage";
 const OnboardingPage = lazy(() => import("./pages/OnboardingPage"));
 const BillingPage = lazy(() => import("./pages/BillingPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
@@ -37,8 +36,8 @@ const MyLoansPage = lazy(() => import("./pages/MyLoansPage"));
 const EmployeeReportPage = lazy(() => import("./pages/EmployeeReportPage"));
 const LoansPage = lazy(() => import("./pages/LoansPage"));
 import NotFound from "./pages/NotFound";
-const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
-const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 const ExitManagementPage = lazy(() => import("./pages/ExitManagementPage"));
 const AuditLogPage = lazy(() => import("./pages/AuditLogPage"));
 const SupportPage = lazy(() => import("./pages/SupportPage"));
@@ -219,14 +218,6 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <PayrollPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/recruitment"
-          element={
-            <ProtectedRoute>
-              <RecruitmentPage />
             </ProtectedRoute>
           }
         />

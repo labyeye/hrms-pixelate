@@ -135,7 +135,7 @@ const getBalanceSummary = asyncHandler(async (req, res) => {
   const employees = await Employee.find({
     company: req.user.company,
     status: { $ne: "terminated" },
-  }).select("firstName lastName employeeId avatar");
+  }).select("firstName lastName employeeId avatar designation");
 
   const summary = await Promise.all(
     employees.map(async (emp) => {
@@ -150,6 +150,7 @@ const getBalanceSummary = asyncHandler(async (req, res) => {
           lastName: emp.lastName,
           employeeId: emp.employeeId,
           avatar: emp.avatar,
+          designation: emp.designation,
         },
         lateUsed: balance.lateUsed,
         lateAllowed: balance.lateAllowed,

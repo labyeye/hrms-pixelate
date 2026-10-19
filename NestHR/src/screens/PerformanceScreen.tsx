@@ -28,7 +28,9 @@ import { useNavigation } from '@react-navigation/native';
 import { performanceAPI } from '../api/api';
 import { PerformanceReview } from '../types/hrms';
 import { C } from '../theme';
+import { CENTER } from '../components/common/centerModal';
 import FilterBar from '../components/common/FilterBar';
+import PerformanceOverview from '../components/performance/PerformanceOverview';
 
 const RATING_COLORS: Record<number, string> = {
   1: C.danger,
@@ -185,6 +187,7 @@ export default function PerformanceScreen() {
             />
           }
           showsVerticalScrollIndicator={false}
+          ListHeaderComponent={<PerformanceOverview />}
           ListEmptyComponent={
             <View style={styles.empty}>
               <TrendingUp size={40} color="#D1D5DB" />
@@ -277,10 +280,11 @@ export default function PerformanceScreen() {
       {/* Add Review Modal */}
       <Modal
         visible={showForm}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
+        animationType="fade"
       >
-        <SafeAreaView style={styles.safe} edges={['top']}>
+<View style={CENTER.overlay}><View style={CENTER.card}>
+        <SafeAreaView style={styles.safe} edges={[]}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Add Review</Text>
             <TouchableOpacity onPress={() => setShowForm(false)}>
@@ -368,7 +372,8 @@ export default function PerformanceScreen() {
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
-      </Modal>
+      </View></View>
+</Modal>
     </SafeAreaView>
   );
 }

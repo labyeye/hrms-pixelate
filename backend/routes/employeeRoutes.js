@@ -16,6 +16,7 @@ const {
   resetMyFace,
 } = require("../controllers/employeeController");
 const { protect, authorize } = require("../middleware/auth");
+const { requireDocAccess } = require("../utils/docVault");
 const {
   uploadEmployeeDocs,
   uploadAvatar,
@@ -111,6 +112,7 @@ router.get(
   "/:id/documents/:type",
   protect,
   authorize("super_admin", "hr_manager"),
+  requireDocAccess,
   downloadEmployeeDocument,
 );
 

@@ -29,6 +29,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { supportAPI } from '../api/api';
 import { C, S } from '../theme';
+import { CENTER } from '../components/common/centerModal';
 
 const ISSUE_TYPES = [
   { value: 'attendance', label: 'Attendance' },
@@ -36,7 +37,6 @@ const ISSUE_TYPES = [
   { value: 'payroll', label: 'Payroll & Salary' },
   { value: 'employee_management', label: 'Employee Management' },
   { value: 'performance', label: 'Performance Review' },
-  { value: 'recruitment', label: 'Recruitment' },
   { value: 'biometric', label: 'Biometric & Devices' },
   { value: 'billing', label: 'Billing & Subscription' },
   { value: 'reports', label: 'Reports' },
@@ -329,9 +329,10 @@ export default function SupportScreen({ navigation }: any) {
       {/* Create Ticket Modal */}
       <Modal
         visible={showForm}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
+        animationType="fade"
       >
+<View style={CENTER.overlay}><View style={CENTER.card}>
         <SafeAreaView style={styles.modalSafe} edges={['top', 'bottom']}>
           <View style={styles.modalHeader}>
             <Text style={S.h3}>New Support Ticket</Text>
@@ -424,7 +425,8 @@ export default function SupportScreen({ navigation }: any) {
             </ScrollView>
           </KeyboardAvoidingView>
         </SafeAreaView>
-      </Modal>
+      </View></View>
+</Modal>
 
       {/* Issue Type Picker Modal */}
       <Modal visible={showIssueTypePicker} animationType="slide" transparent>
@@ -516,9 +518,10 @@ export default function SupportScreen({ navigation }: any) {
       {/* Ticket Detail Modal */}
       <Modal
         visible={!!selectedTicket}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
+        animationType="fade"
       >
+<View style={CENTER.overlay}><View style={CENTER.card}>
         {selectedTicket && (
           <SafeAreaView style={styles.modalSafe} edges={['top', 'bottom']}>
             <View style={styles.modalHeader}>
@@ -804,7 +807,8 @@ export default function SupportScreen({ navigation }: any) {
             </ScrollView>
           </SafeAreaView>
         )}
-      </Modal>
+      </View></View>
+</Modal>
     </SafeAreaView>
   );
 }
@@ -964,12 +968,14 @@ const styles = StyleSheet.create({
   pickerOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    padding: 20,
   },
   pickerSheet: {
     backgroundColor: C.white,
-    borderTopWidth: 2,
-    borderTopColor: C.black,
+    borderWidth: 2,
+    borderColor: C.black,
+    borderRadius: 8,
     maxHeight: '60%',
   },
   pickerHeader: {

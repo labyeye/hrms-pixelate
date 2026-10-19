@@ -49,12 +49,6 @@ const MENU_ITEMS = [
     desc: 'Manage salaries & payslips',
   },
   {
-    key: 'Recruitment',
-    label: 'Recruitment',
-    icon: Briefcase,
-    desc: 'Jobs & candidate pipeline',
-  },
-  {
     key: 'Performance',
     label: 'Performance',
     icon: TrendingUp,

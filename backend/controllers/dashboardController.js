@@ -4,7 +4,6 @@ const Employee = require("../models/Employee");
 const Attendance = require("../models/Attendance");
 const Leave = require("../models/Leave");
 const Payroll = require("../models/Payroll");
-const Recruitment = require("../models/Recruitment");
 const Department = require("../models/Department");
 
 const getStats = asyncHandler(async (req, res) => {
@@ -26,7 +25,6 @@ const getStats = asyncHandler(async (req, res) => {
       newHires,
       pendingLeaves,
       todayPresent,
-      openPositions,
       departments,
       monthlyPayroll,
     ] = await Promise.all([
@@ -46,9 +44,6 @@ const getStats = asyncHandler(async (req, res) => {
         date: today,
         status: "present",
       }).catch(() => 0),
-      Recruitment.countDocuments({ company: companyId, status: "open" }).catch(
-        () => 0,
-      ),
       Department.countDocuments({ company: companyId }).catch(() => 0),
       Payroll.aggregate([
         {
@@ -176,7 +171,6 @@ const getStats = asyncHandler(async (req, res) => {
           todayAbsent,
           todayOnLeave,
           attendanceRate,
-          openPositions,
           departments,
           monthlyPayroll: monthlyPayroll[0]?.total || 0,
         },
@@ -199,7 +193,6 @@ const getStats = asyncHandler(async (req, res) => {
           pendingLeaves: 0,
           todayPresent: 0,
           attendanceRate: 0,
-          openPositions: 0,
           departments: 0,
           monthlyPayroll: 0,
         },

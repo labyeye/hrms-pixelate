@@ -6,6 +6,7 @@ const EmployeeDocument = require("../models/EmployeeDocument");
 const Employee = require("../models/Employee");
 const { validateMagicBytes } = require("../middleware/upload");
 const { moveToTrash } = require("./trashController");
+const { encryptFile, readDecrypted } = require("../utils/docVault");
 
 const UPLOADS_ROOT = path.resolve(__dirname, "../uploads/employee-docs");
 
@@ -76,6 +77,7 @@ const uploadDocument = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Employee not found");
   }
+  encryptFile(finalFile.path); // confidential: never stored in plaintext
 
   const relativePath = path
     .relative(path.resolve(__dirname, "../"), finalFile.path)
@@ -155,6 +157,7 @@ const generateLetter = asyncHandler(async (req, res) => {
   const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.txt`;
   const absPath = path.resolve(UPLOADS_ROOT, filename);
   fs.writeFileSync(absPath, content, "utf8");
+  encryptFile(absPath);
 
   const relativePath = path
     .relative(path.resolve(__dirname, "../"), absPath)
@@ -248,7 +251,7 @@ const downloadDocument = asyncHandler(async (req, res) => {
     throw new Error("File missing on server");
   }
 
-  const fileBuffer = fs.readFileSync(abs);
+  const fileBuffer = readDecrypted(abs);
   const base64 = fileBuffer.toString("base64");
 
   res.json({
@@ -317,6 +320,7 @@ const updateDocument = asyncHandler(async (req, res) => {
     }
 
     await validateMagicBytes(finalFile.path);
+    encryptFile(finalFile.path);
 
     doc.mimeType = finalFile.mimetype;
     doc.sizeBytes = finalFile.size;

@@ -1,4 +1,5 @@
 import { StatCard } from "@/components/ui/StatCard";
+import { ExportMenu } from "@/components/ui/ExportMenu";
 import { useState, useEffect, useCallback } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -199,6 +200,10 @@ export default function LeavePage() {
   >([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("");
+  // employeeId(_id) -> leave allowance usage for the current month
+  const [usageMap, setUsageMap] = useState<
+    Record<string, { used: number; allowed: number; detail: string }>
+  >({});
 
   // Create modal
   const [showModal, setShowModal] = useState(false);
@@ -276,12 +281,27 @@ export default function LeavePage() {
           })
           .catch(() => {});
       } else {
-        const [leavesRes, empRes] = await Promise.all([
+        const [leavesRes, empRes, balRes] = await Promise.all([
           leaveAPI.getAll(filter ? { status: filter } : undefined),
-          employeeAPI.getAll({ status: "active", limit: "200" }),
+          employeeAPI.getAll({ status: "active", limit: "5000" }),
+          attendanceSettingsAPI.getBalanceSummary().catch(() => null),
         ]);
         if (leavesRes.success) setLeaves(leavesRes.data);
         if (empRes.success) setEmployees(empRes.data);
+        if (balRes?.success) {
+          const m: typeof usageMap = {};
+          for (const r of balRes.data) {
+            const rows = (r.leaveUsed || []).filter((l: any) => l.daysAllowed > 0);
+            m[r.employee._id] = {
+              used: rows.reduce((t: number, l: any) => t + l.daysUsed, 0),
+              allowed: rows.reduce((t: number, l: any) => t + l.daysAllowed, 0),
+              detail: rows
+                .map((l: any) => `${TYPE_LABELS[l.leaveType] ?? l.leaveType}: ${l.daysUsed}/${l.daysAllowed}`)
+                .join(" · "),
+            };
+          }
+          setUsageMap(m);
+        }
       }
     } catch {}
     setLoading(false);
@@ -546,19 +566,38 @@ export default function LeavePage() {
             </button>
           ))}
         </div>
-        <button
-          onClick={() => {
-            setForm(
-              isEmployee
-                ? { ...EMPTY_FORM, employee: myEmployeeId }
-                : EMPTY_FORM,
-            );
-            setShowModal(true);
-          }}
-          className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5"
-        >
-          <Plus className="w-4 h-4" /> Apply Leave
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportMenu
+            name="leave_requests"
+            rows={displayedLeaves}
+            cols={[
+              { header: "Emp Code", value: (l: any) => l.employee?.employeeId },
+              { header: "Employee", value: (l: any) => `${l.employee?.firstName || ""} ${l.employee?.lastName || ""}`.trim() },
+              { header: "Designation", value: (l: any) => l.employee?.designation },
+              { header: "Free Leave Used", value: (l: any) => { const u = usageMap[l.employee?._id]; return u ? `${u.used}/${u.allowed}` : ""; } },
+              { header: "Type", value: (l: any) => TYPE_LABELS[l.leaveType] ?? l.leaveType },
+              { header: "From", value: (l: any) => String(l.startDate).slice(0, 10) },
+              { header: "To", value: (l: any) => String(l.endDate).slice(0, 10) },
+              { header: "Days", value: (l: any) => l.days },
+              { header: "Reason", value: (l: any) => l.reason },
+              { header: "Status", value: (l: any) => l.status },
+              { header: "Paid/Unpaid", value: (l: any) => (l.status === "approved" ? (l.deductSalary ? "Unpaid" : "Paid") : "") },
+            ]}
+          />
+          <button
+            onClick={() => {
+              setForm(
+                isEmployee
+                  ? { ...EMPTY_FORM, employee: myEmployeeId }
+                  : EMPTY_FORM,
+              );
+              setShowModal(true);
+            }}
+            className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5"
+          >
+            <Plus className="w-4 h-4" /> Apply Leave
+          </button>
+        </div>
       </div>
 
       {isEmployee && myLeaveBalance.length > 0 && (
@@ -651,17 +690,23 @@ export default function LeavePage() {
             <thead>
               <tr className="border-b-2 border-black bg-[#024BAB]/5">
                 {[
-                  "Employee",
-                  "Leave Type",
-                  "Duration",
-                  "Days",
-                  "Reason",
-                  "Status",
-                  "Actions",
-                ].map((h) => (
+                  ["Emp Code", ""],
+                  ["Employee", ""],
+                  ["Designation", ""],
+                  ...(isEmployee ? [] : [["Free Leave", ""]]),
+                  ["Type", "w-24"],
+                  ["Duration", ""],
+                  ["Days", "w-14"],
+                  ["Reason", "min-w-[240px] w-1/4"],
+                  ["Status", ""],
+                  ["Actions", ""],
+                ].map(([h, w]) => (
                   <th
                     key={h}
-                    className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider"
+                    className={cn(
+                      "px-3 py-3 text-left text-xs font-bold text-black uppercase tracking-wider",
+                      w,
+                    )}
                   >
                     {h}
                   </th>
@@ -677,36 +722,56 @@ export default function LeavePage() {
                     i % 2 === 0 ? "" : "bg-[#F8FAFF]",
                   )}
                 >
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-3 text-xs font-bold text-black whitespace-nowrap">
+                    {(leave.employee as any)?.employeeId || "—"}
+                  </td>
+                  <td className="px-3 py-3">
                     <div className="flex items-center gap-2">
                       {(leave.employee as any)?.avatar ? (
                         <img
                           src={(leave.employee as any).avatar}
                           alt={(leave.employee as any)?.firstName}
-                          className="w-7 h-7 border-2 border-black object-cover shrink-0"
+                          className="w-7 h-7 border-2 border-black object-cover shrink-0 rounded-full"
                         />
                       ) : (
-                        <div className="w-7 h-7 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[10px] font-bold text-white shrink-0">
-                          {(
-                            leave.employee as any
-                          )?.firstName?.[0]?.toUpperCase()}
+                        <div className="w-7 h-7 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[10px] font-bold text-white shrink-0 rounded-full">
+                          {(leave.employee as any)?.firstName?.[0]?.toUpperCase()}
                         </div>
                       )}
-                      <div>
-                        <p className="font-bold text-black text-xs">
-                          {(leave.employee as any)?.firstName}{" "}
-                          {(leave.employee as any)?.lastName}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {(leave.employee as any)?.department?.name}
-                        </p>
-                      </div>
+                      <p className="font-bold text-black text-xs whitespace-nowrap">
+                        {(leave.employee as any)?.firstName}{" "}
+                        {(leave.employee as any)?.lastName}
+                      </p>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-3 text-xs text-black">
+                    {(leave.employee as any)?.designation || "—"}
+                  </td>
+                  {!isEmployee && (
+                    <td className="px-3 py-3 text-xs whitespace-nowrap">
+                      {(() => {
+                        const u = usageMap[(leave.employee as any)?._id];
+                        if (!u || !u.allowed) return <span className="text-muted-foreground">—</span>;
+                        return (
+                          <span
+                            title={u.detail}
+                            className={cn(
+                              "font-bold border-2 px-1.5 py-0.5",
+                              u.used >= u.allowed
+                                ? "text-[#EF4444] border-[#EF4444] bg-[#EF4444]/10"
+                                : "text-[#024BAB] border-[#024BAB] bg-[#024BAB]/10",
+                            )}
+                          >
+                            {u.used}/{u.allowed} d
+                          </span>
+                        );
+                      })()}
+                    </td>
+                  )}
+                  <td className="px-3 py-3 w-24">
                     <span
                       className={cn(
-                        "border-2 text-[10px] px-2 py-0.5",
+                        "border-2 text-[10px] px-1.5 py-0.5 whitespace-nowrap",
                         TYPE_BADGE_COLORS[leave.leaveType] ||
                           "bg-gray-100 text-gray-500 border-gray-300",
                       )}
@@ -714,17 +779,17 @@ export default function LeavePage() {
                       {TYPE_LABELS[leave.leaveType]}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-xs text-black">
+                  <td className="px-3 py-3 text-xs text-black whitespace-nowrap">
                     {formatDate(leave.startDate)} → {formatDate(leave.endDate)}
                   </td>
-                  <td className="px-4 py-3 text-xs font-bold text-black">
+                  <td className="px-3 py-3 w-14 text-xs font-bold text-black">
                     {leave.days}d
                   </td>
-                  <td className="px-4 py-3 text-xs text-black max-w-32 truncate">
+                  <td className="px-3 py-3 text-xs text-black min-w-[240px] whitespace-normal break-words">
                     {leave.reason}
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-col gap-1">
+                  <td className="px-3 py-3">
+                    <div className="flex flex-row items-center gap-1 whitespace-nowrap">
                       <span
                         className={cn(
                           "border-2 text-[10px] capitalize",
@@ -747,7 +812,7 @@ export default function LeavePage() {
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-3">
                     <div className="flex gap-1 flex-wrap">
                       {/* Approve / Reject — admin only, pending leaves */}
                       {isAdmin && leave.status === "pending" && (

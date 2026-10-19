@@ -10,6 +10,7 @@ import {
   transactionAPI,
   shiftAPI,
   payrollAPI,
+  attendanceAPI,
 } from "@/services/api";
 import { Employee, Department } from "@/types/hrms";
 import { cn, formatDate } from "@/lib/utils";
@@ -45,7 +46,16 @@ import {
   Loader2,
   ArrowUp,
   ArrowDown,
+  UserPlus,
+  CalendarCheck,
+  CheckSquare,
 } from "lucide-react";
+import { StatCard } from "@/components/ui/StatCard";
+import { ExportMenu } from "@/components/ui/ExportMenu";
+import { PhoneInput } from "@/components/ui/PhoneInput";
+import { PickerSelect } from "@/components/ui/PickerSelect";
+import { AddressFields } from "@/components/employees/AddressFields";
+import { useDocOtp } from "@/hooks/use-doc-otp";
 import { formatCurrency } from "@/lib/utils";
 import { ActionModal } from "@/components/ui/ActionModal";
 import { useConfirm } from "@/hooks/use-confirm";
@@ -59,6 +69,8 @@ const STATUS_COLORS: Record<string, string> = {
   inactive: "border-2 bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
   terminated:
     "border-2 bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444] px-2 py-0.5",
+  exited:
+    "border-2 bg-[#A855F7]/10 text-[#A855F7] border-[#A855F7] px-2 py-0.5",
 };
 
 const TYPE_COLORS: Record<string, string> = {
@@ -92,6 +104,9 @@ interface EmployeeFormData {
   aadharNumber: string;
   address: string;
   permanentAddress: string;
+  permanentCity: string;
+  permanentState: string;
+  permanentPincode: string;
   city: string;
   state: string;
   pincode: string;
@@ -160,6 +175,9 @@ const EMPTY_FORM: EmployeeFormData = {
   aadharNumber: "",
   address: "",
   permanentAddress: "",
+  permanentCity: "",
+  permanentState: "",
+  permanentPincode: "",
   city: "",
   state: "",
   pincode: "",
@@ -248,6 +266,13 @@ export default function EmployeesPage() {
   const [faceEnrolling, setFaceEnrolling] = useState(false);
   const faceEnrollInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
+  const { withOtp, otpModal } = useDocOtp();
+  const [sameAddress, setSameAddress] = useState(true);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [allEmps, setAllEmps] = useState<Employee[]>([]);
+  const [attSummary, setAttSummary] = useState<Record<string, number>>({});
   const [viewEmp, setViewEmp] = useState<Employee | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [loanModal, setLoanModal] = useState(false);
@@ -298,7 +323,7 @@ export default function EmployeesPage() {
       if (filterDept) params.department = filterDept;
       if (filterStatus) params.status = filterStatus;
       const now = new Date();
-      const [empRes, deptRes, shiftRes, payrollRes] = await Promise.all([
+      const [empRes, deptRes, shiftRes, payrollRes, allRes, attRes] = await Promise.all([
         employeeAPI.getAll(params),
         departmentAPI.getAll(),
         shiftAPI.getAll(),
@@ -307,8 +332,18 @@ export default function EmployeesPage() {
           year: String(now.getFullYear()),
           limit: "200",
         }),
+        employeeAPI.getAll({ limit: "5000" }),
+        attendanceAPI
+          .getSummary({ month: String(now.getMonth() + 1), year: String(now.getFullYear()) })
+          .catch(() => null),
       ]);
       if (empRes.success) setEmployees(empRes.data);
+      if (allRes.success) setAllEmps(allRes.data);
+      if ((attRes as any)?.success) {
+        const m: Record<string, number> = {};
+        for (const r of (attRes as any).data) m[r._id] = r.count;
+        setAttSummary(m);
+      }
       if (deptRes.success) setDepartments(deptRes.data);
       if ((shiftRes as any).success) setShifts((shiftRes as any).data);
       if ((payrollRes as any).success) {
@@ -333,6 +368,7 @@ export default function EmployeesPage() {
     setForm(EMPTY_FORM);
     setDocFiles({});
     setAvatarPreview(null);
+    setSameAddress(true);
     setFormTab(0);
     setShowModal(true);
   };
@@ -394,6 +430,9 @@ export default function EmployeesPage() {
         otAfterHours: String((emp as any).customShift?.otAfterHours ?? 9),
       },
       permanentAddress: (emp as any).permanentAddress || "",
+      permanentCity: (emp as any).permanentCity || "",
+      permanentState: (emp as any).permanentState || "",
+      permanentPincode: (emp as any).permanentPincode || "",
       city: (emp as any).city || "",
       state: (emp as any).state || "",
       pincode: (emp as any).pincode || "",
@@ -411,6 +450,12 @@ export default function EmployeesPage() {
       previousCompany: (emp as any).previousCompany || "",
     });
     setDocFiles({});
+    const pa = (emp as any).permanentAddress;
+    setSameAddress(
+      !pa ||
+        (pa === (emp as any).address &&
+          ((emp as any).permanentPincode || (emp as any).pincode) === (emp as any).pincode),
+    );
     setFormTab(0);
     setShowModal(true);
   };
@@ -484,6 +529,14 @@ export default function EmployeesPage() {
     try {
       const payload = {
         ...form,
+        ...(sameAddress
+          ? {
+              permanentAddress: form.address,
+              permanentCity: form.city,
+              permanentState: form.state,
+              permanentPincode: form.pincode,
+            }
+          : {}),
         salary: Number(form.salary) || 0,
         workDaysPerWeek:
           form.workScheduleType === "custom"
@@ -849,14 +902,94 @@ export default function EmployeesPage() {
     );
   }, 0);
 
+  const now0 = new Date();
+  const newHires = allEmps.filter((e) => {
+    const d = e.joinDate ? new Date(e.joinDate) : null;
+    return d && d.getMonth() === now0.getMonth() && d.getFullYear() === now0.getFullYear();
+  }).length;
+  const statusCount = {
+    active: allEmps.filter((e) => e.status === "active").length,
+    inactive: allEmps.filter((e) => e.status === "inactive").length,
+    exited: allEmps.filter((e) => (e.status as string) === "exited").length,
+  };
+  const attDen =
+    (attSummary.present || 0) + (attSummary.late || 0) + (attSummary.half_day || 0) +
+    (attSummary.absent || 0) + (attSummary.on_leave || 0);
+  const attPct = attDen
+    ? Math.round((((attSummary.present || 0) + (attSummary.late || 0) + (attSummary.half_day || 0) * 0.5) / attDen) * 100)
+    : 0;
+
+  const toggleSel = (id: string) =>
+    setSelected((p) => {
+      const n = new Set(p);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  const bulkRun = async (label: string, fn: (id: string) => Promise<any>, destructive = false) => {
+    const ok = await confirm({
+      title: `${label} ${selected.size} employee(s)?`,
+      description: destructive ? "This action cannot be undone." : "This updates every selected employee.",
+      confirmText: label,
+      destructive,
+    });
+    if (!ok) return;
+    setBulkBusy(true);
+    let done = 0;
+    const total = selected.size;
+    for (const id of selected) {
+      try {
+        await fn(id);
+        done++;
+      } catch {}
+    }
+    setBulkBusy(false);
+    setSelected(new Set());
+    setActionModal({
+      show: true,
+      type: done === total ? "success" : "error",
+      title: `${label}: ${done}/${total} done`,
+      message: done === total ? "Bulk action completed." : "Some employees could not be updated.",
+    });
+    load();
+  };
+
   return (
     <AppLayout title="Employees">
-      {}
+      {otpModal}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h1 className="font-display font-bold text-2xl text-black">
           Employees
         </h1>
-        <div className="grid-cols-2 grid gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => {
+              setSelectMode((v) => !v);
+              setSelected(new Set());
+            }}
+            className={cn(
+              "border-2 border-black px-4 py-2 text-sm flex items-center gap-1.5 font-bold transition-colors",
+              selectMode ? "bg-black text-white" : "bg-white text-black hover:bg-gray-50",
+            )}
+          >
+            <CheckSquare className="w-4 h-4" /> {selectMode ? "Selecting" : "Select"}
+          </button>
+          <ExportMenu
+            name="employees"
+            rows={displayedEmployees}
+            cols={[
+              { header: "Emp ID", value: (e) => e.employeeId },
+              { header: "Name", value: (e) => `${e.firstName} ${e.lastName}` },
+              { header: "Department", value: (e: any) => e.department?.name },
+              { header: "Designation", value: (e) => e.designation },
+              { header: "Phone", value: (e) => e.phone },
+              { header: "Email", value: (e) => e.email },
+              { header: "Join Date", value: (e) => (e.joinDate ? String(e.joinDate).slice(0, 10) : "") },
+              { header: "Salary", value: (e: any) => e.salary ?? 0 },
+              { header: "Loan Balance", value: (e: any) => e.loanBalance ?? 0 },
+              { header: "Status", value: (e) => e.status },
+            ]}
+          />
           <button
             onClick={() => {
               setImportModal(true);
@@ -864,7 +997,7 @@ export default function EmployeesPage() {
             }}
             className="border-2 border-black bg-white text-black px-4 py-2 text-sm flex items-center gap-1.5 font-bold hover:bg-gray-50 transition-colors"
           >
-            <FileSpreadsheet className="w-4 h-4" /> Import Excel
+            <FileSpreadsheet className="w-4 h-4 text-[#00A36C]" /> Import Excel
           </button>
           <button
             onClick={openAdd}
@@ -876,46 +1009,68 @@ export default function EmployeesPage() {
       </div>
 
       {}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-5">
-        {" "}
-        <div className="border-2 border-black bg-white p-4 flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#024BAB]/10 border-2 border-[#024BAB] flex items-center justify-center shrink-0">
-            <Users className="w-5 h-5 text-[#024BAB]" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              Total Employees
-            </p>
-            <p className="text-2xl font-bold text-black">{employees.length}</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+        <StatCard label="Total Employees" value={allEmps.length} icon={Users} color="#024BAB" />
+        <StatCard
+          label="New Hires This Month"
+          value={newHires}
+          icon={UserPlus}
+          color="#A855F7"
+          sub={new Date().toLocaleString("en-IN", { month: "long", year: "numeric" })}
+        />
+        <StatCard
+          label="Total Est. Balance"
+          value={formatCurrency(totalEstBalance)}
+          icon={IndianRupee}
+          color={totalEstBalance < 0 ? "#EF4444" : "#00C48C"}
+        />
+        <StatCard label="Total Loan Balance" value={formatCurrency(totalLoan)} icon={Banknote} color="#EF4444" />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-5">
+        <div className="nb-rise border-2 border-black bg-white p-4">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Workforce Status</p>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "Active", n: statusCount.active, color: "#00C48C", icon: UserCheck },
+              { label: "Inactive", n: statusCount.inactive, color: "#6B7280", icon: Clock },
+              { label: "Exited", n: statusCount.exited, color: "#A855F7", icon: ArrowRight },
+            ].map((x) => (
+              <div key={x.label} className="flex items-center gap-2">
+                <div
+                  className="w-10 h-10 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: x.color }}
+                >
+                  <x.icon className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold leading-tight tabular-nums">{x.n}</p>
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{x.label}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-        <div className="border-2 border-black bg-white p-4 flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#00C48C]/10 border-2 border-[#00C48C] flex items-center justify-center shrink-0">
-            <IndianRupee className="w-5 h-5 text-[#00C48C]" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              Total Est. Balance
+        <div className="nb-rise border-2 border-black bg-white p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+              <CalendarCheck className="w-4 h-4" /> Attendance &middot;{" "}
+              {new Date().toLocaleString("en-IN", { month: "long" })}
             </p>
-            <p
-              className={`text-2xl font-bold ${totalEstBalance < 0 ? "text-red-500" : "text-[#00C48C]"}`}
-            >
-              {formatCurrency(totalEstBalance)}
-            </p>
+            <p className="text-2xl font-bold tabular-nums">{attPct}%</p>
           </div>
-        </div>
-        <div className="border-2 border-black bg-white p-4 flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#EF4444]/10 border-2 border-[#EF4444] flex items-center justify-center shrink-0">
-            <Banknote className="w-5 h-5 text-[#EF4444]" />
+          <div className="h-4 border-2 border-black bg-gray-100">
+            <div
+              className="h-full transition-all duration-700"
+              style={{
+                width: `${attPct}%`,
+                backgroundColor: attPct >= 85 ? "#00C48C" : attPct >= 70 ? "#FA731C" : "#EF4444",
+              }}
+            />
           </div>
-          <div>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              Total Loan Balance
-            </p>
-            <p className="text-2xl font-bold text-[#EF4444]">
-              {formatCurrency(totalLoan)}
-            </p>
-          </div>
+          <p className="text-[11px] text-muted-foreground mt-2">
+            Present {attSummary.present || 0} &middot; Late {attSummary.late || 0} &middot; Half day{" "}
+            {attSummary.half_day || 0} &middot; Leave {attSummary.on_leave || 0} &middot; Absent {attSummary.absent || 0}
+          </p>
         </div>
       </div>
 
@@ -955,6 +1110,7 @@ export default function EmployeesPage() {
             <option value="on_leave">On Leave</option>
             <option value="inactive">Inactive</option>
             <option value="terminated">Terminated</option>
+            <option value="exited">Exited</option>
           </select>
         </div>
         {(filterDept || filterStatus) && (
@@ -990,7 +1146,60 @@ export default function EmployeesPage() {
         </button>
       </div>
 
-      {}
+      {selectMode && (
+        <div className="flex flex-wrap items-center gap-2 mb-3 border-2 border-black bg-[#024BAB]/5 px-3 py-2">
+          <span className="text-sm font-bold">{selected.size} selected</span>
+          <button
+            className="text-xs font-bold border-2 border-black px-2 py-1 bg-white"
+            onClick={() =>
+              setSelected(
+                selected.size === displayedEmployees.length ? new Set() : new Set(displayedEmployees.map((e) => e._id)),
+              )
+            }
+          >
+            {selected.size === displayedEmployees.length ? "Clear all" : "Select all"}
+          </button>
+          {selected.size > 0 && (
+            <>
+              <button
+                disabled={bulkBusy}
+                className="text-xs font-bold border-2 border-black px-2 py-1 bg-[#00C48C] text-white"
+                onClick={() => bulkRun("Activate", (id) => employeeAPI.update(id, { status: "active" }))}
+              >
+                Mark Active
+              </button>
+              <button
+                disabled={bulkBusy}
+                className="text-xs font-bold border-2 border-black px-2 py-1 bg-gray-500 text-white"
+                onClick={() => bulkRun("Deactivate", (id) => employeeAPI.update(id, { status: "inactive" }))}
+              >
+                Mark Inactive
+              </button>
+              <button
+                disabled={bulkBusy}
+                className="text-xs font-bold border-2 border-black px-2 py-1 bg-[#EF4444] text-white"
+                onClick={() => bulkRun("Terminate", (id) => employeeAPI.delete(id), true)}
+              >
+                Terminate
+              </button>
+              <span className="ml-auto">
+                <ExportMenu
+                  name="employees_selected"
+                  rows={displayedEmployees.filter((e) => selected.has(e._id))}
+                  cols={[
+                    { header: "Emp ID", value: (e) => e.employeeId },
+                    { header: "Name", value: (e) => `${e.firstName} ${e.lastName}` },
+                    { header: "Designation", value: (e) => e.designation },
+                    { header: "Status", value: (e) => e.status },
+                  ]}
+                />
+              </span>
+            </>
+          )}
+          {bulkBusy && <Loader2 className="w-4 h-4 animate-spin" />}
+        </div>
+      )}
+
       {loading ? (
         <div className="flex items-center justify-center h-64">
           <img src={nesthrlogo} alt="NestHR" className="h-16 w-auto" />
@@ -1156,7 +1365,9 @@ export default function EmployeesPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b-2 border-black bg-[#024BAB]/5">
+                  {selectMode && <th className="px-3 py-3 w-8" />}
                   {[
+                    "Emp ID",
                     "Employee",
                     "Department",
                     "Designation",
@@ -1185,6 +1396,19 @@ export default function EmployeesPage() {
                     )}
                     onClick={() => setViewEmp(emp)}
                   >
+                    {selectMode && (
+                      <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selected.has(emp._id)}
+                          onChange={() => toggleSel(emp._id)}
+                          className="w-4 h-4 accent-[#024BAB]"
+                        />
+                      </td>
+                    )}
+                    <td className="px-4 py-3 text-xs font-bold text-black whitespace-nowrap">
+                      {emp.employeeId}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 border-[1px] border-black shrink-0 overflow-hidden bg-[#024BAB] flex items-center justify-center text-xs font-bold text-white rounded-full">
@@ -1201,9 +1425,6 @@ export default function EmployeesPage() {
                         <div>
                           <p className="font-bold text-black">
                             {emp.firstName} {emp.lastName}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {emp.employeeId}
                           </p>
                         </div>
                       </div>
@@ -1445,7 +1666,7 @@ export default function EmployeesPage() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                       <div>
                         <label className="block text-xs font-bold text-black mb-1">
                           First Name <span className="text-red-500">*</span>
@@ -1495,23 +1716,10 @@ export default function EmployeesPage() {
                         <label className="block text-xs font-bold text-black mb-1">
                           Mobile Number
                         </label>
-                        <input
-                          type="tel"
+                        <PhoneInput
                           value={form.phone}
-                          onChange={(e) =>
-                            setForm({
-                              ...form,
-                              phone: e.target.value
-                                .replace(/\D/g, "")
-                                .slice(0, 10),
-                            })
-                          }
-                          maxLength={10}
-                          minLength={10}
-                          pattern="\d{10}"
-                          title="Enter a valid 10-digit mobile number"
-                          className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                          placeholder="10-digit mobile number"
+                          onChange={(v) => setForm({ ...form, phone: v })}
+                          placeholder="Mobile number"
                         />
                       </div>
                       <div>
@@ -1550,27 +1758,20 @@ export default function EmployeesPage() {
                       <label className="block text-xs font-bold text-black mb-2">
                         Gender
                       </label>
-                      <div className="flex gap-3">
-                        {["male", "female", "other"].map((g) => (
-                          <button
-                            key={g}
-                            type="button"
-                            onClick={() => setForm({ ...form, gender: g })}
-                            className={cn(
-                              "flex-1 py-2.5 border-2 border-black text-sm font-bold capitalize transition-colors",
-                              form.gender === g
-                                ? "bg-[#024BAB] text-white"
-                                : "bg-white text-black hover:bg-[#024BAB]/5",
-                            )}
-                          >
-                            {g}
-                          </button>
-                        ))}
-                      </div>
+                      <PickerSelect
+                        value={form.gender}
+                        onChange={(g) => setForm({ ...form, gender: g })}
+                        placeholder="Select gender"
+                        options={[
+                          { value: "male", label: "Male" },
+                          { value: "female", label: "Female" },
+                          { value: "other", label: "Other" },
+                        ]}
+                      />
                     </div>
 
                     {canAssignRole && (
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-3 gap-4">
                         <div>
                           <label className="block text-xs font-bold text-black mb-1">
                             Role
@@ -1594,6 +1795,46 @@ export default function EmployeesPage() {
                                 {r.label}
                               </option>
                             ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Department
+                          </label>
+                          <select
+                            required
+                            value={form.department}
+                            onChange={(e) =>
+                              setForm({ ...form, department: e.target.value })
+                            }
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 bg-white"
+                          >
+                            <option value="">Select department</option>
+                            {departments.map((d) => (
+                              <option key={d._id} value={d._id}>
+                                {d.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-black mb-1">
+                            Employment Type
+                          </label>
+                          <select
+                            value={form.employmentType}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                employmentType: e.target.value,
+                              })
+                            }
+                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 bg-white"
+                          >
+                            <option value="full_time">Full Time</option>
+                            <option value="part_time">Part Time</option>
+                            <option value="contract">Contract</option>
+                            <option value="intern">Intern</option>
                           </select>
                         </div>
                         {form.role === "department_head" && (
@@ -1625,43 +1866,6 @@ export default function EmployeesPage() {
                     )}
 
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-bold text-black mb-1">
-                          Department
-                        </label>
-                        <select
-                          required
-                          value={form.department}
-                          onChange={(e) =>
-                            setForm({ ...form, department: e.target.value })
-                          }
-                          className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 bg-white"
-                        >
-                          <option value="">Select department</option>
-                          {departments.map((d) => (
-                            <option key={d._id} value={d._id}>
-                              {d.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-black mb-1">
-                          Employment Type
-                        </label>
-                        <select
-                          value={form.employmentType}
-                          onChange={(e) =>
-                            setForm({ ...form, employmentType: e.target.value })
-                          }
-                          className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 bg-white"
-                        >
-                          <option value="full_time">Full Time</option>
-                          <option value="part_time">Part Time</option>
-                          <option value="contract">Contract</option>
-                          <option value="intern">Intern</option>
-                        </select>
-                      </div>
                       {editEmp && (
                         <div>
                           <label className="block text-xs font-bold text-black mb-1">
@@ -1856,6 +2060,7 @@ export default function EmployeesPage() {
                         </button>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
+                        {form.otEnabled && (
                         <div>
                           <label className="block text-xs font-bold text-black mb-1">
                             OT Rate (₹ / Hour)
@@ -1871,6 +2076,7 @@ export default function EmployeesPage() {
                             placeholder="e.g. 50"
                           />
                         </div>
+                        )}
                         <div>
                           <label className="block text-xs font-bold text-black mb-1">
                             Biometric User ID
@@ -2439,107 +2645,62 @@ export default function EmployeesPage() {
                           <label className="block text-xs font-bold text-black mb-1">
                             Emergency Contact
                           </label>
-                          <input
-                            type="tel"
+                          <PhoneInput
                             value={form.emergencyContact}
-                            onChange={(e) =>
-                              setForm({
-                                ...form,
-                                emergencyContact: e.target.value
-                                  .replace(/\D/g, "")
-                                  .slice(0, 10),
-                              })
-                            }
-                            maxLength={10}
-                            minLength={10}
-                            pattern="\d{10}"
-                            title="Enter a valid 10-digit phone number"
-                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="10-digit phone number"
+                            onChange={(v) => setForm({ ...form, emergencyContact: v })}
+                            placeholder="Emergency number"
                           />
                         </div>
                         <div className="col-span-2">
-                          <label className="block text-xs font-bold text-black mb-1">
-                            Current Address
-                          </label>
-                          <textarea
-                            value={form.address}
-                            onChange={(e) =>
-                              setForm({ ...form, address: e.target.value })
-                            }
-                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 resize-none"
-                            rows={2}
-                            placeholder="Current residential address"
+                          <AddressFields
+                            addressLabel="Current Address"
+                            value={{ address: form.address, pincode: form.pincode, city: form.city, state: form.state }}
+                            onChange={(v) => setForm({ ...form, ...v })}
                           />
                         </div>
-                        <div className="col-span-2">
-                          <label className="block text-xs font-bold text-black mb-1">
-                            Permanent Address{" "}
-                            <span className="text-gray-400 font-normal">
-                              (if different)
-                            </span>
-                          </label>
-                          <textarea
-                            value={form.permanentAddress}
-                            onChange={(e) =>
-                              setForm({
-                                ...form,
-                                permanentAddress: e.target.value,
-                              })
-                            }
-                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30 resize-none"
-                            rows={2}
-                            placeholder="Permanent address"
-                          />
+                        <div className="col-span-2 flex items-center justify-between p-3 border-2 border-black/10 hover:border-black transition-colors">
+                          <div>
+                            <p className="text-sm font-bold text-black">Permanent address same as current</p>
+                            <p className="text-xs text-muted-foreground">Turn off to enter a different permanent address</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setSameAddress((v) => !v)}
+                            className={cn(
+                              "w-12 h-6 border-2 border-black transition-colors relative flex-shrink-0",
+                              sameAddress ? "bg-[#024BAB]" : "bg-gray-200",
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "absolute top-0.5 w-4 h-4 bg-white border border-black transition-all",
+                                sameAddress ? "left-6" : "left-0.5",
+                              )}
+                            />
+                          </button>
                         </div>
-                        <div>
-                          <label className="block text-xs font-bold text-black mb-1">
-                            City
-                          </label>
-                          <input
-                            type="text"
-                            value={form.city}
-                            onChange={(e) =>
-                              setForm({ ...form, city: e.target.value })
-                            }
-                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="City"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-black mb-1">
-                            State
-                          </label>
-                          <input
-                            type="text"
-                            value={form.state}
-                            onChange={(e) =>
-                              setForm({ ...form, state: e.target.value })
-                            }
-                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="State"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-black mb-1">
-                            Pincode
-                          </label>
-                          <input
-                            type="text"
-                            value={form.pincode}
-                            onChange={(e) =>
-                              setForm({
-                                ...form,
-                                pincode: e.target.value
-                                  .replace(/\D/g, "")
-                                  .slice(0, 6),
-                              })
-                            }
-                            maxLength={6}
-                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="6-digit pincode"
-                          />
-                        </div>
+                        {!sameAddress && (
+                          <div className="col-span-2">
+                            <AddressFields
+                              addressLabel="Permanent Address"
+                              value={{
+                                address: form.permanentAddress,
+                                pincode: form.permanentPincode,
+                                city: form.permanentCity,
+                                state: form.permanentState,
+                              }}
+                              onChange={(v) =>
+                                setForm({
+                                  ...form,
+                                  permanentAddress: v.address,
+                                  permanentPincode: v.pincode,
+                                  permanentCity: v.city,
+                                  permanentState: v.state,
+                                })
+                              }
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -2548,7 +2709,7 @@ export default function EmployeesPage() {
                       <p className="text-xs font-bold uppercase tracking-wider text-[#024BAB] mb-4">
                         Personal Details
                       </p>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-3 gap-4">
                         <div>
                           <label className="block text-xs font-bold text-black mb-1">
                             Father's Name
@@ -2691,20 +2852,10 @@ export default function EmployeesPage() {
                           <label className="block text-xs font-bold text-black mb-1">
                             Alternate Phone
                           </label>
-                          <input
-                            type="tel"
+                          <PhoneInput
                             value={form.alternatePhone}
-                            onChange={(e) =>
-                              setForm({
-                                ...form,
-                                alternatePhone: e.target.value
-                                  .replace(/\D/g, "")
-                                  .slice(0, 10),
-                              })
-                            }
-                            maxLength={10}
-                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="Alternate 10-digit number"
+                            onChange={(v) => setForm({ ...form, alternatePhone: v })}
+                            placeholder="Alternate number"
                           />
                         </div>
                       </div>
@@ -3601,8 +3752,9 @@ export default function EmployeesPage() {
                         <button
                           type="button"
                           onClick={() =>
-                            employeeAPI
-                              .openDocument(viewEmp._id, "pan")
+                            withOtp((tk) =>
+                              employeeAPI.openDocument(viewEmp._id, "pan", tk),
+                            )
                               .catch((e: Error) => window.alert(e.message))
                           }
                           className="text-[10px] font-bold border-2 border-[#024BAB] text-[#024BAB] px-2 py-1 hover:bg-[#024BAB]/10"
@@ -3614,8 +3766,9 @@ export default function EmployeesPage() {
                         <button
                           type="button"
                           onClick={() =>
-                            employeeAPI
-                              .openDocument(viewEmp._id, "aadhaar")
+                            withOtp((tk) =>
+                              employeeAPI.openDocument(viewEmp._id, "aadhaar", tk),
+                            )
                               .catch((e: Error) => window.alert(e.message))
                           }
                           className="text-[10px] font-bold border-2 border-[#024BAB] text-[#024BAB] px-2 py-1 hover:bg-[#024BAB]/10"
@@ -3627,8 +3780,9 @@ export default function EmployeesPage() {
                         <button
                           type="button"
                           onClick={() =>
-                            employeeAPI
-                              .openDocument(viewEmp._id, "resume")
+                            withOtp((tk) =>
+                              employeeAPI.openDocument(viewEmp._id, "resume", tk),
+                            )
                               .catch((e: Error) => window.alert(e.message))
                           }
                           className="text-[10px] font-bold border-2 border-[#00C48C] text-[#00C48C] px-2 py-1 hover:bg-[#00C48C]/10"
@@ -4063,31 +4217,33 @@ export default function EmployeesPage() {
                     Download the template to get started instantly.
                   </div>
 
-                  <div className="border-2 border-black overflow-hidden">
-                    <div className="grid grid-cols-[1fr_80px_1fr] bg-[#024BAB] text-white text-xs font-bold uppercase px-3 py-2">
-                      <span>Column Header (exact)</span>
-                      <span>Required</span>
-                      <span>Example Value</span>
-                    </div>
-                    {IMPORT_HEADERS.map((h) => (
-                      <div
-                        key={h.key}
-                        className="grid grid-cols-[1fr_80px_1fr] px-3 py-2 border-t border-black/10 text-sm hover:bg-gray-50"
-                      >
-                        <span className="font-bold text-black">{h.label}</span>
-                        <span
-                          className={cn(
-                            "text-xs font-bold",
-                            h.required ? "text-[#EF4444]" : "text-gray-400",
-                          )}
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-black mb-2">
+                      Column headers (exact) &middot; red icon = required
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {IMPORT_HEADERS.map((h) => (
+                        <div
+                          key={h.key}
+                          className="border-2 border-black bg-white p-2 flex flex-col gap-1 min-w-0"
                         >
-                          {h.required ? "Yes" : "No"}
-                        </span>
-                        <span className="text-muted-foreground font-mono text-xs">
-                          {h.example}
-                        </span>
-                      </div>
-                    ))}
+                          <div className="flex items-center gap-1.5">
+                            <FileSpreadsheet
+                              className={cn(
+                                "w-3.5 h-3.5 shrink-0",
+                                h.required ? "text-[#EF4444]" : "text-[#00A36C]",
+                              )}
+                            />
+                            <span className="text-[11px] font-bold text-black truncate" title={h.label}>
+                              {h.label}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground font-mono truncate" title={String(h.example)}>
+                            {h.example}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="bg-amber-50 border-2 border-amber-400 p-3 text-xs font-medium text-amber-800 space-y-1">

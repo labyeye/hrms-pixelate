@@ -3,7 +3,7 @@
 const express = require("express");
 const path = require("path");
 
-const PUBLIC_UPLOAD_DIRS = new Set(["company-logos", "avatars", "attendance-selfies"]);
+const PUBLIC_UPLOAD_DIRS = new Set(["company-logos", "avatars", "attendance-selfies", "announcement-posters"]);
 
 const guard = (req, res, next) => {
   // Decode first: express.static decodes %2F and normalises "avatars/..%2Femployee-aadhaar/x" into a sibling folder,

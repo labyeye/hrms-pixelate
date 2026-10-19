@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useConfirm } from "@/hooks/use-confirm";
 import { StatCard } from "@/components/ui/StatCard";
+import { ExportMenu } from "@/components/ui/ExportMenu";
 import { AttendanceRecord, Employee } from "@/types/hrms";
 import { cn } from "@/lib/utils";
 import { EmployeeCombobox } from "@/components/employees/EmployeeCombobox";
@@ -506,6 +507,21 @@ export default function AttendancePage() {
             </button>
           )}
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportMenu
+            name={`attendance_${year}_${String(month).padStart(2, "0")}`}
+            rows={displayedRecords}
+            cols={[
+              { header: "Emp Code", value: (r: any) => r.employee?.employeeId },
+              { header: "Employee", value: (r: any) => `${r.employee?.firstName || ""} ${r.employee?.lastName || ""}`.trim() },
+              { header: "Date", value: (r: any) => toLocalDateStr(r.date) },
+              { header: "Check In", value: (r: any) => (r.checkIn ? new Date(r.checkIn).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "") },
+              { header: "Check Out", value: (r: any) => (r.checkOut ? new Date(r.checkOut).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "") },
+              { header: "Hours", value: (r: any) => (r.workHours ? Number(r.workHours).toFixed(1) : "") },
+              { header: "OT Hrs", value: (r: any) => (r.overtime ? Number(r.overtime).toFixed(1) : "") },
+              { header: "Status", value: (r: any) => String(r.status || "").replace(/_/g, " ") },
+            ]}
+          />
         {!isEmployee && (
           <button
             onClick={() => {
@@ -523,6 +539,7 @@ export default function AttendancePage() {
             <Clock className="w-4 h-4" /> Mark Attendance
           </button>
         )}
+        </div>
       </div>
 
       {isEmployee && myLateBalance && (

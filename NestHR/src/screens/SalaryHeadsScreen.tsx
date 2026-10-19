@@ -25,6 +25,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { salaryHeadAPI } from '../api/api';
 import { C } from '../theme';
+import { CENTER } from '../components/common/centerModal';
 
 const TYPES = ['Earning', 'Deduction', 'Variable'];
 const CALC_METHODS = [
@@ -232,9 +233,10 @@ export default function SalaryHeadsScreen() {
 
       <Modal
         visible={modal}
-        animationType="slide"
-        presentationStyle="formSheet"
+        transparent
+        animationType="fade"
       >
+<View style={CENTER.overlay}><View style={CENTER.card}>
         <SafeAreaView style={s.safe} edges={['top']}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>
@@ -373,7 +375,8 @@ export default function SalaryHeadsScreen() {
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
-      </Modal>
+      </View></View>
+</Modal>
     </SafeAreaView>
   );
 }

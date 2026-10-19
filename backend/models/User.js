@@ -37,6 +37,10 @@ const userSchema = new mongoose.Schema(
     resetOtp: { type: String, select: false },
     resetOtpExpire: { type: Date, select: false },
     // Wrong-code counters: a 6-digit code is burned after a handful of misses.
+    // Document-vault access OTP (separate purpose from login/reset OTPs).
+    docOtp: { type: String, select: false },
+    docOtpExpire: { type: Date, select: false },
+    docOtpTries: { type: Number, default: 0, select: false },
     phoneOtpTries: { type: Number, default: 0, select: false },
     phoneVerifyOtpTries: { type: Number, default: 0, select: false },
     resetOtpTries: { type: Number, default: 0, select: false },

@@ -16,7 +16,23 @@ const {
   sendCheckOutHR,
 } = require("../services/whatsappService");
 
+const DeviceActivityLog = require("../models/DeviceActivityLog");
+
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+
+// Fire-and-forget audit trail of what each device sent / what we answered. Never blocks or breaks the device protocol.
+const clip = (v, n = 2000) => (v == null ? undefined : String(v).slice(0, n));
+function logDevice(req, entry) {
+  DeviceActivityLog.create({
+    serialNumber: clip(req.query.SN, 64),
+    ip: clip(req.headers["x-forwarded-for"] || req.ip, 64),
+    ...entry,
+    requestData: clip(entry.requestData),
+    responseData: clip(entry.responseData),
+  }).catch(() => {});
+}
+// A healthy device polls /getrequest every ~10-30s; only record an idle poll once per 15 min per device.
+const lastIdlePoll = new Map();
 
 async function resolveAttendanceStatus(employee, checkIn) {
   if (!checkIn) return "present";
@@ -323,17 +339,17 @@ router.get(["/cdata", "/cdata.aspx"], async (req, res) => {
   res.set("Content-Type", "text/plain");
 
   let attlogStamp = "None";
+  let hsDevice = null;
   if (SN && typeof SN === "string") {
-    const device = await BiometricDevice.findOneAndUpdate(
+    hsDevice = await BiometricDevice.findOneAndUpdate(
       { serialNumber: SN },
       { lastSeenAt: new Date() },
       { new: true },
     ).catch(() => null);
-    if (device?.attlogStamp) attlogStamp = device.attlogStamp;
+    if (hsDevice?.attlogStamp) attlogStamp = hsDevice.attlogStamp;
   }
 
-  res.send(
-    [
+  const handshakeReply = [
       `GET OPTION FROM: ${SN || "DEVICE"}`,
       `ATTLOGStamp=${attlogStamp}`,
       `OPERLOGStamp=9999`,
@@ -350,8 +366,19 @@ router.get(["/cdata", "/cdata.aspx"], async (req, res) => {
       `PushOptionsFlag=1`,
       `datetime=${serverTimeStr()}`,
       ``,
-    ].join("\n"),
-  );
+    ].join("\n");
+  logDevice(req, {
+    company: hsDevice?.company,
+    device: hsDevice?._id,
+    event: hsDevice ? "handshake" : "unknown_device",
+    status: hsDevice ? "ok" : "warn",
+    summary: hsDevice
+      ? `Device connected and fetched server options (last punch stamp ${attlogStamp})`
+      : `Handshake from unregistered serial number ${SN || "(none)"}`,
+    requestData: JSON.stringify(req.query),
+    responseData: handshakeReply,
+  });
+  res.send(handshakeReply);
 });
 
 router.post(
@@ -362,7 +389,10 @@ router.post(
     res.set("Content-Type", "text/plain");
 
     const body = req.body;
-    if (!body || typeof body !== "string") return res.send("OK");
+    if (!body || typeof body !== "string") {
+      logDevice(req, { event: "error", status: "warn", summary: `Empty ${table || "unknown"} push`, responseData: "OK" });
+      return res.send("OK");
+    }
 
     // Handle face/finger bio template upload from device after ENROLL_BIO command
     if (table === "BIODATA") {
@@ -385,6 +415,17 @@ router.post(
             const employee = await Employee.findOne({
               biometricUserId: pin,
               company: device.company,
+            });
+            logDevice(req, {
+              company: device.company,
+              device: device._id,
+              event: "biodata_push",
+              status: employee ? "ok" : "warn",
+              summary: employee
+                ? `Face template received for ${employee.firstName} ${employee.lastName} (PIN ${pin}) and stored`
+                : `Face template received for unknown PIN ${pin}`,
+              requestData: body.slice(0, 200),
+              responseData: "OK",
             });
             if (employee) {
               employee.deviceFaceTemplate = Buffer.from(body).toString("hex");
@@ -431,6 +472,18 @@ router.post(
       await Promise.allSettled(
         logs.map((log) => processLog(log, companyId, devLocationName)),
       );
+      logDevice(req, {
+        company: companyId,
+        device: device?._id,
+        event: device ? "attlog_push" : "unknown_device",
+        status: device ? "ok" : "warn",
+        summary: device
+          ? `Device pushed ${logs.length} punch record(s) (stamp ${stamp}); attendance updated`
+          : `Punches received from unregistered serial number ${SN}`,
+        records: logs.length,
+        requestData: body,
+        responseData: `OK: ${stamp}`,
+      });
 
       if (device && stamp > (device.attlogStamp || 0)) {
         device.attlogStamp = stamp;
@@ -441,6 +494,7 @@ router.post(
       res.send(`OK: ${stamp}`);
     } catch (err) {
       console.error("[ADMS] cdata POST error:", err.message);
+      logDevice(req, { event: "error", status: "error", summary: `Failed to process ${table} push: ${err.message}`, requestData: body, responseData: "OK" });
       res.send("OK");
     }
   },
@@ -459,6 +513,7 @@ router.get(["/getrequest", "/getrequest.aspx"], async (req, res) => {
     const device = await resolveDevice(SN);
     if (!device) {
       console.warn(`[ADMS] getrequest: unknown device SN=${SN}`);
+      logDevice(req, { event: "unknown_device", status: "warn", summary: `Command poll from unregistered serial number ${SN}`, responseData: "OK" });
       return res.send("OK");
     }
 
@@ -470,8 +525,19 @@ router.get(["/getrequest", "/getrequest.aspx"], async (req, res) => {
 
     if (!cmd) {
       // Normal quiet poll — no command queued
+      if (Date.now() - (lastIdlePoll.get(SN) || 0) > 15 * 60 * 1000) {
+        lastIdlePoll.set(SN, Date.now());
+        logDevice(req, { company: device.company, device: device._id, event: "command_poll", summary: "Device is online - polled for commands, nothing queued", responseData: "OK" });
+      }
       return res.send("OK");
     }
+    logDevice(req, {
+      company: device.company,
+      device: device._id,
+      event: "command_sent",
+      summary: `Sent command #${cmd.cmdId} (${cmd.type}) to device`,
+      responseData: `C:${cmd.cmdId}:${cmd.command}`,
+    });
 
     console.log(
       `[ADMS] getrequest: SN=${SN} → C:${cmd.cmdId}:${cmd.command.replace(/\t/g, "\\t")}`,
@@ -506,6 +572,16 @@ router.post(
           const returnMatch = body.match(/Return=(\d+)/);
           const returnCode = returnMatch ? returnMatch[1] : "0";
 
+          logDevice(req, {
+            company: device.company,
+            device: device._id,
+            event: "command_result",
+            status: returnCode === "0" ? "ok" : "error",
+            summary: `Device answered command #${cmdId}: ${returnCode === "0" ? "success" : "failed (Return=" + returnCode + ")"}`,
+            deviceReturnCode: returnCode,
+            requestData: body.trim(),
+            responseData: "OK",
+          });
           await BiometricCommand.findOneAndUpdate(
             { device: device._id, cmdId: Number(cmdId) },
             {

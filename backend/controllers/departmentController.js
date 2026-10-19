@@ -21,7 +21,7 @@ const getDepartments = asyncHandler(async (req, res) => {
 });
 
 const createDepartment = asyncHandler(async (req, res) => {
-  const { name, code, head, description, budget } = req.body;
+  const { name, code, head, description } = req.body;
 
   if (
     !name ||
@@ -58,7 +58,6 @@ const createDepartment = asyncHandler(async (req, res) => {
     code: code.trim().toUpperCase(),
     head: head || undefined,
     description: description ? String(description).slice(0, 500) : undefined,
-    budget: budget ? Number(budget) : 0,
     shiftStartTime: shiftStartTime || undefined,
     shiftEndTime: shiftEndTime || undefined,
   });
@@ -80,7 +79,6 @@ const updateDepartment = asyncHandler(async (req, res) => {
     "name",
     "head",
     "description",
-    "budget",
     "status",
     "shiftStartTime",
     "shiftEndTime",

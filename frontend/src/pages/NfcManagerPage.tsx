@@ -77,7 +77,7 @@ export default function NfcManagerPage() {
     setLoading(true);
     try {
       const [empRes, devRes] = await Promise.all([
-        employeeAPI.getAll(),
+        employeeAPI.getAll({ limit: "5000" }),
         biometricAPI.getDevices(),
       ]);
       setEmployees(empRes.data || []);

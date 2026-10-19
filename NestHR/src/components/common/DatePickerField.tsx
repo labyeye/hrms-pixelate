@@ -288,13 +288,13 @@ const s = StyleSheet.create({
   },
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    padding: 20,
     backgroundColor: 'rgba(0,0,0,0.45)',
   },
   sheet: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderRadius: 14,
     paddingBottom: 36,
   },
   sheetHeader: {

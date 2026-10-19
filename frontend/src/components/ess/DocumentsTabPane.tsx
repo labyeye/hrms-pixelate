@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { documentAPI } from "@/services/api";
+import { useDocOtp } from "@/hooks/use-doc-otp";
 import {
   Loader2,
   Upload,
@@ -26,6 +27,7 @@ const DOC_TYPES = [
 ];
 
 export function DocumentsTabPane({ employee, toast }: Props) {
+  const { withOtp, otpModal } = useDocOtp();
   const [docs, setDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
@@ -113,7 +115,7 @@ export function DocumentsTabPane({ employee, toast }: Props) {
 
   const handleDownload = async (docId: string, docName: string) => {
     try {
-      const res = await documentAPI.download(docId);
+      const res = await withOtp((t) => documentAPI.download(docId, t));
       if (res.success && res.data?.fileData) {
         const base64 = res.data.fileData;
         const mimeType = res.data.mimeType || "application/octet-stream";
@@ -166,6 +168,7 @@ export function DocumentsTabPane({ employee, toast }: Props) {
 
   return (
     <div className="space-y-6">
+      {otpModal}
       <div className="border-2 border-black bg-white p-5">
         <h3 className="text-sm font-bold uppercase mb-1">My Document Vault</h3>
         <p className="text-xs text-muted-foreground">

@@ -66,9 +66,11 @@ const to10 = (phone) =>
 
 async function findUserByPhone(normalised) {
   const variants = [normalised, `+91${normalised}`, `91${normalised}`];
-  const user = await User.findOne({ phone: { $in: variants } });
+  // Numbers saved with another country code (e.g. +9715...) match on their last 10 digits.
+  const tail = /^\d{10}$/.test(normalised) ? { $regex: `${normalised}$` } : null;
+  const user = await User.findOne({ phone: { $in: variants } }) || (tail && (await User.findOne({ phone: tail })));
   if (user) return user;
-  const employee = await Employee.findOne({ phone: { $in: variants } });
+  const employee = (await Employee.findOne({ phone: { $in: variants } })) || (tail && (await Employee.findOne({ phone: tail })));
   return employee ? User.findById(employee.user) : null;
 }
 

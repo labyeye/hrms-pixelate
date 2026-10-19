@@ -16,23 +16,13 @@ import {
   ArrowDown,
 } from "lucide-react";
 import { ActionModal } from "@/components/ui/ActionModal";
-
-const DEPT_BG_COLORS = [
-  "bg-[#024BAB]",
-  "bg-[#FA731C]",
-  "bg-[#00C48C]",
-  "bg-[#A855F7]",
-  "bg-[#EF4444]",
-  "bg-[#FFD60A]",
-  "bg-[#0D9488]",
-  "bg-[#EC4899]",
-];
+import { ExportMenu } from "@/components/ui/ExportMenu";
+import { ImportButton } from "@/components/ui/ImportButton";
 
 interface DeptForm {
   name: string;
   code: string;
   description: string;
-  budget: string;
   shiftStartTime: string;
   shiftEndTime: string;
 }
@@ -40,7 +30,6 @@ const EMPTY_FORM: DeptForm = {
   name: "",
   code: "",
   description: "",
-  budget: "",
   shiftStartTime: "",
   shiftEndTime: "",
 };
@@ -60,7 +49,7 @@ export default function DepartmentsPage() {
     message: string;
   }>({ show: false, type: "success", title: "", message: "" });
   const [search, setSearch] = useState("");
-  const [sortKey, setSortKey] = useState<"name" | "headcount" | "budget">(
+  const [sortKey, setSortKey] = useState<"name" | "headcount">(
     "name",
   );
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -89,7 +78,6 @@ export default function DepartmentsPage() {
       name: d.name,
       code: d.code,
       description: d.description || "",
-      budget: String(d.budget || ""),
       shiftStartTime: (d as any).shiftStartTime || "",
       shiftEndTime: (d as any).shiftEndTime || "",
     });
@@ -108,15 +96,9 @@ export default function DepartmentsPage() {
     setSaving(true);
     try {
       if (editDept)
-        await departmentAPI.update(editDept._id, {
-          ...form,
-          budget: Number(form.budget) || 0,
-        });
+        await departmentAPI.update(editDept._id, form);
       else
-        await departmentAPI.create({
-          ...form,
-          budget: Number(form.budget) || 0,
-        });
+        await departmentAPI.create(form);
       setActionModal({
         show: true,
         type: "success",
@@ -164,7 +146,6 @@ export default function DepartmentsPage() {
       if (sortKey === "name") cmp = a.name.localeCompare(b.name);
       else if (sortKey === "headcount")
         cmp = (a.headcount ?? 0) - (b.headcount ?? 0);
-      else if (sortKey === "budget") cmp = (a.budget ?? 0) - (b.budget ?? 0);
       return sortDir === "asc" ? cmp : -cmp;
     });
 
@@ -176,12 +157,50 @@ export default function DepartmentsPage() {
           {departments.reduce((s, d) => s + (d.headcount || 0), 0)} total
           headcount
         </p>
-        <button
-          onClick={openAdd}
-          className="border-2 border-black bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5 font-bold"
-        >
-          <Plus className="w-4 h-4" /> Add Department
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <ImportButton
+            name="departments"
+            headers={["Name", "Code", "Shift Start (HH:MM)", "Shift End (HH:MM)", "Description"]}
+            example={["Engineering", "ENG", "09:00", "18:00", "Product engineering"]}
+            onRows={async (rows) => {
+              let ok = 0;
+              for (const r of rows) {
+                const name = String(r["Name"] || "").trim();
+                const code = String(r["Code"] || "").trim().toUpperCase();
+                if (!name || !code) continue;
+                try {
+                  await departmentAPI.create({
+                    name,
+                    code,
+                    shiftStartTime: String(r["Shift Start (HH:MM)"] || "09:00"),
+                    shiftEndTime: String(r["Shift End (HH:MM)"] || "18:00"),
+                    description: String(r["Description"] || ""),
+                  });
+                  ok++;
+                } catch {}
+              }
+              load();
+              return `${ok} of ${rows.length} departments imported`;
+            }}
+          />
+          <ExportMenu
+            name="departments"
+            rows={displayedDepts}
+            cols={[
+              { header: "Code", value: (d) => d.code },
+              { header: "Department", value: (d) => d.name },
+              { header: "Shift Timings", value: (d: any) => (d.shiftStartTime ? `${d.shiftStartTime} - ${d.shiftEndTime}` : "") },
+              { header: "Headcount", value: (d) => d.headcount || 0 },
+              { header: "Head", value: (d: any) => d.head?.name || "" },
+            ]}
+          />
+          <button
+            onClick={openAdd}
+            className="border-2 border-black bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5 font-bold"
+          >
+            <Plus className="w-4 h-4" /> Add Department
+          </button>
+        </div>
       </div>
 
       {/* Search & Sort */}
@@ -208,7 +227,6 @@ export default function DepartmentsPage() {
         >
           <option value="name">Sort: Name</option>
           <option value="headcount">Sort: Headcount</option>
-          <option value="budget">Sort: Budget</option>
         </select>
         <button
           onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
@@ -255,12 +273,9 @@ export default function DepartmentsPage() {
             <thead>
               <tr className="border-b-2 border-black bg-[#024BAB]/5">
                 {[
-                  "",
-                  "Department",
                   "Code",
-                  "Description",
+                  "Department",
                   "Shift Timings",
-                  "Budget (₹)",
                   "Headcount",
                   "Head",
                   "Actions",
@@ -284,27 +299,12 @@ export default function DepartmentsPage() {
                   )}
                 >
                   <td className="px-4 py-3">
-                    <div
-                      className={cn(
-                        "w-9 h-9 border-2 border-black flex items-center justify-center shrink-0",
-                        DEPT_BG_COLORS[i % DEPT_BG_COLORS.length],
-                      )}
-                    >
-                      <Building2 className="w-4 h-4 text-white" />
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <p className="font-bold text-black">{dept.name}</p>
-                  </td>
-                  <td className="px-4 py-3">
                     <span className="text-xs font-bold text-gray-600 uppercase tracking-wider bg-gray-100 border-2 border-gray-400 px-2 py-0.5">
                       {dept.code}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground max-w-48">
-                    <span className="line-clamp-1">
-                      {dept.description || "—"}
-                    </span>
+                  <td className="px-4 py-3">
+                    <p className="font-bold text-black">{dept.name}</p>
                   </td>
                   <td className="px-4 py-3">
                     {(dept as any).shiftStartTime &&
@@ -316,11 +316,6 @@ export default function DepartmentsPage() {
                     ) : (
                       <span className="text-muted-foreground text-xs">—</span>
                     )}
-                  </td>
-                  <td className="px-4 py-3 font-bold text-black">
-                    {dept.budget
-                      ? `₹${Number(dept.budget).toLocaleString("en-IN")}`
-                      : "—"}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1.5">
@@ -441,18 +436,6 @@ export default function DepartmentsPage() {
                   className="border-2 border-black w-full px-3 py-2 text-sm resize-none"
                   rows={2}
                   placeholder="Optional description"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-black mb-1">
-                  Budget (₹)
-                </label>
-                <input
-                  type="number"
-                  value={form.budget}
-                  onChange={(e) => setForm({ ...form, budget: e.target.value })}
-                  className="border-2 border-black w-full px-3 py-2 text-sm"
-                  placeholder="Annual budget"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">

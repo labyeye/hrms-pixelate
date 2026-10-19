@@ -11,6 +11,7 @@ import {
   ScrollView,
   Modal,
   Share,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -35,6 +36,8 @@ import { buildPayslipHTML } from '../utils/buildPayslipHTML';
 import { useAuth } from '../contexts/AuthContext';
 import { Payroll } from '../types/hrms';
 import { C } from '../theme';
+import { CENTER } from '../components/common/centerModal';
+import ExportButton from '../components/common/ExportButton';
 import FilterBar from '../components/common/FilterBar';
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
@@ -333,7 +336,32 @@ export default function PayrollScreen() {
           </Text>
         </View>
         {!isEmployee && (
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+            {payrolls.length > 0 && (
+              <ExportButton
+                name="payroll"
+                label=""
+                rows={payrolls}
+                cols={[
+                  { header: 'Emp Code', value: (p: any) => p.employee?.employeeId },
+                  { header: 'Employee', value: (p: any) => `${p.employee?.firstName || ''} ${p.employee?.lastName || ''}`.trim() },
+                  { header: 'Designation', value: (p: any) => p.employee?.designation },
+                  { header: 'Cost / Hour', value: (p: any) => (p.hourlyRate ? Number(p.hourlyRate).toFixed(2) : '') },
+                  { header: 'Basic', value: (p: any) => p.basicSalary },
+                  { header: 'OT', value: (p: any) => p.otPay || 0 },
+                  { header: 'Absent Ded.', value: (p: any) => p.absentDeduction || 0 },
+                  { header: 'Late Ded.', value: (p: any) => p.lateDeductionAmount || 0 },
+                  { header: 'Half Day Ded.', value: (p: any) => p.halfDayDeduction || 0 },
+                  { header: 'Early Out Ded.', value: (p: any) => p.earlyCheckoutDeduction || 0 },
+                  { header: 'Penalty', value: (p: any) => p.penaltyAmount || 0 },
+                  { header: 'Bonus/Allow', value: (p: any) => p.otherAllowances || 0 },
+                  { header: 'Loan/Advance', value: (p: any) => p.loanDeduction || 0 },
+                  { header: 'Gross', value: (p: any) => p.grossSalary },
+                  { header: 'Net Salary', value: (p: any) => p.netSalary },
+                  { header: 'Status', value: (p: any) => p.status },
+                ]}
+              />
+            )}
             {payrolls.length > 0 && (
               <TouchableOpacity
                 style={[styles.genBtn, { backgroundColor: '#16A34A' }]}
@@ -507,12 +535,17 @@ export default function PayrollScreen() {
                 activeOpacity={0.85}
               >
                 <View style={styles.cardTop}>
-                  <View style={styles.empAvatar}>
-                    <Text style={styles.empAvatarText}>
-                      {emp?.firstName?.[0] || 'E'}
-                    </Text>
-                  </View>
+                  {emp?.avatar ? (
+                    <Image source={{ uri: emp.avatar }} style={styles.empPhoto} />
+                  ) : (
+                    <View style={styles.empAvatar}>
+                      <Text style={styles.empAvatarText}>
+                        {emp?.firstName?.[0] || 'E'}
+                      </Text>
+                    </View>
+                  )}
                   <View style={{ flex: 1, marginLeft: 12 }}>
+                    {!isEmployee && <Text style={styles.codeChip}>{emp?.employeeId || '—'}</Text>}
                     <Text style={styles.empName}>
                       {isEmployee
                         ? user?.name || 'My Payslip'
@@ -525,10 +558,10 @@ export default function PayrollScreen() {
                         ? period
                         : `${emp?.designation || 'N/A'} · ${period}`}
                     </Text>
-                    {(item as any).absentDays > 0 && (
-                      <Text style={[styles.empSub, { color: C.danger }]}>
-                        {(item as any).absentDays} absent · -₹
-                        {((item as any).absentDeduction || 0).toLocaleString()}
+                    {!isEmployee && (
+                      <Text style={styles.empSub}>
+                        {(item as any).hourlyRate ? `₹${Number((item as any).hourlyRate).toFixed(2)}/hr · ` : ''}
+                        Salary ₹{(item.basicSalary || 0).toLocaleString()}
                       </Text>
                     )}
                   </View>
@@ -548,6 +581,32 @@ export default function PayrollScreen() {
                     <ChevronRight size={14} color={C.textMuted} />
                   </View>
                 </View>
+
+                {/* Only the adjustments that actually apply to this payslip */}
+                {(() => {
+                  const p: any = item;
+                  const chips = [
+                    { l: 'OT', v: p.otPay, sign: '+', c: '#F59E0B' },
+                    { l: `Absent${p.absentDays ? ` ${p.absentDays}d` : ''}`, v: p.absentDeduction, sign: '-', c: C.danger },
+                    { l: 'Late', v: p.lateDeductionAmount, sign: '-', c: C.danger },
+                    { l: 'Half Day', v: p.halfDayDeduction, sign: '-', c: C.danger },
+                    { l: 'Early Out', v: p.earlyCheckoutDeduction, sign: '-', c: C.danger },
+                    { l: 'Penalty', v: p.penaltyAmount, sign: '-', c: C.danger },
+                    { l: 'Bonus', v: p.otherAllowances, sign: '+', c: C.success },
+                    { l: 'Loan', v: p.loanDeduction, sign: '-', c: C.secondary },
+                  ].filter(x => (x.v || 0) > 0);
+                  return chips.length ? (
+                    <View style={styles.chipWrap}>
+                      {chips.map(x => (
+                        <View key={x.l} style={[styles.adjChip, { borderColor: x.c }]}>
+                          <Text style={[styles.adjText, { color: x.c }]}>
+                            {x.l} {x.sign}₹{Number(x.v).toLocaleString()}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : null;
+                })()}
 
                 <View style={styles.salaryRow}>
                   <View style={styles.salaryItem}>
@@ -604,10 +663,11 @@ export default function PayrollScreen() {
       {!isEmployee && (
         <Modal
           visible={showGenModal}
-          animationType="slide"
-          presentationStyle="pageSheet"
+          transparent
+        animationType="fade"
         >
-          <SafeAreaView style={styles.safe} edges={['top']}>
+<View style={CENTER.overlay}><View style={CENTER.card}>
+          <SafeAreaView style={styles.safe} edges={[]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
                 {previewStep === 'preview'
@@ -871,17 +931,19 @@ export default function PayrollScreen() {
               )}
             </ScrollView>
           </SafeAreaView>
-        </Modal>
+        </View></View>
+</Modal>
       )}
 
       {/* Detail Modal */}
       <Modal
         visible={!!selected}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
+        animationType="fade"
       >
+<View style={CENTER.overlay}><View style={CENTER.card}>
         {selected && (
-          <SafeAreaView style={styles.safe} edges={['top']}>
+          <SafeAreaView style={styles.safe} edges={[]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Payroll Detail</Text>
               <TouchableOpacity onPress={() => setSelected(null)}>
@@ -1052,16 +1114,18 @@ export default function PayrollScreen() {
             </ScrollView>
           </SafeAreaView>
         )}
-      </Modal>
+      </View></View>
+</Modal>
 
       {isEmployee && (
         <Modal
           visible={showTaxModal}
-          animationType="slide"
-          presentationStyle="pageSheet"
+          transparent
+        animationType="fade"
           onRequestClose={() => setShowTaxModal(false)}
         >
-          <SafeAreaView style={styles.safe} edges={['top']}>
+<View style={CENTER.overlay}><View style={CENTER.card}>
+          <SafeAreaView style={styles.safe} edges={[]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Investment Declarations</Text>
               <TouchableOpacity onPress={() => setShowTaxModal(false)}>
@@ -1145,13 +1209,30 @@ export default function PayrollScreen() {
               </TouchableOpacity>
             </ScrollView>
           </SafeAreaView>
-        </Modal>
+        </View></View>
+</Modal>
       )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  empPhoto: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: C.black },
+  codeChip: {
+    alignSelf: 'flex-start',
+    fontSize: 11,
+    fontWeight: '800',
+    color: C.primary,
+    backgroundColor: C.primary + '18',
+    borderWidth: 1.5,
+    borderColor: C.primary,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    marginBottom: 3,
+  },
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
+  adjChip: { borderWidth: 1.5, paddingHorizontal: 6, paddingVertical: 2 },
+  adjText: { fontSize: 10, fontWeight: '700' },
   safe: { flex: 1, backgroundColor: '#F8F9FA' },
   taxCard: {
     backgroundColor: C.white,

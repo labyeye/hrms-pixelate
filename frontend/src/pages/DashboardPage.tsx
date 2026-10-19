@@ -198,16 +198,6 @@ export default function DashboardPage() {
           },
         ]
       : []),
-    ...(stats.openPositions > 0
-      ? [
-          {
-            icon: Briefcase,
-            color: "#024BAB",
-            msg: `${stats.openPositions} open position${stats.openPositions > 1 ? "s" : ""} need attention`,
-            time: "Active",
-          },
-        ]
-      : []),
     {
       icon: CheckCircle2,
       color: "#00C48C",
@@ -310,14 +300,6 @@ export default function DashboardPage() {
             icon: IndianRupee,
             bg: "bg-[#FA731C]",
             to: "/payroll",
-          },
-          {
-            title: "Open Positions",
-            numericValue: stats.openPositions,
-            sub: "Active job listings",
-            icon: Briefcase,
-            bg: "bg-[#024BAB]",
-            to: "/recruitment",
           },
           {
             title: "Departments",

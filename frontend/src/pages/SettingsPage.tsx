@@ -142,21 +142,7 @@ const INITIAL_PERMISSIONS: ResourcePermissions[] = [
       employee: { create: false, read: true, update: false, delete: false },
     },
   },
-  {
-    resource: "Recruitment",
-    permissions: {
-      super_admin: { create: true, read: true, update: true, delete: true },
-      hr_manager: { create: true, read: true, update: true, delete: true },
-      hr_executive: { create: true, read: true, update: true, delete: false },
-      department_head: {
-        create: false,
-        read: true,
-        update: false,
-        delete: false,
-      },
-      employee: { create: false, read: false, update: false, delete: false },
-    },
-  },
+
   {
     resource: "Biometric",
     permissions: {
@@ -2434,7 +2420,7 @@ export default function SettingsPage() {
                         Edit Profile
                       </p>
                     </div>
-                    <div className="p-5 space-y-4">
+                    <div className="p-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-xs font-bold uppercase mb-1.5">
                           Display Name

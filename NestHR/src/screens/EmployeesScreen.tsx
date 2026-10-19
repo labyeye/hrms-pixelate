@@ -63,6 +63,11 @@ import {
   Church,
   GraduationCap,
   ArrowLeft,
+  UserPlus,
+  CalendarCheck,
+  CheckSquare,
+  Square,
+  Clock,
 } from 'lucide-react-native';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import {
@@ -77,13 +82,20 @@ import {
 } from '../api/api';
 import { Employee } from '../types/hrms';
 import { C } from '../theme';
+import { CENTER } from '../components/common/centerModal';
 import FilterBar from '../components/common/FilterBar';
+import ExportButton from '../components/common/ExportButton';
+import StatTile, { tileGrid } from '../components/common/StatTile';
+import PhoneField from '../components/common/PhoneField';
+import PickerField from '../components/common/PickerField';
+import { lookupPincode, INDIA_STATES } from '../utils/pincode';
 
 const STATUS_COLOR: Record<string, string> = {
   active: C.success,
   inactive: '#9CA3AF',
   terminated: C.danger,
   on_leave: C.warning,
+  exited: '#A855F7',
 };
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
@@ -91,11 +103,12 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
   inactive: { color: '#9CA3AF', bg: '#F9FAFB' },
   on_leave: { color: C.warning, bg: '#FFF7ED' },
   terminated: { color: C.danger, bg: '#FEF2F2' },
+  exited: { color: '#A855F7', bg: '#FAF5FF' },
 };
 const EMP_TYPES = ['full_time', 'part_time', 'contract', 'intern'];
 const GENDERS = ['male', 'female', 'other'];
 const WORK_DAYS = [5, 6, 7];
-const STATUSES = ['active', 'inactive', 'on_leave', 'terminated'];
+const STATUSES = ['active', 'inactive', 'on_leave', 'terminated', 'exited'];
 
 const EMPTY_FORM = {
   // Tab 1 Basic Info
@@ -126,6 +139,9 @@ const EMPTY_FORM = {
   emergencyContact: '',
   address: '',
   permanentAddress: '',
+  permanentCity: '',
+  permanentState: '',
+  permanentPincode: '',
   city: '',
   state: '',
   pincode: '',
@@ -185,13 +201,27 @@ export default function EmployeesScreen() {
   const [actionLoading, setActionLoading] = useState(false);
   const [actionRecords, setActionRecords] = useState<any[]>([]);
   const [actionRecordsLoading, setActionRecordsLoading] = useState(false);
+  const [sameAddress, setSameAddress] = useState(true);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [attSummary, setAttSummary] = useState<Record<string, number>>({});
 
   const load = useCallback(async () => {
     try {
-      const res = await employeeAPI.getAll();
+      const now = new Date();
+      const [res, att] = await Promise.all([
+        employeeAPI.getAll(),
+        attendanceAPI
+          .getSummary({ month: String(now.getMonth() + 1), year: String(now.getFullYear()) })
+          .catch(() => null),
+      ]);
       const data: Employee[] = res.data || [];
       setEmployees(data);
       setFiltered(data);
+      const m: Record<string, number> = {};
+      for (const r of (att as any)?.data || []) m[r._id] = r.count;
+      setAttSummary(m);
     } catch (e: any) {
       Alert.alert('Error', e.message);
     } finally {
@@ -276,6 +306,7 @@ export default function EmployeesScreen() {
     setAvatarAsset(null);
     setFormDirty(false);
     setFormErrors({});
+    setSameAddress(true);
     setActiveTab(0);
     setShowForm(true);
   };
@@ -316,6 +347,9 @@ export default function EmployeesScreen() {
       panNumber: (emp as any).panNumber || '',
       aadharNumber: (emp as any).aadharNumber || '',
       permanentAddress: (emp as any).permanentAddress || '',
+      permanentCity: (emp as any).permanentCity || '',
+      permanentState: (emp as any).permanentState || '',
+      permanentPincode: (emp as any).permanentPincode || '',
       city: (emp as any).city || '',
       state: (emp as any).state || '',
       pincode: (emp as any).pincode || '',
@@ -340,6 +374,12 @@ export default function EmployeesScreen() {
     setAvatarAsset(null);
     setFormDirty(false);
     setFormErrors({});
+    const pa = (emp as any).permanentAddress;
+    setSameAddress(
+      !pa ||
+        (pa === (emp as any).address &&
+          ((emp as any).permanentPincode || (emp as any).pincode) === (emp as any).pincode),
+    );
     setActiveTab(0);
     setShowForm(true);
   };
@@ -372,6 +412,14 @@ export default function EmployeesScreen() {
     try {
       const body: any = {
         ...form,
+        ...(sameAddress
+          ? {
+              permanentAddress: form.address,
+              permanentCity: form.city,
+              permanentState: form.state,
+              permanentPincode: form.pincode,
+            }
+          : {}),
         monthlySalary: form.monthlySalary
           ? parseFloat(form.monthlySalary)
           : undefined,
@@ -661,6 +709,108 @@ export default function EmployeesScreen() {
     </View>
   );
 
+  // 6-digit pincode -> city + state (free India Post API); user can still edit/pick manually.
+  const onPincode = async (v: string, prefix: '' | 'permanent') => {
+    const pin = v.replace(/\D/g, '').slice(0, 6);
+    const k = (f: string) => (prefix ? prefix + f[0].toUpperCase() + f.slice(1) : f);
+    setForm(p => ({ ...p, [k('pincode')]: pin }));
+    setFormDirty(true);
+    if (pin.length === 6) {
+      const hit = await lookupPincode(pin);
+      if (hit) setForm(p => ({ ...p, [k('city')]: hit.city, [k('state')]: hit.state }));
+    }
+  };
+
+  const AddressBlock = (prefix: '' | 'permanent') => {
+    const k = (f: string) => (prefix ? prefix + f[0].toUpperCase() + f.slice(1) : f) as keyof typeof EMPTY_FORM;
+    return (
+      <>
+        <View>
+          <Text style={styles.fieldLabel}>Pincode</Text>
+          <TextInput
+            style={styles.fieldInput}
+            value={String(form[k('pincode')] ?? '')}
+            onChangeText={v => onPincode(v, prefix)}
+            placeholder="6-digit pincode (auto-fills city & state)"
+            placeholderTextColor={C.textLight}
+            keyboardType="number-pad"
+            maxLength={6}
+          />
+        </View>
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.fieldLabel}>City</Text>
+            <TextInput
+              style={styles.fieldInput}
+              value={String(form[k('city')] ?? '')}
+              onChangeText={v => {
+                setForm(p => ({ ...p, [k('city')]: v }));
+                setFormDirty(true);
+              }}
+              placeholder="City / District"
+              placeholderTextColor={C.textLight}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.fieldLabel}>State</Text>
+            <PickerField
+              title="Select state"
+              value={String(form[k('state')] ?? '')}
+              options={INDIA_STATES}
+              placeholder="State"
+              onChange={v => {
+                setForm(p => ({ ...p, [k('state')]: v }));
+                setFormDirty(true);
+              }}
+            />
+          </View>
+        </View>
+      </>
+    );
+  };
+
+  const toggleSel = (id: string) =>
+    setSelected(p => (p.includes(id) ? p.filter(x => x !== id) : [...p, id]));
+
+  const bulkRun = (label: string, fn: (id: string) => Promise<any>, destructive = false) => {
+    Alert.alert(`${label} ${selected.length} employee(s)?`, destructive ? 'This cannot be undone.' : '', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: label,
+        style: destructive ? 'destructive' : 'default',
+        onPress: async () => {
+          setBulkBusy(true);
+          let done = 0;
+          for (const id of selected) {
+            try {
+              await fn(id);
+              done++;
+            } catch {}
+          }
+          setBulkBusy(false);
+          Alert.alert(`${label}: ${done}/${selected.length} done`);
+          setSelected([]);
+          load();
+        },
+      },
+    ]);
+  };
+
+  const now0 = new Date();
+  const newHires = employees.filter(e => {
+    const d = (e as any).joinDate || (e as any).joiningDate;
+    if (!d) return false;
+    const dt = new Date(d);
+    return dt.getMonth() === now0.getMonth() && dt.getFullYear() === now0.getFullYear();
+  }).length;
+  const cnt = (st: string) => employees.filter(e => (e.status as string) === st).length;
+  const attDen =
+    (attSummary.present || 0) + (attSummary.late || 0) + (attSummary.half_day || 0) +
+    (attSummary.absent || 0) + (attSummary.on_leave || 0);
+  const attPct = attDen
+    ? Math.round((((attSummary.present || 0) + (attSummary.late || 0) + (attSummary.half_day || 0) * 0.5) / attDen) * 100)
+    : 0;
+
   const getDeptName = (dept: any) => {
     if (!dept) return 'No department';
     if (typeof dept === 'string')
@@ -675,11 +825,72 @@ export default function EmployeesScreen() {
           <Users size={20} color={C.primary} />
           <Text style={styles.headerTitle}>Employees</Text>
         </View>
-        <TouchableOpacity style={styles.addBtn} onPress={openCreate}>
-          <Plus size={14} color={C.white} />
-          <Text style={styles.addBtnText}>Add</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+          <TouchableOpacity
+            style={[styles.selectBtn, selectMode && { backgroundColor: C.black }]}
+            onPress={() => {
+              setSelectMode(v => !v);
+              setSelected([]);
+            }}
+          >
+            <CheckSquare size={14} color={selectMode ? C.white : C.black} />
+          </TouchableOpacity>
+          <ExportButton
+            name="employees"
+            label=""
+            rows={filtered}
+            cols={[
+              { header: 'Emp ID', value: (e: any) => e.employeeId },
+              { header: 'Name', value: (e: any) => `${e.firstName} ${e.lastName}` },
+              { header: 'Department', value: (e: any) => e.department?.name },
+              { header: 'Designation', value: (e: any) => e.designation },
+              { header: 'Phone', value: (e: any) => e.phone },
+              { header: 'Email', value: (e: any) => e.email },
+              { header: 'Salary', value: (e: any) => e.salary ?? e.monthlySalary ?? 0 },
+              { header: 'Loan Balance', value: (e: any) => e.loanBalance ?? 0 },
+              { header: 'Status', value: (e: any) => e.status },
+            ]}
+          />
+          <TouchableOpacity style={styles.addBtn} onPress={openCreate}>
+            <Plus size={14} color={C.white} />
+            <Text style={styles.addBtnText}>Add</Text>
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {selectMode && (
+        <View style={styles.bulkBar}>
+          <Text style={styles.bulkText}>{selected.length} selected</Text>
+          <TouchableOpacity
+            onPress={() => setSelected(selected.length === filtered.length ? [] : filtered.map(e => e._id))}
+          >
+            <Text style={styles.bulkLink}>{selected.length === filtered.length ? 'Clear' : 'All'}</Text>
+          </TouchableOpacity>
+          {selected.length > 0 && !bulkBusy && (
+            <>
+              <TouchableOpacity
+                style={[styles.bulkBtn, { backgroundColor: C.success }]}
+                onPress={() => bulkRun('Activate', id => employeeAPI.update(id, { status: 'active' }))}
+              >
+                <Text style={styles.bulkBtnText}>Active</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.bulkBtn, { backgroundColor: '#6B7280' }]}
+                onPress={() => bulkRun('Deactivate', id => employeeAPI.update(id, { status: 'inactive' }))}
+              >
+                <Text style={styles.bulkBtnText}>Inactive</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.bulkBtn, { backgroundColor: C.danger }]}
+                onPress={() => bulkRun('Terminate', id => employeeAPI.delete(id), true)}
+              >
+                <Text style={styles.bulkBtnText}>Terminate</Text>
+              </TouchableOpacity>
+            </>
+          )}
+          {bulkBusy && <ActivityIndicator color={C.primary} />}
+        </View>
+      )}
 
       <View style={styles.searchWrap}>
         <Search size={15} color={C.textMuted} />
@@ -723,6 +934,51 @@ export default function EmployeesScreen() {
             />
           }
           showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <View style={{ gap: 10, marginBottom: 4 }}>
+              <View style={tileGrid}>
+                <StatTile label="Total Employees" value={employees.length} icon={Users} color={C.primary} />
+                <StatTile label="New Hires (Month)" value={newHires} icon={UserPlus} color="#A855F7" />
+              </View>
+              <View style={styles.statusCard}>
+                {[
+                  { label: 'Active', n: cnt('active'), color: C.success, icon: UserCheck },
+                  { label: 'Inactive', n: cnt('inactive'), color: '#6B7280', icon: Clock },
+                  { label: 'Exited', n: cnt('exited'), color: '#A855F7', icon: LogOut },
+                ].map(x => (
+                  <View key={x.label} style={styles.statusCell}>
+                    <View style={[styles.statusChip, { backgroundColor: x.color }]}>
+                      <x.icon size={15} color={C.white} />
+                    </View>
+                    <Text style={styles.statusNum}>{x.n}</Text>
+                    <Text style={styles.statusLbl}>{x.label}</Text>
+                  </View>
+                ))}
+              </View>
+              <View style={styles.attCard}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <CalendarCheck size={14} color={C.black} />
+                    <Text style={styles.statusLbl}>
+                      Attendance · {now0.toLocaleString('en-IN', { month: 'long' })}
+                    </Text>
+                  </View>
+                  <Text style={styles.statusNum}>{attPct}%</Text>
+                </View>
+                <View style={styles.progTrack}>
+                  <View
+                    style={[
+                      styles.progFill,
+                      {
+                        width: `${attPct}%`,
+                        backgroundColor: attPct >= 85 ? C.success : attPct >= 70 ? C.secondary : C.danger,
+                      },
+                    ]}
+                  />
+                </View>
+              </View>
+            </View>
+          }
           ListEmptyComponent={
             <View style={styles.empty}>
               <Users size={40} color="#D1D5DB" />
@@ -734,10 +990,16 @@ export default function EmployeesScreen() {
             return (
               <TouchableOpacity
                 style={styles.card}
-                onPress={() => setDetailEmp(item)}
+                onPress={() => (selectMode ? toggleSel(item._id) : setDetailEmp(item))}
                 activeOpacity={0.85}
               >
                 <View style={styles.cardTop}>
+                  {selectMode &&
+                    (selected.includes(item._id) ? (
+                      <CheckSquare size={20} color={C.primary} style={{ marginRight: 8, marginTop: 12 }} />
+                    ) : (
+                      <Square size={20} color={C.black} style={{ marginRight: 8, marginTop: 12 }} />
+                    ))}
                   {(item as any).avatar ? (
                     <Image
                       source={{ uri: (item as any).avatar }}
@@ -760,10 +1022,10 @@ export default function EmployeesScreen() {
                     </View>
                   )}
                   <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={styles.empIdChip}>{item.employeeId}</Text>
                     <Text style={styles.empName}>
                       {item.firstName} {item.lastName}
                     </Text>
-                    <Text style={styles.empId}>{item.employeeId}</Text>
                     <Text style={styles.empDesig} numberOfLines={1}>
                       {item.designation || getDeptName(item.department)}
                     </Text>
@@ -876,8 +1138,8 @@ export default function EmployeesScreen() {
       {/* ── Employee Detail Modal (single modal, view-stack inside) ── */}
       <Modal
         visible={!!detailEmp}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
+        animationType="fade"
         onRequestClose={() => {
           if (actionModal) {
             setActionModal(null);
@@ -888,8 +1150,9 @@ export default function EmployeesScreen() {
           }
         }}
       >
+<View style={CENTER.overlay}><View style={CENTER.card}>
         {detailEmp && (
-          <SafeAreaView style={styles.safe} edges={['top']}>
+          <SafeAreaView style={styles.safe} edges={[]}>
             {/* Header — changes based on current view */}
             <View style={styles.modalHeader}>
               {actionModal ? (
@@ -1879,14 +2142,16 @@ export default function EmployeesScreen() {
             )}
           </SafeAreaView>
         )}
-      </Modal>
+      </View></View>
+</Modal>
 
       <Modal
         visible={showForm}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
+        animationType="fade"
       >
-        <SafeAreaView style={styles.safe} edges={['top']}>
+<View style={CENTER.overlay}><View style={CENTER.card}>
+        <SafeAreaView style={styles.safe} edges={[]}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
               {editingEmp ? 'Edit Employee' : 'Add Employee'}
@@ -1971,10 +2236,17 @@ export default function EmployeesScreen() {
                   keyboardType: 'email-address',
                   autoCapitalize: 'none',
                 })}
-                {F('Mobile', 'phone', {
-                  placeholder: '+91 9876543210',
-                  keyboardType: 'phone-pad',
-                })}
+                <View>
+                  <Text style={styles.fieldLabel}>Mobile</Text>
+                  <PhoneField
+                    value={form.phone}
+                    onChange={v => {
+                      setForm(p => ({ ...p, phone: v }));
+                      setFormDirty(true);
+                    }}
+                    placeholder="Mobile number"
+                  />
+                </View>
                 {F('Designation', 'designation', {
                   placeholder: 'e.g. Software Engineer',
                 })}
@@ -1983,14 +2255,19 @@ export default function EmployeesScreen() {
                   value={form.joiningDate}
                   onChange={v => setForm(p => ({ ...p, joiningDate: v }))}
                 />
-                {Select(
-                  'Gender',
-                  'gender',
-                  GENDERS.map(g => ({
-                    value: g,
-                    label: g.charAt(0).toUpperCase() + g.slice(1),
-                  })),
-                )}
+                <View>
+                  <Text style={styles.fieldLabel}>Gender</Text>
+                  <PickerField
+                    title="Select gender"
+                    value={form.gender}
+                    placeholder="Select gender"
+                    options={GENDERS.map(g => ({ value: g, label: g.charAt(0).toUpperCase() + g.slice(1) }))}
+                    onChange={v => {
+                      setForm(p => ({ ...p, gender: v }));
+                      setFormDirty(true);
+                    }}
+                  />
+                </View>
                 <View>
                   <Text style={styles.fieldLabel}>Department</Text>
                   <ScrollView
@@ -2238,29 +2515,43 @@ export default function EmployeesScreen() {
                   onChange={v => setForm(p => ({ ...p, dateOfBirth: v }))}
                   maximumDate={new Date()}
                 />
-                {F('Emergency Contact', 'emergencyContact', {
-                  placeholder: 'Name & phone number',
-                })}
-                {F('Current Address', 'address', {
-                  placeholder: 'Full residential address',
-                  multiline: true,
-                })}
-                {F('Permanent Address', 'permanentAddress', {
-                  placeholder: 'Permanent address (if different)',
-                  multiline: true,
-                })}
-                <View style={{ flexDirection: 'row', gap: 12 }}>
-                  <View style={{ flex: 1 }}>
-                    {F('City', 'city', { placeholder: 'e.g. Mumbai' })}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    {F('State', 'state', { placeholder: 'e.g. Maharashtra' })}
-                  </View>
+                <View>
+                  <Text style={styles.fieldLabel}>Emergency Contact</Text>
+                  <PhoneField
+                    value={form.emergencyContact}
+                    onChange={v => {
+                      setForm(p => ({ ...p, emergencyContact: v }));
+                      setFormDirty(true);
+                    }}
+                    placeholder="Emergency number"
+                  />
                 </View>
-                {F('Pincode', 'pincode', {
-                  placeholder: '6-digit pincode',
-                  keyboardType: 'numeric',
+                {F('Current Address', 'address', {
+                  placeholder: 'House no., street, area',
+                  multiline: true,
                 })}
+                {AddressBlock('')}
+                <View style={styles.toggleRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.fieldLabel}>Permanent address same as current</Text>
+                    <Text style={styles.toggleHint}>Turn off to enter a different permanent address</Text>
+                  </View>
+                  <Switch
+                    value={sameAddress}
+                    onValueChange={setSameAddress}
+                    trackColor={{ true: C.primary, false: '#D1D5DB' }}
+                    thumbColor={C.white}
+                  />
+                </View>
+                {!sameAddress && (
+                  <>
+                    {F('Permanent Address', 'permanentAddress', {
+                      placeholder: 'House no., street, area',
+                      multiline: true,
+                    })}
+                    {AddressBlock('permanent')}
+                  </>
+                )}
                 {F('PAN Number', 'panNumber', {
                   placeholder: 'ABCDE1234F',
                   autoCapitalize: 'characters',
@@ -2316,10 +2607,17 @@ export default function EmployeesScreen() {
                   keyboardType: 'email-address',
                   autoCapitalize: 'none',
                 })}
-                {F('Alternate Phone', 'alternatePhone', {
-                  placeholder: 'Alternate contact number',
-                  keyboardType: 'phone-pad',
-                })}
+                <View>
+                  <Text style={styles.fieldLabel}>Alternate Phone</Text>
+                  <PhoneField
+                    value={form.alternatePhone}
+                    onChange={v => {
+                      setForm(p => ({ ...p, alternatePhone: v }));
+                      setFormDirty(true);
+                    }}
+                    placeholder="Alternate number"
+                  />
+                </View>
 
                 <View style={styles.sectionDivider}>
                   <Text style={styles.sectionDividerText}>
@@ -2394,7 +2692,8 @@ export default function EmployeesScreen() {
             </View>
           </ScrollView>
         </SafeAreaView>
-      </Modal>
+      </View></View>
+</Modal>
     </SafeAreaView>
   );
 }
@@ -2558,6 +2857,84 @@ const styles = StyleSheet.create({
   avatarText: { color: C.white, fontWeight: '700', fontSize: 14 },
   empName: { fontSize: 15, fontWeight: '700', color: C.black },
   empId: { fontSize: 11, color: C.textMuted, fontFamily: 'monospace' },
+  empIdChip: {
+    alignSelf: 'flex-start',
+    fontSize: 11,
+    fontWeight: '800',
+    color: C.primary,
+    backgroundColor: C.primary + '18',
+    borderWidth: 1.5,
+    borderColor: C.primary,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    marginBottom: 3,
+  },
+  selectBtn: {
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderColor: C.black,
+    backgroundColor: C.white,
+    paddingHorizontal: 9,
+    paddingVertical: 8,
+  },
+  bulkBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#EFF6FF',
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
+  },
+  bulkText: { fontWeight: '700', fontSize: 12, color: C.black },
+  bulkLink: { fontWeight: '700', fontSize: 12, color: C.primary },
+  bulkBtn: { borderWidth: 2, borderColor: C.black, paddingHorizontal: 8, paddingVertical: 4 },
+  bulkBtnText: { color: C.white, fontWeight: '700', fontSize: 11 },
+  statusCard: {
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderColor: C.black,
+    backgroundColor: C.white,
+    padding: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  statusCell: { alignItems: 'center', gap: 2 },
+  statusChip: {
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: C.black,
+    borderRadius: 6,
+  },
+  statusNum: { fontSize: 20, fontWeight: '800', color: C.black },
+  statusLbl: { fontSize: 10, fontWeight: '700', color: C.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  attCard: {
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderColor: C.black,
+    backgroundColor: C.white,
+    padding: 12,
+    gap: 8,
+  },
+  progTrack: { height: 12, borderWidth: 2, borderColor: C.black, backgroundColor: '#F3F4F6' },
+  progFill: { height: '100%' },
   empDesig: {
     fontSize: 12,
     color: C.textMuted,

@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { employeeAPI } from "@/services/api";
 import { documentAPI } from "@/services/api";
+import { useDocOtp } from "@/hooks/use-doc-otp";
+import { ExportMenu } from "@/components/ui/ExportMenu";
 import {
   FolderOpen,
   Upload,
@@ -162,6 +164,8 @@ export default function DocumentVaultPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const confirm = useConfirm();
+  const { withOtp, otpModal } = useDocOtp();
+  const bulkRef = useRef<HTMLInputElement>(null);
   const isEmployee = user?.role === "employee";
   const canManage = user?.role === "super_admin" || user?.role === "hr_manager";
   const [docs, setDocs] = useState<any[]>([]);
@@ -325,7 +329,7 @@ export default function DocumentVaultPage() {
 
   const handleDownload = async (doc: any) => {
     try {
-      const res = await documentAPI.download(doc._id);
+      const res = await withOtp((t) => documentAPI.download(doc._id, t));
       if (!res.success) throw new Error("Download failed");
       const { fileData, mimeType, name } = res.data;
       const byteChars = atob(fileData);
@@ -369,6 +373,42 @@ export default function DocumentVaultPage() {
     }
   };
 
+  // Bulk import: files named "<EMPCODE>_<doctype>.<ext>" (e.g. EMP0004_aadhar.pdf) are filed under that employee.
+  const handleBulkImport = async (files: FileList | null) => {
+    if (!files?.length) return;
+    let ok = 0;
+    const skipped: string[] = [];
+    for (const f of Array.from(files)) {
+      const [code, rawType = "other"] = f.name.replace(/\.[^.]+$/, "").split("_");
+      const emp = employees.find((e) => e.employeeId?.toLowerCase() === code.toLowerCase());
+      const docType = DOC_TYPES.some((t) => t.value === rawType.toLowerCase()) ? rawType.toLowerCase() : "other";
+      if (!emp || f.size > MAX_DOC_BYTES) {
+        skipped.push(f.name);
+        continue;
+      }
+      try {
+        await documentAPI.upload({
+          employeeId: emp._id,
+          name: DOC_TYPE_MAP[docType],
+          docType,
+          mimeType: f.type,
+          fileData: await readAsDataURL(f),
+        });
+        ok++;
+      } catch {
+        skipped.push(f.name);
+      }
+    }
+    if (bulkRef.current) bulkRef.current.value = "";
+    toast({
+      title: `${ok} document(s) imported`,
+      description: skipped.length ? `Skipped: ${skipped.join(", ")}` : "All files filed.",
+      variant: skipped.length ? "destructive" : undefined,
+    });
+    load();
+    loadAllDocs();
+  };
+
   const displayed = docs.filter((d) => {
     if (filterType && d.docType !== filterType) return false;
     if (search && !d.name.toLowerCase().includes(search.toLowerCase()))
@@ -395,6 +435,7 @@ export default function DocumentVaultPage() {
 
   return (
     <AppLayout title="Document Vault">
+      {otpModal}
       {!isEmployee && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
           <StatCard
@@ -472,12 +513,43 @@ export default function DocumentVaultPage() {
           </div>
         </div>
         {!isEmployee && (
-          <button
-            onClick={() => setUploadModal(true)}
-            className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5 font-bold"
-          >
-            <Upload className="w-4 h-4" /> Upload Document
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              title="Select many files named EMPCODE_doctype.ext, e.g. EMP0004_aadhar.pdf"
+              onClick={() => bulkRef.current?.click()}
+              className="border-2 border-black bg-white px-4 py-2 text-sm flex items-center gap-1.5 font-bold"
+            >
+              <Upload className="w-4 h-4" /> Import
+            </button>
+            <input
+              ref={bulkRef}
+              type="file"
+              multiple
+              hidden
+              accept=".pdf,.jpg,.jpeg,.png,.webp"
+              onChange={(e) => handleBulkImport(e.target.files)}
+            />
+            <ExportMenu
+              name="document_register"
+              rows={displayed}
+              cols={[
+                { header: "Emp Code", value: (d: any) => d.employee?.employeeId },
+                { header: "Employee", value: (d: any) => `${d.employee?.firstName || ""} ${d.employee?.lastName || ""}`.trim() },
+                { header: "Document", value: (d: any) => d.name },
+                { header: "Type", value: (d: any) => DOC_TYPE_MAP[d.docType] || d.docType },
+                { header: "Size KB", value: (d: any) => Math.round((d.sizeBytes || 0) / 1024) },
+                { header: "Expiry", value: (d: any) => (d.expiryDate ? String(d.expiryDate).slice(0, 10) : "") },
+                { header: "Uploaded", value: (d: any) => String(d.createdAt || "").slice(0, 10) },
+              ]}
+            />
+            <button
+              onClick={() => setUploadModal(true)}
+              className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5 font-bold"
+            >
+              <Upload className="w-4 h-4" /> Upload Document
+            </button>
+          </div>
         )}
       </div>
 

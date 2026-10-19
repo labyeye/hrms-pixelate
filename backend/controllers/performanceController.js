@@ -3,6 +3,8 @@ const Performance = require("../models/Performance");
 const Employee = require("../models/Employee");
 const Attendance = require("../models/Attendance");
 const Task = require("../models/Task");
+const Loan = require("../models/Loan");
+const Leave = require("../models/Leave");
 const { safePagination } = require("../middleware/validate");
 
 const REVIEW_TYPES = ["quarterly", "half_yearly", "annual", "probation"];
@@ -126,6 +128,119 @@ const getLiveMetrics = asyncHandler(async (req, res) => {
   );
 
   res.json({ success: true, data });
+});
+
+// Everything that feeds an employee's performance, for ALL active employees in one go (HR / admin view):
+// attendance split + hours + overtime, task completion, loans, approved leave and review rating, plus the live score.
+// 5 aggregates for the whole company instead of 5 queries per employee.
+const getOverview = asyncHandler(async (req, res) => {
+  const now = new Date();
+  const y = parseInt(req.query.year) || now.getFullYear();
+  const m = parseInt(req.query.month) || now.getMonth() + 1;
+  const start = new Date(y, m - 1, 1);
+  const end = new Date(y, m, 1);
+
+  const employees = await Employee.find({ company: req.user.company, status: "active" })
+    .select("firstName lastName employeeId avatar designation salary user joinDate department")
+    .populate("department", "name")
+    .sort({ employeeId: 1 });
+  const empIds = employees.map((e) => e._id);
+  const userIds = employees.map((e) => e.user).filter(Boolean);
+
+  const [att, tasks, loans, leaves, reviews] = await Promise.all([
+    Attendance.aggregate([
+      { $match: { employee: { $in: empIds }, date: { $gte: start, $lt: end } } },
+      {
+        $group: {
+          _id: "$employee",
+          present: { $sum: { $cond: [{ $eq: ["$status", "present"] }, 1, 0] } },
+          late: { $sum: { $cond: [{ $eq: ["$status", "late"] }, 1, 0] } },
+          halfDay: { $sum: { $cond: [{ $eq: ["$status", "half_day"] }, 1, 0] } },
+          absent: { $sum: { $cond: [{ $eq: ["$status", "absent"] }, 1, 0] } },
+          onLeave: { $sum: { $cond: [{ $eq: ["$status", "on_leave"] }, 1, 0] } },
+          early: { $sum: { $cond: ["$earlyLeaving", 1, 0] } },
+          workHours: { $sum: "$workHours" },
+          overtime: { $sum: "$overtime" },
+        },
+      },
+    ]),
+    Task.aggregate([
+      {
+        $match: {
+          assignedTo: { $in: userIds },
+          $or: [{ dueDate: { $gte: start, $lt: end } }, { dueDate: null, createdAt: { $gte: start, $lt: end } }],
+        },
+      },
+      {
+        $group: {
+          _id: "$assignedTo",
+          total: { $sum: 1 },
+          done: { $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] } },
+          late: { $sum: { $cond: ["$late", 1, 0] } },
+        },
+      },
+    ]),
+    Loan.aggregate([
+      { $match: { employee: { $in: empIds }, status: { $in: ["active", "paused"] } } },
+      { $group: { _id: "$employee", count: { $sum: 1 }, balance: { $sum: "$remainingBalance" }, emi: { $sum: "$monthlyEmi" } } },
+    ]),
+    Leave.aggregate([
+      { $match: { employee: { $in: empIds }, status: "approved", startDate: { $lt: end }, endDate: { $gte: start } } },
+      { $group: { _id: "$employee", days: { $sum: "$days" } } },
+    ]),
+    Performance.aggregate([
+      { $match: { employee: { $in: empIds }, year: y, overallRating: { $gte: 1 } } },
+      { $group: { _id: "$employee", rating: { $avg: "$overallRating" } } },
+    ]),
+  ]);
+  const by = (rows) => new Map(rows.map((r) => [String(r._id), r]));
+  const attM = by(att), taskM = by(tasks), loanM = by(loans), leaveM = by(leaves), revM = by(reviews);
+
+  const data = employees.map((e) => {
+    const a = attM.get(String(e._id)) || {};
+    const t = taskM.get(String(e.user)) || {};
+    const l = loanM.get(String(e._id)) || {};
+    const marked = (a.present || 0) + (a.late || 0) + (a.halfDay || 0) + (a.absent || 0) + (a.onLeave || 0);
+    const attendancePct = marked ? ((((a.present || 0) + (a.late || 0) + (a.halfDay || 0) * 0.5) / marked) * 100) : null;
+    const taskPct = t.total ? (t.done / t.total) * 100 : null;
+    const score =
+      attendancePct != null && taskPct != null ? attendancePct * 0.5 + taskPct * 0.5 : attendancePct ?? taskPct;
+    const r = (v) => (v == null ? null : Math.round(v));
+    return {
+      _id: e._id,
+      employeeCode: e.employeeId,
+      firstName: e.firstName,
+      lastName: e.lastName,
+      avatar: e.avatar,
+      designation: e.designation,
+      department: e.department?.name || "",
+      salary: e.salary || 0,
+      joinDate: e.joinDate,
+      present: a.present || 0,
+      late: a.late || 0,
+      halfDay: a.halfDay || 0,
+      absent: a.absent || 0,
+      onLeave: a.onLeave || 0,
+      earlyLeaving: a.early || 0,
+      markedDays: marked,
+      workHours: Math.round((a.workHours || 0) * 10) / 10,
+      overtimeHours: Math.round((a.overtime || 0) * 10) / 10,
+      leaveDays: leaveM.get(String(e._id))?.days || 0,
+      attendancePct: r(attendancePct),
+      tasksTotal: t.total || 0,
+      tasksDone: t.done || 0,
+      tasksLate: t.late || 0,
+      taskPct: r(taskPct),
+      hasLoan: (l.count || 0) > 0,
+      loanCount: l.count || 0,
+      loanBalance: l.balance || 0,
+      loanEmi: l.emi || 0,
+      reviewRating: revM.get(String(e._id)) ? Math.round(revM.get(String(e._id)).rating * 10) / 10 : null,
+      score: r(score),
+    };
+  });
+
+  res.json({ success: true, data, month: m, year: y });
 });
 
 const getReviews = asyncHandler(async (req, res) => {
@@ -253,4 +368,4 @@ const updateReview = asyncHandler(async (req, res) => {
   res.json({ success: true, data: review });
 });
 
-module.exports = { getReviews, createReview, updateReview, getLiveMetrics };
+module.exports = { getReviews, createReview, updateReview, getLiveMetrics, getOverview };

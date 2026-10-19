@@ -5,8 +5,10 @@ const {
   deleteAnnouncement,
   markRead,
   acknowledgeAnnouncement,
+  uploadPoster,
 } = require("../controllers/announcementController");
 const { protect, authorize } = require("../middleware/auth");
+const { uploadAnnouncementPoster } = require("../middleware/upload");
 const router = express.Router();
 
 router
@@ -14,6 +16,7 @@ router
   .get(protect, getAnnouncements)
   .post(protect, authorize("super_admin", "hr_manager"), createAnnouncement);
 
+router.post("/poster", protect, authorize("super_admin", "hr_manager"), uploadAnnouncementPoster, uploadPoster);
 router.post("/:id/read", protect, markRead);
 router.post("/:id/acknowledge", protect, acknowledgeAnnouncement);
 

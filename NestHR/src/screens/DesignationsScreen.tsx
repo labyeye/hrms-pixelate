@@ -25,6 +25,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { designationAPI, departmentAPI } from '../api/api';
 import { C } from '../theme';
+import { CENTER } from '../components/common/centerModal';
 
 const EMPTY = { title: '', department: '', description: '', level: '' };
 
@@ -206,9 +207,10 @@ export default function DesignationsScreen() {
 
       <Modal
         visible={modal}
-        animationType="slide"
-        presentationStyle="formSheet"
+        transparent
+        animationType="fade"
       >
+<View style={CENTER.overlay}><View style={CENTER.card}>
         <SafeAreaView style={s.safe} edges={['top']}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>
@@ -300,14 +302,16 @@ export default function DesignationsScreen() {
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
-      </Modal>
+      </View></View>
+</Modal>
 
       {/* Department Picker */}
       <Modal
         visible={deptPicker}
-        animationType="slide"
-        presentationStyle="formSheet"
+        transparent
+        animationType="fade"
       >
+<View style={CENTER.overlay}><View style={CENTER.card}>
         <SafeAreaView style={s.safe} edges={['top']}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>Select Department</Text>
@@ -355,7 +359,8 @@ export default function DesignationsScreen() {
             ))}
           </ScrollView>
         </SafeAreaView>
-      </Modal>
+      </View></View>
+</Modal>
     </SafeAreaView>
   );
 }

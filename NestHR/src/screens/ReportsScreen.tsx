@@ -45,6 +45,7 @@ import {
   departmentAPI,
 } from '../api/api';
 import { C } from '../theme';
+import { CENTER } from '../components/common/centerModal';
 
 const { width: SW } = Dimensions.get('window');
 const MONTHS = [
@@ -1285,9 +1286,10 @@ function ReportModal({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
+      transparent
+        animationType="fade"
     >
+<View style={CENTER.overlay}><View style={CENTER.card}>
       <SafeAreaView style={ms.safe} edges={['top']}>
         {/* Header */}
         <View style={ms.header}>
@@ -1626,7 +1628,8 @@ function ReportModal({
           )}
         </ScrollView>
       </SafeAreaView>
-    </Modal>
+    </View></View>
+</Modal>
   );
 }
 

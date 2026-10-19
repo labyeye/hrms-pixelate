@@ -87,7 +87,11 @@ const EMPTY_DEV = { name: '', location: '' };
 
 export default function BiometricDeviceScreen() {
   const navigation = useNavigation<any>();
-  const [tab, setTab] = useState<'locations' | 'devices' | 'adms'>('locations');
+  const [tab, setTab] = useState<'locations' | 'devices' | 'adms' | 'logs'>('locations');
+  const [devLogs, setDevLogs] = useState<any[]>([]);
+  const [devLogsLoading, setDevLogsLoading] = useState(false);
+  const [logDevice, setLogDevice] = useState('');
+  const [openLog, setOpenLog] = useState<string | null>(null);
   const [locations, setLocations] = useState<Location[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
@@ -164,6 +168,23 @@ export default function BiometricDeviceScreen() {
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
+
+  const fetchDevLogs = useCallback(async () => {
+    setDevLogsLoading(true);
+    try {
+      const params: Record<string, string> = { limit: '100' };
+      if (logDevice) params.deviceId = logDevice;
+      const res = await biometricAPI.getDeviceLogs(params);
+      setDevLogs(res.data || []);
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    }
+    setDevLogsLoading(false);
+  }, [logDevice]);
+
+  useEffect(() => {
+    if (tab === 'logs') fetchDevLogs();
+  }, [tab, fetchDevLogs]);
 
   useEffect(() => {
     if (tab === 'adms') {
@@ -461,7 +482,7 @@ export default function BiometricDeviceScreen() {
           <Cpu size={20} color={C.primary} />
           <Text style={styles.headerTitle}>Biometric Devices</Text>
         </View>
-        {tab !== 'adms' && (
+        {(tab === 'locations' || tab === 'devices') && (
           <TouchableOpacity
             style={styles.addBtn}
             onPress={tab === 'locations' ? openLocCreate : openDevCreate}
@@ -481,6 +502,7 @@ export default function BiometricDeviceScreen() {
             { id: 'locations', label: `Locations (${locations.length})` },
             { id: 'devices', label: `Devices (${devices.length})` },
             { id: 'adms', label: 'ADMS Sync' },
+            { id: 'logs', label: 'Activity Logs' },
           ] as const
         ).map(t => (
           <TouchableOpacity
@@ -497,6 +519,7 @@ export default function BiometricDeviceScreen() {
         ))}
       </View>
 
+      {(tab === 'locations' || tab === 'devices') && (
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
         refreshControl={
@@ -518,38 +541,42 @@ export default function BiometricDeviceScreen() {
             </View>
           ) : (
             <View style={styles.card}>
+              <View style={[styles.tblRow, styles.tblHead]}>
+                <Text style={[styles.tblH, { flex: 3 }]}>Location</Text>
+                <Text style={[styles.tblH, { flex: 1.2, textAlign: 'center' }]}>Devices</Text>
+                <Text style={[styles.tblH, { flex: 1.3, textAlign: 'center' }]}>Status</Text>
+                <Text style={[styles.tblH, { width: 62, textAlign: 'right' }]}>Actions</Text>
+              </View>
               {locations.map((loc, i) => (
-                <View
-                  key={loc._id}
-                  style={[styles.row, i > 0 && styles.rowBorder]}
-                >
-                  <View style={styles.locIcon}>
-                    <MapPin size={16} color={C.primary} />
-                  </View>
-                  <View style={{ flex: 1 }}>
+                <View key={loc._id} style={[styles.tblRow, i % 2 ? { backgroundColor: '#F8FAFF' } : null]}>
+                  <View style={{ flex: 3, paddingRight: 6 }}>
                     <Text style={styles.rowTitle}>{loc.name}</Text>
-                    {loc.address ? (
-                      <Text style={styles.rowSub}>{loc.address}</Text>
-                    ) : null}
+                    {loc.address ? <Text style={styles.rowSub}>{loc.address}</Text> : null}
+                    {loc.description ? <Text style={styles.rowSub}>{loc.description}</Text> : null}
                   </View>
-                  <View
-                    style={[
-                      styles.statusDot,
-                      { backgroundColor: loc.isActive ? C.success : '#D1D5DB' },
-                    ]}
-                  />
-                  <TouchableOpacity
-                    onPress={() => openLocEdit(loc)}
-                    style={styles.iconBtn}
-                  >
-                    <Edit2 size={14} color={C.primary} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => deleteLocation(loc)}
-                    style={styles.iconBtn}
-                  >
-                    <Trash2 size={14} color={C.danger} />
-                  </TouchableOpacity>
+                  <Text style={[styles.tblC, { flex: 1.2, textAlign: 'center' }]}>
+                    {devices.filter(d => d.location?._id === loc._id).length}
+                  </Text>
+                  <View style={{ flex: 1.3, alignItems: 'center' }}>
+                    <Text
+                      style={[
+                        styles.tblPill,
+                        loc.isActive
+                          ? { color: C.success, borderColor: C.success }
+                          : { color: '#6B7280', borderColor: '#9CA3AF' },
+                      ]}
+                    >
+                      {loc.isActive ? 'ACTIVE' : 'INACTIVE'}
+                    </Text>
+                  </View>
+                  <View style={{ width: 62, flexDirection: 'row', justifyContent: 'flex-end' }}>
+                    <TouchableOpacity onPress={() => openLocEdit(loc)} style={styles.iconBtn}>
+                      <Edit2 size={14} color={C.primary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => deleteLocation(loc)} style={styles.iconBtn}>
+                      <Trash2 size={14} color={C.danger} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ))}
             </View>
@@ -564,39 +591,42 @@ export default function BiometricDeviceScreen() {
           </View>
         ) : (
           <View style={styles.card}>
+            <View style={[styles.tblRow, styles.tblHead]}>
+              <Text style={[styles.tblH, { flex: 2.4 }]}>Device</Text>
+              <Text style={[styles.tblH, { flex: 2 }]}>Location</Text>
+              <Text style={[styles.tblH, { flex: 1.5, textAlign: 'center' }]}>Status</Text>
+              <Text style={[styles.tblH, { width: 18 }]} />
+            </View>
             {devices.map((dev, i) => (
               <View key={dev._id}>
                 <TouchableOpacity
-                  style={[styles.row, i > 0 && styles.rowBorder]}
+                  style={[styles.tblRow, i % 2 ? { backgroundColor: '#F8FAFF' } : null]}
                   onPress={() =>
                     setExpandedDev(expandedDev === dev._id ? null : dev._id)
                   }
                   activeOpacity={0.8}
                 >
-                  <View style={styles.locIcon}>
-                    <Cpu size={16} color={C.primary} />
-                  </View>
-                  <View style={{ flex: 1 }}>
+                  <View style={{ flex: 2.4, paddingRight: 6 }}>
                     <Text style={styles.rowTitle}>{dev.name}</Text>
                     <Text style={styles.rowSub}>
-                      {dev.location?.name || '—'}
+                      {dev.lastSeenAt ? `Seen ${new Date(dev.lastSeenAt).toLocaleDateString('en-IN')}` : 'Never seen'}
                     </Text>
                   </View>
-                  {dev.activated ? (
-                    <View style={styles.badge}>
-                      <Wifi size={10} color={C.success} />
-                      <Text style={[styles.badgeText, { color: C.success }]}>
-                        Active
-                      </Text>
-                    </View>
-                  ) : (
-                    <View style={[styles.badge, { borderColor: C.black }]}>
-                      <WifiOff size={10} color="#9CA3AF" />
-                      <Text style={[styles.badgeText, { color: '#9CA3AF' }]}>
-                        Pending
-                      </Text>
-                    </View>
-                  )}
+                  <Text style={[styles.tblC, { flex: 2 }]} numberOfLines={2}>
+                    {dev.location?.name || '—'}
+                  </Text>
+                  <View style={{ flex: 1.5, alignItems: 'center' }}>
+                    <Text
+                      style={[
+                        styles.tblPill,
+                        dev.activated
+                          ? { color: C.success, borderColor: C.success }
+                          : { color: '#6B7280', borderColor: '#9CA3AF' },
+                      ]}
+                    >
+                      {dev.activated ? 'ACTIVE' : 'PENDING'}
+                    </Text>
+                  </View>
                   {expandedDev === dev._id ? (
                     <ChevronUp size={14} color="#9CA3AF" />
                   ) : (
@@ -649,6 +679,79 @@ export default function BiometricDeviceScreen() {
           </View>
         )}
       </ScrollView>
+      )}
+
+      {/* ── Activity Logs: everything the hardware device sent and how the server answered ── */}
+      {tab === 'logs' && (
+        <ScrollView
+          contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 10 }}
+          refreshControl={<RefreshControl refreshing={devLogsLoading} onRefresh={fetchDevLogs} tintColor={C.primary} />}
+        >
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+            {[{ _id: '', name: 'All devices' }, ...devices].map((d: any) => (
+              <TouchableOpacity
+                key={d._id || 'all'}
+                style={[styles.logChip, logDevice === d._id && { backgroundColor: C.primary }]}
+                onPress={() => setLogDevice(d._id)}
+              >
+                <Text style={[styles.logChipText, logDevice === d._id && { color: C.white }]}>{d.name}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          {devLogsLoading ? (
+            <ActivityIndicator color={C.primary} style={{ paddingVertical: 30 }} />
+          ) : devLogs.length === 0 ? (
+            <View style={styles.empty}>
+              <Radio size={32} color="#D1D5DB" />
+              <Text style={styles.emptyText}>No device communication yet</Text>
+              <Text style={styles.emptySub}>Logs appear when an ADMS device connects (kept 30 days)</Text>
+            </View>
+          ) : (
+            <View style={styles.card}>
+              <View style={[styles.tblRow, styles.tblHead]}>
+                <Text style={[styles.tblH, { flex: 1.6 }]}>Time</Text>
+                <Text style={[styles.tblH, { flex: 2 }]}>Event</Text>
+                <Text style={[styles.tblH, { flex: 1, textAlign: 'center' }]}>Status</Text>
+              </View>
+              {devLogs.map((l, i) => {
+                const col = l.status === 'ok' ? C.success : l.status === 'warn' ? C.secondary : C.danger;
+                return (
+                  <View key={l._id}>
+                    <TouchableOpacity
+                      style={[styles.tblRow, i % 2 ? { backgroundColor: '#F8FAFF' } : null]}
+                      onPress={() => setOpenLog(openLog === l._id ? null : l._id)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={{ flex: 1.6 }}>
+                        <Text style={styles.rowTitle}>{new Date(l.createdAt).toLocaleTimeString('en-IN')}</Text>
+                        <Text style={styles.rowSub}>{new Date(l.createdAt).toLocaleDateString('en-IN')}</Text>
+                      </View>
+                      <View style={{ flex: 2, paddingRight: 4 }}>
+                        <Text style={styles.rowTitle}>{String(l.event).replace(/_/g, ' ')}</Text>
+                        <Text style={styles.rowSub}>{l.device?.name || l.serialNumber || ''}</Text>
+                      </View>
+                      <View style={{ flex: 1, alignItems: 'center' }}>
+                        <Text style={[styles.tblPill, { color: col, borderColor: col }]}>{String(l.status).toUpperCase()}</Text>
+                      </View>
+                    </TouchableOpacity>
+                    {openLog === l._id && (
+                      <View style={styles.logDetail}>
+                        {!!l.summary && <Text style={styles.logSummary}>{l.summary}</Text>}
+                        <Text style={styles.logLabel}>DEVICE → SERVER</Text>
+                        <Text style={styles.logCode}>{l.requestData || '(empty)'}</Text>
+                        <Text style={styles.logLabel}>
+                          SERVER → DEVICE{l.deviceReturnCode != null ? ` · device Return=${l.deviceReturnCode}` : ''}
+                        </Text>
+                        <Text style={styles.logCode}>{l.responseData || '(empty)'}</Text>
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </ScrollView>
+      )}
 
       {/* ── ADMS / ESSL Sync tab ──────────────────────────────────────────── */}
       {tab === 'adms' && (
@@ -1267,6 +1370,17 @@ export default function BiometricDeviceScreen() {
 }
 
 const styles = StyleSheet.create({
+  tblRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 6, borderTopWidth: 1, borderTopColor: '#E5E7EB' },
+  tblHead: { backgroundColor: '#EFF6FF', borderTopWidth: 0, borderBottomWidth: 2, borderBottomColor: C.black },
+  tblH: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase', color: C.black },
+  tblC: { fontSize: 12, fontWeight: '600', color: C.black },
+  tblPill: { fontSize: 9, fontWeight: '800', borderWidth: 1.5, paddingHorizontal: 5, paddingVertical: 1 },
+  logChip: { borderWidth: 2, borderColor: C.black, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: C.white },
+  logChipText: { fontSize: 11, fontWeight: '700', color: C.black },
+  logDetail: { backgroundColor: '#F9FAFB', padding: 10, gap: 4, borderTopWidth: 1, borderTopColor: '#E5E7EB' },
+  logSummary: { fontSize: 12, fontWeight: '700', color: C.black },
+  logLabel: { fontSize: 9, fontWeight: '800', color: '#6B7280', marginTop: 4 },
+  logCode: { fontSize: 10, fontFamily: 'monospace', color: C.black, backgroundColor: C.white, borderWidth: 1, borderColor: '#D1D5DB', padding: 6 },
   safe: { flex: 1, backgroundColor: '#F8F9FA' },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: {
@@ -1454,12 +1568,14 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    padding: 20,
   },
   modal: {
     backgroundColor: C.white,
-    borderTopWidth: 2,
-    borderTopColor: C.black,
+    borderWidth: 2,
+    borderColor: C.black,
+    borderRadius: 8,
     padding: 20,
     paddingBottom: 40,
   },

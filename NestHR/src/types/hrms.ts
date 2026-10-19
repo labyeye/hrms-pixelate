@@ -37,7 +37,6 @@ export interface Department {
   name: string;
   description?: string;
   headCount?: number;
-  budget?: number;
   isActive: boolean;
 }
 

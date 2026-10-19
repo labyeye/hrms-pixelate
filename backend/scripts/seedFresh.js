@@ -12,7 +12,6 @@ const Attendance = require("../models/Attendance");
 const Leave = require("../models/Leave");
 const Payroll = require("../models/Payroll");
 const Performance = require("../models/Performance");
-const Recruitment = require("../models/Recruitment");
 
 const connectDB = require("../config/db");
 
@@ -33,7 +32,6 @@ async function seed() {
 
   console.log("🗑  Dropping all collections...");
   const models = [
-    Recruitment,
     Performance,
     Payroll,
     Leave,
@@ -79,7 +77,6 @@ async function seed() {
         features: [
           "Everything in Starter",
           "Performance Reviews",
-          "Recruitment Management",
           "Advanced Reports",
           "Priority Support",
         ],
@@ -179,28 +176,24 @@ async function seed() {
         code: "ENG",
         description: "Software development team",
         headcount: 4,
-        budget: 500000,
       },
       {
         name: "Human Resources",
         code: "HR",
         description: "HR & people operations",
         headcount: 2,
-        budget: 200000,
       },
       {
         name: "Sales",
         code: "SLS",
         description: "Sales and business dev",
         headcount: 2,
-        budget: 300000,
       },
       {
         name: "Finance",
         code: "FIN",
         description: "Finance and accounts",
         headcount: 2,
-        budget: 250000,
       },
     ],
   );
@@ -563,91 +556,6 @@ async function seed() {
   }
   await Performance.insertMany(perfDocs);
   console.log(`✅ ${perfDocs.length} performance reviews seeded\n`);
-
-  console.log("📢 Seeding recruitment postings...");
-  await Recruitment.insertMany([
-    {
-      title: "Full Stack Developer",
-      department: deptEng._id,
-      positions: 2,
-      type: "full_time",
-      status: "open",
-      priority: "high",
-      description:
-        "Looking for experienced full stack developer with React and Node.js skills.",
-      requirements: "3+ years experience, React, Node.js, MongoDB",
-      minSalary: 60000,
-      maxSalary: 90000,
-      location: "Bengaluru",
-      postedBy: hrManager._id,
-      closingDate: addDays(new Date(), 30),
-      candidates: [
-        {
-          name: "Karan Mehta",
-          email: "karan.m@gmail.com",
-          phone: "9111111111",
-          stage: "interview",
-          notes: "Strong React skills",
-        },
-        {
-          name: "Divya Rao",
-          email: "divya.r@gmail.com",
-          phone: "9111111112",
-          stage: "screening",
-          notes: "Good portfolio",
-        },
-        {
-          name: "Suresh Kumar",
-          email: "suresh.k@gmail.com",
-          phone: "9111111113",
-          stage: "applied",
-          notes: "Needs assessment",
-        },
-      ],
-    },
-    {
-      title: "HR Executive",
-      department: deptHR._id,
-      positions: 1,
-      type: "full_time",
-      status: "open",
-      priority: "medium",
-      description:
-        "HR executive to support recruitment and employee engagement.",
-      requirements: "1-2 years HR experience, good communication",
-      minSalary: 30000,
-      maxSalary: 50000,
-      location: "Bengaluru",
-      postedBy: hrManager._id,
-      closingDate: addDays(new Date(), 20),
-      candidates: [
-        {
-          name: "Nisha Singh",
-          email: "nisha.s@gmail.com",
-          phone: "9222222221",
-          stage: "hr_round",
-          notes: "Final round pending",
-        },
-      ],
-    },
-    {
-      title: "Sales Executive",
-      department: deptSales._id,
-      positions: 2,
-      type: "full_time",
-      status: "on_hold",
-      priority: "low",
-      description: "Sales executive to grow enterprise client base.",
-      requirements: "2+ years B2B sales experience",
-      minSalary: 40000,
-      maxSalary: 60000,
-      location: "Remote",
-      postedBy: hrManager._id,
-      closingDate: addDays(new Date(), 45),
-      candidates: [],
-    },
-  ]);
-  console.log(`✅ 3 recruitment postings seeded\n`);
 
   console.log(
     "═══════════════════════════════════════════════════════════════",

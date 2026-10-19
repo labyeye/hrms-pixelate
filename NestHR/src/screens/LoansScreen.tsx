@@ -28,6 +28,8 @@ import { useNavigation } from '@react-navigation/native';
 import { loanAPI, employeeAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import { C } from '../theme';
+import { CENTER } from '../components/common/centerModal';
+import ExportButton from '../components/common/ExportButton';
 import FilterBar from '../components/common/FilterBar';
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> =
@@ -176,19 +178,39 @@ export default function LoansScreen() {
             {isEmployee ? 'My Loans' : 'Loans'}
           </Text>
         </View>
-        <TouchableOpacity
-          style={styles.addBtn}
-          onPress={() => {
-            setForm(EMPTY_FORM);
-            setSelectedEmpId('');
-            setShowForm(true);
-          }}
-        >
-          <Plus size={14} color={C.white} />
-          <Text style={styles.addBtnText}>
-            {isEmployee ? 'Request' : 'Give Loan'}
-          </Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+          {!isEmployee && (
+            <ExportButton
+              name="loans_advances"
+              label=""
+              rows={filtered}
+              cols={[
+                { header: 'Emp Code', value: (l: any) => l.employee?.employeeId },
+                { header: 'Employee', value: (l: any) => `${l.employee?.firstName || ''} ${l.employee?.lastName || ''}`.trim() },
+                { header: 'Type', value: (l: any) => l.type },
+                { header: 'Amount', value: (l: any) => l.amount },
+                { header: 'Monthly EMI', value: (l: any) => l.monthlyEmi },
+                { header: 'Remaining', value: (l: any) => l.remainingBalance },
+                { header: 'Disbursed On', value: (l: any) => (l.disbursedOn ? String(l.disbursedOn).slice(0, 10) : '') },
+                { header: 'Status', value: (l: any) => l.status },
+                { header: 'Reason', value: (l: any) => l.reason },
+              ]}
+            />
+          )}
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={() => {
+              setForm(EMPTY_FORM);
+              setSelectedEmpId('');
+              setShowForm(true);
+            }}
+          >
+            <Plus size={14} color={C.white} />
+            <Text style={styles.addBtnText}>
+              {isEmployee ? 'Request' : 'Give Loan'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.summaryRow}>
@@ -360,10 +382,11 @@ export default function LoansScreen() {
 
       <Modal
         visible={showForm}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
+        animationType="fade"
       >
-        <SafeAreaView style={styles.safe} edges={['top']}>
+<View style={CENTER.overlay}><View style={CENTER.card}>
+        <SafeAreaView style={styles.safe} edges={[]}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
               {isEmployee ? 'Request Loan / Advance' : 'Give Loan to Staff'}
@@ -512,7 +535,8 @@ export default function LoansScreen() {
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
-      </Modal>
+      </View></View>
+</Modal>
     </SafeAreaView>
   );
 }

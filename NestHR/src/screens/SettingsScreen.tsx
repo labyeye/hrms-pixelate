@@ -37,6 +37,7 @@ import { useNavigation } from '@react-navigation/native';
 import { settingsAPI, authAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import { C } from '../theme';
+import { CENTER } from '../components/common/centerModal';
 
 export default function SettingsScreen() {
   const navigation = useNavigation<any>();
@@ -593,10 +594,11 @@ export default function SettingsScreen() {
       {/* 2FA Setup Modal */}
       <Modal
         visible={show2FASetup}
-        animationType="slide"
-        presentationStyle="formSheet"
+        transparent
+        animationType="fade"
       >
-        <SafeAreaView style={styles.safe} edges={['top']}>
+<View style={CENTER.overlay}><View style={CENTER.card}>
+        <SafeAreaView style={styles.safe} edges={[]}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Enable 2FA</Text>
             <TouchableOpacity onPress={() => setShow2FASetup(false)}>
@@ -702,15 +704,17 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
-      </Modal>
+      </View></View>
+</Modal>
 
       {/* 2FA Disable Modal */}
       <Modal
         visible={show2FADisable}
-        animationType="slide"
-        presentationStyle="formSheet"
+        transparent
+        animationType="fade"
       >
-        <SafeAreaView style={styles.safe} edges={['top']}>
+<View style={CENTER.overlay}><View style={CENTER.card}>
+        <SafeAreaView style={styles.safe} edges={[]}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Disable 2FA</Text>
             <TouchableOpacity onPress={() => setShow2FADisable(false)}>
@@ -780,7 +784,8 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
-      </Modal>
+      </View></View>
+</Modal>
     </SafeAreaView>
   );
 }

@@ -67,6 +67,9 @@ const employeeSchema = new mongoose.Schema(
     city: { type: String },
     state: { type: String },
     pincode: { type: String },
+    permanentCity: { type: String },
+    permanentState: { type: String },
+    permanentPincode: { type: String },
 
     emergencyContact: { type: String },
     avatar: { type: String },

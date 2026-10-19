@@ -10,7 +10,6 @@ const FEATURES_BY_TIER = {
     whatsapp: false,
     twoFactor: false,
     auditLog: false,
-    recruitment: false,
   },
   web_mobile_whatsapp: {
     mobileApp: true,
@@ -20,7 +19,6 @@ const FEATURES_BY_TIER = {
     whatsapp: true,
     twoFactor: true,
     auditLog: true,
-    recruitment: true,
   },
 };
 

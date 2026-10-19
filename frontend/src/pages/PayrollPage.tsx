@@ -6,6 +6,7 @@ import nesthrlogo from "../../assets/nesthr.png";
 import payrollChequePdf from "../../assets/payrollcheque.pdf";
 import * as pdfjsLib from "pdfjs-dist";
 import jsPDF from "jspdf";
+import { ExportMenu } from "@/components/ui/ExportMenu";
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
   import.meta.url,
@@ -530,6 +531,55 @@ export default function PayrollPage() {
       return sortDir === "asc" ? cmp : -cmp;
     });
 
+  // Optional columns only appear when at least one row in the current list has a value for them.
+  const money = (v: number, sign: "+" | "-", color: string) => (
+    <span className={color}>
+      {sign}
+      {formatCurrency(v)}
+    </span>
+  );
+  const allOptionalCols: {
+    key: string;
+    label: string;
+    cls: string;
+    val: (p: any) => number;
+    cell: (p: any) => React.ReactNode;
+  }[] = [
+    {
+      key: "ot",
+      label: "OT",
+      cls: "text-[#F59E0B]",
+      val: (p) => p.otPay ?? 0,
+      cell: (p) => (
+        <>
+          {money(p.otPay, "+", "text-[#F59E0B]")}
+          {(p.overtimeHours ?? 0) > 0 && (
+            <p className="text-[10px] text-muted-foreground">{Number(p.overtimeHours).toFixed(2)}h</p>
+          )}
+        </>
+      ),
+    },
+    {
+      key: "absent",
+      label: "Absent",
+      cls: "text-red-500",
+      val: (p) => p.absentDeduction ?? 0,
+      cell: (p) => (
+        <>
+          {money(p.absentDeduction, "-", "text-red-500")}
+          {p.absentDays > 0 && <p className="text-[10px] text-muted-foreground">{p.absentDays}d</p>}
+        </>
+      ),
+    },
+    { key: "late", label: "Late", cls: "text-red-500", val: (p) => p.lateDeductionAmount ?? 0, cell: (p) => money(p.lateDeductionAmount, "-", "text-red-500") },
+    { key: "half", label: "Half Day", cls: "text-red-500", val: (p) => p.halfDayDeduction ?? 0, cell: (p) => money(p.halfDayDeduction, "-", "text-red-500") },
+    { key: "early", label: "Early Out", cls: "text-red-500", val: (p) => p.earlyCheckoutDeduction ?? 0, cell: (p) => money(p.earlyCheckoutDeduction, "-", "text-red-500") },
+    { key: "penalty", label: "Penalty", cls: "text-red-500", val: (p) => p.penaltyAmount ?? 0, cell: (p) => money(p.penaltyAmount, "-", "text-red-500") },
+    { key: "bonus", label: "Bonus / Allow", cls: "text-[#00C48C]", val: (p) => p.otherAllowances ?? 0, cell: (p) => money(p.otherAllowances, "+", "text-[#00C48C]") },
+    { key: "loan", label: "Loan / Advance", cls: "text-[#FA731C]", val: (p) => p.loanDeduction ?? 0, cell: (p) => money(p.loanDeduction, "-", "text-[#FA731C]") },
+  ];
+  const optionalCols = allOptionalCols.filter((c) => displayedPayrolls.some((p) => c.val(p) > 0));
+
   return (
     <AppLayout title="Payroll">
       {}
@@ -574,6 +624,29 @@ export default function PayrollPage() {
           >
             <CheckCircle className="w-4 h-4" /> Bulk Mark Paid
           </button>
+          <ExportMenu
+            name={`payroll_${year}_${String(month).padStart(2, "0")}`}
+            rows={displayedPayrolls}
+            cols={[
+              { header: "Emp Code", value: (p: any) => p.employee?.employeeId },
+              { header: "Employee", value: (p: any) => `${p.employee?.firstName || ""} ${p.employee?.lastName || ""}`.trim() },
+              { header: "Designation", value: (p: any) => p.employee?.designation },
+              { header: "Cost / Hour", value: (p: any) => (p.hourlyRate ? Number(p.hourlyRate).toFixed(2) : "") },
+              { header: "Basic", value: (p: any) => p.basicSalary },
+              { header: "Earned Basic", value: (p: any) => p.earnedBasic ?? p.basicSalary },
+              { header: "OT", value: (p: any) => p.otPay || 0 },
+              { header: "Absent Ded.", value: (p: any) => p.absentDeduction || 0 },
+              { header: "Late Ded.", value: (p: any) => p.lateDeductionAmount || 0 },
+              { header: "Half Day Ded.", value: (p: any) => p.halfDayDeduction || 0 },
+              { header: "Early Out Ded.", value: (p: any) => p.earlyCheckoutDeduction || 0 },
+              { header: "Penalty", value: (p: any) => p.penaltyAmount || 0 },
+              { header: "Bonus/Allow", value: (p: any) => p.otherAllowances || 0 },
+              { header: "Loan/Advance", value: (p: any) => p.loanDeduction || 0 },
+              { header: "Gross", value: (p: any) => p.grossSalary },
+              { header: "Net Salary", value: (p: any) => p.netSalary },
+              { header: "Status", value: (p: any) => p.status },
+            ]}
+          />
           <button
             onClick={() => {
               if (payrolls.length === 0) {
@@ -818,26 +891,19 @@ export default function PayrollPage() {
             <thead>
               <tr className="border-b-2 border-black bg-[#024BAB]/5">
                 {[
+                  { label: "Emp Code", cls: "" },
                   { label: "Employee", cls: "" },
+                  { label: "Designation", cls: "" },
+                  { label: "Cost / Hr", cls: "text-right" },
                   { label: "Salary", cls: "text-right" },
-                  { label: "OT", cls: "text-right text-[#F59E0B]" },
-                  { label: "Absent", cls: "text-right text-red-500" },
-                  { label: "Late", cls: "text-right text-red-500" },
-                  { label: "Half Day", cls: "text-right text-red-500" },
-                  { label: "Early Out", cls: "text-right text-red-500" },
-                  { label: "Penalty", cls: "text-right text-red-500" },
-                  { label: "Bonus / Allow", cls: "text-right text-[#00C48C]" },
-                  { label: "Loan / Advance", cls: "text-right text-[#FA731C]" },
+                  ...optionalCols.map((c) => ({ label: c.label, cls: `text-right ${c.cls}` })),
                   { label: "Net Salary", cls: "text-right" },
                   { label: "Status", cls: "" },
-                  { label: "", cls: "" },
+                  { label: "Actions", cls: "" },
                 ].map(({ label, cls }) => (
                   <th
                     key={label}
-                    className={cn(
-                      "px-4 py-3 text-xs font-bold text-black uppercase tracking-wider",
-                      cls,
-                    )}
+                    className={cn("px-4 py-3 text-xs font-bold text-black uppercase tracking-wider", cls)}
                   >
                     {label}
                   </th>
@@ -853,7 +919,9 @@ export default function PayrollPage() {
                     i % 2 === 0 ? "" : "bg-[#F8FAFF]",
                   )}
                 >
-                  {}
+                  <td className="px-4 py-3 text-xs font-bold text-black whitespace-nowrap">
+                    {(p.employee as any)?.employeeId || "—"}
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       {(p.employee as any)?.avatar ? (
@@ -868,129 +936,26 @@ export default function PayrollPage() {
                         </div>
                       )}
                       <div>
-                        <p className="font-bold text-black text-xs">
-                          {(p.employee as any)?.firstName}{" "}
-                          {(p.employee as any)?.lastName}
+                        <p className="font-bold text-black text-xs whitespace-nowrap">
+                          {(p.employee as any)?.firstName} {(p.employee as any)?.lastName}
                         </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {p.totalWorkHours != null
-                            ? `${Number(p.totalWorkHours).toFixed(2)}h worked`
-                            : `${p.presentDays}/${p.workingDays} days`}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          ₹{p.hourlyRate?.toFixed(2) ?? "—"}/hr
-                        </p>
+                        
                       </div>
                     </div>
                   </td>
-
-                  {}
+                  <td className="px-4 py-3 text-xs text-black">{(p.employee as any)?.designation || "—"}</td>
+                  <td className="px-4 py-3 text-right text-xs font-bold text-black">
+                    {p.hourlyRate ? `₹${Number(p.hourlyRate).toFixed(2)}` : "—"}
+                  </td>
                   <td className="px-4 py-3 text-right">
-                    <p className="text-xs font-bold text-black">
-                      {formatCurrency(p.earnedBasic ?? p.basicSalary)}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">
-                      of {formatCurrency(p.basicSalary)}
-                    </p>
+                    <p className="text-xs font-bold text-black">{formatCurrency(p.earnedBasic ?? p.basicSalary)}</p>
+                    <p className="text-[10px] text-muted-foreground">of {formatCurrency(p.basicSalary)}</p>
                   </td>
-
-                  {}
-                  <td className="px-4 py-3 text-right text-xs font-bold">
-                    {(p.otPay ?? 0) > 0 ? (
-                      <span className="text-[#F59E0B]">
-                        +{formatCurrency(p.otPay!)}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                    {(p.overtimeHours ?? 0) > 0 && (
-                      <p className="text-[10px] text-muted-foreground">
-                        {Number(p.overtimeHours).toFixed(2)}h
-                      </p>
-                    )}
-                  </td>
-
-                  {}
-                  <td className="px-4 py-3 text-right text-xs font-bold">
-                    {(p as any).absentDeduction > 0 ? (
-                      <span className="text-red-500">
-                        -{formatCurrency((p as any).absentDeduction)}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                    {(p as any).absentDays > 0 && (
-                      <p className="text-[10px] text-muted-foreground">
-                        {(p as any).absentDays}d
-                      </p>
-                    )}
-                  </td>
-
-                  {}
-                  <td className="px-4 py-3 text-right text-xs font-bold">
-                    {(p.lateDeductionAmount ?? 0) > 0 ? (
-                      <span className="text-red-500">
-                        -{formatCurrency(p.lateDeductionAmount!)}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
-
-                  {}
-                  <td className="px-4 py-3 text-right text-xs font-bold">
-                    {(p.halfDayDeduction ?? 0) > 0 ? (
-                      <span className="text-red-500">
-                        -{formatCurrency(p.halfDayDeduction!)}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
-
-                  {}
-                  <td className="px-4 py-3 text-right text-xs font-bold">
-                    {(p.earlyCheckoutDeduction ?? 0) > 0 ? (
-                      <span className="text-red-500">
-                        -{formatCurrency(p.earlyCheckoutDeduction!)}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
-
-                  {}
-                  <td className="px-4 py-3 text-right text-xs font-bold">
-                    {(p.penaltyAmount ?? 0) > 0 ? (
-                      <span className="text-red-500">
-                        -{formatCurrency(p.penaltyAmount!)}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
-
-                  {}
-                  <td className="px-4 py-3 text-right text-xs font-bold">
-                    {(p.otherAllowances ?? 0) > 0 ? (
-                      <span className="text-[#00C48C]">
-                        +{formatCurrency(p.otherAllowances!)}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
-
-                  {}
-                  <td className="px-4 py-3 text-right text-xs font-bold">
-                    {p.loanDeduction > 0 ? (
-                      <span className="text-[#FA731C]">
-                        -{formatCurrency(p.loanDeduction)}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
+                  {optionalCols.map((c) => (
+                    <td key={c.key} className="px-4 py-3 text-right text-xs font-bold">
+                      {c.val(p) > 0 ? c.cell(p) : <span className="text-muted-foreground">—</span>}
+                    </td>
+                  ))}
 
                   {}
                   <td className="px-4 py-3 text-right">
@@ -1019,7 +984,8 @@ export default function PayrollPage() {
                   {}
                   <td className="px-4 py-3">
                     <div className="flex flex-col gap-1">
-                      {p.status === "processed" && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {p.status === "processed" && (
                         <button
                           onClick={() => handleMarkPaid(p._id)}
                           className="flex items-center gap-1 text-xs font-bold border-2 border-black px-2 py-1 hover:bg-[#024BAB] hover:text-white transition-colors whitespace-nowrap"
@@ -1038,6 +1004,7 @@ export default function PayrollPage() {
                       >
                         <Printer className="w-3 h-3" /> Payslip
                       </button>
+                      </div>
                       {/* Slip receipt confirmation */}
                       {p.slipReceived === "received" ? (
                         <span className="flex items-center gap-1 text-[10px] font-bold text-[#00C48C] border-2 border-[#00C48C] px-2 py-0.5">

@@ -43,7 +43,6 @@ const ISSUE_TYPES = [
   { value: "payroll", label: "Payroll & Salary" },
   { value: "employee_management", label: "Employee Management" },
   { value: "performance", label: "Performance Review" },
-  { value: "recruitment", label: "Recruitment" },
   { value: "biometric", label: "Biometric & Devices" },
   { value: "billing", label: "Billing & Subscription" },
   { value: "reports", label: "Reports" },

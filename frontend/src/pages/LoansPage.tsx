@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import { Employee } from "@/types/hrms";
 import { EmployeeCombobox } from "@/components/employees/EmployeeCombobox";
+import { ExportMenu } from "@/components/ui/ExportMenu";
+import { ImportButton } from "@/components/ui/ImportButton";
 
 interface Loan {
   _id: string;
@@ -91,7 +93,7 @@ export default function LoansPage() {
     try {
       const [loanRes, empRes] = await Promise.all([
         loanAPI.getAll(),
-        employeeAPI.getAll({ status: "active", limit: "300" }),
+        employeeAPI.getAll({ status: "active", limit: "5000" }),
       ]);
       setLoans(loanRes.data || []);
       setEmployees(empRes.data || []);
@@ -308,12 +310,65 @@ export default function LoansPage() {
             </button>
           ))}
         </div>
-        <button
-          onClick={openAdd}
-          className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5 font-bold"
-        >
-          <Plus className="w-4 h-4" /> Add Loan / Advance
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <ImportButton
+            name="loans_advances"
+            headers={["Emp ID", "Type (loan/advance)", "Amount", "Monthly EMI", "Disbursed On (YYYY-MM-DD)", "Reason"]}
+            example={["EMP0001", "loan", 50000, 5000, new Date().toISOString().slice(0, 10), "Medical"]}
+            onRows={async (rows) => {
+              let ok = 0;
+              const bad: string[] = [];
+              for (const r of rows) {
+                const code = String(r["Emp ID"] || "").trim().toLowerCase();
+                const emp = employees.find((e) => e.employeeId?.toLowerCase() === code);
+                const amount = parseFloat(String(r["Amount"]).replace(/,/g, ""));
+                if (!emp || !(amount > 0)) {
+                  bad.push(String(r["Emp ID"] || "(blank)"));
+                  continue;
+                }
+                const type = String(r["Type (loan/advance)"] || "loan").toLowerCase() === "advance" ? "advance" : "loan";
+                try {
+                  await loanAPI.create({
+                    employee: emp._id,
+                    type,
+                    amount,
+                    remainingBalance: amount,
+                    monthlyEmi: parseFloat(String(r["Monthly EMI"]).replace(/,/g, "")) || 0,
+                    disbursedOn: String(r["Disbursed On (YYYY-MM-DD)"] || "").slice(0, 10) || new Date().toISOString().slice(0, 10),
+                    reason: String(r["Reason"] || ""),
+                    status: "active",
+                  });
+                  ok++;
+                } catch {
+                  bad.push(String(r["Emp ID"]));
+                }
+              }
+              load();
+              return `${ok} of ${rows.length} imported${bad.length ? `. Skipped: ${bad.slice(0, 5).join(", ")}` : ""}`;
+            }}
+          />
+          <ExportMenu
+            name="loans_advances"
+            rows={displayedLoans}
+            cols={[
+              { header: "Emp Code", value: (l) => l.employee?.employeeId },
+              { header: "Employee", value: (l) => `${l.employee?.firstName || ""} ${l.employee?.lastName || ""}`.trim() },
+              { header: "Type", value: (l) => l.type },
+              { header: "Amount", value: (l) => l.amount },
+              { header: "Monthly EMI", value: (l) => l.monthlyEmi },
+              { header: "Remaining", value: (l) => l.remainingBalance },
+              { header: "Disbursed On", value: (l) => (l.disbursedOn ? String(l.disbursedOn).slice(0, 10) : "") },
+              { header: "Status", value: (l) => l.status },
+              { header: "Reason", value: (l) => l.reason },
+            ]}
+          />
+          <button
+            onClick={openAdd}
+            className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5 font-bold"
+          >
+            <Plus className="w-4 h-4" /> Add Loan / Advance
+          </button>
+        </div>
       </div>
 
       {/* Summary cards */}

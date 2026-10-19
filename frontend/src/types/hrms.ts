@@ -42,7 +42,6 @@ export interface Department {
   head?: { _id: string; name: string; email: string };
   description?: string;
   headcount: number;
-  budget?: number;
   status: "active" | "inactive";
 }
 

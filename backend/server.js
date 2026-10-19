@@ -121,7 +121,6 @@ app.use("/api/employees", require("./routes/employeeRoutes"));
 app.use("/api/attendance", require("./routes/attendanceRoutes"));
 app.use("/api/leaves", require("./routes/leaveRoutes"));
 app.use("/api/payroll", require("./routes/payrollRoutes"));
-app.use("/api/recruitment", require("./routes/recruitmentRoutes"));
 app.use("/api/departments", require("./routes/departmentRoutes"));
 app.use("/api/performance", require("./routes/performanceRoutes"));
 app.use("/api/settings", require("./routes/settingRoutes"));

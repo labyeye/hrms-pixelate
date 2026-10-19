@@ -204,12 +204,6 @@ const allGroups: NavGroup[] = [
         roles: ["super_admin", "hr_manager", "hr_executive"],
       },
       {
-        title: "Recruitment",
-        href: "/recruitment",
-        icon: Briefcase,
-        roles: ["super_admin", "hr_manager", "hr_executive"],
-      },
-      {
         title: "Performance",
         href: "/performance",
         icon: TrendingUp,

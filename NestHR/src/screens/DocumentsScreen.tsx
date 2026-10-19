@@ -33,6 +33,9 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import { documentAPI, employeeAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import { C } from '../theme';
+import { CENTER } from '../components/common/centerModal';
+import { useDocOtp } from '../hooks/useDocOtp';
+import ExportButton from '../components/common/ExportButton';
 import { DatePickerField } from '../components/common/DatePickerField';
 
 const DOC_TYPES = [
@@ -76,6 +79,22 @@ export default function DocumentsScreen() {
   const [showEmpPicker, setShowEmpPicker] = useState(false);
   const [filterEmp, setFilterEmp] = useState('');
   const [previewDoc, setPreviewDoc] = useState<any>(null);
+  const { withOtp, otpModal } = useDocOtp();
+
+  // Every file open goes through the WhatsApp OTP gate; the decrypted file only exists in memory.
+  const openDoc = async (doc: any) => {
+    try {
+      const res = await withOtp(t => documentAPI.download(doc._id, t));
+      if (!res?.success) throw new Error('Could not open the document');
+      setPreviewDoc({
+        ...doc,
+        mimeType: res.data.mimeType,
+        dataUri: `data:${res.data.mimeType};base64,${res.data.fileData}`,
+      });
+    } catch (e: any) {
+      if (!/cancelled/i.test(e?.message || '')) Alert.alert('Error', e.message);
+    }
+  };
 
   const load = useCallback(async () => {
     try {
@@ -189,7 +208,7 @@ export default function DocumentsScreen() {
   const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => setPreviewDoc(item)}
+      onPress={() => openDoc(item)}
       activeOpacity={0.85}
     >
       <View style={styles.cardLeft}>
@@ -268,6 +287,20 @@ export default function DocumentsScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Document Vault</Text>
         <View style={{ flex: 1 }} />
+        {!isEmployee && (
+          <ExportButton
+            name="document_register"
+            rows={docs}
+            cols={[
+              { header: 'Emp Code', value: (d: any) => d.employee?.employeeId },
+              { header: 'Employee', value: (d: any) => `${d.employee?.firstName || ''} ${d.employee?.lastName || ''}`.trim() },
+              { header: 'Document', value: (d: any) => d.name },
+              { header: 'Type', value: (d: any) => d.docType },
+              { header: 'Expiry', value: (d: any) => (d.expiryDate ? String(d.expiryDate).slice(0, 10) : '') },
+              { header: 'Uploaded', value: (d: any) => String(d.createdAt || '').slice(0, 10) },
+            ]}
+          />
+        )}
         <TouchableOpacity
           style={styles.addBtn}
           onPress={() => {
@@ -361,10 +394,11 @@ export default function DocumentsScreen() {
       {/* Upload Modal */}
       <Modal
         visible={showUpload}
-        animationType="slide"
-        presentationStyle="formSheet"
+        transparent
+        animationType="fade"
       >
-        <SafeAreaView style={styles.safe} edges={['top']}>
+<View style={CENTER.overlay}><View style={CENTER.card}>
+        <SafeAreaView style={styles.safe} edges={[]}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Upload Document</Text>
             <TouchableOpacity onPress={() => setShowUpload(false)}>
@@ -469,10 +503,13 @@ export default function DocumentsScreen() {
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
-      </Modal>
+      </View></View>
+</Modal>
+
+      {otpModal}
 
       {/* Doc Type Picker */}
-      <Modal visible={showDocTypePicker} animationType="slide" transparent>
+      <Modal visible={showDocTypePicker} animationType="fade" transparent>
         <View style={styles.overlay}>
           <View style={styles.sheet}>
             <View style={styles.sheetHeader}>
@@ -508,7 +545,7 @@ export default function DocumentsScreen() {
       </Modal>
 
       {/* Employee Picker */}
-      <Modal visible={showEmpPicker} animationType="slide" transparent>
+      <Modal visible={showEmpPicker} animationType="fade" transparent>
         <View style={styles.overlay}>
           <View style={[styles.sheet, { maxHeight: '70%' }]}>
             <View style={styles.sheetHeader}>
@@ -602,22 +639,17 @@ export default function DocumentsScreen() {
               >
                 {previewDoc.name}
               </Text>
-              {previewDoc.url || previewDoc.fileUrl || previewDoc.filePath ? (
+              {previewDoc.dataUri && /^image\//.test(previewDoc.mimeType || '') ? (
                 <Image
-                  source={{
-                    uri:
-                      previewDoc.url ||
-                      previewDoc.fileUrl ||
-                      previewDoc.filePath,
-                  }}
+                  source={{ uri: previewDoc.dataUri }}
                   style={{ width: '90%', height: '70%' }}
                   resizeMode="contain"
                 />
               ) : (
-                <View style={{ alignItems: 'center', gap: 12 }}>
+                <View style={{ alignItems: 'center', gap: 12, paddingHorizontal: 30 }}>
                   <FileText size={60} color="#fff" />
-                  <Text style={{ color: '#aaa', fontSize: 13 }}>
-                    Preview not available for this file type
+                  <Text style={{ color: '#aaa', fontSize: 13, textAlign: 'center' }}>
+                    PDF files can be opened from the NestHR web app. Images preview here.
                   </Text>
                 </View>
               )}
@@ -859,12 +891,15 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    padding: 24,
   },
   sheet: {
     backgroundColor: C.white,
-    borderTopWidth: 2,
-    borderTopColor: C.black,
+    borderWidth: 2,
+    borderRadius: 8,
+    borderColor: C.black,
+    overflow: 'hidden',
   },
   sheetHeader: {
     flexDirection: 'row',

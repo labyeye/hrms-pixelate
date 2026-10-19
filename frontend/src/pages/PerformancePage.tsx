@@ -24,6 +24,7 @@ import {
   Avatar,
 } from "@/components/performance/LiveMetricsTable";
 import { Link } from "react-router-dom";
+import { PerformanceOverview } from "@/components/performance/PerformanceOverview";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
@@ -151,7 +152,10 @@ export default function PerformancePage() {
         </button>
       </div>
 
+      {!isEmployee && <PerformanceOverview />}
+
       {/* Live performance — auto-computed from this month's attendance + tasks */}
+      {isEmployee && (
       <div className="border-2 bg-white p-4 mb-5">
         <div className="flex items-center gap-2 mb-3">
           <Activity className="w-4 h-4 text-[#024BAB]" />
@@ -205,6 +209,7 @@ export default function PerformancePage() {
           <p className="text-xs text-muted-foreground">No employees to show.</p>
         )}
       </div>
+      )}
 
       {}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">

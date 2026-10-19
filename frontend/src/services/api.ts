@@ -161,8 +161,9 @@ export const dashboardAPI = {
 };
 
 export const employeeAPI = {
+  // The server pages at 20 by default, which silently hid employees beyond the first 20.
   getAll: (params?: Record<string, string>) => {
-    const q = params ? "?" + new URLSearchParams(params).toString() : "";
+    const q = "?" + new URLSearchParams({ limit: "5000", ...params }).toString();
     return request(`/employees${q}`);
   },
   getMe: () => request("/employees/me"),
@@ -200,12 +201,12 @@ export const employeeAPI = {
   getDocumentUrl: (id: string, type: "aadhaar" | "pan" | "resume") =>
     `${BASE_URL}/employees/${id}/documents/${type}`,
   // The endpoint needs the Bearer token, which a plain link can't send: fetch it, then open the blob.
-  openDocument: async (id: string, type: "aadhaar" | "pan" | "resume") => {
+  openDocument: async (id: string, type: "aadhaar" | "pan" | "resume", docToken = "") => {
     const token = getToken();
     const res = await fetch(`${BASE_URL}/employees/${id}/documents/${type}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), "X-Doc-Token": docToken },
     });
-    if (!res.ok) throw new Error("Could not open the document");
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || "Could not open the document");
     const url = URL.createObjectURL(await res.blob());
     window.open(url, "_blank", "noopener");
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
@@ -322,30 +323,6 @@ export const payrollAPI = {
     ),
 };
 
-export const recruitmentAPI = {
-  getAll: (params?: Record<string, string>) => {
-    const q = params ? "?" + new URLSearchParams(params).toString() : "";
-    return request(`/recruitment${q}`);
-  },
-  create: (body: object) =>
-    request("/recruitment", { method: "POST", body: JSON.stringify(body) }),
-  update: (id: string, body: object) =>
-    request(`/recruitment/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(body),
-    }),
-  addCandidate: (id: string, body: object) =>
-    request(`/recruitment/${id}/candidates`, {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
-  updateCandidateStage: (id: string, candidateId: string, body: object) =>
-    request(`/recruitment/${id}/candidates/${candidateId}`, {
-      method: "PUT",
-      body: JSON.stringify(body),
-    }),
-};
-
 export const departmentAPI = {
   getAll: () => request("/departments"),
   create: (body: object) =>
@@ -373,6 +350,10 @@ export const performanceAPI = {
   getLive: (params?: Record<string, string>) => {
     const q = params ? "?" + new URLSearchParams(params).toString() : "";
     return request(`/performance/live${q}`);
+  },
+  getOverview: (params?: Record<string, string>) => {
+    const q = params ? "?" + new URLSearchParams(params).toString() : "";
+    return request(`/performance/overview${q}`);
   },
 };
 
@@ -562,6 +543,10 @@ export const biometricAPI = {
     const q = params ? "?" + new URLSearchParams(params).toString() : "";
     return request(`/biometric/logs${q}`);
   },
+  getDeviceLogs: (params?: Record<string, string>) => {
+    const q = params ? "?" + new URLSearchParams(params).toString() : "";
+    return request(`/biometric/device-logs${q}`);
+  },
 
   setDeviceSerial: (id: string, serialNumber: string) =>
     request(`/biometric/devices/${id}/serial`, {
@@ -668,7 +653,10 @@ export const attendanceSettingsAPI = {
 };
 
 export const lateApprovalAPI = {
-  getAll: () => request("/late-approvals"),
+  getAll: (params?: Record<string, string>) => {
+    const q = params ? "?" + new URLSearchParams(params).toString() : "";
+    return request(`/late-approvals${q}`);
+  },
   resolve: (id: string, resolvedStatus: string) =>
     request(`/late-approvals/${id}/resolve`, {
       method: "POST",
@@ -859,7 +847,11 @@ export const documentAPI = {
     mimeType: string;
     fileData: string;
   }) => request("/documents", { method: "POST", body: JSON.stringify(body) }),
-  download: (id: string) => request(`/documents/${id}/download`),
+  download: (id: string, docToken = "") =>
+    request(`/documents/${id}/download`, { headers: { "X-Doc-Token": docToken } }),
+  requestOtp: () => request("/documents/otp/request", { method: "POST" }),
+  verifyOtp: (otp: string) =>
+    request("/documents/otp/verify", { method: "POST", body: JSON.stringify({ otp }) }),
   update: (
     id: string,
     body: { name?: string; docType?: string; fileData?: string },
@@ -911,8 +903,23 @@ export const announcementAPI = {
     departments?: string[];
     roles?: string[];
     acknowledgementRequired?: boolean;
+    posterUrl?: string;
   }) =>
     request("/announcements", { method: "POST", body: JSON.stringify(body) }),
+  // Uploads the poster image; resolves with { url } to pass as posterUrl in create().
+  uploadPoster: async (file: File): Promise<{ url: string }> => {
+    const form = new FormData();
+    form.append("poster", file);
+    const token = getToken();
+    const r = await fetch(`${BASE_URL}/announcements/poster`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.message || "Poster upload failed");
+    return d;
+  },
   delete: (id: string) => request(`/announcements/${id}`, { method: "DELETE" }),
   markRead: (id: string) =>
     request(`/announcements/${id}/read`, { method: "POST" }),

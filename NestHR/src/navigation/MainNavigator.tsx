@@ -30,7 +30,6 @@ import AttendanceScreen from '../screens/AttendanceScreen';
 import LeaveScreen from '../screens/LeaveScreen';
 import MoreScreen from '../screens/MoreScreen';
 import PayrollScreen from '../screens/PayrollScreen';
-import RecruitmentScreen from '../screens/RecruitmentScreen';
 import PerformanceScreen from '../screens/PerformanceScreen';
 import PerformanceReportScreen from '../screens/PerformanceReportScreen';
 import DepartmentsScreen from '../screens/DepartmentsScreen';
@@ -68,7 +67,6 @@ function MoreNavigator() {
     <MoreStack.Navigator screenOptions={{ headerShown: false }}>
       <MoreStack.Screen name="MoreHome" component={MoreScreen} />
       <MoreStack.Screen name="Payroll" component={PayrollScreen} />
-      <MoreStack.Screen name="Recruitment" component={RecruitmentScreen} />
       <MoreStack.Screen name="Performance" component={PerformanceScreen} />
       <MoreStack.Screen
         name="PerformanceReport"

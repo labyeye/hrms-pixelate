@@ -52,7 +52,7 @@ export default function EmployeeCredentialsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { status: "active" };
+      const params: Record<string, string> = { limit: "5000" };
       if (search) params.search = search;
 
       const res = await employeeAPI.getAll(params);
@@ -365,6 +365,7 @@ export default function EmployeeCredentialsPage() {
             <thead>
               <tr className="border-b-2 border-black bg-[#024BAB]/5">
                 {[
+                  "Emp Code",
                   "Employee",
                   "Email",
                   "Designation",
@@ -389,6 +390,9 @@ export default function EmployeeCredentialsPage() {
                     i % 2 === 0 ? "" : "bg-[#F8FAFF]",
                   )}
                 >
+                  <td className="px-4 py-3 text-xs font-bold text-black whitespace-nowrap">
+                    {emp.employeeId}
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
                       {emp.avatar ? (
@@ -406,9 +410,6 @@ export default function EmployeeCredentialsPage() {
                         <p className="font-bold text-black">
                           {emp.firstName} {emp.lastName}
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                          {emp.employeeId}
-                        </p>
                       </div>
                     </div>
                   </td>
@@ -417,7 +418,7 @@ export default function EmployeeCredentialsPage() {
                   </td>
                   <td className="px-4 py-3 text-black">{emp.designation}</td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">
-                    {formatDate(emp.joinDate)}
+                    {formatDate((emp as any).updatedAt || emp.joinDate)}
                   </td>
                   <td className="px-4 py-3">
                     <button

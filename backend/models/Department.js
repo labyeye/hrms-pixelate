@@ -8,7 +8,6 @@ const departmentSchema = new mongoose.Schema(
     head: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     description: { type: String },
     headcount: { type: Number, default: 0 },
-    budget: { type: Number, default: 0 },
     status: { type: String, enum: ["active", "inactive"], default: "active" },
     shiftStartTime: { type: String },
     shiftEndTime: { type: String },

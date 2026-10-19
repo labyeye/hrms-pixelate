@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   FlatList,
+  Image,
   Modal,
   RefreshControl,
   ScrollView,
@@ -24,10 +25,14 @@ import {
   X,
 } from 'lucide-react-native';
 import { announcementAPI, departmentAPI } from '../api/api';
+import { launchImageLibrary } from 'react-native-image-picker';
+import { API_BASE_URL } from '../config/env';
+import ExportButton from '../components/common/ExportButton';
 import { useAuth } from '../contexts/AuthContext';
 import { DatePickerField } from '../components/common/DatePickerField';
 import ScreenLayout, { HeaderBtn } from '../components/common/ScreenLayout';
 import { C, FONT } from '../theme';
+import { CENTER } from '../components/common/centerModal';
 
 // The backend only lets these roles post or delete.
 const ADMIN_ROLES = ['super_admin', 'hr_manager'];
@@ -88,6 +93,20 @@ export default function AnnouncementsScreen() {
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [poster, setPoster] = useState<{ uri: string; type: string; name: string } | null>(null);
+  // posters are served from the API server root (/uploads/...), not under /api
+  const serverRoot = API_BASE_URL.replace(/\/api\/?$/, '');
+
+  const pickPoster = async () => {
+    const r = await launchImageLibrary({ mediaType: 'photo', quality: 0.8 });
+    const a = r.assets?.[0];
+    if (!a?.uri) return;
+    if ((a.fileSize || 0) > 5 * 1024 * 1024) {
+      Alert.alert('Too large', 'Poster must be under 5 MB');
+      return;
+    }
+    setPoster({ uri: a.uri, type: a.type || 'image/jpeg', name: a.fileName || `poster_${Date.now()}.jpg` });
+  };
 
   const load = useCallback(async () => {
     try {
@@ -196,9 +215,13 @@ export default function AnnouncementsScreen() {
     }
     setSaving(true);
     try {
-      await announcementAPI.create(form);
+      const posterUrl = poster
+        ? (await announcementAPI.uploadPoster(poster.uri, poster.type, poster.name)).url
+        : undefined;
+      await announcementAPI.create({ ...form, posterUrl });
       setFormOpen(false);
       setForm(EMPTY_FORM);
+      setPoster(null);
       await load();
     } catch (e: any) {
       Alert.alert('Error', e?.message || 'Failed to post announcement');
@@ -212,13 +235,29 @@ export default function AnnouncementsScreen() {
       title="Announcements"
       loading={loading}
       right={
-        isAdmin ? (
-          <HeaderBtn
-            label="Post"
-            icon={<Plus size={14} color="#fff" />}
-            onPress={() => setFormOpen(true)}
+        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+          <ExportButton
+            name="announcements"
+            label=""
+            rows={shown}
+            cols={[
+              { header: 'Title', value: (a: any) => a.title },
+              { header: 'Category', value: (a: any) => a.category },
+              { header: 'Priority', value: (a: any) => a.priority },
+              { header: 'Posted By', value: (a: any) => a.postedBy?.name },
+              { header: 'Date', value: (a: any) => String(a.date || a.createdAt || '').slice(0, 10) },
+              { header: 'Seen', value: (a: any) => a.readBy?.length || 0 },
+              { header: 'Content', value: (a: any) => a.content },
+            ]}
           />
-        ) : undefined
+          {isAdmin ? (
+            <HeaderBtn
+              label="Post"
+              icon={<Plus size={14} color="#fff" />}
+              onPress={() => setFormOpen(true)}
+            />
+          ) : null}
+        </View>
       }
     >
       <View style={s.topBar}>
@@ -307,6 +346,13 @@ export default function AnnouncementsScreen() {
               </View>
               {open && (
                 <>
+                  {!!a.posterUrl && (
+                    <Image
+                      source={{ uri: `${serverRoot}${a.posterUrl}` }}
+                      style={{ width: '100%', height: 220, marginBottom: 8, borderWidth: 2, borderColor: C.black }}
+                      resizeMode="contain"
+                    />
+                  )}
                   <Text style={s.content}>{a.content}</Text>
                   {isAdmin && a.acknowledgementRequired && (
                     <Text style={s.meta}>
@@ -347,11 +393,12 @@ export default function AnnouncementsScreen() {
 
       <Modal
         visible={formOpen}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
+        animationType="fade"
         onRequestClose={() => setFormOpen(false)}
       >
-        <SafeAreaView edges={['top']} style={s.sheet}>
+<View style={CENTER.overlay}><View style={CENTER.card}>
+        <SafeAreaView edges={[]} style={s.sheet}>
           <View style={s.sheetHeader}>
             <Text style={s.sheetTitle}>New Announcement</Text>
             <TouchableOpacity onPress={() => setFormOpen(false)} hitSlop={8}>
@@ -375,6 +422,18 @@ export default function AnnouncementsScreen() {
               onChangeText={v => setForm(f => ({ ...f, content: v }))}
               multiline
             />
+            <Text style={s.label}>Poster (optional) · sent to every employee as a notification</Text>
+            <TouchableOpacity style={s.input} onPress={pickPoster}>
+              <Text style={{ color: C.black, fontWeight: '600' }}>{poster ? 'Change poster' : 'Choose poster image'}</Text>
+            </TouchableOpacity>
+            {poster && (
+              <View style={{ marginBottom: 8 }}>
+                <Image source={{ uri: poster.uri }} style={{ width: '100%', height: 160 }} resizeMode="contain" />
+                <TouchableOpacity onPress={() => setPoster(null)}>
+                  <Text style={{ color: C.danger, fontWeight: '700', marginTop: 4 }}>Remove poster</Text>
+                </TouchableOpacity>
+              </View>
+            )}
             <Text style={s.label}>Category</Text>
             <Chips
               options={CATEGORIES}
@@ -449,7 +508,8 @@ export default function AnnouncementsScreen() {
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
-      </Modal>
+      </View></View>
+</Modal>
     </ScreenLayout>
   );
 }

@@ -34,6 +34,7 @@ import { useNavigation } from '@react-navigation/native';
 import { exitAPI, employeeAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import { C } from '../theme';
+import { CENTER } from '../components/common/centerModal';
 import FilterBar from '../components/common/FilterBar';
 
 const REASONS = [
@@ -359,9 +360,10 @@ export default function ExitManagementScreen() {
       {/* Create Modal */}
       <Modal
         visible={showCreate}
-        animationType="slide"
-        presentationStyle="formSheet"
+        transparent
+        animationType="fade"
       >
+<View style={CENTER.overlay}><View style={CENTER.card}>
         <SafeAreaView style={s.safe} edges={['top']}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>Initiate Exit</Text>
@@ -470,7 +472,8 @@ export default function ExitManagementScreen() {
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
-      </Modal>
+      </View></View>
+</Modal>
 
       {/* Reason Picker Modal */}
       <Modal visible={showReasonPicker} animationType="slide" transparent>
@@ -511,9 +514,10 @@ export default function ExitManagementScreen() {
       {/* Detail / Update Modal */}
       <Modal
         visible={!!selected}
-        animationType="slide"
-        presentationStyle="formSheet"
+        transparent
+        animationType="fade"
       >
+<View style={CENTER.overlay}><View style={CENTER.card}>
         {selected && (
           <SafeAreaView style={s.safe} edges={['top']}>
             <View style={s.modalHeader}>
@@ -697,7 +701,8 @@ export default function ExitManagementScreen() {
             </ScrollView>
           </SafeAreaView>
         )}
-      </Modal>
+      </View></View>
+</Modal>
 
       {/* Status Picker Modal */}
       <Modal visible={showStatusPicker} animationType="slide" transparent>
@@ -1007,12 +1012,14 @@ const s = StyleSheet.create({
   pickerOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    padding: 20,
   },
   pickerSheet: {
     backgroundColor: C.white,
-    borderTopWidth: 2,
-    borderTopColor: C.black,
+    borderWidth: 2,
+    borderColor: C.black,
+    borderRadius: 8,
   },
   pickerSheetHeader: {
     flexDirection: 'row',

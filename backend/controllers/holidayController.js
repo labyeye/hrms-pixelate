@@ -1,6 +1,58 @@
 const asyncHandler = require("express-async-handler");
 const Holiday = require("../models/Holiday");
+const Employee = require("../models/Employee");
+const Attendance = require("../models/Attendance");
 const { safePagination } = require("../middleware/validate");
+
+// Holiday.date is stored at UTC midnight of the chosen calendar day (same convention as the attendance auto-mark job).
+const dayUTC = (d) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+const holidayNote = (h) => `Holiday: ${h.name}`;
+
+// Marks every working employee of the company as "holiday" (national holidays only) on that date. Real punches (a checkIn) are never touched.
+async function markHolidayAttendance(holiday) {
+  if (holiday.type !== "national") return 0; // optional / restricted holidays are chosen per employee
+  const date = dayUTC(holiday.date);
+  const emps = await Employee.find({
+    company: holiday.company,
+    status: { $in: ["active", "on_leave", "inactive"] },
+    $and: [
+      { $or: [{ joinDate: { $exists: false } }, { joinDate: null }, { joinDate: { $lte: date } }] },
+      { $or: [{ exitDate: { $exists: false } }, { exitDate: null }, { exitDate: { $gte: date } }] },
+    ],
+  }).select("_id");
+  if (!emps.length) return 0;
+  const ids = emps.map((e) => e._id);
+  const note = holidayNote(holiday);
+  // existing blank rows (auto-marked absent / weekend) become holiday
+  await Attendance.updateMany(
+    { employee: { $in: ids }, date, checkIn: { $exists: false }, status: { $in: ["absent", "weekend", "holiday"] } },
+    { $set: { status: "holiday", notes: note } },
+  );
+  // employees with no row yet get one (upsert never overwrites an existing row)
+  await Attendance.bulkWrite(
+    ids.map((employee) => ({
+      updateOne: {
+        filter: { employee, date },
+        update: { $setOnInsert: { status: "holiday", notes: note, verifyMode: "auto" } },
+        upsert: true,
+      },
+    })),
+    { ordered: false },
+  );
+  return ids.length;
+}
+
+// Removes the auto-created holiday rows again (rows with a real punch or edited notes stay).
+async function unmarkHolidayAttendance(holiday) {
+  const emps = await Employee.find({ company: holiday.company }).select("_id");
+  await Attendance.deleteMany({
+    employee: { $in: emps.map((e) => e._id) },
+    date: dayUTC(holiday.date),
+    status: "holiday",
+    checkIn: { $exists: false },
+    notes: holidayNote(holiday),
+  });
+}
 
 const HOLIDAY_TYPES = ["national", "optional", "restricted"];
 
@@ -52,7 +104,8 @@ const createHoliday = asyncHandler(async (req, res) => {
     description: description ? String(description).slice(0, 500) : undefined,
   });
 
-  res.status(201).json({ success: true, data: holiday });
+  const marked = await markHolidayAttendance(holiday);
+  res.status(201).json({ success: true, data: holiday, attendanceMarked: marked });
 });
 
 const updateHoliday = asyncHandler(async (req, res) => {
@@ -66,6 +119,7 @@ const updateHoliday = asyncHandler(async (req, res) => {
   }
 
   const { name, date, type, description, isActive } = req.body;
+  const before = { company: holiday.company, name: holiday.name, date: holiday.date };
   if (name !== undefined) holiday.name = String(name).trim().slice(0, 100);
   if (date !== undefined) {
     if (isNaN(new Date(date).getTime())) {
@@ -79,7 +133,9 @@ const updateHoliday = asyncHandler(async (req, res) => {
     holiday.description = String(description).slice(0, 500);
   if (isActive !== undefined) holiday.isActive = !!isActive;
 
+  await unmarkHolidayAttendance(before); // re-applied with the new date / name / active flag
   await holiday.save();
+  if (holiday.isActive) await markHolidayAttendance(holiday);
   res.json({ success: true, data: holiday });
 });
 
@@ -92,6 +148,7 @@ const deleteHoliday = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Holiday not found");
   }
+  await unmarkHolidayAttendance(holiday);
   await holiday.deleteOne();
   res.json({ success: true, message: "Holiday deleted" });
 });

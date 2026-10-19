@@ -8,11 +8,15 @@ const {
   generateLetter,
 } = require("../controllers/documentController");
 const { protect, authorize } = require("../middleware/auth");
+const { requestDocOtp, verifyDocOtp, requireDocAccess } = require("../utils/docVault");
 const { uploadDocumentVault } = require("../middleware/upload");
 
 const router = express.Router();
 
 router.get("/", protect, getDocuments);
+// OTP gate: every owner/staff must verify a WhatsApp OTP before a file can be opened.
+router.post("/otp/request", protect, authorize("super_admin", "hr_manager", "employee"), requestDocOtp);
+router.post("/otp/verify", protect, authorize("super_admin", "hr_manager", "employee"), verifyDocOtp);
 router.post(
   "/generate-letter",
   protect,
@@ -32,6 +36,7 @@ router.get(
   "/:id/download",
   protect,
   authorize("super_admin", "hr_manager", "employee"),
+  requireDocAccess,
   downloadDocument,
 );
 router.put(

@@ -13,6 +13,7 @@ const {
 const { logAudit } = require("../utils/auditLogger");
 const { validateMagicBytes } = require("../middleware/upload");
 const Counter = require("../models/Counter");
+const { encryptFile, readDecrypted } = require("../utils/docVault");
 
 // EMP#### from an atomic per-company sequence; the first call seeds it from the highest id already issued.
 async function nextEmployeeId(company) {
@@ -151,6 +152,9 @@ const createEmployee = [
       esicNumber,
       address,
       permanentAddress,
+      permanentCity,
+      permanentState,
+      permanentPincode,
       city,
       state,
       pincode,
@@ -281,6 +285,9 @@ const createEmployee = [
       city: city || undefined,
       state: state || undefined,
       pincode: pincode || undefined,
+      permanentCity: permanentCity || undefined,
+      permanentState: permanentState || undefined,
+      permanentPincode: permanentPincode || undefined,
       emergencyContact: emergencyContact || undefined,
       gender: gender || undefined,
       dateOfBirth: dateOfBirth || undefined,
@@ -374,6 +381,9 @@ const updateEmployee = [
       "personalEmail",
       "alternatePhone",
       "permanentAddress",
+      "permanentCity",
+      "permanentState",
+      "permanentPincode",
       "city",
       "state",
       "pincode",
@@ -658,6 +668,7 @@ const uploadEmployeeDocuments = asyncHandler(async (req, res) => {
   const saveDoc = async (field, empField) => {
     if (!files[field]?.[0]) return;
     await validateMagicBytes(files[field][0].path); // throws + deletes file if invalid
+    encryptFile(files[field][0].path); // KYC scans are encrypted at rest
     if (employee[empField]) {
       const old = path.join(__dirname, "../", employee[empField]);
       if (fs.existsSync(old)) fs.unlinkSync(old);
@@ -721,7 +732,15 @@ const downloadEmployeeDocument = asyncHandler(async (req, res) => {
     throw new Error("File missing on server");
   }
 
-  res.download(abs);
+  const ext = path.extname(abs).toLowerCase();
+  const mime = { ".pdf": "application/pdf", ".png": "image/png", ".webp": "image/webp" }[ext] || "image/jpeg";
+  res
+    .set({
+      "Content-Type": mime,
+      "Content-Disposition": `attachment; filename="${type}${ext}"`,
+      "X-Content-Type-Options": "nosniff",
+    })
+    .send(readDecrypted(abs));
 });
 
 // Enrolls (or re-enrolls) the employee's face embedding for mobile geofenced

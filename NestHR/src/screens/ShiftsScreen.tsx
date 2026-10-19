@@ -26,6 +26,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { shiftAPI } from '../api/api';
 import { C } from '../theme';
+import { CENTER } from '../components/common/centerModal';
 
 const EMPTY_FORM = {
   name: '',
@@ -230,9 +231,10 @@ export default function ShiftsScreen() {
 
       <Modal
         visible={modal}
-        animationType="slide"
-        presentationStyle="formSheet"
+        transparent
+        animationType="fade"
       >
+<View style={CENTER.overlay}><View style={CENTER.card}>
         <SafeAreaView style={s.safe} edges={['top']}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>
@@ -299,7 +301,8 @@ export default function ShiftsScreen() {
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
-      </Modal>
+      </View></View>
+</Modal>
     </SafeAreaView>
   );
 }

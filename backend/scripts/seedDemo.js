@@ -13,7 +13,6 @@ const Employee = require("../models/Employee");
 const Attendance = require("../models/Attendance");
 const Leave = require("../models/Leave");
 const Payroll = require("../models/Payroll");
-const Recruitment = require("../models/Recruitment");
 const Performance = require("../models/Performance");
 
 function daysAgo(n) {
@@ -54,7 +53,6 @@ async function seedDemoData() {
         await Leave.deleteMany({ employee: { $in: empIds } });
         await Payroll.deleteMany({ employee: { $in: empIds } });
         await Performance.deleteMany({ employee: { $in: empIds } });
-        await Recruitment.deleteMany({});
         await Employee.deleteMany({
           email: { $regex: "@techvision.com|demo@nesthr.com" },
         });
@@ -95,7 +93,6 @@ async function seedDemoData() {
           "Up to 50 employees",
           "Full payroll with tax calculations",
           "Performance reviews",
-          "Recruitment management",
           "Biometric attendance",
           "WhatsApp notifications",
           "Priority support",
@@ -199,7 +196,6 @@ async function seedDemoData() {
       code: "HR",
       description: "Human Resources and Talent Management",
       headcount: 5,
-      budget: 500000,
       status: "active",
     });
     const deptIT = await Department.create({
@@ -208,7 +204,6 @@ async function seedDemoData() {
       code: "IT",
       description: "Software Development and IT Infrastructure",
       headcount: 12,
-      budget: 1500000,
       status: "active",
     });
     const deptSales = await Department.create({
@@ -217,7 +212,6 @@ async function seedDemoData() {
       code: "SM",
       description: "Sales and Business Development",
       headcount: 8,
-      budget: 800000,
       status: "active",
     });
     const deptOps = await Department.create({
@@ -226,7 +220,6 @@ async function seedDemoData() {
       code: "OPS",
       description: "Operations and Administration",
       headcount: 6,
-      budget: 400000,
       status: "active",
     });
     console.log("✅ Departments created (4)");
@@ -631,111 +624,6 @@ async function seedDemoData() {
       `✅ Payroll records created (${employees.length * 4} records, 4 months)`,
     );
 
-    await Recruitment.insertMany([
-      {
-        title: "Senior React Developer",
-        department: deptIT._id,
-        positions: 2,
-        type: "full_time",
-        status: "open",
-        priority: "high",
-        description:
-          "Looking for an experienced React developer to join our product team.",
-        requirements: "5+ years React, TypeScript, Node.js, REST APIs",
-        minSalary: 1000000,
-        maxSalary: 1500000,
-        location: "Bangalore",
-        postedBy: adminUser._id,
-        closingDate: new Date(Date.now() + 30 * 86400000),
-        candidates: [
-          {
-            name: "Arjun Mehta",
-            email: "arjun@gmail.com",
-            phone: "+91 99001 12345",
-            stage: "interview",
-            notes: "Strong React skills",
-            appliedAt: daysAgo(12),
-          },
-          {
-            name: "Sunita Rao",
-            email: "sunita@gmail.com",
-            phone: "+91 99002 23456",
-            stage: "technical",
-            notes: "Good problem solver",
-            appliedAt: daysAgo(8),
-          },
-          {
-            name: "Kiran Joshi",
-            email: "kiran@gmail.com",
-            phone: "+91 99003 34567",
-            stage: "screening",
-            notes: "Profile looks good",
-            appliedAt: daysAgo(3),
-          },
-        ],
-      },
-      {
-        title: "HR Executive",
-        department: deptHR._id,
-        positions: 1,
-        type: "full_time",
-        status: "open",
-        priority: "medium",
-        description:
-          "HR Executive to manage recruitment and employee engagement.",
-        requirements: "2+ years HR experience, MBA preferred",
-        minSalary: 350000,
-        maxSalary: 500000,
-        location: "Bangalore",
-        postedBy: adminUser._id,
-        closingDate: new Date(Date.now() + 20 * 86400000),
-        candidates: [
-          {
-            name: "Divya Pillai",
-            email: "divya@gmail.com",
-            phone: "+91 99004 45678",
-            stage: "hr_round",
-            notes: "Excellent communication",
-            appliedAt: daysAgo(15),
-          },
-          {
-            name: "Manish Singh",
-            email: "manish@gmail.com",
-            phone: "+91 99005 56789",
-            stage: "offered",
-            notes: "Accepted offer verbally",
-            appliedAt: daysAgo(20),
-          },
-        ],
-      },
-      {
-        title: "Sales Manager – North India",
-        department: deptSales._id,
-        positions: 1,
-        type: "full_time",
-        status: "on_hold",
-        priority: "urgent",
-        description: "Drive B2B sales across North India region.",
-        requirements: "5+ years enterprise sales, SaaS experience preferred",
-        minSalary: 900000,
-        maxSalary: 1200000,
-        location: "Delhi NCR",
-        postedBy: adminUser._id,
-        closingDate: new Date(Date.now() + 45 * 86400000),
-        candidates: [
-          {
-            name: "Vikram Bhatia",
-            email: "vikram@gmail.com",
-            phone: "+91 99006 67890",
-            stage: "hired",
-            notes: "Joining next month",
-            appliedAt: daysAgo(30),
-          },
-        ],
-      },
-    ]);
-    console.log("✅ Recruitment postings created (3)");
-
     const perfData = [
       {
         empIdx: 0,
@@ -867,7 +755,6 @@ async function seedDemoData() {
     );
     console.log("   Leaves: " + leaveData.length + " requests");
     console.log("   Payroll: " + employees.length * 4 + " records (4 months)");
-    console.log("   Recruitment: 3 job postings with candidates");
     console.log("   Performance: 3 reviews");
 
     process.exit(0);

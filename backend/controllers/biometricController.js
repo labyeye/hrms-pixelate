@@ -558,6 +558,34 @@ const recordBiometric = asyncHandler(async (req, res) => {
   });
 });
 
+// Hardware-device protocol log: handshakes, punch pushes, command polls/results and what the server replied.
+const getDeviceActivityLogs = asyncHandler(async (req, res) => {
+  const DeviceActivityLog = require("../models/DeviceActivityLog");
+  const { safePagination } = require("../middleware/validate");
+  const { page, limit, skip } = safePagination(req.query, 50, 500);
+  const { deviceId, event, date, status } = req.query;
+  const filter = { company: req.user.company };
+  if (deviceId) filter.device = deviceId;
+  if (event) filter.event = event;
+  if (status) filter.status = status;
+  if (date) {
+    const d = new Date(date);
+    if (!isNaN(d.getTime())) {
+      d.setHours(0, 0, 0, 0);
+      const end = new Date(d);
+      end.setHours(23, 59, 59, 999);
+      filter.createdAt = { $gte: d, $lte: end };
+    }
+  }
+  const total = await DeviceActivityLog.countDocuments(filter);
+  const logs = await DeviceActivityLog.find(filter)
+    .populate("device", "name")
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+  res.json({ success: true, data: logs, total, page, pages: Math.ceil(total / limit) });
+});
+
 const getLogs = asyncHandler(async (req, res) => {
   const { safePagination } = require("../middleware/validate");
   const { page, limit, skip } = safePagination(req.query, 50, 5000);
@@ -1339,6 +1367,7 @@ module.exports = {
   getDeviceInfo,
   recordBiometric,
   getLogs,
+  getDeviceActivityLogs,
   setDeviceSerial,
   syncEmployeeToDevice,
   syncAllToDevice,

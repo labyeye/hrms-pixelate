@@ -24,6 +24,7 @@ const announcementSchema = new mongoose.Schema(
       enum: ["low", "medium", "high", "critical"],
       default: "medium",
     },
+    posterUrl: { type: String }, // /uploads/announcement-posters/<file>
     pinned: { type: Boolean, default: false },
     expiryDate: { type: Date, default: null },
     targetAudience: {

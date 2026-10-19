@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { announcementAPI, departmentAPI } from "@/services/api";
+import { ExportMenu } from "@/components/ui/ExportMenu";
 import { useToast } from "@/hooks/use-toast";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useAuth } from "@/contexts/AuthContext";
@@ -63,6 +64,7 @@ interface Announcement {
   acknowledgementRequired: boolean;
   acknowledgedBy: UserRef[];
   audienceCount?: number;
+  posterUrl?: string;
 }
 
 function refId(ref: UserRef) {
@@ -113,6 +115,10 @@ export default function AnnouncementsPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [poster, setPoster] = useState<File | null>(null);
+  const posterPreview = useMemo(() => (poster ? URL.createObjectURL(poster) : ""), [poster]);
+  // Posters live on the API server root (/uploads/...), not under /api
+  const serverRoot = ((import.meta.env.VITE_API_URL as string) || "").replace(/\/api$/, "");
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [form, setForm] = useState(EMPTY_FORM);
@@ -163,9 +169,11 @@ export default function AnnouncementsPage() {
     if (!ok) return;
     setSubmitting(true);
     try {
-      await announcementAPI.create(form);
-      toast({ title: "Announcement posted" });
+      const posterUrl = poster ? (await announcementAPI.uploadPoster(poster)).url : undefined;
+      await announcementAPI.create({ ...form, posterUrl });
+      toast({ title: "Announcement posted", description: "Employees are being notified." });
       setForm(EMPTY_FORM);
+      setPoster(null);
       setCreateOpen(false);
       fetchAnnouncements();
     } catch (err: any) {
@@ -237,14 +245,32 @@ export default function AnnouncementsPage() {
         <h1 className="font-display font-bold text-2xl text-black">
           Announcements
         </h1>
-        {isAdmin && (
-          <button
-            onClick={() => setCreateOpen(true)}
-            className="border-2 border-black bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5 font-bold hover:bg-[#01368A] transition-colors"
-          >
-            <Plus className="w-4 h-4" /> New Announcement
-          </button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportMenu
+            name="announcements"
+            rows={announcements}
+            cols={[
+              { header: "Title", value: (a) => a.title },
+              { header: "Category", value: (a) => a.category },
+              { header: "Priority", value: (a) => a.priority },
+              { header: "Posted By", value: (a) => a.postedBy?.name },
+              { header: "Date", value: (a) => String(a.date).slice(0, 10) },
+              { header: "Expiry", value: (a) => (a.expiryDate ? String(a.expiryDate).slice(0, 10) : "") },
+              { header: "Audience", value: (a) => a.targetAudience },
+              { header: "Seen", value: (a) => a.readBy?.length || 0 },
+              { header: "Acknowledged", value: (a) => (a.acknowledgementRequired ? a.acknowledgedBy?.length || 0 : "") },
+              { header: "Content", value: (a) => a.content },
+            ]}
+          />
+          {isAdmin && (
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="border-2 border-black bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5 font-bold hover:bg-[#01368A] transition-colors"
+            >
+              <Plus className="w-4 h-4" /> New Announcement
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Stat tiles */}
@@ -374,6 +400,15 @@ export default function AnnouncementsPage() {
                       )}
                     </div>
                     <p className="font-bold text-black">{a.title}</p>
+                    {a.posterUrl && (
+                      <a href={`${serverRoot}${a.posterUrl}`} target="_blank" rel="noreferrer">
+                        <img
+                          src={`${serverRoot}${a.posterUrl}`}
+                          alt={a.title}
+                          className="mt-2 max-h-72 w-auto max-w-full border-2 border-black object-contain bg-gray-50"
+                        />
+                      </a>
+                    )}
                     <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-1">
                       {a.content}
                     </p>
@@ -456,7 +491,10 @@ export default function AnnouncementsPage() {
         open={createOpen}
         onOpenChange={(o) => {
           setCreateOpen(o);
-          if (!o) setForm(EMPTY_FORM);
+          if (!o) {
+            setForm(EMPTY_FORM);
+            setPoster(null);
+          }
         }}
       >
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
@@ -486,6 +524,37 @@ export default function AnnouncementsPage() {
                 onChange={(e) => setForm({ ...form, content: e.target.value })}
                 className="w-full border-2 border-black px-3 py-2 text-sm outline-none resize-none"
               />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-black">
+                Poster (optional) &middot; sent to every employee as a notification
+              </label>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] || null;
+                  if (f && f.size > 5 * 1024 * 1024) {
+                    toast({ title: "Poster must be under 5 MB", variant: "destructive" });
+                    e.target.value = "";
+                    return;
+                  }
+                  setPoster(f);
+                }}
+                className="w-full border-2 border-black px-3 py-2 text-sm bg-white file:mr-3 file:border-2 file:border-black file:bg-[#024BAB] file:text-white file:px-3 file:py-1 file:text-xs file:font-bold"
+              />
+              {posterPreview && (
+                <div className="relative w-fit">
+                  <img src={posterPreview} alt="Poster preview" className="max-h-48 border-2 border-black object-contain" />
+                  <button
+                    type="button"
+                    onClick={() => setPoster(null)}
+                    className="absolute -top-2 -right-2 bg-white border-2 border-black p-0.5"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">

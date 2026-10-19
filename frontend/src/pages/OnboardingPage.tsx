@@ -53,7 +53,6 @@ const PLAN = {
     "Reports & analytics",
     "WhatsApp notifications",
     "2FA & audit log",
-    "Recruitment",
     "Priority support",
   ],
 };

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
-import { AlertCircle, Users2 } from "lucide-react";
-import loginDash from "../../assets/login-dash.png";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { AlertCircle, ArrowRight } from "lucide-react";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -22,22 +22,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F0F6FF] flex items-center justify-center p-8">
-      <div className="w-full max-w-sm">
-        <img
-          src={loginDash}
-          alt="NestHR dashboard preview"
-          className="w-full mb-6 bg-white border-2 border-black"
-        />
-        <div className="flex items-center gap-2 mb-8">
-          <div className="w-9 h-9 bg-[#024BAB] border-2 border-black flex items-center justify-center">
-            <Users2 className="w-4 h-4 text-white" />
-          </div>
-          <span className="font-display font-bold text-xl text-black">
-            NestHR
-          </span>
-        </div>
-
+    <AuthShell>
         <h2 className="font-display font-bold text-3xl text-black mb-1">
           Create account
         </h2>
@@ -58,9 +43,9 @@ export default function RegisterPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5 login-anim">
           <div>
-            <label className="block text-sm font-bold text-black mb-1.5">
+            <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
               Full Name
             </label>
             <input
@@ -68,13 +53,13 @@ export default function RegisterPage() {
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="John Smith"
-              className="border-2 w-full px-3 py-2.5 text-sm"
+              className="w-full px-4 py-3 border-2 border-black text-sm font-medium bg-white focus:outline-none transition-colors"
               required
               autoFocus
             />
           </div>
           <div>
-            <label className="block text-sm font-bold text-black mb-1.5">
+            <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
               Email
             </label>
             <input
@@ -82,12 +67,12 @@ export default function RegisterPage() {
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               placeholder="you@company.com"
-              className="border-2 w-full px-3 py-2.5 text-sm"
+              className="w-full px-4 py-3 border-2 border-black text-sm font-medium bg-white focus:outline-none transition-colors"
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-bold text-black mb-1.5">
+            <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
               Password
             </label>
             <input
@@ -95,7 +80,7 @@ export default function RegisterPage() {
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               placeholder="Min. 6 characters"
-              className="border-2 w-full px-3 py-2.5 text-sm"
+              className="w-full px-4 py-3 border-2 border-black text-sm font-medium bg-white focus:outline-none transition-colors"
               required
               minLength={6}
             />
@@ -103,7 +88,7 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="border-2 w-full bg-[#024BAB] text-white py-3 text-sm font-bold mt-2"
+            className="w-full bg-[#024BAB] text-white py-3.5 text-sm font-bold border-2 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#0a0a0a] transition-all flex items-center justify-center gap-2 mt-2"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -111,7 +96,7 @@ export default function RegisterPage() {
                 Creating account...
               </span>
             ) : (
-              "Create Account →"
+              <>Create Account <ArrowRight className="w-4 h-4" /></>
             )}
           </button>
         </form>
@@ -135,7 +120,6 @@ export default function RegisterPage() {
             Terms of Service
           </a>
         </p>
-      </div>
-    </div>
+    </AuthShell>
   );
 }

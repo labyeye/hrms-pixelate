@@ -21,17 +21,29 @@ import {
   Sun,
   ChevronLeft,
   Edit2,
+  ChevronRight,
+  CalendarDays,
+  Flag,
+  Gift,
+  Lock,
+  CalendarClock,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { holidayAPI } from '../api/api';
 import { C } from '../theme';
+import { CENTER } from '../components/common/centerModal';
+import ExportButton from '../components/common/ExportButton';
+import StatTile, { tileGrid } from '../components/common/StatTile';
 
 const TYPE_COLOR: Record<string, string> = {
-  national: C.primary,
-  regional: C.secondary,
-  optional: C.warning,
-  religious: C.success,
+  national: C.danger,
+  optional: C.secondary,
+  restricted: '#EAB308',
 };
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const iso = (y: number, m: number, d: number) =>
+  `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
 const EMPTY_FORM = { name: '', date: '', type: 'national', description: '' };
 
@@ -44,17 +56,21 @@ export default function HolidaysScreen() {
   const [saving, setSaving] = useState(false);
   const [editingHoliday, setEditingHoliday] = useState<any | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth());
+  const [dayModal, setDayModal] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const res = await holidayAPI.getAll();
+      const res = await holidayAPI.getAll({ year: String(year) });
       setHolidays(res.data || []);
     } catch (e: any) {
       Alert.alert('Error', e.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [year]);
 
   useEffect(() => {
     load();
@@ -66,9 +82,9 @@ export default function HolidaysScreen() {
     setRefreshing(false);
   };
 
-  const openCreate = () => {
+  const openCreate = (date = '') => {
     setEditingHoliday(null);
-    setForm(EMPTY_FORM);
+    setForm({ ...EMPTY_FORM, date });
     setShowForm(true);
   };
 
@@ -129,6 +145,30 @@ export default function HolidaysScreen() {
   };
 
   const upcoming = holidays.filter(h => new Date(h.date) >= new Date()).length;
+  const active = holidays.filter(h => h.isActive !== false);
+  const count = (t: string) => active.filter(h => h.type === t).length;
+  const todayKey = iso(now.getFullYear(), now.getMonth(), now.getDate());
+  const nextHoliday = [...active]
+    .filter(h => String(h.date).slice(0, 10) >= todayKey)
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)))[0];
+  const byDate: Record<string, any[]> = {};
+  holidays.forEach(h => {
+    const k = String(h.date).slice(0, 10);
+    (byDate[k] = byDate[k] || []).push(h);
+  });
+  const dayHolidays = dayModal ? byDate[dayModal] || [] : [];
+  const monthHolidays = holidays
+    .filter(h => new Date(h.date).getMonth() === month)
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  const first = new Date(year, month, 1).getDay();
+  const dim = new Date(year, month + 1, 0).getDate();
+  const cells: (number | null)[] = [...Array(first).fill(null), ...Array.from({ length: dim }, (_, i) => i + 1)];
+  while (cells.length % 7) cells.push(null);
+  const shiftMonth = (d: number) => {
+    const dt = new Date(year, month + d, 1);
+    setYear(dt.getFullYear());
+    setMonth(dt.getMonth());
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -146,10 +186,24 @@ export default function HolidaysScreen() {
             <Text style={styles.countText}>{upcoming} upcoming</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.addBtn} onPress={openCreate}>
-          <Plus size={14} color={C.white} />
-          <Text style={styles.addBtnText}>Add</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <ExportButton
+            name={`holidays_${year}`}
+            label=""
+            rows={[...holidays].sort((a, b) => String(a.date).localeCompare(String(b.date)))}
+            cols={[
+              { header: 'Date', value: (h: any) => String(h.date).slice(0, 10) },
+              { header: 'Day', value: (h: any) => new Date(h.date).toLocaleDateString('en-IN', { weekday: 'long' }) },
+              { header: 'Holiday', value: (h: any) => h.name },
+              { header: 'Type', value: (h: any) => h.type },
+              { header: 'Description', value: (h: any) => h.description || '' },
+            ]}
+          />
+          <TouchableOpacity style={styles.addBtn} onPress={() => openCreate()}>
+            <Plus size={14} color={C.white} />
+            <Text style={styles.addBtnText}>Add</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {loading ? (
@@ -157,87 +211,176 @@ export default function HolidaysScreen() {
           <ActivityIndicator size="large" color={C.primary} />
         </View>
       ) : (
-        <FlatList
-          data={holidays.sort(
-            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-          )}
-          keyExtractor={item => item._id}
-          contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 32 }}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={C.primary}
-            />
-          }
+        <ScrollView
+          contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} />}
           showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <Sun size={40} color="#D1D5DB" />
-              <Text style={styles.emptyText}>No holidays added</Text>
+        >
+          <View style={tileGrid}>
+            <StatTile label={`Total ${year}`} value={active.length} icon={CalendarDays} color={C.primary} />
+            <StatTile label="National" value={count('national')} icon={Flag} color={C.danger} />
+            <StatTile label="Optional" value={count('optional')} icon={Gift} color={C.secondary} />
+            <StatTile label="Restricted" value={count('restricted')} icon={Lock} color="#EAB308" />
+            <StatTile
+              label="Next Holiday"
+              value={nextHoliday ? nextHoliday.name : 'None'}
+              sub={nextHoliday ? new Date(nextHoliday.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : undefined}
+              icon={CalendarClock}
+              color={C.success}
+              width="100%"
+            />
+          </View>
+
+          <View style={styles.calCard}>
+            <View style={styles.calNav}>
+              <TouchableOpacity onPress={() => shiftMonth(-1)} style={styles.calNavBtn}>
+                <ChevronLeft size={18} color={C.black} />
+              </TouchableOpacity>
+              <Text style={styles.calTitle}>
+                {MONTHS[month]} {year}
+              </Text>
+              <TouchableOpacity onPress={() => shiftMonth(1)} style={styles.calNavBtn}>
+                <ChevronRight size={18} color={C.black} />
+              </TouchableOpacity>
             </View>
-          }
-          renderItem={({ item }) => {
-            const color = TYPE_COLOR[item.type] || C.textMuted;
-            const d = new Date(item.date);
-            const isPast = d < new Date();
-            return (
-              <View style={[styles.card, isPast && { opacity: 0.6 }]}>
-                <View style={[styles.dateBadge, { backgroundColor: color }]}>
-                  <Text style={styles.dateDay}>{d.getDate()}</Text>
-                  <Text style={styles.dateMonth}>
-                    {d.toLocaleString('en', { month: 'short' }).toUpperCase()}
-                  </Text>
-                </View>
-                <View style={{ flex: 1, marginLeft: 14 }}>
-                  <Text style={styles.holidayName}>{item.name}</Text>
-                  <View style={styles.metaRow}>
-                    <View
-                      style={[
-                        styles.typePill,
-                        { backgroundColor: color, borderColor: C.black },
-                      ]}
-                    >
-                      <Text style={[styles.typePillText, { color: C.white }]}>
-                        {item.type?.toUpperCase()}
+            <View style={styles.calRow}>
+              {DOW.map((d, i) => (
+                <Text key={i} style={styles.calDow}>
+                  {d}
+                </Text>
+              ))}
+            </View>
+            <View style={styles.calGrid}>
+              {cells.map((d, i) => {
+                if (!d) return <View key={i} style={styles.calCell} />;
+                const key = iso(year, month, d);
+                const list = byDate[key] || [];
+                const isToday = key === todayKey;
+                return (
+                  <TouchableOpacity key={i} style={styles.calCell} onPress={() => setDayModal(key)}>
+                    <View style={[styles.calDay, isToday && { backgroundColor: C.primary }]}>
+                      <Text style={[styles.calDayText, isToday && { color: C.white }, i % 7 === 0 && !isToday && { color: C.danger }]}>
+                        {d}
                       </Text>
                     </View>
-                    <Text style={styles.weekday}>
-                      {d.toLocaleDateString('en-IN', { weekday: 'long' })}
-                    </Text>
+                    <View style={{ flexDirection: 'row', gap: 2, height: 6 }}>
+                      {list.slice(0, 3).map(h => (
+                        <View key={h._id} style={[styles.dot, { backgroundColor: TYPE_COLOR[h.type] || C.textMuted }]} />
+                      ))}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <View style={styles.legend}>
+              {Object.keys(TYPE_COLOR).map(t => (
+                <View key={t} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <View style={[styles.dot, { backgroundColor: TYPE_COLOR[t] }]} />
+                  <Text style={styles.legendText}>{t.toUpperCase()}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <Text style={styles.listTitle}>
+            {MONTHS[month]} holidays
+          </Text>
+          {monthHolidays.length === 0 ? (
+            <Text style={styles.emptyText}>No holidays this month. Tap a date to add one.</Text>
+          ) : (
+            monthHolidays.map(item => {
+              const color = TYPE_COLOR[item.type] || C.textMuted;
+              const d = new Date(item.date);
+              return (
+                <TouchableOpacity key={item._id} style={styles.card} onPress={() => setDayModal(String(item.date).slice(0, 10))}>
+                  <View style={[styles.dateBadge, { backgroundColor: color }]}>
+                    <Text style={styles.dateDay}>{d.getDate()}</Text>
+                    <Text style={styles.dateMonth}>{d.toLocaleString('en', { month: 'short' }).toUpperCase()}</Text>
                   </View>
-                  {item.description && (
-                    <Text style={styles.desc} numberOfLines={1}>
-                      {item.description}
-                    </Text>
-                  )}
-                </View>
-                <View style={styles.cardActions}>
-                  <TouchableOpacity
-                    onPress={() => openEdit(item)}
-                    style={styles.editBtn}
-                  >
-                    <Edit2 size={13} color={C.primary} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => handleDelete(item)}
-                    style={styles.deleteBtn}
-                  >
-                    <Trash2 size={13} color={C.danger} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            );
-          }}
-        />
+                  <View style={{ flex: 1, marginLeft: 14 }}>
+                    <Text style={styles.holidayName}>{item.name}</Text>
+                    <View style={styles.metaRow}>
+                      <View style={[styles.typePill, { backgroundColor: color, borderColor: C.black }]}>
+                        <Text style={[styles.typePillText, { color: C.white }]}>{item.type?.toUpperCase()}</Text>
+                      </View>
+                      <Text style={styles.weekday}>{d.toLocaleDateString('en-IN', { weekday: 'long' })}</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })
+          )}
+        </ScrollView>
       )}
+
+      {/* Day modal — centred: holidays on the tapped date + add */}
+      <Modal visible={!!dayModal} transparent animationType="fade" onRequestClose={() => setDayModal(null)}>
+        <View style={styles.dayOverlay}>
+          <View style={styles.dayCard}>
+            <View style={styles.dayHead}>
+              <Text style={styles.dayHeadText}>
+                {dayModal
+                  ? new Date(dayModal + 'T00:00:00').toLocaleDateString('en-IN', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })
+                  : ''}
+              </Text>
+              <TouchableOpacity onPress={() => setDayModal(null)}>
+                <X size={20} color={C.white} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ maxHeight: 320 }} contentContainerStyle={{ padding: 14, gap: 10 }}>
+              {dayHolidays.length === 0 ? (
+                <Text style={styles.emptyText}>No holiday on this date.</Text>
+              ) : (
+                dayHolidays.map(h => (
+                  <View key={h._id} style={[styles.dayItem, { borderColor: TYPE_COLOR[h.type] || C.black }]}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.holidayName}>{h.name}</Text>
+                      <Text style={[styles.typePillText, { color: TYPE_COLOR[h.type] || C.black }]}>{String(h.type).toUpperCase()}</Text>
+                      {h.description ? <Text style={styles.desc}>{h.description}</Text> : null}
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setDayModal(null);
+                        openEdit(h);
+                      }}
+                      style={styles.editBtn}
+                    >
+                      <Edit2 size={13} color={C.primary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleDelete(h)} style={styles.deleteBtn}>
+                      <Trash2 size={13} color={C.danger} />
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.dayAdd}
+              onPress={() => {
+                const d = dayModal || '';
+                setDayModal(null);
+                openCreate(d);
+              }}
+            >
+              <Plus size={14} color={C.white} />
+              <Text style={styles.addBtnText}>Add holiday on this date</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         visible={showForm}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
+        animationType="fade"
       >
-        <SafeAreaView style={styles.safe} edges={['top']}>
+<View style={CENTER.overlay}><View style={CENTER.card}>
+        <SafeAreaView style={styles.safe} edges={[]}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
               {editingHoliday ? 'Edit Holiday' : 'Add Holiday'}
@@ -333,12 +476,72 @@ export default function HolidaysScreen() {
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
-      </Modal>
+      </View></View>
+</Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  calCard: {
+    backgroundColor: C.white,
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderColor: C.black,
+    padding: 10,
+  },
+  calNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  calNavBtn: { borderWidth: 2, borderColor: C.black, padding: 4 },
+  calTitle: { fontSize: 15, fontWeight: '800', color: C.black },
+  calRow: { flexDirection: 'row' },
+  calDow: { flex: 1, textAlign: 'center', fontSize: 11, fontWeight: '700', color: C.textMuted, paddingBottom: 4 },
+  calGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  calCell: { width: '14.2857%', alignItems: 'center', paddingVertical: 4 },
+  calDay: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', borderRadius: 15 },
+  calDayText: { fontSize: 13, fontWeight: '700', color: C.black },
+  dot: { width: 6, height: 6, borderRadius: 3 },
+  legend: { flexDirection: 'row', gap: 14, justifyContent: 'center', marginTop: 8 },
+  legendText: { fontSize: 10, fontWeight: '700', color: C.black },
+  listTitle: { fontSize: 12, fontWeight: '800', color: C.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  dayOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
+  dayCard: {
+    backgroundColor: C.white,
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderColor: C.black,
+    overflow: 'hidden',
+  },
+  dayHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
+    backgroundColor: C.primary,
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
+  },
+  dayHeadText: { color: C.white, fontWeight: '700', fontSize: 14, flex: 1 },
+  dayItem: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 2, padding: 10 },
+  dayAdd: {
+    margin: 14,
+    marginTop: 0,
+    backgroundColor: C.primary,
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    gap: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   safe: { flex: 1, backgroundColor: '#F8F9FA' },
   header: {
     flexDirection: 'row',

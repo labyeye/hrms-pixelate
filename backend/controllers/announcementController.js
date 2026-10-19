@@ -2,6 +2,32 @@ const asyncHandler = require("express-async-handler");
 const Announcement = require("../models/Announcement");
 const Employee = require("../models/Employee");
 const { moveToTrash } = require("./trashController");
+const User = require("../models/User");
+const { validateMagicBytes } = require("../middleware/upload");
+const { notifyUsers } = require("../services/pushNotificationService");
+
+// POST /announcements/poster (multipart "poster") -> { url } to pass as posterUrl when creating the announcement
+exports.uploadPoster = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    res.status(400);
+    throw new Error("Choose a JPG, PNG or WEBP poster");
+  }
+  await validateMagicBytes(req.file.path); // deletes the file if the content is not a real image
+  res.status(201).json({ success: true, url: `/uploads/announcement-posters/${req.file.filename}` });
+});
+
+// Everyone who should see the announcement: the whole company, one or more departments, or given roles.
+async function audienceUserIds(a) {
+  const base = { company: a.company, status: { $ne: "inactive" } };
+  if (a.targetAudience === "role") {
+    return (await User.find({ ...base, role: { $in: a.roles } }).select("_id")).map((u) => u._id);
+  }
+  if (a.targetAudience === "department") {
+    const emps = await Employee.find({ company: a.company, department: { $in: a.departments }, status: "active" }).select("user");
+    return emps.map((e) => e.user).filter(Boolean);
+  }
+  return (await User.find(base).select("_id")).map((u) => u._id);
+}
 
 exports.createAnnouncement = asyncHandler(async (req, res) => {
   const {
@@ -16,6 +42,7 @@ exports.createAnnouncement = asyncHandler(async (req, res) => {
     roles,
     acknowledgementRequired,
     attachments,
+    posterUrl,
   } = req.body;
 
   if (!title || !content) {
@@ -23,8 +50,14 @@ exports.createAnnouncement = asyncHandler(async (req, res) => {
     throw new Error("Title and content are required");
   }
 
+  if (posterUrl && !/^\/uploads\/announcement-posters\/[\w.-]+$/.test(posterUrl)) {
+    res.status(400);
+    throw new Error("Invalid poster");
+  }
+
   const announcement = await Announcement.create({
     company: req.user.company,
+    posterUrl: posterUrl || undefined,
     title,
     content,
     postedBy: req.user._id,
@@ -44,6 +77,23 @@ exports.createAnnouncement = asyncHandler(async (req, res) => {
     "name email",
   );
   res.status(201).json({ success: true, data: populated });
+
+  // Notify everyone in the audience (poster shown as the notification image); after the response, never blocks.
+  audienceUserIds(announcement)
+    .then((ids) =>
+      notifyUsers(
+        ids.filter((id) => String(id) !== String(req.user._id)),
+        {
+          title: announcement.title,
+          body: announcement.content.slice(0, 140),
+          image: announcement.posterUrl
+            ? `${process.env.PUBLIC_API_URL || process.env.FRONTEND_URL || ""}${announcement.posterUrl}`
+            : undefined,
+          data: { type: "announcement", id: announcement._id, posterUrl: announcement.posterUrl || "" },
+        },
+      ),
+    )
+    .catch(() => {});
 });
 
 const ADMIN_ROLES = ["super_admin", "hr_manager"];

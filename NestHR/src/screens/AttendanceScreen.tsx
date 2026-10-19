@@ -45,6 +45,8 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { AttendanceRecord, Employee } from '../types/hrms';
 import { C } from '../theme';
+import { CENTER } from '../components/common/centerModal';
+import ExportButton from '../components/common/ExportButton';
 import FilterBar from '../components/common/FilterBar';
 import { TimePickerField } from '../components/common/DatePickerField';
 
@@ -506,6 +508,20 @@ export default function AttendanceScreen({ navigation }: any) {
         </View>
         {!isEmployee && (
           <View style={{ flexDirection: 'row', gap: 8 }}>
+            <ExportButton
+              name={`attendance_${dateFilter}`}
+              label=""
+              rows={filtered}
+              cols={[
+                { header: 'Emp Code', value: (r: any) => r.employee?.employeeId },
+                { header: 'Employee', value: (r: any) => `${r.employee?.firstName || ''} ${r.employee?.lastName || ''}`.trim() },
+                { header: 'Date', value: () => dateFilter },
+                { header: 'Check In', value: (r: any) => (r.checkIn ? new Date(r.checkIn).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '') },
+                { header: 'Check Out', value: (r: any) => (r.checkOut ? new Date(r.checkOut).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '') },
+                { header: 'Hours', value: (r: any) => (r.workHours ? Number(r.workHours).toFixed(1) : '') },
+                { header: 'Status', value: (r: any) => String(r.status || '').replace(/_/g, ' ') },
+              ]}
+            />
             <TouchableOpacity
               style={styles.bulkBtn}
               onPress={() => {
@@ -1116,11 +1132,12 @@ export default function AttendanceScreen({ navigation }: any) {
       {!isEmployee && (
         <Modal
           visible={showBulkModal}
-          animationType="slide"
-          presentationStyle="pageSheet"
+          transparent
+        animationType="fade"
           onRequestClose={() => setShowBulkModal(false)}
         >
-          <SafeAreaView style={styles.safe} edges={['top']}>
+<View style={CENTER.overlay}><View style={CENTER.card}>
+          <SafeAreaView style={styles.safe} edges={[]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Bulk Attendance</Text>
               <TouchableOpacity onPress={() => setShowBulkModal(false)}>
@@ -1276,16 +1293,18 @@ export default function AttendanceScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
           </SafeAreaView>
-        </Modal>
+        </View></View>
+</Modal>
       )}
 
       {!isEmployee && (
         <Modal
           visible={showModal}
-          animationType="slide"
-          presentationStyle="pageSheet"
+          transparent
+        animationType="fade"
         >
-          <SafeAreaView style={styles.safe} edges={['top']}>
+<View style={CENTER.overlay}><View style={CENTER.card}>
+          <SafeAreaView style={styles.safe} edges={[]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
                 {editRecord ? 'Edit Attendance' : 'Mark Attendance'}
@@ -1420,17 +1439,19 @@ export default function AttendanceScreen({ navigation }: any) {
               </TouchableOpacity>
             </ScrollView>
           </SafeAreaView>
-        </Modal>
+        </View></View>
+</Modal>
       )}
 
       {isEmployee && (
         <Modal
           visible={showCorrectionModal}
-          animationType="slide"
-          presentationStyle="pageSheet"
+          transparent
+        animationType="fade"
           onRequestClose={() => setShowCorrectionModal(false)}
         >
-          <SafeAreaView style={styles.safe} edges={['top']}>
+<View style={CENTER.overlay}><View style={CENTER.card}>
+          <SafeAreaView style={styles.safe} edges={[]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Request Correction</Text>
               <TouchableOpacity onPress={() => setShowCorrectionModal(false)}>
@@ -1530,7 +1551,8 @@ export default function AttendanceScreen({ navigation }: any) {
               </TouchableOpacity>
             </ScrollView>
           </SafeAreaView>
-        </Modal>
+        </View></View>
+</Modal>
       )}
     </SafeAreaView>
   );
@@ -2004,12 +2026,14 @@ const styles = StyleSheet.create({
   calOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    padding: 20,
   },
   calSheet: {
     backgroundColor: C.white,
-    borderTopWidth: 2,
-    borderTopColor: C.black,
+    borderWidth: 2,
+    borderColor: C.black,
+    borderRadius: 8,
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 32,

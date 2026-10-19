@@ -9,6 +9,7 @@ import {
   Alert,
   TextInput,
   Switch,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -25,6 +26,8 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { attendanceSettingsAPI, employeeAPI } from '../api/api';
 import { C } from '../theme';
+import ExportButton from '../components/common/ExportButton';
+import PickerField from '../components/common/PickerField';
 
 interface AttendanceSettings {
   shiftStartHour: number;
@@ -205,6 +208,11 @@ export default function AttendanceSettingsScreen() {
     }
   };
 
+  // one usage column per leave type that has an allowance or any usage this month
+  const usageTypes = LEAVE_TYPES.filter(t =>
+    summary.some(r => (r.leaveUsed || []).some((l: any) => l.leaveType === t && (l.daysAllowed > 0 || l.daysUsed > 0))),
+  );
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
@@ -335,61 +343,37 @@ export default function AttendanceSettingsScreen() {
             <Text style={styles.sectionTitle}>Late Coming</Text>
           </View>
           <View style={styles.card}>
-            {numField(
-              'lateThresholdMinutes',
-              'Grace Period',
-              'Employee is marked late after this many minutes',
-              'min',
-            )}
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                {numField('lateThresholdMinutes', 'Grace Period', undefined, 'min')}
+              </View>
+              <View style={{ flex: 1 }}>
+                {numField('halfDayThresholdMinutes', 'Half Day If Late By', undefined, 'min')}
+              </View>
+            </View>
+            <Text style={styles.hint}>
+              Late after the grace period; half-day (50% pay) when later than the half-day limit.
+            </Text>
 
             <View style={[styles.field, styles.fieldBorder]}>
               <Text style={styles.fieldLabel}>Deduction Type</Text>
               <View style={styles.typeRow}>
                 <TouchableOpacity
-                  style={[
-                    styles.typeBtn,
-                    rules.lateDeductionType === 'fixed' && styles.typeBtnActive,
-                  ]}
+                  style={[styles.typeBtn, rules.lateDeductionType === 'fixed' && styles.typeBtnActive]}
                   onPress={() => set('lateDeductionType', 'fixed')}
                 >
-                  <IndianRupee
-                    size={12}
-                    color={
-                      rules.lateDeductionType === 'fixed' ? C.white : C.black
-                    }
-                  />
-                  <Text
-                    style={[
-                      styles.typeBtnText,
-                      rules.lateDeductionType === 'fixed' &&
-                        styles.typeBtnTextActive,
-                    ]}
-                  >
+                  <IndianRupee size={12} color={rules.lateDeductionType === 'fixed' ? C.white : C.black} />
+                  <Text style={[styles.typeBtnText, rules.lateDeductionType === 'fixed' && styles.typeBtnTextActive]}>
                     Fixed (₹)
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[
-                    styles.typeBtn,
-                    rules.lateDeductionType === 'percent' &&
-                      styles.typeBtnActive,
-                  ]}
+                  style={[styles.typeBtn, rules.lateDeductionType === 'percent' && styles.typeBtnActive]}
                   onPress={() => set('lateDeductionType', 'percent')}
                 >
-                  <Percent
-                    size={12}
-                    color={
-                      rules.lateDeductionType === 'percent' ? C.white : C.black
-                    }
-                  />
-                  <Text
-                    style={[
-                      styles.typeBtnText,
-                      rules.lateDeductionType === 'percent' &&
-                        styles.typeBtnTextActive,
-                    ]}
-                  >
-                    Percent (%)
+                  <Percent size={12} color={rules.lateDeductionType === 'percent' ? C.white : C.black} />
+                  <Text style={[styles.typeBtnText, rules.lateDeductionType === 'percent' && styles.typeBtnTextActive]}>
+                    % of Daily
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -398,22 +382,9 @@ export default function AttendanceSettingsScreen() {
             <View style={[styles.field, styles.fieldBorder]}>
               {numField(
                 'lateDeductionAmount',
-                rules.lateDeductionType === 'fixed'
-                  ? 'Deduction Amount (₹)'
-                  : 'Deduction Percent (%)',
-                rules.lateDeductionType === 'percent'
-                  ? 'Percentage of daily salary to deduct'
-                  : undefined,
+                rules.lateDeductionType === 'fixed' ? 'Amount per Late Day (₹)' : '% of Daily Salary',
+                undefined,
                 rules.lateDeductionType === 'fixed' ? '₹' : '%',
-              )}
-            </View>
-
-            <View style={[styles.field, styles.fieldBorder]}>
-              {numField(
-                'halfDayThresholdMinutes',
-                'Half-Day Threshold',
-                'Mark as half-day if late by more than this',
-                'min',
               )}
             </View>
           </View>
@@ -455,63 +426,79 @@ export default function AttendanceSettingsScreen() {
           </View>
         </View>
 
-        {/* Late Allowance */}
+        {/* Late + Leave allowance, side by side */}
         <View>
           <View style={styles.sectionHeader}>
             <CalendarClock size={14} color={C.primary} />
-            <Text style={styles.sectionTitle}>Late Allowance / Month</Text>
+            <Text style={styles.sectionTitle}>Late & Leave Allowance / Month</Text>
           </View>
           <View style={styles.card}>
-            <View style={styles.typeRow}>
-              <TouchableOpacity
-                style={[
-                  styles.typeBtn,
-                  lateMode === 'bulk' && styles.typeBtnActive,
-                ]}
-                onPress={() => setLateMode('bulk')}
-              >
-                <Text
-                  style={[
-                    styles.typeBtnText,
-                    lateMode === 'bulk' && styles.typeBtnTextActive,
-                  ]}
-                >
-                  Bulk (all employees)
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.typeBtn,
-                  lateMode === 'custom' && styles.typeBtnActive,
-                ]}
-                onPress={() => setLateMode('custom')}
-              >
-                <Text
-                  style={[
-                    styles.typeBtnText,
-                    lateMode === 'custom' && styles.typeBtnTextActive,
-                  ]}
-                >
-                  Custom (per employee)
-                </Text>
-              </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View style={{ flex: 1, gap: 8 }}>
+                <Text style={styles.fieldLabel}>Late</Text>
+                {(['bulk', 'custom'] as const).map(m => (
+                  <TouchableOpacity
+                    key={m}
+                    style={[styles.typeBtn, lateMode === m && styles.typeBtnActive]}
+                    onPress={() => setLateMode(m)}
+                  >
+                    <Text style={[styles.typeBtnText, lateMode === m && styles.typeBtnTextActive]}>
+                      {m === 'bulk' ? 'Bulk' : 'Per employee'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+                {lateMode === 'bulk' && (
+                  <TextInput
+                    style={styles.standaloneInput}
+                    value={lateBulk}
+                    onChangeText={setLateBulk}
+                    keyboardType="numeric"
+                    placeholder="Max lates"
+                    placeholderTextColor="#9CA3AF"
+                  />
+                )}
+                <TouchableOpacity style={styles.smallSaveBtn} onPress={handleSaveLateAllowance} disabled={savingLate}>
+                  {savingLate ? <ActivityIndicator size="small" color={C.white} /> : <Text style={styles.smallSaveBtnText}>Save Late</Text>}
+                </TouchableOpacity>
+              </View>
+              <View style={{ flex: 1, gap: 8 }}>
+                <Text style={styles.fieldLabel}>Leave</Text>
+                <PickerField
+                  title="Leave type"
+                  value={leaveType}
+                  onChange={setLeaveType}
+                  options={LEAVE_TYPES.map(t => ({ value: t, label: t.replace('_', ' ').toUpperCase() }))}
+                />
+                {(['bulk', 'custom'] as const).map(m => (
+                  <TouchableOpacity
+                    key={m}
+                    style={[styles.typeBtn, leaveMode === m && styles.typeBtnActive]}
+                    onPress={() => setLeaveMode(m)}
+                  >
+                    <Text style={[styles.typeBtnText, leaveMode === m && styles.typeBtnTextActive]}>
+                      {m === 'bulk' ? 'Bulk' : 'Per employee'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+                {leaveMode === 'bulk' && (
+                  <TextInput
+                    style={styles.standaloneInput}
+                    value={leaveBulk}
+                    onChangeText={setLeaveBulk}
+                    keyboardType="numeric"
+                    placeholder="Days / month"
+                    placeholderTextColor="#9CA3AF"
+                  />
+                )}
+                <TouchableOpacity style={styles.smallSaveBtn} onPress={handleSaveLeaveAllowance} disabled={savingLeave}>
+                  {savingLeave ? <ActivityIndicator size="small" color={C.white} /> : <Text style={styles.smallSaveBtnText}>Save Leave</Text>}
+                </TouchableOpacity>
+              </View>
             </View>
 
-            {lateMode === 'bulk' ? (
+            {lateMode === 'custom' && (
               <View style={[styles.field, styles.fieldBorder]}>
-                <Text style={styles.fieldLabel}>
-                  Max lates/month (no deduction)
-                </Text>
-                <TextInput
-                  style={styles.standaloneInput}
-                  value={lateBulk}
-                  onChangeText={setLateBulk}
-                  keyboardType="numeric"
-                  placeholderTextColor="#9CA3AF"
-                />
-              </View>
-            ) : (
-              <View style={[styles.field, styles.fieldBorder]}>
+                <Text style={styles.fieldLabel}>Late allowance per employee</Text>
                 {employees.map(e => (
                   <View key={e._id} style={styles.perEmpRow}>
                     <Text style={styles.perEmpName} numberOfLines={1}>
@@ -520,9 +507,7 @@ export default function AttendanceSettingsScreen() {
                     <TextInput
                       style={styles.perEmpInput}
                       value={latePerEmp[e._id] ?? ''}
-                      onChangeText={v =>
-                        setLatePerEmp(p => ({ ...p, [e._id]: v }))
-                      }
+                      onChangeText={v => setLatePerEmp(p => ({ ...p, [e._id]: v }))}
                       keyboardType="numeric"
                       placeholder="0"
                       placeholderTextColor="#9CA3AF"
@@ -531,101 +516,9 @@ export default function AttendanceSettingsScreen() {
                 ))}
               </View>
             )}
-
-            <TouchableOpacity
-              style={[styles.smallSaveBtn, styles.fieldBorder]}
-              onPress={handleSaveLateAllowance}
-              disabled={savingLate}
-            >
-              {savingLate ? (
-                <ActivityIndicator size="small" color={C.white} />
-              ) : (
-                <Text style={styles.smallSaveBtnText}>Save Late Allowance</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Leave Allowance */}
-        <View>
-          <View style={styles.sectionHeader}>
-            <CalendarClock size={14} color={C.secondary} />
-            <Text style={styles.sectionTitle}>Leave Allowance / Month</Text>
-          </View>
-          <View style={styles.card}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
-            >
-              {LEAVE_TYPES.map(t => (
-                <TouchableOpacity
-                  key={t}
-                  style={[styles.chip, leaveType === t && styles.chipActive]}
-                  onPress={() => setLeaveType(t)}
-                >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      leaveType === t && styles.chipTextActive,
-                    ]}
-                  >
-                    {t.toUpperCase()}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            <View style={[styles.typeRow, styles.fieldBorder]}>
-              <TouchableOpacity
-                style={[
-                  styles.typeBtn,
-                  leaveMode === 'bulk' && styles.typeBtnActive,
-                ]}
-                onPress={() => setLeaveMode('bulk')}
-              >
-                <Text
-                  style={[
-                    styles.typeBtnText,
-                    leaveMode === 'bulk' && styles.typeBtnTextActive,
-                  ]}
-                >
-                  Bulk (all employees)
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.typeBtn,
-                  leaveMode === 'custom' && styles.typeBtnActive,
-                ]}
-                onPress={() => setLeaveMode('custom')}
-              >
-                <Text
-                  style={[
-                    styles.typeBtnText,
-                    leaveMode === 'custom' && styles.typeBtnTextActive,
-                  ]}
-                >
-                  Custom (per employee)
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {leaveMode === 'bulk' ? (
+            {leaveMode === 'custom' && (
               <View style={[styles.field, styles.fieldBorder]}>
-                <Text style={styles.fieldLabel}>
-                  No-deduction days/month for {leaveType}
-                </Text>
-                <TextInput
-                  style={styles.standaloneInput}
-                  value={leaveBulk}
-                  onChangeText={setLeaveBulk}
-                  keyboardType="numeric"
-                  placeholderTextColor="#9CA3AF"
-                />
-              </View>
-            ) : (
-              <View style={[styles.field, styles.fieldBorder]}>
+                <Text style={styles.fieldLabel}>{leaveType.replace('_', ' ')} days per employee</Text>
                 {employees.map(e => (
                   <View key={e._id} style={styles.perEmpRow}>
                     <Text style={styles.perEmpName} numberOfLines={1}>
@@ -634,9 +527,7 @@ export default function AttendanceSettingsScreen() {
                     <TextInput
                       style={styles.perEmpInput}
                       value={leavePerEmp[e._id] ?? ''}
-                      onChangeText={v =>
-                        setLeavePerEmp(p => ({ ...p, [e._id]: v }))
-                      }
+                      onChangeText={v => setLeavePerEmp(p => ({ ...p, [e._id]: v }))}
                       keyboardType="numeric"
                       placeholder="0"
                       placeholderTextColor="#9CA3AF"
@@ -645,20 +536,6 @@ export default function AttendanceSettingsScreen() {
                 ))}
               </View>
             )}
-
-            <TouchableOpacity
-              style={[styles.smallSaveBtn, styles.fieldBorder]}
-              onPress={handleSaveLeaveAllowance}
-              disabled={savingLeave}
-            >
-              {savingLeave ? (
-                <ActivityIndicator size="small" color={C.white} />
-              ) : (
-                <Text style={styles.smallSaveBtnText}>
-                  Save Leave Allowance
-                </Text>
-              )}
-            </TouchableOpacity>
           </View>
         </View>
 
@@ -673,40 +550,77 @@ export default function AttendanceSettingsScreen() {
           {showSummary && (
             <View style={styles.card}>
               {summary.length === 0 ? (
-                <Text style={styles.hint}>
-                  No usage recorded this month yet.
-                </Text>
+                <Text style={styles.hint}>No usage recorded this month yet.</Text>
               ) : (
-                summary.map((row, i) => (
-                  <View
-                    key={row.employee?._id || i}
-                    style={[styles.field, i > 0 && styles.fieldBorder]}
-                  >
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 8,
-                      }}
-                    >
-                      <Users size={13} color={C.primary} />
-                      <Text style={styles.perEmpName}>
-                        {row.employee?.firstName} {row.employee?.lastName}
-                        {row.employee?.employeeId
-                          ? ` (${row.employee.employeeId})`
-                          : ''}
-                      </Text>
-                    </View>
-                    <Text style={styles.hint}>
-                      Late: {row.lateUsed}/{row.lateAllowed}
-                    </Text>
-                    {(row.leaveUsed || []).map((l: any) => (
-                      <Text key={l.leaveType} style={styles.hint}>
-                        {l.leaveType}: {l.daysUsed}/{l.daysAllowed}d
-                      </Text>
-                    ))}
+                <>
+                  <View style={{ alignItems: 'flex-end', marginBottom: 8 }}>
+                    <ExportButton
+                      name="attendance_balance_summary"
+                      rows={summary}
+                      cols={[
+                        { header: 'Emp Code', value: (r: any) => r.employee?.employeeId },
+                        { header: 'Employee', value: (r: any) => `${r.employee?.firstName || ''} ${r.employee?.lastName || ''}`.trim() },
+                        { header: 'Designation', value: (r: any) => r.employee?.designation },
+                        { header: 'Late Used', value: (r: any) => `${r.lateUsed}/${r.lateAllowed}` },
+                        ...usageTypes.map(t => ({
+                          header: t,
+                          value: (r: any) => {
+                            const l = (r.leaveUsed || []).find((x: any) => x.leaveType === t);
+                            return l ? `${l.daysUsed}/${l.daysAllowed}` : '';
+                          },
+                        })),
+                      ]}
+                    />
                   </View>
-                ))
+                  <ScrollView horizontal showsHorizontalScrollIndicator>
+                    <View>
+                      <View style={[styles.tRow, { backgroundColor: '#EFF6FF' }]}>
+                        <Text style={[styles.tCell, styles.tHead, { width: 70 }]}>Code</Text>
+                        <Text style={[styles.tCell, styles.tHead, { width: 150 }]}>Employee</Text>
+                        <Text style={[styles.tCell, styles.tHead, { width: 110 }]}>Designation</Text>
+                        <Text style={[styles.tCell, styles.tHead, { width: 60 }]}>Late</Text>
+                        {usageTypes.map(t => (
+                          <Text key={t} style={[styles.tCell, styles.tHead, { width: 70 }]}>
+                            {t.replace('_', ' ')}
+                          </Text>
+                        ))}
+                      </View>
+                      {summary.map((row, i) => (
+                        <View key={row.employee?._id || i} style={[styles.tRow, i % 2 ? { backgroundColor: '#F8FAFF' } : null]}>
+                          <Text style={[styles.tCell, { width: 70, fontWeight: '800' }]}>{row.employee?.employeeId}</Text>
+                          <View style={[styles.tCell, { width: 150, flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+                            {row.employee?.avatar ? (
+                              <Image source={{ uri: row.employee.avatar }} style={styles.tPhoto} />
+                            ) : (
+                              <View style={[styles.tPhoto, { backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }]}>
+                                <Text style={{ color: C.white, fontSize: 10, fontWeight: '700' }}>
+                                  {row.employee?.firstName?.[0]}
+                                </Text>
+                              </View>
+                            )}
+                            <Text style={{ fontSize: 11, fontWeight: '700', color: C.black, flexShrink: 1 }} numberOfLines={1}>
+                              {row.employee?.firstName} {row.employee?.lastName}
+                            </Text>
+                          </View>
+                          <Text style={[styles.tCell, { width: 110 }]} numberOfLines={1}>
+                            {row.employee?.designation || '—'}
+                          </Text>
+                          <Text style={[styles.tCell, { width: 60, fontWeight: '800' }]}>
+                            {row.lateUsed}/{row.lateAllowed}
+                          </Text>
+                          {usageTypes.map(t => {
+                            const l = (row.leaveUsed || []).find((x: any) => x.leaveType === t);
+                            return (
+                              <Text key={t} style={[styles.tCell, { width: 70, fontWeight: '800' }]}>
+                                {l ? `${l.daysUsed}/${l.daysAllowed}` : '—'}
+                              </Text>
+                            );
+                          })}
+                        </View>
+                      ))}
+                    </View>
+                  </ScrollView>
+                </>
               )}
             </View>
           )}
@@ -724,6 +638,10 @@ export default function AttendanceSettingsScreen() {
 }
 
 const styles = StyleSheet.create({
+  tRow: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  tCell: { paddingHorizontal: 6, paddingVertical: 8, fontSize: 11, color: C.black },
+  tHead: { fontWeight: '800', textTransform: 'uppercase', fontSize: 10 },
+  tPhoto: { width: 22, height: 22, borderRadius: 11 },
   safe: { flex: 1, backgroundColor: '#F8F9FA' },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: {

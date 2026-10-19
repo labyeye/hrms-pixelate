@@ -33,10 +33,12 @@ import {
   Camera,
 } from 'lucide-react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
-import { leaveAPI } from '../api/api';
+import { leaveAPI, attendanceSettingsAPI } from '../api/api';
+import ExportButton from '../components/common/ExportButton';
 import { useAuth } from '../contexts/AuthContext';
 import { LeaveRequest } from '../types/hrms';
 import { C } from '../theme';
+import { CENTER } from '../components/common/centerModal';
 import FilterBar from '../components/common/FilterBar';
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> =
@@ -78,6 +80,8 @@ export default function LeaveScreen() {
     endHour: '',
   });
   const [pickedDoc, setPickedDoc] = useState<any>(null);
+  // employee _id -> free (allowance) leave used / allowed this month, shown to HR
+  const [usageMap, setUsageMap] = useState<Record<string, { used: number; allowed: number }>>({});
   const DOC_REQUIRED_TYPES = ['sick', 'casual'];
   const [approveModal, setApproveModal] = useState<{
     visible: boolean;
@@ -105,12 +109,26 @@ export default function LeaveScreen() {
     try {
       const res = await leaveAPI.getAll();
       setLeaves(res.data || []);
+      if (!isEmployee) {
+        const bal: any = await attendanceSettingsAPI.getBalanceSummary().catch(() => null);
+        if (bal?.success) {
+          const m: Record<string, { used: number; allowed: number }> = {};
+          for (const r of bal.data) {
+            const rows = (r.leaveUsed || []).filter((l: any) => l.daysAllowed > 0);
+            m[r.employee._id] = {
+              used: rows.reduce((t: number, l: any) => t + l.daysUsed, 0),
+              allowed: rows.reduce((t: number, l: any) => t + l.daysAllowed, 0),
+            };
+          }
+          setUsageMap(m);
+        }
+      }
     } catch (e: any) {
       Alert.alert('Error', e.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isEmployee]);
 
   useEffect(() => {
     load();
@@ -398,16 +416,36 @@ export default function LeaveScreen() {
           <Calendar size={20} color={C.primary} />
           <Text style={styles.headerTitle}>Leave Requests</Text>
         </View>
-        <TouchableOpacity
-          style={styles.addBtn}
-          onPress={() => {
-            setPickedDoc(null);
-            setShowForm(true);
-          }}
-        >
-          <Plus size={14} color={C.white} />
-          <Text style={styles.addBtnText}>Apply</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <ExportButton
+            name="leave_requests"
+            label=""
+            rows={filtered}
+            cols={[
+              { header: 'Emp Code', value: (l: any) => l.employee?.employeeId },
+              { header: 'Employee', value: (l: any) => `${l.employee?.firstName || ''} ${l.employee?.lastName || ''}`.trim() },
+              { header: 'Designation', value: (l: any) => l.employee?.designation },
+              { header: 'Free Leave Used', value: (l: any) => { const u = usageMap[l.employee?._id]; return u ? `${u.used}/${u.allowed}` : ''; } },
+              { header: 'Type', value: (l: any) => l.leaveType },
+              { header: 'From', value: (l: any) => String(l.startDate).slice(0, 10) },
+              { header: 'To', value: (l: any) => String(l.endDate).slice(0, 10) },
+              { header: 'Days', value: (l: any) => l.days },
+              { header: 'Reason', value: (l: any) => l.reason },
+              { header: 'Status', value: (l: any) => l.status },
+              { header: 'Paid/Unpaid', value: (l: any) => (l.status === 'approved' ? (l.deductSalary ? 'Unpaid' : 'Paid') : '') },
+            ]}
+          />
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={() => {
+              setPickedDoc(null);
+              setShowForm(true);
+            }}
+          >
+            <Plus size={14} color={C.white} />
+            <Text style={styles.addBtnText}>Apply</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <FilterBar
@@ -534,26 +572,57 @@ export default function LeaveScreen() {
                     </View>
                   </View>
                   <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={styles.codeChip}>{emp?.employeeId || '—'}</Text>
                     <Text style={styles.empName} numberOfLines={1}>
                       {emp
                         ? `${emp.firstName} ${emp.lastName}`.toUpperCase()
                         : 'UNKNOWN'}
                     </Text>
-                    <Text style={styles.empSub}>
-                      {emp?.employeeId || ''}
-                      {emp?.employeeId ? ' · ' : ''}
-                      {item.leaveType?.replace('_', ' ').toUpperCase()}
+                    <Text style={styles.empSub} numberOfLines={1}>
+                      {emp?.designation || '—'}
                     </Text>
+                    {!isEmployee && usageMap[emp?._id]?.allowed > 0 && (
+                      <Text style={styles.freeLeave}>
+                        Free leave: {usageMap[emp._id].used}/{usageMap[emp._id].allowed} d
+                      </Text>
+                    )}
                   </View>
-                  <View
-                    style={[
-                      styles.statusTag,
-                      { backgroundColor: cfg.bg, borderColor: cfg.color },
-                    ]}
-                  >
-                    <Text style={[styles.statusTagText, { color: cfg.color }]}>
-                      {item.status.toUpperCase()}
-                    </Text>
+                  <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                    <View style={styles.statusLine}>
+                      <View
+                        style={[
+                          styles.statusTag,
+                          { backgroundColor: cfg.bg, borderColor: cfg.color },
+                        ]}
+                      >
+                        <Text style={[styles.statusTagText, { color: cfg.color }]}>
+                          {item.status.toUpperCase()}
+                        </Text>
+                      </View>
+                      {item.status === 'approved' && (
+                        <View
+                          style={[
+                            styles.statusTag,
+                            (item as any).deductSalary
+                              ? { backgroundColor: '#FFF1E6', borderColor: C.secondary }
+                              : { backgroundColor: '#E7F9F1', borderColor: C.success },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.statusTagText,
+                              { color: (item as any).deductSalary ? C.secondary : C.success },
+                            ]}
+                          >
+                            {(item as any).deductSalary ? 'UNPAID' : 'PAID'}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={styles.typeDays}>
+                      <Text style={styles.typeText}>{item.leaveType?.replace('_', ' ').toUpperCase()}</Text>
+                      <Text style={styles.typeText}>{days ? `${days}d` : ''}</Text>
+                    </View>
                   </View>
                 </View>
 
@@ -628,9 +697,7 @@ export default function LeaveScreen() {
                 </View>
 
                 {item.reason && (
-                  <Text style={styles.reason} numberOfLines={2}>
-                    {item.reason}
-                  </Text>
+                  <Text style={styles.reason}>{item.reason}</Text>
                 )}
 
                 {/* Change 4: show comment on card */}
@@ -856,10 +923,11 @@ export default function LeaveScreen() {
       {/* Edit Leave Modal (employee only) */}
       <Modal
         visible={showEditForm}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
+        animationType="fade"
       >
-        <SafeAreaView style={styles.safe} edges={['top']}>
+<View style={CENTER.overlay}><View style={CENTER.card}>
+        <SafeAreaView style={styles.safe} edges={[]}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Edit Leave Request</Text>
             <TouchableOpacity
@@ -976,15 +1044,17 @@ export default function LeaveScreen() {
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
-      </Modal>
+      </View></View>
+</Modal>
 
       {/* Apply Leave Modal */}
       <Modal
         visible={showForm}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
+        animationType="fade"
       >
-        <SafeAreaView style={styles.safe} edges={['top']}>
+<View style={CENTER.overlay}><View style={CENTER.card}>
+        <SafeAreaView style={styles.safe} edges={[]}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Apply for Leave</Text>
             <TouchableOpacity onPress={() => setShowForm(false)}>
@@ -1127,12 +1197,29 @@ export default function LeaveScreen() {
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
-      </Modal>
+      </View></View>
+</Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  codeChip: {
+    alignSelf: 'flex-start',
+    fontSize: 11,
+    fontWeight: '800',
+    color: C.primary,
+    backgroundColor: C.primary + '18',
+    borderWidth: 1.5,
+    borderColor: C.primary,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    marginBottom: 3,
+  },
+  freeLeave: { fontSize: 11, fontWeight: '700', color: C.primary, marginTop: 2 },
+  statusLine: { flexDirection: 'row', gap: 4, alignItems: 'center' },
+  typeDays: { flexDirection: 'row', gap: 6 },
+  typeText: { fontSize: 10, fontWeight: '700', color: C.textMuted },
   safe: { flex: 1, backgroundColor: C.bg },
   header: {
     flexDirection: 'row',

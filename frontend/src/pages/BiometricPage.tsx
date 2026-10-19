@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EmployeeCombobox } from "@/components/employees/EmployeeCombobox";
+import { DeviceProtocolLog } from "@/components/biometric/DeviceProtocolLog";
 
 type Tab = "locations_devices" | "logs" | "adms";
 
@@ -98,6 +99,7 @@ export default function BiometricPage() {
   const toastRef = useRef(toast);
   toastRef.current = toast;
   const [tab, setTab] = useState<Tab>("locations_devices");
+  const [logView, setLogView] = useState<"punches" | "device">("punches");
 
   const [locations, setLocations] = useState<Location[]>([]);
   const [locLoading, setLocLoading] = useState(false);
@@ -182,7 +184,7 @@ export default function BiometricPage() {
   const fetchEmployees = useCallback(async () => {
     try {
       const { employeeAPI } = await import("@/services/api");
-      const res = await employeeAPI.getAll();
+      const res = await employeeAPI.getAll({ limit: "5000" });
       setEmployees(res.data || []);
     } catch {}
   }, []);
@@ -427,7 +429,7 @@ export default function BiometricPage() {
     setAdmsEmpLoading(true);
     try {
       const { employeeAPI } = await import("@/services/api");
-      const res = await employeeAPI.getAll();
+      const res = await employeeAPI.getAll({ limit: "5000" });
       setAdmsEmployees(res.data || []);
     } catch {}
     setAdmsEmpLoading(false);
@@ -759,75 +761,69 @@ export default function BiometricPage() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {locations.map((loc) => (
-                    <div
-                      key={loc._id}
-                      className="bg-white border-2 border-black p-5"
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={cn(
-                              "w-2.5 h-2.5 rounded-full border border-black",
-                              loc.isActive ? "bg-green-500" : "bg-gray-300",
-                            )}
-                          />
-                          <h3 className="font-bold text-base">{loc.name}</h3>
-                        </div>
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => startEditLoc(loc)}
-                            className="p-1.5 border-2 border-gray-200 hover:border-black hover:bg-gray-50 transition-all"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteLocation(loc._id)}
-                            className="p-1.5 border-2 border-gray-200 hover:border-red-500 hover:text-red-500 hover:bg-red-50 transition-all"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                      {loc.address && (
-                        <p className="text-xs text-gray-500 font-medium flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {loc.address}
-                        </p>
-                      )}
-                      {loc.description && (
-                        <p className="text-xs text-gray-400 mt-1">
-                          {loc.description}
-                        </p>
-                      )}
-                      <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-                        <span
-                          className={cn(
-                            "text-xs font-bold uppercase px-2 py-0.5 border-2",
-                            loc.isActive
-                              ? "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]"
-                              : "bg-gray-100 text-gray-500 border-gray-300",
-                          )}
-                        >
-                          {loc.isActive ? "Active" : "Inactive"}
-                        </span>
-                        <span className="text-xs text-gray-400">
-                          {
-                            devices.filter((d) => d.location?._id === loc._id)
-                              .length
-                          }{" "}
-                          devices
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                <div className="bg-white border-2 border-black overflow-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b-2 border-black bg-[#024BAB]/5">
+                        {["Location", "Address", "Description", "Devices", "Status", "Actions"].map((h) => (
+                          <th key={h} className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {locations.map((loc, i) => (
+                        <tr key={loc._id} className={cn("border-b border-black/10 hover:bg-[#024BAB]/5", i % 2 && "bg-[#F8FAFF]")}>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <MapPin className="w-4 h-4 text-[#024BAB] shrink-0" />
+                              <span className="font-bold text-black">{loc.name}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-gray-600">{loc.address || "—"}</td>
+                          <td className="px-4 py-3 text-xs text-gray-500">{loc.description || "—"}</td>
+                          <td className="px-4 py-3 text-xs font-bold">
+                            {devices.filter((d) => d.location?._id === loc._id).length}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={cn(
+                                "text-xs font-bold uppercase px-2 py-0.5 border-2",
+                                loc.isActive
+                                  ? "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]"
+                                  : "bg-gray-100 text-gray-500 border-gray-300",
+                              )}
+                            >
+                              {loc.isActive ? "Active" : "Inactive"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex gap-1">
+                              <button
+                                onClick={() => startEditLoc(loc)}
+                                className="p-1.5 border-2 border-transparent hover:border-black hover:bg-gray-50 transition-all"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteLocation(loc._id)}
+                                className="p-1.5 border-2 border-transparent hover:border-red-500 hover:text-red-500 hover:bg-red-50 transition-all"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
 
               <div className="mt-8 border-t-2 border-black pt-8">
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                  <div className="lg:col-span-2">
+                  <div className="lg:col-span-5">
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="font-bold text-lg flex items-center gap-2">
                         <Cpu className="w-5 h-5 text-[#024BAB]" /> Devices
@@ -910,49 +906,63 @@ export default function BiometricPage() {
                         <Loader2 className="w-6 h-6 animate-spin text-[#024BAB]" />
                       </div>
                     ) : (
-                      <div className="space-y-3">
-                        {devices.map((dev) => (
-                          <button
-                            key={dev._id}
-                            onClick={() => setSelectedDevice(dev)}
-                            className={cn(
-                              "w-full text-left p-4 border-2 transition-all",
-                              selectedDevice?._id === dev._id
-                                ? "border-[#024BAB] bg-blue-50"
-                                : "border-black bg-white hover:border-[#024BAB]",
-                            )}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className={cn(
-                                    "w-2 h-2 rounded-full",
-                                    dev.isActive
-                                      ? "bg-green-500"
-                                      : "bg-gray-300",
+                      <div className="bg-white border-2 border-black overflow-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b-2 border-black bg-[#024BAB]/5">
+                              {["Device", "Location", "Connection", "NFC Cards", "Last Seen", "Status"].map((h) => (
+                                <th key={h} className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
+                                  {h}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {devices.map((dev, i) => (
+                              <tr
+                                key={dev._id}
+                                onClick={() => setSelectedDevice(dev)}
+                                className={cn(
+                                  "border-b border-black/10 cursor-pointer transition-colors",
+                                  selectedDevice?._id === dev._id
+                                    ? "bg-blue-50 outline outline-2 -outline-offset-2 outline-[#024BAB]"
+                                    : cn("hover:bg-[#024BAB]/5", i % 2 && "bg-[#F8FAFF]"),
+                                )}
+                              >
+                                <td className="px-4 py-3 font-bold text-black">{dev.name}</td>
+                                <td className="px-4 py-3 text-xs text-gray-600">
+                                  <span className="flex items-center gap-1">
+                                    <MapPin className="w-3 h-3" />
+                                    {dev.location?.name || "—"}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-xs">
+                                  {dev.activated ? (
+                                    <span className="font-bold text-[#00C48C]">Connected{dev.deviceMeta?.model ? ` · ${dev.deviceMeta.model}` : ""}</span>
+                                  ) : (
+                                    <span className="font-bold text-[#FA731C]">Awaiting connection</span>
                                   )}
-                                />
-                                <span className="font-bold text-sm">
-                                  {dev.name}
-                                </span>
-                              </div>
-                              <span className="text-xs text-gray-500 font-medium flex items-center gap-1">
-                                <CreditCard className="w-3 h-3" />
-                                {dev.nfcCards.length}/10
-                              </span>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1 font-medium flex items-center gap-1">
-                              <MapPin className="w-3 h-3" />
-                              {dev.location?.name}
-                            </p>
-                            {dev.lastSeenAt && (
-                              <p className="text-xs text-gray-400 mt-1">
-                                Last seen:{" "}
-                                {new Date(dev.lastSeenAt).toLocaleString()}
-                              </p>
-                            )}
-                          </button>
-                        ))}
+                                </td>
+                                <td className="px-4 py-3 text-xs font-bold">{dev.nfcCards.length}/10</td>
+                                <td className="px-4 py-3 text-xs text-gray-500">
+                                  {dev.lastSeenAt ? new Date(dev.lastSeenAt).toLocaleString("en-IN") : "Never"}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span
+                                    className={cn(
+                                      "text-xs font-bold uppercase px-2 py-0.5 border-2",
+                                      dev.isActive
+                                        ? "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]"
+                                        : "bg-gray-100 text-gray-500 border-gray-300",
+                                    )}
+                                  >
+                                    {dev.isActive ? "Active" : "Inactive"}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                         {devices.length === 0 && !devLoading && (
                           <div className="text-center py-8 text-gray-400 font-medium text-sm">
                             No devices yet
@@ -962,7 +972,7 @@ export default function BiometricPage() {
                     )}
                   </div>
 
-                  <div className="lg:col-span-3">
+                  <div className="lg:col-span-5">
                     {!selectedDevice ? (
                       <div className="h-full flex items-center justify-center border-2 border-dashed border-gray-300 bg-white py-20">
                         <div className="text-center">
@@ -1304,6 +1314,26 @@ export default function BiometricPage() {
 
           {tab === "logs" && (
             <div>
+              <div className="flex mb-5 border-2 border-black w-fit bg-white">
+                {([
+                  ["punches", "Employee Punches"],
+                  ["device", "Device Communication"],
+                ] as const).map(([k, label], i) => (
+                  <button
+                    key={k}
+                    onClick={() => setLogView(k)}
+                    className={cn(
+                      "px-4 py-2 text-xs font-bold uppercase",
+                      i === 0 && "border-r-2 border-black",
+                      logView === k ? "bg-[#024BAB] text-white" : "bg-white hover:bg-gray-50",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {logView === "device" && <DeviceProtocolLog devices={devices} />}
+              <div className={logView === "device" ? "hidden" : ""}>
               <div className="border-2 border-black bg-white mb-6">
                 <div className="flex items-center justify-between p-4 border-b-2 border-black">
                   <h3 className="font-bold text-sm text-black uppercase tracking-wider">
@@ -1526,6 +1556,7 @@ export default function BiometricPage() {
                   </table>
                 </div>
               )}
+              </div>
             </div>
           )}
           {tab === "adms" && (

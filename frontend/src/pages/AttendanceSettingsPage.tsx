@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useConfirm } from "@/hooks/use-confirm";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Employee } from "@/types/hrms";
+import { ExportMenu } from "@/components/ui/ExportMenu";
 import {
   ShieldAlert,
   Clock,
@@ -279,6 +280,7 @@ interface BalanceRow {
     lastName: string;
     employeeId: string;
     avatar?: string;
+    designation?: string;
   };
   lateUsed: number;
   lateAllowed: number;
@@ -464,6 +466,11 @@ export default function AttendanceSettingsPage() {
     }
   };
 
+  // one usage column per leave type that has an allowance or any usage this month
+  const usageTypes = LEAVE_TYPES.filter((t) =>
+    balances.some((b) => b.leaveUsed.some((l) => l.leaveType === t && (l.daysAllowed > 0 || l.daysUsed > 0))),
+  );
+
   return (
     <AppLayout title="Attendance Settings">
       <div className="w-full mx-auto">
@@ -503,9 +510,9 @@ export default function AttendanceSettingsPage() {
               <div className="p-5 space-y-6">
                 <div>
                   <p className="text-xs font-bold uppercase mb-3">
-                    Late Arrival
+                    Late Arrival &amp; Half-Day
                   </p>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                     <NumField
                       label="Grace Period (min)"
                       value={settings.lateThresholdMinutes}
@@ -516,19 +523,27 @@ export default function AttendanceSettingsPage() {
                       <label className="block text-xs font-bold uppercase mb-1 text-gray-600">
                         Deduction Type
                       </label>
-                      <select
-                        value={settings.lateDeductionType}
-                        onChange={(e) =>
-                          set({
-                            lateDeductionType: e.target.value as
-                              "fixed" | "percent",
-                          })
-                        }
-                        className="w-full border-2 border-black px-3 py-2 text-sm bg-white focus:outline-none"
-                      >
-                        <option value="fixed">Fixed Amount (₹)</option>
-                        <option value="percent">% of Daily Salary</option>
-                      </select>
+                      <div className="flex border-2 border-black">
+                        {(
+                          [
+                            ["fixed", "Fixed ₹"],
+                            ["percent", "% of Daily"],
+                          ] as const
+                        ).map(([k, label], i) => (
+                          <button
+                            key={k}
+                            type="button"
+                            onClick={() => set({ lateDeductionType: k })}
+                            className={`flex-1 py-2 text-xs font-bold ${i === 0 ? "border-r-2 border-black" : ""} ${
+                              settings.lateDeductionType === k
+                                ? "bg-[#024BAB] text-white"
+                                : "bg-white text-black hover:bg-gray-50"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                     <NumField
                       label={
@@ -544,19 +559,13 @@ export default function AttendanceSettingsPage() {
                           : undefined
                       }
                     />
+                    <NumField
+                      label="Half Day if late by (min)"
+                      value={settings.halfDayThresholdMinutes}
+                      onChange={(v) => set({ halfDayThresholdMinutes: v })}
+                      hint={`Half day (50% pay) after ${fmt(settings.shiftStartHour, settings.shiftStartMinute + settings.halfDayThresholdMinutes)}`}
+                    />
                   </div>
-                </div>
-
-                <div className="border-t pt-5">
-                  <p className="text-xs font-bold uppercase mb-3">
-                    Half-Day Rule
-                  </p>
-                  <NumField
-                    label="Late by more than (min) = Half Day (50% pay)"
-                    value={settings.halfDayThresholdMinutes}
-                    onChange={(v) => set({ halfDayThresholdMinutes: v })}
-                    hint={`Half day if arriving after ${fmt(settings.shiftStartHour, settings.shiftStartMinute + settings.halfDayThresholdMinutes)}`}
-                  />
                 </div>
 
                 <div className="border-t pt-5">
@@ -601,6 +610,7 @@ export default function AttendanceSettingsPage() {
               {saving ? "Saving..." : "Save Settings"}
             </button>
 
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
             {/* Late Allowance */}
             <div className="bg-white border-2 border-black">
               <div className="p-4 border-b-2 border-black bg-[#F0F6FF]">
@@ -732,12 +742,31 @@ export default function AttendanceSettingsPage() {
               </div>
             </div>
 
+            </div>
+
             {/* Balance Summary */}
             <div className="bg-white border-2 border-black">
-              <div className="p-4 border-b-2 border-black bg-[#F0F6FF]">
+              <div className="p-4 border-b-2 border-black bg-[#F0F6FF] flex items-center justify-between gap-3">
                 <h2 className="font-bold text-base">
                   Balance Summary (This Month)
                 </h2>
+                <ExportMenu
+                  name="attendance_balance_summary"
+                  rows={balances}
+                  cols={[
+                    { header: "Emp Code", value: (b: BalanceRow) => b.employee.employeeId },
+                    { header: "Employee", value: (b: BalanceRow) => `${b.employee.firstName} ${b.employee.lastName}` },
+                    { header: "Designation", value: (b: BalanceRow) => b.employee.designation },
+                    { header: "Late Used", value: (b: BalanceRow) => `${b.lateUsed}/${b.lateAllowed}` },
+                    ...usageTypes.map((t) => ({
+                      header: LEAVE_LABELS[t] ?? t,
+                      value: (b: BalanceRow) => {
+                        const l = b.leaveUsed.find((x) => x.leaveType === t);
+                        return l ? `${l.daysUsed}/${l.daysAllowed}` : "";
+                      },
+                    })),
+                  ]}
+                />
               </div>
               {loadingBalances ? (
                 <div className="flex justify-center py-10">
@@ -752,52 +781,50 @@ export default function AttendanceSettingsPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b-2 border-black bg-[#024BAB]/5">
-                        <th className="px-4 py-3 text-left text-xs font-bold uppercase">
-                          Employee
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-bold uppercase">
-                          Late Used/Allowed
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-bold uppercase">
-                          Leave Usage
-                        </th>
+                        {["Emp Code", "Employee", "Designation", "Late Used"].map((h) => (
+                          <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase whitespace-nowrap">
+                            {h}
+                          </th>
+                        ))}
+                        {usageTypes.map((t) => (
+                          <th key={t} className="px-4 py-3 text-left text-xs font-bold uppercase whitespace-nowrap">
+                            {LEAVE_LABELS[t] ?? t}
+                          </th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>
                       {balances.map((b, i) => (
-                        <tr
-                          key={b.employee._id}
-                          className={i % 2 ? "bg-[#F8FAFF]" : ""}
-                        >
+                        <tr key={b.employee._id} className={i % 2 ? "bg-[#F8FAFF]" : ""}>
+                          <td className="px-4 py-3 text-xs font-bold whitespace-nowrap">{b.employee.employeeId}</td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <Avatar
-                                avatar={b.employee.avatar}
-                                firstName={b.employee.firstName}
-                              />
-                              <div>
-                                <p className="font-bold text-xs">
-                                  {b.employee.firstName} {b.employee.lastName}
-                                </p>
-                                <p className="text-[10px] text-muted-foreground">
-                                  {b.employee.employeeId}
-                                </p>
-                              </div>
+                              <Avatar avatar={b.employee.avatar} firstName={b.employee.firstName} />
+                              <p className="font-bold text-xs whitespace-nowrap">
+                                {b.employee.firstName} {b.employee.lastName}
+                              </p>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-xs font-bold">
-                            {b.lateUsed}/{b.lateAllowed}
+                          <td className="px-4 py-3 text-xs">{b.employee.designation || "—"}</td>
+                          <td className="px-4 py-3 text-xs font-bold whitespace-nowrap">
+                            <span className={b.lateAllowed > 0 && b.lateUsed >= b.lateAllowed ? "text-[#EF4444]" : ""}>
+                              {b.lateUsed}/{b.lateAllowed}
+                            </span>
                           </td>
-                          <td className="px-4 py-3 text-xs">
-                            {b.leaveUsed.length === 0
-                              ? "—"
-                              : b.leaveUsed
-                                  .map(
-                                    (l) =>
-                                      `${LEAVE_LABELS[l.leaveType] ?? l.leaveType}: ${l.daysUsed}/${l.daysAllowed}`,
-                                  )
-                                  .join(", ")}
-                          </td>
+                          {usageTypes.map((t) => {
+                            const l = b.leaveUsed.find((x) => x.leaveType === t);
+                            return (
+                              <td key={t} className="px-4 py-3 text-xs font-bold whitespace-nowrap">
+                                {l ? (
+                                  <span className={l.daysAllowed > 0 && l.daysUsed >= l.daysAllowed ? "text-[#EF4444]" : ""}>
+                                    {l.daysUsed}/{l.daysAllowed}
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </td>
+                            );
+                          })}
                         </tr>
                       ))}
                     </tbody>

@@ -26,12 +26,13 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { departmentAPI } from '../api/api';
 import { Department } from '../types/hrms';
+import ExportButton from '../components/common/ExportButton';
 import { C } from '../theme';
+import { CENTER } from '../components/common/centerModal';
 
 const EMPTY_FORM = {
   name: '',
   description: '',
-  budget: '',
   code: '',
   shiftStartTime: '',
   shiftEndTime: '',
@@ -79,7 +80,6 @@ export default function DepartmentsScreen() {
     setForm({
       name: dept.name || '',
       description: dept.description || '',
-      budget: dept.budget ? String(dept.budget) : '',
       code: dept.code || '',
       shiftStartTime: dept.shiftStartTime || '',
       shiftEndTime: dept.shiftEndTime || '',
@@ -103,7 +103,6 @@ export default function DepartmentsScreen() {
       const payload: any = {
         name: form.name,
         description: form.description,
-        budget: form.budget ? parseFloat(form.budget) : undefined,
         shiftStartTime: form.shiftStartTime || undefined,
         shiftEndTime: form.shiftEndTime || undefined,
       };
@@ -158,10 +157,27 @@ export default function DepartmentsScreen() {
             <Text style={styles.countText}>{departments.length}</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.addBtn} onPress={openCreate}>
-          <Plus size={14} color={C.white} />
-          <Text style={styles.addBtnText}>Add</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <ExportButton
+            name="departments"
+            rows={departments as any[]}
+            cols={[
+              { header: 'Code', value: (d: any) => d.code },
+              { header: 'Department', value: (d: any) => d.name },
+              {
+                header: 'Shift Timings',
+                value: (d: any) =>
+                  d.shiftStartTime ? `${d.shiftStartTime} - ${d.shiftEndTime}` : '',
+              },
+              { header: 'Headcount', value: (d: any) => d.headcount ?? 0 },
+              { header: 'Head', value: (d: any) => d.head?.name || '' },
+            ]}
+          />
+          <TouchableOpacity style={styles.addBtn} onPress={openCreate}>
+            <Plus size={14} color={C.white} />
+            <Text style={styles.addBtnText}>Add</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {loading ? (
@@ -199,20 +215,15 @@ export default function DepartmentsScreen() {
                   </View>
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <View style={styles.nameRow}>
-                      <Text style={styles.deptName} numberOfLines={1}>
-                        {item.name}
-                      </Text>
                       {dept.code ? (
                         <View style={styles.codeBadge}>
                           <Text style={styles.codeText}>{dept.code}</Text>
                         </View>
                       ) : null}
-                    </View>
-                    {item.description ? (
-                      <Text style={styles.deptDesc} numberOfLines={2}>
-                        {item.description}
+                      <Text style={styles.deptName} numberOfLines={1}>
+                        {item.name}
                       </Text>
-                    ) : null}
+                    </View>
                   </View>
                   <View style={styles.cardActions}>
                     <TouchableOpacity
@@ -231,25 +242,20 @@ export default function DepartmentsScreen() {
                 </View>
 
                 <View style={styles.deptFooter}>
+                  {dept.shiftStartTime && dept.shiftEndTime ? (
+                    <Text style={styles.shiftText}>
+                      {dept.shiftStartTime} – {dept.shiftEndTime}
+                    </Text>
+                  ) : null}
                   <View style={styles.deptMeta}>
                     <Users size={11} color={C.textMuted} />
                     <Text style={styles.deptMetaText}>
                       {empCount} member{empCount !== 1 ? 's' : ''}
                     </Text>
                   </View>
-                  {dept.shiftStartTime && dept.shiftEndTime ? (
-                    <Text style={styles.shiftText}>
-                      {dept.shiftStartTime} – {dept.shiftEndTime}
-                    </Text>
-                  ) : null}
-                  {manager ? (
+                  {dept.head?.name || manager ? (
                     <Text style={styles.deptManager} numberOfLines={1}>
-                      Mgr: {manager.firstName} {manager.lastName}
-                    </Text>
-                  ) : null}
-                  {item.budget ? (
-                    <Text style={styles.deptBudget}>
-                      ₹{(item.budget / 1000).toFixed(0)}K
+                      Head: {dept.head?.name || `${manager.firstName} ${manager.lastName}`}
                     </Text>
                   ) : null}
                 </View>
@@ -261,10 +267,11 @@ export default function DepartmentsScreen() {
 
       <Modal
         visible={showForm}
-        animationType="slide"
-        presentationStyle="pageSheet"
+        transparent
+        animationType="fade"
       >
-        <SafeAreaView style={styles.safe} edges={['top']}>
+<View style={CENTER.overlay}><View style={CENTER.card}>
+        <SafeAreaView style={styles.safe} edges={[]}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
               {editingDept ? 'Edit Department' : 'New Department'}
@@ -312,17 +319,6 @@ export default function DepartmentsScreen() {
                 multiline
               />
             </View>
-            <View>
-              <Text style={styles.fieldLabel}>Annual Budget (₹)</Text>
-              <TextInput
-                style={styles.fieldInput}
-                value={form.budget}
-                onChangeText={v => setForm(p => ({ ...p, budget: v }))}
-                placeholder="5000000"
-                placeholderTextColor={C.textLight}
-                keyboardType="numeric"
-              />
-            </View>
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.fieldLabel}>Shift Start</Text>
@@ -365,7 +361,8 @@ export default function DepartmentsScreen() {
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
-      </Modal>
+      </View></View>
+</Modal>
     </SafeAreaView>
   );
 }
@@ -493,7 +490,6 @@ const styles = StyleSheet.create({
   deptMetaText: { fontSize: 12, fontWeight: '700', color: C.textMuted },
   shiftText: { fontSize: 11, fontWeight: '600', color: C.textMuted },
   deptManager: { fontSize: 11, color: C.textMuted },
-  deptBudget: { fontSize: 11, fontWeight: '700', color: C.success },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',

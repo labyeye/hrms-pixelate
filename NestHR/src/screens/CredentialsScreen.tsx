@@ -28,6 +28,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { employeeAPI } from '../api/api';
 import { C } from '../theme';
+import { CENTER } from '../components/common/centerModal';
 
 function genPassword(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$!';
@@ -168,30 +169,48 @@ export default function CredentialsScreen() {
           }
           renderItem={({ item }) => (
             <View style={s.card}>
-              {item.avatar ? (
-                <Image source={{ uri: item.avatar }} style={s.photoCircle} />
-              ) : (
-                <View style={s.cardAvatar}>
-                  <Text style={s.cardAvatarText}>
-                    {item.firstName?.[0]}
-                    {item.lastName?.[0]}
+              <View style={{ flex: 1 }}>
+                <View style={s.topRow}>
+                  <View style={s.codeChip}>
+                    <Text style={s.codeText}>{item.employeeId || '—'}</Text>
+                  </View>
+                  <Text style={s.updated}>
+                    Updated{' '}
+                    {new Date(item.updatedAt || item.joinDate || Date.now()).toLocaleDateString('en-IN', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
                   </Text>
                 </View>
-              )}
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={s.empName}>
-                  {item.firstName} {item.lastName}
-                </Text>
-                <Text style={s.empSub}>{item.email}</Text>
-                <Text style={s.empId}>{item.employeeId}</Text>
+                <View style={s.nameRow}>
+                  {item.avatar ? (
+                    <Image source={{ uri: item.avatar }} style={s.photoCircle} />
+                  ) : (
+                    <View style={s.cardAvatar}>
+                      <Text style={s.cardAvatarText}>
+                        {item.firstName?.[0]}
+                        {item.lastName?.[0]}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={{ flex: 1, marginLeft: 10 }}>
+                    <Text style={s.empName} numberOfLines={1}>
+                      {item.firstName} {item.lastName}
+                    </Text>
+                    <Text style={s.empSub} numberOfLines={1}>
+                      {item.email}
+                    </Text>
+                    <Text style={s.empId} numberOfLines={1}>
+                      {item.designation || '—'}
+                    </Text>
+                  </View>
+                  <TouchableOpacity style={s.resetBtn} onPress={() => openReset(item)}>
+                    <RefreshCw size={12} color={C.white} />
+                    <Text style={s.resetBtnText}>Reset</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-              <TouchableOpacity
-                style={s.resetBtn}
-                onPress={() => openReset(item)}
-              >
-                <RefreshCw size={12} color={C.white} />
-                <Text style={s.resetBtnText}>Reset</Text>
-              </TouchableOpacity>
             </View>
           )}
         />
@@ -199,9 +218,10 @@ export default function CredentialsScreen() {
 
       <Modal
         visible={!!modal}
-        animationType="slide"
-        presentationStyle="formSheet"
+        transparent
+        animationType="fade"
       >
+<View style={CENTER.overlay}><View style={CENTER.card}>
         <SafeAreaView style={s.safe} edges={['top']}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>Reset Password</Text>
@@ -286,12 +306,18 @@ export default function CredentialsScreen() {
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
-      </Modal>
+      </View></View>
+</Modal>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  codeChip: { backgroundColor: C.primary + '18', borderWidth: 2, borderColor: C.primary, paddingHorizontal: 8, paddingVertical: 2 },
+  codeText: { fontSize: 12, fontWeight: '800', color: C.primary },
+  updated: { fontSize: 10, color: C.textMuted, fontWeight: '600' },
+  nameRow: { flexDirection: 'row', alignItems: 'center' },
   safe: { flex: 1, backgroundColor: '#F8F9FA' },
   header: {
     flexDirection: 'row',

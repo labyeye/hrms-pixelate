@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Loader2, Building2, AlertCircle } from "lucide-react";
 import { validators, formatters } from "@/lib/validation";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 
 interface CompanyDetailsFormProps {
   onSubmit: (data: {
@@ -122,15 +123,10 @@ export default function CompanyDetailsForm({
         <label className="block text-xs font-bold uppercase tracking-wider text-black">
           Phone *
         </label>
-        <input
-          type="tel"
+        <PhoneInput
           value={form.phone}
-          onChange={(e) =>
-            setForm({ ...form, phone: formatters.phone(e.target.value) })
-          }
-          placeholder="+91 98765 43210"
-          className="w-full px-3 py-2.5 text-sm font-medium bg-white border-2 border-black focus:outline-none focus:ring-2 focus:ring-[#024BAB] focus:ring-offset-2"
-          required
+          onChange={(v) => setForm({ ...form, phone: v })}
+          placeholder="Phone number"
         />
       </div>
 

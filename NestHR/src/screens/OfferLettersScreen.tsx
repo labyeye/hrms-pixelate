@@ -32,6 +32,7 @@ import { useNavigation } from '@react-navigation/native';
 import { offerLetterAPI, employeeAPI, companyAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import { C } from '../theme';
+import { CENTER } from '../components/common/centerModal';
 import RNPrint from 'react-native-print';
 
 const STATUS_CONFIG: Record<
@@ -377,9 +378,10 @@ export default function OfferLettersScreen() {
       {/* Create / Edit Modal */}
       <Modal
         visible={showForm}
-        animationType="slide"
-        presentationStyle="formSheet"
+        transparent
+        animationType="fade"
       >
+<View style={CENTER.overlay}><View style={CENTER.card}>
         <SafeAreaView style={s.safe} edges={['top']}>
           <View style={s.modalHeader}>
             <Text style={s.modalTitle}>
@@ -458,7 +460,8 @@ export default function OfferLettersScreen() {
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
-      </Modal>
+      </View></View>
+</Modal>
 
       {/* Employment Type Picker */}
       <Modal visible={showEmpTypePicker} animationType="slide" transparent>
@@ -673,12 +676,14 @@ const s = StyleSheet.create({
   pickerOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    padding: 20,
   },
   pickerSheet: {
     backgroundColor: C.white,
-    borderTopWidth: 2,
-    borderTopColor: C.black,
+    borderWidth: 2,
+    borderColor: C.black,
+    borderRadius: 8,
   },
   pickerSheetHeader: {
     flexDirection: 'row',

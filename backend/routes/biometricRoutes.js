@@ -18,6 +18,7 @@ const {
   getDeviceInfo,
   recordBiometric,
   getLogs,
+  getDeviceActivityLogs,
   setDeviceSerial,
   syncEmployeeToDevice,
   syncAllToDevice,
@@ -101,6 +102,7 @@ router.delete(
 );
 
 router.get("/logs", getLogs);
+router.get("/device-logs", authorize("super_admin", "hr_manager"), getDeviceActivityLogs);
 
 router.put(
   "/devices/:id/serial",
