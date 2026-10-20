@@ -54,6 +54,9 @@ const subscriptionSchema = new mongoose.Schema(
     razorpayPaymentId: { type: String },
     offerCode: { type: String, default: null },
     offerBonusMonths: { type: Number, default: 0 },
+    // Set from the CRM dashboard for custom deals; shown on the customer's billing page instead of the defaults.
+    customPlanName: { type: String, trim: true },
+    customFeatures: { type: [String], default: undefined },
   },
   { timestamps: true },
 );

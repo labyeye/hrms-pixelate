@@ -152,7 +152,7 @@ export default function BillingPage() {
             </div>
             <div>
               <p className="font-display font-bold text-white text-lg">
-                {currentPlan.name} Plan —{" "}
+                {sub?.customPlanName || currentPlan.name} Plan —{" "}
                 {isTrial ? "Free Trial" : isActive ? "Active" : "Inactive"}
               </p>
               <p className="text-sm font-medium text-white/70">
@@ -276,7 +276,9 @@ export default function BillingPage() {
             What's included in your plan
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {[
+            {(sub?.customFeatures?.length
+              ? sub.customFeatures
+              : [
               `Up to ${empMax === 999 ? "unlimited" : empMax} employees`,
               "Employee management, departments & documents",
               "Attendance with biometric device support",
@@ -287,7 +289,7 @@ export default function BillingPage() {
               ...(String(sub?.tier || "").includes("whatsapp")
                 ? ["WhatsApp notifications & OTP"]
                 : []),
-            ].map((f) => (
+            ]).map((f: string) => (
               <div key={f} className="flex items-start gap-2 text-sm text-black">
                 <Check className="w-4 h-4 text-[#00C48C] shrink-0 mt-0.5" />
                 {f}

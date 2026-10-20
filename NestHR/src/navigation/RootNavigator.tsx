@@ -1,4 +1,6 @@
 import React from 'react';
+import { API_BASE_URL as TRACK_BASE } from '../config/env';
+import { initUsageTracker, setUsageIdentity, trackNavState } from '../utils/usageTracker';
 import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -9,10 +11,13 @@ import FaceCheckInScreen from '../screens/FaceCheckInScreen';
 import FaceEnrollScreen from '../screens/FaceEnrollScreen';
 import { C } from '../theme';
 
+initUsageTracker(TRACK_BASE);
+
 const Stack = createNativeStackNavigator();
 
 export default function RootNavigator() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
+  setUsageIdentity(user);
 
   if (isLoading) {
     return (
@@ -30,7 +35,7 @@ export default function RootNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer onStateChange={trackNavState}>
       {isAuthenticated ? (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="MainTabs" component={MainNavigator} />

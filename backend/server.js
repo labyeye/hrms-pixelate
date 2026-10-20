@@ -93,6 +93,12 @@ app.use(
 app.use(sanitizeRequest); // strips $operators / dotted keys (NoSQL injection)
 app.use("/uploads", ...require("./middleware/publicUploads")()); // images only; KYC/vault files need the authenticated endpoints
 
+// Usage/health metrics for the CRM dashboard (page views, active users, crashes, API success).
+const tele = require("./utils/telemetry")("CRM_API_SECRET");
+app.use(tele.middleware);
+app.use("/api/telemetry", tele.ingest);
+app.use("/api/crm/metrics", tele.metrics);
+
 app.use("/iclock", require("./routes/admsRoutes"));
 app.use("/internal/stats", require("./routes/statsRoutes"));
 

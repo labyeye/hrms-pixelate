@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useUsageTracker } from "@/hooks/useUsageTracker";
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -99,6 +100,7 @@ function RootRedirect() {
 
 function AppRoutes() {
   const { isAuthenticated, isLoading } = useAuth();
+  useUsageTracker();
   usePushNotification(isAuthenticated);
   if (isLoading) return <LoadingScreen />;
 
