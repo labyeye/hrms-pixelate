@@ -318,7 +318,7 @@ export default function EmployeesPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { limit: "500" };
+      const params: Record<string, string> = { limit: "5000" };
       if (search) params.search = search;
       if (filterDept) params.department = filterDept;
       if (filterStatus) params.status = filterStatus;
@@ -330,7 +330,7 @@ export default function EmployeesPage() {
         payrollAPI.getAll({
           month: String(now.getMonth() + 1),
           year: String(now.getFullYear()),
-          limit: "200",
+          limit: "5000",
         }),
         employeeAPI.getAll({ limit: "5000" }),
         attendanceAPI

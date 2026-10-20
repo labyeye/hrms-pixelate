@@ -367,7 +367,7 @@ export default function PayrollPage() {
       const res = await payrollAPI.getAll({
         month: String(month),
         year: String(year),
-        limit: "200",
+        limit: "5000",
       });
       if (res.success) setPayrolls(res.data);
     } catch {}

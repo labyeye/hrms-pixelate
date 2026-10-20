@@ -81,7 +81,7 @@ export default function PerformancePage() {
     try {
       const [revRes, empRes] = await Promise.all([
         performanceAPI.getAll(),
-        employeeAPI.getAll({ status: "active", limit: "200" }),
+        employeeAPI.getAll({ status: "active", limit: "5000" }),
       ]);
       if (revRes.success) setReviews(revRes.data);
       if (empRes.success) setEmployees(empRes.data);

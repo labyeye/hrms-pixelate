@@ -242,6 +242,8 @@ export const attendanceAPI = {
     request("/attendance/bulk", { method: "POST", body: JSON.stringify(body) }),
   getSummary: (params: Record<string, string>) =>
     request(`/attendance/summary?${new URLSearchParams(params).toString()}`),
+  getDailySummary: (params: Record<string, string>) =>
+    request(`/attendance/daily-summary?${new URLSearchParams(params).toString()}`),
 };
 
 export const leaveAPI = {

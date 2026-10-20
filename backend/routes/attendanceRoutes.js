@@ -6,6 +6,7 @@ const {
   updateAttendance,
   bulkMarkAttendance,
   getMonthSummary,
+  getDailySummary,
 } = require("../controllers/attendanceController");
 const { runAutoMark } = require("../jobs/attendanceAutoMark");
 const { protect, authorize } = require("../middleware/auth");
@@ -14,6 +15,7 @@ const router = express.Router();
 
 router.get("/", protect, getAttendance);
 router.get("/summary", protect, getMonthSummary);
+router.get("/daily-summary", protect, getDailySummary);
 router.post("/self-mark", protect, uploadAttendanceSelfie, selfMarkAttendance);
 router.post(
   "/",

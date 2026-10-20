@@ -615,7 +615,7 @@ function PayReportGen({
   async function load() {
     setLoading(true);
     try {
-      const r = await payrollAPI.getAll({ month, year, limit: "500" });
+      const r = await payrollAPI.getAll({ month, year, limit: "5000" });
       if (r.success) setData(r.data);
     } catch {}
     setLoading(false);
@@ -740,7 +740,7 @@ function SalaryRegisterGen({
   async function load() {
     setLoading(true);
     try {
-      const r = await payrollAPI.getAll({ month, year, limit: "500" });
+      const r = await payrollAPI.getAll({ month, year, limit: "5000" });
       if (r.success) setData(r.data);
     } catch {}
     setLoading(false);
@@ -885,7 +885,7 @@ function SalaryHistoryGen({
   async function load() {
     setLoading(true);
     try {
-      const r = await employeeAPI.getAll({ limit: "1000" });
+      const r = await employeeAPI.getAll({ limit: "5000" });
       if (r.success) setData(r.data);
     } catch {}
     setLoading(false);
@@ -1007,7 +1007,7 @@ function NetSalaryGen({
   async function load() {
     setLoading(true);
     try {
-      const r = await payrollAPI.getAll({ month, year, limit: "500" });
+      const r = await payrollAPI.getAll({ month, year, limit: "5000" });
       if (r.success) setData(r.data);
     } catch {}
     setLoading(false);
@@ -1097,7 +1097,7 @@ function SalarySlipGen({
   async function load() {
     setLoading(true);
     try {
-      const r = await payrollAPI.getAll({ month, year, limit: "500" });
+      const r = await payrollAPI.getAll({ month, year, limit: "5000" });
       if (r.success) setData(r.data);
     } catch {}
     setLoading(false);
@@ -1385,7 +1385,7 @@ function PFRegisterGen({
   async function load() {
     setLoading(true);
     try {
-      const r = await payrollAPI.getAll({ month, year, limit: "500" });
+      const r = await payrollAPI.getAll({ month, year, limit: "5000" });
       if (r.success) setData(r.data.filter((p: any) => (p.pf || 0) > 0));
     } catch {}
     setLoading(false);
@@ -1473,7 +1473,7 @@ function ESICRegisterGen({
   async function load() {
     setLoading(true);
     try {
-      const r = await payrollAPI.getAll({ month, year, limit: "500" });
+      const r = await payrollAPI.getAll({ month, year, limit: "5000" });
       if (r.success) setData(r.data.filter((p: any) => (p.esi || 0) > 0));
     } catch {}
     setLoading(false);
@@ -1561,7 +1561,7 @@ function BankUploadGen({
   async function load() {
     setLoading(true);
     try {
-      const r = await payrollAPI.getAll({ month, year, limit: "500" });
+      const r = await payrollAPI.getAll({ month, year, limit: "5000" });
       if (r.success) setData(r.data);
     } catch {}
     setLoading(false);
@@ -1648,7 +1648,7 @@ function AbsentLeaveSummaryGen({
   async function load() {
     setLoading(true);
     try {
-      const params: Record<string, string> = { month, year, limit: "500" };
+      const params: Record<string, string> = { month, year, limit: "5000" };
       if (dept !== "all") params.department = dept;
       const r = await attendanceAPI.getAll(params);
       if (r.success) setData(r.data);
@@ -1777,7 +1777,7 @@ function LateComingGen({
   async function load() {
     setLoading(true);
     try {
-      const params: Record<string, string> = { month, year, limit: "500" };
+      const params: Record<string, string> = { month, year, limit: "5000" };
       if (dept !== "all") params.department = dept;
       const r = await attendanceAPI.getAll(params);
       if (r.success)
@@ -1886,7 +1886,7 @@ function DesignationSummaryGen({
   async function load() {
     setLoading(true);
     try {
-      const r = await employeeAPI.getAll({ limit: "500", status: "active" });
+      const r = await employeeAPI.getAll({ limit: "5000", status: "active" });
       if (r.success) setData(r.data);
     } catch {}
     setLoading(false);
@@ -1969,7 +1969,7 @@ function AttendanceReportGen({
   async function load() {
     setLoading(true);
     try {
-      const params: Record<string, string> = { month, year, limit: "500" };
+      const params: Record<string, string> = { month, year, limit: "5000" };
       if (dept !== "all") params.department = dept;
       const r = await attendanceAPI.getAll(params);
       if (r.success) setData(r.data);
@@ -2092,7 +2092,7 @@ function AttendanceInOutGen({
   async function load() {
     setLoading(true);
     try {
-      const params: Record<string, string> = { month, year, limit: "500" };
+      const params: Record<string, string> = { month, year, limit: "5000" };
       if (dept !== "all") params.department = dept;
       const r = await attendanceAPI.getAll(params);
       if (r.success) setData(r.data.filter((rec: any) => rec.checkIn));
@@ -2201,7 +2201,7 @@ function AttendanceSummaryGen({
   async function load() {
     setLoading(true);
     try {
-      const params: Record<string, string> = { month, year, limit: "500" };
+      const params: Record<string, string> = { month, year, limit: "5000" };
       if (dept !== "all") params.department = dept;
       const r = await attendanceAPI.getAll(params);
       if (r.success) setData(r.data);
@@ -2329,7 +2329,7 @@ function LeaveReportGen({
   async function load() {
     setLoading(true);
     try {
-      const params: Record<string, string> = { limit: "500", year };
+      const params: Record<string, string> = { limit: "5000", year };
       if (leaveType !== "all") params.leaveType = leaveType;
       if (status !== "all") params.status = status;
       const r = await leaveAPI.getAll(params);
@@ -2437,7 +2437,7 @@ function MissPunchGen({
   async function load() {
     setLoading(true);
     try {
-      const params: Record<string, string> = { month, year, limit: "500" };
+      const params: Record<string, string> = { month, year, limit: "5000" };
       if (dept !== "all") params.department = dept;
       const r = await attendanceAPI.getAll(params);
       if (r.success)
@@ -2538,7 +2538,7 @@ function EmployeeDirectoryGen({
   async function load() {
     setLoading(true);
     try {
-      const params: Record<string, string> = { limit: "500" };
+      const params: Record<string, string> = { limit: "5000" };
       if (dept !== "all") params.department = dept;
       if (status !== "all") params.status = status;
       const r = await employeeAPI.getAll(params);
@@ -2675,7 +2675,7 @@ function EmployeeReportGen({
 
   useEffect(() => {
     employeeAPI
-      .getAll({ limit: "500", status: "active" })
+      .getAll({ limit: "5000", status: "active" })
       .then((r) => {
         if (r.success) setEmployees(r.data);
         setEmpLoading(false);
@@ -3090,7 +3090,7 @@ function TallyExportGen({
   async function load() {
     setLoading(true);
     try {
-      const r = await payrollAPI.getAll({ month, year, limit: "500" });
+      const r = await payrollAPI.getAll({ month, year, limit: "5000" });
       if (r.success) setData(r.data);
     } catch {}
     setLoading(false);
@@ -3227,7 +3227,7 @@ function EarlyGoingSummaryGen({
   async function load() {
     setLoading(true);
     try {
-      const params: Record<string, string> = { month, year, limit: "500" };
+      const params: Record<string, string> = { month, year, limit: "5000" };
       if (dept !== "all") params.department = dept;
       const r = await attendanceAPI.getAll(params);
       if (r.success) setData(r.data.filter((rec: any) => rec.earlyLeaving));
@@ -3444,7 +3444,7 @@ function BonusReportGen({
     setLoading(true);
     try {
       const months = Array.from({ length: 12 }, (_, i) => String(i + 1));
-      const params: Record<string, string> = { year, limit: "500" };
+      const params: Record<string, string> = { year, limit: "5000" };
       if (dept !== "all") params.department = dept;
       const results = await Promise.all(
         months.map((m) => payrollAPI.getAll({ ...params, month: m })),
@@ -3566,11 +3566,11 @@ function OvertimeSummaryGen({
   async function load() {
     setLoading(true);
     try {
-      const params: Record<string, string> = { month, year, limit: "500" };
+      const params: Record<string, string> = { month, year, limit: "5000" };
       if (dept !== "all") params.department = dept;
       const [attRes, empRes] = await Promise.all([
         attendanceAPI.getAll(params),
-        employeeAPI.getAll({ status: "active", limit: "500" }),
+        employeeAPI.getAll({ status: "active", limit: "5000" }),
       ]);
       if (attRes.success)
         setData(attRes.data.filter((rec: any) => (rec.overtime || 0) > 0));
@@ -3909,7 +3909,7 @@ function AttendanceInOutVerticalGen({
   async function load() {
     setLoading(true);
     try {
-      const params: Record<string, string> = { month, year, limit: "500" };
+      const params: Record<string, string> = { month, year, limit: "5000" };
       if (dept !== "all") params.department = dept;
       const r = await attendanceAPI.getAll(params);
       if (r.success) setData(r.data.filter((rec: any) => rec.employee));
@@ -4023,7 +4023,7 @@ function AttendanceHistoryGen({
   async function load() {
     setLoading(true);
     try {
-      const r = await auditAPI.getLogs({ entity: "Attendance", limit: "500" });
+      const r = await auditAPI.getLogs({ entity: "Attendance", limit: "5000" });
       if (r.success) setData(r.data);
     } catch {}
     setLoading(false);
@@ -4165,16 +4165,16 @@ function AnalyticsTab({
 
   useEffect(() => {
     Promise.all([
-      employeeAPI.getAll({ limit: "500", status: "active" }),
+      employeeAPI.getAll({ limit: "5000", status: "active" }),
       payrollAPI.getAll({
         month: String(now.getMonth() + 1),
         year: String(now.getFullYear()),
-        limit: "500",
+        limit: "5000",
       }),
       attendanceAPI.getAll({
         month: String(now.getMonth() + 1),
         year: String(now.getFullYear()),
-        limit: "500",
+        limit: "5000",
       }),
     ])
       .then(([e, p, a]) => {

@@ -6,7 +6,14 @@ const Leave = require("../models/Leave");
 const Payroll = require("../models/Payroll");
 const Department = require("../models/Department");
 
+// HR dashboards are opened (and auto-refreshed) all day by several people; the numbers move slowly, so one
+// computation per company every 30s is plenty. ponytail: per-process cache, use Redis if the API ever runs on many nodes.
+const statsCache = new Map();
+const STATS_TTL_MS = 30_000;
+
 const getStats = asyncHandler(async (req, res) => {
+  const hit = statsCache.get(String(req.user.company));
+  if (hit && Date.now() - hit.at < STATS_TTL_MS) return res.json(hit.body);
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -24,7 +31,7 @@ const getStats = asyncHandler(async (req, res) => {
       activeEmployees,
       newHires,
       pendingLeaves,
-      todayPresent,
+      todayRows,
       departments,
       monthlyPayroll,
     ] = await Promise.all([
@@ -39,11 +46,10 @@ const getStats = asyncHandler(async (req, res) => {
       Leave.countDocuments({ company: companyId, status: "pending" }).catch(
         () => 0,
       ),
-      Attendance.countDocuments({
-        employee: { $in: companyEmployeeIds },
-        date: today,
-        status: "present",
-      }).catch(() => 0),
+      Attendance.aggregate([
+        { $match: { employee: { $in: companyEmployeeIds }, date: today } },
+        { $group: { _id: "$status", n: { $sum: 1 } } },
+      ]).catch(() => []),
       Department.countDocuments({ company: companyId }).catch(() => 0),
       Payroll.aggregate([
         {
@@ -58,6 +64,8 @@ const getStats = asyncHandler(async (req, res) => {
       ]).catch(() => []),
     ]);
 
+    const todayBy = Object.fromEntries(todayRows.map((r) => [r._id, r.n]));
+    const todayPresent = todayBy.present || 0;
     const attendanceRate =
       activeEmployees > 0
         ? Math.round((todayPresent / activeEmployees) * 100)
@@ -103,62 +111,39 @@ const getStats = asyncHandler(async (req, res) => {
       { $limit: 6 },
     ]).catch(() => []);
 
-    const attTrend = await Promise.all(
-      Array.from({ length: 6 }, (_, i) => {
-        const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
-        const start = new Date(d.getFullYear(), d.getMonth(), 1);
-        const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-        return Attendance.countDocuments({
+    // Last 6 months in one pass (was 6 separate counts, each probing every employee id).
+    const monthStarts = Array.from({ length: 7 }, (_, i) => new Date(now.getFullYear(), now.getMonth() - 5 + i, 1));
+    const attBuckets = await Attendance.aggregate([
+      {
+        $match: {
           employee: { $in: companyEmployeeIds },
-          date: { $gte: start, $lte: end },
+          date: { $gte: monthStarts[0], $lt: monthStarts[6] },
           status: { $in: ["present", "late"] },
-        }).then((count) => ({
-          month: d.getMonth() + 1,
-          year: d.getFullYear(),
-          count,
-        }));
-      }),
-    );
+        },
+      },
+      { $bucket: { groupBy: "$date", boundaries: monthStarts, default: "other", output: { count: { $sum: 1 } } } },
+    ]).catch(() => []);
+    const attTrend = monthStarts.slice(0, 6).map((d) => ({
+      month: d.getMonth() + 1,
+      year: d.getFullYear(),
+      count: attBuckets.find((x) => x._id && new Date(x._id).getTime() === d.getTime())?.count || 0,
+    }));
 
-    const payTrend = await Promise.all(
-      Array.from({ length: 6 }, (_, i) => {
-        const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
-        return Payroll.aggregate([
-          {
-            $match: {
-              company: req.user.company,
-              month: d.getMonth() + 1,
-              year: d.getFullYear(),
-            },
-          },
-          { $group: { _id: null, total: { $sum: "$netSalary" } } },
-        ]).then((r) => ({
-          month: d.getMonth() + 1,
-          year: d.getFullYear(),
-          total: r[0]?.total || 0,
-        }));
-      }),
-    );
+    const payMonths = monthStarts.slice(0, 6).map((d) => ({ month: d.getMonth() + 1, year: d.getFullYear() }));
+    const payRows = await Payroll.aggregate([
+      { $match: { company: req.user.company, $or: payMonths } },
+      { $group: { _id: { month: "$month", year: "$year" }, total: { $sum: "$netSalary" } } },
+    ]).catch(() => []);
+    const payTrend = payMonths.map((m) => ({
+      ...m,
+      total: payRows.find((r) => r._id.month === m.month && r._id.year === m.year)?.total || 0,
+    }));
 
-    const [todayLate, todayAbsent, todayOnLeave] = await Promise.all([
-      Attendance.countDocuments({
-        employee: { $in: companyEmployeeIds },
-        date: today,
-        status: "late",
-      }).catch(() => 0),
-      Attendance.countDocuments({
-        employee: { $in: companyEmployeeIds },
-        date: today,
-        status: "absent",
-      }).catch(() => 0),
-      Attendance.countDocuments({
-        employee: { $in: companyEmployeeIds },
-        date: today,
-        status: "on_leave",
-      }).catch(() => 0),
-    ]);
+    const todayLate = todayBy.late || 0;
+    const todayAbsent = todayBy.absent || 0;
+    const todayOnLeave = todayBy.on_leave || 0;
 
-    res.json({
+    const body = {
       success: true,
       data: {
         stats: {
@@ -180,7 +165,9 @@ const getStats = asyncHandler(async (req, res) => {
         attTrend,
         payTrend,
       },
-    });
+    };
+    statsCache.set(String(req.user.company), { at: Date.now(), body });
+    res.json(body);
   } catch (error) {
     console.error("Dashboard stats error:", error);
     res.status(500).json({
@@ -441,9 +428,10 @@ const getPayrollSummary = asyncHandler(async (req, res) => {
   res.json({ success: true, data });
 });
 
-// Fire-and-forget: pre-compute every range so the first tap is instant.
+// Fire-and-forget: pre-compute the default range so the first view is instant. The longer ranges (3m / 6m / 1y)
+// rebuild a payroll preview per month for every employee, so they are computed on demand, not on every dashboard load.
 function warmSummaries(company) {
-  RANGES.forEach((r) => getSummary(company, r).catch(() => {}));
+  getSummary(company, "this").catch(() => {});
 }
 
 module.exports = { getStats, getEmployeeStats, getPayrollSummary };

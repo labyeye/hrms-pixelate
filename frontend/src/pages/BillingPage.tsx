@@ -1,35 +1,22 @@
 import { writePrintDocument } from "@/lib/printWindow";
-import {
-  PLAN_SLABS,
-  MAX_SELF_SERVE_EMPLOYEES,
-  SALES_URL,
-  slabFor,
-} from "@/lib/planSlabs";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { billingAPI } from "@/services/api";
-import { useToast } from "@/hooks/use-toast";
-import { useConfirm } from "@/hooks/use-confirm";
 import { buildInvoiceHTML } from "@/lib/buildInvoiceHTML";
 import {
   Check,
-  CreditCard,
   Crown,
   AlertTriangle,
-  ArrowRight,
-  Loader2,
   Users,
   Calendar,
   Building2,
   Zap,
   Download,
-  X,
   ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import RazorpayIcon from "../../assets/image.png";
 declare global {
   interface Window {
     Razorpay: any;
@@ -38,17 +25,11 @@ declare global {
 
 export default function BillingPage() {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const confirm = useConfirm();
 
   const [subscription, setSubscription] = useState<any>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [upgrading, setUpgrading] = useState(false);
   const [downloading, setDownloading] = useState<string | null>(null);
-  const [newEmployeeCount, setNewEmployeeCount] = useState<number | "">("");
-  const [gatewayModal, setGatewayModal] = useState(false);
-  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -57,9 +38,6 @@ export default function BillingPage() {
         .then((r) => {
           if (r.success) {
             setSubscription(r.data);
-            setNewEmployeeCount(
-              r.data.currentEmployeeCount || r.data.maxEmployees || "",
-            );
           }
         })
         .catch(() => {}),
@@ -71,7 +49,6 @@ export default function BillingPage() {
         .catch(() => {}),
     ]).finally(() => setLoading(false));
   }, []);
-  const paymentMethodIcon = RazorpayIcon;
   const sub = subscription || user?.company?.subscription;
   const currentPlanId = sub?.plan || "1-10 employees";
 
@@ -104,17 +81,6 @@ export default function BillingPage() {
     sub?.status === "active" || sub?.status === "pending_renewal";
   const isCancelled = sub?.status === "cancelled";
 
-  const loadRazorpayScript = useCallback((): Promise<boolean> => {
-    return new Promise((resolve) => {
-      if (window.Razorpay) return resolve(true);
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  }, []);
-
   const handleDownloadInvoice = (inv: any) => {
     setDownloading(inv._id);
     try {
@@ -128,125 +94,6 @@ export default function BillingPage() {
       }
     } finally {
       setDownloading(null);
-    }
-  };
-
-  const handleUpdateTeamSize = () => {
-    const count = Number(newEmployeeCount);
-    if (!count || count < 1) {
-      toast({
-        title: "Enter employee count",
-        description: "How many employees should this plan cover?",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (!slabFor(count)) {
-      window.open(SALES_URL, "_blank", "noopener");
-      return;
-    }
-    setGatewayModal(true);
-  };
-
-  const handleCancelSubscription = async () => {
-    const ok = await confirm({
-      title: "Cancel subscription?",
-      description: `You'll keep access until ${isTrial ? "your trial ends" : renewalDate ? renewalDate.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) : "the end of your billing period"}, then it won't renew.`,
-    });
-    if (!ok) return;
-    setCancelling(true);
-    try {
-      const res = await billingAPI.cancelSubscription();
-      if (!res.success) throw new Error(res.message || "Failed to cancel");
-      setSubscription(res.data);
-      toast({
-        title: "Subscription cancelled",
-        description: "Auto-renewal has been turned off.",
-      });
-    } catch (err: any) {
-      toast({
-        title: "Error",
-        description: err.message || "Failed to cancel subscription",
-        variant: "destructive",
-      });
-    } finally {
-      setCancelling(false);
-    }
-  };
-
-  const handleGatewaySelect = async (gateway: "razorpay" | "hdfc") => {
-    const count = Number(newEmployeeCount);
-    if (!count) return;
-    setGatewayModal(false);
-    setUpgrading(true);
-    try {
-      const res = await billingAPI.createOrder(
-        count,
-        "web_mobile_whatsapp",
-        "yearly",
-        gateway,
-      );
-      if (!res.success) throw new Error("Failed to create order");
-      const order = res.data;
-
-      if (gateway === "razorpay") {
-        const loaded = await loadRazorpayScript();
-        if (!loaded)
-          throw new Error(
-            "Failed to load Razorpay checkout. Check your connection.",
-          );
-
-        await new Promise<void>((resolve, reject) => {
-          const rzp = new window.Razorpay({
-            key: order.keyId,
-            order_id: order.orderId,
-            amount: order.amount * 100,
-            currency: order.currency || "INR",
-            name: "NestHR",
-            description: `NestHR — ${count} employees — ${order.plan}`,
-            prefill: {
-              name: order.userName,
-              email: order.userEmail,
-              contact: order.userPhone,
-            },
-            theme: { color: "#024BAB" },
-            handler: async (response: any) => {
-              try {
-                await billingAPI.verifyRazorpay({
-                  razorpayOrderId: response.razorpay_order_id,
-                  razorpayPaymentId: response.razorpay_payment_id,
-                  razorpaySignature: response.razorpay_signature,
-                });
-                toast({
-                  title: "Payment Successful!",
-                  description: "Subscription updated.",
-                });
-                resolve();
-              } catch (err: any) {
-                reject(err);
-              }
-            },
-            modal: {
-              ondismiss: () => reject(new Error("Payment cancelled")),
-            },
-          });
-          rzp.open();
-        });
-      } else {
-        if (!order.paymentUrl)
-          throw new Error("HDFC did not return a payment URL.");
-        window.location.href = order.paymentUrl;
-      }
-    } catch (err: any) {
-      if (err.message !== "Payment cancelled") {
-        toast({
-          title: "Payment Error",
-          description: err.message || "Failed to process payment",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      setUpgrading(false);
     }
   };
 
@@ -278,8 +125,7 @@ export default function BillingPage() {
                   month: "long",
                   year: "numeric",
                 })}
-                . Subscribe anytime below to keep full access and unlock yearly
-                savings.
+                . To continue after the trial, contact Pixelate Nest.
               </p>
             </div>
           </div>
@@ -292,8 +138,7 @@ export default function BillingPage() {
                 No Active Subscription
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Your account is not yet activated. Choose a plan below to start
-                using NestHR.
+                Your account is not yet activated. Please contact Pixelate Nest to activate your plan.
               </p>
             </div>
           </div>
@@ -347,15 +192,6 @@ export default function BillingPage() {
                     ? "Paid & Active"
                     : "Attention Required"}
             </div>
-            {sub && !isCancelled && (isActive || isTrial) && (
-              <button
-                onClick={handleCancelSubscription}
-                disabled={cancelling}
-                className="text-xs font-bold text-white px-2.5 py-1 border-2 border-black bg-[#EF4444] hover:bg-[#DC2626] transition-colors disabled:opacity-50"
-              >
-                {cancelling ? "Cancelling…" : "Cancel plan"}
-              </button>
-            )}
             {isCancelled && (
               <span className="text-xs font-bold text-white/70">
                 Cancelled — access until{" "}
@@ -435,161 +271,38 @@ export default function BillingPage() {
           ))}
         </div>
 
-        {}
-        <div>
-          <h2 className="font-display font-bold text-2xl text-black mb-6">
-            Change Plan
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 max-w-2xl">
-            {PLAN_SLABS.map((sl) => {
-              const isSelected =
-                slabFor(Number(newEmployeeCount))?.maxEmployees ===
-                sl.maxEmployees;
-              return (
-                <div
-                  key={sl.maxEmployees}
-                  className={cn(
-                    "border-2 bg-white p-4",
-                    isSelected
-                      ? "border-[#024BAB] ring-2 ring-[#024BAB]"
-                      : "border-black opacity-60",
-                  )}
-                >
-                  <p className="font-bold text-sm text-black">
-                    Up to {sl.maxEmployees} employees
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    ₹{sl.yearlyPrice.toLocaleString("en-IN")}/year
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="border-2 p-5 bg-white max-w-sm">
-            <label className="block text-xs font-bold uppercase tracking-wider text-black mb-2">
-              Number of employees
-            </label>
-            <input
-              type="number"
-              min={1}
-              value={newEmployeeCount}
-              onChange={(e) =>
-                setNewEmployeeCount(
-                  e.target.value === ""
-                    ? ""
-                    : Math.max(1, parseInt(e.target.value) || 1),
-                )
-              }
-              className="w-full border-2 border-black px-4 py-2.5 text-xl font-bold text-center focus:outline-none focus:ring-2 focus:ring-[#024BAB] mb-4"
-            />
-
-            {Number(newEmployeeCount) > 0 && (
-              <div className="mb-4">
-                {(() => {
-                  const count = Number(newEmployeeCount);
-                  const slab = slabFor(count);
-                  if (!slab)
-                    return (
-                      <p className="text-sm font-bold text-black">
-                        More than {MAX_SELF_SERVE_EMPLOYEES} employees —{" "}
-                        <a
-                          href={SALES_URL}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#024BAB] hover:underline"
-                        >
-                          contact sales
-                        </a>
-                      </p>
-                    );
-                  return (
-                    <>
-                      <span className="font-display font-bold text-3xl text-black">
-                        ₹{slab.yearlyPrice.toLocaleString("en-IN")}
-                      </span>
-                      <span className="text-sm font-medium text-muted-foreground">
-                        /yr
-                      </span>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Up to {slab.maxEmployees} employees · NestHR
-                      </p>
-                    </>
-                  );
-                })()}
-              </div>
-            )}
-
-            <button
-              onClick={handleUpdateTeamSize}
-              disabled={
-                upgrading ||
-                (Number(newEmployeeCount) <= empMax &&
-                  sub?.tier === "web_mobile_whatsapp")
-              }
-              className="border-2 w-full py-2.5 text-sm flex items-center justify-center gap-2 bg-black text-white hover:bg-black/80 disabled:opacity-50"
-            >
-              {upgrading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : !slabFor(Number(newEmployeeCount)) ? (
-                "Contact sales"
-              ) : (
-                <>
-                  Update & Pay
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {}
         <div className="border-2 p-4 sm:p-5 bg-white">
-          <h3 className="font-display font-bold text-lg text-black mb-4 flex items-center gap-2">
-            <CreditCard className="w-5 h-5 text-[#024BAB]" /> Payment Method
-          </h3>
-          {sub?.paymentMethod ? (
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 border-2 border-black bg-[#024BAB]/5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-7 flex items-center justify-center shrink-0">
-                  <img src={paymentMethodIcon} alt={sub.paymentMethod} />
-                </div>
-                <div>
-                  <p className="font-bold text-sm text-black capitalize">
-                    {sub.paymentMethod} — last payment ₹
-                    {sub.amountPaid?.toLocaleString("en-IN")}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Paid on{" "}
-                    {sub.startDate
-                      ? new Date(sub.startDate).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })
-                      : "—"}
-                  </p>
-                </div>
+          <h2 className="font-display font-bold text-xl text-black mb-4">
+            What's included in your plan
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {[
+              `Up to ${empMax === 999 ? "unlimited" : empMax} employees`,
+              "Employee management, departments & documents",
+              "Attendance with biometric device support",
+              "Leave, holidays & late approvals",
+              "Payroll, loans & payslips",
+              "Performance, tasks & announcements",
+              "Web & mobile app access",
+              ...(String(sub?.tier || "").includes("whatsapp")
+                ? ["WhatsApp notifications & OTP"]
+                : []),
+            ].map((f) => (
+              <div key={f} className="flex items-start gap-2 text-sm text-black">
+                <Check className="w-4 h-4 text-[#00C48C] shrink-0 mt-0.5" />
+                {f}
               </div>
-              <button className=" bg-white text-black px-4 py-2 text-sm self-start sm:self-auto border-2 border-black">
-                Change
-              </button>
-            </div>
-          ) : (
-            <div className="p-4 border-2 border-dashed border-black text-center">
-              <p className="text-sm text-muted-foreground">
-                No payment method on file
-              </p>
-            </div>
-          )}
-          <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-4 flex items-center gap-1">
             <ShieldCheck className="w-3 h-3 shrink-0" />
-            Payments processed securely via Razorpay or HDFC SmartGateway. We
-            never store your card details.
+            Need a different plan or more employees? Contact Pixelate Nest at
+            support@pixelatenest.com or WhatsApp +91 84069 12345 and we will
+            update it for you.
           </p>
         </div>
 
+        {}
         {}
         <div className="border-2 p-4 sm:p-5 bg-white">
           <h3 className="font-display font-bold text-lg text-black mb-4">
@@ -651,59 +364,6 @@ export default function BillingPage() {
         </div>
       </div>
 
-      {}
-      {gatewayModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="border-2 border-black bg-white w-full max-w-sm">
-            <div className="flex items-center justify-between p-5 border-b-2 border-black">
-              <h3 className="font-bold text-lg">Choose Payment Gateway</h3>
-              <button onClick={() => setGatewayModal(false)}>
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-5 space-y-3">
-              <p className="text-sm text-muted-foreground mb-4">
-                Select how you'd like to complete this payment.
-              </p>
-
-              {/* Razorpay */}
-              <button
-                onClick={() => handleGatewaySelect("razorpay")}
-                className="w-full border-2 border-black p-4 flex items-center gap-4 hover:bg-[#024BAB]/5 transition-colors text-left"
-              >
-                <div className="w-10 h-10 bg-[#024BAB] border-2 border-black flex items-center justify-center shrink-0">
-                  <CreditCard className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <p className="font-bold text-black text-sm">Razorpay</p>
-                  <p className="text-xs text-muted-foreground">
-                    Cards, UPI, Net Banking, Wallets
-                  </p>
-                </div>
-                <ArrowRight className="w-4 h-4 ml-auto text-muted-foreground" />
-              </button>
-
-              {/* HDFC SmartGateway — disabled until merchant account is configured */}
-              <div className="w-full border-2 border-gray-200 p-4 flex items-center gap-4 opacity-50 cursor-not-allowed">
-                <div className="w-10 h-10 bg-gray-300 border-2 border-gray-200 flex items-center justify-center shrink-0">
-                  <Building2 className="w-5 h-5 text-gray-400" />
-                </div>
-                <div>
-                  <p className="font-bold text-gray-400 text-sm">
-                    HDFC SmartGateway
-                  </p>
-                  <p className="text-xs text-gray-400">Coming soon</p>
-                </div>
-              </div>
-
-              <p className="text-xs text-muted-foreground text-center pt-2 flex items-center justify-center gap-1">
-                <ShieldCheck className="w-3 h-3" /> All payments are 256-bit
-                encrypted
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </AppLayout>
   );
 }

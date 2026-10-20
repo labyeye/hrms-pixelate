@@ -5,7 +5,7 @@ const { safePagination } = require("../middleware/validate");
 const { logAudit } = require("../utils/auditLogger");
 
 const getExits = asyncHandler(async (req, res) => {
-  const { page, limit, skip } = safePagination(req.query);
+  const { page, limit, skip } = safePagination(req.query, 50, 5000);
   const { status } = req.query;
   const filter = { company: req.user.company };
   if (status) filter.status = status;

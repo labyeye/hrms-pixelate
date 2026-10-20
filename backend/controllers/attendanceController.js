@@ -209,7 +209,7 @@ const getAttendance = asyncHandler(async (req, res) => {
   // Month view is bounded by employees × days in month, not user input — cap high
   // enough that a full company's month never gets silently truncated.
   const { page, limit, skip } = safePagination(req.query, 50, 5000);
-  const { month, year, employeeId, department } = req.query;
+  const { month, year, employeeId, department, date } = req.query;
 
   if (req.user.role === "employee") {
     let selfEmp = await Employee.findOne({ user: req.user._id }).select("_id");
@@ -271,7 +271,12 @@ const getAttendance = asyncHandler(async (req, res) => {
     filter.employee = { $in: deptEmployees.map((e) => e._id) };
   }
 
-  if (month && year) {
+  if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    // One calendar day (what the HR screen asks for at 1,000+ staff). Rows are stored at local or UTC midnight of
+    // that day, so a +-12h window around 00:00Z catches both and never the neighbouring days.
+    const mid = new Date(date + "T00:00:00.000Z").getTime();
+    filter.date = { $gte: new Date(mid - 12 * 3600000), $lt: new Date(mid + 12 * 3600000) };
+  } else if (month && year) {
     const m = parseInt(month),
       y = parseInt(year);
     if (!isNaN(m) && !isNaN(y)) {
@@ -279,16 +284,19 @@ const getAttendance = asyncHandler(async (req, res) => {
     }
   }
 
-  const total = await Attendance.countDocuments(filter);
-  const records = await Attendance.find(filter)
-    .populate({
-      path: "employee",
-      select: "firstName lastName employeeId designation department avatar",
-      populate: { path: "department", select: "name" },
-    })
-    .sort({ date: -1 })
-    .skip(skip)
-    .limit(limit);
+  const [total, records] = await Promise.all([
+    Attendance.countDocuments(filter),
+    Attendance.find(filter)
+      .populate({
+        path: "employee",
+        select: "firstName lastName employeeId designation department avatar",
+        populate: { path: "department", select: "name" },
+      })
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+  ]);
 
   res.json({
     success: true,
@@ -297,6 +305,29 @@ const getAttendance = asyncHandler(async (req, res) => {
     page,
     pages: Math.ceil(total / limit),
   });
+});
+
+// Per-day status counts for a month in one aggregation: feeds the date strip without shipping every row.
+const getDailySummary = asyncHandler(async (req, res) => {
+  const m = parseInt(req.query.month),
+    y = parseInt(req.query.year);
+  if (isNaN(m) || isNaN(y)) {
+    res.status(400);
+    throw new Error("Valid month and year are required");
+  }
+  const ids = (await Employee.find({ company: req.user.company }).select("_id").lean()).map((e) => e._id);
+  const rows = await Attendance.aggregate([
+    {
+      $match: {
+        employee: { $in: ids },
+        date: { $gte: new Date(Date.UTC(y, m - 1, 1) - 12 * 3600000), $lt: new Date(Date.UTC(y, m, 1) - 12 * 3600000) },
+      },
+    },
+    { $group: { _id: { d: { $dateToString: { format: "%Y-%m-%d", date: "$date", timezone: "+05:30" } }, s: "$status" }, n: { $sum: 1 } } },
+  ]);
+  const days = {};
+  for (const r of rows) (days[r._id.d] ||= {})[r._id.s] = r.n;
+  res.json({ success: true, data: days });
 });
 
 const markAttendance = asyncHandler(async (req, res) => {
@@ -783,5 +814,6 @@ module.exports = {
   updateAttendance,
   bulkMarkAttendance,
   getMonthSummary,
+  getDailySummary,
   handleLateAllowance,
 };

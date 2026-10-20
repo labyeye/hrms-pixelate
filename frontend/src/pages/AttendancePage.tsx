@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
@@ -147,6 +147,9 @@ export default function AttendancePage() {
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
+  // status counts per calendar day of the month (one aggregation) - feeds the date strip without loading every row
+  const [daily, setDaily] = useState<Record<string, Record<string, number>>>({});
+  const reqId = useRef(0);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [markModal, setMarkModal] = useState(false);
@@ -182,21 +185,28 @@ export default function AttendancePage() {
     lateAllowed: number;
   } | null>(null);
 
+  // HR/admin screens load ONE day at a time (2,000 staff x 26 days would be 50k rows); employees load their own month.
+  const todayStr = new Date().toISOString().split("T")[0];
   const load = useCallback(async () => {
+    const my = ++reqId.current;
     setLoading(true);
     try {
-      const attRes = await attendanceAPI.getAll({
-        month: String(month),
-        year: String(year),
-        limit: "5000",
-      });
+      const attRes = await attendanceAPI.getAll(
+        isEmployee
+          ? { month: String(month), year: String(year), limit: "5000" }
+          : { date: selectedDate || todayStr, limit: "5000" },
+      );
+      if (my !== reqId.current) return; // a newer request superseded this one
       if (attRes.success) setRecords(attRes.data);
       if (!isEmployee) {
-        const empRes = await employeeAPI.getAll({
-          status: "active",
-          limit: "5000",
-        });
-        if (empRes.success) setEmployees(empRes.data);
+        const [dailyRes, empRes] = await Promise.all([
+          attendanceAPI.getDailySummary({ month: String(month), year: String(year) }).catch(() => null),
+          employees.length
+            ? Promise.resolve(null)
+            : employeeAPI.getAll({ status: "active", limit: "5000" }),
+        ]);
+        if (dailyRes?.success) setDaily(dailyRes.data);
+        if (empRes?.success) setEmployees(empRes.data);
       } else {
         attendanceSettingsAPI
           .getMyBalance()
@@ -210,8 +220,9 @@ export default function AttendancePage() {
           .catch(() => {});
       }
     } catch {}
-    setLoading(false);
-  }, [month, year, isEmployee]);
+    if (my === reqId.current) setLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [month, year, isEmployee, selectedDate]);
 
   useEffect(() => {
     load();
@@ -348,16 +359,12 @@ export default function AttendancePage() {
   const handleMarkAbsent = async (empIds: string[], date: string) => {
     setMarkingAbsent(true);
     try {
-      await Promise.all(
-        empIds.map((empId) =>
-          attendanceAPI.mark({
-            employee: empId,
-            date,
-            status: "absent",
-            verifyMode: "manual",
-          }),
-        ),
-      );
+      for (let i = 0; i < empIds.length; i += 500) {
+        await attendanceAPI.bulkMark({
+          date,
+          records: empIds.slice(i, i + 500).map((employee) => ({ employee, status: "absent" })),
+        });
+      }
       load();
     } catch (err: any) {
       toast({
@@ -395,7 +402,16 @@ export default function AttendancePage() {
     } else {
       setWindowStart(1);
     }
-    setSelectedDate(null);
+    if (isEmployee) setSelectedDate(null);
+    else {
+      const t = new Date();
+      setSelectedDate(
+        t.getFullYear() === year && t.getMonth() + 1 === month
+          ? todayStr
+          : `${year}-${String(month).padStart(2, "0")}-01`,
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [month, year]);
 
   // As many days as fit the strip's width (~120px each)
@@ -405,10 +421,9 @@ export default function AttendancePage() {
     const date = new Date(year, month - 1, day);
     const iso = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const dayRecords = records.filter((r) => toLocalDateStr(r.date) === iso);
-    const presentCount = dayRecords.filter((r) =>
-      ["present", "late", "half_day"].includes(r.status),
-    ).length;
-    const absentCount = dayRecords.filter((r) => r.status === "absent").length;
+    const dc = daily[iso] || {};
+    const presentCount = (dc.present || 0) + (dc.late || 0) + (dc.half_day || 0);
+    const absentCount = dc.absent || 0;
     return { day, date, iso, dayRecords, presentCount, absentCount };
   }).filter(Boolean) as {
     day: number;

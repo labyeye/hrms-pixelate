@@ -16,7 +16,7 @@ const PAYROLL_STATUS = ["processed", "paid", "cancelled"];
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000; // UTC+5:30
 
 const getPayrolls = asyncHandler(async (req, res) => {
-  const { page, limit, skip } = safePagination(req.query);
+  const { page, limit, skip } = safePagination(req.query, 50, 5000);
   const { month, year, employeeId, status } = req.query;
 
   const filter = { company: req.user.company };

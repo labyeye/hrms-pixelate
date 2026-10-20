@@ -321,7 +321,7 @@ export default function AttendanceSettingsPage() {
     try {
       const [settingsRes, empRes] = await Promise.all([
         attendanceSettingsAPI.get(),
-        employeeAPI.getAll({ status: "active", limit: "500" }),
+        employeeAPI.getAll({ status: "active", limit: "5000" }),
       ]);
       if (settingsRes.data)
         setSettings({ ...DEFAULT_SETTINGS, ...settingsRes.data });

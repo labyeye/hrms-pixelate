@@ -48,6 +48,12 @@ const getSubscription = asyncHandler(async (req, res) => {
 // Cancels auto-renew: the subscription stays active (and billed) until
 // renewalDate/trialEndDate, then lapses instead of charging again.
 const cancelSubscription = asyncHandler(async (req, res) => {
+  // Plans are managed by Pixelate Nest from the CRM; customers cannot cancel on their own.
+  return res.status(403).json({
+    success: false,
+    message: "Please contact Pixelate Nest to change or cancel your plan.",
+  });
+  // eslint-disable-next-line no-unreachable
   const company = await Company.findOne({ createdBy: req.user._id });
   if (!company)
     return res

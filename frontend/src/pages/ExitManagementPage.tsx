@@ -124,7 +124,7 @@ export default function ExitManagementPage() {
   useEffect(() => {
     if (isHR) {
       employeeAPI
-        .getAll({ limit: "200" })
+        .getAll({ limit: "5000" })
         .then((r) => setEmployees(r.data || []))
         .catch(() => {});
     }

@@ -93,7 +93,7 @@ const LEAVE_TYPES = [
 const LEAVE_STATUS = ["pending", "approved", "rejected", "cancelled"];
 
 const getLeaves = asyncHandler(async (req, res) => {
-  const { page, limit, skip } = safePagination(req.query);
+  const { page, limit, skip } = safePagination(req.query, 50, 5000);
   const { status, employeeId, leaveType, year, department } = req.query;
 
   if (req.user.role === "employee") {

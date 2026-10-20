@@ -9,10 +9,12 @@ const {
   deleteCrmOffer,
   getCrmAttendance,
   updateCrmSubscription,
+  createCrmCompany,
 } = require("../controllers/crmController");
 
 router.get("/invoices", getCrmInvoices);
 router.get("/attendance", getCrmAttendance);
+router.post("/companies", createCrmCompany);
 router.patch("/companies/:companyId/subscription", updateCrmSubscription);
 
 router.get("/offers", getCrmOffers);

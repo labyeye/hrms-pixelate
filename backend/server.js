@@ -25,7 +25,8 @@ const compression = require("compression");
 connectDB();
 
 const { startAttendanceAutoMarkJob } = require("./jobs/attendanceAutoMark");
-startAttendanceAutoMarkJob();
+// Under PM2 cluster mode every worker runs this file; only worker 0 may own the hourly cron.
+if (!process.env.NODE_APP_INSTANCE || process.env.NODE_APP_INSTANCE === "0") startAttendanceAutoMarkJob();
 
 const app = express();
 
@@ -104,7 +105,8 @@ const authRateLimit = rateLimit({
   },
 });
 
-const apiRateLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 5000 });
+// Per IP. A 2,000-person site behind one Wi-Fi NAT shares one IP, so large deployments raise this via API_RATE_MAX.
+const apiRateLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: Number(process.env.API_RATE_MAX) || 5000 });
 
 app.use("/api/app-version", require("./routes/appVersionRoutes"));
 app.use("/api/whatsapp-webhook", require("./routes/whatsappWebhookRoutes"));

@@ -62,5 +62,7 @@ const attendanceSchema = new mongoose.Schema(
 );
 
 attendanceSchema.index({ employee: 1, date: 1 }, { unique: true });
+// Covers the dashboard / summary aggregations (employee set + date range + status) from the index alone.
+attendanceSchema.index({ employee: 1, date: 1, status: 1 });
 
 module.exports = mongoose.model("Attendance", attendanceSchema);
