@@ -30,6 +30,7 @@ import {
   X,
 } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
+import AppHeader from '../components/common/AppHeader';
 import {
   dashboardAPI,
   localNotificationsAPI,
@@ -184,41 +185,16 @@ function AdminDashboard({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
-        <View style={styles.headerAvatarWrap}>
-          {user?.avatar ? (
-            <Image source={{ uri: user.avatar }} style={styles.headerAvatar} />
-          ) : (
-            <View style={[styles.headerAvatar, styles.headerAvatarFallback]}>
-              <Text style={styles.headerAvatarText}>
-                {(user?.name || 'U')[0].toUpperCase()}
-              </Text>
-            </View>
-          )}
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.greet}>{greet()},</Text>
-          <Text style={styles.name}>{user?.name || 'User'}</Text>
-          {user?.company?.name && (
-            <Text style={styles.company}>{user.company.name}</Text>
-          )}
-        </View>
-        <TouchableOpacity
-          onPress={() =>
-            navigation.navigate('More', { screen: 'Notifications' })
-          }
-          style={styles.bellBtn}
-        >
-          <Bell size={25} color={C.black} />
-          {unreadCount > 0 && (
-            <View style={styles.bellBadge}>
-              <Text style={styles.bellBadgeText}>
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
+      <AppHeader
+        name={user?.name}
+        avatar={user?.avatar}
+        title="Dashboard"
+        unread={unreadCount}
+        onMenu={() => navigation.navigate('More')}
+        onSearch={() => navigation.navigate('Employees')}
+        onBell={() => navigation.navigate('More', { screen: 'Notifications' })}
+        onAvatar={() => navigation.navigate('More', { screen: 'Profile' })}
+      />
 
       {loading ? (
         <View style={styles.loaderWrap}>
@@ -674,46 +650,16 @@ function EmployeeDashboard({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerAvatarWrap}>
-          {avatarUri ? (
-            <Image source={{ uri: avatarUri }} style={styles.headerAvatar} />
-          ) : (
-            <View style={[styles.headerAvatar, styles.headerAvatarFallback]}>
-              <Text style={styles.headerAvatarText}>
-                {(user?.name || 'U')[0].toUpperCase()}
-              </Text>
-            </View>
-          )}
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.greet}>{greet()},</Text>
-          <Text style={styles.name}>{user?.name || 'User'}</Text>
-          {empProfile?.designation || empProfile?.department?.name ? (
-            <Text style={styles.company}>
-              {[empProfile?.designation, empProfile?.department?.name]
-                .filter(Boolean)
-                .join(' · ')}
-            </Text>
-          ) : null}
-        </View>
-        <TouchableOpacity
-          onPress={() =>
-            navigation.navigate('More', { screen: 'Notifications' })
-          }
-          style={styles.bellBtn}
-        >
-          <Bell size={25} color={C.black} />
-          {unreadCount > 0 && (
-            <View style={styles.bellBadge}>
-              <Text style={styles.bellBadgeText}>
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
+      <AppHeader
+        name={user?.name}
+        avatar={avatarUri}
+        title="Dashboard"
+        unread={unreadCount}
+        onMenu={() => navigation.navigate('More')}
+        onSearch={() => navigation.navigate('More')}
+        onBell={() => navigation.navigate('More', { screen: 'Notifications' })}
+        onAvatar={() => navigation.navigate('More', { screen: 'Profile' })}
+      />
 
       {loading ? (
         <View style={styles.loaderWrap}>
