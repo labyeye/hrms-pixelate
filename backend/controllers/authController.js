@@ -6,6 +6,8 @@ const User = require("../models/User");
 const Employee = require("../models/Employee");
 const Subscription = require("../models/Subscription");
 const bcrypt = require("bcryptjs");
+const Session = require("../models/Session");
+const { startSession, signInPayload } = require("../utils/signIn");
 const generateToken = require("../utils/generateToken");
 const { generatePendingToken, verifyPendingToken } = generateToken;
 const { validateBody } = require("../middleware/validate");
@@ -56,10 +58,12 @@ async function checkOtp(user, otp, { hashField, expireField, triesField }) {
 
 // Equalises timing between "no such user" and "wrong password".
 const DUMMY_HASH = bcrypt.hashSync("not-a-real-password", 12);
-// 3 wrong passwords are allowed; the 4th wrong one locks the account for 30 min.
-// A WhatsApp OTP login or reset (verifyOtp / resetPasswordWithOtp) lifts the lock.
+// 3 wrong passwords are allowed; the 4th wrong one blocks the account for 10 min.
+// Signing in with a WhatsApp/email OTP, or any password reset, lifts the block.
 const MAX_LOGIN_FAILS = 4;
-const LOGIN_LOCK_MS = 30 * 60 * 1000;
+const LOGIN_LOCK_MS = 10 * 60 * 1000;
+const LOCKED_MSG =
+  "Too many wrong passwords. Your account is blocked for 10 minutes. Recover access now with an OTP on your phone (WhatsApp) or email.";
 // 10-digit national number, which is what sendPhoneOtp expects (it adds 91).
 const to10 = (phone) =>
   String(phone).replace(/\s/g, "").replace(/^\+91/, "").slice(-10);
@@ -170,7 +174,7 @@ const login = [
 
     if (user?.loginLockUntil && user.loginLockUntil > new Date()) {
       res.status(429);
-      throw new Error("Account locked for 30 minutes after too many wrong passwords. Unlock it now with a WhatsApp OTP.");
+      throw new Error(LOCKED_MSG);
     }
 
     const passwordOk = user ? await user.matchPassword(password) : (await bcrypt.compare(String(password), DUMMY_HASH), false);
@@ -182,7 +186,7 @@ const login = [
           user.loginFailedAttempts = 0;
           await user.save();
           res.status(429);
-          throw new Error("Account locked for 30 minutes after too many wrong passwords. Unlock it now with a WhatsApp OTP.");
+          throw new Error(LOCKED_MSG);
         }
         await user.save();
       }
@@ -246,21 +250,8 @@ const login = [
       });
     }
 
-    res.json({
-      success: true,
-      data: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar,
-        phone: user.phone,
-        status: user.status,
-        department: user.department,
-        company: user.company,
-        token: generateToken(user._id, user.tokenVersion),
-      },
-    });
+    const sid = await startSession(req, user);
+    res.json({ success: true, data: signInPayload(user, sid) });
   }),
 ];
 
@@ -340,12 +331,18 @@ const updateProfile = asyncHandler(async (req, res) => {
 
   const rotated = user.isModified("password");
   await user.save();
+  if (rotated)
+    await Session.deleteMany(
+      req.sessionId
+        ? { userId: user._id, _id: { $ne: req.sessionId } }
+        : { userId: user._id },
+    );
   const updated = user.toObject();
   delete updated.password;
   res.json({
     success: true,
     data: updated,
-    ...(rotated && { token: generateToken(user._id, user.tokenVersion) }),
+    ...(rotated && { token: generateToken(user._id, user.tokenVersion, req.sessionId) }),
   });
 });
 
@@ -413,7 +410,10 @@ const resetPassword = asyncHandler(async (req, res) => {
   user.password = password;
   user.resetPasswordToken = undefined;
   user.resetPasswordExpire = undefined;
+  user.loginFailedAttempts = 0;
+  user.loginLockUntil = undefined;
   await user.save();
+  await Session.deleteMany({ userId: user._id });
 
   res.json({
     success: true,
@@ -544,21 +544,8 @@ const verify2FA = asyncHandler(async (req, res) => {
   await checkTwoFactorCode(user, token, res);
   await user.save();
 
-  res.json({
-    success: true,
-    data: {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      avatar: user.avatar,
-      phone: user.phone,
-      status: user.status,
-      department: user.department,
-      company: user.company,
-      token: generateToken(user._id, user.tokenVersion),
-    },
-  });
+  const sid = await startSession(req, user);
+  res.json({ success: true, data: signInPayload(user, sid) });
 });
 
 // Phone OTP — step 1: send OTP to WhatsApp
@@ -672,21 +659,8 @@ const verifyOtp = asyncHandler(async (req, res) => {
   user.lastLogin = new Date();
   await user.save();
 
-  res.json({
-    success: true,
-    data: {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      avatar: user.avatar,
-      phone: user.phone,
-      status: user.status,
-      department: user.department,
-      company: user.company,
-      token: generateToken(user._id, user.tokenVersion),
-    },
-  });
+  const sid = await startSession(req, user);
+  res.json({ success: true, data: signInPayload(user, sid) });
 });
 
 // ── Password reset via WhatsApp code / authenticator app ──────────────────
@@ -704,10 +678,14 @@ const forgotPasswordMethods = asyncHandler(async (req, res) => {
     throw new Error("Please provide a valid email address");
   }
 
-  const user = await User.findOne({ email: email.toLowerCase().trim() });
+  const user = await User.findOne({ email: email.toLowerCase().trim() }).select(
+    "+backupCodes +passkeys",
+  );
   const methods = ["email"];
   if (user?.phoneVerified) methods.push("whatsapp");
   if (user?.twoFactorEnabled) methods.push("totp");
+  if (user?.backupCodes?.some((c) => !c.usedAt)) methods.push("backup");
+  if (user?.passkeys?.length) methods.push("passkey");
 
   res.json({ success: true, data: { methods } });
 });
@@ -763,6 +741,7 @@ const resetPasswordWithOtp = asyncHandler(async (req, res) => {
   user.loginFailedAttempts = 0;
   user.loginLockUntil = undefined;
   await user.save();
+  await Session.deleteMany({ userId: user._id });
 
   res.json({
     success: true,
@@ -792,7 +771,10 @@ const resetPasswordWithTotp = asyncHandler(async (req, res) => {
 
   await checkTwoFactorCode(user, token, res);
   user.password = password;
+  user.loginFailedAttempts = 0;
+  user.loginLockUntil = undefined;
   await user.save();
+  await Session.deleteMany({ userId: user._id });
 
   res.json({
     success: true,
@@ -837,6 +819,13 @@ const verifyPhoneVerifyOtp = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  // shared with securityController / passkeyController
+  generateOtp,
+  hashOtp,
+  checkOtp,
+  isEmail,
+  STRONG_PASSWORD_RE,
+  STRONG_PASSWORD_MSG,
   register,
   login,
   getMe,

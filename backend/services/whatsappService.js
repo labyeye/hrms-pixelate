@@ -705,40 +705,60 @@ async function sendLoanAppliedHR(
 async function sendPhoneOtp(phone, { otp }) {
   const accessToken = process.env.META_WA_TOKEN;
   const phoneNumberId = process.env.META_WA_PHONE_ID;
-  console.log(
-    `[WA-OTP] token=${accessToken ? accessToken.slice(0, 8) + "..." : "MISSING"} phoneId=${phoneNumberId || "MISSING"} to=${phone}`,
-  );
+  const templateName = process.env.WHATSAPP_OTP_TEMPLATE_NAME || "neshr_otp";
+  const languageCode = process.env.WHATSAPP_OTP_TEMPLATE_LANG || "en";
+  // Authentication templates normally have a "Copy code" button that needs the OTP again.
+  const hasButton = process.env.WHATSAPP_OTP_HAS_BUTTON !== "false";
+  const masked = (p) => {
+    const d = String(p || "").replace(/\D/g, "");
+    return d.length > 6 ? `${d.slice(0, 4)}****${d.slice(-4)}` : "****";
+  };
+
   if (!accessToken || !phoneNumberId) {
-    console.warn("[WA-DEBUG] ABORT: META_WA_TOKEN or META_WA_PHONE_ID not set");
-    return;
+    console.error("[WA-OTP] Not configured — cannot send OTP", {
+      hasToken: !!accessToken,
+      hasPhoneNumberId: !!phoneNumberId,
+      hint: "set META_WA_TOKEN and META_WA_PHONE_ID",
+    });
+    throw new Error("WhatsApp is not configured on the server");
   }
 
   let toNumber = phone.replace(/^\+/, "").replace(/\s/g, "");
   if (/^[6-9]\d{9}$/.test(toNumber)) toNumber = "91" + toNumber;
 
-  // Authentication templates require body + button components with the OTP
+  console.log("[WA-OTP] Sending OTP", {
+    to: masked(toNumber),
+    template: templateName,
+    lang: languageCode,
+    button: hasButton,
+    phoneNumberId,
+  });
+
+  const components = [
+    { type: "body", parameters: [{ type: "text", text: String(otp) }] },
+  ];
+  if (hasButton) {
+    components.push({
+      type: "button",
+      sub_type: "url",
+      index: "0",
+      parameters: [{ type: "text", text: String(otp) }],
+    });
+  }
   const body = JSON.stringify({
     messaging_product: "whatsapp",
     to: toNumber,
     type: "template",
     template: {
-      name: "neshr_otp",
-      language: { code: "en" },
-      components: [
-        {
-          type: "body",
-          parameters: [{ type: "text", text: String(otp) }],
-        },
-        {
-          type: "button",
-          sub_type: "url",
-          index: "0",
-          parameters: [{ type: "text", text: String(otp) }],
-        },
-      ],
+      name: templateName,
+      language: { code: languageCode },
+      components,
     },
   });
 
+  const startedAt = Date.now();
+  let status;
+  let raw;
   try {
     await new Promise((resolve, reject) => {
       const req = require("https").request(
@@ -756,12 +776,9 @@ async function sendPhoneOtp(phone, { otp }) {
           let data = "";
           res.on("data", (chunk) => (data += chunk));
           res.on("end", () => {
-            console.log(
-              `[WA-OTP] Meta API status=${res.statusCode} body=${data}`,
-            );
-            if (res.statusCode >= 200 && res.statusCode < 300)
-              resolve(JSON.parse(data));
-            else reject(new Error(`Meta API ${res.statusCode}: ${data}`));
+            status = res.statusCode;
+            raw = data;
+            resolve();
           });
         },
       );
@@ -769,11 +786,49 @@ async function sendPhoneOtp(phone, { otp }) {
       req.write(body);
       req.end();
     });
-    console.log(`[WA-DEBUG] ✅ OTP sent to ${phone}`);
   } catch (err) {
-    console.error(`[WA-DEBUG] ❌ OTP FAILED to ${phone}:`, err.message);
+    console.error("[WA-OTP] Network error calling Meta API", {
+      to: masked(toNumber),
+      message: err.message,
+    });
     throw err;
   }
+
+  let data = {};
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    /* non-JSON body */
+  }
+  const ms = Date.now() - startedAt;
+  if (status < 200 || status >= 300) {
+    const e = data.error || {};
+    console.error("[WA-OTP] Meta rejected the OTP message", {
+      to: masked(toNumber),
+      httpStatus: status,
+      code: e.code,
+      subcode: e.error_subcode,
+      message: e.message,
+      details: e.error_data?.details,
+      ms,
+      hint:
+        e.code === 190
+          ? "access token invalid/expired — generate a new system-user token"
+          : e.code === 132001
+            ? "template not found — check WHATSAPP_OTP_TEMPLATE_NAME and WHATSAPP_OTP_TEMPLATE_LANG"
+            : e.code === 132000 || e.code === 132012
+              ? "template parameters don't match — check WHATSAPP_OTP_HAS_BUTTON"
+              : e.code === 131030
+                ? "recipient not allowed (test mode: add the number to the allowed list)"
+                : undefined,
+    });
+    throw new Error(e.message || `Meta API ${status}`);
+  }
+  console.log("[WA-OTP] OTP accepted by Meta", {
+    to: masked(toNumber),
+    messageId: data.messages?.[0]?.id,
+    ms,
+  });
 }
 
 // ─── NestHR Billing (no per-company gate) ────────────────────────────────────

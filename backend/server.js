@@ -123,6 +123,27 @@ app.use(
 );
 app.use("/api/company", require("./routes/companyRoutes"));
 
+{
+  console.log("[Startup] WhatsApp OTP config", {
+    token: !!process.env.META_WA_TOKEN,
+    phoneNumberId: !!process.env.META_WA_PHONE_ID,
+    template: process.env.WHATSAPP_OTP_TEMPLATE_NAME || "neshr_otp",
+    lang: process.env.WHATSAPP_OTP_TEMPLATE_LANG || "en",
+  });
+  console.log("[Startup] Email OTP config", {
+    smtpHost: !!process.env.SMTP_HOST,
+    smtpUser: !!process.env.SMTP_USER,
+    smtpPass: !!process.env.SMTP_PASS,
+  });
+}
+
+// Lets iOS trust this domain for passkeys (webcredentials) — see PASSKEY_RP_ID.
+app.get("/.well-known/apple-app-site-association", (req, res) =>
+  res.json({
+    webcredentials: { apps: ["K8B798T8BB.org.reactjs.native.example.NestHR"] },
+  }),
+);
+
 app.use("/api/auth", authRateLimit, require("./routes/authRoutes"));
 app.use(apiRateLimit);
 app.use("/api/dashboard", require("./routes/dashboardRoutes"));

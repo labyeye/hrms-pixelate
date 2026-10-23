@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
+  StatusBar,
   View,
   Text,
   TextInput,
@@ -11,7 +13,9 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import LottieView from 'lottie-react-native';
+import { Passkey } from 'react-native-passkey';
 import {
   Mail,
   Lock,
@@ -20,15 +24,19 @@ import {
   LogIn,
   Smartphone,
   ArrowRight,
-  Fingerprint,
+  Phone,
+  Key,
 } from 'lucide-react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { authAPI } from '../../api/api';
 import { C } from '../../theme';
-import AuthBanner from '../../components/AuthBanner';
+
+const loginAnim = require('../../assets/lottie/login.json');
+const otpAnim = require('../../assets/lottie/otp.json');
 
 export default function LoginScreen({ navigation }: any) {
   const { login, loginWithToken } = useAuth();
+  const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -43,6 +51,31 @@ export default function LoginScreen({ navigation }: any) {
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
+  const [otpVia, setOtpVia] = useState<'whatsapp' | 'email'>('whatsapp');
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
+  const [blocked, setBlocked] = useState(false);
+
+  const entrance = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    entrance.setValue(0);
+    Animated.timing(entrance, {
+      toValue: 1,
+      duration: 650,
+      useNativeDriver: true,
+    }).start();
+  }, [mode, pending2FA, entrance]);
+
+  const slideUp = (distance = 24) => ({
+    opacity: entrance,
+    transform: [
+      {
+        translateY: entrance.interpolate({
+          inputRange: [0, 1],
+          outputRange: [distance, 0],
+        }),
+      },
+    ],
+  });
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -56,8 +89,10 @@ export default function LoginScreen({ navigation }: any) {
       setPending2FA(result.pendingToken || ''); // pending-2FA token from the password step
       return;
     }
-    if (!result.success)
+    if (!result.success) {
+      setBlocked(/blocked/i.test(result.error || ''));
       Alert.alert('Login Failed', result.error || 'Invalid credentials');
+    }
   };
 
   const handleVerify2FA = async () => {
@@ -74,13 +109,18 @@ export default function LoginScreen({ navigation }: any) {
   };
 
   const handleSendOtp = async () => {
-    if (!phone.trim()) {
-      Alert.alert('Validation', 'Phone number is required');
+    const viaEmail = otpVia === 'email';
+    if (viaEmail ? !email.trim() : !phone.trim()) {
+      Alert.alert(
+        'Validation',
+        viaEmail ? 'Email is required' : 'Phone number is required',
+      );
       return;
     }
     setOtpLoading(true);
     try {
-      await authAPI.sendPhoneOtp(phone.trim());
+      if (viaEmail) await authAPI.loginSendEmailOtp(email.trim().toLowerCase());
+      else await authAPI.sendPhoneOtp(phone.trim());
       setOtpSent(true);
     } catch (err: any) {
       Alert.alert(
@@ -94,12 +134,18 @@ export default function LoginScreen({ navigation }: any) {
 
   const handleVerifyOtp = async () => {
     if (otp.trim().length !== 6) {
-      Alert.alert('Validation', 'Enter the 6-digit OTP from WhatsApp');
+      Alert.alert('Validation', 'Enter the 6-digit OTP');
       return;
     }
     setOtpLoading(true);
     try {
-      const res = await authAPI.verifyPhoneOtp(phone.trim(), otp.trim());
+      const res =
+        otpVia === 'email'
+          ? await authAPI.loginVerifyEmailOtp(
+              email.trim().toLowerCase(),
+              otp.trim(),
+            )
+          : await authAPI.verifyPhoneOtp(phone.trim(), otp.trim());
       const { token, ...userData } = res.data;
       await loginWithToken(userData, token);
     } catch (err: any) {
@@ -110,102 +156,156 @@ export default function LoginScreen({ navigation }: any) {
   };
 
   const handleBiometricLogin = async () => {
+    if (!Passkey.isSupported()) {
+      Alert.alert(
+        'Not supported',
+        'Passkeys are not supported on this device.',
+      );
+      return;
+    }
+    setPasskeyLoading(true);
     try {
-      Alert.alert(
-        'Passkey / Biometric',
-        'Biometric authentication requires device key registration. Ensure face/fingerprint unlock is enabled on your device.',
-      );
+      const { data: opts }: any = await authAPI.passkeyLoginOptions();
+      const result = await Passkey.get({
+        rpId: opts.rpId,
+        challenge: opts.challenge,
+        allowCredentials: opts.allowCredentials,
+        userVerification: opts.userVerification,
+        timeout: opts.timeout,
+      });
+      const res = await authAPI.biometricLogin({
+        challengeToken: opts.challengeToken,
+        id: result.id,
+        rawId: result.rawId,
+        type: 'public-key',
+        response: {
+          clientDataJSON: result.response.clientDataJSON,
+          authenticatorData: result.response.authenticatorData,
+          signature: result.response.signature,
+          userHandle: result.response.userHandle ?? null,
+        },
+        clientExtensionResults: {},
+      });
+      const { token, ...userData } = res.data;
+      await loginWithToken(userData, token);
     } catch (err: any) {
-      Alert.alert(
-        'Biometric Error',
-        err.message || 'Biometric authentication failed.',
-      );
+      const cancelled =
+        err?.error === 'UserCancelled' || err?.name === 'NotAllowedError';
+      if (!cancelled)
+        Alert.alert(
+          'Passkey sign-in failed',
+          err?.message || 'Try another sign-in method.',
+        );
+    } finally {
+      setPasskeyLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
-      <AuthBanner />
-      <KeyboardAvoidingView
-        style={styles.body}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <KeyboardAvoidingView
+      style={styles.screen}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <ScrollView
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingTop: insets.top + 32, paddingBottom: insets.bottom + 24 },
+        ]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-        >
-          <>
-            <Text style={styles.cardTitle}>
-              {pending2FA !== null
-                ? 'Two-Factor Authentication'
-                : mode === 'phone'
-                  ? 'Login with phone'
-                  : 'Login'}
-            </Text>
-            <Text style={styles.cardSub}>
-              {pending2FA !== null
-                ? 'Enter the 6-digit code from your authenticator app, or a backup code.'
-                : mode === 'phone'
-                  ? otpSent
-                    ? 'Enter the OTP sent to you on WhatsApp.'
-                    : "We'll send a one-time code to your phone on WhatsApp."
-                  : 'Sign in with your email and password to continue.'}
-            </Text>
-
-            {pending2FA !== null ? (
-              /* ── 2FA code step ────────────────────────────────── */
-              <>
-                <View style={styles.field}>
-                  <Text style={styles.label}>Authentication Code</Text>
-                  <TextInput
-                    style={[styles.inputRow, styles.otpInput]}
-                    value={tfaCode}
-                    onChangeText={setTfaCode}
-                    placeholder="000000"
-                    placeholderTextColor={C.textLight}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    maxLength={8}
-                    autoFocus
-                  />
-                </View>
-                <TouchableOpacity
-                  style={styles.btnPrimary}
-                  onPress={handleVerify2FA}
-                  disabled={loading || tfaCode.length < 6}
-                >
-                  {loading ? (
-                    <ActivityIndicator color={C.white} />
-                  ) : (
-                    <>
-                      <ArrowRight size={16} color={C.white} />
-                      <Text style={styles.btnPrimaryText}>Verify Code</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.forgotBtn}
-                  onPress={() => {
-                    setPending2FA(null);
-                    setTfaCode('');
-                  }}
-                >
-                  <Text style={styles.forgotText}>← Back to login</Text>
-                </TouchableOpacity>
-              </>
-            ) : mode === 'phone' ? (
-              /* ── Phone OTP flow ───────────────────────────────── */
-              <>
-                {!otpSent ? (
+        <>
+          {pending2FA === null && (
+            <Animated.View style={slideUp(50)}>
+              <LottieView
+                key={mode}
+                source={mode === 'phone' ? otpAnim : loginAnim}
+                autoPlay
+                loop
+                style={mode === 'phone' ? styles.lottieOtp : styles.lottieLogin}
+              />
+            </Animated.View>
+          )}
+          <Text style={styles.cardTitle}>
+            {pending2FA !== null ? 'Two-Factor Authentication' : 'Login'}
+          </Text>
+          {pending2FA !== null ? (
+            /* ── 2FA code step ────────────────────────────────── */
+            <>
+              <View style={styles.field}>
+                <Text style={styles.label}>Authentication Code</Text>
+                <TextInput
+                  style={[styles.inputRow, styles.otpInput]}
+                  value={tfaCode}
+                  onChangeText={setTfaCode}
+                  placeholder="000000"
+                  placeholderTextColor={C.textLight}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  maxLength={8}
+                  autoFocus
+                />
+              </View>
+              <TouchableOpacity
+                style={styles.btnPrimary}
+                onPress={handleVerify2FA}
+                disabled={loading || tfaCode.length < 6}
+              >
+                {loading ? (
+                  <ActivityIndicator color={C.white} />
+                ) : (
                   <>
-                    <View style={styles.field}>
-                      <Text style={styles.label}>Phone Number</Text>
-                      <View style={styles.inputRow}>
+                    <ArrowRight size={16} color={C.white} />
+                    <Text style={styles.btnPrimaryText}>Verify Code</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.forgotBtn}
+                onPress={() => {
+                  setPending2FA(null);
+                  setTfaCode('');
+                }}
+              >
+                <Text style={styles.forgotText}>← Back to login</Text>
+              </TouchableOpacity>
+            </>
+          ) : mode === 'phone' ? (
+            /* ── Phone OTP flow ───────────────────────────────── */
+            <>
+              {!otpSent ? (
+                <>
+                  <View style={styles.field}>
+                    <Text style={styles.label}>
+                      {otpVia === 'email' ? 'Email Address' : 'Phone Number'}
+                    </Text>
+                    <View style={styles.inputRow}>
+                      {otpVia === 'email' ? (
+                        <Mail
+                          size={16}
+                          color={C.textMuted}
+                          style={styles.inputIcon}
+                        />
+                      ) : (
                         <Smartphone
                           size={16}
                           color={C.textMuted}
                           style={styles.inputIcon}
                         />
+                      )}
+                      {otpVia === 'email' ? (
+                        <TextInput
+                          style={styles.input}
+                          value={email}
+                          onChangeText={setEmail}
+                          placeholder="Enter Email Address"
+                          placeholderTextColor={C.textLight}
+                          keyboardType="email-address"
+                          autoCapitalize="none"
+                          autoComplete="email"
+                        />
+                      ) : (
                         <TextInput
                           style={styles.input}
                           value={phone}
@@ -215,240 +315,274 @@ export default function LoginScreen({ navigation }: any) {
                           keyboardType="phone-pad"
                           autoComplete="tel"
                         />
-                      </View>
-                    </View>
-
-                    <TouchableOpacity
-                      style={styles.btnPrimary}
-                      onPress={handleSendOtp}
-                      disabled={otpLoading || !phone.trim()}
-                    >
-                      {otpLoading ? (
-                        <ActivityIndicator color={C.white} />
-                      ) : (
-                        <>
-                          <ArrowRight size={16} color={C.white} />
-                          <Text style={styles.btnPrimaryText}>
-                            Send OTP on WhatsApp
-                          </Text>
-                        </>
                       )}
-                    </TouchableOpacity>
-                  </>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.btnPrimary}
+                    onPress={handleSendOtp}
+                    disabled={
+                      otpLoading ||
+                      (otpVia === 'email' ? !email.trim() : !phone.trim())
+                    }
+                  >
+                    {otpLoading ? (
+                      <ActivityIndicator color={C.white} />
+                    ) : (
+                      <>
+                        <ArrowRight size={16} color={C.white} />
+                        <Text style={styles.btnPrimaryText}>
+                          {otpVia === 'email'
+                            ? 'Send OTP to Email'
+                            : 'Send OTP on WhatsApp'}
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.forgotBtn}
+                    onPress={() =>
+                      setOtpVia(v => (v === 'email' ? 'whatsapp' : 'email'))
+                    }
+                  >
+                    <Text style={styles.forgotText}>
+                      {otpVia === 'email'
+                        ? 'Use WhatsApp OTP instead'
+                        : 'Use email OTP instead'}
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <View style={styles.field}>
+                    <Text style={styles.label}>
+                      {otpVia === 'email'
+                        ? 'Enter OTP (from email)'
+                        : 'Enter OTP (from WhatsApp)'}
+                    </Text>
+                    <TextInput
+                      style={[styles.inputRow, styles.otpInput]}
+                      value={otp}
+                      onChangeText={t =>
+                        setOtp(t.replace(/\D/g, '').slice(0, 6))
+                      }
+                      placeholder="000000"
+                      placeholderTextColor={C.textLight}
+                      keyboardType="number-pad"
+                      maxLength={6}
+                      autoFocus
+                    />
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.btnPrimary}
+                    onPress={handleVerifyOtp}
+                    disabled={otpLoading || otp.length < 6}
+                  >
+                    {otpLoading ? (
+                      <ActivityIndicator color={C.white} />
+                    ) : (
+                      <>
+                        <ArrowRight size={16} color={C.white} />
+                        <Text style={styles.btnPrimaryText}>Verify OTP</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.forgotBtn}
+                    onPress={() => {
+                      setOtpSent(false);
+                      setOtp('');
+                    }}
+                  >
+                    <Text style={styles.forgotText}>
+                      ← Change {otpVia === 'email' ? 'email' : 'number'} /
+                      Resend
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </>
+          ) : (
+            /* ── Email / Password flow ────────────────────────── */
+            <>
+              {/* Email */}
+              <Animated.View style={[styles.field, slideUp(30)]}>
+                <Text style={styles.label}>Email Address</Text>
+                <View style={styles.inputRow}>
+                  <Mail
+                    size={16}
+                    color={C.textMuted}
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.input}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="Enter Email Address"
+                    placeholderTextColor={C.textLight}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoComplete="email"
+                  />
+                </View>
+              </Animated.View>
+
+              {/* Password */}
+              <Animated.View style={[styles.field, slideUp(30)]}>
+                <Text style={styles.label}>Password</Text>
+                <View style={styles.inputRow}>
+                  <Lock
+                    size={16}
+                    color={C.textMuted}
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={[styles.input, { flex: 1 }]}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Enter Password"
+                    placeholderTextColor={C.textLight}
+                    secureTextEntry={!showPw}
+                    autoComplete="password"
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPw(p => !p)}
+                    style={styles.eyeBtn}
+                  >
+                    {showPw ? (
+                      <EyeOff size={16} color={C.textMuted} />
+                    ) : (
+                      <Eye size={16} color={C.textMuted} />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </Animated.View>
+
+              <TouchableOpacity
+                style={styles.btnPrimary}
+                onPress={handleLogin}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color={C.white} />
                 ) : (
                   <>
-                    <View style={styles.field}>
-                      <Text style={styles.label}>
-                        Enter OTP (from WhatsApp)
-                      </Text>
-                      <TextInput
-                        style={[styles.inputRow, styles.otpInput]}
-                        value={otp}
-                        onChangeText={t =>
-                          setOtp(t.replace(/\D/g, '').slice(0, 6))
-                        }
-                        placeholder="000000"
-                        placeholderTextColor={C.textLight}
-                        keyboardType="number-pad"
-                        maxLength={6}
-                        autoFocus
-                      />
-                    </View>
-
-                    <TouchableOpacity
-                      style={styles.btnPrimary}
-                      onPress={handleVerifyOtp}
-                      disabled={otpLoading || otp.length < 6}
-                    >
-                      {otpLoading ? (
-                        <ActivityIndicator color={C.white} />
-                      ) : (
-                        <>
-                          <ArrowRight size={16} color={C.white} />
-                          <Text style={styles.btnPrimaryText}>Verify OTP</Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.forgotBtn}
-                      onPress={() => {
-                        setOtpSent(false);
-                        setOtp('');
-                      }}
-                    >
-                      <Text style={styles.forgotText}>
-                        ← Change number / Resend
-                      </Text>
-                    </TouchableOpacity>
+                    <LogIn size={16} color={C.white} />
+                    <Text style={styles.btnPrimaryText}>Sign In</Text>
                   </>
                 )}
-              </>
-            ) : (
-              /* ── Email / Password flow ────────────────────────── */
-              <>
-                {/* Email */}
-                <View style={styles.field}>
-                  <Text style={styles.label}>Email Address</Text>
-                  <View style={styles.inputRow}>
-                    <Mail
-                      size={16}
-                      color={C.textMuted}
-                      style={styles.inputIcon}
-                    />
-                    <TextInput
-                      style={styles.input}
-                      value={email}
-                      onChangeText={setEmail}
-                      placeholder="admin@company.com"
-                      placeholderTextColor={C.textLight}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      autoComplete="email"
-                    />
-                  </View>
-                </View>
+              </TouchableOpacity>
 
-                {/* Password */}
-                <View style={styles.field}>
-                  <Text style={styles.label}>Password</Text>
-                  <View style={styles.inputRow}>
-                    <Lock
-                      size={16}
-                      color={C.textMuted}
-                      style={styles.inputIcon}
-                    />
-                    <TextInput
-                      style={[styles.input, { flex: 1 }]}
-                      value={password}
-                      onChangeText={setPassword}
-                      placeholder="••••••••"
-                      placeholderTextColor={C.textLight}
-                      secureTextEntry={!showPw}
-                      autoComplete="password"
-                    />
-                    <TouchableOpacity
-                      onPress={() => setShowPw(p => !p)}
-                      style={styles.eyeBtn}
-                    >
-                      {showPw ? (
-                        <EyeOff size={16} color={C.textMuted} />
-                      ) : (
-                        <Eye size={16} color={C.textMuted} />
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <TouchableOpacity
-                  style={styles.btnPrimary}
-                  onPress={handleLogin}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator color={C.white} />
-                  ) : (
-                    <>
-                      <LogIn size={16} color={C.white} />
-                      <Text style={styles.btnPrimaryText}>Sign In</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-
+              {blocked && (
                 <TouchableOpacity
                   style={styles.forgotBtn}
-                  onPress={() => navigation.navigate('ForgotPassword')}
-                >
-                  <Text style={styles.forgotText}>Forgot Password?</Text>
-                </TouchableOpacity>
-              </>
-            )}
-
-            {pending2FA === null && (
-              <>
-                <View style={styles.orRow}>
-                  <View style={styles.orLine} />
-                  <Text style={styles.orText}>Or login with</Text>
-                  <View style={styles.orLine} />
-                </View>
-
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'center',
-                    gap: 20,
+                  onPress={() => {
+                    setBlocked(false);
+                    setMode('phone');
                   }}
                 >
-                  <View style={{ alignItems: 'center' }}>
-                    <TouchableOpacity
-                      style={styles.altBtn}
-                      onPress={() => {
-                        if (mode === 'phone') {
-                          setMode('email');
-                          setOtpSent(false);
-                          setPhone('');
-                          setOtp('');
-                        } else {
-                          setMode('phone');
-                        }
-                      }}
-                      accessibilityRole="button"
-                      accessibilityLabel={
-                        mode === 'phone'
-                          ? 'Sign in with email'
-                          : 'Sign in with phone OTP'
-                      }
-                    >
-                      {mode === 'phone' ? (
-                        <Mail size={24} color={C.white} />
-                      ) : (
-                        <Smartphone size={24} color={C.white} />
-                      )}
-                    </TouchableOpacity>
-                    <Text style={styles.altLabel}>
-                      {mode === 'phone' ? 'Email' : 'Phone'}
-                    </Text>
-                  </View>
+                  <Text style={styles.forgotText}>Recover with an OTP →</Text>
+                </TouchableOpacity>
+              )}
 
-                  <View style={{ alignItems: 'center' }}>
-                    <TouchableOpacity
-                      style={[styles.altBtn, { backgroundColor: '#10B981' }]}
-                      onPress={handleBiometricLogin}
-                      accessibilityRole="button"
-                      accessibilityLabel="Sign in with Biometrics / Passkey"
-                    >
-                      <Fingerprint size={24} color={C.white} />
-                    </TouchableOpacity>
-                    <Text style={styles.altLabel}>Passkey</Text>
-                  </View>
+              <TouchableOpacity
+                style={styles.forgotBtn}
+                onPress={() => navigation.navigate('ForgotPassword')}
+              >
+                <Text style={styles.forgotText}>Forgot Password?</Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+          {pending2FA === null && (
+            <>
+              <View style={styles.orRow}>
+                <View style={styles.orLine} />
+                <Text style={styles.orText}>Or login with</Text>
+                <View style={styles.orLine} />
+              </View>
+
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  gap: 20,
+                }}
+              >
+                <View style={{ alignItems: 'center' }}>
+                  <TouchableOpacity
+                    style={styles.altBtn}
+                    onPress={() => {
+                      if (mode === 'phone') {
+                        setMode('email');
+                        setOtpVia('whatsapp');
+                        setOtpSent(false);
+                        setPhone('');
+                        setOtp('');
+                      } else {
+                        setMode('phone');
+                      }
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      mode === 'phone'
+                        ? 'Sign in with email'
+                        : 'Sign in with phone OTP'
+                    }
+                  >
+                    {mode === 'phone' ? (
+                      <Mail size={24} color={C.white} />
+                    ) : (
+                      <Phone size={24} color={C.white} />
+                    )}
+                  </TouchableOpacity>
+                  <Text style={styles.altLabel}>
+                    {mode === 'phone' ? 'Email' : 'Phone'}
+                  </Text>
                 </View>
-              </>
-            )}
-          </>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+
+                <View style={{ alignItems: 'center' }}>
+                  <TouchableOpacity
+                    style={[styles.altBtn, { backgroundColor: C.primary }]}
+                    onPress={handleBiometricLogin}
+                    disabled={passkeyLoading}
+                    accessibilityRole="button"
+                    accessibilityLabel="Sign in with Biometrics / Passkey"
+                  >
+                    {passkeyLoading ? (
+                      <ActivityIndicator color={C.white} />
+                    ) : (
+                      <Key size={24} color={C.white} />
+                    )}
+                  </TouchableOpacity>
+                  <Text style={styles.altLabel}>Passkey</Text>
+                </View>
+              </View>
+            </>
+          )}
+        </>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  // Blue SafeAreaView behind AuthBanner so it also fills the status bar area;
-  // the scrollable body below is white, matching NestSports' auth screens.
-  screen: { flex: 1, backgroundColor: C.primary },
-  body: { flex: 1, backgroundColor: C.bg },
-  scroll: { flexGrow: 1, padding: 20 },
-  cardTitle: {
-    fontSize: 30,
-    fontWeight: '800',
-    color: C.black,
-    marginBottom: 4,
-    textAlign: 'left',
-    marginTop: 16,
+  screen: { flex: 1, backgroundColor: '#fff' },
+  scroll: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
   },
-  cardSub: {
-    fontSize: 14,
-    color: C.textMuted,
-    fontWeight: '500',
+  lottieLogin: { width: '100%', height: 220, marginTop: 5, marginBottom: 6 },
+  lottieOtp: { width: '100%', height: 300, marginTop: -204, marginBottom: 24 },
+  cardTitle: {
+    fontSize: 36,
+    fontWeight: '600',
+    color: '#000',
     marginBottom: 18,
     textAlign: 'left',
   },

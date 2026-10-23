@@ -1776,7 +1776,7 @@ export default function EmployeeDashboard() {
                         setPwForm((p) => ({ ...p, [key]: e.target.value }))
                       }
                       className="w-full border-2 border-black px-3 py-2.5 pr-9 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
-                      placeholder="••••••••"
+                      placeholder="Enter Password"
                     />
                     <button
                       type="button"

@@ -142,15 +142,72 @@ export const authAPI = {
       body: JSON.stringify({ otp }),
     }),
   // Passkey / WebAuthn
-  passkeyLoginOptions: (email?: string) =>
-    request("/auth/passkey/login-options", {
-      method: "POST",
-      body: JSON.stringify({ email }),
-    }),
+  passkeyLoginOptions: () => request("/auth/passkey/login-options"),
   passkeyLogin: (credential: any) =>
     request("/auth/passkey/login", {
       method: "POST",
       body: JSON.stringify(credential),
+    }),
+  passkeyRegisterOptions: () =>
+    request("/auth/passkey/register-options", { method: "POST" }),
+  passkeyRegister: (credential: any) =>
+    request("/auth/passkey/register", {
+      method: "POST",
+      body: JSON.stringify(credential),
+    }),
+  passkeyList: () => request("/auth/passkey"),
+  passkeyDelete: (id: string) =>
+    request(`/auth/passkey/${id}`, { method: "DELETE" }),
+
+  // Signed-in devices
+  sessions: () => request("/auth/sessions"),
+  removeSession: (id: string) =>
+    request(`/auth/sessions/${id}`, { method: "DELETE" }),
+  removeOtherSessions: () => request("/auth/sessions", { method: "DELETE" }),
+
+  // Backup codes
+  backupCodesStatus: () => request("/auth/backup-codes"),
+  generateBackupCodes: (password: string) =>
+    request("/auth/backup-codes", {
+      method: "POST",
+      body: JSON.stringify({ password }),
+    }),
+
+  // Email OTP sign-in
+  loginSendEmailOtp: (email: string) =>
+    request("/auth/login/email-otp/send", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
+  loginVerifyEmailOtp: (email: string, otp: string) =>
+    request("/auth/login/email-otp/verify", {
+      method: "POST",
+      body: JSON.stringify({ email, otp }),
+    }),
+
+  // Verify the current / a new email with a code sent to it
+  sendEmailVerifyOtp: (email: string) =>
+    request("/auth/contact/email/send-otp", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
+  verifyEmailVerifyOtp: (otp: string) =>
+    request("/auth/contact/email/verify-otp", {
+      method: "POST",
+      body: JSON.stringify({ otp }),
+    }),
+
+  // Password reset via backup code / passkey
+  resetPasswordWithBackupCode: (email: string, code: string, password: string) =>
+    request("/auth/reset/backup", {
+      method: "POST",
+      body: JSON.stringify({ email, code, password }),
+    }),
+  resetPasskeyOptions: () => request("/auth/reset/passkey-options"),
+  resetPasswordWithPasskey: (payload: object) =>
+    request("/auth/reset/passkey", {
+      method: "POST",
+      body: JSON.stringify(payload),
     }),
 };
 

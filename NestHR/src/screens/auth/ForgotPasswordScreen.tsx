@@ -9,12 +9,16 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Image,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import LottieView from 'lottie-react-native';
+import { Passkey } from 'react-native-passkey';
 import { Mail, ArrowLeft, CheckCircle2 } from 'lucide-react-native';
 import { authAPI, authAPI_extras } from '../../api/api';
 import { C } from '../../theme';
+
+const forgotAnim = require('../../assets/lottie/forgot.json');
 
 type Step = 'email' | 'choose' | 'code' | 'done';
 
@@ -32,7 +36,17 @@ const METHOD_INFO: Record<string, { label: string; desc: string }> = {
     label: 'Authenticator app',
     desc: 'Enter the code from your authenticator app',
   },
+  backup: {
+    label: 'Backup code',
+    desc: 'Use one of your saved one-time backup codes',
+  },
+  passkey: {
+    label: 'Passkey',
+    desc: 'Verify with Face ID, fingerprint or your screen lock',
+  },
 };
+
+type CodeMethod = 'whatsapp' | 'totp' | 'backup' | 'passkey';
 
 function Field({
   label,
@@ -54,10 +68,11 @@ function Field({
 }
 
 export default function ForgotPasswordScreen({ navigation }: any) {
+  const insets = useSafeAreaInsets();
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [methods, setMethods] = useState<string[]>([]);
-  const [method, setMethod] = useState<'whatsapp' | 'totp'>('whatsapp');
+  const [method, setMethod] = useState<CodeMethod>('whatsapp');
   const [code, setCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -103,7 +118,7 @@ export default function ForgotPasswordScreen({ navigation }: any) {
       const addr = email.trim().toLowerCase();
       if (m === 'email') return sendLink(addr);
       if (m === 'whatsapp') await authAPI.forgotPasswordWhatsapp(addr);
-      setMethod(m as 'whatsapp' | 'totp');
+      setMethod(m as CodeMethod);
       setCode('');
       setStep('code');
     });
@@ -112,7 +127,43 @@ export default function ForgotPasswordScreen({ navigation }: any) {
     if (password !== confirm) return setError("Passwords don't match");
     const addr = email.trim().toLowerCase();
     run(async () => {
-      if (method === 'whatsapp')
+      if (method === 'passkey') {
+        if (!Passkey.isSupported())
+          throw new Error('Passkeys are not supported on this device.');
+        const { data: o }: any = await authAPI.resetPasskeyOptions();
+        let r: any;
+        try {
+          r = await Passkey.get({
+            rpId: o.rpId,
+            challenge: o.challenge,
+            allowCredentials: o.allowCredentials,
+            userVerification: o.userVerification,
+            timeout: o.timeout,
+          });
+        } catch (e: any) {
+          throw new Error(
+            e?.error === 'UserCancelled'
+              ? 'Passkey verification was cancelled.'
+              : e?.message || 'Passkey verification failed.',
+          );
+        }
+        await authAPI.resetWithPasskey({
+          challengeToken: o.challengeToken,
+          password,
+          id: r.id,
+          rawId: r.rawId,
+          type: 'public-key',
+          response: {
+            clientDataJSON: r.response.clientDataJSON,
+            authenticatorData: r.response.authenticatorData,
+            signature: r.response.signature,
+            userHandle: r.response.userHandle ?? null,
+          },
+          clientExtensionResults: {},
+        });
+      } else if (method === 'backup')
+        await authAPI.resetWithBackupCode(addr, code.trim(), password);
+      else if (method === 'whatsapp')
         await authAPI.resetPasswordWithOtp(addr, code.trim(), password);
       else await authAPI.resetPasswordWithTotp(addr, code.trim(), password);
       setDoneMsg('Your password has been reset. You can now sign in.');
@@ -124,125 +175,130 @@ export default function ForgotPasswordScreen({ navigation }: any) {
     step === 'email'
       ? 'Forgot password?'
       : step === 'choose'
-        ? 'How do you want to reset it?'
-        : step === 'code'
-          ? method === 'whatsapp'
-            ? 'Enter WhatsApp code'
-            : 'Enter authenticator code'
-          : 'All set';
+      ? 'How do you want to reset it?'
+      : step === 'code'
+      ? method === 'whatsapp'
+        ? 'Enter WhatsApp code'
+        : method === 'backup'
+        ? 'Enter a backup code'
+        : method === 'passkey'
+        ? 'Choose a new password'
+        : 'Enter authenticator code'
+      : 'All set';
 
   const sub =
     step === 'email'
       ? 'Enter the email address you registered with to see how you can reset your password.'
       : step === 'choose'
-        ? 'Choose one of the methods set up on your account.'
-        : step === 'code'
-          ? method === 'whatsapp'
-            ? 'We sent a 6-digit code to your verified WhatsApp number.'
-            : 'Open your authenticator app and enter the current 6-digit code (or a backup code).'
-          : '';
+      ? 'Choose one of the methods set up on your account.'
+      : step === 'code'
+      ? method === 'whatsapp'
+        ? 'We sent a 6-digit code to your verified WhatsApp number.'
+        : method === 'backup'
+        ? 'Enter one of your saved backup codes. It stops working after this.'
+        : method === 'passkey'
+        ? 'Pick a new password, then confirm it with your passkey.'
+        : 'Open your authenticator app and enter the current 6-digit code (or a backup code).'
+      : '';
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <KeyboardAvoidingView
+      style={styles.safe}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <ScrollView
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingTop: insets.top + 10, paddingBottom: insets.bottom + 24 },
+        ]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Logo */}
-          <View style={styles.logoWrap}>
-            <Image
-              source={require('../../assets/images/nesthr_bgwhite.png')}
-              style={styles.logoImg}
-              resizeMode="contain"
-            />
-            <Text style={styles.appSub}>NestHR</Text>
-          </View>
-
-          {/* Card */}
-          <View style={styles.card}>
-            {step === 'done' ? (
-              <View style={styles.successBlock}>
-                <View style={styles.successIcon}>
-                  <CheckCircle2 size={32} color={C.success} />
-                </View>
-                <Text style={styles.cardTitle}>{title}</Text>
-                <Text style={styles.cardSub}>{doneMsg}</Text>
-                <TouchableOpacity
-                  style={styles.btnPrimary}
-                  onPress={() => navigation.navigate('Login')}
-                >
-                  <Text style={styles.btnPrimaryText}>Back to Sign In</Text>
-                </TouchableOpacity>
+        <LottieView source={forgotAnim} autoPlay loop style={styles.lottie} />
+        <View style={styles.card}>
+          {step === 'done' ? (
+            <View style={styles.successBlock}>
+              <View style={styles.successIcon}>
+                <CheckCircle2 size={32} color={C.success} />
               </View>
-            ) : (
-              <>
-                <Text style={styles.cardTitle}>{title}</Text>
-                <Text style={styles.cardSub}>{sub}</Text>
+              <Text style={styles.cardTitle}>{title}</Text>
+              <Text style={styles.cardSub}>{doneMsg}</Text>
+              <TouchableOpacity
+                style={styles.btnPrimary}
+                onPress={() => navigation.navigate('Login')}
+              >
+                <Text style={styles.btnPrimaryText}>Back to Sign In</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              <Text style={styles.cardTitle}>{title}</Text>
+              <Text style={styles.cardSub}>{sub}</Text>
 
-                {!!error && <Text style={styles.errorText}>{error}</Text>}
+              {!!error && <Text style={styles.errorText}>{error}</Text>}
 
-                {step === 'email' && (
-                  <>
-                    <View style={styles.field}>
-                      <Text style={styles.label}>Email Address</Text>
-                      <View style={styles.inputRow}>
-                        <Mail
-                          size={16}
-                          color={C.textMuted}
-                          style={styles.inputIcon}
-                        />
-                        <TextInput
-                          style={styles.input}
-                          value={email}
-                          onChangeText={v => {
-                            setEmail(v);
-                            setError('');
-                          }}
-                          placeholder="admin@company.com"
-                          placeholderTextColor="#9CA3AF"
-                          keyboardType="email-address"
-                          autoCapitalize="none"
-                          autoComplete="email"
-                          returnKeyType="send"
-                          onSubmitEditing={onContinue}
-                        />
-                      </View>
+              {step === 'email' && (
+                <>
+                  <View style={styles.field}>
+                    <Text style={styles.label}>Email Address</Text>
+                    <View style={styles.inputRow}>
+                      <Mail
+                        size={16}
+                        color={C.textMuted}
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={styles.input}
+                        value={email}
+                        onChangeText={v => {
+                          setEmail(v);
+                          setError('');
+                        }}
+                        placeholder="Enter Email Address"
+                        placeholderTextColor="#9CA3AF"
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoComplete="email"
+                        returnKeyType="send"
+                        onSubmitEditing={onContinue}
+                      />
                     </View>
-                    <Primary
-                      title="Continue"
-                      loading={loading}
-                      onPress={onContinue}
-                    />
-                  </>
-                )}
+                  </View>
+                  <Primary
+                    title="Continue"
+                    loading={loading}
+                    onPress={onContinue}
+                  />
+                </>
+              )}
 
-                {step === 'choose' &&
-                  methods.map(m => (
-                    <TouchableOpacity
-                      key={m}
-                      style={styles.method}
-                      onPress={() => choose(m)}
-                      disabled={loading}
-                    >
-                      <Text style={styles.methodLabel}>
-                        {METHOD_INFO[m]?.label ?? m}
-                      </Text>
-                      <Text style={styles.methodDesc}>
-                        {METHOD_INFO[m]?.desc}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+              {step === 'choose' &&
+                methods.map(m => (
+                  <TouchableOpacity
+                    key={m}
+                    style={styles.method}
+                    onPress={() => choose(m)}
+                    disabled={loading}
+                  >
+                    <Text style={styles.methodLabel}>
+                      {METHOD_INFO[m]?.label ?? m}
+                    </Text>
+                    <Text style={styles.methodDesc}>
+                      {METHOD_INFO[m]?.desc}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
 
-                {step === 'code' && (
-                  <>
+              {step === 'code' && (
+                <>
+                  {method !== 'passkey' && (
                     <Field
                       label={
                         method === 'whatsapp'
                           ? 'WhatsApp Code'
+                          : method === 'backup'
+                          ? 'Backup Code'
                           : 'Authenticator Code'
                       }
                       value={code}
@@ -250,53 +306,60 @@ export default function ForgotPasswordScreen({ navigation }: any) {
                       keyboardType={
                         method === 'whatsapp' ? 'number-pad' : 'default'
                       }
-                      placeholder="123456"
+                      autoCapitalize={
+                        method === 'backup' ? 'characters' : 'none'
+                      }
+                      placeholder={
+                        method === 'backup' ? 'XXXXX-XXXXX' : '123456'
+                      }
                     />
-                    <Field
-                      label="New Password"
-                      value={password}
-                      onChangeText={setPassword}
-                      secureTextEntry
-                      placeholder="8+ chars, upper, lower & a number"
-                    />
-                    <Field
-                      label="Confirm New Password"
-                      value={confirm}
-                      onChangeText={setConfirm}
-                      secureTextEntry
-                    />
-                    <Primary
-                      title="Reset Password"
-                      loading={loading}
-                      onPress={onReset}
-                    />
-                  </>
-                )}
+                  )}
+                  <Field
+                    label="New Password"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry
+                    placeholder="8+ chars, upper, lower & a number"
+                  />
+                  <Field
+                    label="Confirm New Password"
+                    value={confirm}
+                    onChangeText={setConfirm}
+                    secureTextEntry
+                  />
+                  <Primary
+                    title={
+                      method === 'passkey' ? 'Verify & Reset' : 'Reset Password'
+                    }
+                    loading={loading}
+                    onPress={onReset}
+                  />
+                </>
+              )}
 
-                <TouchableOpacity
-                  style={styles.backLink}
-                  onPress={() => {
-                    setError('');
-                    if (step === 'code') setStep('choose');
-                    else if (step === 'choose') setStep('email');
-                    else navigation.goBack();
-                  }}
-                >
-                  <ArrowLeft size={14} color={C.primary} />
-                  <Text style={styles.backLinkText}>
-                    {step === 'code'
-                      ? 'Choose a different method'
-                      : step === 'choose'
-                        ? 'Back'
-                        : 'Back to Sign In'}
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+              <TouchableOpacity
+                style={styles.backLink}
+                onPress={() => {
+                  setError('');
+                  if (step === 'code') setStep('choose');
+                  else if (step === 'choose') setStep('email');
+                  else navigation.goBack();
+                }}
+              >
+                <ArrowLeft size={14} color={C.primary} />
+                <Text style={styles.backLinkText}>
+                  {step === 'code'
+                    ? 'Choose a different method'
+                    : step === 'choose'
+                    ? 'Back'
+                    : 'Back to Sign In'}
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -325,25 +388,13 @@ function Primary({
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.bg },
-  scroll: { flexGrow: 1, justifyContent: 'center', padding: 20 },
-  logoWrap: { alignItems: 'center', marginBottom: 32 },
-  logoImg: { width: 100, height: 100, marginBottom: 8 },
-  appSub: { fontSize: 19, color: C.textMuted, fontWeight: '500', marginTop: 4 },
-  card: {
-    backgroundColor: C.white,
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderColor: C.black,
-    padding: 24,
-  },
+  safe: { flex: 1, backgroundColor: '#fff' },
+  scroll: { flexGrow: 1, paddingHorizontal: 24, backgroundColor: '#fff' },
+  lottie: { width: '100%', height: 240, alignSelf: 'center' },
+  card: { marginTop: 24 },
   cardTitle: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 32,
+    fontWeight: '600',
     color: C.black,
     marginBottom: 8,
   },

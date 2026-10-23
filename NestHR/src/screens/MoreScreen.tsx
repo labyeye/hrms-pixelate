@@ -133,6 +133,12 @@ const MENU_ITEMS = [
     desc: 'Track who changed what & when',
   },
   {
+    key: 'AccountSecurity',
+    label: 'Account Security',
+    icon: Shield,
+    desc: 'Passkey, devices, backup codes & verification',
+  },
+  {
     key: 'Settings',
     label: 'Settings',
     icon: Settings,
@@ -192,6 +198,7 @@ const MENU_ITEMS = [
 const TRASH_ROLES = ['super_admin', 'hr_manager'];
 
 const EMPLOYEE_MENU_KEYS = new Set([
+  'AccountSecurity',
   'Payroll',
   'Holidays',
   'Loans',

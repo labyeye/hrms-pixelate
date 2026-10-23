@@ -34,6 +34,39 @@ const userSchema = new mongoose.Schema(
     // Separate from phoneOtp (login) so the two code purposes can't be crossed.
     phoneVerifyOtp: { type: String, select: false },
     phoneVerifyOtpExpire: { type: Date, select: false },
+    // Email proven via a code sent to it (after a change, or on demand).
+    emailVerified: { type: Boolean, default: false },
+    pendingEmail: { type: String, select: false },
+    contactOtp: { type: String, select: false },
+    contactOtpExpire: { type: Date, select: false },
+    contactOtpTries: { type: Number, default: 0, select: false },
+    // Email OTP sign-in
+    emailLoginOtp: { type: String, select: false },
+    emailLoginOtpExpire: { type: Date, select: false },
+    emailLoginOtpTries: { type: Number, default: 0, select: false },
+    // One-time recovery codes (hashes only) — separate from the authenticator's backup codes.
+    backupCodes: {
+      type: [{ hash: String, usedAt: Date }],
+      default: [],
+      select: false,
+    },
+    backupCodesGeneratedAt: { type: Date },
+    // WebAuthn passkeys; publicKey is base64url of the COSE key.
+    passkeys: {
+      type: [
+        {
+          credentialId: { type: String, required: true },
+          publicKey: { type: String, required: true },
+          counter: { type: Number, default: 0 },
+          transports: [String],
+          name: { type: String, default: "Passkey" },
+          createdAt: { type: Date, default: Date.now },
+          lastUsedAt: { type: Date },
+        },
+      ],
+      default: [],
+      select: false,
+    },
     resetOtp: { type: String, select: false },
     resetOtpExpire: { type: Date, select: false },
     // Wrong-code counters: a 6-digit code is burned after a handful of misses.

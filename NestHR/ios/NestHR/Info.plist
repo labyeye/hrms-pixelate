@@ -60,6 +60,8 @@
 	<string>NestHR needs camera access to update employee profile photos</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>NestHR needs photo library access to update employee profile photos</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>NestHR saves photos you capture to your photo library</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>DMSans-Bold.ttf</string>

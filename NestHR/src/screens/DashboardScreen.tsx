@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   RefreshControl,
   Image,
-  Dimensions,
   Modal,
   Alert,
 } from 'react-native';
@@ -45,11 +44,9 @@ import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { PieChart } from 'react-native-gifted-charts';
 import AnimatedNumber from '../components/motion/AnimatedNumber';
 import FadeInUp from '../components/motion/FadeInUp';
-import AnimatedLineChart from '../components/common/AnimatedLineChart';
+import AnimatedBarChart from '../components/common/AnimatedBarChart';
 import PerformanceList from '../components/common/PerformanceList';
 import { C, S, FONT } from '../theme';
-
-const CARD_WIDTH = (Dimensions.get('window').width - 32 - 10) / 2;
 
 // ─── Admin Dashboard ──────────────────────────────────────────────────────────
 
@@ -128,7 +125,7 @@ function AdminDashboard({ navigation }: any) {
       setStats({
         ...payload.stats,
         recentActivity: payload.recentHires,
-        attTrend: payload.attTrend || [],
+        dailyStats: payload.dailyStats || [],
         payTrend: payload.payTrend || [],
       });
     } catch (e: any) {
@@ -247,7 +244,7 @@ function AdminDashboard({ navigation }: any) {
                         },
                       ]}
                     >
-                      <Icon size={18} color={s.color} />
+                      <Icon size={14} color={s.color} />
                     </View>
                     <View style={styles.statBody}>
                       <Text style={styles.statLabel} numberOfLines={1}>
@@ -289,49 +286,38 @@ function AdminDashboard({ navigation }: any) {
             ))}
           </View>
 
-          <FadeInUp delay={ADMIN_STATS.length * 70} style={styles.payCard}>
-            <Text style={styles.payLabel}>
-              Payable till today (after attendance)
-            </Text>
-            {paySummary ? (
-              <AnimatedNumber
-                style={[styles.payValue, { color: C.primary }]}
-                value={paySummary.payable}
-                prefix="₹"
-              />
-            ) : (
-              <Text style={styles.payValue}>—</Text>
-            )}
-            <Text style={styles.paySub}>
-              {paySummary
-                ? `${
-                    paySummary.deducted > 0
-                      ? '₹' +
-                        paySummary.deducted.toLocaleString('en-IN') +
-                        ' saved via absences, late & deductions'
-                      : 'No deductions so far'
-                  }`
-                : 'Loading…'}
-            </Text>
-          </FadeInUp>
+          <View
+            style={{ flexDirection: 'row', justifyContent: 'space-between' }}
+          >
+            <FadeInUp delay={ADMIN_STATS.length * 70} style={styles.payCard}>
+              <Text style={styles.payLabel}>Payable till today</Text>
+              {paySummary ? (
+                <AnimatedNumber
+                  style={[styles.payValue, { color: C.primary }]}
+                  value={paySummary.payable}
+                  prefix="₹"
+                />
+              ) : (
+                <Text style={styles.payValue}>—</Text>
+              )}
+            </FadeInUp>
 
-          <FadeInUp delay={ADMIN_STATS.length * 70 + 70} style={styles.payCard}>
-            <Text style={styles.payLabel}>
-              Actual till today (as per database)
-            </Text>
-            {paySummary ? (
-              <AnimatedNumber
-                style={[styles.payValue, { color: C.secondary }]}
-                value={paySummary.actual}
-                prefix="₹"
-              />
-            ) : (
-              <Text style={styles.payValue}>—</Text>
-            )}
-            <Text style={styles.paySub}>
-              Salary to date, before any deductions
-            </Text>
-          </FadeInUp>
+            <FadeInUp
+              delay={ADMIN_STATS.length * 70 + 70}
+              style={styles.payCard}
+            >
+              <Text style={styles.payLabel}>Actual till today</Text>
+              {paySummary ? (
+                <AnimatedNumber
+                  style={[styles.payValue, { color: C.secondary }]}
+                  value={paySummary.actual}
+                  prefix="₹"
+                />
+              ) : (
+                <Text style={styles.payValue}>—</Text>
+              )}
+            </FadeInUp>
+          </View>
 
           <View style={styles.perfHeader}>
             <Text style={styles.sectionLabel}>Performance</Text>
@@ -353,17 +339,29 @@ function AdminDashboard({ navigation }: any) {
             )}
           </View>
 
-          {!!stats?.attTrend?.length && (
+          {!!stats?.dailyStats?.length && (
             <>
-              <Text style={styles.sectionLabel}>Attendance Trend</Text>
+              <Text style={styles.sectionLabel}>Daily Attendance</Text>
               <FadeInUp
                 delay={ADMIN_STATS.length * 70 + 70}
                 style={styles.card}
               >
-                <AnimatedLineChart
-                  data={stats.attTrend.map((t: any) => ({
-                    label: MONTH_LABELS[t.month - 1],
-                    value: t.count,
+                <AnimatedBarChart
+                  legend
+                  series={[
+                    { key: 'present', label: 'Present', color: '#00C48C' },
+                    { key: 'late', label: 'Late', color: '#FACC15' },
+                    { key: 'absent', label: 'Absent', color: '#EF4444' },
+                  ]}
+                  data={stats.dailyStats.map((d: any) => ({
+                    label: ['S', 'M', 'T', 'W', 'T', 'F', 'S'][
+                      new Date(d.date).getDay()
+                    ],
+                    values: {
+                      present: d.present,
+                      late: d.late,
+                      absent: d.absent,
+                    },
                   }))}
                 />
               </FadeInUp>
@@ -377,11 +375,11 @@ function AdminDashboard({ navigation }: any) {
                 delay={ADMIN_STATS.length * 70 + 140}
                 style={styles.card}
               >
-                <AnimatedLineChart
-                  color={C.secondary}
+                <AnimatedBarChart
+                  series={[{ key: 'v', label: 'Payroll', color: C.primary }]}
                   data={stats.payTrend.map((t: any) => ({
                     label: MONTH_LABELS[t.month - 1],
-                    value: Math.round(t.total / 1000),
+                    values: { v: Math.round(t.total / 1000) },
                   }))}
                   format={n => `${n}k`}
                 />
@@ -1519,10 +1517,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // Admin grid
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 8 },
-  statCardWrap: { width: CARD_WIDTH },
+  // Admin grid — 4 KPI cards in one row, NestLeads card style
+  grid: { flexDirection: 'row', gap: 10, marginBottom: 8 },
+  statCardWrap: { flex: 1 },
   statCard: {
+    flex: 1,
     borderWidth: 2,
     borderRadius: 8,
     borderRightWidth: 5,
@@ -1532,30 +1531,27 @@ const styles = StyleSheet.create({
     borderColor: C.black,
     backgroundColor: C.white,
     padding: 12,
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
     gap: 10,
   },
-  statBody: { flex: 1, minWidth: 0 },
+  statBody: { flex: 1, minWidth: 0, alignItems: 'center' },
   statIconWrap: {
-    width: 38,
-    height: 38,
+    width: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderRightWidth: 4,
-    borderBottomWidth: 4,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderRadius: 8,
+    borderRadius: 50,
   },
-  statValue: { fontSize: 22, fontWeight: '800', color: C.black },
+  statValue: { fontSize: 19, fontWeight: '700', color: C.black },
   statLabel: {
-    fontSize: 10,
+    fontSize: 8,
     fontWeight: '700',
     color: C.textMuted,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
+    textAlign: 'center',
   },
 
   // Today's attendance donut

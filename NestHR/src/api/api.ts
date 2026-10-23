@@ -1,4 +1,5 @@
 import { createAsyncStorage } from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { API_BASE_URL } from '../config/env';
 
 const BASE_URL = API_BASE_URL;
@@ -52,6 +53,8 @@ async function request<T = any>(
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
+        'X-Device-Platform': Platform.OS,
+        'X-Device-Name': `${Platform.OS === 'ios' ? 'iOS' : 'Android'} ${Platform.Version}`,
         'Cache-Control': 'no-cache, no-store',
         Pragma: 'no-cache',
         'If-None-Match': '',
@@ -176,15 +179,77 @@ export const authAPI = {
       method: 'PUT',
       body: JSON.stringify({ currentPassword, newPassword }),
     }),
-  passkeyLoginOptions: (email?: string) =>
-    request('/auth/passkey/login-options', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    }),
+  passkeyLoginOptions: () => request('/auth/passkey/login-options'),
   biometricLogin: (credential: any) =>
     request('/auth/passkey/login', {
       method: 'POST',
       body: JSON.stringify(credential),
+    }),
+  passkeyRegisterOptions: () =>
+    request('/auth/passkey/register-options', { method: 'POST' }),
+  passkeyRegister: (payload: any) =>
+    request('/auth/passkey/register', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  passkeyList: () => request('/auth/passkey'),
+  passkeyDelete: (id: string) =>
+    request(`/auth/passkey/${id}`, { method: 'DELETE' }),
+
+  // Signed-in devices
+  sessions: () => request('/auth/sessions'),
+  removeSession: (id: string) =>
+    request(`/auth/sessions/${id}`, { method: 'DELETE' }),
+  removeOtherSessions: () => request('/auth/sessions', { method: 'DELETE' }),
+  removeCurrentSession: async () => {
+    const list: any = await request('/auth/sessions');
+    const cur = (list.data || []).find((s: any) => s.current);
+    if (cur) await request(`/auth/sessions/${cur._id}`, { method: 'DELETE' });
+  },
+
+  // Backup codes
+  backupCodesStatus: () => request('/auth/backup-codes'),
+  generateBackupCodes: (password: string) =>
+    request('/auth/backup-codes', {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    }),
+
+  // Email OTP sign-in
+  loginSendEmailOtp: (email: string) =>
+    request('/auth/login/email-otp/send', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+  loginVerifyEmailOtp: (email: string, otp: string) =>
+    request('/auth/login/email-otp/verify', {
+      method: 'POST',
+      body: JSON.stringify({ email, otp }),
+    }),
+
+  // Verify the current / a new email with a code sent to it
+  sendEmailVerifyOtp: (email: string) =>
+    request('/auth/contact/email/send-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+  verifyEmailVerifyOtp: (otp: string) =>
+    request('/auth/contact/email/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ otp }),
+    }),
+
+  // Password reset via backup code / passkey
+  resetWithBackupCode: (email: string, code: string, password: string) =>
+    request('/auth/reset/backup', {
+      method: 'POST',
+      body: JSON.stringify({ email, code, password }),
+    }),
+  resetPasskeyOptions: () => request('/auth/reset/passkey-options'),
+  resetWithPasskey: (payload: any) =>
+    request('/auth/reset/passkey', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     }),
 };
 

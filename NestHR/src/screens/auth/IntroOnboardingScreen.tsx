@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   Dimensions,
+  Image,
   NativeScrollEvent,
   NativeSyntheticEvent,
   SafeAreaView,
@@ -12,6 +13,9 @@ import {
   View,
 } from 'react-native';
 import { C, FONT } from '../../theme';
+const illustration1 = require('../../assets/images/Onboarding/1.png');
+const illustration2 = require('../../assets/images/Onboarding/2.png');
+const illustration3 = require('../../assets/images/Onboarding/3.png');
 
 const { width } = Dimensions.get('window');
 const ONBOARDING_KEY = '@nesthr/onboarding-complete';
@@ -22,18 +26,21 @@ const slides = [
     title: 'Everything HR, in one place',
     body: 'Manage your people, attendance, leave, payroll and daily HR operations from one simple workspace.',
     color: '#EAF2FF',
+    image: illustration1,
   },
   {
     number: '02',
     title: 'Keep your team connected',
     body: 'Give employees quick access to tasks, announcements, documents and important updates wherever they work.',
     color: '#FFF1E8',
+    image: illustration2,
   },
   {
     number: '03',
     title: 'Make better people decisions',
     body: 'Use clear reports and real-time insights to build a more productive, organised and engaged team.',
     color: '#E9F9F3',
+    image: illustration3,
   },
 ];
 
@@ -93,15 +100,11 @@ export default function IntroOnboardingScreen({ navigation }: any) {
         {slides.map(slide => (
           <View style={styles.slide} key={slide.number}>
             <View style={[styles.illustration, { backgroundColor: slide.color }]}>
-              <Text style={styles.slideNumber}>{slide.number}</Text>
-              <View style={styles.illustrationCard}>
-                <View style={styles.illustrationLineLong} />
-                <View style={styles.illustrationLineShort} />
-                <View style={styles.illustrationRow}>
-                  <View style={styles.illustrationDot} />
-                  <View style={styles.illustrationLineMedium} />
-                </View>
-              </View>
+              <Image
+                source={slide.image}
+                style={styles.illustrationImage}
+                resizeMode="contain"
+              />
             </View>
             <Text style={styles.title}>{slide.title}</Text>
             <Text style={styles.body}>{slide.body}</Text>
@@ -153,7 +156,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 36,
+    overflow: 'hidden',
   },
+  illustrationImage: { width: '100%', height: '100%' },
   slideNumber: {
     position: 'absolute',
     top: 20,

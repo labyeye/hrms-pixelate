@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const asyncHandler = require("express-async-handler");
 const User = require("../models/User");
 const Company = require("../models/Company");
+const Session = require("../models/Session");
 const { getCompanyFeatures } = require("../utils/planFeatures");
 
 const protect = asyncHandler(async (req, res, next) => {
@@ -13,8 +14,9 @@ const protect = asyncHandler(async (req, res, next) => {
     res.status(401);
     throw new Error("Not authorized, no token");
   }
+  let decoded;
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] });
+    decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] });
     if (decoded.purpose) {
       res.status(401); // 2FA pending tokens are not sessions
       throw new Error("Not authorized");
@@ -29,11 +31,30 @@ const protect = asyncHandler(async (req, res, next) => {
       res.status(401);
       throw new Error("Session expired, please log in again");
     }
-    next();
   } catch (err) {
     res.status(401);
     throw new Error("Not authorized, token invalid");
   }
+
+  // Tokens issued to a device carry its session id; a removed device is rejected here.
+  if (decoded.sid) {
+    const session = await Session.findOne({
+      _id: decoded.sid,
+      userId: req.user._id,
+    }).select("lastActiveAt");
+    if (!session) {
+      res.status(401);
+      throw new Error("This device was signed out. Please log in again.");
+    }
+    if (Date.now() - session.lastActiveAt.getTime() > 5 * 60 * 1000) {
+      Session.updateOne(
+        { _id: session._id },
+        { lastActiveAt: new Date(), ip: req.ip || "" },
+      ).catch(() => {});
+    }
+    req.sessionId = String(session._id);
+  }
+  next();
 });
 
 const protectCompany = asyncHandler(async (req, res, next) => {

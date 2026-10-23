@@ -12,20 +12,20 @@ import {
 import { C } from '../../theme';
 import { modalCenter } from './PickerField';
 
-// Emoji flags render natively on Android and iOS, so no image assets are needed in the app.
+// Two-letter country codes instead of emoji flags: emoji can render as "?" boxes with the app's custom font.
 export const COUNTRIES = [
-  { flag: '🇮🇳', dial: '+91', name: 'India' },
-  { flag: '🇦🇪', dial: '+971', name: 'UAE' },
-  { flag: '🇺🇸', dial: '+1', name: 'USA' },
-  { flag: '🇬🇧', dial: '+44', name: 'UK' },
-  { flag: '🇸🇦', dial: '+966', name: 'Saudi Arabia' },
-  { flag: '🇶🇦', dial: '+974', name: 'Qatar' },
-  { flag: '🇳🇵', dial: '+977', name: 'Nepal' },
-  { flag: '🇧🇩', dial: '+880', name: 'Bangladesh' },
-  { flag: '🇱🇰', dial: '+94', name: 'Sri Lanka' },
-  { flag: '🇸🇬', dial: '+65', name: 'Singapore' },
-  { flag: '🇦🇺', dial: '+61', name: 'Australia' },
-  { flag: '🇨🇦', dial: '+1', name: 'Canada' },
+  { flag: 'IN', dial: '+91', name: 'India' },
+  { flag: 'AE', dial: '+971', name: 'UAE' },
+  { flag: 'US', dial: '+1', name: 'USA' },
+  { flag: 'GB', dial: '+44', name: 'UK' },
+  { flag: 'SA', dial: '+966', name: 'Saudi Arabia' },
+  { flag: 'QA', dial: '+974', name: 'Qatar' },
+  { flag: 'NP', dial: '+977', name: 'Nepal' },
+  { flag: 'BD', dial: '+880', name: 'Bangladesh' },
+  { flag: 'LK', dial: '+94', name: 'Sri Lanka' },
+  { flag: 'SG', dial: '+65', name: 'Singapore' },
+  { flag: 'AU', dial: '+61', name: 'Australia' },
+  { flag: 'CA', dial: '+1', name: 'Canada' },
 ];
 
 /** "+919876543210" -> [country, national digits]; bare numbers default to India. */
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     borderRightWidth: 2,
     borderRightColor: C.black,
   },
-  flag: { fontSize: 20 },
+  flag: { fontSize: 12, fontWeight: '800', color: '#000' },
   dial: { fontSize: 14, fontWeight: '700', color: C.black },
   input: { flex: 1, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, fontWeight: '500', color: C.black },
   title: {

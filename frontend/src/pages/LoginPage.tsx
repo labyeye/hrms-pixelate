@@ -18,29 +18,11 @@ import loginDash from "../../assets/login-dash.png";
 import { authAPI } from "@/services/api";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
-
-function bufferToBase64Url(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary)
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-}
-
-function base64UrlToBuffer(base64url: string): ArrayBuffer {
-  const padding = "=".repeat((4 - (base64url.length % 4)) % 4);
-  const base64 = (base64url + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray.buffer;
-}
+import {
+  passkeysSupported,
+  serializeAssertion,
+  toRequestOptions,
+} from "@/lib/webauthn";
 
 function PrivacyLink() {
   return (
@@ -87,52 +69,35 @@ export default function LoginPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
+  const [otpVia, setOtpVia] = useState<"whatsapp" | "email">("whatsapp");
   const [passkeyLoading, setPasskeyLoading] = useState(false);
 
   const handlePasskeyLogin = async () => {
     setError("");
     setPasskeyLoading(true);
     try {
-      if (!window.PublicKeyCredential) {
+      if (!passkeysSupported()) {
         throw new Error("Passkeys are not supported on this browser/device.");
       }
-      const optionsRes = await authAPI.passkeyLoginOptions(email || undefined);
-      const options = optionsRes.data;
-
+      const { data: options } = await authAPI.passkeyLoginOptions();
       const credential = (await navigator.credentials.get({
-        publicKey: {
-          challenge: base64UrlToBuffer(options.challenge),
-          rpId: options.rpId || window.location.hostname,
-          userVerification: "preferred",
-          allowCredentials: options.allowCredentials?.map((c: any) => ({
-            id: base64UrlToBuffer(c.id),
-            type: c.type || "public-key",
-          })),
-        },
-      })) as PublicKeyCredential;
-
+        publicKey: toRequestOptions(options),
+      })) as PublicKeyCredential | null;
       if (!credential) throw new Error("Passkey authentication was cancelled.");
-      const response = credential.response as AuthenticatorAssertionResponse;
 
       const res = await authAPI.passkeyLogin({
-        id: credential.id,
-        rawId: bufferToBase64Url(credential.rawId),
-        response: {
-          clientDataJSON: bufferToBase64Url(response.clientDataJSON),
-          authenticatorData: bufferToBase64Url(response.authenticatorData),
-          signature: bufferToBase64Url(response.signature),
-          userHandle: response.userHandle
-            ? bufferToBase64Url(response.userHandle)
-            : null,
-        },
-        type: credential.type,
+        challengeToken: options.challengeToken,
+        ...serializeAssertion(credential),
       });
-
       const { token, ...userData } = res.data;
       completeLogin(userData, token);
       navigate("/");
     } catch (err: any) {
-      setError(err.message || "Passkey login failed.");
+      setError(
+        err.name === "NotAllowedError"
+          ? "Passkey authentication was cancelled."
+          : err.message || "Passkey login failed.",
+      );
     } finally {
       setPasskeyLoading(false);
     }
@@ -175,7 +140,9 @@ export default function LoginPage() {
     setError("");
     setOtpLoading(true);
     try {
-      await authAPI.sendPhoneOtp(phone.trim());
+      if (otpVia === "email")
+        await authAPI.loginSendEmailOtp(email.trim().toLowerCase());
+      else await authAPI.sendPhoneOtp(phone.trim());
       setOtpSent(true);
     } catch (err: any) {
       setError(err.message || "Failed to send OTP. Please try again.");
@@ -189,7 +156,13 @@ export default function LoginPage() {
     setError("");
     setOtpLoading(true);
     try {
-      const res = await authAPI.verifyPhoneOtp(phone.trim(), otp.trim());
+      const res =
+        otpVia === "email"
+          ? await authAPI.loginVerifyEmailOtp(
+              email.trim().toLowerCase(),
+              otp.trim(),
+            )
+          : await authAPI.verifyPhoneOtp(phone.trim(), otp.trim());
       const { token, ...userData } = res.data;
       completeLogin(userData, token);
       navigate("/");
@@ -350,13 +323,17 @@ export default function LoginPage() {
                 <div className="flex items-center gap-3 mb-2">
                   <WhatsAppIcon className="w-7 h-7 text-[#25D366]" />
                   <h2 className="text-2xl font-display font-bold text-black">
-                    {otpSent ? "Enter OTP" : "Phone Login"}
+                    {otpSent
+                      ? "Enter OTP"
+                      : otpVia === "email"
+                        ? "Email OTP Login"
+                        : "Phone Login"}
                   </h2>
                 </div>
                 <p className="text-sm text-gray-500 font-medium">
                   {otpSent
-                    ? "We sent a 6-digit OTP to your WhatsApp."
-                    : "We'll send a one-time password to your WhatsApp."}
+                    ? `We sent a 6-digit OTP to your ${otpVia === "email" ? "email" : "WhatsApp"}.`
+                    : `We'll send a one-time password to your ${otpVia === "email" ? "email" : "WhatsApp"}.`}
                 </p>
               </div>
 
@@ -371,21 +348,39 @@ export default function LoginPage() {
                 <form onSubmit={handleSendOtp} className="space-y-5 login-anim">
                   <div>
                     <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
-                      Phone Number
+                      {otpVia === "email" ? "Email" : "Phone Number"}
                     </label>
-                    <PhoneInput
-                      value={phone}
-                      onChange={(v) => {
-                        setPhone(v);
-                        setError("");
-                      }}
-                      placeholder="Phone number"
-                      className="[&_input]:py-3 [&_button]:py-3"
-                    />
+                    {otpVia === "email" ? (
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          setError("");
+                        }}
+                        placeholder="you@company.com"
+                        className="w-full px-4 py-3 border-2 border-black text-sm font-medium bg-white focus:outline-none transition-colors"
+                        required
+                        autoFocus
+                      />
+                    ) : (
+                      <PhoneInput
+                        value={phone}
+                        onChange={(v) => {
+                          setPhone(v);
+                          setError("");
+                        }}
+                        placeholder="Phone number"
+                        className="[&_input]:py-3 [&_button]:py-3"
+                      />
+                    )}
                   </div>
                   <button
                     type="submit"
-                    disabled={otpLoading || !phone.trim()}
+                    disabled={
+                      otpLoading ||
+                      (otpVia === "email" ? !email.trim() : !phone.trim())
+                    }
                     className="w-full bg-[#024BAB] text-white py-3.5 text-sm font-bold border-2 border-black hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#0a0a0a] transition-all flex items-center justify-center gap-2"
                   >
                     {otpLoading ? (
@@ -395,14 +390,31 @@ export default function LoginPage() {
                       </>
                     ) : (
                       <>
-                        Send OTP on WhatsApp <ArrowRight className="w-4 h-4" />
+                        {otpVia === "email"
+                          ? "Send OTP to Email"
+                          : "Send OTP on WhatsApp"}{" "}
+                        <ArrowRight className="w-4 h-4" />
                       </>
                     )}
                   </button>
                   <button
                     type="button"
                     onClick={() => {
+                      setOtpVia(otpVia === "email" ? "whatsapp" : "email");
+                      setError("");
+                    }}
+                    className="w-full py-2 text-xs font-bold text-[#024BAB] hover:underline transition-colors"
+                  >
+                    {otpVia === "email"
+                      ? "Use WhatsApp OTP instead"
+                      : "Use email OTP instead"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
                       setLoginMode("email");
+                      setOtpVia("whatsapp");
+                      setOtpSent(false);
                       setError("");
                       setPhone("");
                     }}
@@ -415,7 +427,7 @@ export default function LoginPage() {
                 <form onSubmit={handleVerifyOtp} className="space-y-5 login-anim">
                   <div>
                     <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
-                      WhatsApp OTP
+                      {otpVia === "email" ? "Email OTP" : "WhatsApp OTP"}
                     </label>
                     <input
                       type="text"
@@ -478,6 +490,18 @@ export default function LoginPage() {
                 <div className="flex items-center gap-2 bg-red-50 border-2 border-red-400 text-red-600 text-sm px-3 py-2.5 mb-5">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span className="font-medium">{error}</span>
+                  {/blocked/i.test(error) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLoginMode("phone");
+                        setError("");
+                      }}
+                      className="ml-auto shrink-0 underline font-bold"
+                    >
+                      Use an OTP
+                    </button>
+                  )}
                 </div>
               )}
 

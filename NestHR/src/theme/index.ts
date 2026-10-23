@@ -19,7 +19,7 @@ export const C = {
   card: '#ffffff',
   border: '#000000',
   textMuted: '#000000',
-  textLight: '#000000',
+  textLight: '#94a3b8',
 };
 
 export const S = StyleSheet.create({

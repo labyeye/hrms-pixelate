@@ -1495,7 +1495,7 @@ export default function ProfileScreen() {
                         style={[s.fieldInput, { flex: 1 }]}
                         value={f.value}
                         onChangeText={f.setter}
-                        placeholder="••••••••"
+                        placeholder="Enter Password"
                         placeholderTextColor={C.textLight}
                         secureTextEntry={!f.show}
                         autoCapitalize="none"

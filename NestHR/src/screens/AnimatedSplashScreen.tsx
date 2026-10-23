@@ -75,22 +75,6 @@ export default function AnimatedSplashScreen({ onDone }: Props) {
         useNativeDriver: true,
       }),
 
-      // Logo slides in
-      Animated.parallel([
-        Animated.timing(logoOpacity, {
-          toValue: 1,
-          duration: LOGO_DURATION,
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoY, {
-          toValue: 0,
-          duration: LOGO_DURATION,
-          useNativeDriver: true,
-        }),
-      ]),
-
-      // Hold logo
-      Animated.delay(HOLD_BEFORE_EXIT),
     ]).start(() => onDone());
   }, []);
 
@@ -135,18 +119,6 @@ export default function AnimatedSplashScreen({ onDone }: Props) {
         </Animated.View>
       </Animated.View>
 
-      {/* Logo */}
-      <Animated.View
-        style={[
-          styles.logoWrap,
-          { opacity: logoOpacity, transform: [{ translateY: logoY }] },
-        ]}
-      >
-        <View style={styles.logoCard}>
-          <Image source={logo} style={styles.logoImage} resizeMode="contain" />
-        </View>
-        <Text style={styles.logoTagline}>Nest HR</Text>
-      </Animated.View>
     </View>
   );
 }

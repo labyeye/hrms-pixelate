@@ -29,6 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ActionModal } from "@/components/ui/ActionModal";
 import { useConfirm } from "@/hooks/use-confirm";
+import { AccountSecurityPanel } from "@/components/security/AccountSecurityPanel";
 
 type CrudOp = "create" | "read" | "update" | "delete";
 type HrmsRole =
@@ -1196,6 +1197,7 @@ export default function SettingsPage() {
       group: "Account",
       items: [
         { id: "my_profile", label: "My Profile", icon: UserCircle },
+        { id: "account_security", label: "Account Security", icon: Lock },
         { id: "two_factor", label: "2FA Security", icon: ShieldCheck },
         {
           id: "phone_verify",
@@ -2504,7 +2506,7 @@ export default function SettingsPage() {
                                 }))
                               }
                               className="w-full border-2 border-black px-3 py-2.5 pr-9 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
-                              placeholder="••••••••"
+                              placeholder="Enter Password"
                             />
                             <button
                               type="button"
@@ -2550,7 +2552,7 @@ export default function SettingsPage() {
               )}
             </div>
 
-            {!["my_profile", "two_factor", "phone_verify"].includes(
+            {!["my_profile", "two_factor", "phone_verify", "account_security"].includes(
               activeTab,
             ) && (
               <div className="border-t-2 border-black p-4 flex justify-end bg-gray-50/50">
@@ -2579,6 +2581,7 @@ export default function SettingsPage() {
               </div>
             )}
 
+            {activeTab === "account_security" && <AccountSecurityPanel />}
             {activeTab === "two_factor" && <TwoFactorPanel />}
             {activeTab === "phone_verify" && <PhoneVerifyPanel />}
           </div>

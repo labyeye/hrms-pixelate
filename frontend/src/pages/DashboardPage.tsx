@@ -13,11 +13,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
   Cell,
-  Area,
-  AreaChart,
+  Legend,
 } from "recharts";
 import {
   Users,
@@ -141,7 +138,7 @@ export default function DashboardPage() {
     recentHires,
     pendingLeaveList,
     deptHeadcounts,
-    attTrend = [],
+    dailyStats = [],
     payTrend = [],
   } = data;
 
@@ -160,9 +157,14 @@ export default function DashboardPage() {
     "Dec",
   ];
 
-  const attChartData = attTrend.map((t: any) => ({
-    label: MONTH_LABELS[t.month - 1],
-    count: t.count,
+  const dailyChartData = dailyStats.map((d: any) => ({
+    label: new Date(d.date).toLocaleDateString("en-IN", {
+      weekday: "short",
+      day: "numeric",
+    }),
+    Present: d.present,
+    Late: d.late,
+    Absent: d.absent,
   }));
 
   const payChartData = payTrend.map((t: any) => ({
@@ -172,7 +174,7 @@ export default function DashboardPage() {
 
   const todayDonut = [
     { name: "Present", value: stats.todayPresent || 0, color: "#00C48C" },
-    { name: "Late", value: stats.todayLate || 0, color: "#FA731C" },
+    { name: "Late", value: stats.todayLate || 0, color: "#FACC15" },
     { name: "Absent", value: stats.todayAbsent || 0, color: "#EF4444" },
     { name: "On Leave", value: stats.todayOnLeave || 0, color: "#024BAB" },
   ].filter((d) => d.value > 0);
@@ -182,7 +184,7 @@ export default function DashboardPage() {
       ? [
           {
             icon: CalendarDays,
-            color: "#FA731C",
+            color: "#FACC15",
             msg: `${stats.pendingLeaves} leave request${stats.pendingLeaves > 1 ? "s" : ""} pending approval`,
             time: "Now",
           },
@@ -335,24 +337,33 @@ export default function DashboardPage() {
           <p className="text-xs text-muted-foreground mb-3">Live breakdown</p>
           {todayDonut.length > 0 ? (
             <div className="flex items-center gap-4">
-              <ResponsiveContainer width={110} height={110}>
-                <PieChart>
-                  <Pie
-                    data={todayDonut}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={32}
-                    outerRadius={50}
-                    paddingAngle={3}
+              <ResponsiveContainer width={130} height={120}>
+                <BarChart
+                  data={todayDonut}
+                  margin={{ top: 4, right: 0, left: -30, bottom: 0 }}
+                >
+                  <XAxis dataKey="name" hide />
+                  <YAxis
+                    tick={{ fontSize: 11 }}
+                    tickLine={false}
+                    axisLine={false}
+                    allowDecimals={false}
+                  />
+                  <Tooltip
+                    content={<NbTooltip />}
+                    cursor={{ fill: "#0000000d" }}
+                  />
+                  <Bar
                     dataKey="value"
                     stroke="#0A0A0A"
                     strokeWidth={2}
+                    animationDuration={900}
                   >
                     {todayDonut.map((d, i) => (
                       <Cell key={i} fill={d.color} />
                     ))}
-                  </Pie>
-                </PieChart>
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
               <div className="space-y-1.5 flex-1">
                 {[
@@ -366,7 +377,7 @@ export default function DashboardPage() {
                     label: "Late",
                     value: stats.todayLate || 0,
                     icon: Clock,
-                    color: "#FA731C",
+                    color: "#FACC15",
                   },
                   {
                     label: "Absent",
@@ -409,26 +420,92 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* 6-month Attendance Trend */}
+        {/* Daily attendance stats */}
         <div className="border-2 bg-white p-5">
           <h3 className="font-display font-bold text-base text-black mb-1">
-            Attendance Trend
+            Daily Attendance
           </h3>
           <p className="text-xs text-muted-foreground mb-3">
-            Present days — last 6 months
+            Present, late &amp; absent — last 7 days
           </p>
-          {attChartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={120}>
-              <AreaChart
-                data={attChartData}
+          {dailyChartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={140}>
+              <BarChart
+                data={dailyChartData}
                 margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
               >
-                <defs>
-                  <linearGradient id="attGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#024BAB" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#024BAB" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="#E5E7EB"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 10, fontWeight: 700 }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 12 }}
+                  tickLine={false}
+                  axisLine={false}
+                  width={24}
+                  allowDecimals={false}
+                />
+                <Tooltip
+                  content={<NbTooltip />}
+                  cursor={{ fill: "#0000000d" }}
+                />
+                <Legend
+                  iconSize={8}
+                  wrapperStyle={{ fontSize: 11, fontWeight: 700 }}
+                />
+                <Bar
+                  dataKey="Present"
+                  fill="#00C48C"
+                  stroke="#0A0A0A"
+                  strokeWidth={1.5}
+                  animationDuration={900}
+                />
+                <Bar
+                  dataKey="Late"
+                  fill="#FACC15"
+                  stroke="#0A0A0A"
+                  strokeWidth={1.5}
+                  animationDuration={900}
+                  animationBegin={150}
+                />
+                <Bar
+                  dataKey="Absent"
+                  fill="#EF4444"
+                  stroke="#0A0A0A"
+                  strokeWidth={1.5}
+                  animationDuration={900}
+                  animationBegin={300}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-28 text-muted-foreground text-xs font-bold">
+              No attendance data yet
+            </div>
+          )}
+        </div>
+
+        {/* 6-month Payroll Trend */}
+        <div className="border-2 bg-white p-5">
+          <h3 className="font-display font-bold text-base text-black mb-1">
+            Payroll Trend
+          </h3>
+          <p className="text-xs text-muted-foreground mb-3">
+            Net payout (₹K) — last 6 months
+          </p>
+          {payChartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={120}>
+              <BarChart
+                data={payChartData}
+                margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
+              >
                 <CartesianGrid
                   strokeDasharray="3 3"
                   stroke="#E5E7EB"
@@ -450,75 +527,15 @@ export default function DashboardPage() {
                   content={<NbTooltip />}
                   cursor={{ fill: "#024BAB11" }}
                 />
-                <Area
-                  type="monotone"
-                  dataKey="count"
-                  name="Present"
-                  stroke="#024BAB"
-                  strokeWidth={2}
-                  fill="url(#attGrad)"
-                  dot={{ fill: "#024BAB", strokeWidth: 2, r: 3 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex items-center justify-center h-28 text-muted-foreground text-xs font-bold">
-              No trend data yet
-            </div>
-          )}
-        </div>
-
-        {/* 6-month Payroll Trend */}
-        <div className="border-2 bg-white p-5">
-          <h3 className="font-display font-bold text-base text-black mb-1">
-            Payroll Trend
-          </h3>
-          <p className="text-xs text-muted-foreground mb-3">
-            Net payout (₹K) — last 6 months
-          </p>
-          {payChartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={120}>
-              <AreaChart
-                data={payChartData}
-                margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient id="payGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#00C48C" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#00C48C" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#E5E7EB"
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="label"
-                  tick={{ fontSize: 12, fontWeight: 700 }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={24}
-                />
-                <Tooltip
-                  content={<NbTooltip />}
-                  cursor={{ fill: "#00C48C11" }}
-                />
-                <Area
-                  type="monotone"
+                <Bar
                   dataKey="total"
                   name="₹K"
-                  stroke="#00C48C"
-                  strokeWidth={2}
-                  fill="url(#payGrad)"
-                  dot={{ fill: "#00C48C", strokeWidth: 2, r: 3 }}
+                  fill="#024BAB"
+                  stroke="#0A0A0A"
+                  strokeWidth={1.5}
+                  animationDuration={900}
                 />
-              </AreaChart>
+              </BarChart>
             </ResponsiveContainer>
           ) : (
             <div className="flex items-center justify-center h-28 text-muted-foreground text-xs font-bold">

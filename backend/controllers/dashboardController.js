@@ -129,6 +129,24 @@ const getStats = asyncHandler(async (req, res) => {
       count: attBuckets.find((x) => x._id && new Date(x._id).getTime() === d.getTime())?.count || 0,
     }));
 
+    // Daily present / late / absent for the last 7 days (today included).
+    const dayStarts = Array.from({ length: 7 }, (_, i) => new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6 + i));
+    const dayRows = await Attendance.aggregate([
+      {
+        $match: {
+          employee: { $in: companyEmployeeIds },
+          date: { $gte: dayStarts[0], $lte: today },
+          status: { $in: ["present", "late", "absent"] },
+        },
+      },
+      { $group: { _id: { date: "$date", status: "$status" }, n: { $sum: 1 } } },
+    ]).catch(() => []);
+    const dailyStats = dayStarts.map((d) => {
+      const n = (status) =>
+        dayRows.find((r) => r._id.status === status && new Date(r._id.date).getTime() === d.getTime())?.n || 0;
+      return { date: d.toISOString(), present: n("present"), late: n("late"), absent: n("absent") };
+    });
+
     const payMonths = monthStarts.slice(0, 6).map((d) => ({ month: d.getMonth() + 1, year: d.getFullYear() }));
     const payRows = await Payroll.aggregate([
       { $match: { company: req.user.company, $or: payMonths } },
@@ -163,6 +181,7 @@ const getStats = asyncHandler(async (req, res) => {
         pendingLeaveList,
         deptHeadcounts,
         attTrend,
+        dailyStats,
         payTrend,
       },
     };
