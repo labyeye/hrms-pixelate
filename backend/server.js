@@ -140,7 +140,7 @@ app.use("/api/company", require("./routes/companyRoutes"));
 // Lets iOS trust this domain for passkeys (webcredentials) — see PASSKEY_RP_ID.
 app.get("/.well-known/apple-app-site-association", (req, res) =>
   res.json({
-    webcredentials: { apps: ["K8B798T8BB.org.reactjs.native.example.NestHR"] },
+    webcredentials: { apps: ["5UNNVWBHTU.com.nesthr"] },
   }),
 );
 
