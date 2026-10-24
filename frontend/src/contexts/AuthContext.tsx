@@ -101,7 +101,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await authAPI.login(email, password);
       if (res.data.requires2FA) {
-        return { success: false, requires2FA: true, pendingToken: res.data.pendingToken };
+        return {
+          success: false,
+          requires2FA: true,
+          pendingToken: res.data.pendingToken,
+        };
       }
       const { token, ...userData } = res.data;
       setToken(token);
@@ -132,7 +136,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    // Records the sign-out in the audit log and drops this device (best effort)
+    try {
+      await authAPI.removeCurrentSession();
+    } catch {}
     removeToken();
     setUser(null);
   }, []);

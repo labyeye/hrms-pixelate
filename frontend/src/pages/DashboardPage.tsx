@@ -354,6 +354,7 @@ export default function DashboardPage() {
                     cursor={{ fill: "#0000000d" }}
                   />
                   <Bar
+                    radius={[6, 6, 0, 0]}
                     dataKey="value"
                     stroke="#0A0A0A"
                     strokeWidth={2}
@@ -461,13 +462,17 @@ export default function DashboardPage() {
                   wrapperStyle={{ fontSize: 11, fontWeight: 700 }}
                 />
                 <Bar
-                  dataKey="Present"
-                  fill="#00C48C"
+                  radius={[0, 0, 6, 6]}
+                  stackId="day"
+                  dataKey="Absent"
+                  fill="#EF4444"
                   stroke="#0A0A0A"
                   strokeWidth={1.5}
                   animationDuration={900}
+                  animationBegin={300}
                 />
                 <Bar
+                  stackId="day"
                   dataKey="Late"
                   fill="#FACC15"
                   stroke="#0A0A0A"
@@ -476,12 +481,13 @@ export default function DashboardPage() {
                   animationBegin={150}
                 />
                 <Bar
-                  dataKey="Absent"
-                  fill="#EF4444"
+                  radius={[6, 6, 0, 0]}
+                  stackId="day"
+                  dataKey="Present"
+                  fill="#00C48C"
                   stroke="#0A0A0A"
                   strokeWidth={1.5}
                   animationDuration={900}
-                  animationBegin={300}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -528,6 +534,7 @@ export default function DashboardPage() {
                   cursor={{ fill: "#024BAB11" }}
                 />
                 <Bar
+                  radius={[6, 6, 0, 0]}
                   dataKey="total"
                   name="₹K"
                   fill="#024BAB"
@@ -581,6 +588,7 @@ export default function DashboardPage() {
                     cursor={{ fill: "#024BAB11" }}
                   />
                   <Bar
+                    radius={[0, 6, 6, 0]}
                     dataKey="count"
                     name="Employees"
                     stroke="#0A0A0A"

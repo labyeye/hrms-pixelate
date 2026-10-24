@@ -19,6 +19,11 @@ import {
   User,
   ChevronDown,
   ChevronUp,
+  LogIn,
+  LogOut,
+  Monitor,
+  Smartphone,
+  Clock,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { auditAPI } from '../api/api';
@@ -66,6 +71,250 @@ function fmtDate(d: string) {
 
 const PAGE_SIZE = 15;
 
+interface ActivityEvent {
+  id: string;
+  kind: 'check_in' | 'check_out' | 'login' | 'logout';
+  at: string;
+  name: string;
+  sub?: string;
+  via?: string;
+  status?: string;
+  device?: string;
+  platform?: string;
+  ip?: string;
+  distance?: number;
+  workHours?: number;
+}
+
+const KIND = {
+  check_in: {
+    label: 'Checked in',
+    bg: '#dcfce7',
+    text: '#166534',
+    Icon: LogIn,
+  },
+  check_out: {
+    label: 'Checked out',
+    bg: '#ffedd5',
+    text: '#9a3412',
+    Icon: LogOut,
+  },
+  login: { label: 'Signed in', bg: '#dbeafe', text: '#1e40af', Icon: Monitor },
+  logout: { label: 'Signed out', bg: '#f3f4f6', text: '#374151', Icon: LogOut },
+};
+
+const TYPES = [
+  { key: 'all', label: 'All' },
+  { key: 'attendance', label: 'Check in/out' },
+  { key: 'login', label: 'Logins' },
+];
+
+const cap = (v?: string) =>
+  v ? v.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : '';
+const istDay = (offset = 0) =>
+  new Date(Date.now() + 5.5 * 3600000 - offset * 86400000)
+    .toISOString()
+    .slice(0, 10);
+const fmtTime = (d: string) =>
+  new Date(d).toLocaleTimeString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+const fmtDay = (d: string) =>
+  new Date(d).toLocaleDateString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit',
+    month: 'short',
+  });
+
+const RANGES = [
+  { key: 'today', label: 'Today', days: 0 },
+  { key: '7', label: '7 days', days: 6 },
+  { key: '30', label: '30 days', days: 29 },
+];
+
+function ActivityList() {
+  const [type, setType] = useState('all');
+  const [range, setRange] = useState('today');
+  const [rows, setRows] = useState<ActivityEvent[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [summary, setSummary] = useState({
+    checkIns: 0,
+    checkOuts: 0,
+    logins: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
+
+  const load = useCallback(
+    async (pg = 1) => {
+      if (pg === 1 && !refreshing) setLoading(true);
+      setError('');
+      try {
+        const days = RANGES.find(x => x.key === range)?.days || 0;
+        const res = await auditAPI.getActivity({
+          type,
+          startDate: istDay(days),
+          endDate: istDay(0),
+          page: String(pg),
+          limit: String(PAGE_SIZE),
+        });
+        setRows(prev =>
+          pg === 1 ? res.data || [] : [...prev, ...(res.data || [])],
+        );
+        setTotal(res.total || 0);
+        if (res.summary) setSummary(res.summary);
+        setPage(pg);
+      } catch (e: any) {
+        setError(e?.message || 'Failed to load activity');
+      }
+      setLoading(false);
+      setRefreshing(false);
+    },
+    [type, range, refreshing],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      load(1);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [type, range]),
+  );
+
+  const renderItem = ({ item }: { item: ActivityEvent }) => {
+    const k = KIND[item.kind];
+    const isLogin = item.kind === 'login' || item.kind === 'logout';
+    const detail = isLogin
+      ? item.ip
+        ? `IP ${item.ip}`
+        : ''
+      : [
+          cap(item.status),
+          item.kind === 'check_out' && item.workHours
+            ? `${item.workHours}h worked`
+            : '',
+          item.distance != null
+            ? `${Math.round(item.distance)}m from office`
+            : '',
+        ]
+          .filter(Boolean)
+          .join(' · ');
+    return (
+      <View style={styles.card}>
+        <View style={styles.cardTop}>
+          <View style={[styles.badge, { backgroundColor: k.bg }]}>
+            <k.Icon size={11} color={k.text} />
+            <Text style={[styles.badgeText, { color: k.text }]}>{k.label}</Text>
+          </View>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={styles.timeText}>{fmtTime(item.at)}</Text>
+            <Text style={styles.dateText}>{fmtDay(item.at)}</Text>
+          </View>
+        </View>
+        <Text style={styles.metaText}>{item.name}</Text>
+        {!!item.sub && <Text style={styles.metaEmail}>{item.sub}</Text>}
+        <View style={[styles.metaRow, { marginTop: 6 }]}>
+          {isLogin ? (
+            item.platform === 'web' ? (
+              <Monitor size={12} color={C.textMuted} />
+            ) : (
+              <Smartphone size={12} color={C.textMuted} />
+            )
+          ) : (
+            <Clock size={12} color={C.textMuted} />
+          )}
+          <Text style={styles.metaEmail}>
+            {isLogin ? item.device || 'Unknown device' : cap(item.via) || '—'}
+            {detail ? `  ·  ${detail}` : ''}
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={styles.pillRow}>
+        {TYPES.map(t => (
+          <TouchableOpacity
+            key={t.key}
+            style={[styles.pill, type === t.key && styles.pillActive]}
+            onPress={() => setType(t.key)}
+          >
+            <Text
+              style={[styles.pillText, type === t.key && styles.pillTextActive]}
+            >
+              {t.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <View style={styles.pillRow}>
+        {RANGES.map(t => (
+          <TouchableOpacity
+            key={t.key}
+            style={[styles.pill, range === t.key && styles.pillActive]}
+            onPress={() => setRange(t.key)}
+          >
+            <Text
+              style={[
+                styles.pillText,
+                range === t.key && styles.pillTextActive,
+              ]}
+            >
+              {t.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      {!loading && (
+        <Text style={styles.countText}>
+          {summary.checkIns} check-ins · {summary.checkOuts} check-outs ·{' '}
+          {summary.logins} logins
+        </Text>
+      )}
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={C.primary} />
+        </View>
+      ) : error ? (
+        <View style={styles.center}>
+          <Text style={styles.emptyText}>{error}</Text>
+        </View>
+      ) : rows.length === 0 ? (
+        <View style={styles.center}>
+          <Clock size={48} color="#D1D5DB" />
+          <Text style={styles.emptyText}>No activity for this period</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={rows}
+          keyExtractor={i => i.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => {
+                setRefreshing(true);
+                load(1);
+              }}
+              colors={[C.primary]}
+            />
+          }
+          onEndReached={() => rows.length < total && load(page + 1)}
+          onEndReachedThreshold={0.3}
+          ItemSeparatorComponent={() => <View style={styles.sep} />}
+        />
+      )}
+    </View>
+  );
+}
+
 export default function AuditLogScreen() {
   const navigation = useNavigation<any>();
   const [logs, setLogs] = useState<AuditLog[]>([]);
@@ -75,6 +324,7 @@ export default function AuditLogScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [tab, setTab] = useState<'activity' | 'changes'>('activity');
 
   const load = useCallback(
     async (pg = 1, reset = false) => {
@@ -202,71 +452,134 @@ export default function AuditLogScreen() {
         <View style={{ width: 36 }} />
       </View>
 
-      {/* Search */}
-      <View style={styles.searchWrap}>
-        <Search size={16} color={C.textMuted} style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Filter by action..."
-          placeholderTextColor={C.textMuted}
-          value={search}
-          onChangeText={t => {
-            setSearch(t);
-          }}
-          onSubmitEditing={() => load(1, true)}
-          returnKeyType="search"
-        />
+      <View style={styles.tabs}>
+        {(
+          [
+            ['activity', 'Attendance & Logins'],
+            ['changes', 'Change History'],
+          ] as const
+        ).map(([key, label]) => (
+          <TouchableOpacity
+            key={key}
+            style={[styles.tab, tab === key && styles.tabActive]}
+            onPress={() => setTab(key)}
+          >
+            <Text style={[styles.tabText, tab === key && styles.tabTextActive]}>
+              {label}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
-      {/* Count */}
-      {!loading && (
-        <Text style={styles.countText}>
-          {total} record{total !== 1 ? 's' : ''}
-        </Text>
-      )}
-
-      {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={C.primary} />
-        </View>
-      ) : logs.length === 0 ? (
-        <View style={styles.center}>
-          <Shield size={48} color="#D1D5DB" />
-          <Text style={styles.emptyText}>No audit logs yet</Text>
-          <Text style={styles.emptySubtext}>
-            Actions like approving leaves or editing employees will appear here
-          </Text>
-        </View>
+      {tab === 'activity' ? (
+        <ActivityList />
       ) : (
-        <FlatList
-          data={logs}
-          keyExtractor={i => i._id}
-          renderItem={renderItem}
-          contentContainerStyle={styles.list}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[C.primary]}
+        <>
+          {/* Search */}
+          <View style={styles.searchWrap}>
+            <Search size={16} color={C.textMuted} style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Filter by action..."
+              placeholderTextColor={C.textMuted}
+              value={search}
+              onChangeText={t => {
+                setSearch(t);
+              }}
+              onSubmitEditing={() => load(1, true)}
+              returnKeyType="search"
             />
-          }
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.3}
-          ListFooterComponent={
-            logs.length < total ? (
-              <View style={styles.loadMore}>
-                <ActivityIndicator size="small" color={C.primary} />
-              </View>
-            ) : null
-          }
-          ItemSeparatorComponent={() => <View style={styles.sep} />}
-        />
+          </View>
+
+          {/* Count */}
+          {!loading && (
+            <Text style={styles.countText}>
+              {total} record{total !== 1 ? 's' : ''}
+            </Text>
+          )}
+
+          {loading ? (
+            <View style={styles.center}>
+              <ActivityIndicator size="large" color={C.primary} />
+            </View>
+          ) : logs.length === 0 ? (
+            <View style={styles.center}>
+              <Shield size={48} color="#D1D5DB" />
+              <Text style={styles.emptyText}>No audit logs yet</Text>
+              <Text style={styles.emptySubtext}>
+                Actions like approving leaves or editing employees will appear
+                here
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={logs}
+              keyExtractor={i => i._id}
+              renderItem={renderItem}
+              contentContainerStyle={styles.list}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  colors={[C.primary]}
+                />
+              }
+              onEndReached={loadMore}
+              onEndReachedThreshold={0.3}
+              ListFooterComponent={
+                logs.length < total ? (
+                  <View style={styles.loadMore}>
+                    <ActivityIndicator size="small" color={C.primary} />
+                  </View>
+                ) : null
+              }
+              ItemSeparatorComponent={() => <View style={styles.sep} />}
+            />
+          )}
+        </>
       )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  tabs: {
+    flexDirection: 'row',
+    margin: 12,
+    marginBottom: 0,
+    borderWidth: 2,
+    borderRadius: 8,
+    borderColor: '#000',
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+  },
+  tab: { flex: 1, paddingVertical: 10, alignItems: 'center' },
+  tabActive: { backgroundColor: '#024BAB' },
+  tabText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#64748b',
+    textTransform: 'uppercase',
+  },
+  tabTextActive: { color: '#fff' },
+  pillRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+  },
+  pill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 2,
+    borderColor: '#000',
+    borderRadius: 999,
+    backgroundColor: '#fff',
+  },
+  pillActive: { backgroundColor: '#FFDE00' },
+  pillText: { fontSize: 11, fontWeight: '800', color: '#000' },
+  pillTextActive: { color: '#000' },
+  timeText: { fontSize: 13, fontWeight: '800', color: '#000' },
   safe: { flex: 1, backgroundColor: '#F0F6FF' },
   header: {
     flexDirection: 'row',

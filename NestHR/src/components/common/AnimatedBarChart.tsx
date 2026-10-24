@@ -30,6 +30,7 @@ interface Props {
   height?: number;
   format?: (n: number) => string;
   legend?: boolean;
+  stacked?: boolean;
 }
 
 function niceMax(max: number) {
@@ -46,6 +47,7 @@ export default function AnimatedBarChart({
   height = 190,
   format = n => String(n),
   legend = false,
+  stacked = false,
 }: Props) {
   const [w, setW] = useState(280);
   const reduce = useReduceMotion();
@@ -76,12 +78,24 @@ export default function AnimatedBarChart({
   const padB = 24;
   const plotW = w - padL - padR;
   const plotH = height - padT - padB;
-  const max = niceMax(
-    Math.max(0, ...data.flatMap(d => series.map(s => d.values[s.key] || 0))),
+  const max = Math.max(
+    2,
+    niceMax(
+      Math.max(
+        0,
+        ...(stacked
+          ? data.map(d =>
+              series.reduce((a, s) => a + (d.values[s.key] || 0), 0),
+            )
+          : data.flatMap(d => series.map(s => d.values[s.key] || 0))),
+      ),
+    ),
   );
   const slot = plotW / Math.max(data.length, 1);
-  const barW = Math.min(18, (slot * 0.8) / series.length);
-  const groupW = barW * series.length;
+  const barW = stacked
+    ? Math.min(26, slot * 0.6)
+    : Math.min(18, (slot * 0.8) / series.length);
+  const groupW = stacked ? barW : barW * series.length;
 
   return (
     <View onLayout={onLayout}>
@@ -118,21 +132,33 @@ export default function AnimatedBarChart({
             <React.Fragment key={i}>
               {series.map((s, j) => {
                 const full = ((d.values[s.key] || 0) / max) * plotH;
+                // Stacked bars put the first series on top.
+                const below = stacked
+                  ? (series
+                      .slice(j + 1)
+                      .reduce((a, t) => a + (d.values[t.key] || 0), 0) /
+                      max) *
+                    plotH
+                  : 0;
                 const h = progress.interpolate({
                   inputRange: [0, 1],
                   outputRange: [0, full],
                 });
                 const y = progress.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [padT + plotH, padT + plotH - full],
+                  outputRange: [
+                    padT + plotH - below,
+                    padT + plotH - below - full,
+                  ],
                 });
                 return (
                   <AnimatedRect
                     key={s.key}
-                    x={gx + j * barW}
+                    x={stacked ? gx : gx + j * barW}
                     y={y}
                     width={barW}
                     height={h}
+                    rx={5}
                     fill={s.color}
                     stroke={C.black}
                     strokeWidth={full > 0 ? 1.5 : 0}

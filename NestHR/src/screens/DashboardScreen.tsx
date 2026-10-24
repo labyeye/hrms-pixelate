@@ -267,6 +267,37 @@ function AdminDashboard({ navigation }: any) {
             })}
           </View>
 
+
+          {!!stats?.dailyStats?.length && (
+            <>
+              <Text style={styles.sectionLabel}>Daily Attendance</Text>
+              <FadeInUp
+                delay={ADMIN_STATS.length * 70 + 70}
+                style={styles.card}
+              >
+                <AnimatedBarChart
+                  legend
+                  stacked
+                  series={[
+                    { key: 'present', label: 'Present', color: '#00C48C' },
+                    { key: 'late', label: 'Late', color: '#FACC15' },
+                    { key: 'absent', label: 'Absent', color: '#EF4444' },
+                  ]}
+                  data={stats.dailyStats.map((d: any) => ({
+                    label: ['S', 'M', 'T', 'W', 'T', 'F', 'S'][
+                      new Date(d.date).getDay()
+                    ],
+                    values: {
+                      present: d.present,
+                      late: d.late,
+                      absent: d.absent,
+                    },
+                  }))}
+                />
+              </FadeInUp>
+            </>
+          )}
+
           <View style={styles.rangeRow}>
             {RANGE_PILLS.map(r => (
               <TouchableOpacity
@@ -319,55 +350,6 @@ function AdminDashboard({ navigation }: any) {
             </FadeInUp>
           </View>
 
-          <View style={styles.perfHeader}>
-            <Text style={styles.sectionLabel}>Performance</Text>
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('More', { screen: 'PerformanceReport' })
-              }
-            >
-              <Text style={styles.perfLink}>Monthly report →</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.card}>
-            {paySummary?.performance?.length ? (
-              <PerformanceList data={paySummary.performance} />
-            ) : (
-              <Text style={styles.perfEmpty}>
-                No attendance data for this period
-              </Text>
-            )}
-          </View>
-
-          {!!stats?.dailyStats?.length && (
-            <>
-              <Text style={styles.sectionLabel}>Daily Attendance</Text>
-              <FadeInUp
-                delay={ADMIN_STATS.length * 70 + 70}
-                style={styles.card}
-              >
-                <AnimatedBarChart
-                  legend
-                  series={[
-                    { key: 'present', label: 'Present', color: '#00C48C' },
-                    { key: 'late', label: 'Late', color: '#FACC15' },
-                    { key: 'absent', label: 'Absent', color: '#EF4444' },
-                  ]}
-                  data={stats.dailyStats.map((d: any) => ({
-                    label: ['S', 'M', 'T', 'W', 'T', 'F', 'S'][
-                      new Date(d.date).getDay()
-                    ],
-                    values: {
-                      present: d.present,
-                      late: d.late,
-                      absent: d.absent,
-                    },
-                  }))}
-                />
-              </FadeInUp>
-            </>
-          )}
-
           {!!stats?.payTrend?.length && (
             <>
               <Text style={styles.sectionLabel}>Payroll Trend (₹k)</Text>
@@ -386,35 +368,24 @@ function AdminDashboard({ navigation }: any) {
               </FadeInUp>
             </>
           )}
-
-          <Text style={styles.sectionLabel}>This Month</Text>
+          <View style={styles.perfHeader}>
+            <Text style={styles.sectionLabel}>Performance</Text>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate('More', { screen: 'PerformanceReport' })
+              }
+            >
+              <Text style={styles.perfLink}>Monthly report →</Text>
+            </TouchableOpacity>
+          </View>
           <View style={styles.card}>
-            {[
-              {
-                label: 'Payroll Processed',
-                val: stats?.monthlyPayroll ?? '—',
-                icon: <TrendingUp size={14} color={C.success} />,
-              },
-              {
-                label: 'New Hires',
-                val: stats?.newHires ?? '—',
-                icon: <Users size={14} color={C.primary} />,
-              },
-              {
-                label: 'Leave Requests',
-                val: stats?.pendingLeaves ?? '—',
-                icon: <Clock size={14} color={C.warning} />,
-              },
-            ].map((item, i) => (
-              <View
-                key={item.label}
-                style={[styles.quickRow, i > 0 && styles.quickBorder]}
-              >
-                <View style={styles.quickIcon}>{item.icon}</View>
-                <Text style={styles.quickLabel}>{item.label}</Text>
-                <Text style={styles.quickVal}>{item.val}</Text>
-              </View>
-            ))}
+            {paySummary?.performance?.length ? (
+              <PerformanceList data={paySummary.performance} />
+            ) : (
+              <Text style={styles.perfEmpty}>
+                No attendance data for this period
+              </Text>
+            )}
           </View>
         </ScrollView>
       )}
@@ -1513,7 +1484,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: C.textMuted,
     marginBottom: 10,
-    marginTop: 16,
+    marginTop: 10,
     letterSpacing: 0.5,
   },
 
@@ -1989,7 +1960,10 @@ const styles = StyleSheet.create({
     borderColor: C.black,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
-    padding: 16,
+    paddingBottom: 16,
+    paddingTop: 16,
+    paddingLeft: 18,
+    paddingRight: 18,
     marginBottom: 12,
   },
   payLabel: {

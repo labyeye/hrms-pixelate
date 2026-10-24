@@ -934,51 +934,7 @@ export default function EmployeesScreen() {
             />
           }
           showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            <View style={{ gap: 10, marginBottom: 4 }}>
-              <View style={tileGrid}>
-                <StatTile label="Total Employees" value={employees.length} icon={Users} color={C.primary} />
-                <StatTile label="New Hires (Month)" value={newHires} icon={UserPlus} color="#A855F7" />
-              </View>
-              <View style={styles.statusCard}>
-                {[
-                  { label: 'Active', n: cnt('active'), color: C.success, icon: UserCheck },
-                  { label: 'Inactive', n: cnt('inactive'), color: '#6B7280', icon: Clock },
-                  { label: 'Exited', n: cnt('exited'), color: '#A855F7', icon: LogOut },
-                ].map(x => (
-                  <View key={x.label} style={styles.statusCell}>
-                    <View style={[styles.statusChip, { backgroundColor: x.color }]}>
-                      <x.icon size={15} color={C.white} />
-                    </View>
-                    <Text style={styles.statusNum}>{x.n}</Text>
-                    <Text style={styles.statusLbl}>{x.label}</Text>
-                  </View>
-                ))}
-              </View>
-              <View style={styles.attCard}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <CalendarCheck size={14} color={C.black} />
-                    <Text style={styles.statusLbl}>
-                      Attendance · {now0.toLocaleString('en-IN', { month: 'long' })}
-                    </Text>
-                  </View>
-                  <Text style={styles.statusNum}>{attPct}%</Text>
-                </View>
-                <View style={styles.progTrack}>
-                  <View
-                    style={[
-                      styles.progFill,
-                      {
-                        width: `${attPct}%`,
-                        backgroundColor: attPct >= 85 ? C.success : attPct >= 70 ? C.secondary : C.danger,
-                      },
-                    ]}
-                  />
-                </View>
-              </View>
-            </View>
-          }
+          
           ListEmptyComponent={
             <View style={styles.empty}>
               <Users size={40} color="#D1D5DB" />
@@ -1050,16 +1006,16 @@ export default function EmployeesScreen() {
                   </View>
                 </View>
                 <View style={styles.cardMeta}>
-                  {item.email && (
+                  {item.designation && (
                     <View
                       style={[
                         styles.metaItem,
-                        { backgroundColor: '#DBEAFE', flex: 1 },
+                        { backgroundColor: '#FBFBFB', flex: 1 },
                       ]}
                     >
-                      <Mail size={12} color={C.black} />
+                      <User size={12} color={C.black} />
                       <Text style={styles.metaText} numberOfLines={1}>
-                        {item.email}
+                        {item.designation}
                       </Text>
                     </View>
                   )}
@@ -1067,7 +1023,7 @@ export default function EmployeesScreen() {
                     <View
                       style={[
                         styles.metaItem,
-                        { flexShrink: 0, backgroundColor: '#DCFCE7' },
+                        { flexShrink: 0, backgroundColor: '#FBFBFB' },
                       ]}
                     >
                       <Phone size={12} color={C.black} />
@@ -1083,7 +1039,7 @@ export default function EmployeesScreen() {
                     <View
                       style={[
                         styles.metaItem,
-                        { flexShrink: 0, backgroundColor: '#FEF08A' },
+                        { flexShrink: 0, backgroundColor: '#fbbb90ff' },
                       ]}
                     >
                       <Briefcase size={12} color={C.black} />

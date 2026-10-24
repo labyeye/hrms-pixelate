@@ -69,7 +69,7 @@ const s = StyleSheet.create({
   wrap: {
     paddingHorizontal: 16,
     paddingTop: 10,
-    paddingBottom: 10,
+    paddingBottom: 0,
     backgroundColor: C.white,
   },
   row: {

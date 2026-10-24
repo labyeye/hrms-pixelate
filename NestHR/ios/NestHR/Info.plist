@@ -33,10 +33,25 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>NestHR needs camera access to update employee profile photos</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string/>
+	<string>NestHR uses your location while the app is open to verify that you are at your workplace when you mark attendance.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>NestHR uses your location to verify that you are at your workplace when you mark attendance. It is only used when you check in or out.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>NestHR saves photos you capture to your photo library</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>NestHR needs photo library access to update employee profile photos</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
+	<key>UIAppFonts</key>
+	<array>
+		<string>DMSans-Bold.ttf</string>
+		<string>DMSans-Medium.ttf</string>
+		<string>DMSans-Regular.ttf</string>
+		<string>DMSans-SemiBold.ttf</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>
@@ -56,18 +71,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<key>NSCameraUsageDescription</key>
-	<string>NestHR needs camera access to update employee profile photos</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>NestHR needs photo library access to update employee profile photos</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>NestHR saves photos you capture to your photo library</string>
-	<key>UIAppFonts</key>
-	<array>
-		<string>DMSans-Bold.ttf</string>
-		<string>DMSans-Medium.ttf</string>
-		<string>DMSans-Regular.ttf</string>
-		<string>DMSans-SemiBold.ttf</string>
-	</array>
 </dict>
 </plist>

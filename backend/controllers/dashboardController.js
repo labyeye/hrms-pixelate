@@ -129,22 +129,29 @@ const getStats = asyncHandler(async (req, res) => {
       count: attBuckets.find((x) => x._id && new Date(x._id).getTime() === d.getTime())?.count || 0,
     }));
 
-    // Daily present / late / absent for the last 7 days (today included).
-    const dayStarts = Array.from({ length: 7 }, (_, i) => new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6 + i));
+    // Daily present / late / absent for the last 7 days (today included). Attendance dates are
+    // per-IST-day stamps, so bucket by IST date string instead of matching exact instants.
+    const istDay = (offset) =>
+      new Date(Date.now() + 5.5 * 3600000 - offset * 86400000).toISOString().slice(0, 10);
+    const dayKeys = Array.from({ length: 7 }, (_, i) => istDay(6 - i));
     const dayRows = await Attendance.aggregate([
       {
         $match: {
           employee: { $in: companyEmployeeIds },
-          date: { $gte: dayStarts[0], $lte: today },
+          date: { $gte: new Date(`${dayKeys[0]}T00:00:00Z`.replace("Z", "+05:30")), $lt: new Date(Date.now() + 36 * 3600000) },
           status: { $in: ["present", "late", "absent"] },
         },
       },
-      { $group: { _id: { date: "$date", status: "$status" }, n: { $sum: 1 } } },
+      {
+        $group: {
+          _id: { d: { $dateToString: { format: "%Y-%m-%d", date: "$date", timezone: "+05:30" } }, s: "$status" },
+          n: { $sum: 1 },
+        },
+      },
     ]).catch(() => []);
-    const dailyStats = dayStarts.map((d) => {
-      const n = (status) =>
-        dayRows.find((r) => r._id.status === status && new Date(r._id.date).getTime() === d.getTime())?.n || 0;
-      return { date: d.toISOString(), present: n("present"), late: n("late"), absent: n("absent") };
+    const dailyStats = dayKeys.map((k) => {
+      const n = (status) => dayRows.find((r) => r._id.d === k && r._id.s === status)?.n || 0;
+      return { date: `${k}T12:00:00+05:30`, present: n("present"), late: n("late"), absent: n("absent") };
     });
 
     const payMonths = monthStarts.slice(0, 6).map((d) => ({ month: d.getMonth() + 1, year: d.getFullYear() }));

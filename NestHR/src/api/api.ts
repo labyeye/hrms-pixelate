@@ -854,6 +854,8 @@ export const paymentMethodAPI = {
 
 export const auditAPI = {
   getLogs: (params?: Record<string, string>) => request(`/audit${qs(params)}`),
+  getActivity: (params?: Record<string, string>) =>
+    request(`/audit/activity${qs(params)}`),
 };
 
 export const supportAPI = {

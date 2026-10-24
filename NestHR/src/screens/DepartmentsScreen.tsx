@@ -151,11 +151,8 @@ export default function DepartmentsScreen() {
           >
             <ChevronLeft size={22} color={C.black} />
           </TouchableOpacity>
-          <Building2 size={20} color={C.primary} />
           <Text style={styles.headerTitle}>Departments</Text>
-          <View style={styles.countBadge}>
-            <Text style={styles.countText}>{departments.length}</Text>
-          </View>
+          
         </View>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <ExportButton
@@ -174,8 +171,7 @@ export default function DepartmentsScreen() {
             ]}
           />
           <TouchableOpacity style={styles.addBtn} onPress={openCreate}>
-            <Plus size={14} color={C.white} />
-            <Text style={styles.addBtnText}>Add</Text>
+            <Plus size={22} color={C.black} />
           </TouchableOpacity>
         </View>
       </View>
@@ -398,14 +394,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: C.primary,
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderColor: C.black,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },

@@ -21,13 +21,13 @@ import {
   KeyRound,
   Smartphone,
   Mail,
-  MessageCircle,
   FileText,
   Trash2,
   CheckCircle2,
 } from 'lucide-react-native';
 import { authAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
+import WhatsAppIcon from '../components/common/WhatsAppIcon';
 import { C } from '../theme';
 
 type Section = 'passkey' | 'devices' | 'email' | 'phone' | 'backup';
@@ -92,16 +92,20 @@ export default function AccountSecurityScreen() {
       Icon: Mail,
       color: C.primary,
       title: 'Email Verification',
-      status: me.emailVerified ? 'Email verified' : 'Confirm your email address',
+      status: me.emailVerified
+        ? 'Email verified'
+        : 'Confirm your email address',
       on: !!me.emailVerified,
       body: <EmailBody me={me} onChanged={loadMe} />,
     },
     {
       key: 'phone',
-      Icon: MessageCircle,
-      color: C.success,
+      Icon: WhatsAppIcon,
+      color: '#FFFFFF',
       title: 'WhatsApp Number',
-      status: me.phoneVerified ? 'Number verified' : 'Verify your number for OTP login',
+      status: me.phoneVerified
+        ? 'Number verified'
+        : 'Verify your number for OTP login',
       on: !!me.phoneVerified,
       body: <PhoneBody me={me} onChanged={loadMe} />,
     },
@@ -144,12 +148,18 @@ export default function AccountSecurityScreen() {
                 onPress={() => setOpen(o => (o === sec.key ? null : sec.key))}
               >
                 <View style={[styles.iconBox, { backgroundColor: sec.color }]}>
-                  <sec.Icon size={18} color={C.white} />
+                  <sec.Icon
+                    size={sec.key === 'phone' ? 26 : 18}
+                    color={C.white}
+                  />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.sectionTitle}>{sec.title}</Text>
                   <Text
-                    style={[styles.sectionStatus, sec.on && { color: '#00A676' }]}
+                    style={[
+                      styles.sectionStatus,
+                      sec.on && { color: '#00A676' },
+                    ]}
                     numberOfLines={1}
                   >
                     {sec.status}
@@ -192,7 +202,10 @@ function PasskeyBody() {
 
   const add = async () => {
     if (!Passkey.isSupported()) {
-      return Alert.alert('Not supported', 'Passkeys are not supported on this device.');
+      return Alert.alert(
+        'Not supported',
+        'Passkeys are not supported on this device.',
+      );
     }
     setAdding(true);
     try {
@@ -222,8 +235,10 @@ function PasskeyBody() {
       Alert.alert('Passkey added', 'You can now sign in with your passkey.');
       await load();
     } catch (e: any) {
-      const cancelled = e?.error === 'UserCancelled' || e?.name === 'NotAllowedError';
-      if (!cancelled) Alert.alert('Error', e?.message || 'Could not add passkey');
+      const cancelled =
+        e?.error === 'UserCancelled' || e?.name === 'NotAllowedError';
+      if (!cancelled)
+        Alert.alert('Error', e?.message || 'Could not add passkey');
     } finally {
       setAdding(false);
     }
@@ -249,8 +264,8 @@ function PasskeyBody() {
   return (
     <View style={{ gap: 8 }}>
       <Text style={styles.desc}>
-        A passkey lets you sign in with Face ID, Touch ID or your screen lock — no
-        password to type or remember.
+        A passkey lets you sign in with Face ID, Touch ID or your screen lock —
+        no password to type or remember.
       </Text>
       {loading ? (
         <ActivityIndicator color={C.primary} style={{ marginTop: 8 }} />
@@ -331,7 +346,8 @@ function DevicesBody() {
       },
     ]);
 
-  if (loading) return <ActivityIndicator color={C.primary} style={{ margin: 8 }} />;
+  if (loading)
+    return <ActivityIndicator color={C.primary} style={{ margin: 8 }} />;
   return (
     <View style={{ gap: 8 }}>
       {list.length === 0 && (
@@ -377,7 +393,8 @@ function EmailBody({ me, onChanged }: { me: any; onChanged: () => void }) {
 
   useEffect(() => setValue(me.email || ''), [me.email]);
 
-  const changed = value.trim().toLowerCase() !== String(me.email || '').toLowerCase();
+  const changed =
+    value.trim().toLowerCase() !== String(me.email || '').toLowerCase();
   const needs = changed || !me.emailVerified;
 
   const send = async () => {
@@ -596,7 +613,10 @@ function BackupBody() {
             Save these now — they won't be shown again.
           </Text>
           <Primary title="Copy / Save Codes" busy={false} onPress={share} />
-          <TouchableOpacity style={styles.secondaryBtn} onPress={() => setCodes(null)}>
+          <TouchableOpacity
+            style={styles.secondaryBtn}
+            onPress={() => setCodes(null)}
+          >
             <Text style={styles.secondaryBtnText}>Done</Text>
           </TouchableOpacity>
         </>
@@ -612,7 +632,9 @@ function BackupBody() {
             autoCapitalize="none"
           />
           <Primary
-            title={status?.generatedAt ? 'Generate New Codes' : 'Generate Codes'}
+            title={
+              status?.generatedAt ? 'Generate New Codes' : 'Generate Codes'
+            }
             busy={busy}
             onPress={generate}
           />

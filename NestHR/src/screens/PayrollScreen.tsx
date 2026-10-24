@@ -32,13 +32,35 @@ import { useNavigation } from '@react-navigation/native';
 import { payrollAPI, payrollPreviewAPI } from '../api/api';
 import RNPrint from 'react-native-print';
 import { buildPayslipHTML } from '../utils/buildPayslipHTML';
-
+const tallylogo = require('../assets/images/tally.png');
 import { useAuth } from '../contexts/AuthContext';
 import { Payroll } from '../types/hrms';
 import { C } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import ExportButton from '../components/common/ExportButton';
 import FilterBar from '../components/common/FilterBar';
+import PickerField from '../components/common/PickerField';
+
+const GEN_MONTHS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+].map((label, i) => ({ value: String(i + 1), label }));
+
+// Current year +1 back to 5 years ago, newest first.
+const genYearOptions = Array.from({ length: 7 }, (_, i) => {
+  const y = new Date().getFullYear() + 1 - i;
+  return { value: String(y), label: String(y) };
+});
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
   pending: { color: C.warning, bg: '#FFF7ED' },
@@ -97,8 +119,9 @@ export default function PayrollScreen() {
     if (statusFilter && p.status !== statusFilter) return false;
     if (search) {
       const emp = p.employee as any;
-      const name =
-        `${emp?.firstName || ''} ${emp?.lastName || ''}`.toLowerCase();
+      const name = `${emp?.firstName || ''} ${
+        emp?.lastName || ''
+      }`.toLowerCase();
       if (!name.includes(search.toLowerCase())) return false;
     }
     return true;
@@ -183,8 +206,8 @@ export default function PayrollScreen() {
     const name = isEmployee
       ? user?.name || 'Employee'
       : emp
-        ? `${emp.firstName} ${emp.lastName}`
-        : 'Employee';
+      ? `${emp.firstName} ${emp.lastName}`
+      : 'Employee';
     const text = [
       `━━━━━━━━━━━━━━━━━━━━`,
       `SALARY SLIP — ${period}`,
@@ -200,8 +223,12 @@ export default function PayrollScreen() {
       `Gross Salary   : ₹${(payroll.grossSalary || 0).toLocaleString()}`,
       ``,
       `DEDUCTIONS`,
-      `Absent (${payroll.absentDays || 0}d): -₹${(payroll.absentDeduction || 0).toLocaleString()}`,
-      `Late           : -₹${(payroll.lateDeductionAmount || 0).toLocaleString()}`,
+      `Absent (${payroll.absentDays || 0}d): -₹${(
+        payroll.absentDeduction || 0
+      ).toLocaleString()}`,
+      `Late           : -₹${(
+        payroll.lateDeductionAmount || 0
+      ).toLocaleString()}`,
       `Half Day       : -₹${(payroll.halfDayDeduction || 0).toLocaleString()}`,
       `Penalty        : -₹${(payroll.penaltyAmount || 0).toLocaleString()}`,
       `Loan EMI       : -₹${(payroll.loanDeduction || 0).toLocaleString()}`,
@@ -279,7 +306,9 @@ export default function PayrollScreen() {
     const csv = [header, ...rows].join('\n');
     const period =
       payrolls[0] && (payrolls[0] as any).month
-        ? `${months[((payrolls[0] as any).month || 1) - 1]}_${(payrolls[0] as any).year}`
+        ? `${months[((payrolls[0] as any).month || 1) - 1]}_${
+            (payrolls[0] as any).year
+          }`
         : 'Export';
     await Share.share({
       message: csv,
@@ -343,19 +372,56 @@ export default function PayrollScreen() {
                 label=""
                 rows={payrolls}
                 cols={[
-                  { header: 'Emp Code', value: (p: any) => p.employee?.employeeId },
-                  { header: 'Employee', value: (p: any) => `${p.employee?.firstName || ''} ${p.employee?.lastName || ''}`.trim() },
-                  { header: 'Designation', value: (p: any) => p.employee?.designation },
-                  { header: 'Cost / Hour', value: (p: any) => (p.hourlyRate ? Number(p.hourlyRate).toFixed(2) : '') },
+                  {
+                    header: 'Emp Code',
+                    value: (p: any) => p.employee?.employeeId,
+                  },
+                  {
+                    header: 'Employee',
+                    value: (p: any) =>
+                      `${p.employee?.firstName || ''} ${
+                        p.employee?.lastName || ''
+                      }`.trim(),
+                  },
+                  {
+                    header: 'Designation',
+                    value: (p: any) => p.employee?.designation,
+                  },
+                  {
+                    header: 'Cost / Hour',
+                    value: (p: any) =>
+                      p.hourlyRate ? Number(p.hourlyRate).toFixed(2) : '',
+                  },
                   { header: 'Basic', value: (p: any) => p.basicSalary },
                   { header: 'OT', value: (p: any) => p.otPay || 0 },
-                  { header: 'Absent Ded.', value: (p: any) => p.absentDeduction || 0 },
-                  { header: 'Late Ded.', value: (p: any) => p.lateDeductionAmount || 0 },
-                  { header: 'Half Day Ded.', value: (p: any) => p.halfDayDeduction || 0 },
-                  { header: 'Early Out Ded.', value: (p: any) => p.earlyCheckoutDeduction || 0 },
-                  { header: 'Penalty', value: (p: any) => p.penaltyAmount || 0 },
-                  { header: 'Bonus/Allow', value: (p: any) => p.otherAllowances || 0 },
-                  { header: 'Loan/Advance', value: (p: any) => p.loanDeduction || 0 },
+                  {
+                    header: 'Absent Ded.',
+                    value: (p: any) => p.absentDeduction || 0,
+                  },
+                  {
+                    header: 'Late Ded.',
+                    value: (p: any) => p.lateDeductionAmount || 0,
+                  },
+                  {
+                    header: 'Half Day Ded.',
+                    value: (p: any) => p.halfDayDeduction || 0,
+                  },
+                  {
+                    header: 'Early Out Ded.',
+                    value: (p: any) => p.earlyCheckoutDeduction || 0,
+                  },
+                  {
+                    header: 'Penalty',
+                    value: (p: any) => p.penaltyAmount || 0,
+                  },
+                  {
+                    header: 'Bonus/Allow',
+                    value: (p: any) => p.otherAllowances || 0,
+                  },
+                  {
+                    header: 'Loan/Advance',
+                    value: (p: any) => p.loanDeduction || 0,
+                  },
                   { header: 'Gross', value: (p: any) => p.grossSalary },
                   { header: 'Net Salary', value: (p: any) => p.netSalary },
                   { header: 'Status', value: (p: any) => p.status },
@@ -364,18 +430,16 @@ export default function PayrollScreen() {
             )}
             {payrolls.length > 0 && (
               <TouchableOpacity
-                style={[styles.genBtn, { backgroundColor: '#16A34A' }]}
+                style={[styles.genBtn]}
                 onPress={handleTallyExport}
               >
-                <Share2 size={13} color={C.white} />
-                <Text style={styles.genBtnText}>Tally</Text>
+                <Image source={tallylogo} style={{ width: 40, height: 20 }} />
               </TouchableOpacity>
             )}
             <TouchableOpacity
               style={styles.genBtn}
               onPress={() => setShowGenModal(true)}
             >
-              <Zap size={14} color={C.white} />
               <Text style={styles.genBtnText}>Generate</Text>
             </TouchableOpacity>
           </View>
@@ -536,7 +600,10 @@ export default function PayrollScreen() {
               >
                 <View style={styles.cardTop}>
                   {emp?.avatar ? (
-                    <Image source={{ uri: emp.avatar }} style={styles.empPhoto} />
+                    <Image
+                      source={{ uri: emp.avatar }}
+                      style={styles.empPhoto}
+                    />
                   ) : (
                     <View style={styles.empAvatar}>
                       <Text style={styles.empAvatarText}>
@@ -545,13 +612,17 @@ export default function PayrollScreen() {
                     </View>
                   )}
                   <View style={{ flex: 1, marginLeft: 12 }}>
-                    {!isEmployee && <Text style={styles.codeChip}>{emp?.employeeId || '—'}</Text>}
+                    {!isEmployee && (
+                      <Text style={styles.codeChip}>
+                        {emp?.employeeId || '—'}
+                      </Text>
+                    )}
                     <Text style={styles.empName}>
                       {isEmployee
                         ? user?.name || 'My Payslip'
                         : emp
-                          ? `${emp.firstName} ${emp.lastName}`
-                          : 'Employee'}
+                        ? `${emp.firstName} ${emp.lastName}`
+                        : 'Employee'}
                     </Text>
                     <Text style={styles.empSub}>
                       {isEmployee
@@ -560,7 +631,11 @@ export default function PayrollScreen() {
                     </Text>
                     {!isEmployee && (
                       <Text style={styles.empSub}>
-                        {(item as any).hourlyRate ? `₹${Number((item as any).hourlyRate).toFixed(2)}/hr · ` : ''}
+                        {(item as any).hourlyRate
+                          ? `₹${Number((item as any).hourlyRate).toFixed(
+                              2,
+                            )}/hr · `
+                          : ''}
                         Salary ₹{(item.basicSalary || 0).toLocaleString()}
                       </Text>
                     )}
@@ -587,18 +662,56 @@ export default function PayrollScreen() {
                   const p: any = item;
                   const chips = [
                     { l: 'OT', v: p.otPay, sign: '+', c: '#F59E0B' },
-                    { l: `Absent${p.absentDays ? ` ${p.absentDays}d` : ''}`, v: p.absentDeduction, sign: '-', c: C.danger },
-                    { l: 'Late', v: p.lateDeductionAmount, sign: '-', c: C.danger },
-                    { l: 'Half Day', v: p.halfDayDeduction, sign: '-', c: C.danger },
-                    { l: 'Early Out', v: p.earlyCheckoutDeduction, sign: '-', c: C.danger },
-                    { l: 'Penalty', v: p.penaltyAmount, sign: '-', c: C.danger },
-                    { l: 'Bonus', v: p.otherAllowances, sign: '+', c: C.success },
-                    { l: 'Loan', v: p.loanDeduction, sign: '-', c: C.secondary },
+                    {
+                      l: `Absent${p.absentDays ? ` ${p.absentDays}d` : ''}`,
+                      v: p.absentDeduction,
+                      sign: '-',
+                      c: C.danger,
+                    },
+                    {
+                      l: 'Late',
+                      v: p.lateDeductionAmount,
+                      sign: '-',
+                      c: C.danger,
+                    },
+                    {
+                      l: 'Half Day',
+                      v: p.halfDayDeduction,
+                      sign: '-',
+                      c: C.danger,
+                    },
+                    {
+                      l: 'Early Out',
+                      v: p.earlyCheckoutDeduction,
+                      sign: '-',
+                      c: C.danger,
+                    },
+                    {
+                      l: 'Penalty',
+                      v: p.penaltyAmount,
+                      sign: '-',
+                      c: C.danger,
+                    },
+                    {
+                      l: 'Bonus',
+                      v: p.otherAllowances,
+                      sign: '+',
+                      c: C.success,
+                    },
+                    {
+                      l: 'Loan',
+                      v: p.loanDeduction,
+                      sign: '-',
+                      c: C.secondary,
+                    },
                   ].filter(x => (x.v || 0) > 0);
                   return chips.length ? (
                     <View style={styles.chipWrap}>
                       {chips.map(x => (
-                        <View key={x.l} style={[styles.adjChip, { borderColor: x.c }]}>
+                        <View
+                          key={x.l}
+                          style={[styles.adjChip, { borderColor: x.c }]}
+                        >
                           <Text style={[styles.adjText, { color: x.c }]}>
                             {x.l} {x.sign}₹{Number(x.v).toLocaleString()}
                           </Text>
@@ -661,563 +774,592 @@ export default function PayrollScreen() {
       )}
 
       {!isEmployee && (
-        <Modal
-          visible={showGenModal}
-          transparent
-        animationType="fade"
-        >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-          <SafeAreaView style={styles.safe} edges={[]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {previewStep === 'preview'
-                  ? 'Payroll Preview'
-                  : 'Generate Payroll'}
-              </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setShowGenModal(false);
-                  setPreviewStep('form');
-                  setPreviewData([]);
-                }}
-              >
-                <X size={22} color={C.black} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView
-              contentContainerStyle={{ padding: 20, gap: 16 }}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-            >
-              {previewStep === 'form' ? (
-                <>
-                  <View style={styles.genNote}>
-                    <Text style={styles.genNoteText}>
-                      Preview payroll calculations before processing, or
-                      generate directly.
-                    </Text>
-                  </View>
-                  <View>
-                    <Text style={styles.fieldLabel}>Month (1–12)</Text>
-                    <TextInput
-                      style={styles.fieldInput}
-                      value={genMonth}
-                      onChangeText={setGenMonth}
-                      keyboardType="numeric"
-                      placeholder="e.g. 6"
-                      placeholderTextColor={C.textLight}
-                    />
-                  </View>
-                  <View>
-                    <Text style={styles.fieldLabel}>Year</Text>
-                    <TextInput
-                      style={styles.fieldInput}
-                      value={genYear}
-                      onChangeText={setGenYear}
-                      keyboardType="numeric"
-                      placeholder="e.g. 2026"
-                      placeholderTextColor={C.textLight}
-                    />
-                  </View>
-                  <TouchableOpacity
-                    style={[
-                      styles.genSubmitBtn,
-                      { backgroundColor: C.primary },
-                    ]}
-                    onPress={handlePreviewPayroll}
-                    disabled={loadingPreview}
-                  >
-                    {loadingPreview ? (
-                      <ActivityIndicator color={C.white} />
-                    ) : (
-                      <>
-                        <Eye size={14} color={C.white} />
-                        <Text style={styles.genSubmitBtnText}>
-                          Preview First
-                        </Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.genSubmitBtn}
-                    onPress={() => handleGenerate(false)}
-                    disabled={generating}
-                  >
-                    {generating ? (
-                      <ActivityIndicator color={C.white} />
-                    ) : (
-                      <>
-                        <Zap size={14} color={C.white} />
-                        <Text style={styles.genSubmitBtnText}>
-                          Generate Directly
-                        </Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.genSubmitBtn,
-                      { backgroundColor: C.danger, marginTop: 0 },
-                    ]}
-                    onPress={() => handleGenerate(true)}
-                    disabled={generating}
-                  >
-                    <>
-                      <Zap size={14} color={C.white} />
-                      <Text style={styles.genSubmitBtnText}>
-                        Force Reprocess
-                      </Text>
-                    </>
-                  </TouchableOpacity>
-                  <Text
-                    style={{
-                      fontSize: 11,
-                      color: C.textMuted,
-                      textAlign: 'center',
-                    }}
-                  >
-                    Force Reprocess deletes and recalculates existing payroll
-                    (not paid ones)
+        <Modal visible={showGenModal} transparent animationType="fade">
+          <View style={CENTER.overlay}>
+            <View style={CENTER.card}>
+              <SafeAreaView style={styles.safe} edges={[]}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>
+                    {previewStep === 'preview'
+                      ? 'Payroll Preview'
+                      : 'Generate Payroll'}
                   </Text>
-                </>
-              ) : (
-                <>
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      fontWeight: '600',
-                      color: C.textMuted,
-                    }}
-                  >
-                    {previewData.length} employee
-                    {previewData.length !== 1 ? 's' : ''} · {genMonth}/{genYear}
-                  </Text>
-                  {previewData.map(p => (
-                    <View key={p.employee._id} style={styles.previewRow}>
-                      <View style={{ flex: 1, marginRight: 10 }}>
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            gap: 6,
-                            flexWrap: 'wrap',
-                          }}
-                        >
-                          <Text
-                            style={{
-                              fontSize: 13,
-                              fontWeight: '700',
-                              color: C.black,
-                            }}
-                          >
-                            {p.employee.firstName} {p.employee.lastName}
-                          </Text>
-                          {p.alreadyProcessed && (
-                            <View
-                              style={{
-                                backgroundColor: '#FEF3C7',
-                                borderWidth: 1.5,
-                                borderColor: '#D97706',
-                                paddingHorizontal: 6,
-                                paddingVertical: 1,
-                              }}
-                            >
-                              <Text
-                                style={{
-                                  fontSize: 9,
-                                  fontWeight: '700',
-                                  color: '#92400E',
-                                }}
-                              >
-                                ⚠ EXISTS
-                              </Text>
-                            </View>
-                          )}
-                          {!p.alreadyProcessed && (
-                            <View
-                              style={{
-                                backgroundColor: '#F0FDF4',
-                                borderWidth: 1.5,
-                                borderColor: C.success,
-                                paddingHorizontal: 6,
-                                paddingVertical: 1,
-                              }}
-                            >
-                              <Text
-                                style={{
-                                  fontSize: 9,
-                                  fontWeight: '700',
-                                  color: C.success,
-                                }}
-                              >
-                                ✓ NEW
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                        <Text
-                          style={{
-                            fontSize: 11,
-                            color: C.textMuted,
-                            marginTop: 2,
-                          }}
-                        >
-                          {p.employee.employeeId
-                            ? `${p.employee.employeeId} · `
-                            : ''}
-                          {p.presentDays}/{p.workingDays}d · {p.absentDays || 0}{' '}
-                          absent
-                        </Text>
-                      </View>
-                      <View style={{ alignItems: 'flex-end' }}>
-                        <Text
-                          style={{
-                            fontSize: 11,
-                            color: C.textMuted,
-                            textDecorationLine: 'line-through',
-                          }}
-                        >
-                          ₹{(p.grossSalary || 0).toLocaleString()}
-                        </Text>
-                        <Text
-                          style={{
-                            fontSize: 14,
-                            fontWeight: '700',
-                            color: C.success,
-                          }}
-                        >
-                          ₹{(p.netSalary || 0).toLocaleString()}
-                        </Text>
-                        {(p.totalDeductions || 0) > 0 && (
-                          <Text
-                            style={{
-                              fontSize: 10,
-                              color: C.danger,
-                              fontWeight: '600',
-                            }}
-                          >
-                            -₹{(p.totalDeductions || 0).toLocaleString()}
-                          </Text>
-                        )}
-                      </View>
-                    </View>
-                  ))}
                   <TouchableOpacity
-                    style={[styles.genSubmitBtn, { backgroundColor: '#000' }]}
                     onPress={() => {
+                      setShowGenModal(false);
                       setPreviewStep('form');
                       setPreviewData([]);
                     }}
                   >
-                    <Text style={styles.genSubmitBtnText}>← Back</Text>
+                    <X size={22} color={C.black} />
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.genSubmitBtn}
-                    onPress={() => handleGenerate(false)}
-                    disabled={generating}
-                  >
-                    {generating ? (
-                      <ActivityIndicator color={C.white} />
-                    ) : (
-                      <>
-                        <Zap size={14} color={C.white} />
-                        <Text style={styles.genSubmitBtnText}>
-                          Confirm & Generate
+                </View>
+                <ScrollView
+                  contentContainerStyle={{ padding: 20, gap: 16 }}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
+                >
+                  {previewStep === 'form' ? (
+                    <>
+                      <View style={styles.genNote}>
+                        <Text style={styles.genNoteText}>
+                          Preview payroll calculations before processing, or
+                          generate directly.
                         </Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                </>
-              )}
-            </ScrollView>
-          </SafeAreaView>
-        </View></View>
-</Modal>
+                      </View>
+                      <View>
+                        <Text style={styles.fieldLabel}>Month</Text>
+                        <PickerField
+                          title="Select month"
+                          value={genMonth}
+                          onChange={setGenMonth}
+                          options={GEN_MONTHS}
+                        />
+                      </View>
+                      <View>
+                        <Text style={styles.fieldLabel}>Year</Text>
+                        <PickerField
+                          title="Select year"
+                          value={genYear}
+                          onChange={setGenYear}
+                          options={genYearOptions}
+                        />
+                      </View>
+                      <TouchableOpacity
+                        style={[
+                          styles.genSubmitBtn,
+                          { backgroundColor: C.primary },
+                        ]}
+                        onPress={handlePreviewPayroll}
+                        disabled={loadingPreview}
+                      >
+                        {loadingPreview ? (
+                          <ActivityIndicator color={C.white} />
+                        ) : (
+                          <>
+                            <Eye size={14} color={C.white} />
+                            <Text style={styles.genSubmitBtnText}>
+                              Preview First
+                            </Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.genSubmitBtn}
+                        onPress={() => handleGenerate(false)}
+                        disabled={generating}
+                      >
+                        {generating ? (
+                          <ActivityIndicator color={C.white} />
+                        ) : (
+                          <>
+                            <Zap size={14} color={C.white} />
+                            <Text style={styles.genSubmitBtnText}>
+                              Generate Directly
+                            </Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.genSubmitBtn,
+                          { backgroundColor: C.danger, marginTop: 0 },
+                        ]}
+                        onPress={() => handleGenerate(true)}
+                        disabled={generating}
+                      >
+                        <>
+                          <Zap size={14} color={C.white} />
+                          <Text style={styles.genSubmitBtnText}>
+                            Force Reprocess
+                          </Text>
+                        </>
+                      </TouchableOpacity>
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          color: C.textMuted,
+                          textAlign: 'center',
+                        }}
+                      >
+                        Force Reprocess deletes and recalculates existing
+                        payroll (not paid ones)
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          fontWeight: '600',
+                          color: C.textMuted,
+                        }}
+                      >
+                        {previewData.length} employee
+                        {previewData.length !== 1 ? 's' : ''} · {genMonth}/
+                        {genYear}
+                      </Text>
+                      {previewData.map(p => (
+                        <View key={p.employee._id} style={styles.previewRow}>
+                          <View style={{ flex: 1, marginRight: 10 }}>
+                            <View
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 6,
+                                flexWrap: 'wrap',
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: '700',
+                                  color: C.black,
+                                }}
+                              >
+                                {p.employee.firstName} {p.employee.lastName}
+                              </Text>
+                              {p.alreadyProcessed && (
+                                <View
+                                  style={{
+                                    backgroundColor: '#FEF3C7',
+                                    borderWidth: 1.5,
+                                    borderColor: '#D97706',
+                                    paddingHorizontal: 6,
+                                    paddingVertical: 1,
+                                  }}
+                                >
+                                  <Text
+                                    style={{
+                                      fontSize: 9,
+                                      fontWeight: '700',
+                                      color: '#92400E',
+                                    }}
+                                  >
+                                    ⚠ EXISTS
+                                  </Text>
+                                </View>
+                              )}
+                              {!p.alreadyProcessed && (
+                                <View
+                                  style={{
+                                    backgroundColor: '#F0FDF4',
+                                    borderWidth: 1.5,
+                                    borderColor: C.success,
+                                    paddingHorizontal: 6,
+                                    paddingVertical: 1,
+                                  }}
+                                >
+                                  <Text
+                                    style={{
+                                      fontSize: 9,
+                                      fontWeight: '700',
+                                      color: C.success,
+                                    }}
+                                  >
+                                    ✓ NEW
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
+                            <Text
+                              style={{
+                                fontSize: 11,
+                                color: C.textMuted,
+                                marginTop: 2,
+                              }}
+                            >
+                              {p.employee.employeeId
+                                ? `${p.employee.employeeId} · `
+                                : ''}
+                              {p.presentDays}/{p.workingDays}d ·{' '}
+                              {p.absentDays || 0} absent
+                            </Text>
+                          </View>
+                          <View style={{ alignItems: 'flex-end' }}>
+                            <Text
+                              style={{
+                                fontSize: 11,
+                                color: C.textMuted,
+                                textDecorationLine: 'line-through',
+                              }}
+                            >
+                              ₹{(p.grossSalary || 0).toLocaleString()}
+                            </Text>
+                            <Text
+                              style={{
+                                fontSize: 14,
+                                fontWeight: '700',
+                                color: C.success,
+                              }}
+                            >
+                              ₹{(p.netSalary || 0).toLocaleString()}
+                            </Text>
+                            {(p.totalDeductions || 0) > 0 && (
+                              <Text
+                                style={{
+                                  fontSize: 10,
+                                  color: C.danger,
+                                  fontWeight: '600',
+                                }}
+                              >
+                                -₹{(p.totalDeductions || 0).toLocaleString()}
+                              </Text>
+                            )}
+                          </View>
+                        </View>
+                      ))}
+                      <TouchableOpacity
+                        style={[
+                          styles.genSubmitBtn,
+                          { backgroundColor: '#000' },
+                        ]}
+                        onPress={() => {
+                          setPreviewStep('form');
+                          setPreviewData([]);
+                        }}
+                      >
+                        <Text style={styles.genSubmitBtnText}>← Back</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.genSubmitBtn}
+                        onPress={() => handleGenerate(false)}
+                        disabled={generating}
+                      >
+                        {generating ? (
+                          <ActivityIndicator color={C.white} />
+                        ) : (
+                          <>
+                            <Zap size={14} color={C.white} />
+                            <Text style={styles.genSubmitBtnText}>
+                              Confirm & Generate
+                            </Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </ScrollView>
+              </SafeAreaView>
+            </View>
+          </View>
+        </Modal>
       )}
 
       {/* Detail Modal */}
-      <Modal
-        visible={!!selected}
-        transparent
-        animationType="fade"
-      >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        {selected && (
-          <SafeAreaView style={styles.safe} edges={[]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Payroll Detail</Text>
-              <TouchableOpacity onPress={() => setSelected(null)}>
-                <X size={22} color={C.black} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView
-              contentContainerStyle={{ padding: 20, gap: 16 }}
-              showsVerticalScrollIndicator={false}
-            >
-              {(() => {
-                const s = selected as any;
-                const rows: Array<{
-                  label: string;
-                  val: number;
-                  prefix: string;
-                  color?: string;
-                  bold?: boolean;
-                  large?: boolean;
-                  section?: boolean;
-                }> = [
-                  { label: 'EARNINGS', val: 0, prefix: '', section: true },
-                  { label: 'Basic Salary', val: s.basicSalary, prefix: '₹' },
-                  { label: 'Earned Basic', val: s.earnedBasic, prefix: '₹' },
-                  {
-                    label: 'Allowances / Bonus',
-                    val: s.otherAllowances,
-                    prefix: '₹',
-                  },
-                  { label: 'Overtime Pay', val: s.otPay, prefix: '₹' },
-                  {
-                    label: 'Gross Salary',
-                    val: s.grossSalary,
-                    prefix: '₹',
-                    bold: true,
-                  },
-                  { label: 'DEDUCTIONS', val: 0, prefix: '', section: true },
-                  {
-                    label: `Absent (${s.absentDays || 0} days)`,
-                    val: s.absentDeduction,
-                    prefix: '-₹',
-                    color: C.danger,
-                  },
-                  {
-                    label: 'Late Deduction',
-                    val: s.lateDeductionAmount,
-                    prefix: '-₹',
-                    color: C.danger,
-                  },
-                  {
-                    label: 'Half-Day Deduction',
-                    val: s.halfDayDeduction,
-                    prefix: '-₹',
-                    color: C.danger,
-                  },
-                  {
-                    label: 'Penalty',
-                    val: s.penaltyAmount,
-                    prefix: '-₹',
-                    color: C.danger,
-                  },
-                  {
-                    label: 'Loan / Advance EMI',
-                    val: s.loanDeduction,
-                    prefix: '-₹',
-                    color: C.danger,
-                  },
-                  {
-                    label: 'Total Deductions',
-                    val: s.totalDeductions,
-                    prefix: '-₹',
-                    color: C.danger,
-                    bold: true,
-                  },
-                  { label: 'SUMMARY', val: 0, prefix: '', section: true },
-                  { label: 'Days Worked', val: s.presentDays, prefix: '' },
-                  { label: 'Working Days', val: s.workingDays, prefix: '' },
-                  { label: 'Hours Worked', val: s.totalWorkHours, prefix: '' },
-                  {
-                    label: 'Net Salary',
-                    val: s.netSalary,
-                    prefix: '₹',
-                    color: C.success,
-                    bold: true,
-                    large: true,
-                  },
-                ];
-                return rows;
-              })().map((row, i) => {
-                if (row.section) {
-                  return (
-                    <View key={i} style={styles.detailSection}>
-                      <Text style={styles.detailSectionLabel}>{row.label}</Text>
-                    </View>
-                  );
-                }
-                const val = row.val || 0;
-                const display =
-                  typeof val === 'number' && !Number.isInteger(val)
-                    ? val.toFixed(2)
-                    : val.toLocaleString();
-                return (
-                  <View key={i} style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>{row.label}</Text>
-                    <Text
-                      style={[
-                        styles.detailVal,
-                        row.bold && { fontWeight: '700' },
-                        row.color ? { color: row.color } : {},
-                        row.large ? { fontSize: 20 } : {},
-                        val === 0 && { color: C.textMuted },
-                      ]}
-                    >
-                      {val === 0 ? '—' : `${row.prefix}${display}`}
-                    </Text>
-                  </View>
-                );
-              })}
-              <TouchableOpacity
-                style={styles.shareBtn}
-                onPress={() => handleSharePayslip(selected)}
-              >
-                <Share2 size={15} color={C.white} />
-                <Text style={styles.processBtnText}>Share Payslip</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.pdfBtn}
-                onPress={() => handlePrintPayslip(selected)}
-              >
-                <FileText size={15} color={C.white} />
-                <Text style={styles.processBtnText}>Download / Print PDF</Text>
-              </TouchableOpacity>
-
-              {/* Mark Slip Received — HR only, on paid payrolls */}
-              {!isEmployee &&
-                (selected as any).status === 'paid' &&
-                ((selected as any).slipReceivedAt ? (
-                  <View style={styles.slipReceivedBadge}>
-                    <CheckCircle2 size={15} color={C.success} />
-                    <Text style={styles.slipReceivedText}>
-                      Slip acknowledged ·{' '}
-                      {new Date(
-                        (selected as any).slipReceivedAt,
-                      ).toLocaleDateString('en-IN')}
-                    </Text>
-                  </View>
-                ) : (
+      <Modal visible={!!selected} transparent animationType="fade">
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            {selected && (
+              <SafeAreaView style={styles.safe} edges={[]}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Payroll Detail</Text>
+                  <TouchableOpacity onPress={() => setSelected(null)}>
+                    <X size={22} color={C.black} />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView
+                  contentContainerStyle={{ padding: 20, gap: 16 }}
+                  showsVerticalScrollIndicator={false}
+                >
+                  {(() => {
+                    const s = selected as any;
+                    const rows: Array<{
+                      label: string;
+                      val: number;
+                      prefix: string;
+                      color?: string;
+                      bold?: boolean;
+                      large?: boolean;
+                      section?: boolean;
+                    }> = [
+                      { label: 'EARNINGS', val: 0, prefix: '', section: true },
+                      {
+                        label: 'Basic Salary',
+                        val: s.basicSalary,
+                        prefix: '₹',
+                      },
+                      {
+                        label: 'Earned Basic',
+                        val: s.earnedBasic,
+                        prefix: '₹',
+                      },
+                      {
+                        label: 'Allowances / Bonus',
+                        val: s.otherAllowances,
+                        prefix: '₹',
+                      },
+                      { label: 'Overtime Pay', val: s.otPay, prefix: '₹' },
+                      {
+                        label: 'Gross Salary',
+                        val: s.grossSalary,
+                        prefix: '₹',
+                        bold: true,
+                      },
+                      {
+                        label: 'DEDUCTIONS',
+                        val: 0,
+                        prefix: '',
+                        section: true,
+                      },
+                      {
+                        label: `Absent (${s.absentDays || 0} days)`,
+                        val: s.absentDeduction,
+                        prefix: '-₹',
+                        color: C.danger,
+                      },
+                      {
+                        label: 'Late Deduction',
+                        val: s.lateDeductionAmount,
+                        prefix: '-₹',
+                        color: C.danger,
+                      },
+                      {
+                        label: 'Half-Day Deduction',
+                        val: s.halfDayDeduction,
+                        prefix: '-₹',
+                        color: C.danger,
+                      },
+                      {
+                        label: 'Penalty',
+                        val: s.penaltyAmount,
+                        prefix: '-₹',
+                        color: C.danger,
+                      },
+                      {
+                        label: 'Loan / Advance EMI',
+                        val: s.loanDeduction,
+                        prefix: '-₹',
+                        color: C.danger,
+                      },
+                      {
+                        label: 'Total Deductions',
+                        val: s.totalDeductions,
+                        prefix: '-₹',
+                        color: C.danger,
+                        bold: true,
+                      },
+                      { label: 'SUMMARY', val: 0, prefix: '', section: true },
+                      { label: 'Days Worked', val: s.presentDays, prefix: '' },
+                      { label: 'Working Days', val: s.workingDays, prefix: '' },
+                      {
+                        label: 'Hours Worked',
+                        val: s.totalWorkHours,
+                        prefix: '',
+                      },
+                      {
+                        label: 'Net Salary',
+                        val: s.netSalary,
+                        prefix: '₹',
+                        color: C.success,
+                        bold: true,
+                        large: true,
+                      },
+                    ];
+                    return rows;
+                  })().map((row, i) => {
+                    if (row.section) {
+                      return (
+                        <View key={i} style={styles.detailSection}>
+                          <Text style={styles.detailSectionLabel}>
+                            {row.label}
+                          </Text>
+                        </View>
+                      );
+                    }
+                    const val = row.val || 0;
+                    const display =
+                      typeof val === 'number' && !Number.isInteger(val)
+                        ? val.toFixed(2)
+                        : val.toLocaleString();
+                    return (
+                      <View key={i} style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>{row.label}</Text>
+                        <Text
+                          style={[
+                            styles.detailVal,
+                            row.bold && { fontWeight: '700' },
+                            row.color ? { color: row.color } : {},
+                            row.large ? { fontSize: 20 } : {},
+                            val === 0 && { color: C.textMuted },
+                          ]}
+                        >
+                          {val === 0 ? '—' : `${row.prefix}${display}`}
+                        </Text>
+                      </View>
+                    );
+                  })}
                   <TouchableOpacity
-                    style={styles.slipBtn}
-                    onPress={async () => {
-                      try {
-                        await payrollAPI.markSlipReceived(
-                          (selected as any)._id,
-                        );
-                        setSelected(null);
-                        load();
-                      } catch (e: any) {
-                        Alert.alert('Error', e.message);
-                      }
-                    }}
+                    style={styles.shareBtn}
+                    onPress={() => handleSharePayslip(selected)}
                   >
-                    <CheckCircle2 size={15} color={C.white} />
+                    <Share2 size={15} color={C.white} />
+                    <Text style={styles.processBtnText}>Share Payslip</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.pdfBtn}
+                    onPress={() => handlePrintPayslip(selected)}
+                  >
+                    <FileText size={15} color={C.white} />
                     <Text style={styles.processBtnText}>
-                      Mark Slip Received
+                      Download / Print PDF
                     </Text>
                   </TouchableOpacity>
-                ))}
-            </ScrollView>
-          </SafeAreaView>
-        )}
-      </View></View>
-</Modal>
+
+                  {/* Mark Slip Received — HR only, on paid payrolls */}
+                  {!isEmployee &&
+                    (selected as any).status === 'paid' &&
+                    ((selected as any).slipReceivedAt ? (
+                      <View style={styles.slipReceivedBadge}>
+                        <CheckCircle2 size={15} color={C.success} />
+                        <Text style={styles.slipReceivedText}>
+                          Slip acknowledged ·{' '}
+                          {new Date(
+                            (selected as any).slipReceivedAt,
+                          ).toLocaleDateString('en-IN')}
+                        </Text>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.slipBtn}
+                        onPress={async () => {
+                          try {
+                            await payrollAPI.markSlipReceived(
+                              (selected as any)._id,
+                            );
+                            setSelected(null);
+                            load();
+                          } catch (e: any) {
+                            Alert.alert('Error', e.message);
+                          }
+                        }}
+                      >
+                        <CheckCircle2 size={15} color={C.white} />
+                        <Text style={styles.processBtnText}>
+                          Mark Slip Received
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                </ScrollView>
+              </SafeAreaView>
+            )}
+          </View>
+        </View>
+      </Modal>
 
       {isEmployee && (
         <Modal
           visible={showTaxModal}
           transparent
-        animationType="fade"
+          animationType="fade"
           onRequestClose={() => setShowTaxModal(false)}
         >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-          <SafeAreaView style={styles.safe} edges={[]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Investment Declarations</Text>
-              <TouchableOpacity onPress={() => setShowTaxModal(false)}>
-                <X size={22} color={C.black} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView
-              contentContainerStyle={{ padding: 20, gap: 16 }}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-            >
-              <View style={styles.genNote}>
-                <Text style={styles.genNoteText}>
-                  Submit investment details under Section 80C, 80D and HRA Rent
-                  for verification.
-                </Text>
-              </View>
-
-              <View>
-                <Text style={styles.fieldLabel}>
-                  Section 80C (PPF, LIC, ELSS) *
-                </Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  value={declarations.sec80C}
-                  onChangeText={v =>
-                    setDeclarations(p => ({ ...p, sec80C: v }))
-                  }
-                  keyboardType="numeric"
-                  placeholder="e.g. 150000"
-                  placeholderTextColor={C.textLight}
-                />
-                <Text
-                  style={{ fontSize: 10, color: C.textMuted, marginTop: 4 }}
+          <View style={CENTER.overlay}>
+            <View style={CENTER.card}>
+              <SafeAreaView style={styles.safe} edges={[]}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Investment Declarations</Text>
+                  <TouchableOpacity onPress={() => setShowTaxModal(false)}>
+                    <X size={22} color={C.black} />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView
+                  contentContainerStyle={{ padding: 20, gap: 16 }}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
                 >
-                  Maximum deduction limit is ₹1,50,000
-                </Text>
-              </View>
+                  <View style={styles.genNote}>
+                    <Text style={styles.genNoteText}>
+                      Submit investment details under Section 80C, 80D and HRA
+                      Rent for verification.
+                    </Text>
+                  </View>
 
-              <View>
-                <Text style={styles.fieldLabel}>
-                  Section 80D (Medical Insurance) *
-                </Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  value={declarations.sec80D}
-                  onChangeText={v =>
-                    setDeclarations(p => ({ ...p, sec80D: v }))
-                  }
-                  keyboardType="numeric"
-                  placeholder="e.g. 25000"
-                  placeholderTextColor={C.textLight}
-                />
-              </View>
+                  <View>
+                    <Text style={styles.fieldLabel}>
+                      Section 80C (PPF, LIC, ELSS) *
+                    </Text>
+                    <TextInput
+                      style={styles.fieldInput}
+                      value={declarations.sec80C}
+                      onChangeText={v =>
+                        setDeclarations(p => ({ ...p, sec80C: v }))
+                      }
+                      keyboardType="numeric"
+                      placeholder="e.g. 150000"
+                      placeholderTextColor={C.textLight}
+                    />
+                    <Text
+                      style={{ fontSize: 10, color: C.textMuted, marginTop: 4 }}
+                    >
+                      Maximum deduction limit is ₹1,50,000
+                    </Text>
+                  </View>
 
-              <View>
-                <Text style={styles.fieldLabel}>
-                  House Rent Allowance (HRA Rent Paid) *
-                </Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  value={declarations.hra}
-                  onChangeText={v => setDeclarations(p => ({ ...p, hra: v }))}
-                  keyboardType="numeric"
-                  placeholder="e.g. 120000"
-                  placeholderTextColor={C.textLight}
-                />
-              </View>
+                  <View>
+                    <Text style={styles.fieldLabel}>
+                      Section 80D (Medical Insurance) *
+                    </Text>
+                    <TextInput
+                      style={styles.fieldInput}
+                      value={declarations.sec80D}
+                      onChangeText={v =>
+                        setDeclarations(p => ({ ...p, sec80D: v }))
+                      }
+                      keyboardType="numeric"
+                      placeholder="e.g. 25000"
+                      placeholderTextColor={C.textLight}
+                    />
+                  </View>
 
-              <TouchableOpacity
-                style={styles.submitBtn}
-                onPress={() => {
-                  Alert.alert(
-                    'Success',
-                    'Declarations submitted successfully for verification.',
-                  );
-                  setShowTaxModal(false);
-                }}
-              >
-                <Text style={styles.submitBtnText}>Submit Declarations</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </SafeAreaView>
-        </View></View>
-</Modal>
+                  <View>
+                    <Text style={styles.fieldLabel}>
+                      House Rent Allowance (HRA Rent Paid) *
+                    </Text>
+                    <TextInput
+                      style={styles.fieldInput}
+                      value={declarations.hra}
+                      onChangeText={v =>
+                        setDeclarations(p => ({ ...p, hra: v }))
+                      }
+                      keyboardType="numeric"
+                      placeholder="e.g. 120000"
+                      placeholderTextColor={C.textLight}
+                    />
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.submitBtn}
+                    onPress={() => {
+                      Alert.alert(
+                        'Success',
+                        'Declarations submitted successfully for verification.',
+                      );
+                      setShowTaxModal(false);
+                    }}
+                  >
+                    <Text style={styles.submitBtnText}>
+                      Submit Declarations
+                    </Text>
+                  </TouchableOpacity>
+                </ScrollView>
+              </SafeAreaView>
+            </View>
+          </View>
+        </Modal>
       )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  empPhoto: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: C.black },
+  empPhoto: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: C.black,
+  },
   codeChip: {
     alignSelf: 'flex-start',
     fontSize: 11,
@@ -1521,19 +1663,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: C.success,
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderColor: C.black,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 5,
+    paddingVertical: 5,
   },
   genBtnText: {
-    color: C.white,
+    color: C.primary,
     fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',

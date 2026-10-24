@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const Session = require("../models/Session");
+const AuditLog = require("../models/AuditLog");
 const Subscription = require("../models/Subscription");
 const generateToken = require("./generateToken");
 const { getCompanyFeatures } = require("./planFeatures");
@@ -57,6 +58,18 @@ async function startSession(req, user) {
     platform,
     ip: req.ip || "",
   });
+  // Login trail for the Audit Log (kept after the session row is deleted on logout).
+  AuditLog.create({
+    company: user.company?._id || user.company,
+    user: user._id,
+    userEmail: user.email,
+    userName: user.name,
+    action: "auth.login",
+    entity: "Session",
+    entityId: s._id,
+    details: { device: deviceName, platform, sessionId: String(s._id) },
+    ip: req.ip || "",
+  }).catch(() => {});
   return String(s._id);
 }
 

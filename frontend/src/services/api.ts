@@ -164,6 +164,11 @@ export const authAPI = {
   removeSession: (id: string) =>
     request(`/auth/sessions/${id}`, { method: "DELETE" }),
   removeOtherSessions: () => request("/auth/sessions", { method: "DELETE" }),
+  removeCurrentSession: async () => {
+    const list: any = await request("/auth/sessions");
+    const cur = (list.data || []).find((s: any) => s.current);
+    if (cur) await request(`/auth/sessions/${cur._id}`, { method: "DELETE" });
+  },
 
   // Backup codes
   backupCodesStatus: () => request("/auth/backup-codes"),
@@ -833,6 +838,10 @@ export const auditAPI = {
   getLogs: (params?: Record<string, string>) => {
     const q = params ? "?" + new URLSearchParams(params).toString() : "";
     return request(`/audit${q}`);
+  },
+  getActivity: (params?: Record<string, string>) => {
+    const q = params ? "?" + new URLSearchParams(params).toString() : "";
+    return request(`/audit/activity${q}`);
   },
 };
 

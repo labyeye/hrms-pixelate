@@ -15,8 +15,7 @@ interface Props<T> {
 export default function ExportButton<T>({ name, cols, rows, label = 'Export' }: Props<T>) {
   return (
     <TouchableOpacity style={styles.btn} onPress={() => chooseExport(name, cols, rows)}>
-      <Download size={13} color={C.black} />
-      <Text style={styles.text}>{label}</Text>
+      <Download size={20} color={C.black} />
     </TouchableOpacity>
   );
 }
@@ -26,14 +25,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: C.white,
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 4,
-    borderBottomWidth: 4,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderColor: C.black,
     paddingHorizontal: 10,
     paddingVertical: 7,
   },

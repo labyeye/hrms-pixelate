@@ -15,6 +15,7 @@ import {
   Easing,
   LayoutAnimation,
   UIManager,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -44,12 +45,16 @@ import {
   Percent,
   Pencil,
   Link2,
+  ShieldCheck,
+  CheckCircle2,
+  AlertCircle,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { useAuth } from '../contexts/AuthContext';
 import { authAPI, employeeAPI } from '../api/api';
 import { C } from '../theme';
+import WhatsAppIcon from '../components/common/WhatsAppIcon';
 
 if (
   Platform.OS === 'android' &&
@@ -209,97 +214,7 @@ function BInput({
   );
 }
 
-// Proves the user owns their saved phone via a WhatsApp code; unlocks WhatsApp
-// password reset on the forgot-password screen.
-function PhoneVerifyCard({ phone }: { phone: string }) {
-  const [verified, setVerified] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [otp, setOtp] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    setSent(false);
-    authAPI
-      .getMe()
-      .then((r: any) => setVerified(!!r?.data?.phoneVerified))
-      .catch(() => {});
-  }, [phone]);
-
-  if (!phone) return null;
-
-  const send = async () => {
-    setBusy(true);
-    try {
-      await authAPI.sendPhoneVerifyOtp();
-      setSent(true);
-      Alert.alert('Code sent', 'Check WhatsApp for your 6-digit code');
-    } catch (e: any) {
-      Alert.alert('Failed', e?.message || 'Could not send code');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const verify = async () => {
-    setBusy(true);
-    try {
-      await authAPI.verifyPhoneVerifyOtp(otp.trim());
-      setVerified(true);
-      setSent(false);
-      setOtp('');
-      Alert.alert('Verified', 'WhatsApp number verified');
-    } catch (e: any) {
-      Alert.alert('Verification failed', e?.message || 'Invalid code');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <View>
-      <View style={s.sectionHeader}>
-        <Phone size={14} color={C.primary} />
-        <Text style={s.sectionTitle}>WhatsApp Verification</Text>
-      </View>
-      <View style={[s.card, { padding: 14, gap: 10 }]}>
-        <Text style={{ fontSize: 12, color: C.textMuted }}>
-          {verified
-            ? `${phone} is verified. You can reset your password with a WhatsApp code.`
-            : 'Verify your number to reset your password with a WhatsApp code.'}
-        </Text>
-        {!verified && sent && (
-          <View>
-            <Text style={s.fieldLabel}>6-Digit Code</Text>
-            <TextInput
-              style={s.fieldInput}
-              value={otp}
-              onChangeText={setOtp}
-              keyboardType="number-pad"
-              maxLength={6}
-              placeholder="123456"
-              placeholderTextColor={C.textLight}
-            />
-          </View>
-        )}
-        {!verified && (
-          <TouchableOpacity
-            style={s.saveBtn}
-            onPress={sent ? verify : send}
-            disabled={busy}
-          >
-            {busy ? (
-              <ActivityIndicator color={C.white} />
-            ) : (
-              <Text style={s.saveBtnText}>
-                {sent ? 'Verify' : 'Send Verification Code'}
-              </Text>
-            )}
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
-  );
-}
+const digits = (v: string) => (v || '').replace(/\D/g, '');
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
@@ -324,10 +239,29 @@ export default function ProfileScreen() {
   const [skills, setSkills] = useState<string[]>([]);
   const [certificates, setCertificates] = useState<any[]>([]);
 
+  const [activeTab, setActiveTab] = useState<'profile' | 'password'>('profile');
+  const [savedEmail, setSavedEmail] = useState(user?.email || '');
+  const [savedPhone, setSavedPhone] = useState(user?.phone || '');
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [otpFor, setOtpFor] = useState<null | 'email' | 'phone'>(null);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpBusy, setOtpBusy] = useState(false);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [newSkill, setNewSkill] = useState('');
 
+  const loadVerification = () =>
+    authAPI
+      .getMe()
+      .then((res: any) => {
+        const me = res?.data || res;
+        setEmailVerified(!!me?.emailVerified);
+        setPhoneVerified(!!me?.phoneVerified);
+      })
+      .catch(() => {});
+
   useEffect(() => {
+    loadVerification();
     employeeAPI
       .getMe()
       .then(res => {
@@ -427,6 +361,9 @@ export default function ProfileScreen() {
         phone: phone.trim(),
         avatar: avatarUri || undefined,
       });
+      setSavedEmail(email.trim());
+      setSavedPhone(phone.trim());
+      loadVerification();
       Alert.alert('Success', 'Profile details updated successfully');
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Failed to update profile');
@@ -434,6 +371,114 @@ export default function ProfileScreen() {
       setSaving(false);
     }
   };
+
+  const emailChanged = email.trim().toLowerCase() !== savedEmail.toLowerCase();
+  const phoneChanged = digits(phone) !== digits(savedPhone);
+  const emailNeedsVerify = emailChanged || !emailVerified;
+  const phoneNeedsVerify = phoneChanged || !phoneVerified;
+
+  const startOtp = async (type: 'email' | 'phone') => {
+    if (type === 'email') {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        Alert.alert('Invalid email', 'Enter a valid email address');
+        return;
+      }
+    } else {
+      if (digits(phone).length < 10) {
+        Alert.alert('Invalid number', 'Enter a valid phone number');
+        return;
+      }
+      if (phoneChanged) {
+        Alert.alert(
+          'Save first',
+          'Save your profile, then verify the new number.',
+        );
+        return;
+      }
+    }
+    setOtpBusy(true);
+    try {
+      if (type === 'email')
+        await authAPI.sendEmailVerifyOtp(email.trim().toLowerCase());
+      else await authAPI.sendPhoneVerifyOtp();
+      setOtpCode('');
+      setOtpFor(type);
+    } catch (e: any) {
+      Alert.alert('Could not send code', e?.message || 'Please try again');
+    } finally {
+      setOtpBusy(false);
+    }
+  };
+
+  const confirmOtp = async () => {
+    if (otpCode.trim().length < 4 || !otpFor) return;
+    setOtpBusy(true);
+    try {
+      if (otpFor === 'email') {
+        await authAPI.verifyEmailVerifyOtp(otpCode.trim());
+        setSavedEmail(email.trim());
+        setEmailVerified(true);
+      } else {
+        await authAPI.verifyPhoneVerifyOtp(otpCode.trim());
+        setPhoneVerified(true);
+      }
+      setOtpFor(null);
+      Alert.alert('Verified', 'Updated successfully');
+    } catch (e: any) {
+      Alert.alert('Verification failed', e?.message || 'Invalid code');
+    } finally {
+      setOtpBusy(false);
+    }
+  };
+
+  const renderVerify = (
+    type: 'email' | 'phone',
+    changed: boolean,
+    needs: boolean,
+    verified: boolean,
+  ) => (
+    <View style={{ marginTop: 8 }}>
+      <View style={[s.statusChip, needs ? s.chipWarn : s.chipOk]}>
+        {needs ? (
+          <AlertCircle size={13} color="#92400e" />
+        ) : (
+          <CheckCircle2 size={13} color="#166534" />
+        )}
+        <Text
+          style={[s.statusChipText, { color: needs ? '#92400e' : '#166534' }]}
+        >
+          {changed ? 'Unsaved change' : verified ? 'Verified' : 'Not verified'}
+        </Text>
+      </View>
+      {needs && (
+        <TouchableOpacity
+          style={[
+            s.verifyBtn,
+            type === 'email' && { backgroundColor: C.primary },
+          ]}
+          onPress={() => startOtp(type)}
+          disabled={otpBusy}
+        >
+          {otpBusy && otpFor === null ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <>
+              {type === 'phone' ? (
+                <WhatsAppIcon size={18} />
+              ) : (
+                <ShieldCheck size={15} color="#fff" />
+              )}
+              <Text style={s.verifyBtnText}>
+                {type === 'email'
+                  ? 'Verify email with OTP'
+                  : 'Verify number with WhatsApp OTP'}
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+      )}
+    </View>
+  );
 
   const handleChangePassword = async () => {
     if (!currentPw || !newPw || !confirmPw) {
@@ -487,8 +532,8 @@ export default function ProfileScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Avatar block */}
-          <View style={s.avatarBlock}>
+          {/* Profile card */}
+          <View style={s.profileCard}>
             <TouchableOpacity
               onPress={pickPhoto}
               activeOpacity={0.8}
@@ -505,780 +550,321 @@ export default function ProfileScreen() {
                 <Camera size={13} color={C.white} />
               </View>
             </TouchableOpacity>
-            <Text style={s.avatarName}>{user?.name || 'User'}</Text>
-            <View style={s.roleBadge}>
-              <Text style={s.roleText}>
-                {(user?.role || 'employee').replace(/_/g, ' ').toUpperCase()}
+            <View style={{ flex: 1, gap: 3 }}>
+              <Text style={s.avatarName} numberOfLines={1}>
+                {user?.name || 'User'}
               </Text>
-            </View>
-            <Text style={s.tapHint}>Tap photo to change</Text>
-          </View>
-
-          {/* Profile info */}
-          <View>
-            <View style={s.sectionHeader}>
-              <User size={14} color={C.primary} />
-              <Text style={s.sectionTitle}>Personal Information</Text>
-            </View>
-            <View style={s.card}>
-              {[
-                {
-                  label: 'Full Name',
-                  value: name,
-                  setter: setName,
-                  icon: <User size={14} color={C.textMuted} />,
-                  placeholder: 'John Doe',
-                  keyboard: 'default' as const,
-                },
-                {
-                  label: 'Email Address',
-                  value: email,
-                  setter: setEmail,
-                  icon: <Mail size={14} color={C.textMuted} />,
-                  placeholder: 'you@company.com',
-                  keyboard: 'email-address' as const,
-                  autoCapitalize: 'none',
-                },
-                {
-                  label: 'Phone Number',
-                  value: phone,
-                  setter: setPhone,
-                  icon: <Phone size={14} color={C.textMuted} />,
-                  placeholder: '+91 9876543210',
-                  keyboard: 'phone-pad' as const,
-                },
-              ].map((f, i) => (
-                <View
-                  key={f.label}
-                  style={[s.fieldRow, i > 0 && s.fieldBorder]}
-                >
-                  <View style={s.fieldIcon}>{f.icon}</View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.fieldLabel}>{f.label}</Text>
-                    <TextInput
-                      style={s.fieldInput}
-                      value={f.value}
-                      onChangeText={f.setter}
-                      placeholder={f.placeholder}
-                      placeholderTextColor={C.textLight}
-                      keyboardType={f.keyboard}
-                      autoCapitalize={(f as any).autoCapitalize || 'words'}
-                    />
-                  </View>
-                </View>
-              ))}
-            </View>
-
-            <TouchableOpacity
-              style={s.saveBtn}
-              onPress={handleSaveProfile}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator color={C.white} />
-              ) : (
-                <>
-                  <Save size={15} color={C.white} />
-                  <Text style={s.saveBtnText}>Save Profile</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {/* ESS Collapsible Sections */}
-          <View>
-            {/* Section: Bank & ID */}
-            <AccordionSection
-              title="Bank & Identification"
-              isOpen={openSection === 'bank'}
-              onToggle={() =>
-                setOpenSection(openSection === 'bank' ? null : 'bank')
-              }
-              icon={CreditCard}
-            >
-              <View style={{ gap: 10 }}>
-                <Text style={s.fieldLabel}>PAN Number</Text>
-                <BInput
-                  style={{
-                    borderWidth: 2,
-                    borderColor: C.black,
-                    padding: 8,
-                    fontSize: 13,
-                    color: C.black,
-                  }}
-                  value={panNumber}
-                  onChangeText={setPanNumber}
-                  placeholder="ABCDE1234F"
-                  placeholderTextColor={C.textLight}
-                />
-                <Text style={s.fieldLabel}>Bank Account Number</Text>
-                <BInput
-                  style={{
-                    borderWidth: 2,
-                    borderColor: C.black,
-                    padding: 8,
-                    fontSize: 13,
-                    color: C.black,
-                  }}
-                  value={bankAccount}
-                  onChangeText={setBankAccount}
-                  placeholder="Account Number"
-                  placeholderTextColor={C.textLight}
-                />
-                <Text style={s.fieldLabel}>IFSC Code</Text>
-                <BInput
-                  style={{
-                    borderWidth: 2,
-                    borderColor: C.black,
-                    padding: 8,
-                    fontSize: 13,
-                    color: C.black,
-                  }}
-                  value={ifscCode}
-                  onChangeText={setIfscCode}
-                  placeholder="IFSC Code"
-                  placeholderTextColor={C.textLight}
-                />
-              </View>
-            </AccordionSection>
-
-            {/* Section: Nominees */}
-            <AccordionSection
-              title="Emergency & Nominees"
-              isOpen={openSection === 'nominees'}
-              onToggle={() =>
-                setOpenSection(openSection === 'nominees' ? null : 'nominees')
-              }
-              icon={Heart}
-            >
-              <View style={{ gap: 12 }}>
-                <Text style={s.fieldLabel}>Emergency Contact</Text>
-                <BInput
-                  style={{
-                    borderWidth: 2,
-                    borderColor: C.black,
-                    padding: 8,
-                    fontSize: 13,
-                    color: C.black,
-                  }}
-                  value={emergencyContact}
-                  onChangeText={setEmergencyContact}
-                  placeholder="Contact Name & Phone"
-                  placeholderTextColor={C.textLight}
-                />
-
-                <Text
-                  style={[
-                    s.fieldLabel,
-                    {
-                      borderTopWidth: 2,
-                      borderTopColor: C.black,
-                      paddingTop: 8,
-                      marginTop: 8,
-                    },
-                  ]}
-                >
-                  Nominees List
+              <Text style={s.cardEmail} numberOfLines={1}>
+                {user?.email}
+              </Text>
+              <View style={s.roleBadge}>
+                <Text style={s.roleText}>
+                  {(user?.role || 'employee').replace(/_/g, ' ').toUpperCase()}
                 </Text>
-                {nominees.map((n, i) => (
-                  <View
-                    key={i}
-                    style={{
-                      borderWidth: 2,
-                      borderRightWidth: 4,
-                      borderBottomWidth: 4,
-                      borderRightColor: '#0A0A0A',
-                      borderBottomColor: '#0A0A0A',
-                      borderRadius: 8,
-                      borderColor: C.black,
-                      padding: 10,
-                      gap: 8,
-                      backgroundColor: '#F9FAFB',
-                    }}
-                  >
-                    <BInput
-                      style={{
-                        borderWidth: 2,
-                        borderColor: C.black,
-                        padding: 6,
-                        fontSize: 12,
-                        backgroundColor: '#fff',
-                        color: C.black,
-                      }}
-                      value={n.name}
-                      onChangeText={val => {
-                        const updated = [...nominees];
-                        updated[i].name = val;
-                        setNominees(updated);
-                      }}
-                      placeholder="Nominee Name"
-                      placeholderTextColor={C.textLight}
-                    />
-                    <BInput
-                      style={{
-                        borderWidth: 2,
-                        borderColor: C.black,
-                        padding: 6,
-                        fontSize: 12,
-                        backgroundColor: '#fff',
-                        color: C.black,
-                      }}
-                      value={n.relationship}
-                      onChangeText={val => {
-                        const updated = [...nominees];
-                        updated[i].relationship = val;
-                        setNominees(updated);
-                      }}
-                      placeholder="Relationship"
-                      placeholderTextColor={C.textLight}
-                    />
-                    <BInput
-                      style={{
-                        borderWidth: 2,
-                        borderColor: C.black,
-                        padding: 6,
-                        fontSize: 12,
-                        backgroundColor: '#fff',
-                        color: C.black,
-                      }}
-                      value={String(n.percentage || '')}
-                      keyboardType="numeric"
-                      onChangeText={val => {
-                        const updated = [...nominees];
-                        updated[i].percentage = Number(val) || 0;
-                        setNominees(updated);
-                      }}
-                      placeholder="Share Percentage"
-                      placeholderTextColor={C.textLight}
-                    />
-                    <TouchableOpacity
-                      onPress={() =>
-                        setNominees(nominees.filter((_, idx) => idx !== i))
-                      }
-                      style={{
-                        alignSelf: 'flex-end',
-                        backgroundColor: C.danger,
-                        paddingHorizontal: 10,
-                        paddingVertical: 4,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: '#fff',
-                          fontSize: 10,
-                          fontWeight: '700',
-                        }}
-                      >
-                        Remove
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
-                <TouchableOpacity
-                  onPress={() =>
-                    setNominees([
-                      ...nominees,
-                      { name: '', relationship: '', percentage: 100 },
-                    ])
-                  }
-                  style={{
-                    borderWidth: 2,
-                    borderStyle: 'dashed',
-                    borderColor: C.black,
-                    padding: 8,
-                    alignItems: 'center',
-                    marginTop: 4,
-                  }}
-                >
-                  <Text
-                    style={{ fontSize: 11, fontWeight: '700', color: C.black }}
-                  >
-                    + Add Nominee
-                  </Text>
-                </TouchableOpacity>
               </View>
-            </AccordionSection>
+            </View>
+          </View>
 
-            {/* Section: Family */}
-            <AccordionSection
-              title="Family Details"
-              isOpen={openSection === 'family'}
-              onToggle={() =>
-                setOpenSection(openSection === 'family' ? null : 'family')
-              }
-              icon={Heart}
-            >
-              <View style={{ gap: 12 }}>
-                {familyDetails.map((f, i) => (
-                  <View
-                    key={i}
-                    style={{
-                      borderWidth: 2,
-                      borderRightWidth: 4,
-                      borderBottomWidth: 4,
-                      borderRightColor: '#0A0A0A',
-                      borderBottomColor: '#0A0A0A',
-                      borderRadius: 8,
-                      borderColor: C.black,
-                      padding: 10,
-                      gap: 8,
-                      backgroundColor: '#F9FAFB',
-                    }}
-                  >
-                    <BInput
-                      style={{
-                        borderWidth: 2,
-                        borderColor: C.black,
-                        padding: 6,
-                        fontSize: 12,
-                        backgroundColor: '#fff',
-                        color: C.black,
-                      }}
-                      value={f.name}
-                      onChangeText={val => {
-                        const updated = [...familyDetails];
-                        updated[i].name = val;
-                        setFamilyDetails(updated);
-                      }}
-                      placeholder="Member Name"
-                      placeholderTextColor={C.textLight}
-                    />
-                    <BInput
-                      style={{
-                        borderWidth: 2,
-                        borderColor: C.black,
-                        padding: 6,
-                        fontSize: 12,
-                        backgroundColor: '#fff',
-                        color: C.black,
-                      }}
-                      value={f.relationship}
-                      onChangeText={val => {
-                        const updated = [...familyDetails];
-                        updated[i].relationship = val;
-                        setFamilyDetails(updated);
-                      }}
-                      placeholder="Relationship"
-                      placeholderTextColor={C.textLight}
-                    />
-                    <BInput
-                      style={{
-                        borderWidth: 2,
-                        borderColor: C.black,
-                        padding: 6,
-                        fontSize: 12,
-                        backgroundColor: '#fff',
-                        color: C.black,
-                      }}
-                      value={f.phone}
-                      onChangeText={val => {
-                        const updated = [...familyDetails];
-                        updated[i].phone = val;
-                        setFamilyDetails(updated);
-                      }}
-                      placeholder="Phone"
-                      placeholderTextColor={C.textLight}
-                    />
-                    <TouchableOpacity
-                      onPress={() =>
-                        setFamilyDetails(
-                          familyDetails.filter((_, idx) => idx !== i),
-                        )
-                      }
-                      style={{
-                        alignSelf: 'flex-end',
-                        backgroundColor: C.danger,
-                        paddingHorizontal: 10,
-                        paddingVertical: 4,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: '#fff',
-                          fontSize: 10,
-                          fontWeight: '700',
-                        }}
-                      >
-                        Remove
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
-                <TouchableOpacity
-                  onPress={() =>
-                    setFamilyDetails([
-                      ...familyDetails,
-                      { name: '', relationship: '', phone: '' },
-                    ])
-                  }
-                  style={{
-                    borderWidth: 2,
-                    borderStyle: 'dashed',
-                    borderColor: C.black,
-                    padding: 8,
-                    alignItems: 'center',
-                    marginTop: 4,
-                  }}
-                >
-                  <Text
-                    style={{ fontSize: 11, fontWeight: '700', color: C.black }}
-                  >
-                    + Add Family Member
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </AccordionSection>
+          {/* Tabs */}
+          <View style={s.tabs}>
+            {(
+              [
+                ['profile', 'Profile', User],
+                ['password', 'Password', Lock],
+              ] as const
+            ).map(([key, label, TabIcon]) => (
+              <TouchableOpacity
+                key={key}
+                style={[s.tab, activeTab === key && s.tabActive]}
+                onPress={() => setActiveTab(key)}
+              >
+                <TabIcon
+                  size={14}
+                  color={activeTab === key ? '#fff' : '#64748b'}
+                />
+                <Text style={[s.tabText, activeTab === key && s.tabTextActive]}>
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-            {/* Section: Education */}
-            <AccordionSection
-              title="Education Records"
-              isOpen={openSection === 'education'}
-              onToggle={() =>
-                setOpenSection(openSection === 'education' ? null : 'education')
-              }
-              icon={BookOpen}
-            >
-              <View style={{ gap: 12 }}>
-                {education.map((e, i) => (
-                  <View
-                    key={i}
-                    style={{
-                      borderWidth: 2,
-                      borderRightWidth: 4,
-                      borderBottomWidth: 4,
-                      borderRightColor: '#0A0A0A',
-                      borderBottomColor: '#0A0A0A',
-                      borderRadius: 8,
-                      borderColor: C.black,
-                      padding: 10,
-                      gap: 8,
-                      backgroundColor: '#F9FAFB',
-                    }}
-                  >
-                    <BInput
-                      style={{
-                        borderWidth: 2,
-                        borderColor: C.black,
-                        padding: 6,
-                        fontSize: 12,
-                        backgroundColor: '#fff',
-                        color: C.black,
-                      }}
-                      value={e.degree}
-                      onChangeText={val => {
-                        const updated = [...education];
-                        updated[i].degree = val;
-                        setEducation(updated);
-                      }}
-                      placeholder="Degree / Course"
-                      placeholderTextColor={C.textLight}
-                    />
-                    <BInput
-                      style={{
-                        borderWidth: 2,
-                        borderColor: C.black,
-                        padding: 6,
-                        fontSize: 12,
-                        backgroundColor: '#fff',
-                        color: C.black,
-                      }}
-                      value={e.school}
-                      onChangeText={val => {
-                        const updated = [...education];
-                        updated[i].school = val;
-                        setEducation(updated);
-                      }}
-                      placeholder="School / University"
-                      placeholderTextColor={C.textLight}
-                    />
-                    <BInput
-                      style={{
-                        borderWidth: 2,
-                        borderColor: C.black,
-                        padding: 6,
-                        fontSize: 12,
-                        backgroundColor: '#fff',
-                        color: C.black,
-                      }}
-                      value={String(e.passYear || '')}
-                      keyboardType="numeric"
-                      onChangeText={val => {
-                        const updated = [...education];
-                        updated[i].passYear = Number(val) || 0;
-                        setEducation(updated);
-                      }}
-                      placeholder="Pass Year"
-                      placeholderTextColor={C.textLight}
-                    />
-                    <TouchableOpacity
-                      onPress={() =>
-                        setEducation(education.filter((_, idx) => idx !== i))
-                      }
-                      style={{
-                        alignSelf: 'flex-end',
-                        backgroundColor: C.danger,
-                        paddingHorizontal: 10,
-                        paddingVertical: 4,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: '#fff',
-                          fontSize: 10,
-                          fontWeight: '700',
-                        }}
-                      >
-                        Remove
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
-                <TouchableOpacity
-                  onPress={() =>
-                    setEducation([
-                      ...education,
-                      { degree: '', school: '', passYear: 2020 },
-                    ])
-                  }
-                  style={{
-                    borderWidth: 2,
-                    borderStyle: 'dashed',
-                    borderColor: C.black,
-                    padding: 8,
-                    alignItems: 'center',
-                    marginTop: 4,
-                  }}
-                >
-                  <Text
-                    style={{ fontSize: 11, fontWeight: '700', color: C.black }}
-                  >
-                    + Add Education Record
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </AccordionSection>
-
-            {/* Section: Experience */}
-            <AccordionSection
-              title="Work Experience"
-              isOpen={openSection === 'experience'}
-              onToggle={() =>
-                setOpenSection(
-                  openSection === 'experience' ? null : 'experience',
-                )
-              }
-              icon={Briefcase}
-            >
-              <View style={{ gap: 12 }}>
-                {experience.map((exp, i) => (
-                  <View
-                    key={i}
-                    style={{
-                      borderWidth: 2,
-                      borderRightWidth: 4,
-                      borderBottomWidth: 4,
-                      borderRightColor: '#0A0A0A',
-                      borderBottomColor: '#0A0A0A',
-                      borderRadius: 8,
-                      borderColor: C.black,
-                      padding: 10,
-                      gap: 8,
-                      backgroundColor: '#F9FAFB',
-                    }}
-                  >
-                    <BInput
-                      style={{
-                        borderWidth: 2,
-                        borderColor: C.black,
-                        padding: 6,
-                        fontSize: 12,
-                        backgroundColor: '#fff',
-                        color: C.black,
-                      }}
-                      value={exp.company}
-                      onChangeText={val => {
-                        const updated = [...experience];
-                        updated[i].company = val;
-                        setExperience(updated);
-                      }}
-                      placeholder="Company"
-                      placeholderTextColor={C.textLight}
-                    />
-                    <BInput
-                      style={{
-                        borderWidth: 2,
-                        borderColor: C.black,
-                        padding: 6,
-                        fontSize: 12,
-                        backgroundColor: '#fff',
-                        color: C.black,
-                      }}
-                      value={exp.role}
-                      onChangeText={val => {
-                        const updated = [...experience];
-                        updated[i].role = val;
-                        setExperience(updated);
-                      }}
-                      placeholder="Role"
-                      placeholderTextColor={C.textLight}
-                    />
-                    <View style={{ flexDirection: 'row', gap: 6 }}>
-                      <BInput
-                        style={{
-                          flex: 1,
-                          borderWidth: 2,
-                          borderColor: C.black,
-                          padding: 6,
-                          fontSize: 12,
-                          backgroundColor: '#fff',
-                          color: C.black,
-                        }}
-                        value={exp.start}
-                        onChangeText={val => {
-                          const updated = [...experience];
-                          updated[i].start = val;
-                          setExperience(updated);
-                        }}
-                        placeholder="Start Date"
-                        placeholderTextColor={C.textLight}
-                      />
-                      <BInput
-                        style={{
-                          flex: 1,
-                          borderWidth: 2,
-                          borderColor: C.black,
-                          padding: 6,
-                          fontSize: 12,
-                          backgroundColor: '#fff',
-                          color: C.black,
-                        }}
-                        value={exp.end}
-                        onChangeText={val => {
-                          const updated = [...experience];
-                          updated[i].end = val;
-                          setExperience(updated);
-                        }}
-                        placeholder="End Date"
-                        placeholderTextColor={C.textLight}
-                      />
-                    </View>
-                    <TouchableOpacity
-                      onPress={() =>
-                        setExperience(experience.filter((_, idx) => idx !== i))
-                      }
-                      style={{
-                        alignSelf: 'flex-end',
-                        backgroundColor: C.danger,
-                        paddingHorizontal: 10,
-                        paddingVertical: 4,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: '#fff',
-                          fontSize: 10,
-                          fontWeight: '700',
-                        }}
-                      >
-                        Remove
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
-                <TouchableOpacity
-                  onPress={() =>
-                    setExperience([
-                      ...experience,
-                      { company: '', role: '', start: '', end: '' },
-                    ])
-                  }
-                  style={{
-                    borderWidth: 2,
-                    borderStyle: 'dashed',
-                    borderColor: C.black,
-                    padding: 8,
-                    alignItems: 'center',
-                    marginTop: 4,
-                  }}
-                >
-                  <Text
-                    style={{ fontSize: 11, fontWeight: '700', color: C.black }}
-                  >
-                    + Add Experience Record
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </AccordionSection>
-
-            {/* Section: Skills */}
-            <AccordionSection
-              title="Skills Tags"
-              isOpen={openSection === 'skills'}
-              onToggle={() =>
-                setOpenSection(openSection === 'skills' ? null : 'skills')
-              }
-              icon={Award}
-            >
-              <View style={{ gap: 10 }}>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <BInput
-                    style={{
-                      flex: 1,
-                      borderWidth: 2,
-                      borderColor: C.black,
-                      padding: 8,
-                      fontSize: 13,
-                      color: C.black,
-                    }}
-                    value={newSkill}
-                    onChangeText={setNewSkill}
-                    placeholder="e.g. React Native, Swift"
+          {activeTab === 'profile' && (
+            <>
+              {/* Profile info */}
+              <View>
+                <View style={s.sectionHeader}>
+                  <User size={14} color={C.primary} />
+                  <Text style={s.sectionTitle}>Personal Information</Text>
+                </View>
+                <View style={[s.card, { padding: 14 }]}>
+                  <Text style={s.lbl}>FULL NAME</Text>
+                  <TextInput
+                    style={s.boxInput}
+                    value={name}
+                    onChangeText={setName}
+                    placeholder="Enter your name"
                     placeholderTextColor={C.textLight}
                   />
-                  <TouchableOpacity
-                    onPress={() => {
-                      if (
-                        newSkill.trim() &&
-                        !skills.includes(newSkill.trim())
-                      ) {
-                        setSkills([...skills, newSkill.trim()]);
-                        setNewSkill('');
-                      }
-                    }}
-                    style={{
-                      backgroundColor: C.black,
-                      paddingHorizontal: 16,
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Text
-                      style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}
-                    >
-                      Add
-                    </Text>
-                  </TouchableOpacity>
+
+                  <Text style={[s.lbl, { marginTop: 14 }]}>EMAIL</Text>
+                  <TextInput
+                    style={s.boxInput}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="you@company.com"
+                    placeholderTextColor={C.textLight}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  {renderVerify(
+                    'email',
+                    emailChanged,
+                    emailNeedsVerify,
+                    emailVerified,
+                  )}
+
+                  <Text style={[s.lbl, { marginTop: 14 }]}>
+                    PHONE (WHATSAPP)
+                  </Text>
+                  <TextInput
+                    style={s.boxInput}
+                    value={phone}
+                    onChangeText={setPhone}
+                    placeholder="+91 9876543210"
+                    placeholderTextColor={C.textLight}
+                    keyboardType="phone-pad"
+                  />
+                  {renderVerify(
+                    'phone',
+                    phoneChanged,
+                    phoneNeedsVerify,
+                    phoneVerified,
+                  )}
                 </View>
 
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    flexWrap: 'wrap',
-                    gap: 8,
-                    marginTop: 8,
-                  }}
+                <TouchableOpacity
+                  style={s.saveBtn}
+                  onPress={handleSaveProfile}
+                  disabled={saving}
                 >
-                  {skills.map((s, idx) => (
-                    <View
-                      key={idx}
+                  {saving ? (
+                    <ActivityIndicator color={C.white} />
+                  ) : (
+                    <>
+                      <Save size={15} color={C.white} />
+                      <Text style={s.saveBtnText}>Save Profile</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              {/* ESS Collapsible Sections */}
+              <View>
+                {/* Section: Bank & ID */}
+                <AccordionSection
+                  title="Bank & Identification"
+                  isOpen={openSection === 'bank'}
+                  onToggle={() =>
+                    setOpenSection(openSection === 'bank' ? null : 'bank')
+                  }
+                  icon={CreditCard}
+                >
+                  <View style={{ gap: 10 }}>
+                    <Text style={s.fieldLabel}>PAN Number</Text>
+                    <BInput
                       style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        backgroundColor: '#F3F4F6',
                         borderWidth: 2,
                         borderColor: C.black,
-                        paddingHorizontal: 8,
-                        paddingVertical: 4,
-                        gap: 4,
+                        padding: 8,
+                        fontSize: 13,
+                        color: C.black,
+                      }}
+                      value={panNumber}
+                      onChangeText={setPanNumber}
+                      placeholder="ABCDE1234F"
+                      placeholderTextColor={C.textLight}
+                    />
+                    <Text style={s.fieldLabel}>Bank Account Number</Text>
+                    <BInput
+                      style={{
+                        borderWidth: 2,
+                        borderColor: C.black,
+                        padding: 8,
+                        fontSize: 13,
+                        color: C.black,
+                      }}
+                      value={bankAccount}
+                      onChangeText={setBankAccount}
+                      placeholder="Account Number"
+                      placeholderTextColor={C.textLight}
+                    />
+                    <Text style={s.fieldLabel}>IFSC Code</Text>
+                    <BInput
+                      style={{
+                        borderWidth: 2,
+                        borderColor: C.black,
+                        padding: 8,
+                        fontSize: 13,
+                        color: C.black,
+                      }}
+                      value={ifscCode}
+                      onChangeText={setIfscCode}
+                      placeholder="IFSC Code"
+                      placeholderTextColor={C.textLight}
+                    />
+                  </View>
+                </AccordionSection>
+
+                {/* Section: Nominees */}
+                <AccordionSection
+                  title="Emergency & Nominees"
+                  isOpen={openSection === 'nominees'}
+                  onToggle={() =>
+                    setOpenSection(
+                      openSection === 'nominees' ? null : 'nominees',
+                    )
+                  }
+                  icon={Heart}
+                >
+                  <View style={{ gap: 12 }}>
+                    <Text style={s.fieldLabel}>Emergency Contact</Text>
+                    <BInput
+                      style={{
+                        borderWidth: 2,
+                        borderColor: C.black,
+                        padding: 8,
+                        fontSize: 13,
+                        color: C.black,
+                      }}
+                      value={emergencyContact}
+                      onChangeText={setEmergencyContact}
+                      placeholder="Contact Name & Phone"
+                      placeholderTextColor={C.textLight}
+                    />
+
+                    <Text
+                      style={[
+                        s.fieldLabel,
+                        {
+                          borderTopWidth: 2,
+                          borderTopColor: C.black,
+                          paddingTop: 8,
+                          marginTop: 8,
+                        },
+                      ]}
+                    >
+                      Nominees List
+                    </Text>
+                    {nominees.map((n, i) => (
+                      <View
+                        key={i}
+                        style={{
+                          borderWidth: 2,
+                          borderRightWidth: 4,
+                          borderBottomWidth: 4,
+                          borderRightColor: '#0A0A0A',
+                          borderBottomColor: '#0A0A0A',
+                          borderRadius: 8,
+                          borderColor: C.black,
+                          padding: 10,
+                          gap: 8,
+                          backgroundColor: '#F9FAFB',
+                        }}
+                      >
+                        <BInput
+                          style={{
+                            borderWidth: 2,
+                            borderColor: C.black,
+                            padding: 6,
+                            fontSize: 12,
+                            backgroundColor: '#fff',
+                            color: C.black,
+                          }}
+                          value={n.name}
+                          onChangeText={val => {
+                            const updated = [...nominees];
+                            updated[i].name = val;
+                            setNominees(updated);
+                          }}
+                          placeholder="Nominee Name"
+                          placeholderTextColor={C.textLight}
+                        />
+                        <BInput
+                          style={{
+                            borderWidth: 2,
+                            borderColor: C.black,
+                            padding: 6,
+                            fontSize: 12,
+                            backgroundColor: '#fff',
+                            color: C.black,
+                          }}
+                          value={n.relationship}
+                          onChangeText={val => {
+                            const updated = [...nominees];
+                            updated[i].relationship = val;
+                            setNominees(updated);
+                          }}
+                          placeholder="Relationship"
+                          placeholderTextColor={C.textLight}
+                        />
+                        <BInput
+                          style={{
+                            borderWidth: 2,
+                            borderColor: C.black,
+                            padding: 6,
+                            fontSize: 12,
+                            backgroundColor: '#fff',
+                            color: C.black,
+                          }}
+                          value={String(n.percentage || '')}
+                          keyboardType="numeric"
+                          onChangeText={val => {
+                            const updated = [...nominees];
+                            updated[i].percentage = Number(val) || 0;
+                            setNominees(updated);
+                          }}
+                          placeholder="Share Percentage"
+                          placeholderTextColor={C.textLight}
+                        />
+                        <TouchableOpacity
+                          onPress={() =>
+                            setNominees(nominees.filter((_, idx) => idx !== i))
+                          }
+                          style={{
+                            alignSelf: 'flex-end',
+                            backgroundColor: C.danger,
+                            paddingHorizontal: 10,
+                            paddingVertical: 4,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: '#fff',
+                              fontSize: 10,
+                              fontWeight: '700',
+                            }}
+                          >
+                            Remove
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                    <TouchableOpacity
+                      onPress={() =>
+                        setNominees([
+                          ...nominees,
+                          { name: '', relationship: '', percentage: 100 },
+                        ])
+                      }
+                      style={{
+                        borderWidth: 2,
+                        borderStyle: 'dashed',
+                        borderColor: C.black,
+                        padding: 8,
+                        alignItems: 'center',
+                        marginTop: 4,
                       }}
                     >
                       <Text
@@ -1288,253 +874,936 @@ export default function ProfileScreen() {
                           color: C.black,
                         }}
                       >
-                        {s}
+                        + Add Nominee
                       </Text>
-                      <TouchableOpacity
-                        onPress={() =>
-                          setSkills(skills.filter((_, i) => i !== idx))
-                        }
+                    </TouchableOpacity>
+                  </View>
+                </AccordionSection>
+
+                {/* Section: Family */}
+                <AccordionSection
+                  title="Family Details"
+                  isOpen={openSection === 'family'}
+                  onToggle={() =>
+                    setOpenSection(openSection === 'family' ? null : 'family')
+                  }
+                  icon={Heart}
+                >
+                  <View style={{ gap: 12 }}>
+                    {familyDetails.map((f, i) => (
+                      <View
+                        key={i}
+                        style={{
+                          borderWidth: 2,
+                          borderRightWidth: 4,
+                          borderBottomWidth: 4,
+                          borderRightColor: '#0A0A0A',
+                          borderBottomColor: '#0A0A0A',
+                          borderRadius: 8,
+                          borderColor: C.black,
+                          padding: 10,
+                          gap: 8,
+                          backgroundColor: '#F9FAFB',
+                        }}
                       >
-                        <Text
+                        <BInput
                           style={{
-                            color: C.danger,
-                            fontWeight: '700',
-                            fontSize: 13,
+                            borderWidth: 2,
+                            borderColor: C.black,
+                            padding: 6,
+                            fontSize: 12,
+                            backgroundColor: '#fff',
+                            color: C.black,
+                          }}
+                          value={f.name}
+                          onChangeText={val => {
+                            const updated = [...familyDetails];
+                            updated[i].name = val;
+                            setFamilyDetails(updated);
+                          }}
+                          placeholder="Member Name"
+                          placeholderTextColor={C.textLight}
+                        />
+                        <BInput
+                          style={{
+                            borderWidth: 2,
+                            borderColor: C.black,
+                            padding: 6,
+                            fontSize: 12,
+                            backgroundColor: '#fff',
+                            color: C.black,
+                          }}
+                          value={f.relationship}
+                          onChangeText={val => {
+                            const updated = [...familyDetails];
+                            updated[i].relationship = val;
+                            setFamilyDetails(updated);
+                          }}
+                          placeholder="Relationship"
+                          placeholderTextColor={C.textLight}
+                        />
+                        <BInput
+                          style={{
+                            borderWidth: 2,
+                            borderColor: C.black,
+                            padding: 6,
+                            fontSize: 12,
+                            backgroundColor: '#fff',
+                            color: C.black,
+                          }}
+                          value={f.phone}
+                          onChangeText={val => {
+                            const updated = [...familyDetails];
+                            updated[i].phone = val;
+                            setFamilyDetails(updated);
+                          }}
+                          placeholder="Phone"
+                          placeholderTextColor={C.textLight}
+                        />
+                        <TouchableOpacity
+                          onPress={() =>
+                            setFamilyDetails(
+                              familyDetails.filter((_, idx) => idx !== i),
+                            )
+                          }
+                          style={{
+                            alignSelf: 'flex-end',
+                            backgroundColor: C.danger,
+                            paddingHorizontal: 10,
+                            paddingVertical: 4,
                           }}
                         >
-                          ×
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                  {skills.length === 0 && (
-                    <Text style={{ fontSize: 11, color: C.textMuted }}>
-                      No skills tags listed.
-                    </Text>
-                  )}
-                </View>
-              </View>
-            </AccordionSection>
-
-            {/* Section: Certificates */}
-            <AccordionSection
-              title="Certificates"
-              isOpen={openSection === 'certificates'}
-              onToggle={() =>
-                setOpenSection(
-                  openSection === 'certificates' ? null : 'certificates',
-                )
-              }
-              icon={Award}
-            >
-              <View style={{ gap: 12 }}>
-                {certificates.map((cert, i) => (
-                  <View
-                    key={i}
-                    style={{
-                      borderWidth: 2,
-                      borderRightWidth: 4,
-                      borderBottomWidth: 4,
-                      borderRightColor: '#0A0A0A',
-                      borderBottomColor: '#0A0A0A',
-                      borderRadius: 8,
-                      borderColor: C.black,
-                      padding: 10,
-                      gap: 8,
-                      backgroundColor: '#F9FAFB',
-                    }}
-                  >
-                    <BInput
-                      style={{
-                        borderWidth: 2,
-                        borderColor: C.black,
-                        padding: 6,
-                        fontSize: 12,
-                        backgroundColor: '#fff',
-                        color: C.black,
-                      }}
-                      value={cert.name}
-                      onChangeText={val => {
-                        const updated = [...certificates];
-                        updated[i].name = val;
-                        setCertificates(updated);
-                      }}
-                      placeholder="Certificate Name"
-                      placeholderTextColor={C.textLight}
-                    />
-                    <BInput
-                      style={{
-                        borderWidth: 2,
-                        borderColor: C.black,
-                        padding: 6,
-                        fontSize: 12,
-                        backgroundColor: '#fff',
-                        color: C.black,
-                      }}
-                      value={cert.issuer}
-                      onChangeText={val => {
-                        const updated = [...certificates];
-                        updated[i].issuer = val;
-                        setCertificates(updated);
-                      }}
-                      placeholder="Issuer"
-                      placeholderTextColor={C.textLight}
-                    />
-                    <BInput
-                      style={{
-                        borderWidth: 2,
-                        borderColor: C.black,
-                        padding: 6,
-                        fontSize: 12,
-                        backgroundColor: '#fff',
-                        color: C.black,
-                      }}
-                      value={cert.docUrl}
-                      onChangeText={val => {
-                        const updated = [...certificates];
-                        updated[i].docUrl = val;
-                        setCertificates(updated);
-                      }}
-                      placeholder="Certificate URL Link"
-                      placeholderTextColor={C.textLight}
-                    />
+                          <Text
+                            style={{
+                              color: '#fff',
+                              fontSize: 10,
+                              fontWeight: '700',
+                            }}
+                          >
+                            Remove
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))}
                     <TouchableOpacity
                       onPress={() =>
-                        setCertificates(
-                          certificates.filter((_, idx) => idx !== i),
-                        )
+                        setFamilyDetails([
+                          ...familyDetails,
+                          { name: '', relationship: '', phone: '' },
+                        ])
                       }
                       style={{
-                        alignSelf: 'flex-end',
-                        backgroundColor: C.danger,
-                        paddingHorizontal: 10,
-                        paddingVertical: 4,
+                        borderWidth: 2,
+                        borderStyle: 'dashed',
+                        borderColor: C.black,
+                        padding: 8,
+                        alignItems: 'center',
+                        marginTop: 4,
                       }}
                     >
                       <Text
                         style={{
-                          color: '#fff',
-                          fontSize: 10,
+                          fontSize: 11,
                           fontWeight: '700',
+                          color: C.black,
                         }}
                       >
-                        Remove
+                        + Add Family Member
                       </Text>
                     </TouchableOpacity>
                   </View>
-                ))}
-                <TouchableOpacity
-                  onPress={() =>
-                    setCertificates([
-                      ...certificates,
-                      { name: '', issuer: '', docUrl: '' },
-                    ])
+                </AccordionSection>
+
+                {/* Section: Education */}
+                <AccordionSection
+                  title="Education Records"
+                  isOpen={openSection === 'education'}
+                  onToggle={() =>
+                    setOpenSection(
+                      openSection === 'education' ? null : 'education',
+                    )
                   }
-                  style={{
-                    borderWidth: 2,
-                    borderStyle: 'dashed',
-                    borderColor: C.black,
-                    padding: 8,
-                    alignItems: 'center',
-                    marginTop: 4,
-                  }}
+                  icon={BookOpen}
                 >
-                  <Text
-                    style={{ fontSize: 11, fontWeight: '700', color: C.black }}
-                  >
-                    + Add Certificate Record
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </AccordionSection>
-          </View>
-
-          <PhoneVerifyCard phone={user?.phone || ''} />
-
-          {/* Change password */}
-          <View>
-            <View style={s.sectionHeader}>
-              <Shield size={14} color={C.primary} />
-              <Text style={s.sectionTitle}>Change Password</Text>
-            </View>
-            <View style={s.card}>
-              {[
-                {
-                  label: 'Current Password',
-                  value: currentPw,
-                  setter: setCurrentPw,
-                  show: showCurrent,
-                  toggle: () => setShowCurrent(p => !p),
-                },
-                {
-                  label: 'New Password',
-                  value: newPw,
-                  setter: setNewPw,
-                  show: showNew,
-                  toggle: () => setShowNew(p => !p),
-                },
-                {
-                  label: 'Confirm New Password',
-                  value: confirmPw,
-                  setter: setConfirmPw,
-                  show: showConfirm,
-                  toggle: () => setShowConfirm(p => !p),
-                },
-              ].map((f, i) => (
-                <View
-                  key={f.label}
-                  style={[s.fieldRow, i > 0 && s.fieldBorder]}
-                >
-                  <View style={s.fieldIcon}>
-                    <Lock size={14} color={C.textMuted} />
+                  <View style={{ gap: 12 }}>
+                    {education.map((e, i) => (
+                      <View
+                        key={i}
+                        style={{
+                          borderWidth: 2,
+                          borderRightWidth: 4,
+                          borderBottomWidth: 4,
+                          borderRightColor: '#0A0A0A',
+                          borderBottomColor: '#0A0A0A',
+                          borderRadius: 8,
+                          borderColor: C.black,
+                          padding: 10,
+                          gap: 8,
+                          backgroundColor: '#F9FAFB',
+                        }}
+                      >
+                        <BInput
+                          style={{
+                            borderWidth: 2,
+                            borderColor: C.black,
+                            padding: 6,
+                            fontSize: 12,
+                            backgroundColor: '#fff',
+                            color: C.black,
+                          }}
+                          value={e.degree}
+                          onChangeText={val => {
+                            const updated = [...education];
+                            updated[i].degree = val;
+                            setEducation(updated);
+                          }}
+                          placeholder="Degree / Course"
+                          placeholderTextColor={C.textLight}
+                        />
+                        <BInput
+                          style={{
+                            borderWidth: 2,
+                            borderColor: C.black,
+                            padding: 6,
+                            fontSize: 12,
+                            backgroundColor: '#fff',
+                            color: C.black,
+                          }}
+                          value={e.school}
+                          onChangeText={val => {
+                            const updated = [...education];
+                            updated[i].school = val;
+                            setEducation(updated);
+                          }}
+                          placeholder="School / University"
+                          placeholderTextColor={C.textLight}
+                        />
+                        <BInput
+                          style={{
+                            borderWidth: 2,
+                            borderColor: C.black,
+                            padding: 6,
+                            fontSize: 12,
+                            backgroundColor: '#fff',
+                            color: C.black,
+                          }}
+                          value={String(e.passYear || '')}
+                          keyboardType="numeric"
+                          onChangeText={val => {
+                            const updated = [...education];
+                            updated[i].passYear = Number(val) || 0;
+                            setEducation(updated);
+                          }}
+                          placeholder="Pass Year"
+                          placeholderTextColor={C.textLight}
+                        />
+                        <TouchableOpacity
+                          onPress={() =>
+                            setEducation(
+                              education.filter((_, idx) => idx !== i),
+                            )
+                          }
+                          style={{
+                            alignSelf: 'flex-end',
+                            backgroundColor: C.danger,
+                            paddingHorizontal: 10,
+                            paddingVertical: 4,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: '#fff',
+                              fontSize: 10,
+                              fontWeight: '700',
+                            }}
+                          >
+                            Remove
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                    <TouchableOpacity
+                      onPress={() =>
+                        setEducation([
+                          ...education,
+                          { degree: '', school: '', passYear: 2020 },
+                        ])
+                      }
+                      style={{
+                        borderWidth: 2,
+                        borderStyle: 'dashed',
+                        borderColor: C.black,
+                        padding: 8,
+                        alignItems: 'center',
+                        marginTop: 4,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          fontWeight: '700',
+                          color: C.black,
+                        }}
+                      >
+                        + Add Education Record
+                      </Text>
+                    </TouchableOpacity>
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.fieldLabel}>{f.label}</Text>
-                    <View style={s.pwRow}>
-                      <TextInput
-                        style={[s.fieldInput, { flex: 1 }]}
-                        value={f.value}
-                        onChangeText={f.setter}
-                        placeholder="Enter Password"
+                </AccordionSection>
+
+                {/* Section: Experience */}
+                <AccordionSection
+                  title="Work Experience"
+                  isOpen={openSection === 'experience'}
+                  onToggle={() =>
+                    setOpenSection(
+                      openSection === 'experience' ? null : 'experience',
+                    )
+                  }
+                  icon={Briefcase}
+                >
+                  <View style={{ gap: 12 }}>
+                    {experience.map((exp, i) => (
+                      <View
+                        key={i}
+                        style={{
+                          borderWidth: 2,
+                          borderRightWidth: 4,
+                          borderBottomWidth: 4,
+                          borderRightColor: '#0A0A0A',
+                          borderBottomColor: '#0A0A0A',
+                          borderRadius: 8,
+                          borderColor: C.black,
+                          padding: 10,
+                          gap: 8,
+                          backgroundColor: '#F9FAFB',
+                        }}
+                      >
+                        <BInput
+                          style={{
+                            borderWidth: 2,
+                            borderColor: C.black,
+                            padding: 6,
+                            fontSize: 12,
+                            backgroundColor: '#fff',
+                            color: C.black,
+                          }}
+                          value={exp.company}
+                          onChangeText={val => {
+                            const updated = [...experience];
+                            updated[i].company = val;
+                            setExperience(updated);
+                          }}
+                          placeholder="Company"
+                          placeholderTextColor={C.textLight}
+                        />
+                        <BInput
+                          style={{
+                            borderWidth: 2,
+                            borderColor: C.black,
+                            padding: 6,
+                            fontSize: 12,
+                            backgroundColor: '#fff',
+                            color: C.black,
+                          }}
+                          value={exp.role}
+                          onChangeText={val => {
+                            const updated = [...experience];
+                            updated[i].role = val;
+                            setExperience(updated);
+                          }}
+                          placeholder="Role"
+                          placeholderTextColor={C.textLight}
+                        />
+                        <View style={{ flexDirection: 'row', gap: 6 }}>
+                          <BInput
+                            style={{
+                              flex: 1,
+                              borderWidth: 2,
+                              borderColor: C.black,
+                              padding: 6,
+                              fontSize: 12,
+                              backgroundColor: '#fff',
+                              color: C.black,
+                            }}
+                            value={exp.start}
+                            onChangeText={val => {
+                              const updated = [...experience];
+                              updated[i].start = val;
+                              setExperience(updated);
+                            }}
+                            placeholder="Start Date"
+                            placeholderTextColor={C.textLight}
+                          />
+                          <BInput
+                            style={{
+                              flex: 1,
+                              borderWidth: 2,
+                              borderColor: C.black,
+                              padding: 6,
+                              fontSize: 12,
+                              backgroundColor: '#fff',
+                              color: C.black,
+                            }}
+                            value={exp.end}
+                            onChangeText={val => {
+                              const updated = [...experience];
+                              updated[i].end = val;
+                              setExperience(updated);
+                            }}
+                            placeholder="End Date"
+                            placeholderTextColor={C.textLight}
+                          />
+                        </View>
+                        <TouchableOpacity
+                          onPress={() =>
+                            setExperience(
+                              experience.filter((_, idx) => idx !== i),
+                            )
+                          }
+                          style={{
+                            alignSelf: 'flex-end',
+                            backgroundColor: C.danger,
+                            paddingHorizontal: 10,
+                            paddingVertical: 4,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: '#fff',
+                              fontSize: 10,
+                              fontWeight: '700',
+                            }}
+                          >
+                            Remove
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                    <TouchableOpacity
+                      onPress={() =>
+                        setExperience([
+                          ...experience,
+                          { company: '', role: '', start: '', end: '' },
+                        ])
+                      }
+                      style={{
+                        borderWidth: 2,
+                        borderStyle: 'dashed',
+                        borderColor: C.black,
+                        padding: 8,
+                        alignItems: 'center',
+                        marginTop: 4,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          fontWeight: '700',
+                          color: C.black,
+                        }}
+                      >
+                        + Add Experience Record
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </AccordionSection>
+
+                {/* Section: Skills */}
+                <AccordionSection
+                  title="Skills Tags"
+                  isOpen={openSection === 'skills'}
+                  onToggle={() =>
+                    setOpenSection(openSection === 'skills' ? null : 'skills')
+                  }
+                  icon={Award}
+                >
+                  <View style={{ gap: 10 }}>
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <BInput
+                        style={{
+                          flex: 1,
+                          borderWidth: 2,
+                          borderColor: C.black,
+                          padding: 8,
+                          fontSize: 13,
+                          color: C.black,
+                        }}
+                        value={newSkill}
+                        onChangeText={setNewSkill}
+                        placeholder="e.g. React Native, Swift"
                         placeholderTextColor={C.textLight}
-                        secureTextEntry={!f.show}
-                        autoCapitalize="none"
                       />
-                      <TouchableOpacity onPress={f.toggle} style={s.eyeBtn}>
-                        {f.show ? (
-                          <EyeOff size={14} color={C.textMuted} />
-                        ) : (
-                          <Eye size={14} color={C.textMuted} />
-                        )}
+                      <TouchableOpacity
+                        onPress={() => {
+                          if (
+                            newSkill.trim() &&
+                            !skills.includes(newSkill.trim())
+                          ) {
+                            setSkills([...skills, newSkill.trim()]);
+                            setNewSkill('');
+                          }
+                        }}
+                        style={{
+                          backgroundColor: C.black,
+                          paddingHorizontal: 16,
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: '#fff',
+                            fontSize: 12,
+                            fontWeight: '700',
+                          }}
+                        >
+                          Add
+                        </Text>
                       </TouchableOpacity>
                     </View>
-                  </View>
-                </View>
-              ))}
-            </View>
 
-            <TouchableOpacity
-              style={[s.saveBtn, { backgroundColor: C.secondary }]}
-              onPress={handleChangePassword}
-              disabled={changingPw}
-            >
-              {changingPw ? (
-                <ActivityIndicator color={C.white} />
-              ) : (
-                <>
-                  <Shield size={15} color={C.white} />
-                  <Text style={s.saveBtnText}>Change Password</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        flexWrap: 'wrap',
+                        gap: 8,
+                        marginTop: 8,
+                      }}
+                    >
+                      {skills.map((s, idx) => (
+                        <View
+                          key={idx}
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            backgroundColor: '#F3F4F6',
+                            borderWidth: 2,
+                            borderColor: C.black,
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            gap: 4,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 11,
+                              fontWeight: '700',
+                              color: C.black,
+                            }}
+                          >
+                            {s}
+                          </Text>
+                          <TouchableOpacity
+                            onPress={() =>
+                              setSkills(skills.filter((_, i) => i !== idx))
+                            }
+                          >
+                            <Text
+                              style={{
+                                color: C.danger,
+                                fontWeight: '700',
+                                fontSize: 13,
+                              }}
+                            >
+                              ×
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                      {skills.length === 0 && (
+                        <Text style={{ fontSize: 11, color: C.textMuted }}>
+                          No skills tags listed.
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                </AccordionSection>
+
+                {/* Section: Certificates */}
+                <AccordionSection
+                  title="Certificates"
+                  isOpen={openSection === 'certificates'}
+                  onToggle={() =>
+                    setOpenSection(
+                      openSection === 'certificates' ? null : 'certificates',
+                    )
+                  }
+                  icon={Award}
+                >
+                  <View style={{ gap: 12 }}>
+                    {certificates.map((cert, i) => (
+                      <View
+                        key={i}
+                        style={{
+                          borderWidth: 2,
+                          borderRightWidth: 4,
+                          borderBottomWidth: 4,
+                          borderRightColor: '#0A0A0A',
+                          borderBottomColor: '#0A0A0A',
+                          borderRadius: 8,
+                          borderColor: C.black,
+                          padding: 10,
+                          gap: 8,
+                          backgroundColor: '#F9FAFB',
+                        }}
+                      >
+                        <BInput
+                          style={{
+                            borderWidth: 2,
+                            borderColor: C.black,
+                            padding: 6,
+                            fontSize: 12,
+                            backgroundColor: '#fff',
+                            color: C.black,
+                          }}
+                          value={cert.name}
+                          onChangeText={val => {
+                            const updated = [...certificates];
+                            updated[i].name = val;
+                            setCertificates(updated);
+                          }}
+                          placeholder="Certificate Name"
+                          placeholderTextColor={C.textLight}
+                        />
+                        <BInput
+                          style={{
+                            borderWidth: 2,
+                            borderColor: C.black,
+                            padding: 6,
+                            fontSize: 12,
+                            backgroundColor: '#fff',
+                            color: C.black,
+                          }}
+                          value={cert.issuer}
+                          onChangeText={val => {
+                            const updated = [...certificates];
+                            updated[i].issuer = val;
+                            setCertificates(updated);
+                          }}
+                          placeholder="Issuer"
+                          placeholderTextColor={C.textLight}
+                        />
+                        <BInput
+                          style={{
+                            borderWidth: 2,
+                            borderColor: C.black,
+                            padding: 6,
+                            fontSize: 12,
+                            backgroundColor: '#fff',
+                            color: C.black,
+                          }}
+                          value={cert.docUrl}
+                          onChangeText={val => {
+                            const updated = [...certificates];
+                            updated[i].docUrl = val;
+                            setCertificates(updated);
+                          }}
+                          placeholder="Certificate URL Link"
+                          placeholderTextColor={C.textLight}
+                        />
+                        <TouchableOpacity
+                          onPress={() =>
+                            setCertificates(
+                              certificates.filter((_, idx) => idx !== i),
+                            )
+                          }
+                          style={{
+                            alignSelf: 'flex-end',
+                            backgroundColor: C.danger,
+                            paddingHorizontal: 10,
+                            paddingVertical: 4,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: '#fff',
+                              fontSize: 10,
+                              fontWeight: '700',
+                            }}
+                          >
+                            Remove
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                    <TouchableOpacity
+                      onPress={() =>
+                        setCertificates([
+                          ...certificates,
+                          { name: '', issuer: '', docUrl: '' },
+                        ])
+                      }
+                      style={{
+                        borderWidth: 2,
+                        borderStyle: 'dashed',
+                        borderColor: C.black,
+                        padding: 8,
+                        alignItems: 'center',
+                        marginTop: 4,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          fontWeight: '700',
+                          color: C.black,
+                        }}
+                      >
+                        + Add Certificate Record
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </AccordionSection>
+              </View>
+            </>
+          )}
+
+          {activeTab === 'password' && (
+            <View>
+              <View style={s.sectionHeader}>
+                <Shield size={14} color={C.primary} />
+                <Text style={s.sectionTitle}>Change Password</Text>
+              </View>
+              <View style={s.card}>
+                {[
+                  {
+                    label: 'Current Password',
+                    value: currentPw,
+                    setter: setCurrentPw,
+                    show: showCurrent,
+                    toggle: () => setShowCurrent(p => !p),
+                  },
+                  {
+                    label: 'New Password',
+                    value: newPw,
+                    setter: setNewPw,
+                    show: showNew,
+                    toggle: () => setShowNew(p => !p),
+                  },
+                  {
+                    label: 'Confirm New Password',
+                    value: confirmPw,
+                    setter: setConfirmPw,
+                    show: showConfirm,
+                    toggle: () => setShowConfirm(p => !p),
+                  },
+                ].map((f, i) => (
+                  <View
+                    key={f.label}
+                    style={[s.fieldRow, i > 0 && s.fieldBorder]}
+                  >
+                    <View style={s.fieldIcon}>
+                      <Lock size={14} color={C.textMuted} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.fieldLabel}>{f.label}</Text>
+                      <View style={s.pwRow}>
+                        <TextInput
+                          style={[s.fieldInput, { flex: 1 }]}
+                          value={f.value}
+                          onChangeText={f.setter}
+                          placeholder="Enter Password"
+                          placeholderTextColor={C.textLight}
+                          secureTextEntry={!f.show}
+                          autoCapitalize="none"
+                        />
+                        <TouchableOpacity onPress={f.toggle} style={s.eyeBtn}>
+                          {f.show ? (
+                            <EyeOff size={14} color={C.textMuted} />
+                          ) : (
+                            <Eye size={14} color={C.textMuted} />
+                          )}
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              <TouchableOpacity
+                style={[s.saveBtn, { backgroundColor: C.secondary }]}
+                onPress={handleChangePassword}
+                disabled={changingPw}
+              >
+                {changingPw ? (
+                  <ActivityIndicator color={C.white} />
+                ) : (
+                  <>
+                    <Shield size={15} color={C.white} />
+                    <Text style={s.saveBtnText}>Change Password</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal
+        visible={otpFor !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOtpFor(null)}
+      >
+        <View style={s.otpOverlay}>
+          <View style={s.otpBox}>
+            <View
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+            >
+              <ShieldCheck size={20} color={C.primary} />
+              <Text style={s.otpTitle}>
+                Verify {otpFor === 'email' ? 'email' : 'phone number'}
+              </Text>
+            </View>
+            <Text style={s.otpSub}>
+              Enter the 6-digit code we sent to{' '}
+              {otpFor === 'email' ? 'your email inbox' : 'your WhatsApp'}.
+            </Text>
+            <TextInput
+              style={s.otpInput}
+              value={otpCode}
+              onChangeText={t => setOtpCode(t.replace(/\D/g, '').slice(0, 6))}
+              placeholder="000000"
+              placeholderTextColor={C.textLight}
+              keyboardType="number-pad"
+              maxLength={6}
+              autoFocus
+            />
+            <TouchableOpacity
+              style={[
+                s.verifyBtn,
+                { backgroundColor: C.primary },
+                (otpBusy || otpCode.length < 4) && { opacity: 0.5 },
+              ]}
+              onPress={confirmOtp}
+              disabled={otpBusy || otpCode.length < 4}
+            >
+              {otpBusy ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={s.verifyBtnText}>Verify & Update</Text>
+              )}
+            </TouchableOpacity>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                marginTop: 14,
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => otpFor && startOtp(otpFor)}
+                disabled={otpBusy}
+              >
+                <Text style={s.otpLink}>Resend code</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setOtpFor(null)}>
+                <Text style={[s.otpLink, { color: '#64748b' }]}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
+  profileCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    padding: 14,
+    backgroundColor: C.white,
+    ...BRUTAL,
+  },
+  cardEmail: { fontSize: 12, color: C.textMuted },
+  tabs: {
+    flexDirection: 'row',
+    borderWidth: 2,
+    borderRadius: 8,
+    borderColor: C.black,
+    overflow: 'hidden',
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+  },
+  tabActive: { backgroundColor: C.primary },
+  tabText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748b',
+    textTransform: 'uppercase',
+  },
+  tabTextActive: { color: '#fff' },
+  lbl: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#64748b',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  boxInput: {
+    ...BRUTAL,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: C.black,
+    backgroundColor: C.white,
+  },
+  statusChip: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderWidth: 2,
+    borderRadius: 6,
+  },
+  chipOk: { backgroundColor: '#dcfce7', borderColor: '#86efac' },
+  chipWarn: { backgroundColor: '#fef9c3', borderColor: '#fde047' },
+  statusChipText: { fontSize: 11, fontWeight: '800' },
+  verifyBtn: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    backgroundColor: '#25D366',
+    ...BRUTAL,
+  },
+  verifyBtnText: { fontSize: 13, fontWeight: '800', color: '#fff' },
+  otpOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  otpBox: { backgroundColor: '#fff', padding: 18, ...BRUTAL },
+  otpTitle: { fontSize: 17, fontWeight: '800', color: C.black },
+  otpSub: {
+    fontSize: 13,
+    color: '#64748b',
+    fontWeight: '600',
+    marginVertical: 12,
+  },
+  otpInput: {
+    ...BRUTAL,
+    paddingVertical: 12,
+    fontSize: 24,
+    fontWeight: '800',
+    letterSpacing: 10,
+    textAlign: 'center',
+    color: C.black,
+  },
+  otpLink: { fontSize: 13, fontWeight: '800', color: C.primary },
   safe: { flex: 1, backgroundColor: C.bg },
   header: {
     flexDirection: 'row',

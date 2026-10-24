@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const User = require("../models/User");
 const Employee = require("../models/Employee");
 const Session = require("../models/Session");
+const { logAudit } = require("../utils/auditLogger");
 const { sendOtpEmail } = require("../services/notificationService");
 const {
   findForSignIn,
@@ -39,11 +40,20 @@ const listSessions = asyncHandler(async (req, res) => {
 });
 
 const removeSession = asyncHandler(async (req, res) => {
-  const r = await Session.deleteOne({ _id: req.params.id, userId: req.user._id });
-  if (!r.deletedCount) {
+  const gone = await Session.findOneAndDelete({
+    _id: req.params.id,
+    userId: req.user._id,
+  });
+  if (!gone) {
     res.status(404);
     throw new Error("Device not found");
   }
+  logAudit(req, "auth.logout", "Session", gone._id, {
+    device: gone.deviceName,
+    platform: gone.platform,
+    sessionId: String(gone._id),
+    current: String(gone._id) === req.sessionId,
+  });
   res.json({ success: true, message: "Device signed out" });
 });
 

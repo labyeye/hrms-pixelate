@@ -30,6 +30,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { authAPI } from '../../api/api';
 import { C } from '../../theme';
+import WhatsAppIcon from '../../components/common/WhatsAppIcon';
 
 const loginAnim = require('../../assets/lottie/login.json');
 const otpAnim = require('../../assets/lottie/otp.json');
@@ -331,7 +332,11 @@ export default function LoginScreen({ navigation }: any) {
                       <ActivityIndicator color={C.white} />
                     ) : (
                       <>
-                        <ArrowRight size={16} color={C.white} />
+                        {otpVia === 'email' ? (
+                          <ArrowRight size={16} color={C.white} />
+                        ) : (
+                          <WhatsAppIcon size={20} />
+                        )}
                         <Text style={styles.btnPrimaryText}>
                           {otpVia === 'email'
                             ? 'Send OTP to Email'
