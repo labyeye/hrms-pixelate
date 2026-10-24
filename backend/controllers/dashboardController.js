@@ -16,7 +16,9 @@ const getStats = asyncHandler(async (req, res) => {
   if (hit && Date.now() - hit.at < STATS_TTL_MS) return res.json(hit.body);
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const istToday = new Date(Date.now() + 5.5 * 3600000).toISOString().slice(0, 10);
+  const todayStart = new Date(new Date(`${istToday}T00:00:00Z`).getTime() - 12 * 3600000);
+  const todayEnd = new Date(new Date(`${istToday}T00:00:00Z`).getTime() + 12 * 3600000);
 
   try {
     const companyId = new mongoose.Types.ObjectId(req.user.company);
@@ -47,7 +49,8 @@ const getStats = asyncHandler(async (req, res) => {
         () => 0,
       ),
       Attendance.aggregate([
-        { $match: { employee: { $in: companyEmployeeIds }, date: today } },
+        // Range over the IST day (not exact equality) so it works whatever TZ the server / writer used for the date stamp.
+        { $match: { employee: { $in: companyEmployeeIds }, date: { $gte: todayStart, $lt: todayEnd } } },
         { $group: { _id: "$status", n: { $sum: 1 } } },
       ]).catch(() => []),
       Department.countDocuments({ company: companyId }).catch(() => 0),
