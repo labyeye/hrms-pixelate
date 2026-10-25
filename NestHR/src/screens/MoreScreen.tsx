@@ -20,6 +20,7 @@ import {
   Building2,
   Sun,
   CreditCard,
+  Coins,
   BarChart2,
   Settings,
   LogOut as LogOutIcon,
@@ -154,6 +155,12 @@ const MENU_ITEMS = [
     desc: 'Subscription & invoices',
   },
   {
+    key: 'Credits',
+    label: 'WhatsApp Credits',
+    icon: Coins,
+    desc: 'Balance & message usage',
+  },
+  {
     key: 'Support',
     label: 'Support',
     icon: LifeBuoy,
@@ -249,6 +256,7 @@ const GROUPS: { title: string; color: string; keys: string[] }[] = [
       'AccountSecurity',
       'Settings',
       'Billing',
+      'Credits',
       'Support',
     ],
   },

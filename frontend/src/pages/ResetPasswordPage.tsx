@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import nesthrlogo from "../../assets/logo.png";
 import { AuthShell } from "@/components/auth/AuthShell";
+import PasswordChecklist from "@/components/PasswordChecklist";
 
 export default function ResetPasswordPage() {
   const { token } = useParams<{ token: string }>();
@@ -108,7 +109,7 @@ export default function ResetPasswordPage() {
                         setPassword(e.target.value);
                         setError("");
                       }}
-                      placeholder="Min 8 chars, upper, lower, number"
+                      placeholder="Create a strong password"
                       className="flex-1 px-4 py-3 bg-white text-sm font-medium outline-none"
                       required
                       autoFocus
@@ -125,6 +126,7 @@ export default function ResetPasswordPage() {
                       )}
                     </button>
                   </div>
+                  {password && <PasswordChecklist password={password} />}
                 </div>
 
                 <div>

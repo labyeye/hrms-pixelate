@@ -1,6 +1,7 @@
 import { createAsyncStorage } from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { API_BASE_URL } from '../config/env';
+import { announceRefund, isRefundMessage } from '../utils/refundNotice';
 
 const BASE_URL = API_BASE_URL;
 
@@ -71,6 +72,7 @@ async function request<T = any>(
     } catch {} // gateway HTML page — fall through to statusMsg
 
     if (!res.ok) {
+      if (isRefundMessage(data.message)) announceRefund(data.message);
       const err: any = new Error(data.message || statusMsg(res.status));
       err.status = res.status;
       throw err;
@@ -538,6 +540,12 @@ export const billingAPI = {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+};
+
+export const creditsAPI = {
+  balance: () => request('/credits/balance'),
+  ledger: (page = 1, type = '') =>
+    request(`/credits/ledger?page=${page}${type ? `&type=${type}` : ''}`),
 };
 
 export const holidayAPI = {
@@ -1073,5 +1081,20 @@ export const localNotificationsAPI = {
   },
   clear: async () => {
     await storage.setItem(NOTIF_KEY, '[]');
+  },
+};
+
+// Terms & Privacy acceptance (backend /api/legal). Used by components/TermsGate.
+export const legalAPI = {
+  status: async () => {
+    const r: any = await request('/legal/status');
+    return r.data ?? r;
+  },
+  accept: async () => {
+    const r: any = await request('/legal/accept', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    return r.data ?? r;
   },
 };

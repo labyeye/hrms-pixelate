@@ -1,4 +1,5 @@
 const asyncHandler = require("express-async-handler");
+const { Saga, refundAfterFailure } = require("../utils/paymentSaga");
 const crypto = require("crypto");
 const Company = require("../models/Company");
 const Subscription = require("../models/Subscription");
@@ -8,7 +9,6 @@ const User = require("../models/User");
 const OfferCode = require("../models/OfferCode");
 const PendingOrder = require("../models/PendingOrder");
 const Counter = require("../models/Counter");
-const hdfcPayment = require("../services/hdfcPaymentService");
 const razorpayService = require("../services/razorpayService");
 const { sendPaymentConfirmations } = require("../services/notificationService");
 const { PLAN_SLABS, PLAN_LABEL, calculatePricing } = require("../utils/pricing");
@@ -144,9 +144,9 @@ const createOrder = asyncHandler(async (req, res) => {
     throw new Error("Please provide a valid number of employees");
   }
   const billingCycle = "yearly"; // yearly billing only
-  if (!["razorpay", "hdfc"].includes(gateway)) {
+  if (gateway !== "razorpay") {
     res.status(400);
-    throw new Error("Invalid gateway. Use razorpay or hdfc");
+    throw new Error("Invalid gateway. Only razorpay is supported");
   }
 
   let pricing;
@@ -318,91 +318,6 @@ const createOrder = asyncHandler(async (req, res) => {
       offerApplied: !!validatedOffer,
       bonusMonths: validatedOffer ? validatedOffer.bonusMonths : 0,
     };
-  } else {
-    const orderId = hdfcPayment.generateOrderId();
-    const result = await hdfcPayment.createOrder({
-      orderId,
-      amount: amountRupees,
-      currency: "INR",
-      customer: {
-        name: req.user.name,
-        email: req.user.email,
-        phone:
-          req.user.phone ||
-          (existingCompany ? existingCompany.phone : newCompanyDetails.phone) ||
-          "",
-        address: existingCompany?.address || "India",
-        city: existingCompany?.city || "",
-        state: existingCompany?.state || "",
-        pincode: existingCompany?.pincode || "",
-        userId: req.user._id.toString(),
-        companyId: existingCompany ? existingCompany._id.toString() : "",
-      },
-    });
-
-    if (existingCompany) {
-      await Subscription.findOneAndUpdate(
-        { company: existingCompany._id },
-        {
-          company: existingCompany._id,
-          plan: pricing.tierLabel,
-          tier: pricing.tier,
-          employeeCount: empCount,
-          ratePerEmployee: pricing.ratePerEmployee,
-          monthlyPrice: pricing.monthlyPrice,
-          yearlyPrice: pricing.yearlyPrice,
-          maxEmployees: pricing.maxEmployees,
-          billingCycle,
-          startDate: new Date(),
-          renewalDate: new Date(),
-          status: "inactive",
-          paymentStatus: "pending",
-          paymentMethod: "hdfc_smartgateway",
-          amountPaid: 0,
-          pendingChargeAmount: amountRupees,
-          hdfcOrderId: orderId,
-          offerCode: validatedOffer ? validatedOffer.code : null,
-          offerBonusMonths: validatedOffer ? validatedOffer.bonusMonths : 0,
-        },
-        { upsert: true, new: true },
-      );
-    } else {
-      await PendingOrder.create({
-        orderId,
-        gateway: "hdfc",
-        user: req.user._id,
-        companyName: newCompanyDetails.name,
-        companyEmail: newCompanyDetails.email,
-        companyPhone: newCompanyDetails.phone,
-        industry: newCompanyDetails.industry,
-        website: newCompanyDetails.website,
-        gstNumber: newCompanyDetails.gstNumber,
-        panNumber: newCompanyDetails.panNumber,
-        employeeCount: empCount,
-        billingCycle,
-        tier: pricing.tier,
-        ratePerEmployee: pricing.ratePerEmployee,
-        tierLabel: pricing.tierLabel,
-        monthlyPrice: pricing.monthlyPrice,
-        yearlyPrice: pricing.yearlyPrice,
-        offerCode: validatedOffer ? validatedOffer.code : null,
-        offerBonusMonths: validatedOffer ? validatedOffer.bonusMonths : 0,
-      });
-    }
-
-    orderData = {
-      gateway: "hdfc",
-      orderId,
-      paymentUrl: result.paymentUrl,
-      amount: amountRupees,
-      currency: "INR",
-      employeeCount: empCount,
-      ratePerEmployee: pricing.ratePerEmployee,
-      plan: pricing.tierLabel,
-      billingCycle,
-      offerApplied: !!validatedOffer,
-      bonusMonths: validatedOffer ? validatedOffer.bonusMonths : 0,
-    };
   }
 
   res.json({ success: true, data: orderData });
@@ -457,65 +372,12 @@ const verifyRazorpayPayment = asyncHandler(async (req, res) => {
   });
 });
 
-const verifyHdfcPayment = asyncHandler(async (req, res) => {
-  const { orderId, trackingId } = req.body;
-  if (!orderId) {
-    res.status(400);
-    throw new Error("orderId is required");
-  }
-
-  const verification = await hdfcPayment.verifyPayment({ orderId, trackingId });
-  if (!verification.isSuccess) {
-    res.status(400);
-    throw new Error(
-      `Payment not successful. Status: ${verification.status || "unknown"}`,
-    );
-  }
-
-  const pendingOrder = await PendingOrder.findOne({ orderId });
-  if (pendingOrder) {
-    await _createCompanyAndActivate({
-      pendingOrder,
-      req,
-      update: {
-        hdfcTrackingId: verification.trackingId,
-        hdfcBankRefNo: verification.bankRefNo,
-        paymentMethod: "hdfc_smartgateway",
-        paymentStatus: "completed",
-      },
-      invoiceExtra: {
-        hdfcOrderId: orderId,
-        hdfcTrackingId: verification.trackingId,
-      },
-      res,
-    });
-    return;
-  }
-
-  await _activateSubscription({
-    req,
-    lookup: { hdfcOrderId: orderId },
-    update: {
-      hdfcTrackingId: verification.trackingId,
-      hdfcBankRefNo: verification.bankRefNo,
-      paymentMethod: "hdfc_smartgateway",
-      paymentStatus: "completed",
-    },
-    invoiceExtra: {
-      hdfcOrderId: orderId,
-      hdfcTrackingId: verification.trackingId,
-    },
-    res,
-  });
-});
-
-async function _createCompanyAndActivate({
+async function _createCompanyAndActivateSteps({
   pendingOrder,
   req,
   update,
   invoiceExtra,
-  res,
-}) {
+  res, saga }) {
   if (pendingOrder.user.toString() !== req.user._id.toString()) {
     res.status(403);
     throw new Error("This order does not belong to the current user.");
@@ -533,7 +395,7 @@ async function _createCompanyAndActivate({
     throw new Error("Company email already exists");
   }
 
-  const company = await Company.create({
+  const company = await saga.create(Company, {
     name: pendingOrder.companyName,
     email: pendingOrder.companyEmail,
     phone: pendingOrder.companyPhone,
@@ -550,6 +412,7 @@ async function _createCompanyAndActivate({
     pendingOrder.billingCycle === "yearly"
       ? pendingOrder.yearlyPrice
       : pendingOrder.monthlyPrice;
+  saga.amount = amountPaid;
 
   const startDate = new Date();
   const renewalDate = new Date();
@@ -563,7 +426,7 @@ async function _createCompanyAndActivate({
     renewalDate.setMonth(renewalDate.getMonth() + bonusMonths);
   }
 
-  const subscription = await Subscription.create({
+  const subscription = await saga.create(Subscription, {
     company: company._id,
     plan: pendingOrder.tierLabel,
     tier: pendingOrder.tier,
@@ -582,24 +445,19 @@ async function _createCompanyAndActivate({
     ...update,
   });
 
-  company.subscription = subscription._id;
-  await company.save();
+  await saga.patch(Company, company._id, { subscription: subscription._id });
 
   req.user.company = company._id;
-  await req.user.save();
+  await saga.patch(User, req.user._id, { company: company._id, ...(req.user.phone ? { phone: req.user.phone } : {}) });
 
   let offerCodeDoc = null;
   if (pendingOrder.offerCode) {
-    offerCodeDoc = await OfferCode.findOneAndUpdate(
-      { code: pendingOrder.offerCode },
-      { $inc: { usedCount: 1 } },
-      { new: true },
-    );
+    offerCodeDoc = await saga.inc(OfferCode, { code: pendingOrder.offerCode }, "usedCount", 1);
   }
 
   const seq = await Counter.next("invoice-hrms", () => Invoice.countDocuments());
   const invoiceNumber = `INV-HRMS-${String(seq).padStart(4, "0")}`;
-  await Invoice.create({
+  await saga.create(Invoice, {
     company: company._id,
     subscription: subscription._id,
     invoiceNumber,
@@ -625,12 +483,13 @@ async function _createCompanyAndActivate({
     });
   }
 
-  await PendingOrder.deleteOne({ _id: pendingOrder._id });
+  await PendingOrder.deleteOne({ _id: pendingOrder._id }).catch(() => {});
 
   const dashboardUrl = process.env.FRONTEND_URL
     ? `${process.env.FRONTEND_URL}/`
     : "https://hrms.pixelatenest.com/";
 
+  require("../services/creditsService").onSubscriptionPaid(company._id, subscription).catch((err) => console.error("[Credits]", err.message));
   sendPaymentConfirmations({
     toEmail: req.user.email || company.email,
     toName: req.user.name || company.name,
@@ -669,7 +528,7 @@ async function _createCompanyAndActivate({
   });
 }
 
-async function _activateSubscription({ lookup, update, invoiceExtra, res, req }) {
+async function _activateSubscriptionSteps({ lookup, update, invoiceExtra, res, req, saga }) {
   const subscription = await Subscription.findOne(lookup);
   if (!subscription) {
     res.status(404);
@@ -682,8 +541,7 @@ async function _activateSubscription({ lookup, update, invoiceExtra, res, req })
   }
   // Replay guard: the same gateway payment must not create a second invoice / offer redemption / notification.
   const sameRazorpay = update.razorpayPaymentId && subscription.razorpayPaymentId === update.razorpayPaymentId;
-  const sameHdfc = update.hdfcTrackingId && subscription.hdfcTrackingId === update.hdfcTrackingId;
-  if (subscription.paymentStatus === "completed" && (sameRazorpay || sameHdfc)) {
+    if (subscription.paymentStatus === "completed" && sameRazorpay) {
     return res.json({
       success: true,
       message: "Payment already processed",
@@ -703,6 +561,7 @@ async function _activateSubscription({ lookup, update, invoiceExtra, res, req })
     (subscription.billingCycle === "yearly"
       ? subscription.yearlyPrice
       : subscription.monthlyPrice);
+  saga.amount = amountPaid;
 
   const startDate = new Date();
   const renewalDate = new Date();
@@ -718,30 +577,23 @@ async function _activateSubscription({ lookup, update, invoiceExtra, res, req })
     renewalDate.setMonth(renewalDate.getMonth() + bonusMonths);
   }
 
-  const updatedSub = await Subscription.findByIdAndUpdate(
-    subscription._id,
-    { startDate, renewalDate, status: "active", amountPaid, ...update },
-    { new: true },
-  );
+  await saga.patch(Subscription, subscription._id, { startDate, renewalDate, status: "active", amountPaid, ...update });
+  const updatedSub = await Subscription.findById(subscription._id);
 
   // Record offer code usage (invoiceNumber assigned just below)
   let offerCodeDoc = null;
   if (subscription.offerCode) {
-    offerCodeDoc = await OfferCode.findOneAndUpdate(
-      { code: subscription.offerCode },
-      { $inc: { usedCount: 1 } },
-      { new: true },
-    );
+    offerCodeDoc = await saga.inc(OfferCode, { code: subscription.offerCode }, "usedCount", 1);
   }
 
-  await Company.findByIdAndUpdate(company._id, {
+  await saga.patch(Company, company._id, {
     status: "active",
     subscription: updatedSub._id,
   });
 
   const seq = await Counter.next("invoice-hrms", () => Invoice.countDocuments());
   const invoiceNumber = `INV-HRMS-${String(seq).padStart(4, "0")}`;
-  await Invoice.create({
+  await saga.create(Invoice, {
     company: company._id,
     subscription: updatedSub._id,
     invoiceNumber,
@@ -773,6 +625,7 @@ async function _activateSubscription({ lookup, update, invoiceExtra, res, req })
     ? `${process.env.FRONTEND_URL}/`
     : "https://hrms.pixelatenest.com/";
 
+  require("../services/creditsService").onSubscriptionPaid(company._id, updatedSub).catch((err) => console.error("[Credits]", err.message));
   sendPaymentConfirmations({
     toEmail: user?.email || company.email,
     toName: user?.name || company.name,
@@ -805,11 +658,68 @@ async function _activateSubscription({ lookup, update, invoiceExtra, res, req })
   });
 }
 
-const verifyPayment = asyncHandler(async (req, res) => {
-  if (req.body.razorpayOrderId) {
-    return verifyRazorpayPayment(req, res);
+const SAGA_PRODUCT = "NestHR subscription";
+
+// Payment is already taken when these run. If anything below fails: undo what was written, refund the
+// customer (utils/paymentSaga.js) and tell them so. Ownership errors (403) are not the customer's money at stake.
+async function _withRefundSaga(args, steps) {
+  const { update, invoiceExtra, req, res } = args;
+  const saga = new Saga();
+  try {
+    return await steps({ ...args, saga });
+  } catch (err) {
+    if (res.statusCode === 403 || res.headersSent) throw err;
+    res.status(409);
+    const undone = await saga.rollback();
+    await refundAfterFailure(
+      {
+        gateway: "razorpay",
+        paymentId: update.razorpayPaymentId,
+        orderId: invoiceExtra?.razorpayOrderId,
+        amount: saga.amount,
+        product: SAGA_PRODUCT,
+        userId: req.user?._id,
+      },
+      err,
+      undone,
+    );
   }
-  return verifyHdfcPayment(req, res);
+}
+const _createCompanyAndActivate = (args) => _withRefundSaga(args, _createCompanyAndActivateSteps);
+const _activateSubscription = (args) => _withRefundSaga(args, _activateSubscriptionSteps);
+
+// Activates a paid Razorpay order without a signed-in browser (used when only the webhook told us about the payment).
+// Same code path as the browser's verify call, so the saga/refund protection is identical.
+async function provisionRazorpay({ orderId, paymentId }) {
+  const res = {
+    statusCode: 200,
+    headersSent: false,
+    status(c) {
+      this.statusCode = c;
+      return this;
+    },
+    json() {
+      this.headersSent = true;
+      return this;
+    },
+  };
+  const update = { razorpayPaymentId: paymentId, paymentMethod: "razorpay", paymentStatus: "completed" };
+  const invoiceExtra = { razorpayOrderId: orderId, razorpayPaymentId: paymentId };
+  const pendingOrder = await PendingOrder.findOne({ orderId });
+  if (pendingOrder) {
+    const user = await User.findById(pendingOrder.user);
+    if (!user) throw new Error("The user who started this order no longer exists");
+    return _createCompanyAndActivate({ pendingOrder, req: { user }, update, invoiceExtra, res });
+  }
+  return _activateSubscription({ req: {}, lookup: { razorpayOrderId: orderId }, update, invoiceExtra, res });
+}
+
+const verifyPayment = asyncHandler(async (req, res) => {
+  if (!req.body.razorpayOrderId) {
+    res.status(400);
+    throw new Error("razorpayOrderId is required");
+  }
+  return verifyRazorpayPayment(req, res);
 });
 
 module.exports = {
@@ -821,5 +731,5 @@ module.exports = {
   validateOfferCode,
   verifyPayment,
   verifyRazorpayPayment,
-  verifyHdfcPayment,
+  provisionRazorpay,
 };

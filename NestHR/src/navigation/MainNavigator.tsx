@@ -39,6 +39,7 @@ import ReportsScreen from '../screens/ReportsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import AccountSecurityScreen from '../screens/AccountSecurityScreen';
 import BillingScreen from '../screens/BillingScreen';
+import CreditsScreen from '../screens/CreditsScreen';
 import CredentialsScreen from '../screens/CredentialsScreen';
 import ManageScreen from '../screens/ManageScreen';
 import ShiftsScreen from '../screens/ShiftsScreen';
@@ -83,6 +84,7 @@ function MoreNavigator() {
         component={AccountSecurityScreen}
       />
       <MoreStack.Screen name="Billing" component={BillingScreen} />
+      <MoreStack.Screen name="Credits" component={CreditsScreen} />
       <MoreStack.Screen name="Credentials" component={CredentialsScreen} />
       <MoreStack.Screen name="Manage" component={ManageScreen} />
       <MoreStack.Screen name="Shifts" component={ShiftsScreen} />

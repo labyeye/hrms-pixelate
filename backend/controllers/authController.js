@@ -27,7 +27,8 @@ const loginSchema = {
   password: { required: true, type: "string", minLength: 1, maxLength: 128 },
 };
 
-const STRONG_PASSWORD_RE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+const { checkPasswordRules } = require("../utils/passwordPolicy");
+const STRONG_PASSWORD_RE = { test: (p) => !checkPasswordRules(p) };
 
 const generateOtp = () => String(crypto.randomInt(100000, 1000000));
 // Keyed hash: a leaked database can't be turned back into the 6-digit codes with a rainbow table.
@@ -668,7 +669,7 @@ const verifyOtp = asyncHandler(async (req, res) => {
 const isEmail = (e) => typeof e === "string" && validator.isEmail(e);
 
 const STRONG_PASSWORD_MSG =
-  "Password must be at least 8 characters and include uppercase, lowercase, and a number";
+  "Password needs 8+ characters with an uppercase, a lowercase, a number and a special character, no simple series like 1234 and nothing common like \"password\".";
 
 // Tells the forgot-password screen which reset methods this account has set up.
 const forgotPasswordMethods = asyncHandler(async (req, res) => {

@@ -13,7 +13,7 @@ flowchart LR
   API --> Face[FastAPI face service]
   API --> Devices[Biometric/ADMS devices]
   API --> WA[WhatsApp/notifications]
-  API --> Pay[Razorpay/HDFC/billing]
+  API --> Pay[Razorpay/billing]
 ```
 
 ## Components

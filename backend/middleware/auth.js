@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const asyncHandler = require("express-async-handler");
 const User = require("../models/User");
+const terms = require("../utils/terms");
 const Company = require("../models/Company");
 const Session = require("../models/Session");
 const { getCompanyFeatures } = require("../utils/planFeatures");
@@ -54,6 +55,7 @@ const protect = asyncHandler(async (req, res, next) => {
     }
     req.sessionId = String(session._id);
   }
+  if (terms.blocks(req)) return terms.refuse(res);
   next();
 });
 

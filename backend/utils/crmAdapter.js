@@ -5,6 +5,7 @@ const Subscription = require("../models/Subscription");
 const User = require("../models/User");
 const Employee = require("../models/Employee");
 const { helpers: H } = require("./crmAccounts");
+const terms = require("./terms");
 
 const ROLES = User.schema.path("role").enumValues;
 
@@ -32,7 +33,7 @@ const subView = (s) =>
     amountPaid: s.amountPaid, isTrial: s.isTrial, customPlanName: s.customPlanName, customFeatures: s.customFeatures || [],
     limits: { maxEmployees: s.maxEmployees }, flags: { whatsapp: s.tier !== "web_mobile" },
   };
-const userView = (u, ownerId) => ({ id: u._id, name: u.name, email: u.email, role: u.role, status: u.status, phone: u.phone, lastLogin: u.lastLogin, isOwner: String(u._id) === String(ownerId) });
+const userView = (u, ownerId) => ({ id: u._id, name: u.name, email: u.email, role: u.role, status: u.status, phone: u.phone, lastLogin: u.lastLogin, terms: terms.userState(u), termsAcceptedAt: u.termsAcceptedAt, isOwner: String(u._id) === String(ownerId) });
 
 exports.meta = meta;
 
@@ -40,17 +41,18 @@ exports.list = async (search) => {
   const q = search ? { $or: [{ name: new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") }, { email: new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") }] } : {};
   const companies = await Company.find(q).select("-password").sort({ createdAt: -1 }).limit(500).lean();
   const ids = companies.map((c) => c._id);
-  const [subs, emps, logins] = await Promise.all([
+  const [subs, emps, logins, tstat] = await Promise.all([
     Subscription.find({ company: { $in: ids } }).lean(),
     Employee.aggregate([{ $match: { company: { $in: ids }, status: "active" } }, { $group: { _id: "$company", n: { $sum: 1 } } }]),
     User.aggregate([{ $match: { company: { $in: ids } } }, { $group: { _id: "$company", last: { $max: "$lastLogin" } } }]),
+    terms.stats(User, "company", ids),
   ]);
   const sub = Object.fromEntries(subs.map((s) => [String(s.company), s]));
   const emp = Object.fromEntries(emps.map((e) => [String(e._id), e.n]));
   const last = Object.fromEntries(logins.map((l) => [String(l._id), l.last]));
   return companies.map((c) => {
     const s = sub[String(c._id)];
-    return { id: c._id, name: c.name, email: c.email, phone: c.phone, status: c.status, plan: s?.plan, validTill: s?.renewalDate, usage: `${emp[String(c._id)] || 0} / ${s?.maxEmployees ?? "—"} employees`, lastLogin: last[String(c._id)], createdAt: c.createdAt };
+    return { id: c._id, name: c.name, email: c.email, phone: c.phone, status: c.status, plan: s?.plan, validTill: s?.renewalDate, usage: `${emp[String(c._id)] || 0} / ${s?.maxEmployees ?? "—"} employees`, lastLogin: last[String(c._id)], createdAt: c.createdAt, terms: terms.label(tstat[String(c._id)]), termsCount: tstat[String(c._id)] ? `${tstat[String(c._id)].done}/${tstat[String(c._id)].need}` : "—" };
   });
 };
 
@@ -59,7 +61,7 @@ exports.get = async (id) => {
   if (!c) throw H.fail("Company not found", 404);
   const [s, users, active] = await Promise.all([
     Subscription.findOne({ company: c._id }).lean(),
-    User.find({ company: c._id }).select("name email role status phone lastLogin").sort({ createdAt: 1 }).lean(),
+    User.find({ company: c._id }).select("name email role status phone lastLogin termsVersion termsAcceptedAt").sort({ createdAt: 1 }).lean(),
     Employee.countDocuments({ company: c._id, status: "active" }),
   ]);
   return { account: accountView(c), subscription: subView(s), users: users.map((u) => userView(u, c.createdBy)), usage: { employees: active } };

@@ -25,8 +25,9 @@ async function nextEmployeeId(company) {
 }
 
 // Passwords an admin types for someone else: 8-128 chars with at least one letter and one digit.
-const PASSWORD_OK = (pw) => typeof pw === "string" && pw.length >= 8 && pw.length <= 128 && /[A-Za-z]/.test(pw) && /\d/.test(pw);
-const PASSWORD_MSG = "Password must be 8-128 characters with at least one letter and one number";
+const { checkPasswordRules, generatePassword } = require("../utils/passwordPolicy");
+const PASSWORD_OK = (pw) => typeof pw === "string" && !checkPasswordRules(pw);
+const PASSWORD_MSG = "Password needs 8+ characters with an uppercase, a lowercase, a number and a special character, no simple series like 1234 and nothing common like \"password\".";
 const { enrollFace } = require("../services/faceService");
 
 const createSchema = {
@@ -228,7 +229,7 @@ const createEmployee = [
         res.status(400);
         throw new Error(PASSWORD_MSG);
       }
-      const tempPassword = providedPassword ? providedPassword : crypto.randomBytes(8).toString("hex") + "A1";
+      const tempPassword = providedPassword ? providedPassword : generatePassword();
       const user = await User.create({
         name: `${firstName.trim()} ${lastName.trim()}`,
         email: normalizedEmail,
@@ -593,7 +594,7 @@ const bulkImportEmployees = asyncHandler(async (req, res) => {
         const tempPassword =
           row.password && PASSWORD_OK(row.password)
             ? row.password
-            : crypto.randomBytes(8).toString("hex") + "A1";
+            : generatePassword();
         const user = await User.create({
           name: `${firstName} ${lastName}`,
           email,

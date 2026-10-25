@@ -2,7 +2,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { settingsAPI, authAPI } from "@/services/api";
+import { settingsAPI, authAPI, creditsAPI } from "@/services/api";
+import { fmtCredits, useCredits } from "@/contexts/CreditsContext";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { WhatsAppIcon } from "@/components/icons/WhatsAppIcon";
 import {
@@ -30,6 +32,7 @@ import { cn } from "@/lib/utils";
 import { ActionModal } from "@/components/ui/ActionModal";
 import { useConfirm } from "@/hooks/use-confirm";
 import { AccountSecurityPanel } from "@/components/security/AccountSecurityPanel";
+import PasswordChecklist from "@/components/PasswordChecklist";
 
 type CrudOp = "create" | "read" | "update" | "delete";
 type HrmsRole =
@@ -794,6 +797,12 @@ function CropModal({
 }
 
 export default function SettingsPage() {
+  const { credits } = useCredits();
+  const navigate = useNavigate();
+  const [waEstimate, setWaEstimate] = useState<any>(null);
+  useEffect(() => {
+    if (credits?.metered) creditsAPI.estimate().then((r) => setWaEstimate(r.data)).catch(() => {});
+  }, [credits?.metered]);
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
   const confirm = useConfirm();
@@ -1582,6 +1591,84 @@ export default function SettingsPage() {
                       Employee phone numbers must include country code without +
                       (e.g. 919876543210).
                     </p>
+                  </div>
+
+                  {credits?.metered && (
+                    <div
+                      className={cn(
+                        "p-4 border-2 border-black text-xs space-y-1",
+                        credits.zero ? "bg-red-50" : "bg-[#F0FFF8]",
+                      )}
+                    >
+                      <p className="font-bold text-sm text-black">
+                        WhatsApp credits: {fmtCredits(credits.total)}
+                        {credits.zero && " — messages are paused"}
+                      </p>
+                      <p className="text-gray-600">
+                        Every WhatsApp message costs {credits.ratePerMessage}{" "}
+                        credit, automatic ones too (check-in, leave, salary),
+                        including the copy each admin/HR receives.
+                      </p>
+                      {waEstimate && waEstimate.punch.messagesPerDay > 0 && (
+                        <p className="text-gray-600">
+                          Check-in / check-out alerts as saved: about{" "}
+                          <b>{waEstimate.punch.messagesPerDay}</b> messages (
+                          {fmtCredits(waEstimate.punch.creditsPerDay)} credits)
+                          per day for {waEstimate.employees} employees and{" "}
+                          {waEstimate.hrRecipients} HR/admin recipient(s).
+                        </p>
+                      )}
+                      <button
+                        onClick={() => navigate("/credits")}
+                        className="mt-1 font-bold text-[#024BAB] hover:underline"
+                      >
+                        Add credits &amp; see usage
+                      </button>
+                    </div>
+                  )}
+
+                  {}
+                  <div className="border-t-2 border-black pt-4 space-y-3">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                      Who receives messages
+                    </h3>
+                    {[
+                      {
+                        key: "whatsappSendPunchAlert",
+                        label: "Check-in / Check-out alerts",
+                      },
+                      {
+                        key: "whatsappSendLeaveAlert",
+                        label: "Leave & loan alerts",
+                      },
+                    ].map(({ key, label }) => (
+                      <div
+                        key={key}
+                        className="flex items-center justify-between p-3 border-2 border-gray-200 bg-white"
+                      >
+                        <div>
+                          <p className="font-bold text-sm text-black">{label}</p>
+                          <p className="text-xs text-gray-500">
+                            Each person who receives a message uses a credit.
+                          </p>
+                        </div>
+                        <select
+                          value={settings?.[key] || "Both"}
+                          onChange={(e) =>
+                            setSettings((p: any) => ({
+                              ...p,
+                              [key]: e.target.value,
+                            }))
+                          }
+                          className="border-2 border-black bg-white px-2 py-1 text-xs font-bold"
+                        >
+                          <option value="Both">Employee + HR/Admin</option>
+                          <option value="Employee">Employee only</option>
+                          <option value="HR">HR/Admin only</option>
+                          <option value="Off">Off</option>
+                        </select>
+                      </div>
+                    ))}
                   </div>
 
                   {}
@@ -2525,6 +2612,7 @@ export default function SettingsPage() {
                               )}
                             </button>
                           </div>
+                          {key === "next" && pwForm.next && <PasswordChecklist password={pwForm.next} />}
                         </div>
                       ))}
                       <div className="sm:col-span-3">

@@ -24,8 +24,6 @@ const invoiceSchema = new mongoose.Schema(
     paidAt: { type: Date },
     razorpayOrderId: { type: String },
     razorpayPaymentId: { type: String },
-    hdfcOrderId: { type: String },
-    hdfcTrackingId: { type: String },
   },
   { timestamps: true },
 );

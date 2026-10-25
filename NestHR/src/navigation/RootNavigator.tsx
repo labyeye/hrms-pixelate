@@ -9,6 +9,7 @@ import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
 import FaceCheckInScreen from '../screens/FaceCheckInScreen';
 import FaceEnrollScreen from '../screens/FaceEnrollScreen';
+import TermsGate from '../components/TermsGate';
 import { C } from '../theme';
 
 initUsageTracker(TRACK_BASE);
@@ -35,6 +36,7 @@ export default function RootNavigator() {
   }
 
   return (
+    <>
     <NavigationContainer onStateChange={trackNavState}>
       {isAuthenticated ? (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -60,5 +62,7 @@ export default function RootNavigator() {
         <AuthNavigator />
       )}
     </NavigationContainer>
+    {isAuthenticated && <TermsGate />}
+    </>
   );
 }

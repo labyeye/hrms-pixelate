@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { AlertCircle, ArrowRight } from "lucide-react";
+import PasswordChecklist from "@/components/PasswordChecklist";
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -79,12 +80,21 @@ export default function RegisterPage() {
               type="password"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
-              placeholder="Min. 6 characters"
+              placeholder="Create a strong password"
               className="w-full px-4 py-3 border-2 border-black text-sm font-medium bg-white focus:outline-none transition-colors"
               required
-              minLength={6}
-            />
+                          />
+          {form.password && <PasswordChecklist password={form.password} />}
           </div>
+          <label className="flex items-start gap-2 text-xs text-gray-600">
+            <input type="checkbox" required className="mt-0.5 accent-[#024BAB]" />
+            <span>
+              I agree to the{" "}
+              <a href="https://www.pixelatenest.com/legal/terms-of-service.html" target="_blank" rel="noopener noreferrer" className="font-bold text-[#024BAB] hover:underline">Terms of Service</a>{" "}
+              and{" "}
+              <a href="https://www.pixelatenest.com/legal/privacy-policy.html" target="_blank" rel="noopener noreferrer" className="font-bold text-[#024BAB] hover:underline">Privacy Policy</a>.
+            </span>
+          </label>
           <button
             type="submit"
             disabled={loading}

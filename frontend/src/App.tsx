@@ -1,8 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useUsageTracker } from "@/hooks/useUsageTracker";
+import TermsGate from "@/components/TermsGate";
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import IntroOnboarding from "@/components/IntroOnboarding";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { CreditsProvider } from "@/contexts/CreditsContext";
 import { ToastProvider } from "@/hooks/use-toast";
 import { ConfirmProvider } from "@/hooks/use-confirm";
 import { usePushNotification } from "@/hooks/usePushNotification";
@@ -28,7 +31,6 @@ const HolidaysPage = lazy(() => import("./pages/HolidaysPage"));
 const NfcManagerPage = lazy(() => import("./pages/NfcManagerPage"));
 const AttendanceSettingsPage = lazy(() => import("./pages/AttendanceSettingsPage"));
 const LateApprovalsPage = lazy(() => import("./pages/LateApprovalsPage"));
-const PaymentSuccessPage = lazy(() => import("./pages/PaymentSuccessPage"));
 const PaymentFailedPage = lazy(() => import("./pages/PaymentFailedPage"));
 const WelcomePage = lazy(() => import("./pages/WelcomePage"));
 const ManagePage = lazy(() => import("./pages/ManagePage"));
@@ -46,8 +48,10 @@ const DocumentVaultPage = lazy(() => import("./pages/DocumentVaultPage"));
 const TasksPage = lazy(() => import("./pages/TasksPage"));
 const AnnouncementsPage = lazy(() => import("./pages/AnnouncementsPage"));
 const TrashPage = lazy(() => import("./pages/TrashPage"));
+const CreditsPage = lazy(() => import("./pages/CreditsPage"));
 import nesthrlogo from "../assets/nesthr.png";
 import PageTransition from "@/components/layout/PageTransition";
+import RefundNotice from "@/components/RefundNotice";
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } },
 });
@@ -133,16 +137,6 @@ function AppRoutes() {
           }
         />
         {}
-        <Route
-          path="/payment/success"
-          element={
-            isAuthenticated ? (
-              <PaymentSuccessPage />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
         <Route
           path="/payment/failed"
           element={
@@ -401,6 +395,14 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/credits"
+          element={
+            <ProtectedRoute>
+              <CreditsPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<NotFound />} />
       </Routes>
       </Suspense>
@@ -413,9 +415,14 @@ const App = () => (
     <ToastProvider>
       <ConfirmProvider>
         <AuthProvider>
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
+          <CreditsProvider>
+            <BrowserRouter>
+              <AppRoutes />
+              <TermsGate />
+              <IntroOnboarding />
+              <RefundNotice />
+            </BrowserRouter>
+          </CreditsProvider>
         </AuthProvider>
       </ConfirmProvider>
     </ToastProvider>

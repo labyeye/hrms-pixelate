@@ -55,6 +55,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { authAPI, employeeAPI } from '../api/api';
 import { C } from '../theme';
 import WhatsAppIcon from '../components/common/WhatsAppIcon';
+import PasswordChecklist from '../components/PasswordChecklist';
+import { passwordOk } from '../utils/passwordRules';
 
 if (
   Platform.OS === 'android' &&
@@ -485,7 +487,7 @@ export default function ProfileScreen() {
       Alert.alert('Validation', 'All password fields are required');
       return;
     }
-    if (newPw.length < 8) {
+    if (!passwordOk(newPw)) {
       Alert.alert('Validation', 'New password must be at least 8 characters');
       return;
     }
@@ -1619,6 +1621,7 @@ export default function ProfileScreen() {
                   </View>
                 ))}
               </View>
+              {!!newPw && <PasswordChecklist password={newPw} />}
 
               <TouchableOpacity
                 style={[s.saveBtn, { backgroundColor: C.secondary }]}

@@ -17,6 +17,8 @@ import LottieView from 'lottie-react-native';
 import { User, Mail, Lock, ArrowLeft } from 'lucide-react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { C } from '../../theme';
+import PasswordChecklist from '../../components/PasswordChecklist';
+import { passwordOk } from '../../utils/passwordRules';
 
 const loginAnim = require('../../assets/lottie/login.json');
 
@@ -33,8 +35,8 @@ export default function RegisterScreen({ navigation }: any) {
       Alert.alert('Validation', 'All fields are required');
       return;
     }
-    if (password.length < 6) {
-      Alert.alert('Validation', 'Password must be at least 6 characters');
+    if (!passwordOk(password)) {
+      Alert.alert('Validation', 'Please meet every point in the password checklist');
       return;
     }
     setLoading(true);
@@ -113,6 +115,7 @@ export default function RegisterScreen({ navigation }: any) {
                   secureTextEntry={f.secure}
                 />
               </View>
+              {f.secure && !!f.value && <PasswordChecklist password={f.value} />}
             </View>
           ))}
 

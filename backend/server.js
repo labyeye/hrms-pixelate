@@ -23,6 +23,7 @@ const sanitizeRequest = require("./middleware/sanitize");
 const compression = require("compression");
 
 connectDB();
+require("./utils/paymentSaga").startRefundSweep(); // keeps retrying refunds for paid-but-unprovisioned subscriptions
 
 const { startAttendanceAutoMarkJob } = require("./jobs/attendanceAutoMark");
 // Under PM2 cluster mode every worker runs this file; only worker 0 may own the hourly cron.
@@ -57,6 +58,7 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
       "http://localhost:5173",
       "http://localhost:5174",
       "https://hrms.pixelatenest.com",
+      "http://localhost:8080"
     ];
 
 app.use(
@@ -86,10 +88,12 @@ app.use(
   express.json({
     limit: "5mb",
     verify: (req, _res, buf) => {
-      if (req.originalUrl.includes("whatsapp-webhook")) req.rawBody = buf;
+      if (req.originalUrl.includes("whatsapp-webhook") || req.originalUrl.includes("razorpay-billing")) req.rawBody = buf;
     },
   }),
 );
+// Razorpay "payment captured" notices (see utils/paymentReconcile.js); signed with RAZORPAY_WEBHOOK_SECRET
+app.post("/api/webhooks/razorpay-billing", require("./utils/paymentReconcile").webhook);
 app.use(sanitizeRequest); // strips $operators / dotted keys (NoSQL injection)
 app.use("/uploads", ...require("./middleware/publicUploads")()); // images only; KYC/vault files need the authenticated endpoints
 
@@ -145,6 +149,7 @@ app.get("/.well-known/apple-app-site-association", (req, res) =>
 );
 
 app.use("/api/auth", authRateLimit, require("./routes/authRoutes"));
+app.use("/api/legal", require("./routes/legalRoutes"));
 app.use(apiRateLimit);
 app.use("/api/dashboard", require("./routes/dashboardRoutes"));
 app.use("/api/employees", require("./routes/employeeRoutes"));
@@ -155,6 +160,7 @@ app.use("/api/departments", require("./routes/departmentRoutes"));
 app.use("/api/performance", require("./routes/performanceRoutes"));
 app.use("/api/settings", require("./routes/settingRoutes"));
 app.use("/api/billing", require("./routes/billingRoutes"));
+app.use("/api/credits", require("./routes/creditsRoutes"));
 app.use("/api/payment-methods", require("./routes/paymentMethodRoutes"));
 app.use("/api/biometric", require("./routes/biometricRoutes"));
 app.use("/api/holidays", require("./routes/holidayRoutes"));

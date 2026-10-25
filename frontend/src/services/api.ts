@@ -1,3 +1,4 @@
+import { announceRefund, isRefundMessage } from "@/lib/refundNotice";
 const BASE_URL = import.meta.env.VITE_API_URL;
 
 export const getToken = () => localStorage.getItem("hrms_token");
@@ -58,6 +59,7 @@ async function request<T = any>(
   // Proxies/gateways can answer with HTML — don't surface "Unexpected token <".
   const data = await res.json().catch(() => ({}) as any);
   if (!res.ok) {
+    if (isRefundMessage(data.message)) announceRefund(data.message);
     const err: any = new Error(data.message || statusMsg(res.status));
     err.status = res.status;
     throw err;
@@ -444,6 +446,31 @@ export const settingsAPI = {
   },
 };
 
+export const creditsAPI = {
+  balance: () => request<{ success: boolean; data: any }>("/credits/balance"),
+  packs: () => request<{ success: boolean; data: any }>("/credits/packs"),
+  estimate: () => request<{ success: boolean; data: any }>("/credits/estimate"),
+  topups: () => request<{ success: boolean; data: any[] }>("/credits/topups"),
+  ledger: (page = 1, type = "") =>
+    request<{ success: boolean; data: any[]; total: number; page: number }>(
+      `/credits/ledger?page=${page}${type ? `&type=${type}` : ""}`,
+    ),
+  createTopup: (packId: string) =>
+    request<{ success: boolean; data: any }>("/credits/topup", {
+      method: "POST",
+      body: JSON.stringify({ packId }),
+    }),
+  verifyTopup: (body: {
+    razorpayOrderId: string;
+    razorpayPaymentId: string;
+    razorpaySignature: string;
+  }) =>
+    request<{ success: boolean; data: any }>("/credits/topup/verify", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+};
+
 export const billingAPI = {
   getPlans: () => request<{ success: boolean; data: any }>("/billing/plans"),
   getSubscription: () =>
@@ -459,7 +486,7 @@ export const billingAPI = {
     employeeCount: number,
     tier: "web_mobile" | "web_mobile_whatsapp",
     billingCycle: "monthly" | "yearly",
-    gateway: "razorpay" | "hdfc" = "razorpay",
+    gateway: "razorpay" = "razorpay",
     company?: {
       name: string;
       email: string;
@@ -487,14 +514,6 @@ export const billingAPI = {
   }) =>
     request<{ success: boolean; message: string; data: any }>(
       "/billing/verify-razorpay",
-      {
-        method: "POST",
-        body: JSON.stringify(payload),
-      },
-    ),
-  verifyHdfc: (payload: { orderId: string; trackingId?: string | null }) =>
-    request<{ success: boolean; message: string; data: any }>(
-      "/billing/verify-hdfc",
       {
         method: "POST",
         body: JSON.stringify(payload),
@@ -1027,4 +1046,16 @@ export const trashAPI = {
     request(`/trash${modelName ? `?modelName=${modelName}` : ""}`),
   restore: (id: string) => request(`/trash/${id}/restore`, { method: "POST" }),
   purge: (id: string) => request(`/trash/${id}`, { method: "DELETE" }),
+};
+
+// Terms & Privacy acceptance (backend /api/legal). Used by components/TermsGate.
+export const legalAPI = {
+  status: async () => {
+    const r: any = await request("/legal/status");
+    return r.data ?? r;
+  },
+  accept: async () => {
+    const r: any = await request("/legal/accept", { method: "POST", body: JSON.stringify({}) });
+    return r.data ?? r;
+  },
 };

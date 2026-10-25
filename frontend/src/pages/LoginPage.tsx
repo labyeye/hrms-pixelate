@@ -200,7 +200,7 @@ export default function LoginPage() {
         <img
           src={loginDash}
           alt="NestHR dashboard preview"
-          className="relative z-10 max-w-3xl mx-auto"
+          className="relative z-10 max-w-auto mx-auto"
         />
 
         {}

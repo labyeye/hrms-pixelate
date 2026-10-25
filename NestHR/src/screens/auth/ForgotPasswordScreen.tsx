@@ -17,6 +17,7 @@ import { Passkey } from 'react-native-passkey';
 import { Mail, ArrowLeft, CheckCircle2 } from 'lucide-react-native';
 import { authAPI, authAPI_extras } from '../../api/api';
 import { C } from '../../theme';
+import PasswordChecklist from '../../components/PasswordChecklist';
 
 const forgotAnim = require('../../assets/lottie/forgot.json');
 
@@ -321,6 +322,7 @@ export default function ForgotPasswordScreen({ navigation }: any) {
                     secureTextEntry
                     placeholder="8+ chars, upper, lower & a number"
                   />
+                  {!!password && <PasswordChecklist password={password} />}
                   <Field
                     label="Confirm New Password"
                     value={confirm}
