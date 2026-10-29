@@ -16,16 +16,23 @@ const getLateApprovals = asyncHandler(async (req, res) => {
       throw new Error("Valid month and year are required");
     }
     // +-1 day slack: attendance dates are stored at local midnight, which is the previous UTC day in IST
-    filter.date = { $gte: new Date(Date.UTC(y, m - 1, 0)), $lt: new Date(Date.UTC(y, m, 2)) };
-    if (["pending", "approved", "rejected"].includes(status)) filter.status = status;
+    filter.date = {
+      $gte: new Date(Date.UTC(y, m - 1, 0)),
+      $lt: new Date(Date.UTC(y, m, 2)),
+    };
+    if (["pending", "approved", "rejected"].includes(status))
+      filter.status = status;
   } else {
-    filter.status = ["pending", "approved", "rejected"].includes(status) ? status : "pending";
+    filter.status = ["pending", "approved", "rejected"].includes(status)
+      ? status
+      : "pending";
   }
 
   const approvals = await LateApproval.find(filter)
     .populate({
       path: "employee",
-      select: "firstName lastName employeeId designation salary department avatar",
+      select:
+        "firstName lastName employeeId designation salary department avatar",
       populate: { path: "department", select: "name" },
     })
     .sort({ date: -1, createdAt: -1 });

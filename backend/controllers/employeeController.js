@@ -25,9 +25,13 @@ async function nextEmployeeId(company) {
 }
 
 // Passwords an admin types for someone else: 8-128 chars with at least one letter and one digit.
-const { checkPasswordRules, generatePassword } = require("../utils/passwordPolicy");
+const {
+  checkPasswordRules,
+  generatePassword,
+} = require("../utils/passwordPolicy");
 const PASSWORD_OK = (pw) => typeof pw === "string" && !checkPasswordRules(pw);
-const PASSWORD_MSG = "Password needs 8+ characters with an uppercase, a lowercase, a number and a special character, no simple series like 1234 and nothing common like \"password\".";
+const PASSWORD_MSG =
+  'Password needs 8+ characters with an uppercase, a lowercase, a number and a special character, no simple series like 1234 and nothing common like "password".';
 const { enrollFace } = require("../services/faceService");
 
 const createSchema = {
@@ -192,7 +196,10 @@ const createEmployee = [
       throw new Error("Invalid role");
     }
     // Only a super_admin may hand out the privileged roles.
-    if (["super_admin", "hr_manager"].includes(role) && req.user.role !== "super_admin") {
+    if (
+      ["super_admin", "hr_manager"].includes(role) &&
+      req.user.role !== "super_admin"
+    ) {
       res.status(403);
       throw new Error("Only a super admin can assign this role");
     }
@@ -211,9 +218,14 @@ const createEmployee = [
     let userId;
     const existingUser = await User.findOne({ email: normalizedEmail });
     // An email that already belongs to a login in ANOTHER organisation must never be linked or re-roled from here.
-    if (existingUser && String(existingUser.company || "") !== String(req.user.company || "")) {
+    if (
+      existingUser &&
+      String(existingUser.company || "") !== String(req.user.company || "")
+    ) {
       res.status(409);
-      throw new Error("An account with this email already exists in another organisation");
+      throw new Error(
+        "An account with this email already exists in another organisation",
+      );
     }
     if (existingUser) {
       userId = existingUser._id;
@@ -229,7 +241,9 @@ const createEmployee = [
         res.status(400);
         throw new Error(PASSWORD_MSG);
       }
-      const tempPassword = providedPassword ? providedPassword : generatePassword();
+      const tempPassword = providedPassword
+        ? providedPassword
+        : generatePassword();
       const user = await User.create({
         name: `${firstName.trim()} ${lastName.trim()}`,
         email: normalizedEmail,
@@ -453,7 +467,10 @@ const updateEmployee = [
         res.status(400);
         throw new Error("Invalid role");
       }
-      if (["super_admin", "hr_manager"].includes(req.body.role) && req.user.role !== "super_admin") {
+      if (
+        ["super_admin", "hr_manager"].includes(req.body.role) &&
+        req.user.role !== "super_admin"
+      ) {
         res.status(403);
         throw new Error("Only a super admin can assign this role");
       }
@@ -584,8 +601,15 @@ const bulkImportEmployees = asyncHandler(async (req, res) => {
 
       let userId;
       const existingUser = await User.findOne({ email });
-      if (existingUser && String(existingUser.company || "") !== String(req.user.company || "")) {
-        results.push({ row: i + 1, status: "error", message: "Email already belongs to another organisation" });
+      if (
+        existingUser &&
+        String(existingUser.company || "") !== String(req.user.company || "")
+      ) {
+        results.push({
+          row: i + 1,
+          status: "error",
+          message: "Email already belongs to another organisation",
+        });
         continue;
       }
       if (existingUser) {
@@ -734,7 +758,10 @@ const downloadEmployeeDocument = asyncHandler(async (req, res) => {
   }
 
   const ext = path.extname(abs).toLowerCase();
-  const mime = { ".pdf": "application/pdf", ".png": "image/png", ".webp": "image/webp" }[ext] || "image/jpeg";
+  const mime =
+    { ".pdf": "application/pdf", ".png": "image/png", ".webp": "image/webp" }[
+      ext
+    ] || "image/jpeg";
   res
     .set({
       "Content-Type": mime,

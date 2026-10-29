@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  headerTitle: { color: C.white, fontWeight: '700', fontSize: 15 },
+  headerTitle: { color: C.white, fontWeight: '400', fontSize: 15 },
   stage: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   camCircle: {
     width: CAM,
@@ -458,7 +458,7 @@ const styles = StyleSheet.create({
   },
   msgTitle: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 16,
     textAlign: 'center',
   },
@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
   },
-  btnText: { color: C.white, fontWeight: '700', fontSize: 13 },
+  btnText: { color: C.white, fontWeight: '400', fontSize: 13 },
   footer: {
     paddingHorizontal: 24,
     paddingVertical: 28,
@@ -479,7 +479,7 @@ const styles = StyleSheet.create({
   footerTitle: {
     color: C.white,
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '400',
     textAlign: 'center',
   },
   footerSub: { color: '#9CA3AF', fontSize: 13, marginTop: 6 },

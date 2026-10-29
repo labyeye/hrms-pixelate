@@ -583,7 +583,13 @@ const getDeviceActivityLogs = asyncHandler(async (req, res) => {
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
-  res.json({ success: true, data: logs, total, page, pages: Math.ceil(total / limit) });
+  res.json({
+    success: true,
+    data: logs,
+    total,
+    page,
+    pages: Math.ceil(total / limit),
+  });
 });
 
 const getLogs = asyncHandler(async (req, res) => {
@@ -911,8 +917,9 @@ const faceAttendance = asyncHandler(async (req, res) => {
     throw new Error("Device not found");
   }
 
+  // Always scoped to one company: the device's, or the signed-in admin's (web/mobile attendance kiosk).
   const employees = await Employee.find({
-    ...(device ? { company: device.company } : {}),
+    company: device ? device.company : req.user.company,
     faceDescriptor: { $exists: true, $not: { $size: 0 } },
     status: { $nin: ["terminated", "exited"] },
   })

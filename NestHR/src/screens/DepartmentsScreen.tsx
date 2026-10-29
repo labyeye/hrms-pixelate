@@ -152,7 +152,6 @@ export default function DepartmentsScreen() {
             <ChevronLeft size={22} color={C.black} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Departments</Text>
-          
         </View>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <ExportButton
@@ -164,14 +163,16 @@ export default function DepartmentsScreen() {
               {
                 header: 'Shift Timings',
                 value: (d: any) =>
-                  d.shiftStartTime ? `${d.shiftStartTime} - ${d.shiftEndTime}` : '',
+                  d.shiftStartTime
+                    ? `${d.shiftStartTime} - ${d.shiftEndTime}`
+                    : '',
               },
               { header: 'Headcount', value: (d: any) => d.headcount ?? 0 },
               { header: 'Head', value: (d: any) => d.head?.name || '' },
             ]}
           />
           <TouchableOpacity style={styles.addBtn} onPress={openCreate}>
-            <Plus size={22} color={C.black} />
+            <Plus size={24} color={C.primary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -251,7 +252,9 @@ export default function DepartmentsScreen() {
                   </View>
                   {dept.head?.name || manager ? (
                     <Text style={styles.deptManager} numberOfLines={1}>
-                      Head: {dept.head?.name || `${manager.firstName} ${manager.lastName}`}
+                      Head:{' '}
+                      {dept.head?.name ||
+                        `${manager.firstName} ${manager.lastName}`}
                     </Text>
                   ) : null}
                 </View>
@@ -261,104 +264,104 @@ export default function DepartmentsScreen() {
         />
       )}
 
-      <Modal
-        visible={showForm}
-        transparent
-        animationType="fade"
-      >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        <SafeAreaView style={styles.safe} edges={[]}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>
-              {editingDept ? 'Edit Department' : 'New Department'}
-            </Text>
-            <TouchableOpacity onPress={closeForm}>
-              <X size={22} color={C.black} />
-            </TouchableOpacity>
+      <Modal visible={showForm} transparent animationType="fade">
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            <SafeAreaView style={styles.safe} edges={[]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>
+                  {editingDept ? 'Edit Department' : 'New Department'}
+                </Text>
+                <TouchableOpacity onPress={closeForm}>
+                  <X size={22} color={C.black} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView
+                contentContainerStyle={{ padding: 20, gap: 16 }}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                <View>
+                  <Text style={styles.fieldLabel}>Name *</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={form.name}
+                    onChangeText={v => setForm(p => ({ ...p, name: v }))}
+                    placeholder="Engineering"
+                    placeholderTextColor={C.textLight}
+                  />
+                </View>
+                {!editingDept && (
+                  <View>
+                    <Text style={styles.fieldLabel}>Code *</Text>
+                    <TextInput
+                      style={styles.fieldInput}
+                      value={form.code}
+                      onChangeText={v => setForm(p => ({ ...p, code: v }))}
+                      placeholder="ENG"
+                      placeholderTextColor={C.textLight}
+                      autoCapitalize="characters"
+                    />
+                  </View>
+                )}
+                <View>
+                  <Text style={styles.fieldLabel}>Description</Text>
+                  <TextInput
+                    style={[styles.fieldInput, { minHeight: 80 }]}
+                    value={form.description}
+                    onChangeText={v => setForm(p => ({ ...p, description: v }))}
+                    placeholder="Department description…"
+                    placeholderTextColor={C.textLight}
+                    multiline
+                  />
+                </View>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.fieldLabel}>Shift Start</Text>
+                    <TextInput
+                      style={styles.fieldInput}
+                      value={form.shiftStartTime}
+                      onChangeText={v =>
+                        setForm(p => ({ ...p, shiftStartTime: v }))
+                      }
+                      placeholder="09:00"
+                      placeholderTextColor={C.textLight}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.fieldLabel}>Shift End</Text>
+                    <TextInput
+                      style={styles.fieldInput}
+                      value={form.shiftEndTime}
+                      onChangeText={v =>
+                        setForm(p => ({ ...p, shiftEndTime: v }))
+                      }
+                      placeholder="18:00"
+                      placeholderTextColor={C.textLight}
+                    />
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={styles.submitBtn}
+                  onPress={handleSubmit}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <ActivityIndicator color={C.white} />
+                  ) : (
+                    <>
+                      <Check size={16} color={C.white} />
+                      <Text style={styles.submitBtnText}>
+                        {editingDept ? 'Save Changes' : 'Create Department'}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
+            </SafeAreaView>
           </View>
-          <ScrollView
-            contentContainerStyle={{ padding: 20, gap: 16 }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <View>
-              <Text style={styles.fieldLabel}>Name *</Text>
-              <TextInput
-                style={styles.fieldInput}
-                value={form.name}
-                onChangeText={v => setForm(p => ({ ...p, name: v }))}
-                placeholder="Engineering"
-                placeholderTextColor={C.textLight}
-              />
-            </View>
-            {!editingDept && (
-              <View>
-                <Text style={styles.fieldLabel}>Code *</Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  value={form.code}
-                  onChangeText={v => setForm(p => ({ ...p, code: v }))}
-                  placeholder="ENG"
-                  placeholderTextColor={C.textLight}
-                  autoCapitalize="characters"
-                />
-              </View>
-            )}
-            <View>
-              <Text style={styles.fieldLabel}>Description</Text>
-              <TextInput
-                style={[styles.fieldInput, { minHeight: 80 }]}
-                value={form.description}
-                onChangeText={v => setForm(p => ({ ...p, description: v }))}
-                placeholder="Department description…"
-                placeholderTextColor={C.textLight}
-                multiline
-              />
-            </View>
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>Shift Start</Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  value={form.shiftStartTime}
-                  onChangeText={v =>
-                    setForm(p => ({ ...p, shiftStartTime: v }))
-                  }
-                  placeholder="09:00"
-                  placeholderTextColor={C.textLight}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>Shift End</Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  value={form.shiftEndTime}
-                  onChangeText={v => setForm(p => ({ ...p, shiftEndTime: v }))}
-                  placeholder="18:00"
-                  placeholderTextColor={C.textLight}
-                />
-              </View>
-            </View>
-            <TouchableOpacity
-              style={styles.submitBtn}
-              onPress={handleSubmit}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator color={C.white} />
-              ) : (
-                <>
-                  <Check size={16} color={C.white} />
-                  <Text style={styles.submitBtnText}>
-                    {editingDept ? 'Save Changes' : 'Create Department'}
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </View></View>
-</Modal>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -376,7 +379,7 @@ const styles = StyleSheet.create({
     borderBottomColor: C.black,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: C.black },
+  headerTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   countBadge: {
     backgroundColor: C.primary,
     paddingHorizontal: 7,
@@ -389,23 +392,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderColor: C.black,
   },
-  countText: { color: C.white, fontSize: 12, fontWeight: '700' },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
+  countText: { color: C.white, fontSize: 12, fontWeight: '400' },
+  addBtn: { padding: 4 },
   addBtnText: {
     color: C.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
-  emptyText: { fontSize: 14, fontWeight: '700', color: C.textMuted },
+  emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
   deptCard: {
     backgroundColor: C.white,
     borderWidth: 2,
@@ -439,7 +436,7 @@ const styles = StyleSheet.create({
     gap: 8,
     flexWrap: 'wrap',
   },
-  deptName: { fontSize: 15, fontWeight: '700', color: C.black },
+  deptName: { fontSize: 15, fontWeight: '400', color: C.black },
   codeBadge: {
     backgroundColor: C.primary + '18',
     borderWidth: 2,
@@ -447,7 +444,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  codeText: { fontSize: 12, fontWeight: '700', color: C.primary },
+  codeText: { fontSize: 12, fontWeight: '400', color: C.primary },
   deptDesc: { fontSize: 11, color: C.textMuted, lineHeight: 16, marginTop: 4 },
   cardActions: { flexDirection: 'row', gap: 6, marginLeft: 8 },
   editBtn: {
@@ -475,8 +472,8 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   deptMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  deptMetaText: { fontSize: 12, fontWeight: '700', color: C.textMuted },
-  shiftText: { fontSize: 11, fontWeight: '600', color: C.textMuted },
+  deptMetaText: { fontSize: 12, fontWeight: '400', color: C.textMuted },
+  shiftText: { fontSize: 11, fontWeight: '400', color: C.textMuted },
   deptManager: { fontSize: 11, color: C.textMuted },
   modalHeader: {
     flexDirection: 'row',
@@ -487,10 +484,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: C.black },
+  modalTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   fieldLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.black,
     marginBottom: 5,
@@ -507,7 +504,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
     backgroundColor: C.white,
   },
@@ -529,7 +526,7 @@ const styles = StyleSheet.create({
   },
   submitBtnText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 14,
     textTransform: 'uppercase',
   },

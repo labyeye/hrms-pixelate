@@ -99,7 +99,9 @@ export default function IntroOnboardingScreen({ navigation }: any) {
       >
         {slides.map(slide => (
           <View style={styles.slide} key={slide.number}>
-            <View style={[styles.illustration, { backgroundColor: slide.color }]}>
+            <View
+              style={[styles.illustration, { backgroundColor: slide.color }]}
+            >
               <Image
                 source={slide.image}
                 style={styles.illustrationImage}
@@ -124,7 +126,9 @@ export default function IntroOnboardingScreen({ navigation }: any) {
           style={styles.button}
           onPress={next}
           accessibilityRole="button"
-          accessibilityLabel={current === slides.length - 1 ? 'Get started' : 'Next'}
+          accessibilityLabel={
+            current === slides.length - 1 ? 'Get started' : 'Next'
+          }
         >
           <Text style={styles.buttonText}>
             {current === slides.length - 1 ? 'Get started' : 'Next'}

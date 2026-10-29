@@ -801,7 +801,11 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const [waEstimate, setWaEstimate] = useState<any>(null);
   useEffect(() => {
-    if (credits?.metered) creditsAPI.estimate().then((r) => setWaEstimate(r.data)).catch(() => {});
+    if (credits?.metered)
+      creditsAPI
+        .estimate()
+        .then((r) => setWaEstimate(r.data))
+        .catch(() => {});
   }, [credits?.metered]);
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
@@ -1647,7 +1651,9 @@ export default function SettingsPage() {
                         className="flex items-center justify-between p-3 border-2 border-gray-200 bg-white"
                       >
                         <div>
-                          <p className="font-bold text-sm text-black">{label}</p>
+                          <p className="font-bold text-sm text-black">
+                            {label}
+                          </p>
                           <p className="text-xs text-gray-500">
                             Each person who receives a message uses a credit.
                           </p>
@@ -2612,7 +2618,9 @@ export default function SettingsPage() {
                               )}
                             </button>
                           </div>
-                          {key === "next" && pwForm.next && <PasswordChecklist password={pwForm.next} />}
+                          {key === "next" && pwForm.next && (
+                            <PasswordChecklist password={pwForm.next} />
+                          )}
                         </div>
                       ))}
                       <div className="sm:col-span-3">
@@ -2640,9 +2648,12 @@ export default function SettingsPage() {
               )}
             </div>
 
-            {!["my_profile", "two_factor", "phone_verify", "account_security"].includes(
-              activeTab,
-            ) && (
+            {![
+              "my_profile",
+              "two_factor",
+              "phone_verify",
+              "account_security",
+            ].includes(activeTab) && (
               <div className="border-t-2 border-black p-4 flex justify-end bg-gray-50/50">
                 <button
                   onClick={handleSave}

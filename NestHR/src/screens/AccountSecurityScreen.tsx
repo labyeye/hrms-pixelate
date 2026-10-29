@@ -698,7 +698,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: C.black },
+  headerTitle: { fontSize: 18, fontWeight: '400', color: C.black },
   intro: { fontSize: 12, color: '#64748b' },
   section: { ...shadow, backgroundColor: '#fff', overflow: 'hidden' },
   sectionHead: {
@@ -716,7 +716,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sectionTitle: { fontSize: 14, fontWeight: '700', color: C.black },
+  sectionTitle: { fontSize: 14, fontWeight: '400', color: C.black },
   sectionStatus: { fontSize: 11, color: '#64748b', marginTop: 2 },
   sectionBody: { borderTopWidth: 2, borderTopColor: '#000', padding: 14 },
   desc: { fontSize: 12, color: '#64748b', lineHeight: 18 },
@@ -729,7 +729,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
   },
-  rowName: { fontSize: 13, fontWeight: '700', color: C.black },
+  rowName: { fontSize: 13, fontWeight: '400', color: C.black },
   rowMeta: { fontSize: 10, color: '#64748b', marginTop: 2 },
   input: {
     ...shadow,
@@ -738,7 +738,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: C.black,
   },
-  otpInput: { textAlign: 'center', letterSpacing: 6, fontWeight: '700' },
+  otpInput: { textAlign: 'center', letterSpacing: 6, fontWeight: '400' },
   primaryBtn: {
     ...shadow,
     backgroundColor: C.primary,
@@ -747,7 +747,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginTop: 6,
   },
-  primaryBtnText: { fontSize: 12, fontWeight: '600', color: '#fff' },
+  primaryBtnText: { fontSize: 12, fontWeight: '400', color: '#fff' },
   secondaryBtn: {
     borderWidth: 2,
     borderRadius: 8,
@@ -756,7 +756,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginTop: 6,
   },
-  secondaryBtnText: { fontSize: 12, fontWeight: '600', color: C.primary },
+  secondaryBtnText: { fontSize: 12, fontWeight: '400', color: C.primary },
   dangerBtn: {
     borderWidth: 2,
     borderRadius: 8,
@@ -765,9 +765,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginTop: 6,
   },
-  dangerBtnText: { fontSize: 12, fontWeight: '600', color: C.danger },
+  dangerBtnText: { fontSize: 12, fontWeight: '400', color: C.danger },
   okPill: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  okText: { fontSize: 11, fontWeight: '800', color: '#00A676' },
+  okText: { fontSize: 11, fontWeight: '400', color: '#00A676' },
   codesBox: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -781,7 +781,7 @@ const styles = StyleSheet.create({
   codeText: {
     width: '50%',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '400',
     letterSpacing: 1,
     color: C.black,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',

@@ -13,16 +13,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   CreditCard,
   CheckCircle2,
-  Zap,
   Calendar,
   ChevronLeft,
-  Star,
-  Shield,
+  Crown,
   Users,
-  IndianRupee,
   AlertCircle,
   Check,
   Download,
+  IndianRupee,
+  Zap,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import RNPrint from 'react-native-print';
@@ -31,111 +30,49 @@ import { billingAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import { C } from '../theme';
 
-const PLAN_COLOR: Record<string, string> = {
-  free: '#9CA3AF',
-  starter: C.primary,
-  professional: C.secondary,
-  enterprise: C.success,
-};
+const fmtDate = (
+  d?: string | Date | null,
+  opts?: Intl.DateTimeFormatOptions,
+) =>
+  d
+    ? new Date(d).toLocaleDateString(
+        'en-IN',
+        opts || { day: 'numeric', month: 'short', year: 'numeric' },
+      )
+    : '—';
 
-const PLAN_ICON: Record<string, any> = {
-  free: Shield,
-  starter: Zap,
-  professional: Star,
-  enterprise: Users,
-};
-
-const BILLING_CYCLES = [
-  { key: 'monthly', label: 'Monthly' },
-  { key: 'yearly', label: 'Yearly (Save 20%)' },
-];
-
+/**
+ * Read-only billing summary, same as the web app: plans are changed by Pixelate Nest, so there is no checkout here.
+ * Every field is read defensively - the subscription/invoice payloads are optional and shaped by the backend plan model.
+ */
 export default function BillingScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
-  const [billing, setBilling] = useState<any>(null);
-  const [plans, setPlans] = useState<any[]>([]);
+  const [subscription, setSubscription] = useState<any>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [cycle, setCycle] = useState<'monthly' | 'yearly'>('monthly');
-  const [upgrading, setUpgrading] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState<string | null>(null);
 
   const load = async () => {
-    try {
-      const [subRes, plansRes, invRes] = await Promise.all([
-        billingAPI.getSubscription(),
-        billingAPI.getPlans(),
-        billingAPI.getInvoices().catch(() => ({ data: [] })),
-      ]);
-      setBilling(subRes.data || subRes);
-      setPlans(plansRes.data || []);
-      setInvoices(invRes.data || []);
-    } catch (e: any) {
-      Alert.alert('Error', e.message);
-    } finally {
-      setLoading(false);
-    }
+    const [subRes, invRes]: any[] = await Promise.all([
+      billingAPI.getSubscription().catch(() => null),
+      billingAPI.getInvoices().catch(() => null),
+    ]);
+    setSubscription(subRes?.data || null);
+    setInvoices(Array.isArray(invRes?.data) ? invRes.data : []);
+    setLoading(false);
   };
 
   useEffect(() => {
     load();
   }, []);
+
   const onRefresh = async () => {
     setRefreshing(true);
     await load();
     setRefreshing(false);
   };
-
-  const handleUpgrade = async (planId: string) => {
-    const currentPlan = billing?.plan || 'free';
-    if (planId === currentPlan) {
-      Alert.alert('Current Plan', 'You are already on this plan.');
-      return;
-    }
-
-    setUpgrading(planId);
-    try {
-      const res = await billingAPI.createOrder(planId, cycle, 'razorpay');
-      const order = res.data;
-
-      const options = {
-        key: order.key || '',
-        amount: order.amount,
-        currency: order.currency || 'INR',
-        name: 'NestHR',
-        description: `${
-          planId.charAt(0).toUpperCase() + planId.slice(1)
-        } Plan — ${cycle}`,
-        order_id: order.orderId,
-        prefill: {
-          name: user?.name || '',
-          email: user?.email || '',
-          contact: user?.phone || '',
-        },
-        theme: { color: C.primary },
-      };
-
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const Razorpay = require('react-native-razorpay').default;
-      const payment = await Razorpay.open(options);
-      await billingAPI.verifyRazorpay({
-        razorpayOrderId: payment.razorpay_order_id,
-        razorpayPaymentId: payment.razorpay_payment_id,
-        razorpaySignature: payment.razorpay_signature,
-      });
-      Alert.alert('Success', `${planId} plan activated!`);
-      await load();
-    } catch (e: any) {
-      if (e?.code !== 'PAYMENT_CANCELLED') {
-        Alert.alert('Payment Failed', e.message || 'Something went wrong');
-      }
-    } finally {
-      setUpgrading(null);
-    }
-  };
-
-  const [downloading, setDownloading] = useState<string | null>(null);
 
   const downloadInvoice = async (inv: any) => {
     setDownloading(inv._id);
@@ -150,30 +87,61 @@ export default function BillingScreen() {
     }
   };
 
-  const currentPlanId = billing?.plan || 'free';
-  const isActive = billing?.status === 'active';
-  const daysLeft = billing?.trialEndsAt
+  const sub: any = subscription || user?.subscription || null;
+  const planName = String(sub?.customPlanName || sub?.plan || '—');
+  const isTrial = !!sub?.isTrial;
+  const isActive =
+    sub?.status === 'active' || sub?.status === 'pending_renewal';
+  const isCancelled = sub?.status === 'cancelled';
+  const expiry = isTrial ? sub?.trialEndDate : sub?.renewalDate;
+  const daysLeft = expiry
     ? Math.max(
         0,
-        Math.ceil(
-          (new Date(billing.trialEndsAt).getTime() - Date.now()) / 86400000,
-        ),
+        Math.ceil((new Date(expiry).getTime() - Date.now()) / 86400000),
       )
     : null;
+  const empUsed = Number(sub?.currentEmployeeCount ?? 0);
+  const empMax = Number(sub?.maxEmployees ?? 0);
+  const unlimited = empMax === 999;
+  const empPct =
+    empMax > 0 && !unlimited
+      ? Math.min(100, Math.round((empUsed / empMax) * 100))
+      : 0;
+  const features: string[] =
+    Array.isArray(sub?.customFeatures) && sub.customFeatures.length
+      ? sub.customFeatures
+      : [
+          `Up to ${unlimited ? 'unlimited' : empMax || '—'} employees`,
+          'Employee management, departments & documents',
+          'Attendance with biometric device support',
+          'Leave, holidays & late approvals',
+          'Payroll, loans & payslips',
+          'Performance, tasks & announcements',
+          'Web & mobile app access',
+          ...(String(sub?.tier || '').includes('whatsapp')
+            ? ['WhatsApp notifications & OTP']
+            : []),
+        ];
+  const accent =
+    isTrial || isCancelled ? C.warning : isActive ? C.success : C.danger;
+
+  const Header = (
+    <View style={s.header}>
+      <TouchableOpacity
+        onPress={() => navigation.goBack()}
+        style={{ padding: 4, marginRight: 4 }}
+      >
+        <ChevronLeft size={22} color={C.black} />
+      </TouchableOpacity>
+      <CreditCard size={20} color={C.primary} />
+      <Text style={s.headerTitle}>Billing</Text>
+    </View>
+  );
 
   if (loading)
     return (
       <SafeAreaView style={s.safe} edges={['top']}>
-        <View style={s.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={{ padding: 4, marginRight: 4 }}
-          >
-            <ChevronLeft size={22} color={C.black} />
-          </TouchableOpacity>
-          <CreditCard size={20} color={C.primary} />
-          <Text style={s.headerTitle}>Billing</Text>
-        </View>
+        {Header}
         <View style={s.loader}>
           <ActivityIndicator size="large" color={C.primary} />
         </View>
@@ -182,17 +150,7 @@ export default function BillingScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={{ padding: 4, marginRight: 4 }}
-        >
-          <ChevronLeft size={22} color={C.black} />
-        </TouchableOpacity>
-        <CreditCard size={20} color={C.primary} />
-        <Text style={s.headerTitle}>Billing</Text>
-      </View>
-
+      {Header}
       <ScrollView
         contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 40 }}
         refreshControl={
@@ -204,221 +162,143 @@ export default function BillingScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Current status card */}
-        <View
-          style={[
-            s.statusCard,
-            { borderColor: PLAN_COLOR[currentPlanId] || C.primary },
-          ]}
-        >
+        {isTrial && (
+          <View style={s.trialBanner}>
+            <Zap size={14} color={C.warning} />
+            <Text style={s.trialBannerText}>
+              Free trial — {daysLeft ?? 0} days remaining. To continue after the
+              trial, contact Pixelate Nest.
+            </Text>
+          </View>
+        )}
+        {!isActive && !isTrial && (
           <View
             style={[
-              s.statusIcon,
-              { backgroundColor: PLAN_COLOR[currentPlanId] || C.primary },
+              s.trialBanner,
+              { borderColor: C.danger, backgroundColor: '#FEF2F2' },
             ]}
           >
-            {(() => {
-              const Icon = PLAN_ICON[currentPlanId] || Zap;
-              return <Icon size={20} color={C.white} />;
-            })()}
+            <AlertCircle size={14} color={C.danger} />
+            <Text style={[s.trialBannerText, { color: C.danger }]}>
+              No active subscription. Please contact Pixelate Nest to activate
+              your plan.
+            </Text>
+          </View>
+        )}
+
+        <View style={[s.statusCard, { borderColor: accent }]}>
+          <View style={[s.statusIcon, { backgroundColor: C.primary }]}>
+            <Crown size={20} color={C.white} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={s.statusPlan}>{currentPlanId.toUpperCase()} PLAN</Text>
+            <Text style={s.statusPlan}>{planName.toUpperCase()} PLAN</Text>
             <View style={s.statusRow}>
-              {isActive ? (
-                <>
-                  <CheckCircle2 size={12} color={C.success} />
-                  <Text style={[s.statusLabel, { color: C.success }]}>
-                    Active
-                  </Text>
-                </>
-              ) : billing?.status === 'trial' ? (
-                <>
-                  <AlertCircle size={12} color={C.warning} />
-                  <Text style={[s.statusLabel, { color: C.warning }]}>
-                    Trial{daysLeft !== null ? ` — ${daysLeft} days left` : ''}
-                  </Text>
-                </>
+              {isActive && !isTrial ? (
+                <CheckCircle2 size={12} color={C.success} />
               ) : (
-                <>
-                  <AlertCircle size={12} color={C.danger} />
-                  <Text style={[s.statusLabel, { color: C.danger }]}>
-                    Inactive
-                  </Text>
-                </>
+                <AlertCircle size={12} color={accent} />
               )}
+              <Text style={[s.statusLabel, { color: accent }]}>
+                {isTrial
+                  ? `Free trial — ${daysLeft ?? 0} days left`
+                  : isCancelled
+                    ? 'Cancelling'
+                    : isActive
+                      ? 'Paid & Active'
+                      : 'Inactive'}
+              </Text>
             </View>
           </View>
-          {billing?.nextBillingDate && (
+          {!!expiry && (
             <View style={s.nextBill}>
               <Calendar size={11} color={C.textMuted} />
               <Text style={s.nextBillText}>
-                {new Date(billing.nextBillingDate).toLocaleDateString('en-IN', {
-                  day: 'numeric',
-                  month: 'short',
-                })}
+                {fmtDate(expiry, { day: 'numeric', month: 'short' })}
               </Text>
             </View>
           )}
         </View>
 
-        {/* Trial banner */}
-        {billing?.status === 'trial' && daysLeft !== null && daysLeft <= 7 && (
-          <View style={s.trialBanner}>
-            <AlertCircle size={14} color={C.warning} />
-            <Text style={s.trialBannerText}>
-              Trial ends in {daysLeft} day{daysLeft !== 1 ? 's' : ''}. Upgrade
-              to keep access.
-            </Text>
-          </View>
-        )}
-
-        {/* Billing cycle toggle */}
-        <View style={s.cycleRow}>
-          {BILLING_CYCLES.map(c => (
-            <TouchableOpacity
-              key={c.key}
-              style={[s.cycleBtn, cycle === c.key && s.cycleBtnActive]}
-              onPress={() => setCycle(c.key as any)}
-            >
-              <Text
-                style={[s.cycleBtnText, cycle === c.key && { color: C.white }]}
-              >
-                {c.label}
+        <View style={s.invoiceCard}>
+          <View style={[s.invoiceRow, { alignItems: 'center' }]}>
+            <Users size={16} color={C.primary} />
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={s.invoicePlan}>
+                Employees: {empUsed} / {unlimited ? '∞' : empMax || '—'}
               </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Plans */}
-        <View>
-          <Text style={s.sectionTitle}>Choose Your Plan</Text>
-          <View style={{ gap: 10 }}>
-            {plans.length === 0 ? (
-              <View style={s.emptyPlans}>
-                <ActivityIndicator color={C.primary} />
-                <Text style={s.emptyPlansText}>Loading plans…</Text>
+              <View
+                style={{
+                  height: 8,
+                  marginTop: 6,
+                  backgroundColor: '#DBEAFE',
+                  borderWidth: 1,
+                  borderColor: C.black,
+                }}
+              >
+                <View
+                  style={{
+                    width: `${unlimited ? 10 : empPct}%`,
+                    height: '100%',
+                    backgroundColor: empPct > 85 ? C.danger : C.primary,
+                  }}
+                />
               </View>
-            ) : (
-              plans.map(plan => {
-                const pid = plan.planType || plan._id;
-                const isCurrent = pid === currentPlanId;
-                const price =
-                  cycle === 'yearly'
-                    ? plan.yearlyPrice || plan.monthlyPrice * 10
-                    : plan.monthlyPrice;
-                const color = PLAN_COLOR[pid] || C.primary;
-                const PlanIcon = PLAN_ICON[pid] || Zap;
-                return (
-                  <View
-                    key={pid}
-                    style={[
-                      s.planCard,
-                      isCurrent && { borderColor: color, borderWidth: 3 },
-                    ]}
-                  >
-                    {isCurrent && (
-                      <View
-                        style={[s.currentBadge, { backgroundColor: color }]}
-                      >
-                        <Text style={s.currentBadgeText}>CURRENT PLAN</Text>
-                      </View>
-                    )}
-                    <View style={s.planTop}>
-                      <View style={[s.planIcon, { backgroundColor: color }]}>
-                        <PlanIcon size={18} color={C.white} />
-                      </View>
-                      <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={s.planName}>
-                          {(plan.name || pid).toUpperCase()}
-                        </Text>
-                        <Text style={s.planDesc} numberOfLines={1}>
-                          {plan.description || ''}
-                        </Text>
-                      </View>
-                      <View style={{ alignItems: 'flex-end' }}>
-                        <View style={s.priceRow}>
-                          <IndianRupee size={14} color={C.black} />
-                          <Text style={s.price}>
-                            {(price || 0).toLocaleString()}
-                          </Text>
-                        </View>
-                        <Text style={s.priceCycle}>
-                          /{cycle === 'yearly' ? 'yr' : 'mo'}
-                        </Text>
-                      </View>
-                    </View>
-
-                    {plan.features && plan.features.length > 0 && (
-                      <View style={s.featureList}>
-                        {plan.features
-                          .slice(0, 4)
-                          .map((f: string, i: number) => (
-                            <View key={i} style={s.featureRow}>
-                              <Check size={12} color={color} />
-                              <Text style={s.featureText}>{f}</Text>
-                            </View>
-                          ))}
-                      </View>
-                    )}
-
-                    <TouchableOpacity
-                      style={[
-                        s.upgradeBtn,
-                        { backgroundColor: isCurrent ? '#F3F4F6' : color },
-                      ]}
-                      onPress={() => handleUpgrade(pid)}
-                      disabled={isCurrent || upgrading === pid}
-                    >
-                      {upgrading === pid ? (
-                        <ActivityIndicator
-                          color={isCurrent ? C.textMuted : C.white}
-                          size="small"
-                        />
-                      ) : (
-                        <Text
-                          style={[
-                            s.upgradeBtnText,
-                            isCurrent && { color: C.textMuted },
-                          ]}
-                        >
-                          {isCurrent ? 'Current Plan' : 'Upgrade Now'}
-                        </Text>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                );
-              })
-            )}
+            </View>
           </View>
         </View>
 
-        {/* Invoices */}
-        {invoices.length > 0 && (
-          <View>
-            <Text style={s.sectionTitle}>Invoice History</Text>
+        <View>
+          <Text style={s.sectionTitle}>What's included</Text>
+          <View style={s.invoiceCard}>
+            {features.map((f, i) => (
+              <View
+                key={`${i}-${f}`}
+                style={[
+                  s.invoiceRow,
+                  i > 0 && s.invoiceBorder,
+                  { alignItems: 'center', gap: 8 },
+                ]}
+              >
+                <Check size={14} color={C.success} />
+                <Text style={[s.invoiceDate, { flex: 1, color: C.black }]}>
+                  {f}
+                </Text>
+              </View>
+            ))}
+          </View>
+          <Text style={[s.invoiceDate, { marginTop: 8 }]}>
+            Need a different plan or more employees? Contact Pixelate Nest at
+            support@pixelatenest.com.
+          </Text>
+        </View>
+
+        <View>
+          <Text style={s.sectionTitle}>Invoice History</Text>
+          {invoices.length === 0 ? (
+            <View style={s.emptyPlans}>
+              <Text style={s.emptyPlansText}>No invoices found</Text>
+            </View>
+          ) : (
             <View style={s.invoiceCard}>
-              {invoices.slice(0, 5).map((inv: any, i: number) => (
+              {invoices.slice(0, 20).map((inv: any, i: number) => (
                 <View
                   key={inv._id || i}
                   style={[s.invoiceRow, i > 0 && s.invoiceBorder]}
                 >
                   <View style={s.invoiceLeft}>
                     <Text style={s.invoicePlan}>
-                      {(inv.plan || 'Plan').toUpperCase()}
+                      {String(inv.invoiceNumber || inv.plan || 'Invoice')}
                     </Text>
                     <Text style={s.invoiceDate}>
-                      {new Date(inv.createdAt || inv.date).toLocaleDateString(
-                        'en-IN',
-                        { day: 'numeric', month: 'short', year: 'numeric' },
-                      )}
+                      {fmtDate(inv.paidAt || inv.createdAt || inv.date)}
+                      {inv.billingCycle ? ` · ${inv.billingCycle}` : ''}
                     </Text>
                   </View>
                   <View style={{ alignItems: 'flex-end', gap: 6 }}>
                     <View style={s.invoiceAmount}>
                       <IndianRupee size={11} color={C.black} />
                       <Text style={s.invoiceAmountText}>
-                        {(inv.amount || 0).toLocaleString()}
+                        {Number(inv.amount || 0).toLocaleString('en-IN')}
                       </Text>
                     </View>
                     <View style={s.invoiceBottomRow}>
@@ -432,7 +312,7 @@ export default function BillingScreen() {
                         ]}
                       >
                         <Text style={s.invStatusText}>
-                          {(inv.status || 'paid').toUpperCase()}
+                          {String(inv.status || 'paid').toUpperCase()}
                         </Text>
                       </View>
                       <TouchableOpacity
@@ -441,7 +321,7 @@ export default function BillingScreen() {
                         disabled={downloading === inv._id}
                       >
                         {downloading === inv._id ? (
-                          <ActivityIndicator size={10} color={C.white} />
+                          <ActivityIndicator size="small" color={C.white} />
                         ) : (
                           <Download size={11} color={C.white} />
                         )}
@@ -452,8 +332,8 @@ export default function BillingScreen() {
                 </View>
               ))}
             </View>
-          </View>
-        )}
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -471,7 +351,7 @@ const s = StyleSheet.create({
     borderBottomColor: C.black,
     gap: 8,
   },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: C.black },
+  headerTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   statusCard: {
     flexDirection: 'row',
@@ -506,7 +386,7 @@ const s = StyleSheet.create({
     borderRightWidth: 4,
     borderBottomWidth: 4,
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.black,
   },
   statusRow: {
@@ -515,9 +395,9 @@ const s = StyleSheet.create({
     gap: 4,
     marginTop: 2,
   },
-  statusLabel: { fontSize: 12, fontWeight: '600' },
+  statusLabel: { fontSize: 12, fontWeight: '400' },
   nextBill: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  nextBillText: { fontSize: 11, fontWeight: '600', color: C.textMuted },
+  nextBillText: { fontSize: 11, fontWeight: '400', color: C.textMuted },
   trialBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -534,7 +414,7 @@ const s = StyleSheet.create({
   },
   trialBannerText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '400',
     color: '#92400E',
     flex: 1,
   },
@@ -553,13 +433,13 @@ const s = StyleSheet.create({
   cycleBtnActive: { backgroundColor: C.primary },
   cycleBtnText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.black,
     textTransform: 'uppercase',
   },
   sectionTitle: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.black,
     letterSpacing: 0.5,
@@ -580,7 +460,7 @@ const s = StyleSheet.create({
     borderRadius: 8,
     borderColor: C.black,
   },
-  emptyPlansText: { fontSize: 13, fontWeight: '600', color: C.textMuted },
+  emptyPlansText: { fontSize: 13, fontWeight: '400', color: C.textMuted },
   planCard: {
     backgroundColor: C.white,
     borderWidth: 2,
@@ -606,7 +486,7 @@ const s = StyleSheet.create({
   currentBadgeText: {
     textTransform: 'uppercase',
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.white,
     letterSpacing: 1,
   },
@@ -624,18 +504,18 @@ const s = StyleSheet.create({
     borderRadius: 8,
     borderColor: C.black,
   },
-  planName: { fontSize: 14, fontWeight: '700', color: C.black },
+  planName: { fontSize: 14, fontWeight: '400', color: C.black },
   planDesc: {
     fontSize: 11,
     color: C.textMuted,
-    fontWeight: '500',
+    fontWeight: '400',
     marginTop: 2,
   },
   priceRow: { flexDirection: 'row', alignItems: 'center' },
-  price: { fontSize: 20, fontWeight: '700', color: C.black },
+  price: { fontSize: 20, fontWeight: '400', color: C.black },
   priceCycle: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '400',
     color: C.textMuted,
     marginTop: 2,
   },
@@ -647,7 +527,7 @@ const s = StyleSheet.create({
     gap: 5,
   },
   featureRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  featureText: { fontSize: 12, fontWeight: '500', color: C.black },
+  featureText: { fontSize: 12, fontWeight: '400', color: C.black },
   upgradeBtn: {
     marginTop: 12,
     paddingVertical: 12,
@@ -662,7 +542,7 @@ const s = StyleSheet.create({
   },
   upgradeBtnText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.white,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -686,15 +566,15 @@ const s = StyleSheet.create({
   },
   invoiceBorder: { borderTopWidth: 2, borderTopColor: C.black },
   invoiceLeft: { flex: 1 },
-  invoicePlan: { fontSize: 12, fontWeight: '700', color: C.black },
+  invoicePlan: { fontSize: 12, fontWeight: '400', color: C.black },
   invoiceDate: {
     fontSize: 11,
     color: C.textMuted,
-    fontWeight: '500',
+    fontWeight: '400',
     marginTop: 2,
   },
   invoiceAmount: { flexDirection: 'row', alignItems: 'center' },
-  invoiceAmountText: { fontSize: 15, fontWeight: '700', color: C.black },
+  invoiceAmountText: { fontSize: 15, fontWeight: '400', color: C.black },
   invStatus: {
     borderWidth: 2,
     borderRadius: 999,
@@ -708,7 +588,7 @@ const s = StyleSheet.create({
   invStatusText: {
     textTransform: 'uppercase',
     fontSize: 8,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.white,
   },
   invoiceBottomRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -727,5 +607,5 @@ const s = StyleSheet.create({
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
   },
-  downloadBtnText: { fontSize: 8, fontWeight: '700', color: C.white },
+  downloadBtnText: { fontSize: 8, fontWeight: '400', color: C.white },
 });

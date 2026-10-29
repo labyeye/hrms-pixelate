@@ -23,7 +23,11 @@ import {
   Users,
   Clock,
 } from 'lucide-react-native';
-import { localNotificationsAPI, LocalNotification } from '../api/api';
+import {
+  localNotificationsAPI,
+  syncAnnouncementNotifications,
+  LocalNotification,
+} from '../api/api';
 import { C } from '../theme';
 
 function relativeTime(ts: number) {
@@ -44,28 +48,9 @@ function getIcon(title: string) {
     return IndianRupee;
   if (t.includes('employee') || t.includes('hire')) return Users;
   if (t.includes('attendance') || t.includes('check')) return Clock;
+  if (t.includes('announcement')) return Bell;
   return Info;
 }
-
-// Demo notifications seeded on first open so the screen isn't empty
-const DEMO_NOTIFICATIONS: Omit<LocalNotification, 'id' | 'ts' | 'read'>[] = [
-  {
-    title: 'Leave Approved',
-    body: 'Your leave request for Jun 15-16 has been approved.',
-  },
-  {
-    title: 'Payroll Processed',
-    body: 'May 2026 payroll has been successfully processed for 24 employees.',
-  },
-  {
-    title: 'New Employee Added',
-    body: 'Priya Sharma has been added to the Engineering department.',
-  },
-  {
-    title: 'Attendance Alert',
-    body: '5 employees have not checked in yet today.',
-  },
-];
 
 export default function NotificationsScreen() {
   const navigation = useNavigation<any>();
@@ -75,13 +60,8 @@ export default function NotificationsScreen() {
   const loadNotifications = useCallback(async () => {
     setLoading(true);
     try {
-      let all = await localNotificationsAPI.getAll();
-      if (all.length === 0) {
-        for (const n of DEMO_NOTIFICATIONS) {
-          await localNotificationsAPI.add(n);
-        }
-        all = await localNotificationsAPI.getAll();
-      }
+      await syncAnnouncementNotifications().catch(() => {});
+      const all = await localNotificationsAPI.getAll();
       setNotifications(all);
       if (Platform.OS === 'android' && Platform.Version >= 33) {
         try {
@@ -260,7 +240,7 @@ const styles = StyleSheet.create({
     borderBottomColor: C.black,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: C.black },
+  headerTitle: { fontSize: 18, fontWeight: '400', color: C.black },
   badge: {
     borderWidth: 2,
     borderRadius: 999,
@@ -278,7 +258,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: C.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
   },
   headerActions: { flexDirection: 'row', gap: 4 },
   actionBtn: {
@@ -299,7 +279,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  infoBannerText: { fontSize: 11, fontWeight: '600', color: '#92400E' },
+  infoBannerText: { fontSize: 11, fontWeight: '400', color: '#92400E' },
   listHeader: {
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -309,7 +289,7 @@ const styles = StyleSheet.create({
   },
   listHeaderText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.primary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -344,12 +324,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 3,
   },
-  notifTitle: { fontSize: 13, fontWeight: '600', color: '#6B7280', flex: 1 },
-  notifTitleUnread: { color: C.black, fontWeight: '700' },
+  notifTitle: { fontSize: 13, fontWeight: '400', color: '#6B7280', flex: 1 },
+  notifTitleUnread: { color: C.black, fontWeight: '400' },
   notifTime: {
     fontSize: 12,
     color: '#9CA3AF',
-    fontWeight: '500',
+    fontWeight: '400',
     marginLeft: 8,
   },
   notifBody: { fontSize: 12, color: '#6B7280', lineHeight: 18 },
@@ -362,6 +342,6 @@ const styles = StyleSheet.create({
   },
   separator: { height: 2, backgroundColor: '#000000' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: C.black },
+  emptyTitle: { fontSize: 16, fontWeight: '400', color: C.black },
   emptySub: { fontSize: 13, color: '#9CA3AF' },
 });

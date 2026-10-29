@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   backBtn: { padding: 4 },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: C.black },
+  headerTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   center: {
     flex: 1,
     alignItems: 'center',
@@ -224,14 +224,14 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '400',
     color: '#6B7280',
     marginTop: 12,
   },
   emptySubtitle: {
     fontSize: 13,
     color: '#9CA3AF',
-    fontWeight: '500',
+    fontWeight: '400',
     textAlign: 'center',
     marginTop: 6,
   },
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 12,
   },
-  assetName: { fontSize: 15, fontWeight: '700', color: C.black, flex: 1 },
+  assetName: { fontSize: 15, fontWeight: '400', color: C.black, flex: 1 },
   statusBadge: {
     borderWidth: 2,
     borderRadius: 999,
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
-  statusText: { fontSize: 9, fontWeight: '800', textTransform: 'uppercase' },
+  statusText: { fontSize: 9, fontWeight: '400', textTransform: 'uppercase' },
   infoRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
   infoCol: {
     flex: 1,
@@ -280,12 +280,12 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: '#000000',
     marginBottom: 2,
   },
-  infoVal: { fontSize: 12, fontWeight: '600', color: C.black },
+  infoVal: { fontSize: 12, fontWeight: '400', color: C.black },
   cardBottom: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     marginTop: 4,
   },
-  date: { fontSize: 12, fontWeight: '600', color: C.black },
+  date: { fontSize: 12, fontWeight: '400', color: C.black },
   returnBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   returnBtnText: {
     color: C.white,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
 });

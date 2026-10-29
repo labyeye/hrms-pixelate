@@ -138,7 +138,8 @@ export default function BillingPage() {
                 No Active Subscription
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Your account is not yet activated. Please contact Pixelate Nest to activate your plan.
+                Your account is not yet activated. Please contact Pixelate Nest
+                to activate your plan.
               </p>
             </div>
           </div>
@@ -279,18 +280,22 @@ export default function BillingPage() {
             {(sub?.customFeatures?.length
               ? sub.customFeatures
               : [
-              `Up to ${empMax === 999 ? "unlimited" : empMax} employees`,
-              "Employee management, departments & documents",
-              "Attendance with biometric device support",
-              "Leave, holidays & late approvals",
-              "Payroll, loans & payslips",
-              "Performance, tasks & announcements",
-              "Web & mobile app access",
-              ...(String(sub?.tier || "").includes("whatsapp")
-                ? ["WhatsApp notifications & OTP"]
-                : []),
-            ]).map((f: string) => (
-              <div key={f} className="flex items-start gap-2 text-sm text-black">
+                  `Up to ${empMax === 999 ? "unlimited" : empMax} employees`,
+                  "Employee management, departments & documents",
+                  "Attendance with biometric device support",
+                  "Leave, holidays & late approvals",
+                  "Payroll, loans & payslips",
+                  "Performance, tasks & announcements",
+                  "Web & mobile app access",
+                  ...(String(sub?.tier || "").includes("whatsapp")
+                    ? ["WhatsApp notifications & OTP"]
+                    : []),
+                ]
+            ).map((f: string) => (
+              <div
+                key={f}
+                className="flex items-start gap-2 text-sm text-black"
+              >
                 <Check className="w-4 h-4 text-[#00C48C] shrink-0 mt-0.5" />
                 {f}
               </div>
@@ -365,7 +370,6 @@ export default function BillingPage() {
           )}
         </div>
       </div>
-
     </AppLayout>
   );
 }

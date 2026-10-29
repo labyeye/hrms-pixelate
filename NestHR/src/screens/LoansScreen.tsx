@@ -23,14 +23,20 @@ import {
   CheckCircle2,
   XCircle,
   ChevronLeft,
+  Search,
+  SlidersHorizontal,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { loanAPI, employeeAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
+import AnimatedNumber from '../components/motion/AnimatedNumber';
+import FadeInUp from '../components/motion/FadeInUp';
 import { C } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import ExportButton from '../components/common/ExportButton';
-import FilterBar from '../components/common/FilterBar';
+import HeaderIconBtn from '../components/common/HeaderIconBtn';
+import SearchModal from '../components/common/SearchModal';
+import FilterSortModal from '../components/common/FilterSortModal';
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> =
   {
@@ -58,6 +64,10 @@ export default function LoansScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
+  const [search, setSearch] = useState('');
+  const [sortKey, setSortKey] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -93,9 +103,20 @@ export default function LoansScreen() {
     setRefreshing(false);
   };
 
-  const filtered = statusFilter
-    ? loans.filter(l => l.status === statusFilter)
-    : loans;
+  const loanName = (l: any) =>
+    `${l.employee?.firstName || ''} ${l.employee?.lastName || ''}`.trim();
+  const filtered = loans
+    .filter(l => !statusFilter || l.status === statusFilter)
+    .filter(
+      l => !search || loanName(l).toLowerCase().includes(search.toLowerCase()),
+    )
+    .sort((a, b) =>
+      sortKey === 'name'
+        ? loanName(a).localeCompare(loanName(b))
+        : sortKey === 'amount'
+          ? (b.amount || 0) - (a.amount || 0)
+          : 0,
+    );
 
   const handleGiveLoan = async () => {
     if (!isEmployee && !selectedEmpId) {
@@ -178,20 +199,45 @@ export default function LoansScreen() {
             {isEmployee ? 'My Loans' : 'Loans'}
           </Text>
         </View>
-        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+          {!isEmployee && (
+            <HeaderIconBtn
+              label="Search"
+              icon={<Search size={22} color={C.black} />}
+              dot={!!search}
+              onPress={() => setSearchOpen(true)}
+            />
+          )}
+          <HeaderIconBtn
+            label="Filter and sort"
+            icon={<SlidersHorizontal size={22} color={C.black} />}
+            dot={!!statusFilter || !!sortKey}
+            onPress={() => setFilterOpen(true)}
+          />
           {!isEmployee && (
             <ExportButton
               name="loans_advances"
               label=""
               rows={filtered}
               cols={[
-                { header: 'Emp Code', value: (l: any) => l.employee?.employeeId },
-                { header: 'Employee', value: (l: any) => `${l.employee?.firstName || ''} ${l.employee?.lastName || ''}`.trim() },
+                {
+                  header: 'Emp Code',
+                  value: (l: any) => l.employee?.employeeId,
+                },
+                {
+                  header: 'Employee',
+                  value: (l: any) =>
+                    `${l.employee?.firstName || ''} ${l.employee?.lastName || ''}`.trim(),
+                },
                 { header: 'Type', value: (l: any) => l.type },
                 { header: 'Amount', value: (l: any) => l.amount },
                 { header: 'Monthly EMI', value: (l: any) => l.monthlyEmi },
                 { header: 'Remaining', value: (l: any) => l.remainingBalance },
-                { header: 'Disbursed On', value: (l: any) => (l.disbursedOn ? String(l.disbursedOn).slice(0, 10) : '') },
+                {
+                  header: 'Disbursed On',
+                  value: (l: any) =>
+                    l.disbursedOn ? String(l.disbursedOn).slice(0, 10) : '',
+                },
                 { header: 'Status', value: (l: any) => l.status },
                 { header: 'Reason', value: (l: any) => l.reason },
               ]}
@@ -204,35 +250,39 @@ export default function LoansScreen() {
               setSelectedEmpId('');
               setShowForm(true);
             }}
+            accessibilityLabel={isEmployee ? 'Request' : 'Give Loan'}
+            hitSlop={8}
           >
-            <Plus size={14} color={C.white} />
-            <Text style={styles.addBtnText}>
-              {isEmployee ? 'Request' : 'Give Loan'}
-            </Text>
+            <Plus size={24} color={C.primary} />
           </TouchableOpacity>
         </View>
       </View>
 
-      <View style={styles.summaryRow}>
-        {[
-          { label: 'Total', val: loans.length, color: C.black },
-          {
-            label: 'Active',
-            val: loans.filter(l => l.status === 'active').length,
-            color: C.primary,
-          },
-          {
-            label: 'Pending',
-            val: loans.filter(l => l.status === 'pending').length,
-            color: C.warning,
-          },
-        ].map(s => (
-          <View key={s.label} style={styles.summaryCard}>
-            <Text style={[styles.summaryVal, { color: s.color }]}>{s.val}</Text>
-            <Text style={styles.summaryLabel}>{s.label}</Text>
-          </View>
-        ))}
-      </View>
+      <FadeInUp>
+        <View style={styles.summaryRow}>
+          {[
+            { label: 'Total', val: loans.length, color: C.black },
+            {
+              label: 'Active',
+              val: loans.filter(l => l.status === 'active').length,
+              color: C.primary,
+            },
+            {
+              label: 'Pending',
+              val: loans.filter(l => l.status === 'pending').length,
+              color: C.warning,
+            },
+          ].map(s => (
+            <View key={s.label} style={styles.summaryCard}>
+              <AnimatedNumber
+                style={[styles.summaryVal, { color: s.color }]}
+                value={s.val}
+              />
+              <Text style={styles.summaryLabel}>{s.label}</Text>
+            </View>
+          ))}
+        </View>
+      </FadeInUp>
 
       {totalActive > 0 && (
         <View style={styles.activeBanner}>
@@ -243,14 +293,39 @@ export default function LoansScreen() {
         </View>
       )}
 
-      <FilterBar
-        value={statusFilter}
-        onChange={setStatusFilter}
-        toggle={false}
-        options={[
+      <SearchModal
+        visible={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        value={search}
+        onChange={setSearch}
+        placeholder="Search by employee…"
+        items={loans.map(l => ({
+          key: l._id,
+          title: loanName(l) || String(l.type),
+          subtitle: `${l.type} · ₹${l.amount}`,
+        }))}
+      />
+      <FilterSortModal
+        visible={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        filterTitle="Status"
+        filterOptions={[
           { key: '', label: 'All' },
           ...Object.keys(STATUS_CONFIG).map(k => ({ key: k, label: k })),
         ]}
+        filterValue={statusFilter}
+        onFilter={setStatusFilter}
+        sortOptions={[
+          { key: '', label: 'Default' },
+          { key: 'name', label: 'Employee A–Z' },
+          { key: 'amount', label: 'Highest amount' },
+        ]}
+        sortValue={sortKey}
+        onSort={setSortKey}
+        onReset={() => {
+          setStatusFilter('');
+          setSortKey('');
+        }}
       />
 
       {loading ? (
@@ -380,163 +455,163 @@ export default function LoansScreen() {
         />
       )}
 
-      <Modal
-        visible={showForm}
-        transparent
-        animationType="fade"
-      >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        <SafeAreaView style={styles.safe} edges={[]}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>
-              {isEmployee ? 'Request Loan / Advance' : 'Give Loan to Staff'}
-            </Text>
-            <TouchableOpacity onPress={() => setShowForm(false)}>
-              <X size={22} color={C.black} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            contentContainerStyle={{ padding: 20, gap: 16 }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {!isEmployee && (
-              <View>
-                <Text style={styles.fieldLabel}>Employee *</Text>
-                <View style={styles.empPicker}>
-                  {employees.map(e => {
-                    const isSelected = selectedEmpId === e._id;
-                    return (
-                      <TouchableOpacity
-                        key={e._id}
-                        style={[
-                          styles.empPickerRow,
-                          isSelected && styles.empPickerRowActive,
-                        ]}
-                        onPress={() => setSelectedEmpId(e._id)}
-                      >
-                        {e.avatar ? (
-                          <Image
-                            source={{ uri: e.avatar }}
-                            style={styles.empPickerPhoto}
-                          />
-                        ) : (
-                          <View style={styles.empPickerInitials}>
-                            <Text style={styles.empPickerInitialsText}>
-                              {`${(e.firstName || '')[0] || ''}${(e.lastName || '')[0] || ''}`}
-                            </Text>
-                          </View>
-                        )}
-                        <View style={{ flex: 1 }}>
-                          <Text
-                            style={[
-                              styles.empPickerName,
-                              isSelected && { color: C.white },
-                            ]}
-                          >
-                            {e.firstName} {e.lastName}
-                          </Text>
-                          {e.employeeId && (
-                            <Text
-                              style={[
-                                styles.empPickerSub,
-                                isSelected && { color: C.white + 'CC' },
-                              ]}
-                            >
-                              {e.employeeId}
-                            </Text>
-                          )}
-                        </View>
-                        {isSelected && <Check size={14} color={C.white} />}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-            )}
-            <View>
-              <Text style={styles.fieldLabel}>Type</Text>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  flexWrap: 'wrap',
-                  gap: 8,
-                  marginTop: 6,
-                }}
-              >
-                {LOAN_TYPES.map(t => (
-                  <TouchableOpacity
-                    key={t}
-                    style={[
-                      styles.selChip,
-                      form.type === t && styles.selChipActive,
-                    ]}
-                    onPress={() => setForm(p => ({ ...p, type: t }))}
-                  >
-                    <Text
-                      style={[
-                        styles.selChipText,
-                        form.type === t && { color: C.white },
-                      ]}
-                    >
-                      {t === 'advance' ? 'SALARY ADVANCE' : 'LOAN'}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-            <View>
-              <Text style={styles.fieldLabel}>Amount (₹) *</Text>
-              <TextInput
-                style={styles.fieldInput}
-                value={form.amount}
-                onChangeText={v => setForm(p => ({ ...p, amount: v }))}
-                placeholder="100000"
-                placeholderTextColor={C.textLight}
-                keyboardType="numeric"
-              />
-            </View>
-            <View>
-              <Text style={styles.fieldLabel}>
-                How many months to repay? (Tenure)
-              </Text>
-              <TextInput
-                style={styles.fieldInput}
-                value={form.tenureMonths}
-                onChangeText={v => setForm(p => ({ ...p, tenureMonths: v }))}
-                placeholder="e.g. 6"
-                placeholderTextColor={C.textLight}
-                keyboardType="numeric"
-              />
-            </View>
-            <View>
-              <Text style={styles.fieldLabel}>Reason *</Text>
-              <TextInput
-                style={[styles.fieldInput, { minHeight: 80 }]}
-                value={form.reason}
-                onChangeText={v => setForm(p => ({ ...p, reason: v }))}
-                placeholder="Reason for loan / advance…"
-                placeholderTextColor={C.textLight}
-                multiline
-              />
-            </View>
-            <TouchableOpacity
-              style={styles.submitBtn}
-              onPress={handleGiveLoan}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator color={C.white} />
-              ) : (
-                <Text style={styles.submitBtnText}>
-                  {isEmployee ? 'Submit Request' : 'Give Loan'}
+      <Modal visible={showForm} transparent animationType="fade">
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            <SafeAreaView style={styles.safe} edges={[]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>
+                  {isEmployee ? 'Request Loan / Advance' : 'Give Loan to Staff'}
                 </Text>
-              )}
-            </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </View></View>
-</Modal>
+                <TouchableOpacity onPress={() => setShowForm(false)}>
+                  <X size={22} color={C.black} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView
+                contentContainerStyle={{ padding: 20, gap: 16 }}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                {!isEmployee && (
+                  <View>
+                    <Text style={styles.fieldLabel}>Employee *</Text>
+                    <View style={styles.empPicker}>
+                      {employees.map(e => {
+                        const isSelected = selectedEmpId === e._id;
+                        return (
+                          <TouchableOpacity
+                            key={e._id}
+                            style={[
+                              styles.empPickerRow,
+                              isSelected && styles.empPickerRowActive,
+                            ]}
+                            onPress={() => setSelectedEmpId(e._id)}
+                          >
+                            {e.avatar ? (
+                              <Image
+                                source={{ uri: e.avatar }}
+                                style={styles.empPickerPhoto}
+                              />
+                            ) : (
+                              <View style={styles.empPickerInitials}>
+                                <Text style={styles.empPickerInitialsText}>
+                                  {`${(e.firstName || '')[0] || ''}${(e.lastName || '')[0] || ''}`}
+                                </Text>
+                              </View>
+                            )}
+                            <View style={{ flex: 1 }}>
+                              <Text
+                                style={[
+                                  styles.empPickerName,
+                                  isSelected && { color: C.white },
+                                ]}
+                              >
+                                {e.firstName} {e.lastName}
+                              </Text>
+                              {e.employeeId && (
+                                <Text
+                                  style={[
+                                    styles.empPickerSub,
+                                    isSelected && { color: C.white + 'CC' },
+                                  ]}
+                                >
+                                  {e.employeeId}
+                                </Text>
+                              )}
+                            </View>
+                            {isSelected && <Check size={14} color={C.white} />}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+                )}
+                <View>
+                  <Text style={styles.fieldLabel}>Type</Text>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                      gap: 8,
+                      marginTop: 6,
+                    }}
+                  >
+                    {LOAN_TYPES.map(t => (
+                      <TouchableOpacity
+                        key={t}
+                        style={[
+                          styles.selChip,
+                          form.type === t && styles.selChipActive,
+                        ]}
+                        onPress={() => setForm(p => ({ ...p, type: t }))}
+                      >
+                        <Text
+                          style={[
+                            styles.selChipText,
+                            form.type === t && { color: C.white },
+                          ]}
+                        >
+                          {t === 'advance' ? 'SALARY ADVANCE' : 'LOAN'}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+                <View>
+                  <Text style={styles.fieldLabel}>Amount (₹) *</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={form.amount}
+                    onChangeText={v => setForm(p => ({ ...p, amount: v }))}
+                    placeholder="100000"
+                    placeholderTextColor={C.textLight}
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View>
+                  <Text style={styles.fieldLabel}>
+                    How many months to repay? (Tenure)
+                  </Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={form.tenureMonths}
+                    onChangeText={v =>
+                      setForm(p => ({ ...p, tenureMonths: v }))
+                    }
+                    placeholder="e.g. 6"
+                    placeholderTextColor={C.textLight}
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View>
+                  <Text style={styles.fieldLabel}>Reason *</Text>
+                  <TextInput
+                    style={[styles.fieldInput, { minHeight: 80 }]}
+                    value={form.reason}
+                    onChangeText={v => setForm(p => ({ ...p, reason: v }))}
+                    placeholder="Reason for loan / advance…"
+                    placeholderTextColor={C.textLight}
+                    multiline
+                  />
+                </View>
+                <TouchableOpacity
+                  style={styles.submitBtn}
+                  onPress={handleGiveLoan}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <ActivityIndicator color={C.white} />
+                  ) : (
+                    <Text style={styles.submitBtnText}>
+                      {isEmployee ? 'Submit Request' : 'Give Loan'}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
+            </SafeAreaView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -554,26 +629,12 @@ const styles = StyleSheet.create({
     borderBottomColor: C.black,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: C.black },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: C.primary,
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderColor: C.black,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
+  headerTitle: { fontSize: 20, fontWeight: '400', color: C.black },
+  addBtn: { padding: 4 },
   addBtnText: {
     color: C.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   summaryRow: {
@@ -596,10 +657,10 @@ const styles = StyleSheet.create({
     padding: 10,
     alignItems: 'center',
   },
-  summaryVal: { fontSize: 22, fontWeight: '700', color: C.black },
+  summaryVal: { fontSize: 22, fontWeight: '400', color: C.black },
   summaryLabel: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.textMuted,
     marginTop: 2,
@@ -614,7 +675,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
-  activeBannerText: { fontSize: 13, fontWeight: '700', color: C.primary },
+  activeBannerText: { fontSize: 13, fontWeight: '400', color: C.primary },
   filterBar: {
     maxHeight: 48,
     backgroundColor: C.white,
@@ -635,10 +696,10 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
   },
   chipActive: { backgroundColor: C.primary },
-  chipText: { fontSize: 12, fontWeight: '700', color: C.black },
+  chipText: { fontSize: 12, fontWeight: '400', color: C.black },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
-  emptyText: { fontSize: 14, fontWeight: '700', color: C.textMuted },
+  emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
@@ -668,15 +729,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  empInitialsText: { fontSize: 14, fontWeight: '700', color: C.white },
-  loanType: { fontSize: 13, fontWeight: '700', color: C.black },
+  empInitialsText: { fontSize: 14, fontWeight: '400', color: C.white },
+  loanType: { fontSize: 13, fontWeight: '400', color: C.black },
   empName: {
     fontSize: 11,
     color: C.textMuted,
-    fontWeight: '500',
+    fontWeight: '400',
     marginTop: 2,
   },
-  amount: { fontSize: 18, fontWeight: '700', color: C.black },
+  amount: { fontSize: 18, fontWeight: '400', color: C.black },
   statusTag: {
     borderWidth: 2,
     borderRadius: 999,
@@ -687,11 +748,11 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     marginTop: 4,
   },
-  statusTagText: { textTransform: 'uppercase', fontSize: 9, fontWeight: '700' },
+  statusTagText: { textTransform: 'uppercase', fontSize: 9, fontWeight: '400' },
   detailRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
   detail: {
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '400',
     color: '#000000',
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -745,7 +806,7 @@ const styles = StyleSheet.create({
   actionBtnText: {
     color: C.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   modalHeader: {
@@ -757,10 +818,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: C.black },
+  modalTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   fieldLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.black,
     marginBottom: 5,
@@ -777,7 +838,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
     backgroundColor: C.white,
   },
@@ -793,7 +854,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   selChipActive: { backgroundColor: C.primary },
-  selChipText: { fontSize: 11, fontWeight: '700', color: C.black },
+  selChipText: { fontSize: 11, fontWeight: '400', color: C.black },
   submitBtn: {
     backgroundColor: C.primary,
     borderWidth: 2,
@@ -809,7 +870,7 @@ const styles = StyleSheet.create({
   },
   submitBtnText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 14,
     textTransform: 'uppercase',
   },
@@ -849,7 +910,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  empPickerInitialsText: { fontSize: 11, fontWeight: '700', color: C.black },
-  empPickerName: { fontSize: 13, fontWeight: '600', color: C.black },
+  empPickerInitialsText: { fontSize: 11, fontWeight: '400', color: C.black },
+  empPickerName: { fontSize: 13, fontWeight: '400', color: C.black },
   empPickerSub: { fontSize: 12, color: C.textMuted, marginTop: 1 },
 });

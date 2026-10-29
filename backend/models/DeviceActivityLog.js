@@ -4,8 +4,16 @@ const mongoose = require("mongoose");
 // command result...) together with what the server answered. Auto-deleted after 30 days.
 const deviceActivityLogSchema = new mongoose.Schema(
   {
-    company: { type: mongoose.Schema.Types.ObjectId, ref: "Company", index: true },
-    device: { type: mongoose.Schema.Types.ObjectId, ref: "BiometricDevice", index: true },
+    company: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
+      index: true,
+    },
+    device: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "BiometricDevice",
+      index: true,
+    },
     serialNumber: { type: String, index: true },
     event: {
       type: String,
@@ -32,6 +40,9 @@ const deviceActivityLogSchema = new mongoose.Schema(
   { timestamps: { createdAt: true, updatedAt: false } },
 );
 
-deviceActivityLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 30 * 24 * 3600 });
+deviceActivityLogSchema.index(
+  { createdAt: 1 },
+  { expireAfterSeconds: 30 * 24 * 3600 },
+);
 
 module.exports = mongoose.model("DeviceActivityLog", deviceActivityLogSchema);

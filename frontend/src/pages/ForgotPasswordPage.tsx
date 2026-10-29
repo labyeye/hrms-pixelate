@@ -152,234 +152,234 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthShell>
-        <div className="flex justify-center mb-8">
-          <img
-            src={nesthrlogo}
-            alt="NestHR"
-            className="h-12 w-auto object-contain"
-          />
-        </div>
+      <div className="flex justify-center mb-8">
+        <img
+          src={nesthrlogo}
+          alt="NestHR"
+          className="h-12 w-auto object-contain"
+        />
+      </div>
 
-        <div className="bg-white border-2 border-black p-8">
-          {error && (
-            <div className="flex items-center gap-2 bg-red-50 border-2 border-red-400 text-red-600 text-sm px-3 py-2.5 mb-5">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span className="font-medium">{error}</span>
+      <div className="bg-white border-2 border-black p-8">
+        {error && (
+          <div className="flex items-center gap-2 bg-red-50 border-2 border-red-400 text-red-600 text-sm px-3 py-2.5 mb-5">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span className="font-medium">{error}</span>
+          </div>
+        )}
+
+        {step === "email" && (
+          <>
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-black">
+                Forgot password?
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Enter Email address to see how you can reset your password.
+              </p>
             </div>
-          )}
 
-          {step === "email" && (
-            <>
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-black">
-                  Forgot password?
-                </h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  Enter Email address to see how you can reset your password.
-                </p>
-              </div>
-
-              <form onSubmit={handleEmail} className="space-y-5 login-anim">
-                <div>
-                  <label className={labelCls}>Email</label>
-                  <div className="flex border-2 border-black transition-colors">
-                    <span className="flex items-center px-3 border-r-2 border-black bg-gray-50">
-                      <Mail className="w-4 h-4 text-gray-500" />
-                    </span>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => {
-                        setEmail(e.target.value);
-                        setError("");
-                      }}
-                      placeholder="you@company.com"
-                      className="flex-1 px-4 py-3 bg-white text-sm font-medium outline-none"
-                      required
-                      autoFocus
-                    />
-                  </div>
+            <form onSubmit={handleEmail} className="space-y-5 login-anim">
+              <div>
+                <label className={labelCls}>Email</label>
+                <div className="flex border-2 border-black transition-colors">
+                  <span className="flex items-center px-3 border-r-2 border-black bg-gray-50">
+                    <Mail className="w-4 h-4 text-gray-500" />
+                  </span>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setError("");
+                    }}
+                    placeholder="you@company.com"
+                    className="flex-1 px-4 py-3 bg-white text-sm font-medium outline-none"
+                    required
+                    autoFocus
+                  />
                 </div>
-                <button type="submit" disabled={loading} className={btnCls}>
-                  {loading ? (
-                    <>
-                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />{" "}
-                      Checking...
-                    </>
-                  ) : (
-                    "Continue"
-                  )}
-                </button>
-              </form>
-              <div className="mt-6">{backToLogin}</div>
-            </>
-          )}
-
-          {step === "choose" && (
-            <>
-              <h2 className="text-2xl font-bold text-black mb-1">
-                How do you want to reset it?
-              </h2>
-              <p className="text-sm text-gray-500 mb-6">
-                Choose one of the methods set up on your account.
-              </p>
-              <div className="space-y-3">
-                {methods.map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => choose(m)}
-                    disabled={loading}
-                    className="w-full flex items-center gap-3 border-2 border-black p-3.5 text-left hover:bg-[#F0F6FF] transition-colors disabled:opacity-50"
-                  >
-                    <span className="w-9 h-9 border-2 border-black flex items-center justify-center shrink-0">
-                      {METHOD_INFO[m]?.icon}
-                    </span>
-                    <span>
-                      <span className="block font-bold text-sm text-black">
-                        {METHOD_INFO[m]?.label ?? m}
-                      </span>
-                      <span className="block text-xs text-gray-500">
-                        {METHOD_INFO[m]?.desc}
-                      </span>
-                    </span>
-                  </button>
-                ))}
               </div>
-              <button
-                onClick={() => setStep("email")}
-                className="text-xs font-bold text-gray-500 hover:text-black mt-6"
-              >
-                ← Back
-              </button>
-            </>
-          )}
-
-          {step === "email_sent" && (
-            <div className="text-center">
-              <div className="flex justify-center mb-4">
-                <CheckCircle className="w-14 h-14 text-green-500" />
-              </div>
-              <h2 className="text-xl font-bold text-black mb-2">
-                Check your email
-              </h2>
-              <p className="text-sm text-gray-600 mb-6">
-                If an account exists for <strong>{email}</strong>, we've sent a
-                password reset link. It expires in 1 hour.
-              </p>
-              {backToLogin}
-            </div>
-          )}
-
-          {step === "code" && (
-            <>
-              <h2 className="text-2xl font-bold text-black mb-1">
-                {method === "whatsapp"
-                  ? "Enter WhatsApp code"
-                  : method === "backup"
-                    ? "Enter a backup code"
-                    : method === "passkey"
-                      ? "Choose a new password"
-                      : "Enter authenticator code"}
-              </h2>
-              <p className="text-sm text-gray-500 mb-6">
-                {method === "whatsapp"
-                  ? "We sent a 6-digit code to your verified WhatsApp number."
-                  : method === "backup"
-                    ? "Enter one of your saved backup codes. It stops working after this."
-                    : method === "passkey"
-                      ? "Pick a new password, then confirm it with your passkey."
-                      : "Open your authenticator app and enter the current 6-digit code (or a backup code)."}
-              </p>
-              <form onSubmit={handleReset} className="space-y-5 login-anim">
-                {method !== "passkey" && (
-                  <div>
-                    <label className={labelCls}>
-                      {method === "whatsapp"
-                        ? "WhatsApp code"
-                        : method === "backup"
-                          ? "Backup code"
-                          : "Authenticator code"}
-                    </label>
-                    <input
-                      type="text"
-                      inputMode={method === "whatsapp" ? "numeric" : "text"}
-                      maxLength={
-                        method === "whatsapp" ? 6 : method === "backup" ? 11 : 8
-                      }
-                      value={code}
-                      onChange={(e) =>
-                        setCode(
-                          method === "backup"
-                            ? e.target.value.toUpperCase().trim()
-                            : e.target.value.trim(),
-                        )
-                      }
-                      placeholder={method === "backup" ? "XXXXX-XXXXX" : "123456"}
-                      className="w-full px-3 py-3 border-2 border-black text-center text-lg font-bold tracking-[0.3em] outline-none"
-                      required
-                      autoFocus
-                    />
-                  </div>
+              <button type="submit" disabled={loading} className={btnCls}>
+                {loading ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />{" "}
+                    Checking...
+                  </>
+                ) : (
+                  "Continue"
                 )}
-                <div>
-                  <label className={labelCls}>New password</label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Create a strong password"
-                    className="w-full px-3 py-3 border-2 border-black text-sm outline-none"
-                    required
-                    autoComplete="new-password"
-                  />
-                {password && <PasswordChecklist password={password} />}
-                </div>
-                <div>
-                  <label className={labelCls}>Confirm new password</label>
-                  <input
-                    type="password"
-                    value={confirm}
-                    onChange={(e) => setConfirm(e.target.value)}
-                    className="w-full px-3 py-3 border-2 border-black text-sm outline-none"
-                    required
-                    autoComplete="new-password"
-                  />
-                </div>
-                <button type="submit" disabled={loading} className={btnCls}>
-                  {loading
-                    ? "Resetting..."
-                    : method === "passkey"
-                      ? "Verify & Reset"
-                      : "Reset Password"}
-                </button>
-              </form>
-              <button
-                onClick={() => {
-                  setError("");
-                  setStep("choose");
-                }}
-                className="text-xs font-bold text-gray-500 hover:text-black mt-6"
-              >
-                ← Choose a different method
               </button>
-            </>
-          )}
+            </form>
+            <div className="mt-6">{backToLogin}</div>
+          </>
+        )}
 
-          {step === "done" && (
-            <div className="text-center">
-              <div className="flex justify-center mb-4">
-                <CheckCircle className="w-14 h-14 text-green-500" />
-              </div>
-              <h2 className="text-xl font-bold text-black mb-2">
-                Password reset!
-              </h2>
-              <p className="text-sm text-gray-600 mb-6">
-                Your password has been changed. You can now sign in.
-              </p>
-              {backToLogin}
+        {step === "choose" && (
+          <>
+            <h2 className="text-2xl font-bold text-black mb-1">
+              How do you want to reset it?
+            </h2>
+            <p className="text-sm text-gray-500 mb-6">
+              Choose one of the methods set up on your account.
+            </p>
+            <div className="space-y-3">
+              {methods.map((m) => (
+                <button
+                  key={m}
+                  onClick={() => choose(m)}
+                  disabled={loading}
+                  className="w-full flex items-center gap-3 border-2 border-black p-3.5 text-left hover:bg-[#F0F6FF] transition-colors disabled:opacity-50"
+                >
+                  <span className="w-9 h-9 border-2 border-black flex items-center justify-center shrink-0">
+                    {METHOD_INFO[m]?.icon}
+                  </span>
+                  <span>
+                    <span className="block font-bold text-sm text-black">
+                      {METHOD_INFO[m]?.label ?? m}
+                    </span>
+                    <span className="block text-xs text-gray-500">
+                      {METHOD_INFO[m]?.desc}
+                    </span>
+                  </span>
+                </button>
+              ))}
             </div>
-          )}
-        </div>
+            <button
+              onClick={() => setStep("email")}
+              className="text-xs font-bold text-gray-500 hover:text-black mt-6"
+            >
+              ← Back
+            </button>
+          </>
+        )}
+
+        {step === "email_sent" && (
+          <div className="text-center">
+            <div className="flex justify-center mb-4">
+              <CheckCircle className="w-14 h-14 text-green-500" />
+            </div>
+            <h2 className="text-xl font-bold text-black mb-2">
+              Check your email
+            </h2>
+            <p className="text-sm text-gray-600 mb-6">
+              If an account exists for <strong>{email}</strong>, we've sent a
+              password reset link. It expires in 1 hour.
+            </p>
+            {backToLogin}
+          </div>
+        )}
+
+        {step === "code" && (
+          <>
+            <h2 className="text-2xl font-bold text-black mb-1">
+              {method === "whatsapp"
+                ? "Enter WhatsApp code"
+                : method === "backup"
+                  ? "Enter a backup code"
+                  : method === "passkey"
+                    ? "Choose a new password"
+                    : "Enter authenticator code"}
+            </h2>
+            <p className="text-sm text-gray-500 mb-6">
+              {method === "whatsapp"
+                ? "We sent a 6-digit code to your verified WhatsApp number."
+                : method === "backup"
+                  ? "Enter one of your saved backup codes. It stops working after this."
+                  : method === "passkey"
+                    ? "Pick a new password, then confirm it with your passkey."
+                    : "Open your authenticator app and enter the current 6-digit code (or a backup code)."}
+            </p>
+            <form onSubmit={handleReset} className="space-y-5 login-anim">
+              {method !== "passkey" && (
+                <div>
+                  <label className={labelCls}>
+                    {method === "whatsapp"
+                      ? "WhatsApp code"
+                      : method === "backup"
+                        ? "Backup code"
+                        : "Authenticator code"}
+                  </label>
+                  <input
+                    type="text"
+                    inputMode={method === "whatsapp" ? "numeric" : "text"}
+                    maxLength={
+                      method === "whatsapp" ? 6 : method === "backup" ? 11 : 8
+                    }
+                    value={code}
+                    onChange={(e) =>
+                      setCode(
+                        method === "backup"
+                          ? e.target.value.toUpperCase().trim()
+                          : e.target.value.trim(),
+                      )
+                    }
+                    placeholder={method === "backup" ? "XXXXX-XXXXX" : "123456"}
+                    className="w-full px-3 py-3 border-2 border-black text-center text-lg font-bold tracking-[0.3em] outline-none"
+                    required
+                    autoFocus
+                  />
+                </div>
+              )}
+              <div>
+                <label className={labelCls}>New password</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Create a strong password"
+                  className="w-full px-3 py-3 border-2 border-black text-sm outline-none"
+                  required
+                  autoComplete="new-password"
+                />
+                {password && <PasswordChecklist password={password} />}
+              </div>
+              <div>
+                <label className={labelCls}>Confirm new password</label>
+                <input
+                  type="password"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  className="w-full px-3 py-3 border-2 border-black text-sm outline-none"
+                  required
+                  autoComplete="new-password"
+                />
+              </div>
+              <button type="submit" disabled={loading} className={btnCls}>
+                {loading
+                  ? "Resetting..."
+                  : method === "passkey"
+                    ? "Verify & Reset"
+                    : "Reset Password"}
+              </button>
+            </form>
+            <button
+              onClick={() => {
+                setError("");
+                setStep("choose");
+              }}
+              className="text-xs font-bold text-gray-500 hover:text-black mt-6"
+            >
+              ← Choose a different method
+            </button>
+          </>
+        )}
+
+        {step === "done" && (
+          <div className="text-center">
+            <div className="flex justify-center mb-4">
+              <CheckCircle className="w-14 h-14 text-green-500" />
+            </div>
+            <h2 className="text-xl font-bold text-black mb-2">
+              Password reset!
+            </h2>
+            <p className="text-sm text-gray-600 mb-6">
+              Your password has been changed. You can now sign in.
+            </p>
+            {backToLogin}
+          </div>
+        )}
+      </div>
     </AuthShell>
   );
 }

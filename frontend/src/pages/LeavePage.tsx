@@ -291,12 +291,17 @@ export default function LeavePage() {
         if (balRes?.success) {
           const m: typeof usageMap = {};
           for (const r of balRes.data) {
-            const rows = (r.leaveUsed || []).filter((l: any) => l.daysAllowed > 0);
+            const rows = (r.leaveUsed || []).filter(
+              (l: any) => l.daysAllowed > 0,
+            );
             m[r.employee._id] = {
               used: rows.reduce((t: number, l: any) => t + l.daysUsed, 0),
               allowed: rows.reduce((t: number, l: any) => t + l.daysAllowed, 0),
               detail: rows
-                .map((l: any) => `${TYPE_LABELS[l.leaveType] ?? l.leaveType}: ${l.daysUsed}/${l.daysAllowed}`)
+                .map(
+                  (l: any) =>
+                    `${TYPE_LABELS[l.leaveType] ?? l.leaveType}: ${l.daysUsed}/${l.daysAllowed}`,
+                )
                 .join(" · "),
             };
           }
@@ -572,16 +577,46 @@ export default function LeavePage() {
             rows={displayedLeaves}
             cols={[
               { header: "Emp Code", value: (l: any) => l.employee?.employeeId },
-              { header: "Employee", value: (l: any) => `${l.employee?.firstName || ""} ${l.employee?.lastName || ""}`.trim() },
-              { header: "Designation", value: (l: any) => l.employee?.designation },
-              { header: "Free Leave Used", value: (l: any) => { const u = usageMap[l.employee?._id]; return u ? `${u.used}/${u.allowed}` : ""; } },
-              { header: "Type", value: (l: any) => TYPE_LABELS[l.leaveType] ?? l.leaveType },
-              { header: "From", value: (l: any) => String(l.startDate).slice(0, 10) },
-              { header: "To", value: (l: any) => String(l.endDate).slice(0, 10) },
+              {
+                header: "Employee",
+                value: (l: any) =>
+                  `${l.employee?.firstName || ""} ${l.employee?.lastName || ""}`.trim(),
+              },
+              {
+                header: "Designation",
+                value: (l: any) => l.employee?.designation,
+              },
+              {
+                header: "Free Leave Used",
+                value: (l: any) => {
+                  const u = usageMap[l.employee?._id];
+                  return u ? `${u.used}/${u.allowed}` : "";
+                },
+              },
+              {
+                header: "Type",
+                value: (l: any) => TYPE_LABELS[l.leaveType] ?? l.leaveType,
+              },
+              {
+                header: "From",
+                value: (l: any) => String(l.startDate).slice(0, 10),
+              },
+              {
+                header: "To",
+                value: (l: any) => String(l.endDate).slice(0, 10),
+              },
               { header: "Days", value: (l: any) => l.days },
               { header: "Reason", value: (l: any) => l.reason },
               { header: "Status", value: (l: any) => l.status },
-              { header: "Paid/Unpaid", value: (l: any) => (l.status === "approved" ? (l.deductSalary ? "Unpaid" : "Paid") : "") },
+              {
+                header: "Paid/Unpaid",
+                value: (l: any) =>
+                  l.status === "approved"
+                    ? l.deductSalary
+                      ? "Unpaid"
+                      : "Paid"
+                    : "",
+              },
             ]}
           />
           <button
@@ -735,7 +770,9 @@ export default function LeavePage() {
                         />
                       ) : (
                         <div className="w-7 h-7 bg-[#024BAB] border-2 border-black flex items-center justify-center text-[10px] font-bold text-white shrink-0 rounded-full">
-                          {(leave.employee as any)?.firstName?.[0]?.toUpperCase()}
+                          {(
+                            leave.employee as any
+                          )?.firstName?.[0]?.toUpperCase()}
                         </div>
                       )}
                       <p className="font-bold text-black text-xs whitespace-nowrap">
@@ -751,7 +788,10 @@ export default function LeavePage() {
                     <td className="px-3 py-3 text-xs whitespace-nowrap">
                       {(() => {
                         const u = usageMap[(leave.employee as any)?._id];
-                        if (!u || !u.allowed) return <span className="text-muted-foreground">—</span>;
+                        if (!u || !u.allowed)
+                          return (
+                            <span className="text-muted-foreground">—</span>
+                          );
                         return (
                           <span
                             title={u.detail}

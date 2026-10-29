@@ -176,31 +176,31 @@ export default function ForgotPasswordScreen({ navigation }: any) {
     step === 'email'
       ? 'Forgot password?'
       : step === 'choose'
-      ? 'How do you want to reset it?'
-      : step === 'code'
-      ? method === 'whatsapp'
-        ? 'Enter WhatsApp code'
-        : method === 'backup'
-        ? 'Enter a backup code'
-        : method === 'passkey'
-        ? 'Choose a new password'
-        : 'Enter authenticator code'
-      : 'All set';
+        ? 'How do you want to reset it?'
+        : step === 'code'
+          ? method === 'whatsapp'
+            ? 'Enter WhatsApp code'
+            : method === 'backup'
+              ? 'Enter a backup code'
+              : method === 'passkey'
+                ? 'Choose a new password'
+                : 'Enter authenticator code'
+          : 'All set';
 
   const sub =
     step === 'email'
       ? 'Enter the email address you registered with to see how you can reset your password.'
       : step === 'choose'
-      ? 'Choose one of the methods set up on your account.'
-      : step === 'code'
-      ? method === 'whatsapp'
-        ? 'We sent a 6-digit code to your verified WhatsApp number.'
-        : method === 'backup'
-        ? 'Enter one of your saved backup codes. It stops working after this.'
-        : method === 'passkey'
-        ? 'Pick a new password, then confirm it with your passkey.'
-        : 'Open your authenticator app and enter the current 6-digit code (or a backup code).'
-      : '';
+        ? 'Choose one of the methods set up on your account.'
+        : step === 'code'
+          ? method === 'whatsapp'
+            ? 'We sent a 6-digit code to your verified WhatsApp number.'
+            : method === 'backup'
+              ? 'Enter one of your saved backup codes. It stops working after this.'
+              : method === 'passkey'
+                ? 'Pick a new password, then confirm it with your passkey.'
+                : 'Open your authenticator app and enter the current 6-digit code (or a backup code).'
+          : '';
 
   return (
     <KeyboardAvoidingView
@@ -299,8 +299,8 @@ export default function ForgotPasswordScreen({ navigation }: any) {
                         method === 'whatsapp'
                           ? 'WhatsApp Code'
                           : method === 'backup'
-                          ? 'Backup Code'
-                          : 'Authenticator Code'
+                            ? 'Backup Code'
+                            : 'Authenticator Code'
                       }
                       value={code}
                       onChangeText={setCode}
@@ -353,8 +353,8 @@ export default function ForgotPasswordScreen({ navigation }: any) {
                   {step === 'code'
                     ? 'Choose a different method'
                     : step === 'choose'
-                    ? 'Back'
-                    : 'Back to Sign In'}
+                      ? 'Back'
+                      : 'Back to Sign In'}
                 </Text>
               </TouchableOpacity>
             </>
@@ -396,27 +396,27 @@ const styles = StyleSheet.create({
   card: { marginTop: 24 },
   cardTitle: {
     fontSize: 32,
-    fontWeight: '600',
+    fontWeight: '400',
     color: C.black,
     marginBottom: 8,
   },
   cardSub: {
     fontSize: 13,
     color: '#6B7280',
-    fontWeight: '500',
+    fontWeight: '400',
     marginBottom: 20,
     lineHeight: 20,
   },
   errorText: {
     color: C.danger,
-    fontWeight: '600',
+    fontWeight: '400',
     fontSize: 13,
     marginBottom: 12,
   },
   field: { marginBottom: 16 },
   label: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.black,
     marginBottom: 6,
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingRight: 12,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
   },
   btnPrimary: {
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
   },
   btnPrimaryText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 14,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -475,7 +475,7 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 12,
   },
-  methodLabel: { fontWeight: '700', fontSize: 15, color: C.black },
+  methodLabel: { fontWeight: '400', fontSize: 15, color: C.black },
   methodDesc: { color: '#6B7280', marginTop: 2, fontSize: 12 },
   backLink: {
     flexDirection: 'row',
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 16,
   },
-  backLinkText: { fontSize: 13, fontWeight: '700', color: C.primary },
+  backLinkText: { fontSize: 13, fontWeight: '400', color: C.primary },
   successBlock: { alignItems: 'center', gap: 12 },
   successIcon: {
     width: 64,

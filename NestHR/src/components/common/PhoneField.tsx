@@ -31,8 +31,12 @@ export const COUNTRIES = [
 /** "+919876543210" -> [country, national digits]; bare numbers default to India. */
 export function splitPhone(v: string): [(typeof COUNTRIES)[number], string] {
   const s = (v || '').replace(/[^\d+]/g, '');
-  const hit = [...COUNTRIES].sort((a, b) => b.dial.length - a.dial.length).find(c => s.startsWith(c.dial));
-  return hit ? [hit, s.slice(hit.dial.length)] : [COUNTRIES[0], s.replace(/^\+/, '').slice(-10)];
+  const hit = [...COUNTRIES]
+    .sort((a, b) => b.dial.length - a.dial.length)
+    .find(c => s.startsWith(c.dial));
+  return hit
+    ? [hit, s.slice(hit.dial.length)]
+    : [COUNTRIES[0], s.replace(/^\+/, '').slice(-10)];
 }
 
 interface Props {
@@ -42,10 +46,15 @@ interface Props {
 }
 
 /** Country-code picker (flag + dial code) with the number input. Value is "<dial><digits>". */
-export default function PhoneField({ value, onChange, placeholder = 'Phone number' }: Props) {
+export default function PhoneField({
+  value,
+  onChange,
+  placeholder = 'Phone number',
+}: Props) {
   const [open, setOpen] = useState(false);
   const [country, digits] = splitPhone(value);
-  const set = (c: typeof country, d: string) => onChange(d ? `${c.dial}${d}` : '');
+  const set = (c: typeof country, d: string) =>
+    onChange(d ? `${c.dial}${d}` : '');
   return (
     <>
       <View style={styles.row}>
@@ -62,7 +71,12 @@ export default function PhoneField({ value, onChange, placeholder = 'Phone numbe
           keyboardType="phone-pad"
         />
       </View>
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+      <Modal
+        visible={open}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOpen(false)}
+      >
         <Pressable style={modalCenter.overlay} onPress={() => setOpen(false)}>
           <Pressable style={modalCenter.card} onPress={() => {}}>
             <Text style={styles.title}>Country code</Text>
@@ -113,12 +127,19 @@ const styles = StyleSheet.create({
     borderRightWidth: 2,
     borderRightColor: C.black,
   },
-  flag: { fontSize: 12, fontWeight: '800', color: '#000' },
-  dial: { fontSize: 14, fontWeight: '700', color: C.black },
-  input: { flex: 1, paddingHorizontal: 12, paddingVertical: 11, fontSize: 14, fontWeight: '500', color: C.black },
+  flag: { fontSize: 12, fontWeight: '400', color: '#000' },
+  dial: { fontSize: 14, fontWeight: '400', color: C.black },
+  input: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    fontSize: 14,
+    fontWeight: '400',
+    color: C.black,
+  },
   title: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '400',
     padding: 14,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
@@ -133,6 +154,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
-  optName: { flex: 1, fontSize: 15, fontWeight: '600', color: C.black },
-  optDial: { fontSize: 14, color: '#6B7280', fontWeight: '600' },
+  optName: { flex: 1, fontSize: 15, fontWeight: '400', color: C.black },
+  optDial: { fontSize: 14, color: '#6B7280', fontWeight: '400' },
 });

@@ -71,14 +71,25 @@ export const authAPI = {
   login: (email: string, password: string) =>
     request("/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password, client: "web" }),
+      body: JSON.stringify({
+        email,
+        password,
+        client: "web",
+        acceptTerms: true,
+      }),
     }),
   register: (body: { name: string; email: string; password: string }) =>
-    request("/auth/register", { method: "POST", body: JSON.stringify(body) }),
+    request("/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ ...body, acceptTerms: true }),
+    }),
   getMe: () => request("/auth/me"),
   // A password change retires old tokens server-side and answers with a fresh one, so keep the session alive.
   updateProfile: async (body: object) => {
-    const res = await request("/auth/profile", { method: "PUT", body: JSON.stringify(body) });
+    const res = await request("/auth/profile", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
     if (res?.token) setToken(res.token);
     return res;
   },
@@ -106,7 +117,7 @@ export const authAPI = {
   verify2FA: (pendingToken: string, token: string) =>
     request("/auth/2fa/verify", {
       method: "POST",
-      body: JSON.stringify({ pendingToken, token }),
+      body: JSON.stringify({ pendingToken, token, acceptTerms: true }),
     }),
   sendPhoneOtp: (phone: string) =>
     request("/auth/otp/send", {
@@ -116,7 +127,7 @@ export const authAPI = {
   verifyPhoneOtp: (phone: string, otp: string) =>
     request("/auth/otp/verify", {
       method: "POST",
-      body: JSON.stringify({ phone, otp }),
+      body: JSON.stringify({ phone, otp, acceptTerms: true }),
     }),
   // Password reset by WhatsApp code / authenticator app
   forgotPasswordMethods: (email: string) =>
@@ -205,7 +216,11 @@ export const authAPI = {
     }),
 
   // Password reset via backup code / passkey
-  resetPasswordWithBackupCode: (email: string, code: string, password: string) =>
+  resetPasswordWithBackupCode: (
+    email: string,
+    code: string,
+    password: string,
+  ) =>
     request("/auth/reset/backup", {
       method: "POST",
       body: JSON.stringify({ email, code, password }),
@@ -227,7 +242,8 @@ export const dashboardAPI = {
 export const employeeAPI = {
   // The server pages at 20 by default, which silently hid employees beyond the first 20.
   getAll: (params?: Record<string, string>) => {
-    const q = "?" + new URLSearchParams({ limit: "5000", ...params }).toString();
+    const q =
+      "?" + new URLSearchParams({ limit: "5000", ...params }).toString();
     return request(`/employees${q}`);
   },
   getMe: () => request("/employees/me"),
@@ -265,12 +281,23 @@ export const employeeAPI = {
   getDocumentUrl: (id: string, type: "aadhaar" | "pan" | "resume") =>
     `${BASE_URL}/employees/${id}/documents/${type}`,
   // The endpoint needs the Bearer token, which a plain link can't send: fetch it, then open the blob.
-  openDocument: async (id: string, type: "aadhaar" | "pan" | "resume", docToken = "") => {
+  openDocument: async (
+    id: string,
+    type: "aadhaar" | "pan" | "resume",
+    docToken = "",
+  ) => {
     const token = getToken();
     const res = await fetch(`${BASE_URL}/employees/${id}/documents/${type}`, {
-      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), "X-Doc-Token": docToken },
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        "X-Doc-Token": docToken,
+      },
     });
-    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || "Could not open the document");
+    if (!res.ok)
+      throw new Error(
+        (await res.json().catch(() => ({}))).message ||
+          "Could not open the document",
+      );
     const url = URL.createObjectURL(await res.blob());
     window.open(url, "_blank", "noopener");
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
@@ -304,10 +331,31 @@ export const attendanceAPI = {
     request(`/attendance/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   bulkMark: (body: object) =>
     request("/attendance/bulk", { method: "POST", body: JSON.stringify(body) }),
+  // Admin-only spare-device kiosk: a face photo is matched against all enrolled employees and their day is toggled.
+  kioskFace: async (photo: Blob) => {
+    const form = new FormData();
+    form.append("photo", photo, "kiosk.jpg");
+    const token = getToken();
+    let res: Response;
+    try {
+      res = await fetch(`${BASE_URL}/attendance/kiosk-face`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: form,
+      });
+    } catch {
+      throw new Error(NETWORK_MSG);
+    }
+    const data = await res.json().catch(() => ({}) as any);
+    if (!res.ok) throw new Error(data.message || statusMsg(res.status));
+    return data as { success: boolean; locked?: boolean; data: any };
+  },
   getSummary: (params: Record<string, string>) =>
     request(`/attendance/summary?${new URLSearchParams(params).toString()}`),
   getDailySummary: (params: Record<string, string>) =>
-    request(`/attendance/daily-summary?${new URLSearchParams(params).toString()}`),
+    request(
+      `/attendance/daily-summary?${new URLSearchParams(params).toString()}`,
+    ),
 };
 
 export const leaveAPI = {
@@ -935,10 +983,15 @@ export const documentAPI = {
     fileData: string;
   }) => request("/documents", { method: "POST", body: JSON.stringify(body) }),
   download: (id: string, docToken = "") =>
-    request(`/documents/${id}/download`, { headers: { "X-Doc-Token": docToken } }),
+    request(`/documents/${id}/download`, {
+      headers: { "X-Doc-Token": docToken },
+    }),
   requestOtp: () => request("/documents/otp/request", { method: "POST" }),
   verifyOtp: (otp: string) =>
-    request("/documents/otp/verify", { method: "POST", body: JSON.stringify({ otp }) }),
+    request("/documents/otp/verify", {
+      method: "POST",
+      body: JSON.stringify({ otp }),
+    }),
   update: (
     id: string,
     body: { name?: string; docType?: string; fileData?: string },
@@ -1055,7 +1108,10 @@ export const legalAPI = {
     return r.data ?? r;
   },
   accept: async () => {
-    const r: any = await request("/legal/accept", { method: "POST", body: JSON.stringify({}) });
+    const r: any = await request("/legal/accept", {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
     return r.data ?? r;
   },
 };

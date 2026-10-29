@@ -52,10 +52,19 @@ export function useFaceRecognition() {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: 640, height: 480, facingMode: "user" },
       });
+      // A second start (e.g. React StrictMode remount) replaces the first; release the older stream.
+      streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+      const video = videoRef.current;
+      if (video) {
+        video.srcObject = stream;
+        try {
+          await video.play();
+        } catch (e: any) {
+          // "play() interrupted by a new load request" just means the stream was swapped/stopped meanwhile.
+          if (e?.name !== "AbortError") throw e;
+          if (streamRef.current !== stream) return;
+        }
         setCameraActive(true);
       }
     } catch (e: any) {

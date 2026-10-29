@@ -17,7 +17,9 @@ const protect = asyncHandler(async (req, res, next) => {
   }
   let decoded;
   try {
-    decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] });
+    decoded = jwt.verify(token, process.env.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
     if (decoded.purpose) {
       res.status(401); // 2FA pending tokens are not sessions
       throw new Error("Not authorized");
@@ -69,7 +71,9 @@ const protectCompany = asyncHandler(async (req, res, next) => {
     throw new Error("Not authorized, no token");
   }
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
     if (decoded.purpose) {
       res.status(401);
       throw new Error("Not authorized");
@@ -119,7 +123,9 @@ const protectPlatformAdmin = (req, res, next) => {
   if (!token)
     return res.status(401).json({ success: false, message: "No token" });
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
     if (decoded.role !== "platform_admin" || decoded.iss !== "nesthr-platform")
       return res.status(403).json({ success: false, message: "Forbidden" });
     next();

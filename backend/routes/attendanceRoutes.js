@@ -3,6 +3,7 @@ const {
   getAttendance,
   markAttendance,
   selfMarkAttendance,
+  kioskFaceMark,
   updateAttendance,
   bulkMarkAttendance,
   getMonthSummary,
@@ -10,12 +11,22 @@ const {
 } = require("../controllers/attendanceController");
 const { runAutoMark } = require("../jobs/attendanceAutoMark");
 const { protect, authorize } = require("../middleware/auth");
-const { uploadAttendanceSelfie } = require("../middleware/upload");
+const {
+  uploadAttendanceSelfie,
+  uploadFaceEnrollPhoto,
+} = require("../middleware/upload");
 const router = express.Router();
 
 router.get("/", protect, getAttendance);
 router.get("/summary", protect, getMonthSummary);
 router.get("/daily-summary", protect, getDailySummary);
+router.post(
+  "/kiosk-face",
+  protect,
+  authorize("super_admin", "hr_manager"),
+  uploadFaceEnrollPhoto,
+  kioskFaceMark,
+);
 router.post("/self-mark", protect, uploadAttendanceSelfie, selfMarkAttendance);
 router.post(
   "/",

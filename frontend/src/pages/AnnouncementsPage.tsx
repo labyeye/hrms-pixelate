@@ -116,9 +116,15 @@ export default function AnnouncementsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [poster, setPoster] = useState<File | null>(null);
-  const posterPreview = useMemo(() => (poster ? URL.createObjectURL(poster) : ""), [poster]);
+  const posterPreview = useMemo(
+    () => (poster ? URL.createObjectURL(poster) : ""),
+    [poster],
+  );
   // Posters live on the API server root (/uploads/...), not under /api
-  const serverRoot = ((import.meta.env.VITE_API_URL as string) || "").replace(/\/api$/, "");
+  const serverRoot = ((import.meta.env.VITE_API_URL as string) || "").replace(
+    /\/api$/,
+    "",
+  );
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [form, setForm] = useState(EMPTY_FORM);
@@ -169,9 +175,14 @@ export default function AnnouncementsPage() {
     if (!ok) return;
     setSubmitting(true);
     try {
-      const posterUrl = poster ? (await announcementAPI.uploadPoster(poster)).url : undefined;
+      const posterUrl = poster
+        ? (await announcementAPI.uploadPoster(poster)).url
+        : undefined;
       await announcementAPI.create({ ...form, posterUrl });
-      toast({ title: "Announcement posted", description: "Employees are being notified." });
+      toast({
+        title: "Announcement posted",
+        description: "Employees are being notified.",
+      });
       setForm(EMPTY_FORM);
       setPoster(null);
       setCreateOpen(false);
@@ -255,10 +266,20 @@ export default function AnnouncementsPage() {
               { header: "Priority", value: (a) => a.priority },
               { header: "Posted By", value: (a) => a.postedBy?.name },
               { header: "Date", value: (a) => String(a.date).slice(0, 10) },
-              { header: "Expiry", value: (a) => (a.expiryDate ? String(a.expiryDate).slice(0, 10) : "") },
+              {
+                header: "Expiry",
+                value: (a) =>
+                  a.expiryDate ? String(a.expiryDate).slice(0, 10) : "",
+              },
               { header: "Audience", value: (a) => a.targetAudience },
               { header: "Seen", value: (a) => a.readBy?.length || 0 },
-              { header: "Acknowledged", value: (a) => (a.acknowledgementRequired ? a.acknowledgedBy?.length || 0 : "") },
+              {
+                header: "Acknowledged",
+                value: (a) =>
+                  a.acknowledgementRequired
+                    ? a.acknowledgedBy?.length || 0
+                    : "",
+              },
               { header: "Content", value: (a) => a.content },
             ]}
           />
@@ -401,7 +422,11 @@ export default function AnnouncementsPage() {
                     </div>
                     <p className="font-bold text-black">{a.title}</p>
                     {a.posterUrl && (
-                      <a href={`${serverRoot}${a.posterUrl}`} target="_blank" rel="noreferrer">
+                      <a
+                        href={`${serverRoot}${a.posterUrl}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
                         <img
                           src={`${serverRoot}${a.posterUrl}`}
                           alt={a.title}
@@ -527,7 +552,8 @@ export default function AnnouncementsPage() {
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-bold uppercase tracking-wider text-black">
-                Poster (optional) &middot; sent to every employee as a notification
+                Poster (optional) &middot; sent to every employee as a
+                notification
               </label>
               <input
                 type="file"
@@ -535,7 +561,10 @@ export default function AnnouncementsPage() {
                 onChange={(e) => {
                   const f = e.target.files?.[0] || null;
                   if (f && f.size > 5 * 1024 * 1024) {
-                    toast({ title: "Poster must be under 5 MB", variant: "destructive" });
+                    toast({
+                      title: "Poster must be under 5 MB",
+                      variant: "destructive",
+                    });
                     e.target.value = "";
                     return;
                   }
@@ -545,7 +574,11 @@ export default function AnnouncementsPage() {
               />
               {posterPreview && (
                 <div className="relative w-fit">
-                  <img src={posterPreview} alt="Poster preview" className="max-h-48 border-2 border-black object-contain" />
+                  <img
+                    src={posterPreview}
+                    alt="Poster preview"
+                    className="max-h-48 border-2 border-black object-contain"
+                  />
                   <button
                     type="button"
                     onClick={() => setPoster(null)}

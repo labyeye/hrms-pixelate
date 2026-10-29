@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
-import { Menu, Search, Bell, Hand, Coins } from 'lucide-react-native';
+import { Menu, Search, Bell, Hand, Coins, Crown } from 'lucide-react-native';
+import { useAuth } from '../../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { fmtCredits, useCreditBalance } from '../../hooks/useCreditBalance';
 import { C } from '../../theme';
@@ -33,6 +34,10 @@ export default function AppHeader({
   const first = (name || 'User').split(' ')[0];
   const navigation = useNavigation<any>();
   const { credits } = useCreditBalance();
+  const { user } = useAuth();
+  const sub: any = user?.subscription;
+  const isPaid = !!sub && !sub.isTrial && sub.status === 'active';
+  const badge = isPaid ? 'Premium' : sub?.isTrial ? 'Trial' : null;
   return (
     <View style={s.wrap}>
       <View style={s.row}>
@@ -47,6 +52,16 @@ export default function AppHeader({
             <Bell size={24} color={C.black} />
             {unread > 0 && <View style={s.dot} />}
           </TouchableOpacity>
+          {badge && (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('More', { screen: 'Billing' })}
+              activeOpacity={0.8}
+              style={s.badge}
+            >
+              <Crown size={12} color={C.primary} />
+              <Text style={s.badgeText}>{badge}</Text>
+            </TouchableOpacity>
+          )}
           {credits?.metered && (
             <TouchableOpacity
               onPress={() => navigation.navigate('More', { screen: 'Credits' })}
@@ -94,7 +109,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  right: { flexDirection: 'row', alignItems: 'center', gap: 18 },
+  right: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   dot: {
     position: 'absolute',
     top: -1,
@@ -116,16 +131,27 @@ const s = StyleSheet.create({
     borderWidth: 2,
     borderColor: C.black,
   },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    backgroundColor: '#FFF4D6',
+    borderWidth: 2,
+    borderColor: C.black,
+  },
+  badgeText: { color: C.black, fontSize: 11, fontWeight: '400' },
   pillLow: { backgroundColor: C.secondary },
   pillZero: { backgroundColor: C.danger },
-  pillText: { color: C.white, fontSize: 12, fontWeight: '800' },
+  pillText: { color: C.white, fontSize: 12, fontWeight: '400' },
   avatar: { width: 38, height: 38, borderRadius: 19 },
   avatarFb: {
     backgroundColor: C.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { color: C.white, fontSize: 16, fontWeight: '700' },
-  greet: { marginTop: 14, fontSize: 13, color: '#475569', fontWeight: '500' },
-  title: { fontSize: 28, fontWeight: '700', color: C.black, marginTop: 2 },
+  avatarText: { color: C.white, fontSize: 16, fontWeight: '400' },
+  greet: { marginTop: 14, fontSize: 13, color: '#475569', fontWeight: '400' },
+  title: { fontSize: 28, fontWeight: '400', color: C.black, marginTop: 2 },
 });

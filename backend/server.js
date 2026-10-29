@@ -27,7 +27,8 @@ require("./utils/paymentSaga").startRefundSweep(); // keeps retrying refunds for
 
 const { startAttendanceAutoMarkJob } = require("./jobs/attendanceAutoMark");
 // Under PM2 cluster mode every worker runs this file; only worker 0 may own the hourly cron.
-if (!process.env.NODE_APP_INSTANCE || process.env.NODE_APP_INSTANCE === "0") startAttendanceAutoMarkJob();
+if (!process.env.NODE_APP_INSTANCE || process.env.NODE_APP_INSTANCE === "0")
+  startAttendanceAutoMarkJob();
 
 const app = express();
 
@@ -58,7 +59,7 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
       "http://localhost:5173",
       "http://localhost:5174",
       "https://hrms.pixelatenest.com",
-      "http://localhost:8080"
+      "http://localhost:8080",
     ];
 
 app.use(
@@ -88,12 +89,19 @@ app.use(
   express.json({
     limit: "5mb",
     verify: (req, _res, buf) => {
-      if (req.originalUrl.includes("whatsapp-webhook") || req.originalUrl.includes("razorpay-billing")) req.rawBody = buf;
+      if (
+        req.originalUrl.includes("whatsapp-webhook") ||
+        req.originalUrl.includes("razorpay-billing")
+      )
+        req.rawBody = buf;
     },
   }),
 );
 // Razorpay "payment captured" notices (see utils/paymentReconcile.js); signed with RAZORPAY_WEBHOOK_SECRET
-app.post("/api/webhooks/razorpay-billing", require("./utils/paymentReconcile").webhook);
+app.post(
+  "/api/webhooks/razorpay-billing",
+  require("./utils/paymentReconcile").webhook,
+);
 app.use(sanitizeRequest); // strips $operators / dotted keys (NoSQL injection)
 app.use("/uploads", ...require("./middleware/publicUploads")()); // images only; KYC/vault files need the authenticated endpoints
 
@@ -102,7 +110,13 @@ const tele = require("./utils/telemetry")("CRM_API_SECRET");
 app.use(tele.middleware);
 app.use("/api/telemetry", tele.ingest);
 app.use("/api/crm/metrics", tele.metrics);
-app.use("/api/crm/accounts", require("./utils/crmAccounts")("CRM_API_SECRET", require("./utils/crmAdapter")));
+app.use(
+  "/api/crm/accounts",
+  require("./utils/crmAccounts")(
+    "CRM_API_SECRET",
+    require("./utils/crmAdapter"),
+  ),
+);
 
 app.use("/iclock", require("./routes/admsRoutes"));
 app.use("/internal/stats", require("./routes/statsRoutes"));
@@ -117,7 +131,10 @@ const authRateLimit = rateLimit({
 });
 
 // Per IP. A 2,000-person site behind one Wi-Fi NAT shares one IP, so large deployments raise this via API_RATE_MAX.
-const apiRateLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: Number(process.env.API_RATE_MAX) || 5000 });
+const apiRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.API_RATE_MAX) || 5000,
+});
 
 app.use("/api/app-version", require("./routes/appVersionRoutes"));
 app.use("/api/whatsapp-webhook", require("./routes/whatsappWebhookRoutes"));

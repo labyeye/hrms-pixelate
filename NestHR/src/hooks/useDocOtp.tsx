@@ -27,7 +27,10 @@ export function useDocOtp() {
   const [otp, setOtp] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
-  const pending = useRef<{ ok: (t: string) => void; no: (e: Error) => void } | null>(null);
+  const pending = useRef<{
+    ok: (t: string) => void;
+    no: (e: Error) => void;
+  } | null>(null);
 
   const sendCode = async () => {
     setMsg('');
@@ -80,7 +83,12 @@ export function useDocOtp() {
   };
 
   const otpModal = (
-    <Modal visible={open} transparent animationType="fade" onRequestClose={close}>
+    <Modal
+      visible={open}
+      transparent
+      animationType="fade"
+      onRequestClose={close}
+    >
       <View style={styles.overlay}>
         <View style={styles.card}>
           <View style={styles.head}>
@@ -92,8 +100,8 @@ export function useDocOtp() {
           </View>
           <View style={{ padding: 16, gap: 12 }}>
             <Text style={styles.hint}>
-              This is a confidential document. Enter the 6-digit OTP sent to your WhatsApp. Access stays unlocked for 15
-              minutes.
+              This is a confidential document. Enter the 6-digit OTP sent to
+              your WhatsApp. Access stays unlocked for 15 minutes.
             </Text>
             <TextInput
               style={styles.otpInput}
@@ -106,11 +114,18 @@ export function useDocOtp() {
             />
             {msg ? <Text style={styles.msg}>{msg}</Text> : null}
             <TouchableOpacity
-              style={[styles.btn, (otp.length !== 6 || busy) && { opacity: 0.5 }]}
+              style={[
+                styles.btn,
+                (otp.length !== 6 || busy) && { opacity: 0.5 },
+              ]}
               disabled={otp.length !== 6 || busy}
               onPress={submit}
             >
-              {busy ? <ActivityIndicator color={C.white} /> : <Text style={styles.btnText}>Verify & Open</Text>}
+              {busy ? (
+                <ActivityIndicator color={C.white} />
+              ) : (
+                <Text style={styles.btnText}>Verify & Open</Text>
+              )}
             </TouchableOpacity>
             <TouchableOpacity onPress={sendCode}>
               <Text style={styles.resend}>Resend OTP</Text>
@@ -125,7 +140,12 @@ export function useDocOtp() {
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', padding: 24 },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    padding: 24,
+  },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
@@ -146,19 +166,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  headText: { flex: 1, color: C.white, fontWeight: '700', fontSize: 14 },
+  headText: { flex: 1, color: C.white, fontWeight: '400', fontSize: 14 },
   hint: { fontSize: 12, color: '#4B5563' },
   otpInput: {
     borderWidth: 2,
     borderColor: C.black,
     paddingVertical: 12,
     fontSize: 24,
-    fontWeight: '800',
+    fontWeight: '400',
     textAlign: 'center',
     letterSpacing: 8,
     color: C.black,
   },
-  msg: { fontSize: 12, color: C.primary, fontWeight: '600' },
+  msg: { fontSize: 12, color: C.primary, fontWeight: '400' },
   btn: {
     backgroundColor: C.primary,
     borderWidth: 2,
@@ -166,6 +186,16 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: 'center',
   },
-  btnText: { color: C.white, fontWeight: '700', textTransform: 'uppercase', fontSize: 13 },
-  resend: { textAlign: 'center', color: C.primary, fontWeight: '700', fontSize: 12 },
+  btnText: {
+    color: C.white,
+    fontWeight: '400',
+    textTransform: 'uppercase',
+    fontSize: 13,
+  },
+  resend: {
+    textAlign: 'center',
+    color: C.primary,
+    fontWeight: '400',
+    fontSize: 12,
+  },
 });

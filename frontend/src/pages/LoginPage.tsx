@@ -206,11 +206,7 @@ export default function LoginPage() {
         {}
         <div className="relative z-10">
           <h1 className="text-4xl xl:text-3xl font-display font-bold text-white leading-tight mb-5">
-            Every employee.
-            
-            Every payslip.
-            
-            One place.
+            Every employee. Every payslip. One place.
           </h1>
           <p className="text-white/70 text-base font-medium max-w-sm">
             Manage your entire workforce — attendance, leaves, payroll and
@@ -424,7 +420,10 @@ export default function LoginPage() {
                   </button>
                 </form>
               ) : (
-                <form onSubmit={handleVerifyOtp} className="space-y-5 login-anim">
+                <form
+                  onSubmit={handleVerifyOtp}
+                  className="space-y-5 login-anim"
+                >
                   <div>
                     <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
                       {otpVia === "email" ? "Email OTP" : "WhatsApp OTP"}

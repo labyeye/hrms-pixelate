@@ -10,7 +10,7 @@ const { isHolidayDate } = require("./holidayController");
 const { safePagination } = require("../middleware/validate");
 const { sendAttendanceStatus } = require("../services/whatsappService");
 const { validateMagicBytes } = require("../middleware/upload");
-const { verifyFace } = require("../services/faceService");
+const { verifyFace, enrollFace } = require("../services/faceService");
 const { logAudit } = require("../utils/auditLogger");
 
 // Great-circle distance between two lat/lng points, in meters.
@@ -275,7 +275,10 @@ const getAttendance = asyncHandler(async (req, res) => {
     // One calendar day (what the HR screen asks for at 1,000+ staff). Rows are stored at local or UTC midnight of
     // that day, so a +-12h window around 00:00Z catches both and never the neighbouring days.
     const mid = new Date(date + "T00:00:00.000Z").getTime();
-    filter.date = { $gte: new Date(mid - 12 * 3600000), $lt: new Date(mid + 12 * 3600000) };
+    filter.date = {
+      $gte: new Date(mid - 12 * 3600000),
+      $lt: new Date(mid + 12 * 3600000),
+    };
   } else if (month && year) {
     const m = parseInt(month),
       y = parseInt(year);
@@ -315,15 +318,34 @@ const getDailySummary = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("Valid month and year are required");
   }
-  const ids = (await Employee.find({ company: req.user.company }).select("_id").lean()).map((e) => e._id);
+  const ids = (
+    await Employee.find({ company: req.user.company }).select("_id").lean()
+  ).map((e) => e._id);
   const rows = await Attendance.aggregate([
     {
       $match: {
         employee: { $in: ids },
-        date: { $gte: new Date(Date.UTC(y, m - 1, 1) - 12 * 3600000), $lt: new Date(Date.UTC(y, m, 1) - 12 * 3600000) },
+        date: {
+          $gte: new Date(Date.UTC(y, m - 1, 1) - 12 * 3600000),
+          $lt: new Date(Date.UTC(y, m, 1) - 12 * 3600000),
+        },
       },
     },
-    { $group: { _id: { d: { $dateToString: { format: "%Y-%m-%d", date: "$date", timezone: "+05:30" } }, s: "$status" }, n: { $sum: 1 } } },
+    {
+      $group: {
+        _id: {
+          d: {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: "$date",
+              timezone: "+05:30",
+            },
+          },
+          s: "$status",
+        },
+        n: { $sum: 1 },
+      },
+    },
   ]);
   const days = {};
   for (const r of rows) (days[r._id.d] ||= {})[r._id.s] = r.n;
@@ -624,13 +646,160 @@ const selfMarkAttendance = asyncHandler(async (req, res) => {
   res.json({ success: true, data: record });
 });
 
+// Spare-device attendance kiosk (admin / HR signed in on a wall-mounted phone or tablet): identifies WHO is in the
+// photo by comparing its face embedding against every enrolled employee of the company, then toggles that
+// employee's day — first scan checks in, the next checks out. Works alongside manual marking, which is unchanged.
+const KIOSK_MATCH_THRESHOLD = Number(process.env.FACE_MATCH_THRESHOLD) || 0.5;
+const KIOSK_MIN_GAP_MS = 60 * 1000; // ignore a re-scan right after check-in so a lingering face doesn't check out
+
+const kioskFaceMark = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    res.status(400);
+    throw new Error("Photo is required");
+  }
+  const probe = await enrollFace(
+    req.file.buffer,
+    req.file.originalname || "kiosk.jpg",
+    req.file.mimetype,
+  );
+
+  const candidates = await Employee.find({
+    company: req.user.company,
+    "faceDescriptor.127": { $exists: true },
+    status: { $nin: ["terminated", "exited"] },
+  })
+    .select("_id faceDescriptor")
+    .lean();
+
+  let bestId = null;
+  let bestDist = Infinity;
+  for (const c of candidates) {
+    if (c.faceDescriptor.length !== 128) continue;
+    let sum = 0;
+    for (let i = 0; i < 128; i++) sum += (probe[i] - c.faceDescriptor[i]) ** 2;
+    const dist = Math.sqrt(sum);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestId = c._id;
+    }
+  }
+  if (!bestId || bestDist > KIOSK_MATCH_THRESHOLD) {
+    res.status(404);
+    throw new Error(
+      "Face not recognised. Make sure the employee has a face enrolled.",
+    );
+  }
+
+  const emp = await Employee.findOne({
+    _id: bestId,
+    company: req.user.company,
+  });
+  const name = `${emp.firstName} ${emp.lastName || ""}`.trim();
+  const now = new Date();
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+  const who = { name, employeeId: emp.employeeId };
+
+  const boundsError = employmentBoundsError(emp, d);
+  if (boundsError) {
+    res.status(400);
+    throw new Error(boundsError);
+  }
+
+  const record = await Attendance.findOne({ employee: emp._id, date: d });
+
+  if (!record?.checkIn) {
+    const holiday = await isHolidayDate(req.user.company, d);
+    const status = holiday
+      ? "holiday"
+      : await resolveStatus(emp._id, now, "present", req.user.company);
+    let approvalPending = false;
+    if (status === "late")
+      approvalPending = await handleLateAllowance(
+        emp._id,
+        req.user.company,
+        d,
+        now,
+      );
+    const saved = await Attendance.findOneAndUpdate(
+      { employee: emp._id, date: d },
+      {
+        employee: emp._id,
+        date: d,
+        status,
+        checkIn: holiday ? undefined : now,
+        approvalPending,
+        verifyMode: "face",
+        markedBy: req.user._id,
+      },
+      { upsert: true, new: true },
+    );
+    await notifyAttendanceStatus(emp, d, saved.status, req.user.company);
+    return res.json({
+      success: true,
+      data: {
+        employee: who,
+        type: "check_in",
+        status: saved.status,
+        timestamp: now,
+      },
+    });
+  }
+
+  if (record.checkOut) {
+    return res.json({
+      success: true,
+      locked: true,
+      data: {
+        employee: who,
+        type: "check_out",
+        message: "Already checked out for today",
+        timestamp: record.checkOut,
+      },
+    });
+  }
+  if (now - record.checkIn < KIOSK_MIN_GAP_MS) {
+    return res.json({
+      success: true,
+      locked: true,
+      data: {
+        employee: who,
+        type: "check_in",
+        message: "Already checked in",
+        timestamp: record.checkIn,
+      },
+    });
+  }
+
+  const workHours = (now - record.checkIn) / 3600000;
+  const overtime = await calcOTHours(emp, now.toISOString());
+  const earlyLeaving = await calcEarlyLeaving(emp, now.toISOString());
+  await Attendance.updateOne(
+    { _id: record._id },
+    { $set: { checkOut: now, workHours, overtime, earlyLeaving } },
+  );
+  res.json({
+    success: true,
+    data: {
+      employee: who,
+      type: "check_out",
+      workHours: Number(workHours.toFixed(2)),
+      timestamp: now,
+    },
+  });
+});
+
 const updateAttendance = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status, checkIn, checkOut, notes, overtime, verifyMode } = req.body;
 
   const record = await Attendance.findById(id).populate("employee", "_id");
   const inCompany =
-    record?.employee && (await Employee.exists({ _id: record.employee._id, company: req.user.company }));
+    record?.employee &&
+    (await Employee.exists({
+      _id: record.employee._id,
+      company: req.user.company,
+    }));
   if (!record || !inCompany) {
     res.status(404);
     throw new Error("Attendance record not found");
@@ -811,6 +980,7 @@ module.exports = {
   getAttendance,
   markAttendance,
   selfMarkAttendance,
+  kioskFaceMark,
   updateAttendance,
   bulkMarkAttendance,
   getMonthSummary,

@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { color: C.white, fontSize: 14, fontWeight: '700' },
+  avatarText: { color: C.white, fontSize: 14, fontWeight: '400' },
   name: { fontFamily: FONT.bold, fontSize: 14, color: C.black },
   track: {
     height: 8,

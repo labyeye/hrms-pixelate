@@ -379,9 +379,15 @@ export default function DocumentVaultPage() {
     let ok = 0;
     const skipped: string[] = [];
     for (const f of Array.from(files)) {
-      const [code, rawType = "other"] = f.name.replace(/\.[^.]+$/, "").split("_");
-      const emp = employees.find((e) => e.employeeId?.toLowerCase() === code.toLowerCase());
-      const docType = DOC_TYPES.some((t) => t.value === rawType.toLowerCase()) ? rawType.toLowerCase() : "other";
+      const [code, rawType = "other"] = f.name
+        .replace(/\.[^.]+$/, "")
+        .split("_");
+      const emp = employees.find(
+        (e) => e.employeeId?.toLowerCase() === code.toLowerCase(),
+      );
+      const docType = DOC_TYPES.some((t) => t.value === rawType.toLowerCase())
+        ? rawType.toLowerCase()
+        : "other";
       if (!emp || f.size > MAX_DOC_BYTES) {
         skipped.push(f.name);
         continue;
@@ -402,7 +408,9 @@ export default function DocumentVaultPage() {
     if (bulkRef.current) bulkRef.current.value = "";
     toast({
       title: `${ok} document(s) imported`,
-      description: skipped.length ? `Skipped: ${skipped.join(", ")}` : "All files filed.",
+      description: skipped.length
+        ? `Skipped: ${skipped.join(", ")}`
+        : "All files filed.",
       variant: skipped.length ? "destructive" : undefined,
     });
     load();
@@ -534,13 +542,33 @@ export default function DocumentVaultPage() {
               name="document_register"
               rows={displayed}
               cols={[
-                { header: "Emp Code", value: (d: any) => d.employee?.employeeId },
-                { header: "Employee", value: (d: any) => `${d.employee?.firstName || ""} ${d.employee?.lastName || ""}`.trim() },
+                {
+                  header: "Emp Code",
+                  value: (d: any) => d.employee?.employeeId,
+                },
+                {
+                  header: "Employee",
+                  value: (d: any) =>
+                    `${d.employee?.firstName || ""} ${d.employee?.lastName || ""}`.trim(),
+                },
                 { header: "Document", value: (d: any) => d.name },
-                { header: "Type", value: (d: any) => DOC_TYPE_MAP[d.docType] || d.docType },
-                { header: "Size KB", value: (d: any) => Math.round((d.sizeBytes || 0) / 1024) },
-                { header: "Expiry", value: (d: any) => (d.expiryDate ? String(d.expiryDate).slice(0, 10) : "") },
-                { header: "Uploaded", value: (d: any) => String(d.createdAt || "").slice(0, 10) },
+                {
+                  header: "Type",
+                  value: (d: any) => DOC_TYPE_MAP[d.docType] || d.docType,
+                },
+                {
+                  header: "Size KB",
+                  value: (d: any) => Math.round((d.sizeBytes || 0) / 1024),
+                },
+                {
+                  header: "Expiry",
+                  value: (d: any) =>
+                    d.expiryDate ? String(d.expiryDate).slice(0, 10) : "",
+                },
+                {
+                  header: "Uploaded",
+                  value: (d: any) => String(d.createdAt || "").slice(0, 10),
+                },
               ]}
             />
             <button

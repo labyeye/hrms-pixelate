@@ -1,7 +1,11 @@
 // Constant-time secret comparison (hashing first makes the buffers equal length). Never true for an empty secret.
 const crypto = require("crypto");
 
-const digest = (v) => crypto.createHash("sha256").update(String(v ?? "")).digest();
+const digest = (v) =>
+  crypto
+    .createHash("sha256")
+    .update(String(v ?? ""))
+    .digest();
 
 function safeEqual(provided, secret) {
   if (!secret) return false;

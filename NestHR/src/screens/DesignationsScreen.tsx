@@ -205,162 +205,162 @@ export default function DesignationsScreen() {
         />
       )}
 
-      <Modal
-        visible={modal}
-        transparent
-        animationType="fade"
-      >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        <SafeAreaView style={s.safe} edges={['top']}>
-          <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>
-              {editing ? 'Edit Designation' : 'New Designation'}
-            </Text>
-            <TouchableOpacity onPress={() => setModal(false)}>
-              <X size={22} color={C.black} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            contentContainerStyle={{ padding: 20, gap: 16 }}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View>
-              <Text style={s.fieldLabel}>Title *</Text>
-              <TextInput
-                style={s.fieldInput}
-                value={form.title}
-                onChangeText={v => setForm((p: any) => ({ ...p, title: v }))}
-                placeholder="e.g. Senior Engineer, HR Manager"
-                placeholderTextColor={C.textLight}
-              />
-            </View>
-
-            <View>
-              <Text style={s.fieldLabel}>Department</Text>
-              <TouchableOpacity
-                style={[s.fieldInput, { justifyContent: 'center' }]}
-                onPress={() => setDeptPicker(true)}
-              >
-                <Text
-                  style={{
-                    color: form.department ? C.black : C.textLight,
-                    fontSize: 14,
-                    fontWeight: '500',
-                  }}
-                >
-                  {form.department
-                    ? deptName(form.department)
-                    : 'Select department'}
+      <Modal visible={modal} transparent animationType="fade">
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            <SafeAreaView style={s.safe} edges={['top']}>
+              <View style={s.modalHeader}>
+                <Text style={s.modalTitle}>
+                  {editing ? 'Edit Designation' : 'New Designation'}
                 </Text>
-              </TouchableOpacity>
-            </View>
+                <TouchableOpacity onPress={() => setModal(false)}>
+                  <X size={22} color={C.black} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView
+                contentContainerStyle={{ padding: 20, gap: 16 }}
+                keyboardShouldPersistTaps="handled"
+              >
+                <View>
+                  <Text style={s.fieldLabel}>Title *</Text>
+                  <TextInput
+                    style={s.fieldInput}
+                    value={form.title}
+                    onChangeText={v =>
+                      setForm((p: any) => ({ ...p, title: v }))
+                    }
+                    placeholder="e.g. Senior Engineer, HR Manager"
+                    placeholderTextColor={C.textLight}
+                  />
+                </View>
 
-            <View>
-              <Text style={s.fieldLabel}>Level (numeric)</Text>
-              <TextInput
-                style={s.fieldInput}
-                value={form.level}
-                onChangeText={v => setForm((p: any) => ({ ...p, level: v }))}
-                keyboardType="numeric"
-                placeholder="e.g. 1, 2, 3"
-                placeholderTextColor={C.textLight}
-              />
-            </View>
+                <View>
+                  <Text style={s.fieldLabel}>Department</Text>
+                  <TouchableOpacity
+                    style={[s.fieldInput, { justifyContent: 'center' }]}
+                    onPress={() => setDeptPicker(true)}
+                  >
+                    <Text
+                      style={{
+                        color: form.department ? C.black : C.textLight,
+                        fontSize: 14,
+                        fontWeight: '400',
+                      }}
+                    >
+                      {form.department
+                        ? deptName(form.department)
+                        : 'Select department'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
 
-            <View>
-              <Text style={s.fieldLabel}>Description</Text>
-              <TextInput
-                style={[
-                  s.fieldInput,
-                  { minHeight: 80, textAlignVertical: 'top' },
-                ]}
-                value={form.description}
-                onChangeText={v =>
-                  setForm((p: any) => ({ ...p, description: v }))
-                }
-                placeholder="Optional role description"
-                placeholderTextColor={C.textLight}
-                multiline
-              />
-            </View>
+                <View>
+                  <Text style={s.fieldLabel}>Level (numeric)</Text>
+                  <TextInput
+                    style={s.fieldInput}
+                    value={form.level}
+                    onChangeText={v =>
+                      setForm((p: any) => ({ ...p, level: v }))
+                    }
+                    keyboardType="numeric"
+                    placeholder="e.g. 1, 2, 3"
+                    placeholderTextColor={C.textLight}
+                  />
+                </View>
 
-            <TouchableOpacity
-              style={s.submitBtn}
-              onPress={handleSave}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator color={C.white} />
-              ) : (
-                <>
-                  <Check size={16} color={C.white} />
-                  <Text style={s.submitBtnText}>
-                    {editing ? 'Update' : 'Create'} Designation
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </View></View>
-</Modal>
+                <View>
+                  <Text style={s.fieldLabel}>Description</Text>
+                  <TextInput
+                    style={[
+                      s.fieldInput,
+                      { minHeight: 80, textAlignVertical: 'top' },
+                    ]}
+                    value={form.description}
+                    onChangeText={v =>
+                      setForm((p: any) => ({ ...p, description: v }))
+                    }
+                    placeholder="Optional role description"
+                    placeholderTextColor={C.textLight}
+                    multiline
+                  />
+                </View>
+
+                <TouchableOpacity
+                  style={s.submitBtn}
+                  onPress={handleSave}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <ActivityIndicator color={C.white} />
+                  ) : (
+                    <>
+                      <Check size={16} color={C.white} />
+                      <Text style={s.submitBtnText}>
+                        {editing ? 'Update' : 'Create'} Designation
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
+            </SafeAreaView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Department Picker */}
-      <Modal
-        visible={deptPicker}
-        transparent
-        animationType="fade"
-      >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        <SafeAreaView style={s.safe} edges={['top']}>
-          <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>Select Department</Text>
-            <TouchableOpacity onPress={() => setDeptPicker(false)}>
-              <X size={22} color={C.black} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView contentContainerStyle={{ padding: 12, gap: 8 }}>
-            <TouchableOpacity
-              style={[s.pickerRow, !form.department && s.pickerRowActive]}
-              onPress={() => {
-                setForm((p: any) => ({ ...p, department: '' }));
-                setDeptPicker(false);
-              }}
-            >
-              <Text style={s.pickerText}>— None —</Text>
-            </TouchableOpacity>
-            {departments.map(d => (
-              <TouchableOpacity
-                key={d._id}
-                style={[
-                  s.pickerRow,
-                  form.department === d._id && s.pickerRowActive,
-                ]}
-                onPress={() => {
-                  setForm((p: any) => ({ ...p, department: d._id }));
-                  setDeptPicker(false);
-                }}
-              >
-                <Text
-                  style={[
-                    s.pickerText,
-                    form.department === d._id && {
-                      color: C.primary,
-                      fontWeight: '700',
-                    },
-                  ]}
+      <Modal visible={deptPicker} transparent animationType="fade">
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            <SafeAreaView style={s.safe} edges={['top']}>
+              <View style={s.modalHeader}>
+                <Text style={s.modalTitle}>Select Department</Text>
+                <TouchableOpacity onPress={() => setDeptPicker(false)}>
+                  <X size={22} color={C.black} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView contentContainerStyle={{ padding: 12, gap: 8 }}>
+                <TouchableOpacity
+                  style={[s.pickerRow, !form.department && s.pickerRowActive]}
+                  onPress={() => {
+                    setForm((p: any) => ({ ...p, department: '' }));
+                    setDeptPicker(false);
+                  }}
                 >
-                  {d.name}
-                </Text>
-                {form.department === d._id && (
-                  <Check size={16} color={C.primary} />
-                )}
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </SafeAreaView>
-      </View></View>
-</Modal>
+                  <Text style={s.pickerText}>— None —</Text>
+                </TouchableOpacity>
+                {departments.map(d => (
+                  <TouchableOpacity
+                    key={d._id}
+                    style={[
+                      s.pickerRow,
+                      form.department === d._id && s.pickerRowActive,
+                    ]}
+                    onPress={() => {
+                      setForm((p: any) => ({ ...p, department: d._id }));
+                      setDeptPicker(false);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        s.pickerText,
+                        form.department === d._id && {
+                          color: C.primary,
+                          fontWeight: '400',
+                        },
+                      ]}
+                    >
+                      {d.name}
+                    </Text>
+                    {form.department === d._id && (
+                      <Check size={16} color={C.primary} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </SafeAreaView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -377,7 +377,7 @@ const s = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  title: { fontSize: 20, fontWeight: '700', color: C.black },
+  title: { fontSize: 20, fontWeight: '400', color: C.black },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -396,12 +396,12 @@ const s = StyleSheet.create({
   addBtnText: {
     color: C.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
-  emptyText: { fontSize: 14, fontWeight: '700', color: C.textMuted },
+  emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
   card: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -422,8 +422,8 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  desigTitle: { fontSize: 15, fontWeight: '700', color: C.black },
-  desigSub: { fontSize: 11, color: C.primary, fontWeight: '700', marginTop: 2 },
+  desigTitle: { fontSize: 15, fontWeight: '400', color: C.black },
+  desigSub: { fontSize: 11, color: C.primary, fontWeight: '400', marginTop: 2 },
   desigDesc: { fontSize: 11, color: C.textMuted, marginTop: 4 },
   levelBadge: {
     marginTop: 6,
@@ -439,7 +439,7 @@ const s = StyleSheet.create({
     paddingVertical: 2,
     backgroundColor: '#F3F4F6',
   },
-  levelText: { fontSize: 9, fontWeight: '700', color: C.black },
+  levelText: { fontSize: 9, fontWeight: '400', color: C.black },
   iconBtn: {
     width: 30,
     height: 30,
@@ -462,10 +462,10 @@ const s = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: C.black },
+  modalTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   fieldLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.black,
     marginBottom: 6,
@@ -482,7 +482,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
     backgroundColor: C.white,
   },
@@ -504,7 +504,7 @@ const s = StyleSheet.create({
   },
   submitBtnText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 14,
     textTransform: 'uppercase',
   },
@@ -524,5 +524,5 @@ const s = StyleSheet.create({
     backgroundColor: C.white,
   },
   pickerRowActive: { borderColor: C.primary, backgroundColor: '#EFF6FF' },
-  pickerText: { fontSize: 14, fontWeight: '600', color: C.black },
+  pickerText: { fontSize: 14, fontWeight: '400', color: C.black },
 });

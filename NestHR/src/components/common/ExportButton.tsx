@@ -12,9 +12,17 @@ interface Props<T> {
 }
 
 /** "Export" pill -> Excel (CSV) or PDF. */
-export default function ExportButton<T>({ name, cols, rows, label = 'Export' }: Props<T>) {
+export default function ExportButton<T>({
+  name,
+  cols,
+  rows,
+  label = 'Export',
+}: Props<T>) {
   return (
-    <TouchableOpacity style={styles.btn} onPress={() => chooseExport(name, cols, rows)}>
+    <TouchableOpacity
+      style={styles.btn}
+      onPress={() => chooseExport(name, cols, rows)}
+    >
       <Download size={20} color={C.black} />
     </TouchableOpacity>
   );
@@ -28,5 +36,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 7,
   },
-  text: { color: C.black, fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
+  text: {
+    color: C.black,
+    fontSize: 12,
+    fontWeight: '400',
+    textTransform: 'uppercase',
+  },
 });

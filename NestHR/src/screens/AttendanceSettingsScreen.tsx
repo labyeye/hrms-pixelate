@@ -210,7 +210,11 @@ export default function AttendanceSettingsScreen() {
 
   // one usage column per leave type that has an allowance or any usage this month
   const usageTypes = LEAVE_TYPES.filter(t =>
-    summary.some(r => (r.leaveUsed || []).some((l: any) => l.leaveType === t && (l.daysAllowed > 0 || l.daysUsed > 0))),
+    summary.some(r =>
+      (r.leaveUsed || []).some(
+        (l: any) => l.leaveType === t && (l.daysAllowed > 0 || l.daysUsed > 0),
+      ),
+    ),
   );
 
   if (loading) {
@@ -345,34 +349,74 @@ export default function AttendanceSettingsScreen() {
           <View style={styles.card}>
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <View style={{ flex: 1 }}>
-                {numField('lateThresholdMinutes', 'Grace Period', undefined, 'min')}
+                {numField(
+                  'lateThresholdMinutes',
+                  'Grace Period',
+                  undefined,
+                  'min',
+                )}
               </View>
               <View style={{ flex: 1 }}>
-                {numField('halfDayThresholdMinutes', 'Half Day If Late By', undefined, 'min')}
+                {numField(
+                  'halfDayThresholdMinutes',
+                  'Half Day If Late By',
+                  undefined,
+                  'min',
+                )}
               </View>
             </View>
             <Text style={styles.hint}>
-              Late after the grace period; half-day (50% pay) when later than the half-day limit.
+              Late after the grace period; half-day (50% pay) when later than
+              the half-day limit.
             </Text>
 
             <View style={[styles.field, styles.fieldBorder]}>
               <Text style={styles.fieldLabel}>Deduction Type</Text>
               <View style={styles.typeRow}>
                 <TouchableOpacity
-                  style={[styles.typeBtn, rules.lateDeductionType === 'fixed' && styles.typeBtnActive]}
+                  style={[
+                    styles.typeBtn,
+                    rules.lateDeductionType === 'fixed' && styles.typeBtnActive,
+                  ]}
                   onPress={() => set('lateDeductionType', 'fixed')}
                 >
-                  <IndianRupee size={12} color={rules.lateDeductionType === 'fixed' ? C.white : C.black} />
-                  <Text style={[styles.typeBtnText, rules.lateDeductionType === 'fixed' && styles.typeBtnTextActive]}>
+                  <IndianRupee
+                    size={12}
+                    color={
+                      rules.lateDeductionType === 'fixed' ? C.white : C.black
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.typeBtnText,
+                      rules.lateDeductionType === 'fixed' &&
+                        styles.typeBtnTextActive,
+                    ]}
+                  >
                     Fixed (₹)
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.typeBtn, rules.lateDeductionType === 'percent' && styles.typeBtnActive]}
+                  style={[
+                    styles.typeBtn,
+                    rules.lateDeductionType === 'percent' &&
+                      styles.typeBtnActive,
+                  ]}
                   onPress={() => set('lateDeductionType', 'percent')}
                 >
-                  <Percent size={12} color={rules.lateDeductionType === 'percent' ? C.white : C.black} />
-                  <Text style={[styles.typeBtnText, rules.lateDeductionType === 'percent' && styles.typeBtnTextActive]}>
+                  <Percent
+                    size={12}
+                    color={
+                      rules.lateDeductionType === 'percent' ? C.white : C.black
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.typeBtnText,
+                      rules.lateDeductionType === 'percent' &&
+                        styles.typeBtnTextActive,
+                    ]}
+                  >
                     % of Daily
                   </Text>
                 </TouchableOpacity>
@@ -382,7 +426,9 @@ export default function AttendanceSettingsScreen() {
             <View style={[styles.field, styles.fieldBorder]}>
               {numField(
                 'lateDeductionAmount',
-                rules.lateDeductionType === 'fixed' ? 'Amount per Late Day (₹)' : '% of Daily Salary',
+                rules.lateDeductionType === 'fixed'
+                  ? 'Amount per Late Day (₹)'
+                  : '% of Daily Salary',
                 undefined,
                 rules.lateDeductionType === 'fixed' ? '₹' : '%',
               )}
@@ -430,7 +476,9 @@ export default function AttendanceSettingsScreen() {
         <View>
           <View style={styles.sectionHeader}>
             <CalendarClock size={14} color={C.primary} />
-            <Text style={styles.sectionTitle}>Late & Leave Allowance / Month</Text>
+            <Text style={styles.sectionTitle}>
+              Late & Leave Allowance / Month
+            </Text>
           </View>
           <View style={styles.card}>
             <View style={{ flexDirection: 'row', gap: 12 }}>
@@ -439,10 +487,18 @@ export default function AttendanceSettingsScreen() {
                 {(['bulk', 'custom'] as const).map(m => (
                   <TouchableOpacity
                     key={m}
-                    style={[styles.typeBtn, lateMode === m && styles.typeBtnActive]}
+                    style={[
+                      styles.typeBtn,
+                      lateMode === m && styles.typeBtnActive,
+                    ]}
                     onPress={() => setLateMode(m)}
                   >
-                    <Text style={[styles.typeBtnText, lateMode === m && styles.typeBtnTextActive]}>
+                    <Text
+                      style={[
+                        styles.typeBtnText,
+                        lateMode === m && styles.typeBtnTextActive,
+                      ]}
+                    >
                       {m === 'bulk' ? 'Bulk' : 'Per employee'}
                     </Text>
                   </TouchableOpacity>
@@ -457,8 +513,16 @@ export default function AttendanceSettingsScreen() {
                     placeholderTextColor="#9CA3AF"
                   />
                 )}
-                <TouchableOpacity style={styles.smallSaveBtn} onPress={handleSaveLateAllowance} disabled={savingLate}>
-                  {savingLate ? <ActivityIndicator size="small" color={C.white} /> : <Text style={styles.smallSaveBtnText}>Save Late</Text>}
+                <TouchableOpacity
+                  style={styles.smallSaveBtn}
+                  onPress={handleSaveLateAllowance}
+                  disabled={savingLate}
+                >
+                  {savingLate ? (
+                    <ActivityIndicator size="small" color={C.white} />
+                  ) : (
+                    <Text style={styles.smallSaveBtnText}>Save Late</Text>
+                  )}
                 </TouchableOpacity>
               </View>
               <View style={{ flex: 1, gap: 8 }}>
@@ -467,15 +531,26 @@ export default function AttendanceSettingsScreen() {
                   title="Leave type"
                   value={leaveType}
                   onChange={setLeaveType}
-                  options={LEAVE_TYPES.map(t => ({ value: t, label: t.replace('_', ' ').toUpperCase() }))}
+                  options={LEAVE_TYPES.map(t => ({
+                    value: t,
+                    label: t.replace('_', ' ').toUpperCase(),
+                  }))}
                 />
                 {(['bulk', 'custom'] as const).map(m => (
                   <TouchableOpacity
                     key={m}
-                    style={[styles.typeBtn, leaveMode === m && styles.typeBtnActive]}
+                    style={[
+                      styles.typeBtn,
+                      leaveMode === m && styles.typeBtnActive,
+                    ]}
                     onPress={() => setLeaveMode(m)}
                   >
-                    <Text style={[styles.typeBtnText, leaveMode === m && styles.typeBtnTextActive]}>
+                    <Text
+                      style={[
+                        styles.typeBtnText,
+                        leaveMode === m && styles.typeBtnTextActive,
+                      ]}
+                    >
                       {m === 'bulk' ? 'Bulk' : 'Per employee'}
                     </Text>
                   </TouchableOpacity>
@@ -490,15 +565,25 @@ export default function AttendanceSettingsScreen() {
                     placeholderTextColor="#9CA3AF"
                   />
                 )}
-                <TouchableOpacity style={styles.smallSaveBtn} onPress={handleSaveLeaveAllowance} disabled={savingLeave}>
-                  {savingLeave ? <ActivityIndicator size="small" color={C.white} /> : <Text style={styles.smallSaveBtnText}>Save Leave</Text>}
+                <TouchableOpacity
+                  style={styles.smallSaveBtn}
+                  onPress={handleSaveLeaveAllowance}
+                  disabled={savingLeave}
+                >
+                  {savingLeave ? (
+                    <ActivityIndicator size="small" color={C.white} />
+                  ) : (
+                    <Text style={styles.smallSaveBtnText}>Save Leave</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
 
             {lateMode === 'custom' && (
               <View style={[styles.field, styles.fieldBorder]}>
-                <Text style={styles.fieldLabel}>Late allowance per employee</Text>
+                <Text style={styles.fieldLabel}>
+                  Late allowance per employee
+                </Text>
                 {employees.map(e => (
                   <View key={e._id} style={styles.perEmpRow}>
                     <Text style={styles.perEmpName} numberOfLines={1}>
@@ -507,7 +592,9 @@ export default function AttendanceSettingsScreen() {
                     <TextInput
                       style={styles.perEmpInput}
                       value={latePerEmp[e._id] ?? ''}
-                      onChangeText={v => setLatePerEmp(p => ({ ...p, [e._id]: v }))}
+                      onChangeText={v =>
+                        setLatePerEmp(p => ({ ...p, [e._id]: v }))
+                      }
                       keyboardType="numeric"
                       placeholder="0"
                       placeholderTextColor="#9CA3AF"
@@ -518,7 +605,9 @@ export default function AttendanceSettingsScreen() {
             )}
             {leaveMode === 'custom' && (
               <View style={[styles.field, styles.fieldBorder]}>
-                <Text style={styles.fieldLabel}>{leaveType.replace('_', ' ')} days per employee</Text>
+                <Text style={styles.fieldLabel}>
+                  {leaveType.replace('_', ' ')} days per employee
+                </Text>
                 {employees.map(e => (
                   <View key={e._id} style={styles.perEmpRow}>
                     <Text style={styles.perEmpName} numberOfLines={1}>
@@ -527,7 +616,9 @@ export default function AttendanceSettingsScreen() {
                     <TextInput
                       style={styles.perEmpInput}
                       value={leavePerEmp[e._id] ?? ''}
-                      onChangeText={v => setLeavePerEmp(p => ({ ...p, [e._id]: v }))}
+                      onChangeText={v =>
+                        setLeavePerEmp(p => ({ ...p, [e._id]: v }))
+                      }
                       keyboardType="numeric"
                       placeholder="0"
                       placeholderTextColor="#9CA3AF"
@@ -550,7 +641,9 @@ export default function AttendanceSettingsScreen() {
           {showSummary && (
             <View style={styles.card}>
               {summary.length === 0 ? (
-                <Text style={styles.hint}>No usage recorded this month yet.</Text>
+                <Text style={styles.hint}>
+                  No usage recorded this month yet.
+                </Text>
               ) : (
                 <>
                   <View style={{ alignItems: 'flex-end', marginBottom: 8 }}>
@@ -558,14 +651,29 @@ export default function AttendanceSettingsScreen() {
                       name="attendance_balance_summary"
                       rows={summary}
                       cols={[
-                        { header: 'Emp Code', value: (r: any) => r.employee?.employeeId },
-                        { header: 'Employee', value: (r: any) => `${r.employee?.firstName || ''} ${r.employee?.lastName || ''}`.trim() },
-                        { header: 'Designation', value: (r: any) => r.employee?.designation },
-                        { header: 'Late Used', value: (r: any) => `${r.lateUsed}/${r.lateAllowed}` },
+                        {
+                          header: 'Emp Code',
+                          value: (r: any) => r.employee?.employeeId,
+                        },
+                        {
+                          header: 'Employee',
+                          value: (r: any) =>
+                            `${r.employee?.firstName || ''} ${r.employee?.lastName || ''}`.trim(),
+                        },
+                        {
+                          header: 'Designation',
+                          value: (r: any) => r.employee?.designation,
+                        },
+                        {
+                          header: 'Late Used',
+                          value: (r: any) => `${r.lateUsed}/${r.lateAllowed}`,
+                        },
                         ...usageTypes.map(t => ({
                           header: t,
                           value: (r: any) => {
-                            const l = (r.leaveUsed || []).find((x: any) => x.leaveType === t);
+                            const l = (r.leaveUsed || []).find(
+                              (x: any) => x.leaveType === t,
+                            );
                             return l ? `${l.daysUsed}/${l.daysAllowed}` : '';
                           },
                         })),
@@ -574,44 +682,130 @@ export default function AttendanceSettingsScreen() {
                   </View>
                   <ScrollView horizontal showsHorizontalScrollIndicator>
                     <View>
-                      <View style={[styles.tRow, { backgroundColor: '#EFF6FF' }]}>
-                        <Text style={[styles.tCell, styles.tHead, { width: 70 }]}>Code</Text>
-                        <Text style={[styles.tCell, styles.tHead, { width: 150 }]}>Employee</Text>
-                        <Text style={[styles.tCell, styles.tHead, { width: 110 }]}>Designation</Text>
-                        <Text style={[styles.tCell, styles.tHead, { width: 60 }]}>Late</Text>
+                      <View
+                        style={[styles.tRow, { backgroundColor: '#EFF6FF' }]}
+                      >
+                        <Text
+                          style={[styles.tCell, styles.tHead, { width: 70 }]}
+                        >
+                          Code
+                        </Text>
+                        <Text
+                          style={[styles.tCell, styles.tHead, { width: 150 }]}
+                        >
+                          Employee
+                        </Text>
+                        <Text
+                          style={[styles.tCell, styles.tHead, { width: 110 }]}
+                        >
+                          Designation
+                        </Text>
+                        <Text
+                          style={[styles.tCell, styles.tHead, { width: 60 }]}
+                        >
+                          Late
+                        </Text>
                         {usageTypes.map(t => (
-                          <Text key={t} style={[styles.tCell, styles.tHead, { width: 70 }]}>
+                          <Text
+                            key={t}
+                            style={[styles.tCell, styles.tHead, { width: 70 }]}
+                          >
                             {t.replace('_', ' ')}
                           </Text>
                         ))}
                       </View>
                       {summary.map((row, i) => (
-                        <View key={row.employee?._id || i} style={[styles.tRow, i % 2 ? { backgroundColor: '#F8FAFF' } : null]}>
-                          <Text style={[styles.tCell, { width: 70, fontWeight: '800' }]}>{row.employee?.employeeId}</Text>
-                          <View style={[styles.tCell, { width: 150, flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+                        <View
+                          key={row.employee?._id || i}
+                          style={[
+                            styles.tRow,
+                            i % 2 ? { backgroundColor: '#F8FAFF' } : null,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.tCell,
+                              { width: 70, fontWeight: '400' },
+                            ]}
+                          >
+                            {row.employee?.employeeId}
+                          </Text>
+                          <View
+                            style={[
+                              styles.tCell,
+                              {
+                                width: 150,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 6,
+                              },
+                            ]}
+                          >
                             {row.employee?.avatar ? (
-                              <Image source={{ uri: row.employee.avatar }} style={styles.tPhoto} />
+                              <Image
+                                source={{ uri: row.employee.avatar }}
+                                style={styles.tPhoto}
+                              />
                             ) : (
-                              <View style={[styles.tPhoto, { backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' }]}>
-                                <Text style={{ color: C.white, fontSize: 10, fontWeight: '700' }}>
+                              <View
+                                style={[
+                                  styles.tPhoto,
+                                  {
+                                    backgroundColor: C.primary,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                  },
+                                ]}
+                              >
+                                <Text
+                                  style={{
+                                    color: C.white,
+                                    fontSize: 10,
+                                    fontWeight: '400',
+                                  }}
+                                >
                                   {row.employee?.firstName?.[0]}
                                 </Text>
                               </View>
                             )}
-                            <Text style={{ fontSize: 11, fontWeight: '700', color: C.black, flexShrink: 1 }} numberOfLines={1}>
+                            <Text
+                              style={{
+                                fontSize: 11,
+                                fontWeight: '400',
+                                color: C.black,
+                                flexShrink: 1,
+                              }}
+                              numberOfLines={1}
+                            >
                               {row.employee?.firstName} {row.employee?.lastName}
                             </Text>
                           </View>
-                          <Text style={[styles.tCell, { width: 110 }]} numberOfLines={1}>
+                          <Text
+                            style={[styles.tCell, { width: 110 }]}
+                            numberOfLines={1}
+                          >
                             {row.employee?.designation || '—'}
                           </Text>
-                          <Text style={[styles.tCell, { width: 60, fontWeight: '800' }]}>
+                          <Text
+                            style={[
+                              styles.tCell,
+                              { width: 60, fontWeight: '400' },
+                            ]}
+                          >
                             {row.lateUsed}/{row.lateAllowed}
                           </Text>
                           {usageTypes.map(t => {
-                            const l = (row.leaveUsed || []).find((x: any) => x.leaveType === t);
+                            const l = (row.leaveUsed || []).find(
+                              (x: any) => x.leaveType === t,
+                            );
                             return (
-                              <Text key={t} style={[styles.tCell, { width: 70, fontWeight: '800' }]}>
+                              <Text
+                                key={t}
+                                style={[
+                                  styles.tCell,
+                                  { width: 70, fontWeight: '400' },
+                                ]}
+                              >
                                 {l ? `${l.daysUsed}/${l.daysAllowed}` : '—'}
                               </Text>
                             );
@@ -638,9 +832,19 @@ export default function AttendanceSettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  tRow: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-  tCell: { paddingHorizontal: 6, paddingVertical: 8, fontSize: 11, color: C.black },
-  tHead: { fontWeight: '800', textTransform: 'uppercase', fontSize: 10 },
+  tRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  tCell: {
+    paddingHorizontal: 6,
+    paddingVertical: 8,
+    fontSize: 11,
+    color: C.black,
+  },
+  tHead: { fontWeight: '400', textTransform: 'uppercase', fontSize: 10 },
   tPhoto: { width: 22, height: 22, borderRadius: 11 },
   safe: { flex: 1, backgroundColor: '#F8F9FA' },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -655,7 +859,7 @@ const styles = StyleSheet.create({
     borderBottomColor: C.black,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: C.black },
+  headerTitle: { fontSize: 18, fontWeight: '400', color: C.black },
   saveBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -674,7 +878,7 @@ const styles = StyleSheet.create({
   saveBtnText: {
     color: C.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   sectionHeader: {
@@ -685,7 +889,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.primary,
     letterSpacing: 0.5,
@@ -710,7 +914,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: '#6B7280',
     marginBottom: 6,
@@ -731,7 +935,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
   },
   standaloneInput: {
@@ -745,7 +949,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
   },
   suffix: {
@@ -755,12 +959,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8F9FA',
     paddingVertical: 10,
   },
-  suffixText: { fontSize: 13, fontWeight: '700', color: '#6B7280' },
+  suffixText: { fontSize: 13, fontWeight: '400', color: '#6B7280' },
   hint: { fontSize: 11, color: '#9CA3AF', marginTop: 4 },
   timeRow: { flexDirection: 'row', gap: 16 },
   timeInputs: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   timeInput: { width: 56, textAlign: 'center' },
-  timeSep: { fontSize: 18, fontWeight: '700', color: C.black },
+  timeSep: { fontSize: 18, fontWeight: '400', color: C.black },
   typeRow: { flexDirection: 'row', gap: 8, marginTop: 6 },
   typeBtn: {
     flex: 1,
@@ -778,10 +982,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   typeBtnActive: { backgroundColor: C.primary },
-  typeBtnText: { fontSize: 12, fontWeight: '700', color: C.black },
+  typeBtnText: { fontSize: 12, fontWeight: '400', color: C.black },
   typeBtnTextActive: { color: C.white },
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  toggleLabel: { fontSize: 13, fontWeight: '700', color: C.black },
+  toggleLabel: { fontSize: 13, fontWeight: '400', color: C.black },
   toggleDesc: { fontSize: 11, color: '#6B7280', marginTop: 2 },
   infoBox: {
     backgroundColor: '#EFF6FF',
@@ -797,7 +1001,7 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 12,
     color: C.primary,
-    fontWeight: '500',
+    fontWeight: '400',
     lineHeight: 18,
   },
   perEmpRow: {
@@ -807,7 +1011,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     gap: 8,
   },
-  perEmpName: { flex: 1, fontSize: 13, fontWeight: '600', color: C.black },
+  perEmpName: { flex: 1, fontSize: 13, fontWeight: '400', color: C.black },
   perEmpInput: {
     width: 60,
     borderWidth: 2,
@@ -820,7 +1024,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 6,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.black,
     textAlign: 'center',
   },
@@ -839,7 +1043,7 @@ const styles = StyleSheet.create({
   },
   smallSaveBtnText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 12,
     textTransform: 'uppercase',
   },
@@ -855,6 +1059,6 @@ const styles = StyleSheet.create({
     borderColor: C.black,
   },
   chipActive: { backgroundColor: C.secondary },
-  chipText: { fontSize: 10, fontWeight: '700', color: C.black },
+  chipText: { fontSize: 10, fontWeight: '400', color: C.black },
   chipTextActive: { color: C.white },
 });

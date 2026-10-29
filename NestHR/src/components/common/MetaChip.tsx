@@ -59,5 +59,5 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     flexShrink: 1,
   },
-  text: { fontSize: 11, fontWeight: '800', color: C.black, flexShrink: 1 },
+  text: { fontSize: 11, fontWeight: '400', color: C.black, flexShrink: 1 },
 });

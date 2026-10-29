@@ -10,15 +10,26 @@ const cell = (v: unknown) => (v === null || v === undefined ? "" : v);
 const stamp = () => new Date().toISOString().slice(0, 10);
 
 export function exportExcel<T>(name: string, cols: ExportCol<T>[], rows: T[]) {
-  const aoa = [cols.map((c) => c.header), ...rows.map((r) => cols.map((c) => cell(c.value(r))))];
+  const aoa = [
+    cols.map((c) => c.header),
+    ...rows.map((r) => cols.map((c) => cell(c.value(r)))),
+  ];
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), name.slice(0, 31));
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.aoa_to_sheet(aoa),
+    name.slice(0, 31),
+  );
   XLSX.writeFile(wb, `${name}_${stamp()}.xlsx`);
 }
 
 // ponytail: plain-text table, long cells are clipped; swap in jspdf-autotable if wrapping is needed.
 export function exportPdf<T>(name: string, cols: ExportCol<T>[], rows: T[]) {
-  const pdf = new jsPDF({ orientation: cols.length > 6 ? "landscape" : "portrait", unit: "pt", format: "a4" });
+  const pdf = new jsPDF({
+    orientation: cols.length > 6 ? "landscape" : "portrait",
+    unit: "pt",
+    format: "a4",
+  });
   const W = pdf.internal.pageSize.getWidth();
   const H = pdf.internal.pageSize.getHeight();
   const m = 30;
@@ -44,8 +55,11 @@ export function exportPdf<T>(name: string, cols: ExportCol<T>[], rows: T[]) {
       y = m;
       header();
     }
-    if (n % 2) pdf.setFillColor(243, 246, 252).rect(m, y - 9, W - m * 2, 14, "F");
-    cols.forEach((c, i) => pdf.text(fit(String(cell(c.value(r))), 8), m + i * cw + 3, y));
+    if (n % 2)
+      pdf.setFillColor(243, 246, 252).rect(m, y - 9, W - m * 2, 14, "F");
+    cols.forEach((c, i) =>
+      pdf.text(fit(String(cell(c.value(r))), 8), m + i * cw + 3, y),
+    );
     y += 14;
   });
   pdf.save(`${name}_${stamp()}.pdf`);
@@ -53,12 +67,26 @@ export function exportPdf<T>(name: string, cols: ExportCol<T>[], rows: T[]) {
 
 /** Reads the first sheet of an .xlsx/.xls/.csv file into header-keyed objects. */
 export async function readSheet(file: File): Promise<Record<string, any>[]> {
-  const wb = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: true });
-  return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "", raw: false });
+  const wb = XLSX.read(await file.arrayBuffer(), {
+    type: "array",
+    cellDates: true,
+  });
+  return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {
+    defval: "",
+    raw: false,
+  });
 }
 
-export function downloadTemplate(name: string, headers: string[], example: (string | number)[]) {
+export function downloadTemplate(
+  name: string,
+  headers: string[],
+  example: (string | number)[],
+) {
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([headers, example]), "Template");
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.aoa_to_sheet([headers, example]),
+    "Template",
+  );
   XLSX.writeFile(wb, `${name}_template.xlsx`);
 }

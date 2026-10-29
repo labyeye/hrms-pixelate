@@ -468,7 +468,11 @@ export default function AttendanceSettingsPage() {
 
   // one usage column per leave type that has an allowance or any usage this month
   const usageTypes = LEAVE_TYPES.filter((t) =>
-    balances.some((b) => b.leaveUsed.some((l) => l.leaveType === t && (l.daysAllowed > 0 || l.daysUsed > 0))),
+    balances.some((b) =>
+      b.leaveUsed.some(
+        (l) => l.leaveType === t && (l.daysAllowed > 0 || l.daysUsed > 0),
+      ),
+    ),
   );
 
   return (
@@ -611,137 +615,136 @@ export default function AttendanceSettingsPage() {
             </button>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
-            {/* Late Allowance */}
-            <div className="bg-white border-2 border-black">
-              <div className="p-4 border-b-2 border-black bg-[#F0F6FF]">
-                <div className="flex items-center gap-3">
-                  <Clock className="w-5 h-5 text-[#024BAB]" />
-                  <div>
-                    <h2 className="font-bold text-base">Late Allowance</h2>
-                    <p className="text-xs text-gray-500">
-                      Max late arrivals per month with no deduction/approval
-                      needed.
-                    </p>
+              {/* Late Allowance */}
+              <div className="bg-white border-2 border-black">
+                <div className="p-4 border-b-2 border-black bg-[#F0F6FF]">
+                  <div className="flex items-center gap-3">
+                    <Clock className="w-5 h-5 text-[#024BAB]" />
+                    <div>
+                      <h2 className="font-bold text-base">Late Allowance</h2>
+                      <p className="text-xs text-gray-500">
+                        Max late arrivals per month with no deduction/approval
+                        needed.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="p-5 space-y-4">
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setLateMode("bulk")}
-                    className={`flex-1 py-2 text-sm font-bold border-2 border-black ${lateMode === "bulk" ? "bg-[#024BAB] text-white" : "bg-white text-black"}`}
-                  >
-                    Bulk (All Employees)
-                  </button>
-                  <button
-                    onClick={() => setLateMode("custom")}
-                    className={`flex-1 py-2 text-sm font-bold border-2 border-black ${lateMode === "custom" ? "bg-[#024BAB] text-white" : "bg-white text-black"}`}
-                  >
-                    Custom (Per Employee)
-                  </button>
-                </div>
-                {lateMode === "bulk" ? (
-                  <div className="flex items-end gap-3">
-                    <div className="w-48">
-                      <NumField
-                        label="Max Lates / Month"
-                        value={lateBulkCount}
-                        onChange={setLateBulkCount}
-                      />
-                    </div>
+                <div className="p-5 space-y-4">
+                  <div className="flex gap-3">
                     <button
-                      onClick={saveLateBulk}
-                      disabled={savingLate}
-                      className="border-2 bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold disabled:opacity-60"
+                      onClick={() => setLateMode("bulk")}
+                      className={`flex-1 py-2 text-sm font-bold border-2 border-black ${lateMode === "bulk" ? "bg-[#024BAB] text-white" : "bg-white text-black"}`}
                     >
-                      {savingLate ? "Saving..." : "Save"}
+                      Bulk (All Employees)
+                    </button>
+                    <button
+                      onClick={() => setLateMode("custom")}
+                      className={`flex-1 py-2 text-sm font-bold border-2 border-black ${lateMode === "custom" ? "bg-[#024BAB] text-white" : "bg-white text-black"}`}
+                    >
+                      Custom (Per Employee)
                     </button>
                   </div>
-                ) : (
-                  <button
-                    onClick={() => setShowLateModal(true)}
-                    className="border-2 border-black px-4 py-2.5 text-sm font-bold flex items-center gap-2"
-                  >
-                    <Users className="w-4 h-4" /> Configure per Employee
-                  </button>
-                )}
+                  {lateMode === "bulk" ? (
+                    <div className="flex items-end gap-3">
+                      <div className="w-48">
+                        <NumField
+                          label="Max Lates / Month"
+                          value={lateBulkCount}
+                          onChange={setLateBulkCount}
+                        />
+                      </div>
+                      <button
+                        onClick={saveLateBulk}
+                        disabled={savingLate}
+                        className="border-2 bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold disabled:opacity-60"
+                      >
+                        {savingLate ? "Saving..." : "Save"}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowLateModal(true)}
+                      className="border-2 border-black px-4 py-2.5 text-sm font-bold flex items-center gap-2"
+                    >
+                      <Users className="w-4 h-4" /> Configure per Employee
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Leave Allowance */}
-            <div className="bg-white border-2 border-black">
-              <div className="p-4 border-b-2 border-black bg-[#F0F6FF]">
-                <div className="flex items-center gap-3">
-                  <CalendarDays className="w-5 h-5 text-[#024BAB]" />
-                  <div>
-                    <h2 className="font-bold text-base">Leave Allowance</h2>
-                    <p className="text-xs text-gray-500">
-                      Max no-deduction leave days per month, configured per
-                      leave type.
-                    </p>
+              {/* Leave Allowance */}
+              <div className="bg-white border-2 border-black">
+                <div className="p-4 border-b-2 border-black bg-[#F0F6FF]">
+                  <div className="flex items-center gap-3">
+                    <CalendarDays className="w-5 h-5 text-[#024BAB]" />
+                    <div>
+                      <h2 className="font-bold text-base">Leave Allowance</h2>
+                      <p className="text-xs text-gray-500">
+                        Max no-deduction leave days per month, configured per
+                        leave type.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="p-5 space-y-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase mb-1 text-gray-600">
-                    Leave Type
-                  </label>
-                  <select
-                    value={leaveType}
-                    onChange={(e) => setLeaveType(e.target.value)}
-                    className="w-full border-2 border-black px-3 py-2 text-sm bg-white focus:outline-none"
-                  >
-                    {LEAVE_TYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {LEAVE_LABELS[t]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setLeaveMode("bulk")}
-                    className={`flex-1 py-2 text-sm font-bold border-2 border-black ${leaveMode === "bulk" ? "bg-[#024BAB] text-white" : "bg-white text-black"}`}
-                  >
-                    Bulk (All Employees)
-                  </button>
-                  <button
-                    onClick={() => setLeaveMode("custom")}
-                    className={`flex-1 py-2 text-sm font-bold border-2 border-black ${leaveMode === "custom" ? "bg-[#024BAB] text-white" : "bg-white text-black"}`}
-                  >
-                    Custom (Per Employee)
-                  </button>
-                </div>
-                {leaveMode === "bulk" ? (
-                  <div className="flex items-end gap-3">
-                    <div className="w-48">
-                      <NumField
-                        label={`${LEAVE_LABELS[leaveType]} Days / Month`}
-                        value={leaveBulkDays}
-                        onChange={setLeaveBulkDays}
-                      />
-                    </div>
-                    <button
-                      onClick={saveLeaveBulk}
-                      disabled={savingLeave}
-                      className="border-2 bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold disabled:opacity-60"
+                <div className="p-5 space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase mb-1 text-gray-600">
+                      Leave Type
+                    </label>
+                    <select
+                      value={leaveType}
+                      onChange={(e) => setLeaveType(e.target.value)}
+                      className="w-full border-2 border-black px-3 py-2 text-sm bg-white focus:outline-none"
                     >
-                      {savingLeave ? "Saving..." : "Save"}
+                      {LEAVE_TYPES.map((t) => (
+                        <option key={t} value={t}>
+                          {LEAVE_LABELS[t]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setLeaveMode("bulk")}
+                      className={`flex-1 py-2 text-sm font-bold border-2 border-black ${leaveMode === "bulk" ? "bg-[#024BAB] text-white" : "bg-white text-black"}`}
+                    >
+                      Bulk (All Employees)
+                    </button>
+                    <button
+                      onClick={() => setLeaveMode("custom")}
+                      className={`flex-1 py-2 text-sm font-bold border-2 border-black ${leaveMode === "custom" ? "bg-[#024BAB] text-white" : "bg-white text-black"}`}
+                    >
+                      Custom (Per Employee)
                     </button>
                   </div>
-                ) : (
-                  <button
-                    onClick={() => setShowLeaveModal(true)}
-                    className="border-2 border-black px-4 py-2.5 text-sm font-bold flex items-center gap-2"
-                  >
-                    <Users className="w-4 h-4" /> Configure per Employee (
-                    {LEAVE_LABELS[leaveType]})
-                  </button>
-                )}
+                  {leaveMode === "bulk" ? (
+                    <div className="flex items-end gap-3">
+                      <div className="w-48">
+                        <NumField
+                          label={`${LEAVE_LABELS[leaveType]} Days / Month`}
+                          value={leaveBulkDays}
+                          onChange={setLeaveBulkDays}
+                        />
+                      </div>
+                      <button
+                        onClick={saveLeaveBulk}
+                        disabled={savingLeave}
+                        className="border-2 bg-[#024BAB] text-white px-6 py-2.5 text-sm font-bold disabled:opacity-60"
+                      >
+                        {savingLeave ? "Saving..." : "Save"}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowLeaveModal(true)}
+                      className="border-2 border-black px-4 py-2.5 text-sm font-bold flex items-center gap-2"
+                    >
+                      <Users className="w-4 h-4" /> Configure per Employee (
+                      {LEAVE_LABELS[leaveType]})
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-
             </div>
 
             {/* Balance Summary */}
@@ -754,10 +757,24 @@ export default function AttendanceSettingsPage() {
                   name="attendance_balance_summary"
                   rows={balances}
                   cols={[
-                    { header: "Emp Code", value: (b: BalanceRow) => b.employee.employeeId },
-                    { header: "Employee", value: (b: BalanceRow) => `${b.employee.firstName} ${b.employee.lastName}` },
-                    { header: "Designation", value: (b: BalanceRow) => b.employee.designation },
-                    { header: "Late Used", value: (b: BalanceRow) => `${b.lateUsed}/${b.lateAllowed}` },
+                    {
+                      header: "Emp Code",
+                      value: (b: BalanceRow) => b.employee.employeeId,
+                    },
+                    {
+                      header: "Employee",
+                      value: (b: BalanceRow) =>
+                        `${b.employee.firstName} ${b.employee.lastName}`,
+                    },
+                    {
+                      header: "Designation",
+                      value: (b: BalanceRow) => b.employee.designation,
+                    },
+                    {
+                      header: "Late Used",
+                      value: (b: BalanceRow) =>
+                        `${b.lateUsed}/${b.lateAllowed}`,
+                    },
                     ...usageTypes.map((t) => ({
                       header: LEAVE_LABELS[t] ?? t,
                       value: (b: BalanceRow) => {
@@ -781,13 +798,24 @@ export default function AttendanceSettingsPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b-2 border-black bg-[#024BAB]/5">
-                        {["Emp Code", "Employee", "Designation", "Late Used"].map((h) => (
-                          <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase whitespace-nowrap">
+                        {[
+                          "Emp Code",
+                          "Employee",
+                          "Designation",
+                          "Late Used",
+                        ].map((h) => (
+                          <th
+                            key={h}
+                            className="px-4 py-3 text-left text-xs font-bold uppercase whitespace-nowrap"
+                          >
                             {h}
                           </th>
                         ))}
                         {usageTypes.map((t) => (
-                          <th key={t} className="px-4 py-3 text-left text-xs font-bold uppercase whitespace-nowrap">
+                          <th
+                            key={t}
+                            className="px-4 py-3 text-left text-xs font-bold uppercase whitespace-nowrap"
+                          >
                             {LEAVE_LABELS[t] ?? t}
                           </th>
                         ))}
@@ -795,32 +823,62 @@ export default function AttendanceSettingsPage() {
                     </thead>
                     <tbody>
                       {balances.map((b, i) => (
-                        <tr key={b.employee._id} className={i % 2 ? "bg-[#F8FAFF]" : ""}>
-                          <td className="px-4 py-3 text-xs font-bold whitespace-nowrap">{b.employee.employeeId}</td>
+                        <tr
+                          key={b.employee._id}
+                          className={i % 2 ? "bg-[#F8FAFF]" : ""}
+                        >
+                          <td className="px-4 py-3 text-xs font-bold whitespace-nowrap">
+                            {b.employee.employeeId}
+                          </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <Avatar avatar={b.employee.avatar} firstName={b.employee.firstName} />
+                              <Avatar
+                                avatar={b.employee.avatar}
+                                firstName={b.employee.firstName}
+                              />
                               <p className="font-bold text-xs whitespace-nowrap">
                                 {b.employee.firstName} {b.employee.lastName}
                               </p>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-xs">{b.employee.designation || "—"}</td>
+                          <td className="px-4 py-3 text-xs">
+                            {b.employee.designation || "—"}
+                          </td>
                           <td className="px-4 py-3 text-xs font-bold whitespace-nowrap">
-                            <span className={b.lateAllowed > 0 && b.lateUsed >= b.lateAllowed ? "text-[#EF4444]" : ""}>
+                            <span
+                              className={
+                                b.lateAllowed > 0 && b.lateUsed >= b.lateAllowed
+                                  ? "text-[#EF4444]"
+                                  : ""
+                              }
+                            >
                               {b.lateUsed}/{b.lateAllowed}
                             </span>
                           </td>
                           {usageTypes.map((t) => {
-                            const l = b.leaveUsed.find((x) => x.leaveType === t);
+                            const l = b.leaveUsed.find(
+                              (x) => x.leaveType === t,
+                            );
                             return (
-                              <td key={t} className="px-4 py-3 text-xs font-bold whitespace-nowrap">
+                              <td
+                                key={t}
+                                className="px-4 py-3 text-xs font-bold whitespace-nowrap"
+                              >
                                 {l ? (
-                                  <span className={l.daysAllowed > 0 && l.daysUsed >= l.daysAllowed ? "text-[#EF4444]" : ""}>
+                                  <span
+                                    className={
+                                      l.daysAllowed > 0 &&
+                                      l.daysUsed >= l.daysAllowed
+                                        ? "text-[#EF4444]"
+                                        : ""
+                                    }
+                                  >
                                     {l.daysUsed}/{l.daysAllowed}
                                   </span>
                                 ) : (
-                                  <span className="text-muted-foreground">—</span>
+                                  <span className="text-muted-foreground">
+                                    —
+                                  </span>
                                 )}
                               </td>
                             );

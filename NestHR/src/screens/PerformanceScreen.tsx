@@ -23,13 +23,19 @@ import {
   CheckCircle2,
   Clock,
   ChevronLeft,
+  Search,
+  SlidersHorizontal,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { performanceAPI } from '../api/api';
 import { PerformanceReview } from '../types/hrms';
+import AnimatedNumber from '../components/motion/AnimatedNumber';
+import FadeInUp from '../components/motion/FadeInUp';
 import { C } from '../theme';
 import { CENTER } from '../components/common/centerModal';
-import FilterBar from '../components/common/FilterBar';
+import HeaderIconBtn from '../components/common/HeaderIconBtn';
+import SearchModal from '../components/common/SearchModal';
+import FilterSortModal from '../components/common/FilterSortModal';
 import PerformanceOverview from '../components/performance/PerformanceOverview';
 
 const RATING_COLORS: Record<number, string> = {
@@ -53,10 +59,14 @@ export default function PerformanceScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
+  const [search, setSearch] = useState('');
+  const [sortKey, setSortKey] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    reviewPeriod: '',
+    reviewType: '',
     rating: '3',
     feedback: '',
     goals: '',
@@ -82,12 +92,24 @@ export default function PerformanceScreen() {
     setRefreshing(false);
   };
 
-  const filtered = statusFilter
-    ? reviews.filter(r => r.status === statusFilter)
-    : reviews;
+  const revName = (r: any) =>
+    `${r.employee?.firstName || ''} ${r.employee?.lastName || ''}`.trim();
+  const filtered = (
+    statusFilter ? reviews.filter(r => r.status === statusFilter) : reviews
+  )
+    .filter(
+      r => !search || revName(r).toLowerCase().includes(search.toLowerCase()),
+    )
+    .sort((a, b) =>
+      sortKey === 'name'
+        ? revName(a).localeCompare(revName(b))
+        : sortKey === 'rating'
+          ? ((b as any).rating || 0) - ((a as any).rating || 0)
+          : 0,
+    );
 
   const handleCreate = async () => {
-    if (!form.reviewPeriod.trim()) {
+    if (!form.reviewType.trim()) {
       Alert.alert('Validation', 'Review period is required');
       return;
     }
@@ -95,7 +117,7 @@ export default function PerformanceScreen() {
     try {
       await performanceAPI.create({ ...form, rating: parseFloat(form.rating) });
       setShowForm(false);
-      setForm({ reviewPeriod: '', rating: '3', feedback: '', goals: '' });
+      setForm({ reviewType: '', rating: '3', feedback: '', goals: '' });
       await load();
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -124,50 +146,92 @@ export default function PerformanceScreen() {
           <TrendingUp size={20} color={C.primary} />
           <Text style={styles.headerTitle}>Performance</Text>
         </View>
-        <TouchableOpacity
-          style={styles.addBtn}
-          onPress={() => setShowForm(true)}
-        >
-          <Plus size={14} color={C.white} />
-          <Text style={styles.addBtnText}>Add Review</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+          <HeaderIconBtn
+            label="Search"
+            icon={<Search size={22} color={C.black} />}
+            dot={!!search}
+            onPress={() => setSearchOpen(true)}
+          />
+          <HeaderIconBtn
+            label="Filter and sort"
+            icon={<SlidersHorizontal size={22} color={C.black} />}
+            dot={!!statusFilter || !!sortKey}
+            onPress={() => setFilterOpen(true)}
+          />
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={() => setShowForm(true)}
+            accessibilityLabel="Add Review"
+            hitSlop={8}
+          >
+            <Plus size={24} color={C.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Summary */}
-      <View style={styles.summaryRow}>
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryVal}>{reviews.length}</Text>
-          <Text style={styles.summaryLabel}>Total Reviews</Text>
-        </View>
-        <View style={styles.summaryCard}>
-          <View style={styles.ratingWrap}>
-            <Star size={14} color="#F59E0B" />
-            <Text style={[styles.summaryVal, { color: '#F59E0B' }]}>
-              {avgRating}
-            </Text>
+      <FadeInUp>
+        <View style={styles.summaryRow}>
+          <View style={styles.summaryCard}>
+            <AnimatedNumber style={styles.summaryVal} value={reviews.length} />
+            <Text style={styles.summaryLabel}>Total Reviews</Text>
           </View>
-          <Text style={styles.summaryLabel}>Avg Rating</Text>
+          <View style={styles.summaryCard}>
+            <View style={styles.ratingWrap}>
+              <Star size={14} color="#F59E0B" />
+              <Text style={[styles.summaryVal, { color: '#F59E0B' }]}>
+                {avgRating}
+              </Text>
+            </View>
+            <Text style={styles.summaryLabel}>Avg Rating</Text>
+          </View>
+          <View style={styles.summaryCard}>
+            <AnimatedNumber
+              style={[styles.summaryVal, { color: C.warning }]}
+              value={reviews.filter(r => r.status === 'in_review').length}
+            />
+            <Text style={styles.summaryLabel}>Pending</Text>
+          </View>
         </View>
-        <View style={styles.summaryCard}>
-          <Text style={[styles.summaryVal, { color: C.warning }]}>
-            {reviews.filter(r => r.status === 'in_review').length}
-          </Text>
-          <Text style={styles.summaryLabel}>Pending</Text>
-        </View>
-      </View>
+      </FadeInUp>
 
-      {/* Status filters */}
-      <FilterBar
-        value={statusFilter}
-        onChange={setStatusFilter}
-        toggle={false}
-        options={[
+      <SearchModal
+        visible={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        value={search}
+        onChange={setSearch}
+        placeholder="Search by employee…"
+        items={reviews.map(r => ({
+          key: r._id,
+          title: revName(r) || String(r.reviewType),
+          subtitle: String(r.reviewType || ''),
+        }))}
+      />
+      <FilterSortModal
+        visible={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        filterTitle="Status"
+        filterOptions={[
           { key: '', label: 'All' },
           { key: 'draft', label: 'Draft' },
           { key: 'submitted', label: 'Submitted' },
           { key: 'reviewed', label: 'Reviewed' },
           { key: 'completed', label: 'Completed' },
         ]}
+        filterValue={statusFilter}
+        onFilter={setStatusFilter}
+        sortOptions={[
+          { key: '', label: 'Default' },
+          { key: 'name', label: 'Employee A–Z' },
+          { key: 'rating', label: 'Highest rating' },
+        ]}
+        sortValue={sortKey}
+        onSort={setSortKey}
+        onReset={() => {
+          setStatusFilter('');
+          setSortKey('');
+        }}
       />
 
       {loading ? (
@@ -214,8 +278,8 @@ export default function PerformanceScreen() {
                     <Text style={styles.empName}>
                       {emp ? `${emp.firstName} ${emp.lastName}` : 'Employee'}
                     </Text>
-                    <Text style={styles.reviewPeriod}>
-                      {(item as any).reviewPeriod || item.reviewDate || '—'}
+                    <Text style={styles.reviewType}>
+                      {(item as any).reviewType || item.reviewDate || '—'}
                     </Text>
                   </View>
                   <View style={{ alignItems: 'flex-end', gap: 6 }}>
@@ -278,102 +342,100 @@ export default function PerformanceScreen() {
       )}
 
       {/* Add Review Modal */}
-      <Modal
-        visible={showForm}
-        transparent
-        animationType="fade"
-      >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        <SafeAreaView style={styles.safe} edges={[]}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Add Review</Text>
-            <TouchableOpacity onPress={() => setShowForm(false)}>
-              <X size={22} color={C.black} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            contentContainerStyle={{ padding: 20, gap: 16 }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <View>
-              <Text style={styles.fieldLabel}>Review Period *</Text>
-              <TextInput
-                style={styles.fieldInput}
-                value={form.reviewPeriod}
-                onChangeText={v => setForm(p => ({ ...p, reviewPeriod: v }))}
-                placeholder="Q4 2024 / Jan-Mar 2025"
-                placeholderTextColor={C.textLight}
-              />
-            </View>
-            <View>
-              <Text style={styles.fieldLabel}>Rating (1–5)</Text>
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 6 }}>
-                {['1', '2', '3', '4', '5'].map(n => (
-                  <TouchableOpacity
-                    key={n}
-                    style={[
-                      styles.ratingBtn,
-                      form.rating === n && {
-                        backgroundColor: RATING_COLORS[parseInt(n)],
-                        borderColor: RATING_COLORS[parseInt(n)],
-                      },
-                    ]}
-                    onPress={() => setForm(p => ({ ...p, rating: n }))}
-                  >
-                    <Star
-                      size={14}
-                      color={form.rating === n ? C.white : '#F59E0B'}
-                    />
-                    <Text
-                      style={[
-                        styles.ratingBtnText,
-                        form.rating === n && { color: C.white },
-                      ]}
-                    >
-                      {n}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+      <Modal visible={showForm} transparent animationType="fade">
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            <SafeAreaView style={styles.safe} edges={[]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Add Review</Text>
+                <TouchableOpacity onPress={() => setShowForm(false)}>
+                  <X size={22} color={C.black} />
+                </TouchableOpacity>
               </View>
-            </View>
-            <View>
-              <Text style={styles.fieldLabel}>Feedback</Text>
-              <TextInput
-                style={[styles.fieldInput, { minHeight: 90 }]}
-                value={form.feedback}
-                onChangeText={v => setForm(p => ({ ...p, feedback: v }))}
-                placeholder="Performance feedback…"
-                placeholderTextColor={C.textLight}
-                multiline
-              />
-            </View>
-            <View>
-              <Text style={styles.fieldLabel}>Goals</Text>
-              <TextInput
-                style={[styles.fieldInput, { minHeight: 70 }]}
-                value={form.goals}
-                onChangeText={v => setForm(p => ({ ...p, goals: v }))}
-                placeholder="Goals for next period…"
-                placeholderTextColor={C.textLight}
-                multiline
-              />
-            </View>
-            <TouchableOpacity
-              style={styles.submitBtn}
-              onPress={handleCreate}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator color={C.white} />
-              ) : (
-                <Text style={styles.submitBtnText}>Save Review</Text>
-              )}
-            </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </View></View>
-</Modal>
+              <ScrollView
+                contentContainerStyle={{ padding: 20, gap: 16 }}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                <View>
+                  <Text style={styles.fieldLabel}>Review Period *</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={form.reviewType}
+                    onChangeText={v => setForm(p => ({ ...p, reviewType: v }))}
+                    placeholder="Q4 2024 / Jan-Mar 2025"
+                    placeholderTextColor={C.textLight}
+                  />
+                </View>
+                <View>
+                  <Text style={styles.fieldLabel}>Rating (1–5)</Text>
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 6 }}>
+                    {['1', '2', '3', '4', '5'].map(n => (
+                      <TouchableOpacity
+                        key={n}
+                        style={[
+                          styles.ratingBtn,
+                          form.rating === n && {
+                            backgroundColor: RATING_COLORS[parseInt(n)],
+                            borderColor: RATING_COLORS[parseInt(n)],
+                          },
+                        ]}
+                        onPress={() => setForm(p => ({ ...p, rating: n }))}
+                      >
+                        <Star
+                          size={14}
+                          color={form.rating === n ? C.white : '#F59E0B'}
+                        />
+                        <Text
+                          style={[
+                            styles.ratingBtnText,
+                            form.rating === n && { color: C.white },
+                          ]}
+                        >
+                          {n}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+                <View>
+                  <Text style={styles.fieldLabel}>Feedback</Text>
+                  <TextInput
+                    style={[styles.fieldInput, { minHeight: 90 }]}
+                    value={form.feedback}
+                    onChangeText={v => setForm(p => ({ ...p, feedback: v }))}
+                    placeholder="Performance feedback…"
+                    placeholderTextColor={C.textLight}
+                    multiline
+                  />
+                </View>
+                <View>
+                  <Text style={styles.fieldLabel}>Goals</Text>
+                  <TextInput
+                    style={[styles.fieldInput, { minHeight: 70 }]}
+                    value={form.goals}
+                    onChangeText={v => setForm(p => ({ ...p, goals: v }))}
+                    placeholder="Goals for next period…"
+                    placeholderTextColor={C.textLight}
+                    multiline
+                  />
+                </View>
+                <TouchableOpacity
+                  style={styles.submitBtn}
+                  onPress={handleCreate}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <ActivityIndicator color={C.white} />
+                  ) : (
+                    <Text style={styles.submitBtnText}>Save Review</Text>
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
+            </SafeAreaView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -391,26 +453,12 @@ const styles = StyleSheet.create({
     borderBottomColor: C.black,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: C.black },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: C.primary,
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderColor: C.black,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
+  headerTitle: { fontSize: 20, fontWeight: '400', color: C.black },
+  addBtn: { padding: 4 },
   addBtnText: {
     color: C.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   summaryRow: {
@@ -433,10 +481,10 @@ const styles = StyleSheet.create({
     padding: 10,
     alignItems: 'center',
   },
-  summaryVal: { fontSize: 22, fontWeight: '700', color: C.black },
+  summaryVal: { fontSize: 22, fontWeight: '400', color: C.black },
   summaryLabel: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.textMuted,
     marginTop: 2,
@@ -462,10 +510,10 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
   },
   chipActive: { backgroundColor: C.primary },
-  chipText: { fontSize: 12, fontWeight: '700', color: C.black },
+  chipText: { fontSize: 12, fontWeight: '400', color: C.black },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
-  emptyText: { fontSize: 14, fontWeight: '700', color: C.textMuted },
+  emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
@@ -492,12 +540,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { color: C.white, fontWeight: '700', fontSize: 16 },
-  empName: { fontSize: 15, fontWeight: '700', color: C.black },
-  reviewPeriod: {
+  avatarText: { color: C.white, fontWeight: '400', fontSize: 16 },
+  empName: { fontSize: 15, fontWeight: '400', color: C.black },
+  reviewType: {
     fontSize: 11,
     color: C.textMuted,
-    fontWeight: '500',
+    fontWeight: '400',
     marginTop: 1,
   },
   statusBadge: {
@@ -512,7 +560,7 @@ const styles = StyleSheet.create({
   statusBadgeText: {
     textTransform: 'uppercase',
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: '400',
   },
   ratingRow: {
     flexDirection: 'row',
@@ -520,7 +568,7 @@ const styles = StyleSheet.create({
     gap: 4,
     marginBottom: 10,
   },
-  ratingNum: { fontSize: 14, fontWeight: '700', marginLeft: 6 },
+  ratingNum: { fontSize: 14, fontWeight: '400', marginLeft: 6 },
   feedbackText: { fontSize: 12, color: C.textMuted, lineHeight: 18 },
   goalsRow: {
     flexDirection: 'row',
@@ -531,7 +579,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 2,
     borderTopColor: C.black,
   },
-  goalsText: { fontSize: 12, color: C.primary, fontWeight: '600', flex: 1 },
+  goalsText: { fontSize: 12, color: C.primary, fontWeight: '400', flex: 1 },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -541,10 +589,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: C.black },
+  modalTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   fieldLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.black,
     marginBottom: 5,
@@ -561,7 +609,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
     backgroundColor: C.white,
   },
@@ -580,7 +628,7 @@ const styles = StyleSheet.create({
     borderColor: '#F59E0B',
     paddingVertical: 8,
   },
-  ratingBtnText: { fontSize: 13, fontWeight: '700', color: '#F59E0B' },
+  ratingBtnText: { fontSize: 13, fontWeight: '400', color: '#F59E0B' },
   submitBtn: {
     backgroundColor: C.primary,
     borderWidth: 2,
@@ -596,7 +644,7 @@ const styles = StyleSheet.create({
   },
   submitBtnText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 14,
     textTransform: 'uppercase',
   },

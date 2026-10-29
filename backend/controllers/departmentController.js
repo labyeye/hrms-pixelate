@@ -11,11 +11,20 @@ const getDepartments = asyncHandler(async (req, res) => {
     .sort({ name: 1 });
 
   const counts = await Employee.aggregate([
-    { $match: { company: req.user.company, status: "active", department: { $in: departments.map((d) => d._id) } } },
+    {
+      $match: {
+        company: req.user.company,
+        status: "active",
+        department: { $in: departments.map((d) => d._id) },
+      },
+    },
     { $group: { _id: "$department", n: { $sum: 1 } } },
   ]);
   const byDept = new Map(counts.map((c) => [String(c._id), c.n]));
-  const withCounts = departments.map((d) => ({ ...d.toObject(), headcount: byDept.get(String(d._id)) || 0 }));
+  const withCounts = departments.map((d) => ({
+    ...d.toObject(),
+    headcount: byDept.get(String(d._id)) || 0,
+  }));
 
   res.json({ success: true, data: withCounts });
 });

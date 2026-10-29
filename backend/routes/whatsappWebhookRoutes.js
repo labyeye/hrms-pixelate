@@ -10,7 +10,10 @@ const safeEqual = require("../utils/safeEqual");
 // No hard-coded fallback: with META_WA_VERIFY_TOKEN unset the subscription handshake simply fails.
 const VERIFY_TOKEN = process.env.META_WA_VERIFY_TOKEN;
 const APP_SECRET = process.env.META_WA_APP_SECRET;
-if (!APP_SECRET) console.warn("[WA-Webhook] META_WA_APP_SECRET is not set: incoming webhooks are NOT signature-verified");
+if (!APP_SECRET)
+  console.warn(
+    "[WA-Webhook] META_WA_APP_SECRET is not set: incoming webhooks are NOT signature-verified",
+  );
 
 // Meta signs the raw request body with the app secret (X-Hub-Signature-256: sha256=<hmac>).
 function validSignature(req) {
@@ -18,7 +21,10 @@ function validSignature(req) {
   const sig = String(req.headers["x-hub-signature-256"] || "");
   if (!sig.startsWith("sha256=") || !req.rawBody) return false;
   const a = Buffer.from(sig.slice(7), "hex");
-  const b = crypto.createHmac("sha256", APP_SECRET).update(req.rawBody).digest();
+  const b = crypto
+    .createHmac("sha256", APP_SECRET)
+    .update(req.rawBody)
+    .digest();
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
@@ -67,7 +73,9 @@ router.post("/", async (req, res) => {
       // a message Meta could not deliver is not charged
       for (const st of value.statuses) {
         if (st.status === "failed") {
-          require("../services/creditsService").refundByWamid(st.id).catch((e) => console.error("[WA] credit refund:", e.message));
+          require("../services/creditsService")
+            .refundByWamid(st.id)
+            .catch((e) => console.error("[WA] credit refund:", e.message));
         }
       }
     }
@@ -83,7 +91,6 @@ router.post("/", async (req, res) => {
     }
 
     for (const msg of messages) {
-
       const fromPhone = msg.from;
 
       let payload = null;

@@ -126,7 +126,7 @@ function AccordionSection({
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           {Icon && <Icon size={16} color={C.primary} />}
-          <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>
+          <Text style={{ fontSize: 13, fontWeight: '400', color: C.black }}>
             {title}
           </Text>
         </View>
@@ -845,7 +845,7 @@ export default function ProfileScreen() {
                             style={{
                               color: '#fff',
                               fontSize: 10,
-                              fontWeight: '700',
+                              fontWeight: '400',
                             }}
                           >
                             Remove
@@ -872,7 +872,7 @@ export default function ProfileScreen() {
                       <Text
                         style={{
                           fontSize: 11,
-                          fontWeight: '700',
+                          fontWeight: '400',
                           color: C.black,
                         }}
                       >
@@ -979,7 +979,7 @@ export default function ProfileScreen() {
                             style={{
                               color: '#fff',
                               fontSize: 10,
-                              fontWeight: '700',
+                              fontWeight: '400',
                             }}
                           >
                             Remove
@@ -1006,7 +1006,7 @@ export default function ProfileScreen() {
                       <Text
                         style={{
                           fontSize: 11,
-                          fontWeight: '700',
+                          fontWeight: '400',
                           color: C.black,
                         }}
                       >
@@ -1116,7 +1116,7 @@ export default function ProfileScreen() {
                             style={{
                               color: '#fff',
                               fontSize: 10,
-                              fontWeight: '700',
+                              fontWeight: '400',
                             }}
                           >
                             Remove
@@ -1143,7 +1143,7 @@ export default function ProfileScreen() {
                       <Text
                         style={{
                           fontSize: 11,
-                          fontWeight: '700',
+                          fontWeight: '400',
                           color: C.black,
                         }}
                       >
@@ -1274,7 +1274,7 @@ export default function ProfileScreen() {
                             style={{
                               color: '#fff',
                               fontSize: 10,
-                              fontWeight: '700',
+                              fontWeight: '400',
                             }}
                           >
                             Remove
@@ -1301,7 +1301,7 @@ export default function ProfileScreen() {
                       <Text
                         style={{
                           fontSize: 11,
-                          fontWeight: '700',
+                          fontWeight: '400',
                           color: C.black,
                         }}
                       >
@@ -1356,7 +1356,7 @@ export default function ProfileScreen() {
                           style={{
                             color: '#fff',
                             fontSize: 12,
-                            fontWeight: '700',
+                            fontWeight: '400',
                           }}
                         >
                           Add
@@ -1389,7 +1389,7 @@ export default function ProfileScreen() {
                           <Text
                             style={{
                               fontSize: 11,
-                              fontWeight: '700',
+                              fontWeight: '400',
                               color: C.black,
                             }}
                           >
@@ -1403,7 +1403,7 @@ export default function ProfileScreen() {
                             <Text
                               style={{
                                 color: C.danger,
-                                fontWeight: '700',
+                                fontWeight: '400',
                                 fontSize: 13,
                               }}
                             >
@@ -1520,7 +1520,7 @@ export default function ProfileScreen() {
                             style={{
                               color: '#fff',
                               fontSize: 10,
-                              fontWeight: '700',
+                              fontWeight: '400',
                             }}
                           >
                             Remove
@@ -1547,7 +1547,7 @@ export default function ProfileScreen() {
                       <Text
                         style={{
                           fontSize: 11,
-                          fontWeight: '700',
+                          fontWeight: '400',
                           color: C.black,
                         }}
                       >
@@ -1739,14 +1739,14 @@ const s = StyleSheet.create({
   tabActive: { backgroundColor: C.primary },
   tabText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     color: '#64748b',
     textTransform: 'uppercase',
   },
   tabTextActive: { color: '#fff' },
   lbl: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '400',
     color: '#64748b',
     letterSpacing: 0.5,
     marginBottom: 6,
@@ -1771,7 +1771,7 @@ const s = StyleSheet.create({
   },
   chipOk: { backgroundColor: '#dcfce7', borderColor: '#86efac' },
   chipWarn: { backgroundColor: '#fef9c3', borderColor: '#fde047' },
-  statusChipText: { fontSize: 11, fontWeight: '800' },
+  statusChipText: { fontSize: 11, fontWeight: '400' },
   verifyBtn: {
     marginTop: 10,
     flexDirection: 'row',
@@ -1782,7 +1782,7 @@ const s = StyleSheet.create({
     backgroundColor: '#25D366',
     ...BRUTAL,
   },
-  verifyBtnText: { fontSize: 13, fontWeight: '800', color: '#fff' },
+  verifyBtnText: { fontSize: 13, fontWeight: '400', color: '#fff' },
   otpOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
@@ -1790,23 +1790,23 @@ const s = StyleSheet.create({
     padding: 24,
   },
   otpBox: { backgroundColor: '#fff', padding: 18, ...BRUTAL },
-  otpTitle: { fontSize: 17, fontWeight: '800', color: C.black },
+  otpTitle: { fontSize: 17, fontWeight: '400', color: C.black },
   otpSub: {
     fontSize: 13,
     color: '#64748b',
-    fontWeight: '600',
+    fontWeight: '400',
     marginVertical: 12,
   },
   otpInput: {
     ...BRUTAL,
     paddingVertical: 12,
     fontSize: 24,
-    fontWeight: '800',
+    fontWeight: '400',
     letterSpacing: 10,
     textAlign: 'center',
     color: C.black,
   },
-  otpLink: { fontSize: 13, fontWeight: '800', color: C.primary },
+  otpLink: { fontSize: 13, fontWeight: '400', color: C.primary },
   safe: { flex: 1, backgroundColor: C.bg },
   header: {
     flexDirection: 'row',
@@ -1818,7 +1818,7 @@ const s = StyleSheet.create({
     borderBottomColor: C.black,
     gap: 8,
   },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: C.black },
+  headerTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   avatarBlock: { alignItems: 'center', paddingVertical: 8, gap: 8 },
   avatarWrap: { position: 'relative' },
   avatar: {
@@ -1846,7 +1846,7 @@ const s = StyleSheet.create({
     borderRadius: 8,
     borderColor: C.black,
   },
-  avatarText: { fontSize: 30, fontWeight: '700', color: C.white },
+  avatarText: { fontSize: 30, fontWeight: '400', color: C.white },
   cameraBadge: {
     position: 'absolute',
     bottom: 0,
@@ -1859,7 +1859,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarName: { fontSize: 20, fontWeight: '700', color: C.black },
+  avatarName: { fontSize: 20, fontWeight: '400', color: C.black },
   roleBadge: {
     backgroundColor: C.primary,
     borderWidth: 2,
@@ -1874,11 +1874,11 @@ const s = StyleSheet.create({
   },
   roleText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.white,
     letterSpacing: 1,
   },
-  tapHint: { fontSize: 11, color: C.textMuted, fontWeight: '500' },
+  tapHint: { fontSize: 11, color: C.textMuted, fontWeight: '400' },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1887,7 +1887,7 @@ const s = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.black,
     letterSpacing: 0.5,
@@ -1912,7 +1912,7 @@ const s = StyleSheet.create({
   fieldIcon: { paddingTop: 4, marginRight: 10 },
   fieldLabel: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.textMuted,
     marginBottom: 4,
@@ -1920,7 +1920,7 @@ const s = StyleSheet.create({
   },
   fieldInput: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
     paddingVertical: 0,
   },
@@ -1944,7 +1944,7 @@ const s = StyleSheet.create({
   },
   saveBtnText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 13,
     textTransform: 'uppercase',
     letterSpacing: 0.5,

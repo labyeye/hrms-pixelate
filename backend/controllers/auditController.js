@@ -43,7 +43,9 @@ const istToday = () => new Date(Date.now() + IST_MS).toISOString().slice(0, 10);
 // newest-first timeline. Query: type=all|attendance|login, startDate/endDate (YYYY-MM-DD, IST), page, limit.
 const getActivity = asyncHandler(async (req, res) => {
   const { page, limit, skip } = safePagination(req.query);
-  const type = ["attendance", "login"].includes(req.query.type) ? req.query.type : "all";
+  const type = ["attendance", "login"].includes(req.query.type)
+    ? req.query.type
+    : "all";
   const isDay = (v) => /^\d{4}-\d{2}-\d{2}$/.test(v || "");
   let startDay = isDay(req.query.startDate) ? req.query.startDate : istToday();
   let endDay = isDay(req.query.endDate) ? req.query.endDate : startDay;
@@ -64,10 +66,15 @@ const getActivity = asyncHandler(async (req, res) => {
     const byId = new Map(emps.map((e) => [String(e._id), e]));
     const rows = await Attendance.find({
       employee: { $in: emps.map((e) => e._id) },
-      date: { $gte: new Date(`${startDay}T00:00:00Z`), $lte: new Date(`${endDay}T00:00:00Z`) },
+      date: {
+        $gte: new Date(`${startDay}T00:00:00Z`),
+        $lte: new Date(`${endDay}T00:00:00Z`),
+      },
       $or: [{ checkIn: { $ne: null } }, { checkOut: { $ne: null } }],
     })
-      .select("employee checkIn checkOut status verifyMode checkInLocation checkOutLocation workHours")
+      .select(
+        "employee checkIn checkOut status verifyMode checkInLocation checkOutLocation workHours",
+      )
       .lean();
     for (const r of rows) {
       const e = byId.get(String(r.employee));
@@ -104,7 +111,9 @@ const getActivity = asyncHandler(async (req, res) => {
       action: { $in: ["auth.login", "auth.logout"] },
       createdAt: { $gte: from, $lte: to },
     }).lean();
-    const seen = new Set(logs.map((l) => String(l.details?.sessionId)).filter(Boolean));
+    const seen = new Set(
+      logs.map((l) => String(l.details?.sessionId)).filter(Boolean),
+    );
     for (const l of logs)
       events.push({
         id: String(l._id),
@@ -117,7 +126,9 @@ const getActivity = asyncHandler(async (req, res) => {
         ip: l.ip,
       });
     // Sessions opened before login events were recorded.
-    const users = await User.find({ company: req.user.company }).select("name email").lean();
+    const users = await User.find({ company: req.user.company })
+      .select("name email")
+      .lean();
     const uById = new Map(users.map((u) => [String(u._id), u]));
     const sessions = await Session.find({
       userId: { $in: users.map((u) => u._id) },

@@ -260,7 +260,7 @@ export function TimePickerField({
 const s = StyleSheet.create({
   label: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -281,7 +281,7 @@ const s = StyleSheet.create({
   inputText: {
     fontSize: 14,
     color: C.black,
-    fontWeight: '500',
+    fontWeight: '400',
   },
   placeholder: {
     color: C.textLight,
@@ -308,18 +308,18 @@ const s = StyleSheet.create({
   },
   sheetTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.black,
   },
   cancelText: {
     fontSize: 15,
     color: C.textMuted,
-    fontWeight: '500',
+    fontWeight: '400',
   },
   doneText: {
     fontSize: 15,
     color: C.primary,
-    fontWeight: '700',
+    fontWeight: '400',
   },
   spinRow: {
     flexDirection: 'row',
@@ -349,12 +349,12 @@ const s = StyleSheet.create({
   },
   valText: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: '400',
     color: C.primary,
   },
   colLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -372,7 +372,7 @@ const s = StyleSheet.create({
   },
   timeColon: {
     fontSize: 32,
-    fontWeight: '800',
+    fontWeight: '400',
     color: C.black,
     marginBottom: 24,
   },

@@ -189,7 +189,12 @@ export function EmailVerificationCard({
 export function PasskeyCard() {
   const { toast } = useToast();
   const [list, setList] = useState<
-    { _id: string; name: string; createdAt: string; lastUsedAt: string | null }[]
+    {
+      _id: string;
+      name: string;
+      createdAt: string;
+      lastUsedAt: string | null;
+    }[]
   >([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -243,7 +248,8 @@ export function PasskeyCard() {
   };
 
   const remove = async (id: string) => {
-    if (!window.confirm("Remove this passkey? You won't be able to use it.")) return;
+    if (!window.confirm("Remove this passkey? You won't be able to use it."))
+      return;
     try {
       await authAPI.passkeyDelete(id);
       await load();
@@ -262,7 +268,11 @@ export function PasskeyCard() {
       tint="#FA731C"
       title="Passkey"
       subtitle="Sign in with Face ID, fingerprint or your screen lock"
-      badge={list.length ? <VerifiedBadge text={`${list.length} added`} /> : undefined}
+      badge={
+        list.length ? (
+          <VerifiedBadge text={`${list.length} added`} />
+        ) : undefined
+      }
     >
       <div className="space-y-2">
         {loading ? (
@@ -275,7 +285,9 @@ export function PasskeyCard() {
             >
               <KeyRound className="w-4 h-4 text-[#FA731C] shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-black truncate">{p.name}</p>
+                <p className="text-sm font-bold text-black truncate">
+                  {p.name}
+                </p>
                 <p className="text-[11px] text-muted-foreground">
                   Added {new Date(p.createdAt).toLocaleDateString()}
                   {p.lastUsedAt
@@ -350,7 +362,11 @@ export function DevicesCard() {
       await authAPI.removeOtherSessions();
       await load();
     } catch (err: any) {
-      toast({ title: "Failed", description: err.message, variant: "destructive" });
+      toast({
+        title: "Failed",
+        description: err.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -402,7 +418,10 @@ export function DevicesCard() {
           ))
         )}
         {list.some((d) => !d.current) && (
-          <button onClick={removeOthers} className={`${btn} bg-white text-red-600`}>
+          <button
+            onClick={removeOthers}
+            className={`${btn} bg-white text-red-600`}
+          >
             Sign out all other devices
           </button>
         )}
@@ -492,7 +511,10 @@ export function BackupCodesCard() {
               Save these now — they won't be shown again.
             </p>
             <div className="flex gap-2">
-              <button onClick={copy} className={`${btn} bg-[#024BAB] text-white`}>
+              <button
+                onClick={copy}
+                className={`${btn} bg-[#024BAB] text-white`}
+              >
                 <Copy className="w-4 h-4" /> Copy
               </button>
               <button

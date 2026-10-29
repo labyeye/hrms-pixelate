@@ -100,10 +100,10 @@ const s = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  title: { fontSize: 20, fontWeight: '700', color: C.black },
+  title: { fontSize: 20, fontWeight: '400', color: C.black },
   sectionLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.textMuted,
     letterSpacing: 1,
@@ -136,11 +136,11 @@ const s = StyleSheet.create({
     borderRadius: 8,
     borderColor: C.black,
   },
-  tileLabel: { fontSize: 15, fontWeight: '700', color: C.black },
+  tileLabel: { fontSize: 15, fontWeight: '400', color: C.black },
   tileDesc: {
     fontSize: 11,
     color: C.textMuted,
-    fontWeight: '500',
+    fontWeight: '400',
     marginTop: 2,
   },
 });

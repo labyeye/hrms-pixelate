@@ -16,9 +16,15 @@ const getStats = asyncHandler(async (req, res) => {
   if (hit && Date.now() - hit.at < STATS_TTL_MS) return res.json(hit.body);
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const istToday = new Date(Date.now() + 5.5 * 3600000).toISOString().slice(0, 10);
-  const todayStart = new Date(new Date(`${istToday}T00:00:00Z`).getTime() - 12 * 3600000);
-  const todayEnd = new Date(new Date(`${istToday}T00:00:00Z`).getTime() + 12 * 3600000);
+  const istToday = new Date(Date.now() + 5.5 * 3600000)
+    .toISOString()
+    .slice(0, 10);
+  const todayStart = new Date(
+    new Date(`${istToday}T00:00:00Z`).getTime() - 12 * 3600000,
+  );
+  const todayEnd = new Date(
+    new Date(`${istToday}T00:00:00Z`).getTime() + 12 * 3600000,
+  );
 
   try {
     const companyId = new mongoose.Types.ObjectId(req.user.company);
@@ -50,7 +56,12 @@ const getStats = asyncHandler(async (req, res) => {
       ),
       Attendance.aggregate([
         // Range over the IST day (not exact equality) so it works whatever TZ the server / writer used for the date stamp.
-        { $match: { employee: { $in: companyEmployeeIds }, date: { $gte: todayStart, $lt: todayEnd } } },
+        {
+          $match: {
+            employee: { $in: companyEmployeeIds },
+            date: { $gte: todayStart, $lt: todayEnd },
+          },
+        },
         { $group: { _id: "$status", n: { $sum: 1 } } },
       ]).catch(() => []),
       Department.countDocuments({ company: companyId }).catch(() => 0),
@@ -115,7 +126,10 @@ const getStats = asyncHandler(async (req, res) => {
     ]).catch(() => []);
 
     // Last 6 months in one pass (was 6 separate counts, each probing every employee id).
-    const monthStarts = Array.from({ length: 7 }, (_, i) => new Date(now.getFullYear(), now.getMonth() - 5 + i, 1));
+    const monthStarts = Array.from(
+      { length: 7 },
+      (_, i) => new Date(now.getFullYear(), now.getMonth() - 5 + i, 1),
+    );
     const attBuckets = await Attendance.aggregate([
       {
         $match: {
@@ -124,47 +138,86 @@ const getStats = asyncHandler(async (req, res) => {
           status: { $in: ["present", "late"] },
         },
       },
-      { $bucket: { groupBy: "$date", boundaries: monthStarts, default: "other", output: { count: { $sum: 1 } } } },
+      {
+        $bucket: {
+          groupBy: "$date",
+          boundaries: monthStarts,
+          default: "other",
+          output: { count: { $sum: 1 } },
+        },
+      },
     ]).catch(() => []);
     const attTrend = monthStarts.slice(0, 6).map((d) => ({
       month: d.getMonth() + 1,
       year: d.getFullYear(),
-      count: attBuckets.find((x) => x._id && new Date(x._id).getTime() === d.getTime())?.count || 0,
+      count:
+        attBuckets.find(
+          (x) => x._id && new Date(x._id).getTime() === d.getTime(),
+        )?.count || 0,
     }));
 
     // Daily present / late / absent for the last 7 days (today included). Attendance dates are
     // per-IST-day stamps, so bucket by IST date string instead of matching exact instants.
     const istDay = (offset) =>
-      new Date(Date.now() + 5.5 * 3600000 - offset * 86400000).toISOString().slice(0, 10);
+      new Date(Date.now() + 5.5 * 3600000 - offset * 86400000)
+        .toISOString()
+        .slice(0, 10);
     const dayKeys = Array.from({ length: 7 }, (_, i) => istDay(6 - i));
     const dayRows = await Attendance.aggregate([
       {
         $match: {
           employee: { $in: companyEmployeeIds },
-          date: { $gte: new Date(`${dayKeys[0]}T00:00:00Z`.replace("Z", "+05:30")), $lt: new Date(Date.now() + 36 * 3600000) },
+          date: {
+            $gte: new Date(`${dayKeys[0]}T00:00:00Z`.replace("Z", "+05:30")),
+            $lt: new Date(Date.now() + 36 * 3600000),
+          },
           status: { $in: ["present", "late", "absent"] },
         },
       },
       {
         $group: {
-          _id: { d: { $dateToString: { format: "%Y-%m-%d", date: "$date", timezone: "+05:30" } }, s: "$status" },
+          _id: {
+            d: {
+              $dateToString: {
+                format: "%Y-%m-%d",
+                date: "$date",
+                timezone: "+05:30",
+              },
+            },
+            s: "$status",
+          },
           n: { $sum: 1 },
         },
       },
     ]).catch(() => []);
     const dailyStats = dayKeys.map((k) => {
-      const n = (status) => dayRows.find((r) => r._id.d === k && r._id.s === status)?.n || 0;
-      return { date: `${k}T12:00:00+05:30`, present: n("present"), late: n("late"), absent: n("absent") };
+      const n = (status) =>
+        dayRows.find((r) => r._id.d === k && r._id.s === status)?.n || 0;
+      return {
+        date: `${k}T12:00:00+05:30`,
+        present: n("present"),
+        late: n("late"),
+        absent: n("absent"),
+      };
     });
 
-    const payMonths = monthStarts.slice(0, 6).map((d) => ({ month: d.getMonth() + 1, year: d.getFullYear() }));
+    const payMonths = monthStarts
+      .slice(0, 6)
+      .map((d) => ({ month: d.getMonth() + 1, year: d.getFullYear() }));
     const payRows = await Payroll.aggregate([
       { $match: { company: req.user.company, $or: payMonths } },
-      { $group: { _id: { month: "$month", year: "$year" }, total: { $sum: "$netSalary" } } },
+      {
+        $group: {
+          _id: { month: "$month", year: "$year" },
+          total: { $sum: "$netSalary" },
+        },
+      },
     ]).catch(() => []);
     const payTrend = payMonths.map((m) => ({
       ...m,
-      total: payRows.find((r) => r._id.month === m.month && r._id.year === m.year)?.total || 0,
+      total:
+        payRows.find((r) => r._id.month === m.month && r._id.year === m.year)
+          ?.total || 0,
     }));
 
     const todayLate = todayBy.late || 0;

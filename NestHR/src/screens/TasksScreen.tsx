@@ -24,10 +24,17 @@ import {
   Send,
   Trash2,
   X,
+  Search,
+  SlidersHorizontal,
 } from 'lucide-react-native';
 import { employeeAPI, taskAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
+import AnimatedNumber from '../components/motion/AnimatedNumber';
+import FadeInUp from '../components/motion/FadeInUp';
 import { DatePickerField } from '../components/common/DatePickerField';
+import HeaderIconBtn from '../components/common/HeaderIconBtn';
+import SearchModal from '../components/common/SearchModal';
+import FilterSortModal from '../components/common/FilterSortModal';
 import ScreenLayout, { HeaderBtn } from '../components/common/ScreenLayout';
 import ExportButton from '../components/common/ExportButton';
 import { C, FONT } from '../theme';
@@ -87,6 +94,8 @@ export default function TasksScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
 
@@ -225,7 +234,19 @@ export default function TasksScreen() {
       title="Tasks"
       loading={loading}
       right={
-        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+          <HeaderIconBtn
+            label="Search"
+            icon={<Search size={22} color={C.black} />}
+            dot={!!search}
+            onPress={() => setSearchOpen(true)}
+          />
+          <HeaderIconBtn
+            label="Filter"
+            icon={<SlidersHorizontal size={22} color={C.black} />}
+            dot={statusFilter !== 'all' || priorityFilter !== 'all'}
+            onPress={() => setFilterOpen(true)}
+          />
           <ExportButton
             name="tasks"
             label=""
@@ -236,8 +257,15 @@ export default function TasksScreen() {
               { header: 'Assigned To', value: (t: any) => t.assignedTo?.name },
               { header: 'Assigned By', value: (t: any) => t.assignedBy?.name },
               { header: 'Priority', value: (t: any) => t.priority },
-              { header: 'Status', value: (t: any) => String(t.status || '').replace('_', ' ') },
-              { header: 'Due Date', value: (t: any) => (t.dueDate ? String(t.dueDate).slice(0, 10) : '') },
+              {
+                header: 'Status',
+                value: (t: any) => String(t.status || '').replace('_', ' '),
+              },
+              {
+                header: 'Due Date',
+                value: (t: any) =>
+                  t.dueDate ? String(t.dueDate).slice(0, 10) : '',
+              },
             ]}
           />
           {canAssign ? (
@@ -261,53 +289,58 @@ export default function TasksScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={s.kpis}>
-        {STATUSES.map(st => (
-          <View key={st.key} style={[s.kpi, { borderColor: st.color }]}>
-            <Text style={[s.kpiValue, { color: st.color }]}>
-              {count(st.key)}
-            </Text>
-            <Text style={s.kpiLabel}>{st.label}</Text>
+      <FadeInUp>
+        <View style={s.kpis}>
+          {STATUSES.map(st => (
+            <View key={st.key} style={[s.kpi, { borderColor: st.color }]}>
+              <AnimatedNumber
+                style={[s.kpiValue, { color: st.color }]}
+                value={count(st.key)}
+              />
+              <Text style={s.kpiLabel}>{st.label}</Text>
+            </View>
+          ))}
+          <View style={[s.kpi, { borderColor: C.danger }]}>
+            <AnimatedNumber
+              style={[s.kpiValue, { color: C.danger }]}
+              value={lateCount}
+            />
+            <Text style={s.kpiLabel}>Late</Text>
           </View>
-        ))}
-        <View style={[s.kpi, { borderColor: C.danger }]}>
-          <Text style={[s.kpiValue, { color: C.danger }]}>{lateCount}</Text>
-          <Text style={s.kpiLabel}>Late</Text>
         </View>
-      </View>
+      </FadeInUp>
 
-      <View style={s.filters}>
-        <TextInput
-          style={s.search}
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Search tasks..."
-          placeholderTextColor="#6B7280"
-        />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 8 }}
-        >
-          {[{ key: 'all', label: 'All' }, ...STATUSES].map(x => (
-            <Pill
-              key={x.key}
-              label={x.label}
-              on={statusFilter === x.key}
-              onPress={() => setStatusFilter(x.key)}
-            />
-          ))}
-          <View style={s.pillGap} />
-          {['all', ...PRIORITIES].map(p => (
-            <Pill
-              key={p}
-              label={p === 'all' ? 'Any priority' : p}
-              on={priorityFilter === p}
-              onPress={() => setPriorityFilter(p)}
-            />
-          ))}
-        </ScrollView>
-      </View>
+      <SearchModal
+        visible={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        value={search}
+        onChange={setSearch}
+        placeholder="Search tasks…"
+        items={tasks.map((t: any) => ({
+          key: t._id,
+          title: t.title,
+          subtitle: t.assignedTo?.name,
+        }))}
+      />
+      <FilterSortModal
+        visible={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        filterTitle="Status"
+        filterOptions={[{ key: 'all', label: 'All' }, ...STATUSES]}
+        filterValue={statusFilter}
+        onFilter={setStatusFilter}
+        filter2Title="Priority"
+        filter2Options={['all', ...PRIORITIES].map(p => ({
+          key: p,
+          label: p === 'all' ? 'Any priority' : p,
+        }))}
+        filter2Value={priorityFilter}
+        onFilter2={setPriorityFilter}
+        onReset={() => {
+          setStatusFilter('all');
+          setPriorityFilter('all');
+        }}
+      />
 
       <FlatList
         data={shown}
@@ -371,135 +404,142 @@ export default function TasksScreen() {
         animationType="fade"
         onRequestClose={() => setSelected(null)}
       >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        <SafeAreaView edges={[]} style={s.sheet}>
-          <View style={s.sheetHeader}>
-            <Text style={s.sheetTitle} numberOfLines={1}>
-              Task
-            </Text>
-            <View style={s.headerActions}>
-              {canAssign && selected && (
-                <>
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            <SafeAreaView edges={[]} style={s.sheet}>
+              <View style={s.sheetHeader}>
+                <Text style={s.sheetTitle} numberOfLines={1}>
+                  Task
+                </Text>
+                <View style={s.headerActions}>
+                  {canAssign && selected && (
+                    <>
+                      <TouchableOpacity
+                        onPress={() => openEdit(selected)}
+                        hitSlop={8}
+                      >
+                        <Pencil size={18} color={C.primary} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => remove(selected)}
+                        hitSlop={8}
+                      >
+                        <Trash2 size={18} color={C.danger} />
+                      </TouchableOpacity>
+                    </>
+                  )}
                   <TouchableOpacity
-                    onPress={() => openEdit(selected)}
+                    onPress={() => setSelected(null)}
                     hitSlop={8}
                   >
-                    <Pencil size={18} color={C.primary} />
+                    <X size={22} color={C.black} />
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => remove(selected)}
-                    hitSlop={8}
-                  >
-                    <Trash2 size={18} color={C.danger} />
-                  </TouchableOpacity>
-                </>
-              )}
-              <TouchableOpacity onPress={() => setSelected(null)} hitSlop={8}>
-                <X size={22} color={C.black} />
-              </TouchableOpacity>
-            </View>
-          </View>
-          {selected && (
-            <ScrollView
-              contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-              keyboardShouldPersistTaps="handled"
-            >
-              <Text style={s.detailTitle}>{selected.title}</Text>
-              <View style={[s.metaRow, { marginVertical: 8 }]}>
-                <Badge
-                  label={selected.priority}
-                  color={PRIORITY_COLOR[selected.priority] || C.primary}
-                />
-                <Badge
-                  label={STATUS_LABEL[selected.status] || selected.status}
-                  color={STATUS_COLOR[selected.status] || C.primary}
-                />
-                {isLate(selected) && <Badge label="Late" color={C.danger} />}
+                </View>
               </View>
-              {selected.description ? (
-                <Text style={s.body}>{selected.description}</Text>
-              ) : null}
-              <Text style={s.meta}>
-                Assigned to: {selected.assignedTo?.name || '—'}
-              </Text>
-              <Text style={s.meta}>
-                Assigned by: {selected.assignedBy?.name || '—'}
-              </Text>
-              <Text style={s.meta}>Due: {fmt(selected.dueDate)}</Text>
-
-              <Text style={s.section}>Update status</Text>
-              <View style={s.statusRow}>
-                {STATUSES.map(st => (
-                  <TouchableOpacity
-                    key={st.key}
-                    style={[
-                      s.statusBtn,
-                      { borderColor: st.color },
-                      selected.status === st.key && {
-                        backgroundColor: st.color,
-                      },
-                    ]}
-                    onPress={() => setStatus(selected, st.key)}
-                  >
-                    <Text
-                      style={[
-                        s.statusBtnText,
-                        selected.status === st.key && { color: '#fff' },
-                      ]}
-                    >
-                      {st.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <Text style={s.section}>Comments</Text>
-              {(selected.comments || []).length === 0 ? (
-                <Text style={s.meta}>No comments yet</Text>
-              ) : (
-                selected.comments.map((c: any, i: number) => (
-                  <View key={i} style={s.comment}>
-                    <Text style={s.commentUser}>
-                      {c.user?.name || 'User'} · {fmt(c.createdAt)}
-                    </Text>
-                    <Text style={s.body}>{c.message}</Text>
-                  </View>
-                ))
-              )}
-              <View style={s.commentBox}>
-                <TextInput
-                  style={s.commentInput}
-                  value={comment}
-                  onChangeText={setComment}
-                  placeholder="Add a comment..."
-                  placeholderTextColor="#6B7280"
-                  multiline
-                />
-                <TouchableOpacity
-                  style={s.sendBtn}
-                  onPress={sendComment}
-                  hitSlop={6}
+              {selected && (
+                <ScrollView
+                  contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+                  keyboardShouldPersistTaps="handled"
                 >
-                  <Send size={18} color="#fff" />
-                </TouchableOpacity>
-              </View>
+                  <Text style={s.detailTitle}>{selected.title}</Text>
+                  <View style={[s.metaRow, { marginVertical: 8 }]}>
+                    <Badge
+                      label={selected.priority}
+                      color={PRIORITY_COLOR[selected.priority] || C.primary}
+                    />
+                    <Badge
+                      label={STATUS_LABEL[selected.status] || selected.status}
+                      color={STATUS_COLOR[selected.status] || C.primary}
+                    />
+                    {isLate(selected) && (
+                      <Badge label="Late" color={C.danger} />
+                    )}
+                  </View>
+                  {selected.description ? (
+                    <Text style={s.body}>{selected.description}</Text>
+                  ) : null}
+                  <Text style={s.meta}>
+                    Assigned to: {selected.assignedTo?.name || '—'}
+                  </Text>
+                  <Text style={s.meta}>
+                    Assigned by: {selected.assignedBy?.name || '—'}
+                  </Text>
+                  <Text style={s.meta}>Due: {fmt(selected.dueDate)}</Text>
 
-              {(selected.statusHistory || []).length > 0 && (
-                <>
-                  <Text style={s.section}>History</Text>
-                  {selected.statusHistory.map((h: any, i: number) => (
-                    <Text key={i} style={s.meta}>
-                      {STATUS_LABEL[h.status] || h.status} ·{' '}
-                      {h.changedBy?.name || '—'} · {fmt(h.changedAt)}
-                    </Text>
-                  ))}
-                </>
+                  <Text style={s.section}>Update status</Text>
+                  <View style={s.statusRow}>
+                    {STATUSES.map(st => (
+                      <TouchableOpacity
+                        key={st.key}
+                        style={[
+                          s.statusBtn,
+                          { borderColor: st.color },
+                          selected.status === st.key && {
+                            backgroundColor: st.color,
+                          },
+                        ]}
+                        onPress={() => setStatus(selected, st.key)}
+                      >
+                        <Text
+                          style={[
+                            s.statusBtnText,
+                            selected.status === st.key && { color: '#fff' },
+                          ]}
+                        >
+                          {st.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  <Text style={s.section}>Comments</Text>
+                  {(selected.comments || []).length === 0 ? (
+                    <Text style={s.meta}>No comments yet</Text>
+                  ) : (
+                    selected.comments.map((c: any, i: number) => (
+                      <View key={i} style={s.comment}>
+                        <Text style={s.commentUser}>
+                          {c.user?.name || 'User'} · {fmt(c.createdAt)}
+                        </Text>
+                        <Text style={s.body}>{c.message}</Text>
+                      </View>
+                    ))
+                  )}
+                  <View style={s.commentBox}>
+                    <TextInput
+                      style={s.commentInput}
+                      value={comment}
+                      onChangeText={setComment}
+                      placeholder="Add a comment..."
+                      placeholderTextColor="#6B7280"
+                      multiline
+                    />
+                    <TouchableOpacity
+                      style={s.sendBtn}
+                      onPress={sendComment}
+                      hitSlop={6}
+                    >
+                      <Send size={18} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+
+                  {(selected.statusHistory || []).length > 0 && (
+                    <>
+                      <Text style={s.section}>History</Text>
+                      {selected.statusHistory.map((h: any, i: number) => (
+                        <Text key={i} style={s.meta}>
+                          {STATUS_LABEL[h.status] || h.status} ·{' '}
+                          {h.changedBy?.name || '—'} · {fmt(h.changedAt)}
+                        </Text>
+                      ))}
+                    </>
+                  )}
+                </ScrollView>
               )}
-            </ScrollView>
-          )}
-        </SafeAreaView>
-      </View></View>
-</Modal>
+            </SafeAreaView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Create / edit */}
       <Modal
@@ -508,103 +548,108 @@ export default function TasksScreen() {
         animationType="fade"
         onRequestClose={() => setFormOpen(false)}
       >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        <SafeAreaView edges={[]} style={s.sheet}>
-          <View style={s.sheetHeader}>
-            <Text style={s.sheetTitle}>
-              {editing ? 'Edit Task' : 'Assign Task'}
-            </Text>
-            <TouchableOpacity onPress={() => setFormOpen(false)} hitSlop={8}>
-              <X size={22} color={C.black} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-            keyboardShouldPersistTaps="handled"
-          >
-            <Text style={s.label}>Title *</Text>
-            <TextInput
-              style={s.input}
-              value={form.title}
-              onChangeText={v => setForm(f => ({ ...f, title: v }))}
-              maxLength={200}
-            />
-            <Text style={s.label}>Description</Text>
-            <TextInput
-              style={[s.input, { height: 90, textAlignVertical: 'top' }]}
-              value={form.description}
-              onChangeText={v => setForm(f => ({ ...f, description: v }))}
-              multiline
-              maxLength={2000}
-            />
-            <Text style={s.label}>Assign to *</Text>
-            <ScrollView style={s.pickList} nestedScrollEnabled>
-              {employees
-                .filter(e => e.user)
-                .map(e => {
-                  const on = form.assignedTo === e.user;
-                  return (
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            <SafeAreaView edges={[]} style={s.sheet}>
+              <View style={s.sheetHeader}>
+                <Text style={s.sheetTitle}>
+                  {editing ? 'Edit Task' : 'Assign Task'}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setFormOpen(false)}
+                  hitSlop={8}
+                >
+                  <X size={22} color={C.black} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView
+                contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+                keyboardShouldPersistTaps="handled"
+              >
+                <Text style={s.label}>Title *</Text>
+                <TextInput
+                  style={s.input}
+                  value={form.title}
+                  onChangeText={v => setForm(f => ({ ...f, title: v }))}
+                  maxLength={200}
+                />
+                <Text style={s.label}>Description</Text>
+                <TextInput
+                  style={[s.input, { height: 90, textAlignVertical: 'top' }]}
+                  value={form.description}
+                  onChangeText={v => setForm(f => ({ ...f, description: v }))}
+                  multiline
+                  maxLength={2000}
+                />
+                <Text style={s.label}>Assign to *</Text>
+                <ScrollView style={s.pickList} nestedScrollEnabled>
+                  {employees
+                    .filter(e => e.user)
+                    .map(e => {
+                      const on = form.assignedTo === e.user;
+                      return (
+                        <TouchableOpacity
+                          key={e._id}
+                          style={[s.pickRow, on && s.pickRowOn]}
+                          onPress={() =>
+                            setForm(f => ({ ...f, assignedTo: e.user }))
+                          }
+                        >
+                          <Text style={[s.pickText, on && { color: '#fff' }]}>
+                            {e.firstName} {e.lastName}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                </ScrollView>
+                <Text style={s.label}>Priority</Text>
+                <View style={s.statusRow}>
+                  {PRIORITIES.map(p => (
                     <TouchableOpacity
-                      key={e._id}
-                      style={[s.pickRow, on && s.pickRowOn]}
-                      onPress={() =>
-                        setForm(f => ({ ...f, assignedTo: e.user }))
-                      }
+                      key={p}
+                      style={[
+                        s.statusBtn,
+                        { borderColor: PRIORITY_COLOR[p] },
+                        form.priority === p && {
+                          backgroundColor: PRIORITY_COLOR[p],
+                        },
+                      ]}
+                      onPress={() => setForm(f => ({ ...f, priority: p }))}
                     >
-                      <Text style={[s.pickText, on && { color: '#fff' }]}>
-                        {e.firstName} {e.lastName}
+                      <Text
+                        style={[
+                          s.statusBtnText,
+                          form.priority === p && { color: '#fff' },
+                        ]}
+                      >
+                        {p}
                       </Text>
                     </TouchableOpacity>
-                  );
-                })}
-            </ScrollView>
-            <Text style={s.label}>Priority</Text>
-            <View style={s.statusRow}>
-              {PRIORITIES.map(p => (
+                  ))}
+                </View>
+                <DatePickerField
+                  label="Due date"
+                  value={form.dueDate}
+                  onChange={v => setForm(f => ({ ...f, dueDate: v }))}
+                />
                 <TouchableOpacity
-                  key={p}
-                  style={[
-                    s.statusBtn,
-                    { borderColor: PRIORITY_COLOR[p] },
-                    form.priority === p && {
-                      backgroundColor: PRIORITY_COLOR[p],
-                    },
-                  ]}
-                  onPress={() => setForm(f => ({ ...f, priority: p }))}
+                  style={[s.saveBtn, saving && { opacity: 0.6 }]}
+                  onPress={save}
+                  disabled={saving}
                 >
-                  <Text
-                    style={[
-                      s.statusBtnText,
-                      form.priority === p && { color: '#fff' },
-                    ]}
-                  >
-                    {p}
+                  <Text style={s.saveText}>
+                    {saving
+                      ? 'Saving...'
+                      : editing
+                        ? 'Save Changes'
+                        : 'Assign Task'}
                   </Text>
                 </TouchableOpacity>
-              ))}
-            </View>
-            <DatePickerField
-              label="Due date"
-              value={form.dueDate}
-              onChange={v => setForm(f => ({ ...f, dueDate: v }))}
-            />
-            <TouchableOpacity
-              style={[s.saveBtn, saving && { opacity: 0.6 }]}
-              onPress={save}
-              disabled={saving}
-            >
-              <Text style={s.saveText}>
-                {saving
-                  ? 'Saving...'
-                  : editing
-                    ? 'Save Changes'
-                    : 'Assign Task'}
-              </Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </View></View>
-</Modal>
+              </ScrollView>
+            </SafeAreaView>
+          </View>
+        </View>
+      </Modal>
     </ScreenLayout>
   );
 }

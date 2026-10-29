@@ -517,9 +517,7 @@ const updateLeaveStatus = asyncHandler(async (req, res) => {
 
 // Edit a leave — employee can only edit own pending; admins can edit any
 const updateLeave = asyncHandler(async (req, res) => {
-  const isAdmin = ["super_admin", "hr_manager"].includes(
-    req.user.role,
-  );
+  const isAdmin = ["super_admin", "hr_manager"].includes(req.user.role);
 
   let leave;
   if (isAdmin) {
@@ -603,9 +601,7 @@ const updateLeave = asyncHandler(async (req, res) => {
 
 const deleteLeave = asyncHandler(async (req, res) => {
   const { cancellationReason } = req.body || {};
-  const isAdmin = ["super_admin", "hr_manager"].includes(
-    req.user.role,
-  );
+  const isAdmin = ["super_admin", "hr_manager"].includes(req.user.role);
   const filter = { _id: req.params.id, company: req.user.company };
 
   if (!isAdmin) {
@@ -664,8 +660,8 @@ const deleteLeave = asyncHandler(async (req, res) => {
         );
       }
     } catch (err) {
-    console.error("[notify] failed:", err.message);
-  }
+      console.error("[notify] failed:", err.message);
+    }
 
     return res.json({
       success: true,

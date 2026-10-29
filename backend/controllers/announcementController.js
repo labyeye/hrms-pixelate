@@ -13,17 +13,26 @@ exports.uploadPoster = asyncHandler(async (req, res) => {
     throw new Error("Choose a JPG, PNG or WEBP poster");
   }
   await validateMagicBytes(req.file.path); // deletes the file if the content is not a real image
-  res.status(201).json({ success: true, url: `/uploads/announcement-posters/${req.file.filename}` });
+  res.status(201).json({
+    success: true,
+    url: `/uploads/announcement-posters/${req.file.filename}`,
+  });
 });
 
 // Everyone who should see the announcement: the whole company, one or more departments, or given roles.
 async function audienceUserIds(a) {
   const base = { company: a.company, status: { $ne: "inactive" } };
   if (a.targetAudience === "role") {
-    return (await User.find({ ...base, role: { $in: a.roles } }).select("_id")).map((u) => u._id);
+    return (
+      await User.find({ ...base, role: { $in: a.roles } }).select("_id")
+    ).map((u) => u._id);
   }
   if (a.targetAudience === "department") {
-    const emps = await Employee.find({ company: a.company, department: { $in: a.departments }, status: "active" }).select("user");
+    const emps = await Employee.find({
+      company: a.company,
+      department: { $in: a.departments },
+      status: "active",
+    }).select("user");
     return emps.map((e) => e.user).filter(Boolean);
   }
   return (await User.find(base).select("_id")).map((u) => u._id);
@@ -50,7 +59,10 @@ exports.createAnnouncement = asyncHandler(async (req, res) => {
     throw new Error("Title and content are required");
   }
 
-  if (posterUrl && !/^\/uploads\/announcement-posters\/[\w.-]+$/.test(posterUrl)) {
+  if (
+    posterUrl &&
+    !/^\/uploads\/announcement-posters\/[\w.-]+$/.test(posterUrl)
+  ) {
     res.status(400);
     throw new Error("Invalid poster");
   }
@@ -89,7 +101,11 @@ exports.createAnnouncement = asyncHandler(async (req, res) => {
           image: announcement.posterUrl
             ? `${process.env.PUBLIC_API_URL || process.env.FRONTEND_URL || ""}${announcement.posterUrl}`
             : undefined,
-          data: { type: "announcement", id: announcement._id, posterUrl: announcement.posterUrl || "" },
+          data: {
+            type: "announcement",
+            id: announcement._id,
+            posterUrl: announcement.posterUrl || "",
+          },
         },
       ),
     )

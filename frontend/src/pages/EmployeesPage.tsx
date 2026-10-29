@@ -323,20 +323,24 @@ export default function EmployeesPage() {
       if (filterDept) params.department = filterDept;
       if (filterStatus) params.status = filterStatus;
       const now = new Date();
-      const [empRes, deptRes, shiftRes, payrollRes, allRes, attRes] = await Promise.all([
-        employeeAPI.getAll(params),
-        departmentAPI.getAll(),
-        shiftAPI.getAll(),
-        payrollAPI.getAll({
-          month: String(now.getMonth() + 1),
-          year: String(now.getFullYear()),
-          limit: "5000",
-        }),
-        employeeAPI.getAll({ limit: "5000" }),
-        attendanceAPI
-          .getSummary({ month: String(now.getMonth() + 1), year: String(now.getFullYear()) })
-          .catch(() => null),
-      ]);
+      const [empRes, deptRes, shiftRes, payrollRes, allRes, attRes] =
+        await Promise.all([
+          employeeAPI.getAll(params),
+          departmentAPI.getAll(),
+          shiftAPI.getAll(),
+          payrollAPI.getAll({
+            month: String(now.getMonth() + 1),
+            year: String(now.getFullYear()),
+            limit: "5000",
+          }),
+          employeeAPI.getAll({ limit: "5000" }),
+          attendanceAPI
+            .getSummary({
+              month: String(now.getMonth() + 1),
+              year: String(now.getFullYear()),
+            })
+            .catch(() => null),
+        ]);
       if (empRes.success) setEmployees(empRes.data);
       if (allRes.success) setAllEmps(allRes.data);
       if ((attRes as any)?.success) {
@@ -454,7 +458,8 @@ export default function EmployeesPage() {
     setSameAddress(
       !pa ||
         (pa === (emp as any).address &&
-          ((emp as any).permanentPincode || (emp as any).pincode) === (emp as any).pincode),
+          ((emp as any).permanentPincode || (emp as any).pincode) ===
+            (emp as any).pincode),
     );
     setFormTab(0);
     setShowModal(true);
@@ -905,7 +910,11 @@ export default function EmployeesPage() {
   const now0 = new Date();
   const newHires = allEmps.filter((e) => {
     const d = e.joinDate ? new Date(e.joinDate) : null;
-    return d && d.getMonth() === now0.getMonth() && d.getFullYear() === now0.getFullYear();
+    return (
+      d &&
+      d.getMonth() === now0.getMonth() &&
+      d.getFullYear() === now0.getFullYear()
+    );
   }).length;
   const statusCount = {
     active: allEmps.filter((e) => e.status === "active").length,
@@ -913,10 +922,19 @@ export default function EmployeesPage() {
     exited: allEmps.filter((e) => (e.status as string) === "exited").length,
   };
   const attDen =
-    (attSummary.present || 0) + (attSummary.late || 0) + (attSummary.half_day || 0) +
-    (attSummary.absent || 0) + (attSummary.on_leave || 0);
+    (attSummary.present || 0) +
+    (attSummary.late || 0) +
+    (attSummary.half_day || 0) +
+    (attSummary.absent || 0) +
+    (attSummary.on_leave || 0);
   const attPct = attDen
-    ? Math.round((((attSummary.present || 0) + (attSummary.late || 0) + (attSummary.half_day || 0) * 0.5) / attDen) * 100)
+    ? Math.round(
+        (((attSummary.present || 0) +
+          (attSummary.late || 0) +
+          (attSummary.half_day || 0) * 0.5) /
+          attDen) *
+          100,
+      )
     : 0;
 
   const toggleSel = (id: string) =>
@@ -926,10 +944,16 @@ export default function EmployeesPage() {
       else n.add(id);
       return n;
     });
-  const bulkRun = async (label: string, fn: (id: string) => Promise<any>, destructive = false) => {
+  const bulkRun = async (
+    label: string,
+    fn: (id: string) => Promise<any>,
+    destructive = false,
+  ) => {
     const ok = await confirm({
       title: `${label} ${selected.size} employee(s)?`,
-      description: destructive ? "This action cannot be undone." : "This updates every selected employee.",
+      description: destructive
+        ? "This action cannot be undone."
+        : "This updates every selected employee.",
       confirmText: label,
       destructive,
     });
@@ -949,7 +973,10 @@ export default function EmployeesPage() {
       show: true,
       type: done === total ? "success" : "error",
       title: `${label}: ${done}/${total} done`,
-      message: done === total ? "Bulk action completed." : "Some employees could not be updated.",
+      message:
+        done === total
+          ? "Bulk action completed."
+          : "Some employees could not be updated.",
     });
     load();
   };
@@ -969,10 +996,13 @@ export default function EmployeesPage() {
             }}
             className={cn(
               "border-2 border-black px-4 py-2 text-sm flex items-center gap-1.5 font-bold transition-colors",
-              selectMode ? "bg-black text-white" : "bg-white text-black hover:bg-gray-50",
+              selectMode
+                ? "bg-black text-white"
+                : "bg-white text-black hover:bg-gray-50",
             )}
           >
-            <CheckSquare className="w-4 h-4" /> {selectMode ? "Selecting" : "Select"}
+            <CheckSquare className="w-4 h-4" />{" "}
+            {selectMode ? "Selecting" : "Select"}
           </button>
           <ExportMenu
             name="employees"
@@ -984,7 +1014,11 @@ export default function EmployeesPage() {
               { header: "Designation", value: (e) => e.designation },
               { header: "Phone", value: (e) => e.phone },
               { header: "Email", value: (e) => e.email },
-              { header: "Join Date", value: (e) => (e.joinDate ? String(e.joinDate).slice(0, 10) : "") },
+              {
+                header: "Join Date",
+                value: (e) =>
+                  e.joinDate ? String(e.joinDate).slice(0, 10) : "",
+              },
               { header: "Salary", value: (e: any) => e.salary ?? 0 },
               { header: "Loan Balance", value: (e: any) => e.loanBalance ?? 0 },
               { header: "Status", value: (e) => e.status },
@@ -1010,13 +1044,21 @@ export default function EmployeesPage() {
 
       {}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
-        <StatCard label="Total Employees" value={allEmps.length} icon={Users} color="#024BAB" />
+        <StatCard
+          label="Total Employees"
+          value={allEmps.length}
+          icon={Users}
+          color="#024BAB"
+        />
         <StatCard
           label="New Hires This Month"
           value={newHires}
           icon={UserPlus}
           color="#A855F7"
-          sub={new Date().toLocaleString("en-IN", { month: "long", year: "numeric" })}
+          sub={new Date().toLocaleString("en-IN", {
+            month: "long",
+            year: "numeric",
+          })}
         />
         <StatCard
           label="Total Est. Balance"
@@ -1024,16 +1066,38 @@ export default function EmployeesPage() {
           icon={IndianRupee}
           color={totalEstBalance < 0 ? "#EF4444" : "#00C48C"}
         />
-        <StatCard label="Total Loan Balance" value={formatCurrency(totalLoan)} icon={Banknote} color="#EF4444" />
+        <StatCard
+          label="Total Loan Balance"
+          value={formatCurrency(totalLoan)}
+          icon={Banknote}
+          color="#EF4444"
+        />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-5">
         <div className="nb-rise border-2 border-black bg-white p-4">
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Workforce Status</p>
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">
+            Workforce Status
+          </p>
           <div className="grid grid-cols-3 gap-3">
             {[
-              { label: "Active", n: statusCount.active, color: "#00C48C", icon: UserCheck },
-              { label: "Inactive", n: statusCount.inactive, color: "#6B7280", icon: Clock },
-              { label: "Exited", n: statusCount.exited, color: "#A855F7", icon: ArrowRight },
+              {
+                label: "Active",
+                n: statusCount.active,
+                color: "#00C48C",
+                icon: UserCheck,
+              },
+              {
+                label: "Inactive",
+                n: statusCount.inactive,
+                color: "#6B7280",
+                icon: Clock,
+              },
+              {
+                label: "Exited",
+                n: statusCount.exited,
+                color: "#A855F7",
+                icon: ArrowRight,
+              },
             ].map((x) => (
               <div key={x.label} className="flex items-center gap-2">
                 <div
@@ -1043,8 +1107,12 @@ export default function EmployeesPage() {
                   <x.icon className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold leading-tight tabular-nums">{x.n}</p>
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{x.label}</p>
+                  <p className="text-2xl font-bold leading-tight tabular-nums">
+                    {x.n}
+                  </p>
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    {x.label}
+                  </p>
                 </div>
               </div>
             ))}
@@ -1063,13 +1131,20 @@ export default function EmployeesPage() {
               className="h-full transition-all duration-700"
               style={{
                 width: `${attPct}%`,
-                backgroundColor: attPct >= 85 ? "#00C48C" : attPct >= 70 ? "#FA731C" : "#EF4444",
+                backgroundColor:
+                  attPct >= 85
+                    ? "#00C48C"
+                    : attPct >= 70
+                      ? "#FA731C"
+                      : "#EF4444",
               }}
             />
           </div>
           <p className="text-[11px] text-muted-foreground mt-2">
-            Present {attSummary.present || 0} &middot; Late {attSummary.late || 0} &middot; Half day{" "}
-            {attSummary.half_day || 0} &middot; Leave {attSummary.on_leave || 0} &middot; Absent {attSummary.absent || 0}
+            Present {attSummary.present || 0} &middot; Late{" "}
+            {attSummary.late || 0} &middot; Half day {attSummary.half_day || 0}{" "}
+            &middot; Leave {attSummary.on_leave || 0} &middot; Absent{" "}
+            {attSummary.absent || 0}
           </p>
         </div>
       </div>
@@ -1153,32 +1228,46 @@ export default function EmployeesPage() {
             className="text-xs font-bold border-2 border-black px-2 py-1 bg-white"
             onClick={() =>
               setSelected(
-                selected.size === displayedEmployees.length ? new Set() : new Set(displayedEmployees.map((e) => e._id)),
+                selected.size === displayedEmployees.length
+                  ? new Set()
+                  : new Set(displayedEmployees.map((e) => e._id)),
               )
             }
           >
-            {selected.size === displayedEmployees.length ? "Clear all" : "Select all"}
+            {selected.size === displayedEmployees.length
+              ? "Clear all"
+              : "Select all"}
           </button>
           {selected.size > 0 && (
             <>
               <button
                 disabled={bulkBusy}
                 className="text-xs font-bold border-2 border-black px-2 py-1 bg-[#00C48C] text-white"
-                onClick={() => bulkRun("Activate", (id) => employeeAPI.update(id, { status: "active" }))}
+                onClick={() =>
+                  bulkRun("Activate", (id) =>
+                    employeeAPI.update(id, { status: "active" }),
+                  )
+                }
               >
                 Mark Active
               </button>
               <button
                 disabled={bulkBusy}
                 className="text-xs font-bold border-2 border-black px-2 py-1 bg-gray-500 text-white"
-                onClick={() => bulkRun("Deactivate", (id) => employeeAPI.update(id, { status: "inactive" }))}
+                onClick={() =>
+                  bulkRun("Deactivate", (id) =>
+                    employeeAPI.update(id, { status: "inactive" }),
+                  )
+                }
               >
                 Mark Inactive
               </button>
               <button
                 disabled={bulkBusy}
                 className="text-xs font-bold border-2 border-black px-2 py-1 bg-[#EF4444] text-white"
-                onClick={() => bulkRun("Terminate", (id) => employeeAPI.delete(id), true)}
+                onClick={() =>
+                  bulkRun("Terminate", (id) => employeeAPI.delete(id), true)
+                }
               >
                 Terminate
               </button>
@@ -1188,7 +1277,10 @@ export default function EmployeesPage() {
                   rows={displayedEmployees.filter((e) => selected.has(e._id))}
                   cols={[
                     { header: "Emp ID", value: (e) => e.employeeId },
-                    { header: "Name", value: (e) => `${e.firstName} ${e.lastName}` },
+                    {
+                      header: "Name",
+                      value: (e) => `${e.firstName} ${e.lastName}`,
+                    },
                     { header: "Designation", value: (e) => e.designation },
                     { header: "Status", value: (e) => e.status },
                   ]}
@@ -1397,7 +1489,10 @@ export default function EmployeesPage() {
                     onClick={() => setViewEmp(emp)}
                   >
                     {selectMode && (
-                      <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                      <td
+                        className="px-3 py-3"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <input
                           type="checkbox"
                           checked={selected.has(emp._id)}
@@ -2061,21 +2156,21 @@ export default function EmployeesPage() {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         {form.otEnabled && (
-                        <div>
-                          <label className="block text-xs font-bold text-black mb-1">
-                            OT Rate (₹ / Hour)
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={form.otRate}
-                            onChange={(e) =>
-                              setForm({ ...form, otRate: e.target.value })
-                            }
-                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="e.g. 50"
-                          />
-                        </div>
+                          <div>
+                            <label className="block text-xs font-bold text-black mb-1">
+                              OT Rate (₹ / Hour)
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={form.otRate}
+                              onChange={(e) =>
+                                setForm({ ...form, otRate: e.target.value })
+                              }
+                              className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                              placeholder="e.g. 50"
+                            />
+                          </div>
                         )}
                         <div>
                           <label className="block text-xs font-bold text-black mb-1">
@@ -2647,21 +2742,32 @@ export default function EmployeesPage() {
                           </label>
                           <PhoneInput
                             value={form.emergencyContact}
-                            onChange={(v) => setForm({ ...form, emergencyContact: v })}
+                            onChange={(v) =>
+                              setForm({ ...form, emergencyContact: v })
+                            }
                             placeholder="Emergency number"
                           />
                         </div>
                         <div className="col-span-2">
                           <AddressFields
                             addressLabel="Current Address"
-                            value={{ address: form.address, pincode: form.pincode, city: form.city, state: form.state }}
+                            value={{
+                              address: form.address,
+                              pincode: form.pincode,
+                              city: form.city,
+                              state: form.state,
+                            }}
                             onChange={(v) => setForm({ ...form, ...v })}
                           />
                         </div>
                         <div className="col-span-2 flex items-center justify-between p-3 border-2 border-black/10 hover:border-black transition-colors">
                           <div>
-                            <p className="text-sm font-bold text-black">Permanent address same as current</p>
-                            <p className="text-xs text-muted-foreground">Turn off to enter a different permanent address</p>
+                            <p className="text-sm font-bold text-black">
+                              Permanent address same as current
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Turn off to enter a different permanent address
+                            </p>
                           </div>
                           <button
                             type="button"
@@ -2854,7 +2960,9 @@ export default function EmployeesPage() {
                           </label>
                           <PhoneInput
                             value={form.alternatePhone}
-                            onChange={(v) => setForm({ ...form, alternatePhone: v })}
+                            onChange={(v) =>
+                              setForm({ ...form, alternatePhone: v })
+                            }
                             placeholder="Alternate number"
                           />
                         </div>
@@ -3754,8 +3862,7 @@ export default function EmployeesPage() {
                           onClick={() =>
                             withOtp((tk) =>
                               employeeAPI.openDocument(viewEmp._id, "pan", tk),
-                            )
-                              .catch((e: Error) => window.alert(e.message))
+                            ).catch((e: Error) => window.alert(e.message))
                           }
                           className="text-[10px] font-bold border-2 border-[#024BAB] text-[#024BAB] px-2 py-1 hover:bg-[#024BAB]/10"
                         >
@@ -3767,9 +3874,12 @@ export default function EmployeesPage() {
                           type="button"
                           onClick={() =>
                             withOtp((tk) =>
-                              employeeAPI.openDocument(viewEmp._id, "aadhaar", tk),
-                            )
-                              .catch((e: Error) => window.alert(e.message))
+                              employeeAPI.openDocument(
+                                viewEmp._id,
+                                "aadhaar",
+                                tk,
+                              ),
+                            ).catch((e: Error) => window.alert(e.message))
                           }
                           className="text-[10px] font-bold border-2 border-[#024BAB] text-[#024BAB] px-2 py-1 hover:bg-[#024BAB]/10"
                         >
@@ -3781,9 +3891,12 @@ export default function EmployeesPage() {
                           type="button"
                           onClick={() =>
                             withOtp((tk) =>
-                              employeeAPI.openDocument(viewEmp._id, "resume", tk),
-                            )
-                              .catch((e: Error) => window.alert(e.message))
+                              employeeAPI.openDocument(
+                                viewEmp._id,
+                                "resume",
+                                tk,
+                              ),
+                            ).catch((e: Error) => window.alert(e.message))
                           }
                           className="text-[10px] font-bold border-2 border-[#00C48C] text-[#00C48C] px-2 py-1 hover:bg-[#00C48C]/10"
                         >
@@ -4231,14 +4344,22 @@ export default function EmployeesPage() {
                             <FileSpreadsheet
                               className={cn(
                                 "w-3.5 h-3.5 shrink-0",
-                                h.required ? "text-[#EF4444]" : "text-[#00A36C]",
+                                h.required
+                                  ? "text-[#EF4444]"
+                                  : "text-[#00A36C]",
                               )}
                             />
-                            <span className="text-[11px] font-bold text-black truncate" title={h.label}>
+                            <span
+                              className="text-[11px] font-bold text-black truncate"
+                              title={h.label}
+                            >
                               {h.label}
                             </span>
                           </div>
-                          <span className="text-[10px] text-muted-foreground font-mono truncate" title={String(h.example)}>
+                          <span
+                            className="text-[10px] text-muted-foreground font-mono truncate"
+                            title={String(h.example)}
+                          >
                             {h.example}
                           </span>
                         </div>

@@ -4,7 +4,9 @@ const mongoose = require("mongoose");
 
 (async () => {
   await mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URI);
-  const r = await mongoose.connection.collection("departments").updateMany({}, { $unset: { budget: "" } });
+  const r = await mongoose.connection
+    .collection("departments")
+    .updateMany({}, { $unset: { budget: "" } });
   console.log(`Unset budget on ${r.modifiedCount} departments`);
   await mongoose.disconnect();
 })().catch((e) => {

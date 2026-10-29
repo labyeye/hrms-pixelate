@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useFocusReplay } from '../motion/useFocusReplay';
 import {
   Animated,
   Easing,
@@ -51,6 +52,7 @@ export default function AnimatedBarChart({
 }: Props) {
   const [w, setW] = useState(280);
   const reduce = useReduceMotion();
+  const replay = useFocusReplay();
   const progress = useRef(new Animated.Value(0)).current;
   const key = data
     .map(d => series.map(s => d.values[s.key] || 0).join('.'))
@@ -65,7 +67,7 @@ export default function AnimatedBarChart({
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
-  }, [key, reduce, progress]);
+  }, [key, reduce, replay, progress]);
 
   const onLayout = (e: LayoutChangeEvent) => {
     const next = Math.floor(e.nativeEvent.layout.width);

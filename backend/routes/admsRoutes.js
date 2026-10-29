@@ -350,23 +350,23 @@ router.get(["/cdata", "/cdata.aspx"], async (req, res) => {
   }
 
   const handshakeReply = [
-      `GET OPTION FROM: ${SN || "DEVICE"}`,
-      `ATTLOGStamp=${attlogStamp}`,
-      `OPERLOGStamp=9999`,
-      `ATTPHOTOStamp=None`,
-      `ErrorDelay=30`,
-      `Delay=10`,
-      `TransTimes=00:00;23:59`,
-      `TransInterval=1`,
-      `TransFlag=111100000001000`,
-      `Realtime=1`,
-      `Encrypt=0`,
-      `ServerVer=2.4.1`,
-      `PushProtVer=2.4.1`,
-      `PushOptionsFlag=1`,
-      `datetime=${serverTimeStr()}`,
-      ``,
-    ].join("\n");
+    `GET OPTION FROM: ${SN || "DEVICE"}`,
+    `ATTLOGStamp=${attlogStamp}`,
+    `OPERLOGStamp=9999`,
+    `ATTPHOTOStamp=None`,
+    `ErrorDelay=30`,
+    `Delay=10`,
+    `TransTimes=00:00;23:59`,
+    `TransInterval=1`,
+    `TransFlag=111100000001000`,
+    `Realtime=1`,
+    `Encrypt=0`,
+    `ServerVer=2.4.1`,
+    `PushProtVer=2.4.1`,
+    `PushOptionsFlag=1`,
+    `datetime=${serverTimeStr()}`,
+    ``,
+  ].join("\n");
   logDevice(req, {
     company: hsDevice?.company,
     device: hsDevice?._id,
@@ -390,7 +390,12 @@ router.post(
 
     const body = req.body;
     if (!body || typeof body !== "string") {
-      logDevice(req, { event: "error", status: "warn", summary: `Empty ${table || "unknown"} push`, responseData: "OK" });
+      logDevice(req, {
+        event: "error",
+        status: "warn",
+        summary: `Empty ${table || "unknown"} push`,
+        responseData: "OK",
+      });
       return res.send("OK");
     }
 
@@ -494,7 +499,13 @@ router.post(
       res.send(`OK: ${stamp}`);
     } catch (err) {
       console.error("[ADMS] cdata POST error:", err.message);
-      logDevice(req, { event: "error", status: "error", summary: `Failed to process ${table} push: ${err.message}`, requestData: body, responseData: "OK" });
+      logDevice(req, {
+        event: "error",
+        status: "error",
+        summary: `Failed to process ${table} push: ${err.message}`,
+        requestData: body,
+        responseData: "OK",
+      });
       res.send("OK");
     }
   },
@@ -513,7 +524,12 @@ router.get(["/getrequest", "/getrequest.aspx"], async (req, res) => {
     const device = await resolveDevice(SN);
     if (!device) {
       console.warn(`[ADMS] getrequest: unknown device SN=${SN}`);
-      logDevice(req, { event: "unknown_device", status: "warn", summary: `Command poll from unregistered serial number ${SN}`, responseData: "OK" });
+      logDevice(req, {
+        event: "unknown_device",
+        status: "warn",
+        summary: `Command poll from unregistered serial number ${SN}`,
+        responseData: "OK",
+      });
       return res.send("OK");
     }
 
@@ -527,7 +543,13 @@ router.get(["/getrequest", "/getrequest.aspx"], async (req, res) => {
       // Normal quiet poll — no command queued
       if (Date.now() - (lastIdlePoll.get(SN) || 0) > 15 * 60 * 1000) {
         lastIdlePoll.set(SN, Date.now());
-        logDevice(req, { company: device.company, device: device._id, event: "command_poll", summary: "Device is online - polled for commands, nothing queued", responseData: "OK" });
+        logDevice(req, {
+          company: device.company,
+          device: device._id,
+          event: "command_poll",
+          summary: "Device is online - polled for commands, nothing queued",
+          responseData: "OK",
+        });
       }
       return res.send("OK");
     }

@@ -344,9 +344,14 @@ async function sendOtpEmail({ to, name, otp, purpose }) {
   const fromName = process.env.SMTP_FROM_NAME || "NestHR";
   const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER;
   const esc = (v) =>
-    String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    String(v)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
   const verify = purpose === "verify-email";
-  const subject = verify ? "NestHR — Verify your email" : "NestHR — Your sign-in code";
+  const subject = verify
+    ? "NestHR — Verify your email"
+    : "NestHR — Your sign-in code";
   const intro = verify
     ? "Use this code to verify your email address."
     : "Use this code to sign in to your account. It also unlocks your account if it was temporarily blocked.";
@@ -362,7 +367,9 @@ async function sendOtpEmail({ to, name, otp, purpose }) {
 </div></div></body></html>`;
 
   const masked = String(to).replace(/^(.).*(@.*)$/, "$1***$2");
-  console.log(`[Email OTP] Sending (${purpose}) to ${masked} via ${process.env.SMTP_HOST}`);
+  console.log(
+    `[Email OTP] Sending (${purpose}) to ${masked} via ${process.env.SMTP_HOST}`,
+  );
   try {
     const info = await transporter.sendMail({
       from: `"${fromName}" <${fromEmail}>`,
@@ -371,11 +378,15 @@ async function sendOtpEmail({ to, name, otp, purpose }) {
       html,
       text: `Your NestHR code is ${otp}. It expires in 10 minutes.`,
     });
-    console.log(`[Email OTP] Accepted by SMTP to ${masked} id=${info.messageId}`);
+    console.log(
+      `[Email OTP] Accepted by SMTP to ${masked} id=${info.messageId}`,
+    );
   } catch (err) {
     console.error(
       `[Email OTP] FAILED to ${masked}: ${err.code || ""} ${err.message}`,
-      err.code === "EAUTH" ? "— SMTP login rejected; check SMTP_USER / SMTP_PASS (Google app password)" : "",
+      err.code === "EAUTH"
+        ? "— SMTP login rejected; check SMTP_USER / SMTP_PASS (Google app password)"
+        : "",
     );
     throw err;
   }
@@ -387,7 +398,10 @@ async function sendLowCreditsEmail({ to, name, credits, zero }) {
   const fromName = process.env.SMTP_FROM_NAME || "NestHR";
   const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER;
   const esc = (v) =>
-    String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    String(v)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
   const subject = zero
     ? "NestHR — WhatsApp credits finished, messages are paused"
     : "NestHR — WhatsApp credits are running low";
@@ -403,7 +417,12 @@ async function sendLowCreditsEmail({ to, name, credits, zero }) {
 <p style="font-size:14px;color:#555;line-height:1.6">${line}</p>
 <p style="font-size:12px;color:#888">Open NestHR &rarr; Credits to add more.</p>
 </div></div></body></html>`;
-  await transporter.sendMail({ from: `"${fromName}" <${fromEmail}>`, to, subject, html });
+  await transporter.sendMail({
+    from: `"${fromName}" <${fromEmail}>`,
+    to,
+    subject,
+    html,
+  });
 }
 
 module.exports = {

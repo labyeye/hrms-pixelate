@@ -7,7 +7,11 @@ const Employee = require("../models/Employee");
 const Subscription = require("../models/Subscription");
 const bcrypt = require("bcryptjs");
 const Session = require("../models/Session");
-const { startSession, signInPayload } = require("../utils/signIn");
+const {
+  startSession,
+  signInPayload,
+  recordTermsAcceptance,
+} = require("../utils/signIn");
 const generateToken = require("../utils/generateToken");
 const { generatePendingToken, verifyPendingToken } = generateToken;
 const { validateBody } = require("../middleware/validate");
@@ -33,7 +37,10 @@ const STRONG_PASSWORD_RE = { test: (p) => !checkPasswordRules(p) };
 const generateOtp = () => String(crypto.randomInt(100000, 1000000));
 // Keyed hash: a leaked database can't be turned back into the 6-digit codes with a rainbow table.
 const hashOtp = (otp) =>
-  crypto.createHmac("sha256", process.env.JWT_SECRET).update(String(otp).trim()).digest("hex");
+  crypto
+    .createHmac("sha256", process.env.JWT_SECRET)
+    .update(String(otp).trim())
+    .digest("hex");
 const otpMatches = (stored, otp) => {
   const a = Buffer.from(String(stored || ""), "hex");
   const b = Buffer.from(hashOtp(otp), "hex");
@@ -44,7 +51,11 @@ const MAX_OTP_TRIES = 5;
 // Compares `otp` with the code stored on `user`, counting wrong tries in user[triesField]; after MAX_OTP_TRIES
 // misses the code is burned and a new one must be requested. Resolves true only for a live, matching code.
 async function checkOtp(user, otp, { hashField, expireField, triesField }) {
-  const live = user[hashField] && user[expireField] && user[expireField] > new Date() && (user[triesField] || 0) < MAX_OTP_TRIES;
+  const live =
+    user[hashField] &&
+    user[expireField] &&
+    user[expireField] > new Date() &&
+    (user[triesField] || 0) < MAX_OTP_TRIES;
   if (!live) return false;
   if (otpMatches(user[hashField], otp)) return true;
   user[triesField] = (user[triesField] || 0) + 1;
@@ -72,10 +83,16 @@ const to10 = (phone) =>
 async function findUserByPhone(normalised) {
   const variants = [normalised, `+91${normalised}`, `91${normalised}`];
   // Numbers saved with another country code (e.g. +9715...) match on their last 10 digits.
-  const tail = /^\d{10}$/.test(normalised) ? { $regex: `${normalised}$` } : null;
-  const user = await User.findOne({ phone: { $in: variants } }) || (tail && (await User.findOne({ phone: tail })));
+  const tail = /^\d{10}$/.test(normalised)
+    ? { $regex: `${normalised}$` }
+    : null;
+  const user =
+    (await User.findOne({ phone: { $in: variants } })) ||
+    (tail && (await User.findOne({ phone: tail })));
   if (user) return user;
-  const employee = (await Employee.findOne({ phone: { $in: variants } })) || (tail && (await Employee.findOne({ phone: tail })));
+  const employee =
+    (await Employee.findOne({ phone: { $in: variants } })) ||
+    (tail && (await Employee.findOne({ phone: tail })));
   return employee ? User.findById(employee.user) : null;
 }
 
@@ -142,6 +159,7 @@ const register = [
       password,
       role: "super_admin",
     });
+    await recordTermsAcceptance(req, user);
 
     res.status(201).json({
       success: true,
@@ -164,21 +182,23 @@ const login = [
     const user = await User.findOne({ email: email.toLowerCase() })
       .select("+loginFailedAttempts +loginLockUntil")
       .populate({
-      path: "company",
-      select: "name email phone status subscription industry website",
-      populate: {
-        path: "subscription",
-        select:
-          "status plan paymentStatus billingCycle monthlyPrice yearlyPrice maxEmployees currentEmployeeCount renewalDate isTrial trialEndDate",
-      },
-    });
+        path: "company",
+        select: "name email phone status subscription industry website",
+        populate: {
+          path: "subscription",
+          select:
+            "status plan paymentStatus billingCycle monthlyPrice yearlyPrice maxEmployees currentEmployeeCount renewalDate isTrial trialEndDate",
+        },
+      });
 
     if (user?.loginLockUntil && user.loginLockUntil > new Date()) {
       res.status(429);
       throw new Error(LOCKED_MSG);
     }
 
-    const passwordOk = user ? await user.matchPassword(password) : (await bcrypt.compare(String(password), DUMMY_HASH), false);
+    const passwordOk = user
+      ? await user.matchPassword(password)
+      : (await bcrypt.compare(String(password), DUMMY_HASH), false);
     if (!passwordOk) {
       if (user) {
         user.loginFailedAttempts = (user.loginFailedAttempts || 0) + 1;
@@ -343,7 +363,9 @@ const updateProfile = asyncHandler(async (req, res) => {
   res.json({
     success: true,
     data: updated,
-    ...(rotated && { token: generateToken(user._id, user.tokenVersion, req.sessionId) }),
+    ...(rotated && {
+      token: generateToken(user._id, user.tokenVersion, req.sessionId),
+    }),
   });
 });
 
@@ -519,7 +541,10 @@ const verify2FA = asyncHandler(async (req, res) => {
       res.status(401);
       throw new Error("Your sign-in session expired. Please sign in again.");
     }
-  } else if (process.env.LEGACY_2FA_USERID === "true" && typeof req.body.userId === "string") {
+  } else if (
+    process.env.LEGACY_2FA_USERID === "true" &&
+    typeof req.body.userId === "string"
+  ) {
     userId = req.body.userId; // temporary compatibility for old app builds
   } else {
     res.status(400);
@@ -610,16 +635,23 @@ const verifyOtp = asyncHandler(async (req, res) => {
   const user = await User.findById(target._id)
     .select("+phoneOtp +phoneOtpExpire +phoneOtpTries")
     .populate({
-    path: "company",
-    select: "name email phone status subscription industry website",
-    populate: {
-      path: "subscription",
-      select:
-        "status plan paymentStatus billingCycle monthlyPrice yearlyPrice maxEmployees currentEmployeeCount renewalDate isTrial trialEndDate",
-    },
-  });
+      path: "company",
+      select: "name email phone status subscription industry website",
+      populate: {
+        path: "subscription",
+        select:
+          "status plan paymentStatus billingCycle monthlyPrice yearlyPrice maxEmployees currentEmployeeCount renewalDate isTrial trialEndDate",
+      },
+    });
 
-  if (!user || !(await checkOtp(user, otp, { hashField: "phoneOtp", expireField: "phoneOtpExpire", triesField: "phoneOtpTries" }))) {
+  if (
+    !user ||
+    !(await checkOtp(user, otp, {
+      hashField: "phoneOtp",
+      expireField: "phoneOtpExpire",
+      triesField: "phoneOtpTries",
+    }))
+  ) {
     res.status(401);
     throw new Error("Invalid or expired OTP");
   }
@@ -669,7 +701,7 @@ const verifyOtp = asyncHandler(async (req, res) => {
 const isEmail = (e) => typeof e === "string" && validator.isEmail(e);
 
 const STRONG_PASSWORD_MSG =
-  "Password needs 8+ characters with an uppercase, a lowercase, a number and a special character, no simple series like 1234 and nothing common like \"password\".";
+  'Password needs 8+ characters with an uppercase, a lowercase, a number and a special character, no simple series like 1234 and nothing common like "password".';
 
 // Tells the forgot-password screen which reset methods this account has set up.
 const forgotPasswordMethods = asyncHandler(async (req, res) => {
@@ -729,8 +761,17 @@ const resetPasswordWithOtp = asyncHandler(async (req, res) => {
     throw new Error(STRONG_PASSWORD_MSG);
   }
 
-  const user = await User.findOne({ email: email.toLowerCase().trim() }).select("+resetOtp +resetOtpExpire +resetOtpTries");
-  if (!user || !(await checkOtp(user, otp, { hashField: "resetOtp", expireField: "resetOtpExpire", triesField: "resetOtpTries" }))) {
+  const user = await User.findOne({ email: email.toLowerCase().trim() }).select(
+    "+resetOtp +resetOtpExpire +resetOtpTries",
+  );
+  if (
+    !user ||
+    !(await checkOtp(user, otp, {
+      hashField: "resetOtp",
+      expireField: "resetOtpExpire",
+      triesField: "resetOtpTries",
+    }))
+  ) {
     res.status(400);
     throw new Error("This code is invalid or has expired");
   }
@@ -805,8 +846,17 @@ const sendPhoneVerifyOtp = asyncHandler(async (req, res) => {
 });
 
 const verifyPhoneVerifyOtp = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id).select("+phoneVerifyOtp +phoneVerifyOtpExpire +phoneVerifyOtpTries");
-  if (!user || !(await checkOtp(user, String(req.body.otp || ""), { hashField: "phoneVerifyOtp", expireField: "phoneVerifyOtpExpire", triesField: "phoneVerifyOtpTries" }))) {
+  const user = await User.findById(req.user._id).select(
+    "+phoneVerifyOtp +phoneVerifyOtpExpire +phoneVerifyOtpTries",
+  );
+  if (
+    !user ||
+    !(await checkOtp(user, String(req.body.otp || ""), {
+      hashField: "phoneVerifyOtp",
+      expireField: "phoneVerifyOtpExpire",
+      triesField: "phoneVerifyOtpTries",
+    }))
+  ) {
     res.status(400);
     throw new Error("This code is invalid or has expired");
   }

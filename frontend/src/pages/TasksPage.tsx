@@ -342,27 +342,50 @@ export default function TasksPage() {
           {canAssign && (
             <ImportButton
               name="tasks"
-              headers={["Title", "Description", "Assignee Emp ID", "Priority (low/medium/high)", "Due Date (YYYY-MM-DD)"]}
-              example={["Prepare monthly report", "Compile attendance numbers", "EMP0001", "medium", new Date().toISOString().slice(0, 10)]}
+              headers={[
+                "Title",
+                "Description",
+                "Assignee Emp ID",
+                "Priority (low/medium/high)",
+                "Due Date (YYYY-MM-DD)",
+              ]}
+              example={[
+                "Prepare monthly report",
+                "Compile attendance numbers",
+                "EMP0001",
+                "medium",
+                new Date().toISOString().slice(0, 10),
+              ]}
               onRows={async (rows) => {
                 let ok = 0;
                 const bad: string[] = [];
                 for (const r of rows) {
                   const title = String(r["Title"] || "").trim();
-                  const code = String(r["Assignee Emp ID"] || "").trim().toLowerCase();
-                  const emp = employees.find((e) => e.employeeId?.toLowerCase() === code);
+                  const code = String(r["Assignee Emp ID"] || "")
+                    .trim()
+                    .toLowerCase();
+                  const emp = employees.find(
+                    (e) => e.employeeId?.toLowerCase() === code,
+                  );
                   if (!title || !emp) {
                     bad.push(title || "(no title)");
                     continue;
                   }
-                  const pr = String(r["Priority (low/medium/high)"] || "medium").toLowerCase();
+                  const pr = String(
+                    r["Priority (low/medium/high)"] || "medium",
+                  ).toLowerCase();
                   try {
                     await taskAPI.create({
                       title,
                       description: String(r["Description"] || ""),
                       assignedTo: emp.user,
-                      priority: ["low", "medium", "high"].includes(pr) ? pr : "medium",
-                      dueDate: String(r["Due Date (YYYY-MM-DD)"] || "").slice(0, 10),
+                      priority: ["low", "medium", "high"].includes(pr)
+                        ? pr
+                        : "medium",
+                      dueDate: String(r["Due Date (YYYY-MM-DD)"] || "").slice(
+                        0,
+                        10,
+                      ),
                     });
                     ok++;
                   } catch {
@@ -384,7 +407,10 @@ export default function TasksPage() {
               { header: "Assigned By", value: (t) => t.assignedBy?.name },
               { header: "Priority", value: (t) => t.priority },
               { header: "Status", value: (t) => t.status.replace("_", " ") },
-              { header: "Due Date", value: (t) => (t.dueDate ? String(t.dueDate).slice(0, 10) : "") },
+              {
+                header: "Due Date",
+                value: (t) => (t.dueDate ? String(t.dueDate).slice(0, 10) : ""),
+              },
               { header: "Late", value: (t) => (t.late ? "Yes" : "") },
             ]}
           />

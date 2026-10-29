@@ -156,59 +156,61 @@ export default function PerformancePage() {
 
       {/* Live performance — auto-computed from this month's attendance + tasks */}
       {isEmployee && (
-      <div className="border-2 bg-white p-4 mb-5">
-        <div className="flex items-center gap-2 mb-3">
-          <Activity className="w-4 h-4 text-[#024BAB]" />
-          <p className="text-xs font-bold text-black uppercase tracking-wider">
-            Live Performance — {monthTillNow}
-          </p>
-          <Link
-            to="/performance/report"
-            className="ml-auto text-xs font-bold text-[#024BAB] hover:underline"
-          >
-            Monthly report →
-          </Link>
-        </div>
+        <div className="border-2 bg-white p-4 mb-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Activity className="w-4 h-4 text-[#024BAB]" />
+            <p className="text-xs font-bold text-black uppercase tracking-wider">
+              Live Performance — {monthTillNow}
+            </p>
+            <Link
+              to="/performance/report"
+              className="ml-auto text-xs font-bold text-[#024BAB] hover:underline"
+            >
+              Monthly report →
+            </Link>
+          </div>
 
-        {liveLoading ? (
-          <p className="text-xs text-muted-foreground">Loading…</p>
-        ) : isEmployee ? (
-          liveMetrics && !Array.isArray(liveMetrics) ? (
-            <div className="flex flex-wrap items-center gap-4">
-              <Avatar m={liveMetrics} />
-              <div className="w-48">
-                <ProgressBar value={liveMetrics.score} />
+          {liveLoading ? (
+            <p className="text-xs text-muted-foreground">Loading…</p>
+          ) : isEmployee ? (
+            liveMetrics && !Array.isArray(liveMetrics) ? (
+              <div className="flex flex-wrap items-center gap-4">
+                <Avatar m={liveMetrics} />
+                <div className="w-48">
+                  <ProgressBar value={liveMetrics.score} />
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <CalendarCheck className="w-3.5 h-3.5" />
+                  Attendance:{" "}
+                  <span className="font-bold text-black">
+                    {liveMetrics.attendancePct != null
+                      ? `${liveMetrics.attendancePct}%`
+                      : "No data"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <ListChecks className="w-3.5 h-3.5" />
+                  Tasks:{" "}
+                  <span className="font-bold text-black">
+                    {liveMetrics.totalTasks > 0
+                      ? `${liveMetrics.completedTasks}/${liveMetrics.totalTasks} done`
+                      : "None assigned"}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <CalendarCheck className="w-3.5 h-3.5" />
-                Attendance:{" "}
-                <span className="font-bold text-black">
-                  {liveMetrics.attendancePct != null
-                    ? `${liveMetrics.attendancePct}%`
-                    : "No data"}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <ListChecks className="w-3.5 h-3.5" />
-                Tasks:{" "}
-                <span className="font-bold text-black">
-                  {liveMetrics.totalTasks > 0
-                    ? `${liveMetrics.completedTasks}/${liveMetrics.totalTasks} done`
-                    : "None assigned"}
-                </span>
-              </div>
-            </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                No data yet this month.
+              </p>
+            )
+          ) : Array.isArray(liveMetrics) && liveMetrics.length > 0 ? (
+            <LiveMetricsTable data={liveMetrics} />
           ) : (
             <p className="text-xs text-muted-foreground">
-              No data yet this month.
+              No employees to show.
             </p>
-          )
-        ) : Array.isArray(liveMetrics) && liveMetrics.length > 0 ? (
-          <LiveMetricsTable data={liveMetrics} />
-        ) : (
-          <p className="text-xs text-muted-foreground">No employees to show.</p>
-        )}
-      </div>
+          )}
+        </div>
       )}
 
       {}

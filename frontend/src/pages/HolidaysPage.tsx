@@ -36,14 +36,42 @@ interface Holiday {
 }
 
 const TYPE_META = {
-  national: { label: "National", color: "#EF4444", bg: "bg-red-50", border: "border-red-300", text: "text-red-700" },
-  optional: { label: "Optional", color: "#FA731C", bg: "bg-orange-50", border: "border-orange-300", text: "text-orange-700" },
-  restricted: { label: "Restricted", color: "#EAB308", bg: "bg-yellow-50", border: "border-yellow-300", text: "text-yellow-700" },
+  national: {
+    label: "National",
+    color: "#EF4444",
+    bg: "bg-red-50",
+    border: "border-red-300",
+    text: "text-red-700",
+  },
+  optional: {
+    label: "Optional",
+    color: "#FA731C",
+    bg: "bg-orange-50",
+    border: "border-orange-300",
+    text: "text-orange-700",
+  },
+  restricted: {
+    label: "Restricted",
+    color: "#EAB308",
+    bg: "bg-yellow-50",
+    border: "border-yellow-300",
+    text: "text-yellow-700",
+  },
 };
 
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const iso = (y: number, m: number, d: number) =>
@@ -108,7 +136,12 @@ export default function HolidaysPage() {
   const handleSave = async () => {
     if (saving || !dayModal) return;
     if (!form.name.trim()) {
-      setActionModal({ show: true, type: "error", title: "Required Field Missing", message: "Please fill in: Holiday Name" });
+      setActionModal({
+        show: true,
+        type: "error",
+        title: "Required Field Missing",
+        message: "Please fill in: Holiday Name",
+      });
       return;
     }
     const ok = await confirm({
@@ -120,7 +153,8 @@ export default function HolidaysPage() {
     if (!ok) return;
     setSaving(true);
     try {
-      if (editingId) await holidayAPI.update(editingId, { ...form, date: dayModal });
+      if (editingId)
+        await holidayAPI.update(editingId, { ...form, date: dayModal });
       else await holidayAPI.create({ ...form, date: dayModal });
       toast({ title: editingId ? "Holiday updated" : "Holiday added" });
       setEditingId(null);
@@ -172,11 +206,14 @@ export default function HolidaysPage() {
   const todayKey = iso(now.getFullYear(), now.getMonth(), now.getDate());
 
   const active = holidays.filter((h) => h.isActive);
-  const count = (t: Holiday["type"]) => active.filter((h) => h.type === t).length;
+  const count = (t: Holiday["type"]) =>
+    active.filter((h) => h.type === t).length;
   const upcoming = [...active]
     .filter((h) => h.date.slice(0, 10) >= todayKey)
     .sort((a, b) => a.date.localeCompare(b.date))[0];
-  const thisMonth = active.filter((h) => new Date(h.date).getMonth() === month).length;
+  const thisMonth = active.filter(
+    (h) => new Date(h.date).getMonth() === month,
+  ).length;
 
   const dayHolidays = dayModal ? byDate.get(dayModal) || [] : [];
 
@@ -185,29 +222,49 @@ export default function HolidaysPage() {
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
           <div>
-            <h1 className="font-display font-bold text-3xl text-black">Company Holidays</h1>
+            <h1 className="font-display font-bold text-3xl text-black">
+              Company Holidays
+            </h1>
             <p className="text-gray-600 font-medium mt-1">
-              Click a date to see or add a holiday. National holidays are marked in everyone's attendance automatically.
+              Click a date to see or add a holiday. National holidays are marked
+              in everyone's attendance automatically.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {canManage && (
               <ImportButton
                 name="holidays"
-                headers={["Name", "Date (YYYY-MM-DD)", "Type (national/optional/restricted)", "Description"]}
-                example={["Republic Day", `${year}-01-26`, "national", "Public holiday"]}
+                headers={[
+                  "Name",
+                  "Date (YYYY-MM-DD)",
+                  "Type (national/optional/restricted)",
+                  "Description",
+                ]}
+                example={[
+                  "Republic Day",
+                  `${year}-01-26`,
+                  "national",
+                  "Public holiday",
+                ]}
                 onRows={async (rows) => {
                   let ok = 0;
                   for (const r of rows) {
                     const name = String(r["Name"] || "").trim();
-                    const date = String(r["Date (YYYY-MM-DD)"] || "").slice(0, 10);
-                    const type = String(r["Type (national/optional/restricted)"] || "national").toLowerCase();
+                    const date = String(r["Date (YYYY-MM-DD)"] || "").slice(
+                      0,
+                      10,
+                    );
+                    const type = String(
+                      r["Type (national/optional/restricted)"] || "national",
+                    ).toLowerCase();
                     if (!name || !/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
                     try {
                       await holidayAPI.create({
                         name,
                         date,
-                        type: ["optional", "restricted"].includes(type) ? type : "national",
+                        type: ["optional", "restricted"].includes(type)
+                          ? type
+                          : "national",
                         description: String(r["Description"] || ""),
                       });
                       ok++;
@@ -223,25 +280,58 @@ export default function HolidaysPage() {
               rows={[...holidays].sort((a, b) => a.date.localeCompare(b.date))}
               cols={[
                 { header: "Date", value: (h) => h.date.slice(0, 10) },
-                { header: "Day", value: (h) => DAYS[new Date(h.date).getDay()] },
+                {
+                  header: "Day",
+                  value: (h) => DAYS[new Date(h.date).getDay()],
+                },
                 { header: "Holiday", value: (h) => h.name },
                 { header: "Type", value: (h) => TYPE_META[h.type].label },
                 { header: "Description", value: (h) => h.description || "" },
-                { header: "Status", value: (h) => (h.isActive ? "Active" : "Inactive") },
+                {
+                  header: "Status",
+                  value: (h) => (h.isActive ? "Active" : "Inactive"),
+                },
               ]}
             />
           </div>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
-          <StatCard label={`Total ${year}`} value={active.length} icon={CalendarDays} color="#024BAB" />
-          <StatCard label="National" value={count("national")} icon={Flag} color="#EF4444" />
-          <StatCard label="Optional" value={count("optional")} icon={Gift} color="#FA731C" />
-          <StatCard label="Restricted" value={count("restricted")} icon={Lock} color="#EAB308" />
+          <StatCard
+            label={`Total ${year}`}
+            value={active.length}
+            icon={CalendarDays}
+            color="#024BAB"
+          />
+          <StatCard
+            label="National"
+            value={count("national")}
+            icon={Flag}
+            color="#EF4444"
+          />
+          <StatCard
+            label="Optional"
+            value={count("optional")}
+            icon={Gift}
+            color="#FA731C"
+          />
+          <StatCard
+            label="Restricted"
+            value={count("restricted")}
+            icon={Lock}
+            color="#EAB308"
+          />
           <StatCard
             label="Next Holiday"
             value={upcoming ? upcoming.name : "None"}
-            sub={upcoming ? new Date(upcoming.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : undefined}
+            sub={
+              upcoming
+                ? new Date(upcoming.date).toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                  })
+                : undefined
+            }
             icon={CalendarClock}
             color="#00C48C"
           />
@@ -254,7 +344,10 @@ export default function HolidaysPage() {
         ) : (
           <div className="border-2 border-black bg-white">
             <div className="flex items-center justify-between px-4 py-3 border-b-2 border-black bg-[#024BAB]/5">
-              <button onClick={() => shift(-1)} className="p-1.5 border-2 border-black bg-white hover:bg-gray-50">
+              <button
+                onClick={() => shift(-1)}
+                className="p-1.5 border-2 border-black bg-white hover:bg-gray-50"
+              >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <div className="text-center">
@@ -265,20 +358,32 @@ export default function HolidaysPage() {
                   {thisMonth} holiday{thisMonth !== 1 ? "s" : ""} this month
                 </p>
               </div>
-              <button onClick={() => shift(1)} className="p-1.5 border-2 border-black bg-white hover:bg-gray-50">
+              <button
+                onClick={() => shift(1)}
+                className="p-1.5 border-2 border-black bg-white hover:bg-gray-50"
+              >
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
             <div className="grid grid-cols-7 border-b-2 border-black">
               {DAYS.map((d) => (
-                <div key={d} className="py-2 text-center text-xs font-bold uppercase text-gray-500">
+                <div
+                  key={d}
+                  className="py-2 text-center text-xs font-bold uppercase text-gray-500"
+                >
                   {d}
                 </div>
               ))}
             </div>
             <div className="grid grid-cols-7">
               {cells.map((d, i) => {
-                if (!d) return <div key={i} className="min-h-20 border-r border-b border-black/10 bg-gray-50/50" />;
+                if (!d)
+                  return (
+                    <div
+                      key={i}
+                      className="min-h-20 border-r border-b border-black/10 bg-gray-50/50"
+                    />
+                  );
                 const key = iso(year, month, d);
                 const list = byDate.get(key) || [];
                 const isToday = key === todayKey;
@@ -315,7 +420,11 @@ export default function HolidaysPage() {
                         {h.name}
                       </span>
                     ))}
-                    {list.length > 2 && <span className="text-[10px] font-bold text-gray-500">+{list.length - 2} more</span>}
+                    {list.length > 2 && (
+                      <span className="text-[10px] font-bold text-gray-500">
+                        +{list.length - 2} more
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -323,7 +432,10 @@ export default function HolidaysPage() {
             <div className="flex flex-wrap gap-4 px-4 py-2 border-t-2 border-black text-xs font-bold">
               {(Object.keys(TYPE_META) as Holiday["type"][]).map((t) => (
                 <span key={t} className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: TYPE_META[t].color }} />
+                  <span
+                    className="w-2.5 h-2.5 rounded-full"
+                    style={{ backgroundColor: TYPE_META[t].color }}
+                  />
                   {TYPE_META[t].label}
                 </span>
               ))}
@@ -350,22 +462,48 @@ export default function HolidaysPage() {
             </div>
             <div className="p-5 space-y-4 overflow-y-auto">
               {dayHolidays.length === 0 ? (
-                <p className="text-sm text-muted-foreground font-medium">No holiday on this date.</p>
+                <p className="text-sm text-muted-foreground font-medium">
+                  No holiday on this date.
+                </p>
               ) : (
                 <div className="space-y-2">
                   {dayHolidays.map((h) => (
-                    <div key={h._id} className={cn("border-2 p-3 flex items-start gap-2", TYPE_META[h.type].border, TYPE_META[h.type].bg)}>
+                    <div
+                      key={h._id}
+                      className={cn(
+                        "border-2 p-3 flex items-start gap-2",
+                        TYPE_META[h.type].border,
+                        TYPE_META[h.type].bg,
+                      )}
+                    >
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-black">{h.name}</p>
-                        <p className={cn("text-[10px] font-bold uppercase", TYPE_META[h.type].text)}>{TYPE_META[h.type].label}</p>
-                        {h.description && <p className="text-xs text-gray-600 mt-1">{h.description}</p>}
+                        <p
+                          className={cn(
+                            "text-[10px] font-bold uppercase",
+                            TYPE_META[h.type].text,
+                          )}
+                        >
+                          {TYPE_META[h.type].label}
+                        </p>
+                        {h.description && (
+                          <p className="text-xs text-gray-600 mt-1">
+                            {h.description}
+                          </p>
+                        )}
                       </div>
                       {canManage && (
                         <div className="flex gap-1">
-                          <button onClick={() => startEdit(h)} className="p-1.5 border border-gray-300 bg-white hover:border-black">
+                          <button
+                            onClick={() => startEdit(h)}
+                            className="p-1.5 border border-gray-300 bg-white hover:border-black"
+                          >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
-                          <button onClick={() => handleDelete(h._id)} className="p-1.5 border border-gray-300 bg-white hover:border-red-500 hover:text-red-500">
+                          <button
+                            onClick={() => handleDelete(h._id)}
+                            className="p-1.5 border border-gray-300 bg-white hover:border-red-500 hover:text-red-500"
+                          >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
@@ -382,22 +520,37 @@ export default function HolidaysPage() {
                   </p>
                   <input
                     value={form.name}
-                    onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, name: e.target.value }))
+                    }
                     placeholder="Holiday name, e.g. Republic Day"
                     className="w-full border-2 border-black px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
                   />
                   <select
                     value={form.type}
-                    onChange={(e) => setForm((p) => ({ ...p, type: e.target.value as Holiday["type"] }))}
+                    onChange={(e) =>
+                      setForm((p) => ({
+                        ...p,
+                        type: e.target.value as Holiday["type"],
+                      }))
+                    }
                     className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none"
                   >
-                    <option value="national">National - applies to everyone</option>
-                    <option value="optional">Optional - employee can choose</option>
-                    <option value="restricted">Restricted - limited to specific employees</option>
+                    <option value="national">
+                      National - applies to everyone
+                    </option>
+                    <option value="optional">
+                      Optional - employee can choose
+                    </option>
+                    <option value="restricted">
+                      Restricted - limited to specific employees
+                    </option>
                   </select>
                   <input
                     value={form.description}
-                    onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, description: e.target.value }))
+                    }
                     placeholder="Description (optional)"
                     className="w-full border-2 border-black px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
                   />
@@ -407,14 +560,28 @@ export default function HolidaysPage() {
                       disabled={saving}
                       className="flex-1 flex items-center justify-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-bold text-sm uppercase disabled:opacity-60"
                     >
-                      {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : editingId ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                      {saving ? "Saving..." : editingId ? "Save" : "Add Holiday"}
+                      {saving ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : editingId ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        <Plus className="w-4 h-4" />
+                      )}
+                      {saving
+                        ? "Saving..."
+                        : editingId
+                          ? "Save"
+                          : "Add Holiday"}
                     </button>
                     {editingId && (
                       <button
                         onClick={() => {
                           setEditingId(null);
-                          setForm({ name: "", type: "national", description: "" });
+                          setForm({
+                            name: "",
+                            type: "national",
+                            description: "",
+                          });
                         }}
                         className="border-2 border-black px-4 py-2 font-bold text-sm uppercase"
                       >

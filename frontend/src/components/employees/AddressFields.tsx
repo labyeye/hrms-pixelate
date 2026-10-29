@@ -4,11 +4,42 @@ import { PickerSelect } from "@/components/ui/PickerSelect";
 import { lookupPincode } from "@/lib/pincode";
 
 export const INDIA_STATES = [
-  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana",
-  "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur",
-  "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana",
-  "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh",
-  "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry",
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chhattisgarh",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+  "Andaman and Nicobar Islands",
+  "Chandigarh",
+  "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi",
+  "Jammu and Kashmir",
+  "Ladakh",
+  "Lakshadweep",
+  "Puducherry",
 ].map((s) => ({ value: s, label: s }));
 
 export interface AddressValue {
@@ -18,7 +49,8 @@ export interface AddressValue {
   state: string;
 }
 
-const input = "border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30";
+const input =
+  "border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30";
 const label = "block text-xs font-bold text-black mb-1";
 
 /** Address textarea + pincode (auto-fills city & state via India Post API) + city + state picker. */
@@ -65,11 +97,15 @@ export function AddressFields({
             inputMode="numeric"
             maxLength={6}
             value={value.pincode}
-            onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            onChange={(e) =>
+              setPin(e.target.value.replace(/\D/g, "").slice(0, 6))
+            }
             className={input}
             placeholder="6-digit pincode"
           />
-          {looking && <Loader2 className="w-4 h-4 animate-spin absolute right-3 top-3 text-[#024BAB]" />}
+          {looking && (
+            <Loader2 className="w-4 h-4 animate-spin absolute right-3 top-3 text-[#024BAB]" />
+          )}
         </div>
         {note && <p className="text-[10px] text-amber-700 mt-1">{note}</p>}
       </div>

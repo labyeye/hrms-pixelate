@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   createBottomTabNavigator,
   BottomTabBarProps,
@@ -10,6 +10,7 @@ import {
   Text,
   TouchableOpacity,
   LayoutChangeEvent,
+  AppState,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,10 +20,12 @@ import {
   Clock,
   Calendar,
   Grid,
+  ListChecks,
   LucideIcon,
 } from 'lucide-react-native';
 import { C } from '../theme';
 import { useAuth } from '../contexts/AuthContext';
+import { syncAnnouncementNotifications } from '../api/api';
 import TabBounce from '../components/motion/TabBounce';
 import DashboardScreen from '../screens/DashboardScreen';
 import EmployeesScreen from '../screens/EmployeesScreen';
@@ -121,6 +124,7 @@ function MoreNavigator() {
 const TAB_ICONS: Record<string, LucideIcon> = {
   Home: Home,
   Employees: Users,
+  Tasks: ListChecks,
   Attendance: Clock,
   Leave: Calendar,
   More: Grid,
@@ -188,7 +192,11 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
               target: route.key,
               canPreventDefault: true,
             });
-            if (!focused && !event.defaultPrevented) {
+            if (event.defaultPrevented) return;
+            if (route.name === 'More') {
+              // Always land on the More menu, not on whatever sub-screen (e.g. Notifications) was left open.
+              (navigation as any).navigate('More', { screen: 'MoreHome' });
+            } else if (!focused) {
               navigation.navigate(route.name as never);
             }
           };
@@ -240,6 +248,21 @@ export default function MainNavigator() {
   const { user } = useAuth();
   const isEmployee = user?.role === 'employee';
 
+  // New announcements become in-app notifications: checked on open, when the app returns to the foreground, and every minute.
+  useEffect(() => {
+    const run = () => syncAnnouncementNotifications().catch(() => {});
+    run();
+    const timer = setInterval(run, 60_000);
+    const sub = AppState.addEventListener(
+      'change',
+      st => st === 'active' && run(),
+    );
+    return () => {
+      clearInterval(timer);
+      sub.remove();
+    };
+  }, []);
+
   return (
     <Tab.Navigator
       tabBar={props => <CustomTabBar {...props} />}
@@ -250,7 +273,14 @@ export default function MainNavigator() {
         component={DashboardScreen}
         options={{ tabBarLabel: 'Home' }}
       />
-      {!isEmployee && (
+      {/* Staff get the same 5-slot bar as admins (raised Attendance in the middle); Tasks fills the Employee slot. */}
+      {isEmployee ? (
+        <Tab.Screen
+          name="Tasks"
+          component={TasksScreen}
+          options={{ tabBarLabel: 'Tasks' }}
+        />
+      ) : (
         <Tab.Screen
           name="Employees"
           component={EmployeesScreen}
@@ -294,7 +324,7 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     letterSpacing: 0.3,
     maxWidth: '100%',

@@ -23,6 +23,8 @@ import {
   Plus,
   Trash2,
   X,
+  Search,
+  SlidersHorizontal,
 } from 'lucide-react-native';
 import { announcementAPI, departmentAPI } from '../api/api';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -30,6 +32,9 @@ import { API_BASE_URL } from '../config/env';
 import ExportButton from '../components/common/ExportButton';
 import { useAuth } from '../contexts/AuthContext';
 import { DatePickerField } from '../components/common/DatePickerField';
+import HeaderIconBtn from '../components/common/HeaderIconBtn';
+import SearchModal from '../components/common/SearchModal';
+import FilterSortModal from '../components/common/FilterSortModal';
 import ScreenLayout, { HeaderBtn } from '../components/common/ScreenLayout';
 import { C, FONT } from '../theme';
 import { CENTER } from '../components/common/centerModal';
@@ -88,12 +93,18 @@ export default function AnnouncementsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [category, setCategory] = useState('all');
   const [openId, setOpenId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
-  const [poster, setPoster] = useState<{ uri: string; type: string; name: string } | null>(null);
+  const [poster, setPoster] = useState<{
+    uri: string;
+    type: string;
+    name: string;
+  } | null>(null);
   // posters are served from the API server root (/uploads/...), not under /api
   const serverRoot = API_BASE_URL.replace(/\/api\/?$/, '');
 
@@ -105,7 +116,11 @@ export default function AnnouncementsScreen() {
       Alert.alert('Too large', 'Poster must be under 5 MB');
       return;
     }
-    setPoster({ uri: a.uri, type: a.type || 'image/jpeg', name: a.fileName || `poster_${Date.now()}.jpg` });
+    setPoster({
+      uri: a.uri,
+      type: a.type || 'image/jpeg',
+      name: a.fileName || `poster_${Date.now()}.jpg`,
+    });
   };
 
   const load = useCallback(async () => {
@@ -216,7 +231,13 @@ export default function AnnouncementsScreen() {
     setSaving(true);
     try {
       const posterUrl = poster
-        ? (await announcementAPI.uploadPoster(poster.uri, poster.type, poster.name)).url
+        ? (
+            await announcementAPI.uploadPoster(
+              poster.uri,
+              poster.type,
+              poster.name,
+            )
+          ).url
         : undefined;
       await announcementAPI.create({ ...form, posterUrl });
       setFormOpen(false);
@@ -235,7 +256,19 @@ export default function AnnouncementsScreen() {
       title="Announcements"
       loading={loading}
       right={
-        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+          <HeaderIconBtn
+            label="Search"
+            icon={<Search size={22} color={C.black} />}
+            dot={!!search}
+            onPress={() => setSearchOpen(true)}
+          />
+          <HeaderIconBtn
+            label="Filter"
+            icon={<SlidersHorizontal size={22} color={C.black} />}
+            dot={category !== 'all'}
+            onPress={() => setFilterOpen(true)}
+          />
           <ExportButton
             name="announcements"
             label=""
@@ -245,7 +278,11 @@ export default function AnnouncementsScreen() {
               { header: 'Category', value: (a: any) => a.category },
               { header: 'Priority', value: (a: any) => a.priority },
               { header: 'Posted By', value: (a: any) => a.postedBy?.name },
-              { header: 'Date', value: (a: any) => String(a.date || a.createdAt || '').slice(0, 10) },
+              {
+                header: 'Date',
+                value: (a: any) =>
+                  String(a.date || a.createdAt || '').slice(0, 10),
+              },
               { header: 'Seen', value: (a: any) => a.readBy?.length || 0 },
               { header: 'Content', value: (a: any) => a.content },
             ]}
@@ -270,29 +307,27 @@ export default function AnnouncementsScreen() {
           <Text style={s.backText}>Back</Text>
         </TouchableOpacity>
       </View>
-      <View style={s.filters}>
-        <TextInput
-          style={s.search}
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Search announcements..."
-          placeholderTextColor="#6B7280"
-        />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 8 }}
-        >
-          {['all', ...CATEGORIES].map(c => (
-            <Pill
-              key={c}
-              label={c}
-              on={category === c}
-              onPress={() => setCategory(c)}
-            />
-          ))}
-        </ScrollView>
-      </View>
+      <SearchModal
+        visible={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        value={search}
+        onChange={setSearch}
+        placeholder="Search announcements…"
+        items={items.map((a: any) => ({
+          key: a._id,
+          title: a.title,
+          subtitle: a.category,
+        }))}
+      />
+      <FilterSortModal
+        visible={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        filterTitle="Category"
+        filterOptions={['all', ...CATEGORIES].map(c => ({ key: c, label: c }))}
+        filterValue={category}
+        onFilter={setCategory}
+        onReset={() => setCategory('all')}
+      />
 
       <FlatList
         data={shown}
@@ -349,7 +384,13 @@ export default function AnnouncementsScreen() {
                   {!!a.posterUrl && (
                     <Image
                       source={{ uri: `${serverRoot}${a.posterUrl}` }}
-                      style={{ width: '100%', height: 220, marginBottom: 8, borderWidth: 2, borderColor: C.black }}
+                      style={{
+                        width: '100%',
+                        height: 220,
+                        marginBottom: 8,
+                        borderWidth: 2,
+                        borderColor: C.black,
+                      }}
                       resizeMode="contain"
                     />
                   )}
@@ -397,119 +438,140 @@ export default function AnnouncementsScreen() {
         animationType="fade"
         onRequestClose={() => setFormOpen(false)}
       >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        <SafeAreaView edges={[]} style={s.sheet}>
-          <View style={s.sheetHeader}>
-            <Text style={s.sheetTitle}>New Announcement</Text>
-            <TouchableOpacity onPress={() => setFormOpen(false)} hitSlop={8}>
-              <X size={22} color={C.black} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-            keyboardShouldPersistTaps="handled"
-          >
-            <Text style={s.label}>Title *</Text>
-            <TextInput
-              style={s.input}
-              value={form.title}
-              onChangeText={v => setForm(f => ({ ...f, title: v }))}
-            />
-            <Text style={s.label}>Content *</Text>
-            <TextInput
-              style={[s.input, { height: 110, textAlignVertical: 'top' }]}
-              value={form.content}
-              onChangeText={v => setForm(f => ({ ...f, content: v }))}
-              multiline
-            />
-            <Text style={s.label}>Poster (optional) · sent to every employee as a notification</Text>
-            <TouchableOpacity style={s.input} onPress={pickPoster}>
-              <Text style={{ color: C.black, fontWeight: '600' }}>{poster ? 'Change poster' : 'Choose poster image'}</Text>
-            </TouchableOpacity>
-            {poster && (
-              <View style={{ marginBottom: 8 }}>
-                <Image source={{ uri: poster.uri }} style={{ width: '100%', height: 160 }} resizeMode="contain" />
-                <TouchableOpacity onPress={() => setPoster(null)}>
-                  <Text style={{ color: C.danger, fontWeight: '700', marginTop: 4 }}>Remove poster</Text>
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            <SafeAreaView edges={[]} style={s.sheet}>
+              <View style={s.sheetHeader}>
+                <Text style={s.sheetTitle}>New Announcement</Text>
+                <TouchableOpacity
+                  onPress={() => setFormOpen(false)}
+                  hitSlop={8}
+                >
+                  <X size={22} color={C.black} />
                 </TouchableOpacity>
               </View>
-            )}
-            <Text style={s.label}>Category</Text>
-            <Chips
-              options={CATEGORIES}
-              value={form.category}
-              onChange={v => setForm(f => ({ ...f, category: v }))}
-            />
-            <Text style={s.label}>Priority</Text>
-            <Chips
-              options={PRIORITIES}
-              value={form.priority}
-              onChange={v => setForm(f => ({ ...f, priority: v }))}
-            />
-            <DatePickerField
-              label="Expiry date (optional)"
-              value={form.expiryDate}
-              onChange={v => setForm(f => ({ ...f, expiryDate: v }))}
-            />
-            <Text style={s.label}>Audience</Text>
-            <Chips
-              options={AUDIENCES}
-              value={form.targetAudience}
-              onChange={v => setForm(f => ({ ...f, targetAudience: v }))}
-            />
-            {form.targetAudience === 'department' && (
-              <MultiChips
-                options={departments.map(d => ({
-                  value: d._id,
-                  label: d.name,
-                }))}
-                selected={form.departments}
-                onToggle={v => toggleIn('departments', v)}
-              />
-            )}
-            {form.targetAudience === 'role' && (
-              <MultiChips
-                options={ROLE_OPTIONS.map(r => ({
-                  value: r,
-                  label: pretty(r),
-                }))}
-                selected={form.roles}
-                onToggle={v => toggleIn('roles', v)}
-              />
-            )}
-            <View style={s.switchRow}>
-              <Text style={s.switchLabel}>Pin to top</Text>
-              <Switch
-                value={form.pinned}
-                onValueChange={v => setForm(f => ({ ...f, pinned: v }))}
-                trackColor={{ false: '#D1D5DB', true: C.primary }}
-                thumbColor="#fff"
-              />
-            </View>
-            <View style={s.switchRow}>
-              <Text style={s.switchLabel}>Require acknowledgement</Text>
-              <Switch
-                value={form.acknowledgementRequired}
-                onValueChange={v =>
-                  setForm(f => ({ ...f, acknowledgementRequired: v }))
-                }
-                trackColor={{ false: '#D1D5DB', true: C.primary }}
-                thumbColor="#fff"
-              />
-            </View>
-            <TouchableOpacity
-              style={[s.saveBtn, saving && { opacity: 0.6 }]}
-              onPress={post}
-              disabled={saving}
-            >
-              <Text style={s.saveText}>
-                {saving ? 'Posting...' : 'Post Announcement'}
-              </Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </View></View>
-</Modal>
+              <ScrollView
+                contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+                keyboardShouldPersistTaps="handled"
+              >
+                <Text style={s.label}>Title *</Text>
+                <TextInput
+                  style={s.input}
+                  value={form.title}
+                  onChangeText={v => setForm(f => ({ ...f, title: v }))}
+                />
+                <Text style={s.label}>Content *</Text>
+                <TextInput
+                  style={[s.input, { height: 110, textAlignVertical: 'top' }]}
+                  value={form.content}
+                  onChangeText={v => setForm(f => ({ ...f, content: v }))}
+                  multiline
+                />
+                <Text style={s.label}>
+                  Poster (optional) · sent to every employee as a notification
+                </Text>
+                <TouchableOpacity style={s.input} onPress={pickPoster}>
+                  <Text style={{ color: C.black, fontWeight: '400' }}>
+                    {poster ? 'Change poster' : 'Choose poster image'}
+                  </Text>
+                </TouchableOpacity>
+                {poster && (
+                  <View style={{ marginBottom: 8 }}>
+                    <Image
+                      source={{ uri: poster.uri }}
+                      style={{ width: '100%', height: 160 }}
+                      resizeMode="contain"
+                    />
+                    <TouchableOpacity onPress={() => setPoster(null)}>
+                      <Text
+                        style={{
+                          color: C.danger,
+                          fontWeight: '400',
+                          marginTop: 4,
+                        }}
+                      >
+                        Remove poster
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+                <Text style={s.label}>Category</Text>
+                <Chips
+                  options={CATEGORIES}
+                  value={form.category}
+                  onChange={v => setForm(f => ({ ...f, category: v }))}
+                />
+                <Text style={s.label}>Priority</Text>
+                <Chips
+                  options={PRIORITIES}
+                  value={form.priority}
+                  onChange={v => setForm(f => ({ ...f, priority: v }))}
+                />
+                <DatePickerField
+                  label="Expiry date (optional)"
+                  value={form.expiryDate}
+                  onChange={v => setForm(f => ({ ...f, expiryDate: v }))}
+                />
+                <Text style={s.label}>Audience</Text>
+                <Chips
+                  options={AUDIENCES}
+                  value={form.targetAudience}
+                  onChange={v => setForm(f => ({ ...f, targetAudience: v }))}
+                />
+                {form.targetAudience === 'department' && (
+                  <MultiChips
+                    options={departments.map(d => ({
+                      value: d._id,
+                      label: d.name,
+                    }))}
+                    selected={form.departments}
+                    onToggle={v => toggleIn('departments', v)}
+                  />
+                )}
+                {form.targetAudience === 'role' && (
+                  <MultiChips
+                    options={ROLE_OPTIONS.map(r => ({
+                      value: r,
+                      label: pretty(r),
+                    }))}
+                    selected={form.roles}
+                    onToggle={v => toggleIn('roles', v)}
+                  />
+                )}
+                <View style={s.switchRow}>
+                  <Text style={s.switchLabel}>Pin to top</Text>
+                  <Switch
+                    value={form.pinned}
+                    onValueChange={v => setForm(f => ({ ...f, pinned: v }))}
+                    trackColor={{ false: '#D1D5DB', true: C.primary }}
+                    thumbColor="#fff"
+                  />
+                </View>
+                <View style={s.switchRow}>
+                  <Text style={s.switchLabel}>Require acknowledgement</Text>
+                  <Switch
+                    value={form.acknowledgementRequired}
+                    onValueChange={v =>
+                      setForm(f => ({ ...f, acknowledgementRequired: v }))
+                    }
+                    trackColor={{ false: '#D1D5DB', true: C.primary }}
+                    thumbColor="#fff"
+                  />
+                </View>
+                <TouchableOpacity
+                  style={[s.saveBtn, saving && { opacity: 0.6 }]}
+                  onPress={post}
+                  disabled={saving}
+                >
+                  <Text style={s.saveText}>
+                    {saving ? 'Posting...' : 'Post Announcement'}
+                  </Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </SafeAreaView>
+          </View>
+        </View>
+      </Modal>
     </ScreenLayout>
   );
 }

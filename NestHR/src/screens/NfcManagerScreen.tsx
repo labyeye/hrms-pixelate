@@ -26,6 +26,8 @@ import {
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { biometricAPI, employeeAPI } from '../api/api';
+import HeaderIconBtn from '../components/common/HeaderIconBtn';
+import SearchModal from '../components/common/SearchModal';
 import { C } from '../theme';
 
 interface Employee {
@@ -63,6 +65,7 @@ export default function NfcManagerScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const [modal, setModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
@@ -223,31 +226,36 @@ export default function NfcManagerScreen() {
           <CreditCard size={20} color={C.primary} />
           <Text style={styles.headerTitle}>NFC Cards</Text>
         </View>
-        <TouchableOpacity style={styles.addBtn} onPress={openAssign}>
-          <Plus size={14} color={C.white} />
-          <Text style={styles.addBtnText}>Assign</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+          <HeaderIconBtn
+            label="Search"
+            icon={<Search size={22} color={C.black} />}
+            dot={!!search}
+            onPress={() => setSearchOpen(true)}
+          />
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={openAssign}
+            accessibilityLabel="Assign"
+            hitSlop={8}
+          >
+            <Plus size={24} color={C.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Search */}
-      <View style={styles.searchRow}>
-        <Search size={14} color="#9CA3AF" style={{ marginLeft: 12 }} />
-        <TextInput
-          style={styles.searchInput}
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Search employees..."
-          placeholderTextColor="#9CA3AF"
-        />
-        {search ? (
-          <TouchableOpacity
-            onPress={() => setSearch('')}
-            style={{ padding: 10 }}
-          >
-            <X size={14} color="#9CA3AF" />
-          </TouchableOpacity>
-        ) : null}
-      </View>
+      <SearchModal
+        visible={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        value={search}
+        onChange={setSearch}
+        placeholder="Search employees…"
+        items={employees.map(e => ({
+          key: e._id,
+          title: `${e.firstName} ${e.lastName}`.trim(),
+          subtitle: e.employeeId,
+        }))}
+      />
 
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
@@ -509,26 +517,12 @@ const styles = StyleSheet.create({
     borderBottomColor: C.black,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: C.black },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: C.primary,
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderColor: C.black,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
+  headerTitle: { fontSize: 18, fontWeight: '400', color: C.black },
+  addBtn: { padding: 4 },
   addBtnText: {
     color: C.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   searchRow: {
@@ -543,7 +537,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 10,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
   },
   card: {
@@ -584,8 +578,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: C.black,
   },
-  avatarText: { color: C.white, fontSize: 13, fontWeight: '700' },
-  empName: { fontSize: 14, fontWeight: '700', color: C.black },
+  avatarText: { color: C.white, fontSize: 13, fontWeight: '400' },
+  empName: { fontSize: 14, fontWeight: '400', color: C.black },
   empId: { fontSize: 11, color: '#6B7280', marginTop: 1 },
   noCard: { fontSize: 11, color: '#9CA3AF', fontStyle: 'italic', marginTop: 4 },
   cardChip: {
@@ -599,11 +593,11 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     alignSelf: 'flex-start',
   },
-  cardChipText: { fontSize: 11, fontWeight: '700', color: C.primary },
+  cardChipText: { fontSize: 11, fontWeight: '400', color: C.primary },
   cardChipLabel: { fontSize: 11, color: '#6B7280' },
   cardChipDev: { fontSize: 12, color: '#9CA3AF' },
   empty: { alignItems: 'center', paddingVertical: 60, gap: 8 },
-  emptyText: { fontSize: 14, fontWeight: '700', color: '#6B7280' },
+  emptyText: { fontSize: 14, fontWeight: '400', color: '#6B7280' },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -627,7 +621,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.black,
     flex: 1,
     marginRight: 10,
@@ -640,14 +634,14 @@ const styles = StyleSheet.create({
   },
   backBtnText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.primary,
     textTransform: 'uppercase',
   },
   field: { marginBottom: 14 },
   fieldLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: '#6B7280',
     marginBottom: 6,
@@ -664,7 +658,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
   },
   saveBtn: {
@@ -686,7 +680,7 @@ const styles = StyleSheet.create({
   saveBtnText: {
     color: C.white,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   locOption: {
@@ -704,7 +698,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   locOptionSelected: { borderColor: C.primary, backgroundColor: '#EFF6FF' },
-  locOptionText: { fontSize: 14, fontWeight: '600', color: C.black },
+  locOptionText: { fontSize: 14, fontWeight: '400', color: C.black },
   empOption: {
     flexDirection: 'row',
     alignItems: 'center',

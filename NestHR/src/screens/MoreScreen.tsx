@@ -303,14 +303,14 @@ export default function MoreScreen({ navigation }: any) {
       isEmployee && item.key === 'Payroll'
         ? 'My Payslips'
         : isEmployee && item.key === 'Loans'
-        ? 'My Loans'
-        : item.label,
+          ? 'My Loans'
+          : item.label,
     desc:
       isEmployee && item.key === 'Payroll'
         ? 'View your salary payslips'
         : isEmployee && item.key === 'Loans'
-        ? 'Request a loan or salary advance'
-        : item.desc,
+          ? 'Request a loan or salary advance'
+          : item.desc,
   }));
 
   const sections = GROUPS.map(g => ({
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
   },
-  headerTitle: { fontSize: 24, fontWeight: '800', color: '#000' },
+  headerTitle: { fontSize: 24, fontWeight: '400', color: '#000' },
   scroll: { padding: 16, gap: 18 },
 
   hero: { ...box, backgroundColor: '#fff', padding: 14, gap: 14 },
@@ -521,12 +521,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  userAvatarText: { color: '#fff', fontSize: 26, fontWeight: '700' },
-  profileName: { fontSize: 18, fontWeight: '800', color: '#000' },
+  userAvatarText: { color: '#fff', fontSize: 26, fontWeight: '400' },
+  profileName: { fontSize: 18, fontWeight: '400', color: '#000' },
   profileEmail: {
     fontSize: 12,
     color: '#64748b',
-    fontWeight: '600',
+    fontWeight: '400',
     marginTop: 2,
   },
   rolePill: {
@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
-  roleText: { fontSize: 10, fontWeight: '800', color: '#000' },
+  roleText: { fontSize: 10, fontWeight: '400', color: '#000' },
   heroBtns: { flexDirection: 'row', gap: 10 },
   heroBtn: {
     flex: 1,
@@ -552,7 +552,7 @@ const styles = StyleSheet.create({
     borderColor: '#000',
     borderRadius: 8,
   },
-  heroBtnText: { fontSize: 13, fontWeight: '800' },
+  heroBtnText: { fontSize: 13, fontWeight: '400' },
 
   searchBox: {
     ...box,
@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     fontSize: 14,
     color: '#000',
-    fontWeight: '600',
+    fontWeight: '400',
   },
 
   sectionHead: {
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '400',
     color: '#000',
     letterSpacing: 1,
   },
@@ -606,21 +606,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 4,
   },
-  tileLabel: { fontSize: 14, fontWeight: '800', color: '#000' },
+  tileLabel: { fontSize: 14, fontWeight: '400', color: '#000' },
   tileSub: {
     fontSize: 11,
     color: '#64748b',
-    fontWeight: '500',
+    fontWeight: '400',
     lineHeight: 15,
   },
 
   empty: { alignItems: 'center', paddingVertical: 40, gap: 8 },
-  emptyText: { fontSize: 14, fontWeight: '700', color: '#64748b' },
+  emptyText: { fontSize: 14, fontWeight: '400', color: '#64748b' },
   versionText: {
     textAlign: 'center',
     fontSize: 11,
     color: C.textLight,
-    fontWeight: '500',
+    fontWeight: '400',
   },
   bellBtn: { padding: 4, position: 'relative' },
   bellBadge: {
@@ -635,5 +635,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 3,
   },
-  bellBadgeText: { color: '#fff', fontSize: 9, fontWeight: '700' },
+  bellBadgeText: { color: '#fff', fontSize: 9, fontWeight: '400' },
 });

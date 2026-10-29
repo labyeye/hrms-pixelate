@@ -5,9 +5,24 @@ import img2 from "@/assets/onboarding/2.png";
 import img3 from "@/assets/onboarding/3.png";
 
 const SLIDES = [
-  { title: "Everything HR, in one place", body: "Manage your people, attendance, leave, payroll and daily HR operations from one simple workspace.", color: "#EAF2FF", image: img1 },
-  { title: "Keep your team connected", body: "Give employees quick access to tasks, announcements, documents and important updates wherever they work.", color: "#FFF1E8", image: img2 },
-  { title: "Make better people decisions", body: "Use clear reports and real-time insights to build a more productive, organised and engaged team.", color: "#E9F9F3", image: img3 },
+  {
+    title: "Everything HR, in one place",
+    body: "Manage your people, attendance, leave, payroll and daily HR operations from one simple workspace.",
+    color: "#EAF2FF",
+    image: img1,
+  },
+  {
+    title: "Keep your team connected",
+    body: "Give employees quick access to tasks, announcements, documents and important updates wherever they work.",
+    color: "#FFF1E8",
+    image: img2,
+  },
+  {
+    title: "Make better people decisions",
+    body: "Use clear reports and real-time insights to build a more productive, organised and engaged team.",
+    color: "#E9F9F3",
+    image: img3,
+  },
 ];
 
 const key = (id: string) => `nesthr:intro:${id}`;
@@ -25,7 +40,8 @@ export default function IntroOnboarding() {
   } catch {
     // storage blocked: skip rather than nag every load
   }
-  if (!isAuthenticated || seen || done || (user as any)?.role === "member") return null;
+  if (!isAuthenticated || seen || done || (user as any)?.role === "member")
+    return null;
 
   const finish = () => {
     try {
@@ -39,10 +55,19 @@ export default function IntroOnboarding() {
   const s = SLIDES[step];
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-white text-slate-900" role="dialog" aria-modal="true">
+    <div
+      className="fixed inset-0 z-[100] flex flex-col bg-white text-slate-900"
+      role="dialog"
+      aria-modal="true"
+    >
       <div className="flex items-center justify-between px-6 py-4">
-        <span className="text-2xl font-bold text-primary">Nest<span className="text-secondary">HR</span></span>
-        <button onClick={finish} className="text-sm font-semibold text-slate-500 hover:text-slate-800">
+        <span className="text-2xl font-bold text-primary">
+          Nest<span className="text-secondary">HR</span>
+        </span>
+        <button
+          onClick={finish}
+          className="text-sm font-semibold text-slate-500 hover:text-slate-800"
+        >
           Skip
         </button>
       </div>

@@ -36,6 +36,8 @@ import {
   ScanFace,
   CreditCard,
   KeyRound,
+  ListChecks,
+  SlidersHorizontal,
 } from 'lucide-react-native';
 import {
   attendanceAPI,
@@ -47,7 +49,10 @@ import { AttendanceRecord, Employee } from '../types/hrms';
 import { C } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import ExportButton from '../components/common/ExportButton';
-import FilterBar from '../components/common/FilterBar';
+import SlideInCard from '../components/motion/SlideInCard';
+import HeaderIconBtn from '../components/common/HeaderIconBtn';
+import SearchModal from '../components/common/SearchModal';
+import FilterSortModal from '../components/common/FilterSortModal';
 import { TimePickerField } from '../components/common/DatePickerField';
 
 function openLocationInMaps(loc: { lat: number; lng: number }) {
@@ -148,6 +153,9 @@ export default function AttendanceScreen({ navigation }: any) {
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState(toDateStr(new Date()));
   const [statusFilter, setStatusFilter] = useState('');
+  const [sortKey, setSortKey] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedEmpId, setSelectedEmpId] = useState('');
@@ -450,6 +458,18 @@ export default function AttendanceScreen({ navigation }: any) {
     if (statusFilter && r.status !== statusFilter) return false;
     return true;
   });
+  if (sortKey) {
+    const nm = (r: any) =>
+      `${r.employee?.firstName || ''} ${r.employee?.lastName || ''}`.toLowerCase();
+    const t = (v: any) => (v ? new Date(v).getTime() : Infinity);
+    filtered.sort((a: any, b: any) =>
+      sortKey === 'name'
+        ? nm(a).localeCompare(nm(b))
+        : sortKey === 'name_desc'
+          ? nm(b).localeCompare(nm(a))
+          : t(a.checkIn) - t(b.checkIn),
+    );
+  }
 
   const handleSave = async () => {
     setSaving(true);
@@ -507,19 +527,68 @@ export default function AttendanceScreen({ navigation }: any) {
           <Text style={styles.headerTitle}>Attendance</Text>
         </View>
         {!isEmployee && (
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+            <HeaderIconBtn
+              label="Face attendance kiosk"
+              icon={<ScanFace size={22} color={C.primary} />}
+              onPress={() => navigation.navigate('FaceKiosk')}
+            />
+            <HeaderIconBtn
+              label="Search"
+              icon={<Search size={22} color={C.black} />}
+              dot={!!search}
+              onPress={() => setSearchOpen(true)}
+            />
+            <HeaderIconBtn
+              label="Filter and sort"
+              icon={<SlidersHorizontal size={22} color={C.black} />}
+              dot={!!statusFilter || !!sortKey}
+              onPress={() => setFilterOpen(true)}
+            />
             <ExportButton
               name={`attendance_${dateFilter}`}
               label=""
               rows={filtered}
               cols={[
-                { header: 'Emp Code', value: (r: any) => r.employee?.employeeId },
-                { header: 'Employee', value: (r: any) => `${r.employee?.firstName || ''} ${r.employee?.lastName || ''}`.trim() },
+                {
+                  header: 'Emp Code',
+                  value: (r: any) => r.employee?.employeeId,
+                },
+                {
+                  header: 'Employee',
+                  value: (r: any) =>
+                    `${r.employee?.firstName || ''} ${r.employee?.lastName || ''}`.trim(),
+                },
                 { header: 'Date', value: () => dateFilter },
-                { header: 'Check In', value: (r: any) => (r.checkIn ? new Date(r.checkIn).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '') },
-                { header: 'Check Out', value: (r: any) => (r.checkOut ? new Date(r.checkOut).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '') },
-                { header: 'Hours', value: (r: any) => (r.workHours ? Number(r.workHours).toFixed(1) : '') },
-                { header: 'Status', value: (r: any) => String(r.status || '').replace(/_/g, ' ') },
+                {
+                  header: 'Check In',
+                  value: (r: any) =>
+                    r.checkIn
+                      ? new Date(r.checkIn).toLocaleTimeString('en-IN', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : '',
+                },
+                {
+                  header: 'Check Out',
+                  value: (r: any) =>
+                    r.checkOut
+                      ? new Date(r.checkOut).toLocaleTimeString('en-IN', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : '',
+                },
+                {
+                  header: 'Hours',
+                  value: (r: any) =>
+                    r.workHours ? Number(r.workHours).toFixed(1) : '',
+                },
+                {
+                  header: 'Status',
+                  value: (r: any) => String(r.status || '').replace(/_/g, ' '),
+                },
               ]}
             />
             <TouchableOpacity
@@ -530,12 +599,15 @@ export default function AttendanceScreen({ navigation }: any) {
                 setShowBulkModal(true);
               }}
             >
-              <CheckCircle2 size={14} color={C.primary} />
-              <Text style={styles.bulkBtnText}>Bulk</Text>
+              <ListChecks size={24} color={C.black} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.addBtn} onPress={openNew}>
-              <CheckCircle2 size={14} color={C.white} />
-              <Text style={styles.addBtnText}>Mark</Text>
+            <TouchableOpacity
+              style={styles.addBtn}
+              onPress={openNew}
+              accessibilityLabel="Mark"
+              hitSlop={8}
+            >
+              <CheckCircle2 size={24} color={C.primary} />
             </TouchableOpacity>
           </View>
         )}
@@ -543,9 +615,10 @@ export default function AttendanceScreen({ navigation }: any) {
           <TouchableOpacity
             style={styles.addBtn}
             onPress={() => setShowCorrectionModal(true)}
+            accessibilityLabel="Correction"
+            hitSlop={8}
           >
-            <Clock size={14} color={C.white} />
-            <Text style={styles.addBtnText}>Correction</Text>
+            <Clock size={24} color={C.primary} />
           </TouchableOpacity>
         )}
       </View>
@@ -679,32 +752,47 @@ export default function AttendanceScreen({ navigation }: any) {
         )}
 
       {!isEmployee && (
-        <FilterBar
-          value={statusFilter}
-          onChange={setStatusFilter}
-          options={[
-            { key: '', label: 'All' },
-            ...Object.keys(summary).map(k => ({ key: k, label: k })),
-          ]}
-        />
-      )}
-
-      {!isEmployee && (
-        <View style={styles.searchWrap}>
-          <Search size={15} color={C.textMuted} />
-          <TextInput
-            style={styles.searchInput}
+        <>
+          <SearchModal
+            visible={searchOpen}
+            onClose={() => setSearchOpen(false)}
             value={search}
-            onChangeText={setSearch}
+            onChange={setSearch}
             placeholder="Search by employee…"
-            placeholderTextColor={C.textLight}
+            items={mergedRows.map((r: any) => ({
+              key: String(r._id || r.employee?._id),
+              title:
+                `${r.employee?.firstName || ''} ${r.employee?.lastName || ''}`.trim(),
+              subtitle: r.employee?.employeeId,
+            }))}
           />
-          {search.length > 0 && (
-            <TouchableOpacity onPress={() => setSearch('')}>
-              <X size={14} color={C.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
+          <FilterSortModal
+            visible={filterOpen}
+            onClose={() => setFilterOpen(false)}
+            filterTitle="Status"
+            filterOptions={[
+              { key: '', label: 'All' },
+              ...Object.keys(summary).map(k => ({
+                key: k,
+                label: `${k} (${summary[k]})`,
+              })),
+            ]}
+            filterValue={statusFilter}
+            onFilter={setStatusFilter}
+            sortOptions={[
+              { key: '', label: 'Default' },
+              { key: 'name', label: 'Name A–Z' },
+              { key: 'name_desc', label: 'Name Z–A' },
+              { key: 'checkin', label: 'Check-in time' },
+            ]}
+            sortValue={sortKey}
+            onSort={setSortKey}
+            onReset={() => {
+              setStatusFilter('');
+              setSortKey('');
+            }}
+          />
+        </>
       )}
 
       {loading ? (
@@ -731,288 +819,319 @@ export default function AttendanceScreen({ navigation }: any) {
               <Text style={styles.emptyText}>No records for this date</Text>
             </View>
           }
-          renderItem={({ item }) => {
-            const emp = item.employee as any;
-            const cfg = STATUS_CONFIG[item.status] || {
-              color: C.textMuted,
-              bg: '#F3F4F6',
-              icon: AlertCircle,
-            };
-            const Icon = cfg.icon;
-            const ciTime = item.checkIn
-              ? new Date(item.checkIn).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-              : null;
-            const coTime = item.checkOut
-              ? new Date(item.checkOut).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
-              : null;
-            const workHours = (item as any).workingHours;
-            const overtime = (item as any).overtime;
-            const initials = emp
-              ? `${emp.firstName?.[0] || ''}${
-                  emp.lastName?.[0] || ''
-                }`.toUpperCase()
-              : '?';
-            const ciDate = item.checkIn
-              ? new Date(item.checkIn).toLocaleDateString('en-IN', {
-                  day: '2-digit',
-                  month: 'short',
-                  year: 'numeric',
-                })
-              : null;
-            const coDate = item.checkOut
-              ? new Date(item.checkOut).toLocaleDateString('en-IN', {
-                  day: '2-digit',
-                  month: 'short',
-                  year: 'numeric',
-                })
-              : null;
-            const verifyMode = (item as any).verifyMode;
-            const VerifyIcon =
-              (verifyMode && VERIFY_MODE_ICONS[verifyMode]) || Clock;
-            const deptName =
-              typeof emp?.department === 'object'
-                ? emp?.department?.name
-                : emp?.department;
-            const statusLabel =
-              item.status === 'weekend'
-                ? new Date(dateFilter + 'T00:00:00')
-                    .toLocaleDateString('en-IN', { weekday: 'long' })
-                    .toUpperCase()
-                : item.status.replace(/_/g, ' ').toUpperCase();
-            return (
-              <View style={[styles.card, { borderLeftColor: cfg.color }]}>
-                <View style={styles.cardRow}>
-                  <View style={styles.photoWrap}>
-                    {emp?.avatar ? (
-                      <Image
-                        source={{ uri: emp.avatar }}
-                        style={styles.empPhoto}
-                      />
-                    ) : (
-                      <View
-                        style={[
-                          styles.empPhoto,
-                          styles.empPhotoFallback,
-                          { backgroundColor: cfg.bg },
-                        ]}
-                      >
-                        <Text
+          renderItem={({ item, index }) => (
+            <SlideInCard index={index}>
+              {(() => {
+                const emp = item.employee as any;
+                const cfg = STATUS_CONFIG[item.status] || {
+                  color: C.textMuted,
+                  bg: '#F3F4F6',
+                  icon: AlertCircle,
+                };
+                const Icon = cfg.icon;
+                const ciTime = item.checkIn
+                  ? new Date(item.checkIn).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
+                  : null;
+                const coTime = item.checkOut
+                  ? new Date(item.checkOut).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
+                  : null;
+                const workHours = (item as any).workingHours;
+                const overtime = (item as any).overtime;
+                const initials = emp
+                  ? `${emp.firstName?.[0] || ''}${
+                      emp.lastName?.[0] || ''
+                    }`.toUpperCase()
+                  : '?';
+                const ciDate = item.checkIn
+                  ? new Date(item.checkIn).toLocaleDateString('en-IN', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    })
+                  : null;
+                const coDate = item.checkOut
+                  ? new Date(item.checkOut).toLocaleDateString('en-IN', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    })
+                  : null;
+                const verifyMode = (item as any).verifyMode;
+                const VerifyIcon =
+                  (verifyMode && VERIFY_MODE_ICONS[verifyMode]) || Clock;
+                const deptName =
+                  typeof emp?.department === 'object'
+                    ? emp?.department?.name
+                    : emp?.department;
+                const statusLabel =
+                  item.status === 'weekend'
+                    ? new Date(dateFilter + 'T00:00:00')
+                        .toLocaleDateString('en-IN', { weekday: 'long' })
+                        .toUpperCase()
+                    : item.status.replace(/_/g, ' ').toUpperCase();
+                return (
+                  <View style={[styles.card, { borderLeftColor: cfg.color }]}>
+                    <View style={styles.cardRow}>
+                      <View style={styles.photoWrap}>
+                        {emp?.avatar ? (
+                          <Image
+                            source={{ uri: emp.avatar }}
+                            style={styles.empPhoto}
+                          />
+                        ) : (
+                          <View
+                            style={[
+                              styles.empPhoto,
+                              styles.empPhotoFallback,
+                              { backgroundColor: cfg.bg },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.empPhotoInitials,
+                                { color: cfg.color },
+                              ]}
+                            >
+                              {initials}
+                            </Text>
+                          </View>
+                        )}
+                        <View
                           style={[
-                            styles.empPhotoInitials,
-                            { color: cfg.color },
+                            styles.statusBadgeOverlay,
+                            {
+                              backgroundColor: C.white,
+                              borderColor: cfg.color,
+                            },
                           ]}
                         >
-                          {initials}
+                          <Icon size={11} color={cfg.color} />
+                        </View>
+                      </View>
+                      <View style={{ flex: 1, marginLeft: 12 }}>
+                        <Text style={styles.empName} numberOfLines={1}>
+                          {emp
+                            ? `${emp.firstName} ${emp.lastName}`.toUpperCase()
+                            : 'UNKNOWN'}
                         </Text>
-                      </View>
-                    )}
-                    <View
-                      style={[
-                        styles.statusBadgeOverlay,
-                        { backgroundColor: C.white, borderColor: cfg.color },
-                      ]}
-                    >
-                      <Icon size={11} color={cfg.color} />
-                    </View>
-                  </View>
-                  <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={styles.empName} numberOfLines={1}>
-                      {emp
-                        ? `${emp.firstName} ${emp.lastName}`.toUpperCase()
-                        : 'UNKNOWN'}
-                    </Text>
-                    <Text style={styles.empSub}>
-                      {emp?.employeeId || ''}
-                      {emp?.designation ? ` · ${emp.designation}` : ''}
-                    </Text>
-                    {!!deptName && (
-                      <View style={styles.empDeptRow}>
-                        <Building2 size={11} color="#9CA3AF" />
-                        <Text style={styles.empDeptText}>{deptName}</Text>
-                      </View>
-                    )}
-                  </View>
-                  <View style={styles.cardActions}>
-                    <View
-                      style={[
-                        styles.statusTag,
-                        { backgroundColor: cfg.bg, borderColor: cfg.color },
-                      ]}
-                    >
-                      <Text
-                        style={[styles.statusTagText, { color: cfg.color }]}
-                      >
-                        {statusLabel}
-                      </Text>
-                    </View>
-                    {!isEmployee &&
-                      (item._id.startsWith('v_') ? (
-                        item.status === 'weekend' ? null : (
-                          <View style={{ flexDirection: 'row', gap: 6 }}>
-                            <TouchableOpacity
-                              style={styles.absentBtn}
-                              onPress={() =>
-                                markAbsent((item.employee as any)?._id)
-                              }
-                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                            >
-                              <XCircle size={13} color={C.white} />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={styles.markBtn}
-                              onPress={() =>
-                                openMarkForEmp((item.employee as any)?._id)
-                              }
-                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                            >
-                              <CheckCircle2 size={13} color={C.white} />
-                            </TouchableOpacity>
+                        <Text style={styles.empSub}>
+                          {emp?.employeeId || ''}
+                          {emp?.designation ? ` · ${emp.designation}` : ''}
+                        </Text>
+                        {!!deptName && (
+                          <View style={styles.empDeptRow}>
+                            <Building2 size={11} color="#9CA3AF" />
+                            <Text style={styles.empDeptText}>{deptName}</Text>
                           </View>
-                        )
-                      ) : (
-                        <TouchableOpacity
-                          style={styles.editBtn}
-                          onPress={() => openEdit(item)}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        )}
+                      </View>
+                      <View style={styles.cardActions}>
+                        <View
+                          style={[
+                            styles.statusTag,
+                            { backgroundColor: cfg.bg, borderColor: cfg.color },
+                          ]}
                         >
-                          <Pencil size={14} color={C.primary} />
-                        </TouchableOpacity>
-                      ))}
-                  </View>
-                </View>
+                          <Text
+                            style={[styles.statusTagText, { color: cfg.color }]}
+                          >
+                            {statusLabel}
+                          </Text>
+                        </View>
+                        {!isEmployee &&
+                          (item._id.startsWith('v_') ? (
+                            item.status === 'weekend' ? null : (
+                              <View style={{ flexDirection: 'row', gap: 6 }}>
+                                <TouchableOpacity
+                                  style={styles.absentBtn}
+                                  onPress={() =>
+                                    markAbsent((item.employee as any)?._id)
+                                  }
+                                  hitSlop={{
+                                    top: 8,
+                                    bottom: 8,
+                                    left: 8,
+                                    right: 8,
+                                  }}
+                                >
+                                  <XCircle size={13} color={C.white} />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  style={styles.markBtn}
+                                  onPress={() =>
+                                    openMarkForEmp((item.employee as any)?._id)
+                                  }
+                                  hitSlop={{
+                                    top: 8,
+                                    bottom: 8,
+                                    left: 8,
+                                    right: 8,
+                                  }}
+                                >
+                                  <CheckCircle2 size={13} color={C.white} />
+                                </TouchableOpacity>
+                              </View>
+                            )
+                          ) : (
+                            <TouchableOpacity
+                              style={styles.editBtn}
+                              onPress={() => openEdit(item)}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            >
+                              <Pencil size={14} color={C.primary} />
+                            </TouchableOpacity>
+                          ))}
+                      </View>
+                    </View>
 
-                {(ciTime || coTime || verifyMode) && (
-                  <>
-                    <View style={styles.cardDivider} />
-                    <View style={styles.statsRow}>
-                      <View style={styles.statCol}>
-                        <View style={styles.statLabelRow}>
-                          <View
-                            style={[
-                              styles.statIconWrap,
-                              { backgroundColor: '#E7F9F1' },
-                            ]}
-                          >
-                            <LogIn size={12} color={C.success} />
-                          </View>
-                          <Text style={styles.statLabel}>Check In</Text>
-                        </View>
-                        <Text
-                          style={styles.statValue}
-                          numberOfLines={1}
-                          adjustsFontSizeToFit
-                        >
-                          {ciTime || '--:--'}
-                        </Text>
-                        {ciDate && <Text style={styles.statSub}>{ciDate}</Text>}
-                      </View>
-                      <View style={styles.statDivider} />
-                      <View style={styles.statCol}>
-                        <View style={styles.statLabelRow}>
-                          <View
-                            style={[
-                              styles.statIconWrap,
-                              { backgroundColor: '#FDEBEB' },
-                            ]}
-                          >
-                            <LogOut size={12} color={C.danger} />
-                          </View>
-                          <Text style={styles.statLabel}>Check Out</Text>
-                        </View>
-                        <Text
-                          style={styles.statValue}
-                          numberOfLines={1}
-                          adjustsFontSizeToFit
-                        >
-                          {coTime || '--:--'}
-                        </Text>
-                        {coDate && <Text style={styles.statSub}>{coDate}</Text>}
-                      </View>
-                      {verifyMode && (
-                        <>
-                          <View style={styles.statDivider} />
+                    {(ciTime || coTime || verifyMode) && (
+                      <>
+                        <View style={styles.cardDivider} />
+                        <View style={styles.statsRow}>
                           <View style={styles.statCol}>
                             <View style={styles.statLabelRow}>
                               <View
                                 style={[
                                   styles.statIconWrap,
-                                  { backgroundColor: '#F0EBFC' },
+                                  { backgroundColor: '#E7F9F1' },
                                 ]}
                               >
-                                <VerifyIcon size={12} color="#7C3AED" />
+                                <LogIn size={12} color={C.success} />
                               </View>
-                              <Text style={styles.statLabel}>Method</Text>
+                              <Text style={styles.statLabel}>Check In</Text>
                             </View>
                             <Text
                               style={styles.statValue}
                               numberOfLines={1}
                               adjustsFontSizeToFit
                             >
-                              {VERIFY_MODE_LABELS[verifyMode] ||
-                                verifyMode.toUpperCase()}
+                              {ciTime || '--:--'}
+                            </Text>
+                            {ciDate && (
+                              <Text style={styles.statSub}>{ciDate}</Text>
+                            )}
+                          </View>
+                          <View style={styles.statDivider} />
+                          <View style={styles.statCol}>
+                            <View style={styles.statLabelRow}>
+                              <View
+                                style={[
+                                  styles.statIconWrap,
+                                  { backgroundColor: '#FDEBEB' },
+                                ]}
+                              >
+                                <LogOut size={12} color={C.danger} />
+                              </View>
+                              <Text style={styles.statLabel}>Check Out</Text>
+                            </View>
+                            <Text
+                              style={styles.statValue}
+                              numberOfLines={1}
+                              adjustsFontSizeToFit
+                            >
+                              {coTime || '--:--'}
+                            </Text>
+                            {coDate && (
+                              <Text style={styles.statSub}>{coDate}</Text>
+                            )}
+                          </View>
+                          {verifyMode && (
+                            <>
+                              <View style={styles.statDivider} />
+                              <View style={styles.statCol}>
+                                <View style={styles.statLabelRow}>
+                                  <View
+                                    style={[
+                                      styles.statIconWrap,
+                                      { backgroundColor: '#F0EBFC' },
+                                    ]}
+                                  >
+                                    <VerifyIcon size={12} color="#7C3AED" />
+                                  </View>
+                                  <Text style={styles.statLabel}>Method</Text>
+                                </View>
+                                <Text
+                                  style={styles.statValue}
+                                  numberOfLines={1}
+                                  adjustsFontSizeToFit
+                                >
+                                  {VERIFY_MODE_LABELS[verifyMode] ||
+                                    verifyMode.toUpperCase()}
+                                </Text>
+                              </View>
+                            </>
+                          )}
+                        </View>
+                      </>
+                    )}
+
+                    {(workHours ||
+                      overtime > 0 ||
+                      (item as any).earlyLeaving ||
+                      item.checkInLocation ||
+                      item.checkOutLocation) && (
+                      <View style={styles.timeRow}>
+                        {workHours && (
+                          <View style={styles.timePill}>
+                            <Clock size={11} color={C.primary} />
+                            <Text style={styles.timeText}>{workHours}h</Text>
+                          </View>
+                        )}
+                        {overtime > 0 && (
+                          <View
+                            style={[
+                              styles.timePill,
+                              { borderColor: C.warning },
+                            ]}
+                          >
+                            <Clock size={11} color={C.warning} />
+                            <Text
+                              style={[styles.timeText, { color: C.warning }]}
+                            >
+                              OT: {overtime}h
                             </Text>
                           </View>
-                        </>
-                      )}
-                    </View>
-                  </>
-                )}
-
-                {(workHours ||
-                  overtime > 0 ||
-                  (item as any).earlyLeaving ||
-                  item.checkInLocation ||
-                  item.checkOutLocation) && (
-                  <View style={styles.timeRow}>
-                    {workHours && (
-                      <View style={styles.timePill}>
-                        <Clock size={11} color={C.primary} />
-                        <Text style={styles.timeText}>{workHours}h</Text>
+                        )}
+                        {(item as any).earlyLeaving && (
+                          <View
+                            style={[
+                              styles.timePill,
+                              { borderColor: C.primary },
+                            ]}
+                          >
+                            <LogOut size={11} color={C.primary} />
+                            <Text
+                              style={[styles.timeText, { color: C.primary }]}
+                            >
+                              Early Leave
+                            </Text>
+                          </View>
+                        )}
+                        {(item.checkInLocation || item.checkOutLocation) && (
+                          <TouchableOpacity
+                            style={styles.timePill}
+                            onPress={() => showLocationOptions(item)}
+                          >
+                            <MapPin size={11} color={C.primary} />
+                            <Text style={styles.timeText}>Location</Text>
+                          </TouchableOpacity>
+                        )}
                       </View>
                     )}
-                    {overtime > 0 && (
-                      <View
-                        style={[styles.timePill, { borderColor: C.warning }]}
-                      >
-                        <Clock size={11} color={C.warning} />
-                        <Text style={[styles.timeText, { color: C.warning }]}>
-                          OT: {overtime}h
-                        </Text>
-                      </View>
-                    )}
-                    {(item as any).earlyLeaving && (
-                      <View
-                        style={[styles.timePill, { borderColor: C.primary }]}
-                      >
-                        <LogOut size={11} color={C.primary} />
-                        <Text style={[styles.timeText, { color: C.primary }]}>
-                          Early Leave
-                        </Text>
-                      </View>
-                    )}
-                    {(item.checkInLocation || item.checkOutLocation) && (
-                      <TouchableOpacity
-                        style={styles.timePill}
-                        onPress={() => showLocationOptions(item)}
-                      >
-                        <MapPin size={11} color={C.primary} />
-                        <Text style={styles.timeText}>Location</Text>
-                      </TouchableOpacity>
+                    {item.notes && (
+                      <Text style={styles.noteText}>{item.notes}</Text>
                     )}
                   </View>
-                )}
-                {item.notes && (
-                  <Text style={styles.noteText}>{item.notes}</Text>
-                )}
-              </View>
-            );
-          }}
+                );
+              })()}
+            </SlideInCard>
+          )}
         />
       )}
 
@@ -1133,426 +1252,441 @@ export default function AttendanceScreen({ navigation }: any) {
         <Modal
           visible={showBulkModal}
           transparent
-        animationType="fade"
+          animationType="fade"
           onRequestClose={() => setShowBulkModal(false)}
         >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-          <SafeAreaView style={styles.safe} edges={[]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Bulk Attendance</Text>
-              <TouchableOpacity onPress={() => setShowBulkModal(false)}>
-                <X size={22} color={C.black} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView
-              contentContainerStyle={{
-                padding: 16,
-                gap: 14,
-                paddingBottom: 32,
-              }}
-              showsVerticalScrollIndicator={false}
-            >
-              {/* Status selector */}
-              <View>
-                <Text style={styles.fieldLabel}>Status *</Text>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    flexWrap: 'wrap',
-                    gap: 8,
-                    marginTop: 6,
+          <View style={CENTER.overlay}>
+            <View style={CENTER.card}>
+              <SafeAreaView style={styles.safe} edges={[]}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Bulk Attendance</Text>
+                  <TouchableOpacity onPress={() => setShowBulkModal(false)}>
+                    <X size={22} color={C.black} />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView
+                  contentContainerStyle={{
+                    padding: 16,
+                    gap: 14,
+                    paddingBottom: 32,
                   }}
+                  showsVerticalScrollIndicator={false}
                 >
-                  {Object.keys(STATUS_CONFIG)
-                    .filter(s => s !== 'not_checked_in' && s !== 'weekend')
-                    .map(s => (
+                  {/* Status selector */}
+                  <View>
+                    <Text style={styles.fieldLabel}>Status *</Text>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        flexWrap: 'wrap',
+                        gap: 8,
+                        marginTop: 6,
+                      }}
+                    >
+                      {Object.keys(STATUS_CONFIG)
+                        .filter(s => s !== 'not_checked_in' && s !== 'weekend')
+                        .map(s => (
+                          <TouchableOpacity
+                            key={s}
+                            style={[
+                              styles.selChip,
+                              bulkStatus === s && styles.selChipActive,
+                            ]}
+                            onPress={() => setBulkStatus(s)}
+                          >
+                            <Text
+                              style={[
+                                styles.selChipText,
+                                bulkStatus === s && { color: C.white },
+                              ]}
+                            >
+                              {s.replace(/_/g, ' ').toUpperCase()}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                    </View>
+                  </View>
+
+                  {/* Select all toggle */}
+                  <TouchableOpacity
+                    style={styles.bulkSelectAllRow}
+                    onPress={() => {
+                      const eligible = employees.filter(
+                        e => !isWeekendForEmployee(dateFilter, e),
+                      );
+                      if (bulkSelected.length === eligible.length) {
+                        setBulkSelected([]);
+                      } else {
+                        setBulkSelected(eligible.map(e => e._id));
+                      }
+                    }}
+                  >
+                    <View style={styles.bulkCheckbox}>
+                      {bulkSelected.length ===
+                        employees.filter(
+                          e => !isWeekendForEmployee(dateFilter, e),
+                        ).length &&
+                        employees.filter(
+                          e => !isWeekendForEmployee(dateFilter, e),
+                        ).length > 0 && (
+                          <View style={styles.bulkCheckboxInner} />
+                        )}
+                    </View>
+                    <Text style={styles.bulkSelectAllText}>Select All</Text>
+                  </TouchableOpacity>
+
+                  {/* Employee list */}
+                  {employees.map(emp => {
+                    const isWeekend = isWeekendForEmployee(dateFilter, emp);
+                    if (isWeekend) return null;
+                    const checked = bulkSelected.includes(emp._id);
+                    return (
                       <TouchableOpacity
-                        key={s}
-                        style={[
-                          styles.selChip,
-                          bulkStatus === s && styles.selChipActive,
-                        ]}
-                        onPress={() => setBulkStatus(s)}
+                        key={emp._id}
+                        style={styles.bulkEmpRow}
+                        onPress={() =>
+                          setBulkSelected(p =>
+                            checked
+                              ? p.filter(id => id !== emp._id)
+                              : [...p, emp._id],
+                          )
+                        }
+                        activeOpacity={0.7}
                       >
-                        <Text
+                        <View
                           style={[
-                            styles.selChipText,
-                            bulkStatus === s && { color: C.white },
+                            styles.bulkCheckbox,
+                            checked && styles.bulkCheckboxChecked,
                           ]}
                         >
-                          {s.replace(/_/g, ' ').toUpperCase()}
-                        </Text>
+                          {checked && <View style={styles.bulkCheckboxInner} />}
+                        </View>
+                        <View style={{ flex: 1, marginLeft: 10 }}>
+                          <Text style={styles.empOptionName}>
+                            {emp.firstName} {emp.lastName}
+                          </Text>
+                          <Text style={styles.empOptionId}>
+                            {emp.employeeId}
+                          </Text>
+                        </View>
                       </TouchableOpacity>
-                    ))}
-                </View>
-              </View>
+                    );
+                  })}
+                </ScrollView>
 
-              {/* Select all toggle */}
-              <TouchableOpacity
-                style={styles.bulkSelectAllRow}
-                onPress={() => {
-                  const eligible = employees.filter(
-                    e => !isWeekendForEmployee(dateFilter, e),
-                  );
-                  if (bulkSelected.length === eligible.length) {
-                    setBulkSelected([]);
-                  } else {
-                    setBulkSelected(eligible.map(e => e._id));
-                  }
-                }}
-              >
-                <View style={styles.bulkCheckbox}>
-                  {bulkSelected.length ===
-                    employees.filter(e => !isWeekendForEmployee(dateFilter, e))
-                      .length &&
-                    employees.filter(e => !isWeekendForEmployee(dateFilter, e))
-                      .length > 0 && <View style={styles.bulkCheckboxInner} />}
-                </View>
-                <Text style={styles.bulkSelectAllText}>Select All</Text>
-              </TouchableOpacity>
-
-              {/* Employee list */}
-              {employees.map(emp => {
-                const isWeekend = isWeekendForEmployee(dateFilter, emp);
-                if (isWeekend) return null;
-                const checked = bulkSelected.includes(emp._id);
-                return (
+                {/* Mark selected button */}
+                <View
+                  style={{
+                    padding: 16,
+                    backgroundColor: C.white,
+                    borderTopWidth: 2,
+                    borderTopColor: C.black,
+                  }}
+                >
                   <TouchableOpacity
-                    key={emp._id}
-                    style={styles.bulkEmpRow}
-                    onPress={() =>
-                      setBulkSelected(p =>
-                        checked
-                          ? p.filter(id => id !== emp._id)
-                          : [...p, emp._id],
-                      )
-                    }
-                    activeOpacity={0.7}
+                    style={[
+                      styles.submitBtn,
+                      bulkSelected.length === 0 && { opacity: 0.5 },
+                    ]}
+                    disabled={bulkSelected.length === 0 || bulkSaving}
+                    onPress={async () => {
+                      if (bulkSelected.length === 0) return;
+                      setBulkSaving(true);
+                      try {
+                        await attendanceAPI.bulkMark({
+                          records: bulkSelected.map(id => ({
+                            employee: id,
+                            date: dateFilter,
+                            status: bulkStatus,
+                          })),
+                        });
+                        setShowBulkModal(false);
+                        await load();
+                      } catch (e: any) {
+                        Alert.alert('Error', e.message);
+                      } finally {
+                        setBulkSaving(false);
+                      }
+                    }}
                   >
-                    <View
-                      style={[
-                        styles.bulkCheckbox,
-                        checked && styles.bulkCheckboxChecked,
-                      ]}
-                    >
-                      {checked && <View style={styles.bulkCheckboxInner} />}
-                    </View>
-                    <View style={{ flex: 1, marginLeft: 10 }}>
-                      <Text style={styles.empOptionName}>
-                        {emp.firstName} {emp.lastName}
+                    {bulkSaving ? (
+                      <ActivityIndicator color={C.white} />
+                    ) : (
+                      <Text style={styles.submitBtnText}>
+                        Mark Selected ({bulkSelected.length})
                       </Text>
-                      <Text style={styles.empOptionId}>{emp.employeeId}</Text>
-                    </View>
+                    )}
                   </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-
-            {/* Mark selected button */}
-            <View
-              style={{
-                padding: 16,
-                backgroundColor: C.white,
-                borderTopWidth: 2,
-                borderTopColor: C.black,
-              }}
-            >
-              <TouchableOpacity
-                style={[
-                  styles.submitBtn,
-                  bulkSelected.length === 0 && { opacity: 0.5 },
-                ]}
-                disabled={bulkSelected.length === 0 || bulkSaving}
-                onPress={async () => {
-                  if (bulkSelected.length === 0) return;
-                  setBulkSaving(true);
-                  try {
-                    await attendanceAPI.bulkMark({
-                      records: bulkSelected.map(id => ({
-                        employee: id,
-                        date: dateFilter,
-                        status: bulkStatus,
-                      })),
-                    });
-                    setShowBulkModal(false);
-                    await load();
-                  } catch (e: any) {
-                    Alert.alert('Error', e.message);
-                  } finally {
-                    setBulkSaving(false);
-                  }
-                }}
-              >
-                {bulkSaving ? (
-                  <ActivityIndicator color={C.white} />
-                ) : (
-                  <Text style={styles.submitBtnText}>
-                    Mark Selected ({bulkSelected.length})
-                  </Text>
-                )}
-              </TouchableOpacity>
+                </View>
+              </SafeAreaView>
             </View>
-          </SafeAreaView>
-        </View></View>
-</Modal>
+          </View>
+        </Modal>
       )}
 
       {!isEmployee && (
-        <Modal
-          visible={showModal}
-          transparent
-        animationType="fade"
-        >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-          <SafeAreaView style={styles.safe} edges={[]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {editRecord ? 'Edit Attendance' : 'Mark Attendance'}
-              </Text>
-              <TouchableOpacity onPress={closeModal}>
-                <X size={22} color={C.black} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView
-              contentContainerStyle={{ padding: 20, gap: 16 }}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-            >
-              {editRecord ? (
-                <View style={styles.editInfoBox}>
-                  <Text style={styles.editInfoLabel}>Employee</Text>
-                  <Text style={styles.editInfoValue}>
-                    {(editRecord.employee as any)?.firstName}{' '}
-                    {(editRecord.employee as any)?.lastName}
+        <Modal visible={showModal} transparent animationType="fade">
+          <View style={CENTER.overlay}>
+            <View style={CENTER.card}>
+              <SafeAreaView style={styles.safe} edges={[]}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>
+                    {editRecord ? 'Edit Attendance' : 'Mark Attendance'}
                   </Text>
+                  <TouchableOpacity onPress={closeModal}>
+                    <X size={22} color={C.black} />
+                  </TouchableOpacity>
                 </View>
-              ) : (
-                <View>
-                  <Text style={styles.fieldLabel}>Employee *</Text>
-                  <ScrollView style={{ maxHeight: 180 }} nestedScrollEnabled>
-                    {employees.map(e => (
-                      <TouchableOpacity
-                        key={e._id}
-                        style={[
-                          styles.empOption,
-                          selectedEmpId === e._id && styles.empOptionActive,
-                        ]}
-                        onPress={() => setSelectedEmpId(e._id)}
-                      >
-                        <Text
-                          style={[
-                            styles.empOptionName,
-                            selectedEmpId === e._id && { color: C.white },
-                          ]}
-                        >
-                          {e.firstName} {e.lastName}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.empOptionId,
-                            selectedEmpId === e._id && { color: '#93C5FD' },
-                          ]}
-                        >
-                          {e.employeeId}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
-
-              <View>
-                <Text style={styles.fieldLabel}>Status *</Text>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    flexWrap: 'wrap',
-                    gap: 8,
-                    marginTop: 6,
-                  }}
+                <ScrollView
+                  contentContainerStyle={{ padding: 20, gap: 16 }}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
                 >
-                  {Object.keys(STATUS_CONFIG)
-                    .filter(s => s !== 'not_checked_in')
-                    .map(s => (
-                      <TouchableOpacity
-                        key={s}
-                        style={[
-                          styles.selChip,
-                          form.status === s && styles.selChipActive,
-                        ]}
-                        onPress={() => setForm(p => ({ ...p, status: s }))}
+                  {editRecord ? (
+                    <View style={styles.editInfoBox}>
+                      <Text style={styles.editInfoLabel}>Employee</Text>
+                      <Text style={styles.editInfoValue}>
+                        {(editRecord.employee as any)?.firstName}{' '}
+                        {(editRecord.employee as any)?.lastName}
+                      </Text>
+                    </View>
+                  ) : (
+                    <View>
+                      <Text style={styles.fieldLabel}>Employee *</Text>
+                      <ScrollView
+                        style={{ maxHeight: 180 }}
+                        nestedScrollEnabled
                       >
-                        <Text
-                          style={[
-                            styles.selChipText,
-                            form.status === s && { color: C.white },
-                          ]}
-                        >
-                          {s.replace(/_/g, ' ').toUpperCase()}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                </View>
-              </View>
+                        {employees.map(e => (
+                          <TouchableOpacity
+                            key={e._id}
+                            style={[
+                              styles.empOption,
+                              selectedEmpId === e._id && styles.empOptionActive,
+                            ]}
+                            onPress={() => setSelectedEmpId(e._id)}
+                          >
+                            <Text
+                              style={[
+                                styles.empOptionName,
+                                selectedEmpId === e._id && { color: C.white },
+                              ]}
+                            >
+                              {e.firstName} {e.lastName}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.empOptionId,
+                                selectedEmpId === e._id && { color: '#93C5FD' },
+                              ]}
+                            >
+                              {e.employeeId}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
 
-              <View style={{ flexDirection: 'row', gap: 12 }}>
-                <View style={{ flex: 1 }}>
-                  <TimePickerField
-                    label="Check In"
-                    value={form.checkIn}
-                    onChange={v => setForm(p => ({ ...p, checkIn: v }))}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <TimePickerField
-                    label="Check Out"
-                    value={form.checkOut}
-                    onChange={v => setForm(p => ({ ...p, checkOut: v }))}
-                  />
-                </View>
-              </View>
+                  <View>
+                    <Text style={styles.fieldLabel}>Status *</Text>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        flexWrap: 'wrap',
+                        gap: 8,
+                        marginTop: 6,
+                      }}
+                    >
+                      {Object.keys(STATUS_CONFIG)
+                        .filter(s => s !== 'not_checked_in')
+                        .map(s => (
+                          <TouchableOpacity
+                            key={s}
+                            style={[
+                              styles.selChip,
+                              form.status === s && styles.selChipActive,
+                            ]}
+                            onPress={() => setForm(p => ({ ...p, status: s }))}
+                          >
+                            <Text
+                              style={[
+                                styles.selChipText,
+                                form.status === s && { color: C.white },
+                              ]}
+                            >
+                              {s.replace(/_/g, ' ').toUpperCase()}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                    </View>
+                  </View>
 
-              <View>
-                <Text style={styles.fieldLabel}>Notes</Text>
-                <TextInput
-                  style={[styles.fieldInput, { minHeight: 80 }]}
-                  value={form.notes}
-                  onChangeText={v => setForm(p => ({ ...p, notes: v }))}
-                  placeholder="Optional…"
-                  placeholderTextColor={C.textLight}
-                  multiline
-                />
-              </View>
+                  <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <View style={{ flex: 1 }}>
+                      <TimePickerField
+                        label="Check In"
+                        value={form.checkIn}
+                        onChange={v => setForm(p => ({ ...p, checkIn: v }))}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <TimePickerField
+                        label="Check Out"
+                        value={form.checkOut}
+                        onChange={v => setForm(p => ({ ...p, checkOut: v }))}
+                      />
+                    </View>
+                  </View>
 
-              <TouchableOpacity
-                style={styles.submitBtn}
-                onPress={handleSave}
-                disabled={saving}
-              >
-                {saving ? (
-                  <ActivityIndicator color={C.white} />
-                ) : (
-                  <Text style={styles.submitBtnText}>
-                    {editRecord ? 'Update Attendance' : 'Save Attendance'}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </ScrollView>
-          </SafeAreaView>
-        </View></View>
-</Modal>
+                  <View>
+                    <Text style={styles.fieldLabel}>Notes</Text>
+                    <TextInput
+                      style={[styles.fieldInput, { minHeight: 80 }]}
+                      value={form.notes}
+                      onChangeText={v => setForm(p => ({ ...p, notes: v }))}
+                      placeholder="Optional…"
+                      placeholderTextColor={C.textLight}
+                      multiline
+                    />
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.submitBtn}
+                    onPress={handleSave}
+                    disabled={saving}
+                  >
+                    {saving ? (
+                      <ActivityIndicator color={C.white} />
+                    ) : (
+                      <Text style={styles.submitBtnText}>
+                        {editRecord ? 'Update Attendance' : 'Save Attendance'}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </ScrollView>
+              </SafeAreaView>
+            </View>
+          </View>
+        </Modal>
       )}
 
       {isEmployee && (
         <Modal
           visible={showCorrectionModal}
           transparent
-        animationType="fade"
+          animationType="fade"
           onRequestClose={() => setShowCorrectionModal(false)}
         >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-          <SafeAreaView style={styles.safe} edges={[]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Request Correction</Text>
-              <TouchableOpacity onPress={() => setShowCorrectionModal(false)}>
-                <X size={22} color={C.black} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView
-              contentContainerStyle={{ padding: 20, gap: 16 }}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-            >
-              <View>
-                <Text style={styles.fieldLabel}>Date *</Text>
-                <TextInput
-                  style={styles.fieldInput}
-                  value={correctionForm.date}
-                  onChangeText={v =>
-                    setCorrectionForm(p => ({ ...p, date: v }))
-                  }
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={C.textLight}
-                />
-              </View>
-
-              <View>
-                <Text style={styles.fieldLabel}>Correction Type *</Text>
-                <View style={{ flexDirection: 'row', gap: 10, marginTop: 6 }}>
-                  {['regularization', 'missed_punch'].map(t => (
-                    <TouchableOpacity
-                      key={t}
-                      style={[
-                        styles.selChip,
-                        correctionForm.type === t && styles.selChipActive,
-                      ]}
-                      onPress={() =>
-                        setCorrectionForm(p => ({ ...p, type: t }))
+          <View style={CENTER.overlay}>
+            <View style={CENTER.card}>
+              <SafeAreaView style={styles.safe} edges={[]}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Request Correction</Text>
+                  <TouchableOpacity
+                    onPress={() => setShowCorrectionModal(false)}
+                  >
+                    <X size={22} color={C.black} />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView
+                  contentContainerStyle={{ padding: 20, gap: 16 }}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
+                >
+                  <View>
+                    <Text style={styles.fieldLabel}>Date *</Text>
+                    <TextInput
+                      style={styles.fieldInput}
+                      value={correctionForm.date}
+                      onChangeText={v =>
+                        setCorrectionForm(p => ({ ...p, date: v }))
                       }
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor={C.textLight}
+                    />
+                  </View>
+
+                  <View>
+                    <Text style={styles.fieldLabel}>Correction Type *</Text>
+                    <View
+                      style={{ flexDirection: 'row', gap: 10, marginTop: 6 }}
                     >
-                      <Text
-                        style={[
-                          styles.selChipText,
-                          correctionForm.type === t && { color: C.white },
-                        ]}
-                      >
-                        {t.replace('_', ' ').toUpperCase()}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
+                      {['regularization', 'missed_punch'].map(t => (
+                        <TouchableOpacity
+                          key={t}
+                          style={[
+                            styles.selChip,
+                            correctionForm.type === t && styles.selChipActive,
+                          ]}
+                          onPress={() =>
+                            setCorrectionForm(p => ({ ...p, type: t }))
+                          }
+                        >
+                          <Text
+                            style={[
+                              styles.selChipText,
+                              correctionForm.type === t && { color: C.white },
+                            ]}
+                          >
+                            {t.replace('_', ' ').toUpperCase()}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
 
-              <View style={{ flexDirection: 'row', gap: 12 }}>
-                <View style={{ flex: 1 }}>
-                  <TimePickerField
-                    label="Proposed Check In"
-                    value={correctionForm.checkIn}
-                    onChange={v =>
-                      setCorrectionForm(p => ({ ...p, checkIn: v }))
-                    }
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <TimePickerField
-                    label="Proposed Check Out"
-                    value={correctionForm.checkOut}
-                    onChange={v =>
-                      setCorrectionForm(p => ({ ...p, checkOut: v }))
-                    }
-                  />
-                </View>
-              </View>
+                  <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <View style={{ flex: 1 }}>
+                      <TimePickerField
+                        label="Proposed Check In"
+                        value={correctionForm.checkIn}
+                        onChange={v =>
+                          setCorrectionForm(p => ({ ...p, checkIn: v }))
+                        }
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <TimePickerField
+                        label="Proposed Check Out"
+                        value={correctionForm.checkOut}
+                        onChange={v =>
+                          setCorrectionForm(p => ({ ...p, checkOut: v }))
+                        }
+                      />
+                    </View>
+                  </View>
 
-              <View>
-                <Text style={styles.fieldLabel}>Reason *</Text>
-                <TextInput
-                  style={[styles.fieldInput, { minHeight: 80 }]}
-                  value={correctionForm.reason}
-                  onChangeText={v =>
-                    setCorrectionForm(p => ({ ...p, reason: v }))
-                  }
-                  placeholder="Explain the correction request details..."
-                  placeholderTextColor={C.textLight}
-                  multiline
-                />
-              </View>
+                  <View>
+                    <Text style={styles.fieldLabel}>Reason *</Text>
+                    <TextInput
+                      style={[styles.fieldInput, { minHeight: 80 }]}
+                      value={correctionForm.reason}
+                      onChangeText={v =>
+                        setCorrectionForm(p => ({ ...p, reason: v }))
+                      }
+                      placeholder="Explain the correction request details..."
+                      placeholderTextColor={C.textLight}
+                      multiline
+                    />
+                  </View>
 
-              <TouchableOpacity
-                style={styles.submitBtn}
-                onPress={handleCreateCorrection}
-                disabled={submittingCorrection}
-              >
-                {submittingCorrection ? (
-                  <ActivityIndicator color={C.white} />
-                ) : (
-                  <Text style={styles.submitBtnText}>Submit Request</Text>
-                )}
-              </TouchableOpacity>
-            </ScrollView>
-          </SafeAreaView>
-        </View></View>
-</Modal>
+                  <TouchableOpacity
+                    style={styles.submitBtn}
+                    onPress={handleCreateCorrection}
+                    disabled={submittingCorrection}
+                  >
+                    {submittingCorrection ? (
+                      <ActivityIndicator color={C.white} />
+                    ) : (
+                      <Text style={styles.submitBtnText}>Submit Request</Text>
+                    )}
+                  </TouchableOpacity>
+                </ScrollView>
+              </SafeAreaView>
+            </View>
+          </View>
+        </Modal>
       )}
     </SafeAreaView>
   );
@@ -1571,26 +1705,12 @@ const styles = StyleSheet.create({
     borderBottomColor: C.black,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: C.black },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: C.primary,
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderColor: C.black,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
+  headerTitle: { fontSize: 20, fontWeight: '400', color: C.black },
+  addBtn: { padding: 4 },
   addBtnText: {
     color: C.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   dateRow: {
@@ -1603,9 +1723,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   dateBtnArrow: { width: 44, alignItems: 'center' },
-  dateBtnArrowText: { fontSize: 24, fontWeight: '700', color: C.black },
+  dateBtnArrowText: { fontSize: 24, fontWeight: '400', color: C.black },
   dateCurrent: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  dateCurrentText: { fontSize: 13, fontWeight: '700', color: C.black },
+  dateCurrentText: { fontSize: 13, fontWeight: '400', color: C.black },
   summaryBar: {
     flexShrink: 0,
     maxHeight: 96,
@@ -1634,7 +1754,7 @@ const styles = StyleSheet.create({
   },
   summaryCount: {
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: '400',
     lineHeight: Platform.OS === 'android' ? 28 : 24,
     includeFontPadding: false,
   } as any,
@@ -1645,7 +1765,7 @@ const styles = StyleSheet.create({
     borderRightWidth: 4,
     borderBottomWidth: 4,
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
@@ -1662,7 +1782,7 @@ const styles = StyleSheet.create({
   approvalBannerText: {
     flex: 1,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '400',
     color: '#92400E',
   },
   selfMarkCard: {
@@ -1675,7 +1795,7 @@ const styles = StyleSheet.create({
   selfMarkHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   selfMarkHeaderText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.primary,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
@@ -1698,15 +1818,15 @@ const styles = StyleSheet.create({
   selfMarkBtnText: {
     color: C.white,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   selfMarkDoneRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  selfMarkDoneText: { fontSize: 13, fontWeight: '700', color: C.success },
+  selfMarkDoneText: { fontSize: 13, fontWeight: '400', color: C.success },
   selfMarkNoteText: {
     fontSize: 12,
     color: C.textMuted,
-    fontWeight: '500',
+    fontWeight: '400',
     marginBottom: 4,
   },
   searchWrap: {
@@ -1719,10 +1839,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
-  searchInput: { flex: 1, fontSize: 14, fontWeight: '500', color: C.black },
+  searchInput: { flex: 1, fontSize: 14, fontWeight: '400', color: C.black },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
-  emptyText: { fontSize: 14, fontWeight: '700', color: C.textMuted },
+  emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
@@ -1751,7 +1871,7 @@ const styles = StyleSheet.create({
     borderColor: '#000000ff',
   },
   empPhotoFallback: { alignItems: 'center', justifyContent: 'center' },
-  empPhotoInitials: { fontSize: 16, fontWeight: '700' },
+  empPhotoInitials: { fontSize: 16, fontWeight: '400' },
   statusBadgeOverlay: {
     position: 'absolute',
     bottom: -2,
@@ -1769,7 +1889,7 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: 3,
   },
-  empDeptText: { fontSize: 11, color: '#9CA3AF', fontWeight: '500' },
+  empDeptText: { fontSize: 11, color: '#9CA3AF', fontWeight: '400' },
   cardDivider: {
     height: 1,
     backgroundColor: '#F0F1F3',
@@ -1790,10 +1910,10 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 10,
     color: '#9CA3AF',
-    fontWeight: '600',
+    fontWeight: '400',
   },
-  statValue: { fontSize: 15, fontWeight: '700', color: C.black },
-  statSub: { fontSize: 10, color: '#B0B4BA', fontWeight: '500' },
+  statValue: { fontSize: 15, fontWeight: '400', color: C.black },
+  statSub: { fontSize: 10, color: '#B0B4BA', fontWeight: '400' },
   verifyPill: {
     backgroundColor: '#F3F4F6',
     borderWidth: 1,
@@ -1803,23 +1923,23 @@ const styles = StyleSheet.create({
   },
   verifyPillText: {
     fontSize: 8,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.textMuted,
     textTransform: 'uppercase',
   },
   empName: {
     fontSize: 15,
-    fontWeight: '800',
+    fontWeight: '400',
     color: C.black,
     letterSpacing: 0.2,
   },
-  empSub: { fontSize: 11, color: '#9CA3AF', fontWeight: '600', marginTop: 2 },
+  empSub: { fontSize: 11, color: '#9CA3AF', fontWeight: '400', marginTop: 2 },
   statusTag: {
     borderWidth: 1.5,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  statusTagText: { fontSize: 9, fontWeight: '700', letterSpacing: 0.3 },
+  statusTagText: { fontSize: 9, fontWeight: '400', letterSpacing: 0.3 },
   editBtn: {
     borderWidth: 1.5,
     borderColor: C.primary,
@@ -1856,7 +1976,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
   },
-  timeText: { fontSize: 12, fontWeight: '700', color: C.black },
+  timeText: { fontSize: 12, fontWeight: '400', color: C.black },
   noteText: {
     fontSize: 12,
     color: C.textMuted,
@@ -1872,7 +1992,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: C.black },
+  modalTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   editInfoBox: {
     borderWidth: 2,
     borderRightWidth: 4,
@@ -1886,15 +2006,15 @@ const styles = StyleSheet.create({
   },
   editInfoLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.primary,
     marginBottom: 4,
   },
-  editInfoValue: { fontSize: 15, fontWeight: '700', color: C.black },
+  editInfoValue: { fontSize: 15, fontWeight: '400', color: C.black },
   fieldLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.black,
     marginBottom: 5,
@@ -1911,7 +2031,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
     backgroundColor: C.white,
   },
@@ -1927,7 +2047,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
   },
   empOptionActive: { backgroundColor: C.primary, borderColor: C.primary },
-  empOptionName: { fontSize: 13, fontWeight: '700', color: C.black },
+  empOptionName: { fontSize: 13, fontWeight: '400', color: C.black },
   empOptionId: { fontSize: 11, color: C.textMuted },
   selChip: {
     borderWidth: 2,
@@ -1941,7 +2061,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   selChipActive: { backgroundColor: C.primary },
-  selChipText: { fontSize: 11, fontWeight: '700', color: C.black },
+  selChipText: { fontSize: 11, fontWeight: '400', color: C.black },
   submitBtn: {
     backgroundColor: C.primary,
     borderWidth: 2,
@@ -1957,30 +2077,16 @@ const styles = StyleSheet.create({
   },
   submitBtnText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 14,
     textTransform: 'uppercase',
   },
   // Bulk button
-  bulkBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: C.white,
-    borderWidth: 2,
-    borderRightWidth: 4,
-    borderBottomWidth: 4,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderRadius: 8,
-    borderColor: C.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
+  bulkBtn: { padding: 4 },
   bulkBtnText: {
     color: C.primary,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   bulkSelectAllRow: {
@@ -1993,7 +2099,7 @@ const styles = StyleSheet.create({
   },
   bulkSelectAllText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.black,
     textTransform: 'uppercase',
   },
@@ -2045,8 +2151,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   calNavBtn: { width: 36, alignItems: 'center' },
-  calNavArrow: { fontSize: 26, fontWeight: '700', color: C.black },
-  calMonthLabel: { fontSize: 15, fontWeight: '700', color: C.black },
+  calNavArrow: { fontSize: 26, fontWeight: '400', color: C.black },
+  calMonthLabel: { fontSize: 15, fontWeight: '400', color: C.black },
   calDowRow: {
     flexDirection: 'row',
     marginBottom: 4,
@@ -2055,7 +2161,7 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.textMuted,
     textTransform: 'uppercase',
   },
@@ -2091,11 +2197,11 @@ const styles = StyleSheet.create({
   },
   calCellText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '400',
     color: C.black,
   },
   calCellTextSelected: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
   },
 });

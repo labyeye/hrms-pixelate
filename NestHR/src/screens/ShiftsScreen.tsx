@@ -229,80 +229,80 @@ export default function ShiftsScreen() {
         />
       )}
 
-      <Modal
-        visible={modal}
-        transparent
-        animationType="fade"
-      >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        <SafeAreaView style={s.safe} edges={['top']}>
-          <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>
-              {editing ? 'Edit Shift' : 'New Shift'}
-            </Text>
-            <TouchableOpacity onPress={() => setModal(false)}>
-              <X size={22} color={C.black} />
-            </TouchableOpacity>
+      <Modal visible={modal} transparent animationType="fade">
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            <SafeAreaView style={s.safe} edges={['top']}>
+              <View style={s.modalHeader}>
+                <Text style={s.modalTitle}>
+                  {editing ? 'Edit Shift' : 'New Shift'}
+                </Text>
+                <TouchableOpacity onPress={() => setModal(false)}>
+                  <X size={22} color={C.black} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView
+                contentContainerStyle={{ padding: 20, gap: 16 }}
+                keyboardShouldPersistTaps="handled"
+              >
+                {F('Shift Name *', 'name', {
+                  placeholder: 'e.g. Morning Shift',
+                })}
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <View style={{ flex: 1 }}>
+                    <TimePickerField
+                      label="Start Time *"
+                      value={form.startTime}
+                      onChange={v => setForm(p => ({ ...p, startTime: v }))}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <TimePickerField
+                      label="End Time *"
+                      value={form.endTime}
+                      onChange={v => setForm(p => ({ ...p, endTime: v }))}
+                    />
+                  </View>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <View style={{ flex: 1 }}>
+                    {F('Break (min)', 'breakMinutes', {
+                      keyboardType: 'numeric',
+                      placeholder: '30',
+                    })}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    {F('Working Hours', 'workingHours', {
+                      keyboardType: 'numeric',
+                      placeholder: '8',
+                    })}
+                  </View>
+                </View>
+                {F('OT After (hours)', 'otAfter', {
+                  keyboardType: 'numeric',
+                  placeholder: '9',
+                })}
+                <TouchableOpacity
+                  style={s.submitBtn}
+                  onPress={handleSave}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <ActivityIndicator color={C.white} />
+                  ) : (
+                    <>
+                      <Check size={16} color={C.white} />
+                      <Text style={s.submitBtnText}>
+                        {editing ? 'Update Shift' : 'Create Shift'}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
+            </SafeAreaView>
           </View>
-          <ScrollView
-            contentContainerStyle={{ padding: 20, gap: 16 }}
-            keyboardShouldPersistTaps="handled"
-          >
-            {F('Shift Name *', 'name', { placeholder: 'e.g. Morning Shift' })}
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <View style={{ flex: 1 }}>
-                <TimePickerField
-                  label="Start Time *"
-                  value={form.startTime}
-                  onChange={v => setForm(p => ({ ...p, startTime: v }))}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <TimePickerField
-                  label="End Time *"
-                  value={form.endTime}
-                  onChange={v => setForm(p => ({ ...p, endTime: v }))}
-                />
-              </View>
-            </View>
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <View style={{ flex: 1 }}>
-                {F('Break (min)', 'breakMinutes', {
-                  keyboardType: 'numeric',
-                  placeholder: '30',
-                })}
-              </View>
-              <View style={{ flex: 1 }}>
-                {F('Working Hours', 'workingHours', {
-                  keyboardType: 'numeric',
-                  placeholder: '8',
-                })}
-              </View>
-            </View>
-            {F('OT After (hours)', 'otAfter', {
-              keyboardType: 'numeric',
-              placeholder: '9',
-            })}
-            <TouchableOpacity
-              style={s.submitBtn}
-              onPress={handleSave}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator color={C.white} />
-              ) : (
-                <>
-                  <Check size={16} color={C.white} />
-                  <Text style={s.submitBtnText}>
-                    {editing ? 'Update Shift' : 'Create Shift'}
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </View></View>
-</Modal>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -319,7 +319,7 @@ const s = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  title: { fontSize: 20, fontWeight: '700', color: C.black },
+  title: { fontSize: 20, fontWeight: '400', color: C.black },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -338,12 +338,12 @@ const s = StyleSheet.create({
   addBtnText: {
     color: C.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
-  emptyText: { fontSize: 14, fontWeight: '700', color: C.textMuted },
+  emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
   card: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -364,10 +364,10 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  shiftName: { fontSize: 15, fontWeight: '700', color: C.black },
+  shiftName: { fontSize: 15, fontWeight: '400', color: C.black },
   shiftTime: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.primary,
     marginTop: 2,
   },
@@ -379,7 +379,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  pillText: { fontSize: 12, fontWeight: '700', color: C.black },
+  pillText: { fontSize: 12, fontWeight: '400', color: C.black },
   iconBtn: {
     width: 30,
     height: 30,
@@ -402,10 +402,10 @@ const s = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: C.black },
+  modalTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   fieldLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.black,
     marginBottom: 6,
@@ -422,7 +422,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
     backgroundColor: C.white,
   },
@@ -444,7 +444,7 @@ const s = StyleSheet.create({
   },
   submitBtnText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 14,
     textTransform: 'uppercase',
   },

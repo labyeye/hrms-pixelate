@@ -57,13 +57,20 @@ const getLoans = asyncHandler(async (req, res) => {
 });
 
 const createLoan = asyncHandler(async (req, res) => {
-  const target = await Employee.exists({ _id: req.body.employee, company: req.user.company });
+  const target = await Employee.exists({
+    _id: req.body.employee,
+    company: req.user.company,
+  });
   if (!target) {
     res.status(404);
     throw new Error("Employee not found");
   }
   const loan = await Loan.create({
-    ...bodyFor(Loan, req.body, ["approvedBy", "approvedAt", "remainingBalance"]),
+    ...bodyFor(Loan, req.body, [
+      "approvedBy",
+      "approvedAt",
+      "remainingBalance",
+    ]),
     company: req.user.company,
     remainingBalance: req.body.amount,
   });

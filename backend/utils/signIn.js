@@ -4,6 +4,7 @@ const AuditLog = require("../models/AuditLog");
 const Subscription = require("../models/Subscription");
 const generateToken = require("./generateToken");
 const { getCompanyFeatures } = require("./planFeatures");
+const terms = require("./terms");
 
 const COMPANY_POPULATE = {
   path: "company",
@@ -46,12 +47,32 @@ function describeFromUserAgent(ua = "") {
   return [browser, os && `on ${os}`].filter(Boolean).join(" ") || "Web browser";
 }
 
+// Signing in / registering through a screen that shows the Terms + Privacy links counts as acceptance.
+// Stored on the user, so it is asked once per account — never again on another device.
+async function recordTermsAcceptance(req, user) {
+  if (req.body?.acceptTerms !== true || terms.accepted(user)) return;
+  const set = {
+    termsAccepted: true,
+    termsVersion: terms.VERSION,
+    termsAcceptedAt: new Date(),
+    termsAcceptedIp: String(req.ip || "").slice(0, 64),
+    termsAcceptedAgent: String(req.headers["user-agent"] || "").slice(0, 200),
+  };
+  await User.updateOne({ _id: user._id }, { $set: set });
+  Object.assign(user, set);
+}
+
 // Creates the device record for a fresh sign-in and returns its id for the token.
 async function startSession(req, user) {
-  const platform = String(req.headers["x-device-platform"] || "web").slice(0, 20);
+  await recordTermsAcceptance(req, user);
+  const platform = String(req.headers["x-device-platform"] || "web").slice(
+    0,
+    20,
+  );
   const deviceName =
-    String(req.headers["x-device-name"] || "").trim().slice(0, 80) ||
-    describeFromUserAgent(req.headers["user-agent"]);
+    String(req.headers["x-device-name"] || "")
+      .trim()
+      .slice(0, 80) || describeFromUserAgent(req.headers["user-agent"]);
   const s = await Session.create({
     userId: user._id,
     deviceName,
@@ -87,7 +108,9 @@ async function assertSignInAllowed(req, res, user) {
     });
     if (!subscription || subscription.paymentStatus !== "completed") {
       res.status(403);
-      throw new Error("No active subscription. Please contact your administrator.");
+      throw new Error(
+        "No active subscription. Please contact your administrator.",
+      );
     }
     if (
       subscription.isTrial &&
@@ -143,6 +166,7 @@ async function completeSignIn(req, res, user) {
 }
 
 module.exports = {
+  recordTermsAcceptance,
   findForSignIn,
   startSession,
   assertSignInAllowed,

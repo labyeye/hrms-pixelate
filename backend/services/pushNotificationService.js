@@ -43,7 +43,13 @@ function fcmConfig() {
   if (fcmCfg !== undefined) return fcmCfg;
   try {
     const raw = process.env.FCM_SERVICE_ACCOUNT || "";
-    fcmCfg = raw ? JSON.parse(raw.trim().startsWith("{") ? raw : require("fs").readFileSync(raw, "utf8")) : null;
+    fcmCfg = raw
+      ? JSON.parse(
+          raw.trim().startsWith("{")
+            ? raw
+            : require("fs").readFileSync(raw, "utf8"),
+        )
+      : null;
   } catch (e) {
     console.error("[FCM] bad FCM_SERVICE_ACCOUNT:", e.message);
     fcmCfg = null;
@@ -70,11 +76,18 @@ async function fcmAccessToken(cfg) {
   const r = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion }),
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion,
+    }),
   });
   const d = await r.json();
-  if (!d.access_token) throw new Error(d.error_description || "FCM auth failed");
-  fcmTokenCache = { token: d.access_token, exp: Date.now() + (d.expires_in || 3600) * 1000 };
+  if (!d.access_token)
+    throw new Error(d.error_description || "FCM auth failed");
+  fcmTokenCache = {
+    token: d.access_token,
+    exp: Date.now() + (d.expires_in || 3600) * 1000,
+  };
   return d.access_token;
 }
 
@@ -84,18 +97,27 @@ async function sendFcm(tokens, { title, body, image, data }) {
   const access = await fcmAccessToken(cfg);
   await Promise.allSettled(
     tokens.map(async (t) => {
-      const r = await fetch(`https://fcm.googleapis.com/v1/projects/${cfg.project_id}/messages:send`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${access}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: {
-            token: t.fcmToken,
-            notification: { title, body, ...(image ? { image } : {}) },
-            data: Object.fromEntries(Object.entries(data || {}).map(([k, v]) => [k, String(v)])),
+      const r = await fetch(
+        `https://fcm.googleapis.com/v1/projects/${cfg.project_id}/messages:send`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${access}`,
+            "Content-Type": "application/json",
           },
-        }),
-      });
-      if (r.status === 404 || r.status === 410) await PushSubscription.deleteOne({ _id: t._id });
+          body: JSON.stringify({
+            message: {
+              token: t.fcmToken,
+              notification: { title, body, ...(image ? { image } : {}) },
+              data: Object.fromEntries(
+                Object.entries(data || {}).map(([k, v]) => [k, String(v)]),
+              ),
+            },
+          }),
+        },
+      );
+      if (r.status === 404 || r.status === 410)
+        await PushSubscription.deleteOne({ _id: t._id });
     }),
   );
 }
@@ -108,7 +130,10 @@ async function notifyUsers(userIds, payload) {
     if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
       for (const id of ids) await sendPushToEmployee(id, payload);
     }
-    const native = await PushSubscription.find({ employee: { $in: ids }, fcmToken: { $exists: true, $ne: null } });
+    const native = await PushSubscription.find({
+      employee: { $in: ids },
+      fcmToken: { $exists: true, $ne: null },
+    });
     await sendFcm(native, payload);
   } catch (e) {
     console.error("[Push] notifyUsers failed:", e.message);

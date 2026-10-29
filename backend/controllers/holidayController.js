@@ -5,7 +5,8 @@ const Attendance = require("../models/Attendance");
 const { safePagination } = require("../middleware/validate");
 
 // Holiday.date is stored at UTC midnight of the chosen calendar day (same convention as the attendance auto-mark job).
-const dayUTC = (d) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+const dayUTC = (d) =>
+  new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
 const holidayNote = (h) => `Holiday: ${h.name}`;
 
 // Marks every working employee of the company as "holiday" (national holidays only) on that date. Real punches (a checkIn) are never touched.
@@ -16,8 +17,20 @@ async function markHolidayAttendance(holiday) {
     company: holiday.company,
     status: { $in: ["active", "on_leave", "inactive"] },
     $and: [
-      { $or: [{ joinDate: { $exists: false } }, { joinDate: null }, { joinDate: { $lte: date } }] },
-      { $or: [{ exitDate: { $exists: false } }, { exitDate: null }, { exitDate: { $gte: date } }] },
+      {
+        $or: [
+          { joinDate: { $exists: false } },
+          { joinDate: null },
+          { joinDate: { $lte: date } },
+        ],
+      },
+      {
+        $or: [
+          { exitDate: { $exists: false } },
+          { exitDate: null },
+          { exitDate: { $gte: date } },
+        ],
+      },
     ],
   }).select("_id");
   if (!emps.length) return 0;
@@ -25,7 +38,12 @@ async function markHolidayAttendance(holiday) {
   const note = holidayNote(holiday);
   // existing blank rows (auto-marked absent / weekend) become holiday
   await Attendance.updateMany(
-    { employee: { $in: ids }, date, checkIn: { $exists: false }, status: { $in: ["absent", "weekend", "holiday"] } },
+    {
+      employee: { $in: ids },
+      date,
+      checkIn: { $exists: false },
+      status: { $in: ["absent", "weekend", "holiday"] },
+    },
     { $set: { status: "holiday", notes: note } },
   );
   // employees with no row yet get one (upsert never overwrites an existing row)
@@ -33,7 +51,9 @@ async function markHolidayAttendance(holiday) {
     ids.map((employee) => ({
       updateOne: {
         filter: { employee, date },
-        update: { $setOnInsert: { status: "holiday", notes: note, verifyMode: "auto" } },
+        update: {
+          $setOnInsert: { status: "holiday", notes: note, verifyMode: "auto" },
+        },
         upsert: true,
       },
     })),
@@ -105,7 +125,9 @@ const createHoliday = asyncHandler(async (req, res) => {
   });
 
   const marked = await markHolidayAttendance(holiday);
-  res.status(201).json({ success: true, data: holiday, attendanceMarked: marked });
+  res
+    .status(201)
+    .json({ success: true, data: holiday, attendanceMarked: marked });
 });
 
 const updateHoliday = asyncHandler(async (req, res) => {
@@ -119,7 +141,11 @@ const updateHoliday = asyncHandler(async (req, res) => {
   }
 
   const { name, date, type, description, isActive } = req.body;
-  const before = { company: holiday.company, name: holiday.name, date: holiday.date };
+  const before = {
+    company: holiday.company,
+    name: holiday.name,
+    date: holiday.date,
+  };
   if (name !== undefined) holiday.name = String(name).trim().slice(0, 100);
   if (date !== undefined) {
     if (isNaN(new Date(date).getTime())) {

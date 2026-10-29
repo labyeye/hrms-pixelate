@@ -95,11 +95,16 @@ const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I
 const hashCode = (c) =>
   crypto
     .createHash("sha256")
-    .update(String(c).toUpperCase().replace(/[^A-Z0-9]/g, ""))
+    .update(
+      String(c)
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, ""),
+    )
     .digest("hex");
 const newCode = () => {
   let out = "";
-  for (let i = 0; i < 10; i++) out += ALPHABET[crypto.randomInt(ALPHABET.length)];
+  for (let i = 0; i < 10; i++)
+    out += ALPHABET[crypto.randomInt(ALPHABET.length)];
   return `${out.slice(0, 5)}-${out.slice(5)}`;
 };
 
@@ -191,12 +196,19 @@ const loginRequestEmailOtp = asyncHandler(async (req, res) => {
     user.emailLoginOtpExpire = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
     try {
-      await sendOtpEmail({ to: user.email, name: user.name, otp, purpose: "login" });
+      await sendOtpEmail({
+        to: user.email,
+        name: user.name,
+        otp,
+        purpose: "login",
+      });
     } catch {
       // logged inside sendOtpEmail; same response either way so it can't be probed
     }
   } else {
-    console.warn("[Email OTP] login code requested but no active user with that email — nothing sent");
+    console.warn(
+      "[Email OTP] login code requested but no active user with that email — nothing sent",
+    );
   }
   res.json({
     success: true,
@@ -237,7 +249,9 @@ const loginVerifyEmailOtp = asyncHandler(async (req, res) => {
 // The code goes to the address being verified, proving the user owns it.
 
 const sendEmailVerifyOtp = asyncHandler(async (req, res) => {
-  const email = String(req.body.email || "").toLowerCase().trim();
+  const email = String(req.body.email || "")
+    .toLowerCase()
+    .trim();
   if (!isEmail(email)) {
     res.status(400);
     throw new Error("Enter a valid email address");
@@ -247,7 +261,10 @@ const sendEmailVerifyOtp = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("This email is already verified");
   }
-  if (email !== user.email && (await User.findOne({ email, _id: { $ne: user._id } }))) {
+  if (
+    email !== user.email &&
+    (await User.findOne({ email, _id: { $ne: user._id } }))
+  ) {
     res.status(400);
     throw new Error("This email is already in use");
   }
@@ -259,7 +276,12 @@ const sendEmailVerifyOtp = asyncHandler(async (req, res) => {
   user.contactOtpExpire = new Date(Date.now() + 10 * 60 * 1000);
   await user.save();
 
-  await sendOtpEmail({ to: email, name: user.name, otp, purpose: "verify-email" });
+  await sendOtpEmail({
+    to: email,
+    name: user.name,
+    otp,
+    purpose: "verify-email",
+  });
   res.json({ success: true, message: "Code sent to the email" });
 });
 
@@ -280,7 +302,10 @@ const verifyEmailVerifyOtp = asyncHandler(async (req, res) => {
     throw new Error("This code is invalid or has expired");
   }
   const email = user.pendingEmail;
-  if (email !== user.email && (await User.findOne({ email, _id: { $ne: user._id } }))) {
+  if (
+    email !== user.email &&
+    (await User.findOne({ email, _id: { $ne: user._id } }))
+  ) {
     res.status(400);
     throw new Error("This email is already in use");
   }

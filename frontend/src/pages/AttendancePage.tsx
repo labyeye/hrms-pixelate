@@ -36,7 +36,9 @@ import {
   LogOut,
   Palmtree,
   MapPin,
+  ScanFace,
 } from "lucide-react";
+import FaceKioskModal from "@/components/attendance/FaceKioskModal";
 
 const DAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -143,12 +145,16 @@ export default function AttendancePage() {
   const { toast } = useToast();
   const confirm = useConfirm();
   const isEmployee = user?.role === "employee";
+  const isAdmin = user?.role === "super_admin" || user?.role === "hr_manager";
+  const [kioskOpen, setKioskOpen] = useState(false);
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   // status counts per calendar day of the month (one aggregation) - feeds the date strip without loading every row
-  const [daily, setDaily] = useState<Record<string, Record<string, number>>>({});
+  const [daily, setDaily] = useState<Record<string, Record<string, number>>>(
+    {},
+  );
   const reqId = useRef(0);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -171,7 +177,9 @@ export default function AttendancePage() {
   const stripRef = useCallback((el: HTMLDivElement | null) => {
     if (!el) return;
     const fit = () =>
-      setStripCount(Math.min(31, Math.max(3, Math.floor(el.clientWidth / 120))));
+      setStripCount(
+        Math.min(31, Math.max(3, Math.floor(el.clientWidth / 120))),
+      );
     fit();
     new ResizeObserver(fit).observe(el); // dies with the element
   }, []);
@@ -200,7 +208,9 @@ export default function AttendancePage() {
       if (attRes.success) setRecords(attRes.data);
       if (!isEmployee) {
         const [dailyRes, empRes] = await Promise.all([
-          attendanceAPI.getDailySummary({ month: String(month), year: String(year) }).catch(() => null),
+          attendanceAPI
+            .getDailySummary({ month: String(month), year: String(year) })
+            .catch(() => null),
           employees.length
             ? Promise.resolve(null)
             : employeeAPI.getAll({ status: "active", limit: "5000" }),
@@ -362,7 +372,9 @@ export default function AttendancePage() {
       for (let i = 0; i < empIds.length; i += 500) {
         await attendanceAPI.bulkMark({
           date,
-          records: empIds.slice(i, i + 500).map((employee) => ({ employee, status: "absent" })),
+          records: empIds
+            .slice(i, i + 500)
+            .map((employee) => ({ employee, status: "absent" })),
         });
       }
       load();
@@ -422,7 +434,8 @@ export default function AttendancePage() {
     const iso = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const dayRecords = records.filter((r) => toLocalDateStr(r.date) === iso);
     const dc = daily[iso] || {};
-    const presentCount = (dc.present || 0) + (dc.late || 0) + (dc.half_day || 0);
+    const presentCount =
+      (dc.present || 0) + (dc.late || 0) + (dc.half_day || 0);
     const absentCount = dc.absent || 0;
     return { day, date, iso, dayRecords, presentCount, absentCount };
   }).filter(Boolean) as {
@@ -528,32 +541,73 @@ export default function AttendancePage() {
             rows={displayedRecords}
             cols={[
               { header: "Emp Code", value: (r: any) => r.employee?.employeeId },
-              { header: "Employee", value: (r: any) => `${r.employee?.firstName || ""} ${r.employee?.lastName || ""}`.trim() },
+              {
+                header: "Employee",
+                value: (r: any) =>
+                  `${r.employee?.firstName || ""} ${r.employee?.lastName || ""}`.trim(),
+              },
               { header: "Date", value: (r: any) => toLocalDateStr(r.date) },
-              { header: "Check In", value: (r: any) => (r.checkIn ? new Date(r.checkIn).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "") },
-              { header: "Check Out", value: (r: any) => (r.checkOut ? new Date(r.checkOut).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "") },
-              { header: "Hours", value: (r: any) => (r.workHours ? Number(r.workHours).toFixed(1) : "") },
-              { header: "OT Hrs", value: (r: any) => (r.overtime ? Number(r.overtime).toFixed(1) : "") },
-              { header: "Status", value: (r: any) => String(r.status || "").replace(/_/g, " ") },
+              {
+                header: "Check In",
+                value: (r: any) =>
+                  r.checkIn
+                    ? new Date(r.checkIn).toLocaleTimeString("en-IN", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "",
+              },
+              {
+                header: "Check Out",
+                value: (r: any) =>
+                  r.checkOut
+                    ? new Date(r.checkOut).toLocaleTimeString("en-IN", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "",
+              },
+              {
+                header: "Hours",
+                value: (r: any) =>
+                  r.workHours ? Number(r.workHours).toFixed(1) : "",
+              },
+              {
+                header: "OT Hrs",
+                value: (r: any) =>
+                  r.overtime ? Number(r.overtime).toFixed(1) : "",
+              },
+              {
+                header: "Status",
+                value: (r: any) => String(r.status || "").replace(/_/g, " "),
+              },
             ]}
           />
-        {!isEmployee && (
-          <button
-            onClick={() => {
-              const date =
-                selectedDate || new Date().toISOString().split("T")[0];
-              setMarkForm((f) => ({
-                ...f,
-                date,
-                checkIn: defaultCheckIn(date),
-              }));
-              setMarkModal(true);
-            }}
-            className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5"
-          >
-            <Clock className="w-4 h-4" /> Mark Attendance
-          </button>
-        )}
+          {isAdmin && (
+            <button
+              onClick={() => setKioskOpen(true)}
+              className="border-2 bg-white text-[#024BAB] px-4 py-2 text-sm flex items-center gap-1.5"
+            >
+              <ScanFace className="w-4 h-4" /> Face Attendance
+            </button>
+          )}
+          {!isEmployee && (
+            <button
+              onClick={() => {
+                const date =
+                  selectedDate || new Date().toISOString().split("T")[0];
+                setMarkForm((f) => ({
+                  ...f,
+                  date,
+                  checkIn: defaultCheckIn(date),
+                }));
+                setMarkModal(true);
+              }}
+              className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5"
+            >
+              <Clock className="w-4 h-4" /> Mark Attendance
+            </button>
+          )}
         </div>
       </div>
 
@@ -643,7 +697,10 @@ export default function AttendancePage() {
       </div>
 
       {/* Date strip */}
-      <div ref={stripRef} className="border-2 border-black bg-white mb-5 flex items-stretch">
+      <div
+        ref={stripRef}
+        className="border-2 border-black bg-white mb-5 flex items-stretch"
+      >
         {/* Left arrow */}
         <button
           onClick={() => setWindowStart((s) => Math.max(1, s - stripCount))}
@@ -745,7 +802,12 @@ export default function AttendancePage() {
         {/* Right arrow */}
         <button
           onClick={() =>
-            setWindowStart((s) => Math.max(1, Math.min(daysInMonth - stripCount + 1, s + stripCount)))
+            setWindowStart((s) =>
+              Math.max(
+                1,
+                Math.min(daysInMonth - stripCount + 1, s + stripCount),
+              ),
+            )
           }
           disabled={windowStart + stripCount > daysInMonth}
           className="px-3 border-l-2 border-black hover:bg-[#024BAB]/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors shrink-0"
@@ -1003,7 +1065,9 @@ export default function AttendancePage() {
         </div>
       )}
 
-      {}
+      {kioskOpen && (
+        <FaceKioskModal onClose={() => setKioskOpen(false)} onMarked={load} />
+      )}
       {markModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 bg-white w-full max-w-md">

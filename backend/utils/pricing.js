@@ -20,7 +20,8 @@ function calculatePricing(employeeCount) {
     tierLabel: PLAN_LABEL,
     maxEmployees: slab.maxEmployees,
     // effective per-seat rate, informational (schema field is required)
-    ratePerEmployee: Math.round((slab.yearlyPrice / slab.maxEmployees) * 100) / 100,
+    ratePerEmployee:
+      Math.round((slab.yearlyPrice / slab.maxEmployees) * 100) / 100,
     monthlyPrice: Math.round(slab.yearlyPrice / 12),
     yearlyPrice: slab.yearlyPrice,
   };

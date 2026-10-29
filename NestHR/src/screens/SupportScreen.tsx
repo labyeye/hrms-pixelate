@@ -327,106 +327,108 @@ export default function SupportScreen({ navigation }: any) {
       </ScrollView>
 
       {/* Create Ticket Modal */}
-      <Modal
-        visible={showForm}
-        transparent
-        animationType="fade"
-      >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        <SafeAreaView style={styles.modalSafe} edges={['top', 'bottom']}>
-          <View style={styles.modalHeader}>
-            <Text style={S.h3}>New Support Ticket</Text>
-            <TouchableOpacity
-              onPress={() => {
-                setShowForm(false);
-                resetForm();
-              }}
-            >
-              <X size={22} color={C.black} />
-            </TouchableOpacity>
-          </View>
-          <KeyboardAvoidingView
-            style={{ flex: 1 }}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          >
-            <ScrollView
-              contentContainerStyle={styles.formContent}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-            >
-              {/* Subject */}
-              <Text style={styles.fieldLabel}>Subject *</Text>
-              <TextInput
-                style={S.input}
-                placeholder="Brief summary of the issue"
-                placeholderTextColor="#9CA3AF"
-                value={subject}
-                onChangeText={setSubject}
-                maxLength={200}
-              />
-
-              {/* Issue Type */}
-              <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
-                Issue Type *
-              </Text>
-              <TouchableOpacity
-                style={styles.selectBtn}
-                onPress={() => setShowIssueTypePicker(true)}
-              >
-                <Text
-                  style={[
-                    styles.selectText,
-                    !issueType && { color: '#9CA3AF' },
-                  ]}
+      <Modal visible={showForm} transparent animationType="fade">
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            <SafeAreaView style={styles.modalSafe} edges={['top', 'bottom']}>
+              <View style={styles.modalHeader}>
+                <Text style={S.h3}>New Support Ticket</Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowForm(false);
+                    resetForm();
+                  }}
                 >
-                  {issueType ? issueLabel(issueType) : 'Select issue type'}
-                </Text>
-                <ChevronDown size={16} color={C.black} />
-              </TouchableOpacity>
-
-              {/* Priority */}
-              <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
-                Priority
-              </Text>
-              <TouchableOpacity
-                style={styles.selectBtn}
-                onPress={() => setShowPriorityPicker(true)}
+                  <X size={22} color={C.black} />
+                </TouchableOpacity>
+              </View>
+              <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
               >
-                <Text style={styles.selectText}>{priorityLabel(priority)}</Text>
-                <ChevronDown size={16} color={C.black} />
-              </TouchableOpacity>
+                <ScrollView
+                  contentContainerStyle={styles.formContent}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
+                >
+                  {/* Subject */}
+                  <Text style={styles.fieldLabel}>Subject *</Text>
+                  <TextInput
+                    style={S.input}
+                    placeholder="Brief summary of the issue"
+                    placeholderTextColor="#9CA3AF"
+                    value={subject}
+                    onChangeText={setSubject}
+                    maxLength={200}
+                  />
 
-              {/* Description */}
-              <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
-                Description *
-              </Text>
-              <TextInput
-                style={[S.input, styles.textArea]}
-                placeholder="Describe the issue in detail — steps to reproduce, error messages, affected records, etc."
-                placeholderTextColor="#9CA3AF"
-                value={description}
-                onChangeText={setDescription}
-                multiline
-                numberOfLines={6}
-                textAlignVertical="top"
-                maxLength={2000}
-              />
-              <Text style={styles.charCount}>{description.length}/2000</Text>
+                  {/* Issue Type */}
+                  <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
+                    Issue Type *
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.selectBtn}
+                    onPress={() => setShowIssueTypePicker(true)}
+                  >
+                    <Text
+                      style={[
+                        styles.selectText,
+                        !issueType && { color: '#9CA3AF' },
+                      ]}
+                    >
+                      {issueType ? issueLabel(issueType) : 'Select issue type'}
+                    </Text>
+                    <ChevronDown size={16} color={C.black} />
+                  </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[S.btnPrimary, { marginTop: 24 }]}
-                onPress={handleSubmit}
-                disabled={submitting}
-              >
-                <Text style={S.btnPrimaryText}>
-                  {submitting ? 'Submitting...' : 'Submit Ticket'}
-                </Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </SafeAreaView>
-      </View></View>
-</Modal>
+                  {/* Priority */}
+                  <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
+                    Priority
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.selectBtn}
+                    onPress={() => setShowPriorityPicker(true)}
+                  >
+                    <Text style={styles.selectText}>
+                      {priorityLabel(priority)}
+                    </Text>
+                    <ChevronDown size={16} color={C.black} />
+                  </TouchableOpacity>
+
+                  {/* Description */}
+                  <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
+                    Description *
+                  </Text>
+                  <TextInput
+                    style={[S.input, styles.textArea]}
+                    placeholder="Describe the issue in detail — steps to reproduce, error messages, affected records, etc."
+                    placeholderTextColor="#9CA3AF"
+                    value={description}
+                    onChangeText={setDescription}
+                    multiline
+                    numberOfLines={6}
+                    textAlignVertical="top"
+                    maxLength={2000}
+                  />
+                  <Text style={styles.charCount}>
+                    {description.length}/2000
+                  </Text>
+
+                  <TouchableOpacity
+                    style={[S.btnPrimary, { marginTop: 24 }]}
+                    onPress={handleSubmit}
+                    disabled={submitting}
+                  >
+                    <Text style={S.btnPrimaryText}>
+                      {submitting ? 'Submitting...' : 'Submit Ticket'}
+                    </Text>
+                  </TouchableOpacity>
+                </ScrollView>
+              </KeyboardAvoidingView>
+            </SafeAreaView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Issue Type Picker Modal */}
       <Modal visible={showIssueTypePicker} animationType="slide" transparent>
@@ -457,7 +459,7 @@ export default function SupportScreen({ navigation }: any) {
                       styles.pickerRowText,
                       item.value === issueType && {
                         color: C.primary,
-                        fontWeight: '700',
+                        fontWeight: '400',
                       },
                     ]}
                   >
@@ -503,7 +505,7 @@ export default function SupportScreen({ navigation }: any) {
                     styles.pickerRowText,
                     item.value === priority && {
                       color: C.primary,
-                      fontWeight: '700',
+                      fontWeight: '400',
                     },
                   ]}
                 >
@@ -516,299 +518,303 @@ export default function SupportScreen({ navigation }: any) {
       </Modal>
 
       {/* Ticket Detail Modal */}
-      <Modal
-        visible={!!selectedTicket}
-        transparent
-        animationType="fade"
-      >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        {selectedTicket && (
-          <SafeAreaView style={styles.modalSafe} edges={['top', 'bottom']}>
-            <View style={styles.modalHeader}>
-              <View>
-                <Text style={styles.detailTicketNum}>
-                  {selectedTicket.ticketNumber}
-                </Text>
-                <View
-                  style={[
-                    styles.statusBadge,
-                    {
-                      backgroundColor: STATUS_META[selectedTicket.status]?.bg,
-                      borderColor: STATUS_META[selectedTicket.status]?.color,
-                      alignSelf: 'flex-start',
-                      marginTop: 4,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.statusText,
-                      { color: STATUS_META[selectedTicket.status]?.color },
-                    ]}
-                  >
-                    {STATUS_META[selectedTicket.status]?.label}
-                  </Text>
-                </View>
-              </View>
-              <TouchableOpacity onPress={() => setSelectedTicket(null)}>
-                <X size={22} color={C.black} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView
-              contentContainerStyle={styles.detailContent}
-              showsVerticalScrollIndicator={false}
-            >
-              <Text style={S.h3}>{selectedTicket.subject}</Text>
-
-              <View style={styles.detailGrid}>
-                <View style={styles.detailCell}>
-                  <Text style={styles.detailCellLabel}>Issue Type</Text>
-                  <Text style={styles.detailCellValue}>
-                    {issueLabel(selectedTicket.issueType)}
-                  </Text>
-                </View>
-                <View style={styles.detailCell}>
-                  <Text style={styles.detailCellLabel}>Priority</Text>
-                  <Text
-                    style={[
-                      styles.detailCellValue,
-                      { color: PRIORITY_COLORS[selectedTicket.priority] },
-                    ]}
-                  >
-                    {priorityLabel(selectedTicket.priority)}
-                  </Text>
-                </View>
-                <View style={styles.detailCell}>
-                  <Text style={styles.detailCellLabel}>Submitted</Text>
-                  <Text style={styles.detailCellValue}>
-                    {formatDate(selectedTicket.createdAt)}
-                  </Text>
-                </View>
-                {isAdmin && selectedTicket.submittedBy && (
-                  <View style={styles.detailCell}>
-                    <Text style={styles.detailCellLabel}>Submitted By</Text>
-                    <Text style={styles.detailCellValue}>
-                      {selectedTicket.submittedBy.name ||
-                        selectedTicket.submittedBy.email}
+      <Modal visible={!!selectedTicket} transparent animationType="fade">
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            {selectedTicket && (
+              <SafeAreaView style={styles.modalSafe} edges={['top', 'bottom']}>
+                <View style={styles.modalHeader}>
+                  <View>
+                    <Text style={styles.detailTicketNum}>
+                      {selectedTicket.ticketNumber}
                     </Text>
-                  </View>
-                )}
-              </View>
-
-              <View style={S.divider} />
-              <Text style={styles.detailCellLabel}>Description</Text>
-              <Text style={[S.body, { marginTop: 6, lineHeight: 22 }]}>
-                {selectedTicket.description}
-              </Text>
-
-              {selectedTicket.resolvedNote ? (
-                <View style={styles.resolvedNote}>
-                  <CheckCircle2 size={16} color={C.success} />
-                  <View style={{ flex: 1, marginLeft: 8 }}>
-                    <Text style={styles.resolvedNoteTitle}>
-                      Resolution Note
-                    </Text>
-                    <Text style={styles.resolvedNoteText}>
-                      {selectedTicket.resolvedNote}
-                    </Text>
-                  </View>
-                </View>
-              ) : null}
-
-              {/* Conversation History */}
-              <View style={{ marginTop: 24 }}>
-                <Text style={styles.detailCellLabel}>Conversation Chat</Text>
-                <View
-                  style={{
-                    borderWidth: 2,
-                    borderRadius: 8,
-                    borderColor: C.black,
-                    padding: 10,
-                    gap: 10,
-                    marginTop: 8,
-                    backgroundColor: '#F9FAFB',
-                  }}
-                >
-                  {/* Replies list */}
-                  {freshTicket?.replies?.map((rep: any, idx: number) => {
-                    const isSelf =
-                      rep.role === 'employee' ||
-                      rep.submittedBy === (user as any)?._id;
-                    return (
-                      <View
-                        key={idx}
-                        style={{
-                          padding: 8,
-                          backgroundColor: isSelf ? '#EFF6FF' : '#FFF7ED',
-                          borderWidth: 2,
-                          borderRadius: 8,
-                          borderColor: C.black,
-                          alignSelf: isSelf ? 'flex-end' : 'flex-start',
-                          width: '85%',
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 9,
-                            fontWeight: '800',
-                            color: isSelf ? C.primary : C.secondary,
-                            textTransform: 'uppercase',
-                          }}
-                        >
-                          {isSelf ? 'You' : 'Support / HR'}
-                        </Text>
-                        <Text
-                          style={{
-                            fontSize: 12,
-                            color: C.black,
-                            marginTop: 3,
-                            fontWeight: '500',
-                          }}
-                        >
-                          {rep.message}
-                        </Text>
-                        <Text
-                          style={{
-                            fontSize: 8,
-                            color: C.textLight,
-                            marginTop: 4,
-                            fontFamily: 'monospace',
-                          }}
-                        >
-                          {new Date(rep.createdAt).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </Text>
-                      </View>
-                    );
-                  })}
-
-                  {(!freshTicket?.replies ||
-                    freshTicket.replies.length === 0) && (
-                    <Text
-                      style={{
-                        fontSize: 11,
-                        color: C.textMuted,
-                        textAlign: 'center',
-                        paddingVertical: 10,
-                      }}
-                    >
-                      No replies in this conversation yet.
-                    </Text>
-                  )}
-                </View>
-              </View>
-
-              {/* Reply Form & Close Ticket button */}
-              {freshTicket?.status !== 'closed' && (
-                <View style={{ marginTop: 20, gap: 8 }}>
-                  <Text style={styles.detailCellLabel}>Send Reply</Text>
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <TextInput
+                    <View
                       style={[
-                        S.input,
+                        styles.statusBadge,
                         {
-                          flex: 1,
-                          minHeight: 44,
-                          marginVertical: 0,
-                          paddingVertical: 0,
+                          backgroundColor:
+                            STATUS_META[selectedTicket.status]?.bg,
+                          borderColor:
+                            STATUS_META[selectedTicket.status]?.color,
+                          alignSelf: 'flex-start',
+                          marginTop: 4,
                         },
                       ]}
-                      value={replyMsg}
-                      onChangeText={setReplyMsg}
-                      placeholder="Type reply message..."
-                      placeholderTextColor={C.textLight}
-                    />
-                    <TouchableOpacity
+                    >
+                      <Text
+                        style={[
+                          styles.statusText,
+                          { color: STATUS_META[selectedTicket.status]?.color },
+                        ]}
+                      >
+                        {STATUS_META[selectedTicket.status]?.label}
+                      </Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity onPress={() => setSelectedTicket(null)}>
+                    <X size={22} color={C.black} />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView
+                  contentContainerStyle={styles.detailContent}
+                  showsVerticalScrollIndicator={false}
+                >
+                  <Text style={S.h3}>{selectedTicket.subject}</Text>
+
+                  <View style={styles.detailGrid}>
+                    <View style={styles.detailCell}>
+                      <Text style={styles.detailCellLabel}>Issue Type</Text>
+                      <Text style={styles.detailCellValue}>
+                        {issueLabel(selectedTicket.issueType)}
+                      </Text>
+                    </View>
+                    <View style={styles.detailCell}>
+                      <Text style={styles.detailCellLabel}>Priority</Text>
+                      <Text
+                        style={[
+                          styles.detailCellValue,
+                          { color: PRIORITY_COLORS[selectedTicket.priority] },
+                        ]}
+                      >
+                        {priorityLabel(selectedTicket.priority)}
+                      </Text>
+                    </View>
+                    <View style={styles.detailCell}>
+                      <Text style={styles.detailCellLabel}>Submitted</Text>
+                      <Text style={styles.detailCellValue}>
+                        {formatDate(selectedTicket.createdAt)}
+                      </Text>
+                    </View>
+                    {isAdmin && selectedTicket.submittedBy && (
+                      <View style={styles.detailCell}>
+                        <Text style={styles.detailCellLabel}>Submitted By</Text>
+                        <Text style={styles.detailCellValue}>
+                          {selectedTicket.submittedBy.name ||
+                            selectedTicket.submittedBy.email}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <View style={S.divider} />
+                  <Text style={styles.detailCellLabel}>Description</Text>
+                  <Text style={[S.body, { marginTop: 6, lineHeight: 22 }]}>
+                    {selectedTicket.description}
+                  </Text>
+
+                  {selectedTicket.resolvedNote ? (
+                    <View style={styles.resolvedNote}>
+                      <CheckCircle2 size={16} color={C.success} />
+                      <View style={{ flex: 1, marginLeft: 8 }}>
+                        <Text style={styles.resolvedNoteTitle}>
+                          Resolution Note
+                        </Text>
+                        <Text style={styles.resolvedNoteText}>
+                          {selectedTicket.resolvedNote}
+                        </Text>
+                      </View>
+                    </View>
+                  ) : null}
+
+                  {/* Conversation History */}
+                  <View style={{ marginTop: 24 }}>
+                    <Text style={styles.detailCellLabel}>
+                      Conversation Chat
+                    </Text>
+                    <View
                       style={{
-                        backgroundColor: C.primary,
                         borderWidth: 2,
                         borderRadius: 8,
                         borderColor: C.black,
-                        paddingHorizontal: 16,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                      }}
-                      onPress={async () => {
-                        if (!replyMsg.trim()) return;
-                        try {
-                          await supportAPI.reply(
-                            freshTicket._id,
-                            replyMsg.trim(),
-                          );
-                          setReplyMsg('');
-                          const res = await supportAPI.getOne(freshTicket._id);
-                          setFreshTicket(res.data || res);
-                        } catch (err: any) {
-                          Alert.alert('Error', err.message);
-                        }
+                        padding: 10,
+                        gap: 10,
+                        marginTop: 8,
+                        backgroundColor: '#F9FAFB',
                       }}
                     >
-                      <Text
-                        style={{
-                          color: '#fff',
-                          fontSize: 12,
-                          fontWeight: '700',
-                          textTransform: 'uppercase',
-                        }}
-                      >
-                        Send
-                      </Text>
-                    </TouchableOpacity>
+                      {/* Replies list */}
+                      {freshTicket?.replies?.map((rep: any, idx: number) => {
+                        const isSelf =
+                          rep.role === 'employee' ||
+                          rep.submittedBy === (user as any)?._id;
+                        return (
+                          <View
+                            key={idx}
+                            style={{
+                              padding: 8,
+                              backgroundColor: isSelf ? '#EFF6FF' : '#FFF7ED',
+                              borderWidth: 2,
+                              borderRadius: 8,
+                              borderColor: C.black,
+                              alignSelf: isSelf ? 'flex-end' : 'flex-start',
+                              width: '85%',
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 9,
+                                fontWeight: '400',
+                                color: isSelf ? C.primary : C.secondary,
+                                textTransform: 'uppercase',
+                              }}
+                            >
+                              {isSelf ? 'You' : 'Support / HR'}
+                            </Text>
+                            <Text
+                              style={{
+                                fontSize: 12,
+                                color: C.black,
+                                marginTop: 3,
+                                fontWeight: '400',
+                              }}
+                            >
+                              {rep.message}
+                            </Text>
+                            <Text
+                              style={{
+                                fontSize: 8,
+                                color: C.textLight,
+                                marginTop: 4,
+                                fontFamily: 'monospace',
+                              }}
+                            >
+                              {new Date(rep.createdAt).toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </Text>
+                          </View>
+                        );
+                      })}
+
+                      {(!freshTicket?.replies ||
+                        freshTicket.replies.length === 0) && (
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            color: C.textMuted,
+                            textAlign: 'center',
+                            paddingVertical: 10,
+                          }}
+                        >
+                          No replies in this conversation yet.
+                        </Text>
+                      )}
+                    </View>
                   </View>
 
-                  <TouchableOpacity
-                    style={{
-                      backgroundColor: C.danger,
-                      borderWidth: 2,
-                      borderRadius: 8,
-                      borderColor: C.black,
-                      paddingVertical: 12,
-                      alignItems: 'center',
-                      marginTop: 8,
-                    }}
-                    onPress={async () => {
-                      Alert.alert(
-                        'Close Ticket',
-                        'Are you sure you want to close this ticket?',
-                        [
-                          { text: 'Cancel', style: 'cancel' },
-                          {
-                            text: 'Close Ticket',
-                            style: 'destructive',
-                            onPress: async () => {
-                              try {
-                                await supportAPI.close(freshTicket._id);
-                                setSelectedTicket(null);
-                                load();
-                              } catch (err: any) {
-                                Alert.alert('Error', err.message);
-                              }
+                  {/* Reply Form & Close Ticket button */}
+                  {freshTicket?.status !== 'closed' && (
+                    <View style={{ marginTop: 20, gap: 8 }}>
+                      <Text style={styles.detailCellLabel}>Send Reply</Text>
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <TextInput
+                          style={[
+                            S.input,
+                            {
+                              flex: 1,
+                              minHeight: 44,
+                              marginVertical: 0,
+                              paddingVertical: 0,
                             },
-                          },
-                        ],
-                      );
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: '#fff',
-                        fontSize: 12,
-                        fontWeight: '700',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      Close Ticket
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </ScrollView>
-          </SafeAreaView>
-        )}
-      </View></View>
-</Modal>
+                          ]}
+                          value={replyMsg}
+                          onChangeText={setReplyMsg}
+                          placeholder="Type reply message..."
+                          placeholderTextColor={C.textLight}
+                        />
+                        <TouchableOpacity
+                          style={{
+                            backgroundColor: C.primary,
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderColor: C.black,
+                            paddingHorizontal: 16,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}
+                          onPress={async () => {
+                            if (!replyMsg.trim()) return;
+                            try {
+                              await supportAPI.reply(
+                                freshTicket._id,
+                                replyMsg.trim(),
+                              );
+                              setReplyMsg('');
+                              const res = await supportAPI.getOne(
+                                freshTicket._id,
+                              );
+                              setFreshTicket(res.data || res);
+                            } catch (err: any) {
+                              Alert.alert('Error', err.message);
+                            }
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: '#fff',
+                              fontSize: 12,
+                              fontWeight: '400',
+                              textTransform: 'uppercase',
+                            }}
+                          >
+                            Send
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+
+                      <TouchableOpacity
+                        style={{
+                          backgroundColor: C.danger,
+                          borderWidth: 2,
+                          borderRadius: 8,
+                          borderColor: C.black,
+                          paddingVertical: 12,
+                          alignItems: 'center',
+                          marginTop: 8,
+                        }}
+                        onPress={async () => {
+                          Alert.alert(
+                            'Close Ticket',
+                            'Are you sure you want to close this ticket?',
+                            [
+                              { text: 'Cancel', style: 'cancel' },
+                              {
+                                text: 'Close Ticket',
+                                style: 'destructive',
+                                onPress: async () => {
+                                  try {
+                                    await supportAPI.close(freshTicket._id);
+                                    setSelectedTicket(null);
+                                    load();
+                                  } catch (err: any) {
+                                    Alert.alert('Error', err.message);
+                                  }
+                                },
+                              },
+                            ],
+                          );
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: '#fff',
+                            fontSize: 12,
+                            fontWeight: '400',
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          Close Ticket
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </ScrollView>
+              </SafeAreaView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -832,7 +838,7 @@ const styles = StyleSheet.create({
   },
   newBtnText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 12,
     textTransform: 'uppercase',
   },
@@ -851,10 +857,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
   },
-  summaryCount: { fontSize: 20, fontWeight: '700' },
+  summaryCount: { fontSize: 20, fontWeight: '400' },
   summaryLabel: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: '#6B7280',
     marginTop: 2,
@@ -883,7 +889,7 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     fontSize: 11,
     color: '#6B7280',
-    fontWeight: '700',
+    fontWeight: '400',
   },
   statusBadge: {
     borderWidth: 2,
@@ -894,17 +900,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
-  statusText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
+  statusText: { fontSize: 10, fontWeight: '400', textTransform: 'uppercase' },
   ticketSubject: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.black,
     marginBottom: 4,
   },
   ticketDesc: {
     fontSize: 12,
     color: '#6B7280',
-    fontWeight: '500',
+    fontWeight: '400',
     lineHeight: 18,
     marginBottom: 8,
   },
@@ -915,9 +921,9 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   priorityDot: { width: 8, height: 8, borderRadius: 4 },
-  ticketMetaText: { fontSize: 11, color: '#6B7280', fontWeight: '500' },
+  ticketMetaText: { fontSize: 11, color: '#6B7280', fontWeight: '400' },
   ticketMetaDot: { fontSize: 11, color: '#D1D5DB' },
-  ticketBy: { fontSize: 11, color: C.primary, fontWeight: '600', marginTop: 6 },
+  ticketBy: { fontSize: 11, color: C.primary, fontWeight: '400', marginTop: 6 },
 
   // Form modal
   modalSafe: { flex: 1, backgroundColor: C.white },
@@ -933,7 +939,7 @@ const styles = StyleSheet.create({
   formContent: { padding: 16, paddingBottom: 40 },
   fieldLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     color: C.black,
@@ -954,12 +960,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: C.white,
   },
-  selectText: { fontSize: 14, fontWeight: '500', color: C.black },
+  selectText: { fontSize: 14, fontWeight: '400', color: C.black },
   textArea: { height: 130, paddingTop: 10 },
   charCount: {
     fontSize: 11,
     color: '#9CA3AF',
-    fontWeight: '500',
+    fontWeight: '400',
     textAlign: 'right',
     marginTop: 4,
   },
@@ -996,14 +1002,14 @@ const styles = StyleSheet.create({
     borderBottomColor: C.black,
   },
   pickerRowActive: { backgroundColor: '#EFF6FF' },
-  pickerRowText: { fontSize: 14, fontWeight: '500', color: C.black },
+  pickerRowText: { fontSize: 14, fontWeight: '400', color: C.black },
 
   // Detail modal
   detailContent: { padding: 16, paddingBottom: 40 },
   detailTicketNum: {
     fontFamily: 'monospace',
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '400',
     color: '#6B7280',
   },
   detailGrid: {
@@ -1025,13 +1031,13 @@ const styles = StyleSheet.create({
   },
   detailCellLabel: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: '#000000',
     letterSpacing: 0.5,
     marginBottom: 3,
   },
-  detailCellValue: { fontSize: 14, fontWeight: '600', color: C.black },
+  detailCellValue: { fontSize: 14, fontWeight: '400', color: C.black },
   resolvedNote: {
     flexDirection: 'row',
     backgroundColor: '#F0FDF4',
@@ -1047,7 +1053,7 @@ const styles = StyleSheet.create({
   },
   resolvedNoteTitle: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.success,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -1055,7 +1061,7 @@ const styles = StyleSheet.create({
   resolvedNoteText: {
     fontSize: 13,
     color: '#166534',
-    fontWeight: '500',
+    fontWeight: '400',
     marginTop: 4,
     lineHeight: 20,
   },

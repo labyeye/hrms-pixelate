@@ -27,7 +27,14 @@ async function run() {
       `../backups/pre-slab-pricing-${new Date().toISOString().replace(/[:.]/g, "-")}.json`,
     );
     fs.mkdirSync(path.dirname(out), { recursive: true });
-    fs.writeFileSync(out, JSON.stringify(subs.map((s) => s.toObject()), null, 2));
+    fs.writeFileSync(
+      out,
+      JSON.stringify(
+        subs.map((s) => s.toObject()),
+        null,
+        2,
+      ),
+    );
     console.log(`Backup -> ${out}`);
   }
 
@@ -55,7 +62,9 @@ async function run() {
   }
 
   if (skipped.length) {
-    console.log(`Skipped (contact sales, >100 employees): ${skipped.join(", ")}`);
+    console.log(
+      `Skipped (contact sales, >100 employees): ${skipped.join(", ")}`,
+    );
   }
   await mongoose.disconnect();
   process.exit(0);

@@ -592,200 +592,196 @@ export default function SettingsScreen() {
       </ScrollView>
 
       {/* 2FA Setup Modal */}
-      <Modal
-        visible={show2FASetup}
-        transparent
-        animationType="fade"
-      >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        <SafeAreaView style={styles.safe} edges={[]}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Enable 2FA</Text>
-            <TouchableOpacity onPress={() => setShow2FASetup(false)}>
-              <X size={22} color={C.black} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            contentContainerStyle={{ padding: 20, gap: 16 }}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View style={styles.twoFANote}>
-              <ShieldCheck size={20} color={C.primary} />
-              <Text style={styles.twoFANoteText}>
-                Scan the QR code with Google Authenticator, Authy, or any TOTP
-                app. Then enter the 6-digit code to confirm.
-              </Text>
-            </View>
-
-            {qrUri ? (
-              <View style={styles.qrContainer}>
-                <Text style={styles.qrLabel}>Scan this QR Code</Text>
-                <View style={styles.qrBox}>
-                  <Image
-                    source={{ uri: qrUri }}
-                    style={{ width: 200, height: 200 }}
-                    resizeMode="contain"
-                  />
-                </View>
-              </View>
-            ) : null}
-
-            {secret2FA ? (
-              <View>
-                <Text style={styles.fieldLabel2FA}>Manual Entry Key</Text>
-                <TouchableOpacity
-                  style={styles.secretRow}
-                  onPress={() => setShowSecret(s => !s)}
-                >
-                  <Text
-                    style={styles.secretText}
-                    numberOfLines={showSecret ? undefined : 1}
-                  >
-                    {showSecret ? secret2FA : '••••••••••••••••••••'}
-                  </Text>
-                  {showSecret ? (
-                    <EyeOff size={16} color="#6B7280" />
-                  ) : (
-                    <Eye size={16} color="#6B7280" />
-                  )}
+      <Modal visible={show2FASetup} transparent animationType="fade">
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            <SafeAreaView style={styles.safe} edges={[]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Enable 2FA</Text>
+                <TouchableOpacity onPress={() => setShow2FASetup(false)}>
+                  <X size={22} color={C.black} />
                 </TouchableOpacity>
               </View>
-            ) : null}
+              <ScrollView
+                contentContainerStyle={{ padding: 20, gap: 16 }}
+                keyboardShouldPersistTaps="handled"
+              >
+                <View style={styles.twoFANote}>
+                  <ShieldCheck size={20} color={C.primary} />
+                  <Text style={styles.twoFANoteText}>
+                    Scan the QR code with Google Authenticator, Authy, or any
+                    TOTP app. Then enter the 6-digit code to confirm.
+                  </Text>
+                </View>
 
-            <View>
-              <Text style={styles.fieldLabel2FA}>
-                Enter 6-digit code from your app *
-              </Text>
-              <TextInput
-                style={styles.codeInput}
-                value={token2FA}
-                onChangeText={setToken2FA}
-                keyboardType="numeric"
-                maxLength={6}
-                placeholder="000000"
-                placeholderTextColor="#9CA3AF"
-              />
-            </View>
+                {qrUri ? (
+                  <View style={styles.qrContainer}>
+                    <Text style={styles.qrLabel}>Scan this QR Code</Text>
+                    <View style={styles.qrBox}>
+                      <Image
+                        source={{ uri: qrUri }}
+                        style={{ width: 200, height: 200 }}
+                        resizeMode="contain"
+                      />
+                    </View>
+                  </View>
+                ) : null}
 
-            <TouchableOpacity
-              style={[
-                styles.twoFASubmitBtn,
-                { backgroundColor: twoFALoading ? '#9CA3AF' : C.primary },
-              ]}
-              onPress={async () => {
-                if (token2FA.length !== 6) {
-                  Alert.alert('Validation', 'Enter a 6-digit code');
-                  return;
-                }
-                setTwoFALoading(true);
-                try {
-                  const r = await authAPI.confirm2FA(token2FA);
-                  setTwoFAEnabled(true);
-                  setShow2FASetup(false);
-                  Alert.alert(
-                    '2FA enabled',
-                    `Save these backup codes now — each works once if you lose your authenticator:\n\n${(r.data?.backupCodes || []).join('   ')}`,
-                  );
-                } catch (e: any) {
-                  Alert.alert('Invalid Code', e.message);
-                } finally {
-                  setTwoFALoading(false);
-                }
-              }}
-              disabled={twoFALoading}
-            >
-              {twoFALoading ? (
-                <ActivityIndicator color={C.white} />
-              ) : (
-                <Text style={styles.twoFASubmitBtnText}>
-                  Confirm & Enable 2FA
-                </Text>
-              )}
-            </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </View></View>
-</Modal>
+                {secret2FA ? (
+                  <View>
+                    <Text style={styles.fieldLabel2FA}>Manual Entry Key</Text>
+                    <TouchableOpacity
+                      style={styles.secretRow}
+                      onPress={() => setShowSecret(s => !s)}
+                    >
+                      <Text
+                        style={styles.secretText}
+                        numberOfLines={showSecret ? undefined : 1}
+                      >
+                        {showSecret ? secret2FA : '••••••••••••••••••••'}
+                      </Text>
+                      {showSecret ? (
+                        <EyeOff size={16} color="#6B7280" />
+                      ) : (
+                        <Eye size={16} color="#6B7280" />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
+
+                <View>
+                  <Text style={styles.fieldLabel2FA}>
+                    Enter 6-digit code from your app *
+                  </Text>
+                  <TextInput
+                    style={styles.codeInput}
+                    value={token2FA}
+                    onChangeText={setToken2FA}
+                    keyboardType="numeric"
+                    maxLength={6}
+                    placeholder="000000"
+                    placeholderTextColor="#9CA3AF"
+                  />
+                </View>
+
+                <TouchableOpacity
+                  style={[
+                    styles.twoFASubmitBtn,
+                    { backgroundColor: twoFALoading ? '#9CA3AF' : C.primary },
+                  ]}
+                  onPress={async () => {
+                    if (token2FA.length !== 6) {
+                      Alert.alert('Validation', 'Enter a 6-digit code');
+                      return;
+                    }
+                    setTwoFALoading(true);
+                    try {
+                      const r = await authAPI.confirm2FA(token2FA);
+                      setTwoFAEnabled(true);
+                      setShow2FASetup(false);
+                      Alert.alert(
+                        '2FA enabled',
+                        `Save these backup codes now — each works once if you lose your authenticator:\n\n${(r.data?.backupCodes || []).join('   ')}`,
+                      );
+                    } catch (e: any) {
+                      Alert.alert('Invalid Code', e.message);
+                    } finally {
+                      setTwoFALoading(false);
+                    }
+                  }}
+                  disabled={twoFALoading}
+                >
+                  {twoFALoading ? (
+                    <ActivityIndicator color={C.white} />
+                  ) : (
+                    <Text style={styles.twoFASubmitBtnText}>
+                      Confirm & Enable 2FA
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
+            </SafeAreaView>
+          </View>
+        </View>
+      </Modal>
 
       {/* 2FA Disable Modal */}
-      <Modal
-        visible={show2FADisable}
-        transparent
-        animationType="fade"
-      >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        <SafeAreaView style={styles.safe} edges={[]}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Disable 2FA</Text>
-            <TouchableOpacity onPress={() => setShow2FADisable(false)}>
-              <X size={22} color={C.black} />
-            </TouchableOpacity>
+      <Modal visible={show2FADisable} transparent animationType="fade">
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            <SafeAreaView style={styles.safe} edges={[]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Disable 2FA</Text>
+                <TouchableOpacity onPress={() => setShow2FADisable(false)}>
+                  <X size={22} color={C.black} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView
+                contentContainerStyle={{ padding: 20, gap: 16 }}
+                keyboardShouldPersistTaps="handled"
+              >
+                <View
+                  style={[
+                    styles.twoFANote,
+                    { borderColor: C.danger, backgroundColor: '#FEF2F2' },
+                  ]}
+                >
+                  <ShieldOff size={20} color={C.danger} />
+                  <Text style={[styles.twoFANoteText, { color: C.danger }]}>
+                    You will lose the extra protection 2FA provides. Enter your
+                    current 6-digit code to confirm.
+                  </Text>
+                </View>
+
+                <View>
+                  <Text style={styles.fieldLabel2FA}>
+                    Enter 6-digit code from your authenticator app *
+                  </Text>
+                  <TextInput
+                    style={styles.codeInput}
+                    value={disable2FAToken}
+                    onChangeText={setDisable2FAToken}
+                    keyboardType="numeric"
+                    maxLength={6}
+                    placeholder="000000"
+                    placeholderTextColor="#9CA3AF"
+                  />
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.twoFASubmitBtn, { backgroundColor: C.danger }]}
+                  onPress={async () => {
+                    if (disable2FAToken.length !== 6) {
+                      Alert.alert('Validation', 'Enter a 6-digit code');
+                      return;
+                    }
+                    setTwoFALoading(true);
+                    try {
+                      await authAPI.disable2FA(disable2FAToken);
+                      setTwoFAEnabled(false);
+                      setShow2FADisable(false);
+                      Alert.alert('Done', '2FA has been disabled');
+                    } catch (e: any) {
+                      Alert.alert('Invalid Code', e.message);
+                    } finally {
+                      setTwoFALoading(false);
+                    }
+                  }}
+                  disabled={twoFALoading}
+                >
+                  {twoFALoading ? (
+                    <ActivityIndicator color={C.white} />
+                  ) : (
+                    <Text style={styles.twoFASubmitBtnText}>
+                      Confirm Disable 2FA
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
+            </SafeAreaView>
           </View>
-          <ScrollView
-            contentContainerStyle={{ padding: 20, gap: 16 }}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View
-              style={[
-                styles.twoFANote,
-                { borderColor: C.danger, backgroundColor: '#FEF2F2' },
-              ]}
-            >
-              <ShieldOff size={20} color={C.danger} />
-              <Text style={[styles.twoFANoteText, { color: C.danger }]}>
-                You will lose the extra protection 2FA provides. Enter your
-                current 6-digit code to confirm.
-              </Text>
-            </View>
-
-            <View>
-              <Text style={styles.fieldLabel2FA}>
-                Enter 6-digit code from your authenticator app *
-              </Text>
-              <TextInput
-                style={styles.codeInput}
-                value={disable2FAToken}
-                onChangeText={setDisable2FAToken}
-                keyboardType="numeric"
-                maxLength={6}
-                placeholder="000000"
-                placeholderTextColor="#9CA3AF"
-              />
-            </View>
-
-            <TouchableOpacity
-              style={[styles.twoFASubmitBtn, { backgroundColor: C.danger }]}
-              onPress={async () => {
-                if (disable2FAToken.length !== 6) {
-                  Alert.alert('Validation', 'Enter a 6-digit code');
-                  return;
-                }
-                setTwoFALoading(true);
-                try {
-                  await authAPI.disable2FA(disable2FAToken);
-                  setTwoFAEnabled(false);
-                  setShow2FADisable(false);
-                  Alert.alert('Done', '2FA has been disabled');
-                } catch (e: any) {
-                  Alert.alert('Invalid Code', e.message);
-                } finally {
-                  setTwoFALoading(false);
-                }
-              }}
-              disabled={twoFALoading}
-            >
-              {twoFALoading ? (
-                <ActivityIndicator color={C.white} />
-              ) : (
-                <Text style={styles.twoFASubmitBtnText}>
-                  Confirm Disable 2FA
-                </Text>
-              )}
-            </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </View></View>
-</Modal>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -803,7 +799,7 @@ const styles = StyleSheet.create({
     borderBottomColor: C.black,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: C.black },
+  headerTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   saveBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -822,7 +818,7 @@ const styles = StyleSheet.create({
   saveBtnText: {
     color: C.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -834,7 +830,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.primary,
     letterSpacing: 0.5,
@@ -859,14 +855,14 @@ const styles = StyleSheet.create({
   fieldIconWrap: { width: 28, alignItems: 'center' },
   fieldLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.textMuted,
     letterSpacing: 0.3,
   },
   fieldInput: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
     paddingVertical: 2,
     marginTop: 2,
@@ -877,7 +873,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 14,
   },
-  toggleLabel: { fontSize: 13, fontWeight: '700', color: C.black },
+  toggleLabel: { fontSize: 13, fontWeight: '400', color: C.black },
   toggleDesc: { fontSize: 11, color: C.textMuted, marginTop: 2 },
   selChip: {
     borderWidth: 2,
@@ -891,7 +887,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   selChipActive: { backgroundColor: C.primary },
-  selChipText: { fontSize: 11, fontWeight: '700', color: C.black },
+  selChipText: { fontSize: 11, fontWeight: '400', color: C.black },
   navRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -909,7 +905,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: C.black,
   },
-  navRowLabel: { fontSize: 13, fontWeight: '700', color: C.black },
+  navRowLabel: { fontSize: 13, fontWeight: '400', color: C.black },
   navRowDesc: { fontSize: 11, color: C.textMuted, marginTop: 2 },
   twoFABadge: {
     borderWidth: 2,
@@ -923,7 +919,7 @@ const styles = StyleSheet.create({
   twoFABadgeText: {
     textTransform: 'uppercase',
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     letterSpacing: 0.5,
   },
   twoFABtn: {
@@ -941,7 +937,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 14,
     marginBottom: 14,
   },
-  twoFABtnText: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase' },
+  twoFABtnText: { fontSize: 13, fontWeight: '400', textTransform: 'uppercase' },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -951,7 +947,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: C.black },
+  modalTitle: { fontSize: 18, fontWeight: '400', color: C.black },
   twoFANote: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -966,11 +962,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     padding: 14,
   },
-  twoFANoteText: { flex: 1, fontSize: 13, fontWeight: '500', color: C.black },
+  twoFANoteText: { flex: 1, fontSize: 13, fontWeight: '400', color: C.black },
   qrContainer: { alignItems: 'center', gap: 8 },
   qrLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     color: '#6B7280',
     textTransform: 'uppercase',
   },
@@ -994,7 +990,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel2FA: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.black,
     marginBottom: 6,
@@ -1020,7 +1016,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'monospace',
     color: C.black,
-    fontWeight: '600',
+    fontWeight: '400',
   },
   codeInput: {
     borderWidth: 2,
@@ -1033,7 +1029,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 14,
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.black,
     textAlign: 'center',
     letterSpacing: 8,
@@ -1054,7 +1050,7 @@ const styles = StyleSheet.create({
   },
   twoFASubmitBtnText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 14,
     textTransform: 'uppercase',
   },

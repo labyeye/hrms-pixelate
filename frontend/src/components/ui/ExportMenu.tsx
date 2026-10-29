@@ -14,11 +14,13 @@ export function ExportMenu<T>({ name, cols, rows, pdf = true }: Props<T>) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const h = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    const h = (e: MouseEvent) =>
+      !ref.current?.contains(e.target as Node) && setOpen(false);
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, []);
-  const item = "w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-left hover:bg-[#024BAB]/10";
+  const item =
+    "w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-left hover:bg-[#024BAB]/10";
   return (
     <div className="relative" ref={ref}>
       <button
@@ -30,11 +32,23 @@ export function ExportMenu<T>({ name, cols, rows, pdf = true }: Props<T>) {
       </button>
       {open && (
         <div className="absolute right-0 mt-1 w-40 bg-white border-2 border-black z-30">
-          <button className={item} onClick={() => { exportExcel(name, cols, rows); setOpen(false); }}>
+          <button
+            className={item}
+            onClick={() => {
+              exportExcel(name, cols, rows);
+              setOpen(false);
+            }}
+          >
             <FileSpreadsheet className="w-4 h-4 text-[#00A36C]" /> Excel (.xlsx)
           </button>
           {pdf && (
-            <button className={item} onClick={() => { exportPdf(name, cols, rows); setOpen(false); }}>
+            <button
+              className={item}
+              onClick={() => {
+                exportPdf(name, cols, rows);
+                setOpen(false);
+              }}
+            >
               <FileText className="w-4 h-4 text-[#EF4444]" /> PDF
             </button>
           )}

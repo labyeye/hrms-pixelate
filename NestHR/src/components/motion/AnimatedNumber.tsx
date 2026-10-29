@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Easing, StyleProp, Text, TextStyle, Animated } from 'react-native';
 import { useReduceMotion } from './useReduceMotion';
+import { useFocusReplay } from './useFocusReplay';
 
 interface Props {
   value: number;
@@ -17,6 +18,7 @@ export default function AnimatedNumber({
   prefix = '',
 }: Props) {
   const reduce = useReduceMotion();
+  const replay = useFocusReplay();
   const anim = useRef(new Animated.Value(0)).current;
   const [display, setDisplay] = useState(0);
 
@@ -25,6 +27,7 @@ export default function AnimatedNumber({
       setDisplay(value);
       return;
     }
+    anim.setValue(0);
     const id = anim.addListener(({ value: v }) => setDisplay(Math.round(v)));
     Animated.timing(anim, {
       toValue: value,
@@ -33,7 +36,7 @@ export default function AnimatedNumber({
       useNativeDriver: false,
     }).start();
     return () => anim.removeListener(id);
-  }, [value, duration, reduce, anim]);
+  }, [value, duration, reduce, replay, anim]);
 
   return (
     <Text style={style}>

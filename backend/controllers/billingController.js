@@ -11,7 +11,11 @@ const PendingOrder = require("../models/PendingOrder");
 const Counter = require("../models/Counter");
 const razorpayService = require("../services/razorpayService");
 const { sendPaymentConfirmations } = require("../services/notificationService");
-const { PLAN_SLABS, PLAN_LABEL, calculatePricing } = require("../utils/pricing");
+const {
+  PLAN_SLABS,
+  PLAN_LABEL,
+  calculatePricing,
+} = require("../utils/pricing");
 
 const getPlans = asyncHandler(async (req, res) => {
   const plans = PLAN_SLABS.map((slab) => ({
@@ -177,7 +181,11 @@ const createOrder = asyncHandler(async (req, res) => {
       res.status(400);
       throw new Error("Your current plan already covers this many employees.");
     }
-    chargePricing = { ...pricing, yearlyPrice: diff, monthlyPrice: Math.round(diff / 12) };
+    chargePricing = {
+      ...pricing,
+      yearlyPrice: diff,
+      monthlyPrice: Math.round(diff / 12),
+    };
   }
 
   // Validate offer code if provided
@@ -377,7 +385,9 @@ async function _createCompanyAndActivateSteps({
   req,
   update,
   invoiceExtra,
-  res, saga }) {
+  res,
+  saga,
+}) {
   if (pendingOrder.user.toString() !== req.user._id.toString()) {
     res.status(403);
     throw new Error("This order does not belong to the current user.");
@@ -448,14 +458,24 @@ async function _createCompanyAndActivateSteps({
   await saga.patch(Company, company._id, { subscription: subscription._id });
 
   req.user.company = company._id;
-  await saga.patch(User, req.user._id, { company: company._id, ...(req.user.phone ? { phone: req.user.phone } : {}) });
+  await saga.patch(User, req.user._id, {
+    company: company._id,
+    ...(req.user.phone ? { phone: req.user.phone } : {}),
+  });
 
   let offerCodeDoc = null;
   if (pendingOrder.offerCode) {
-    offerCodeDoc = await saga.inc(OfferCode, { code: pendingOrder.offerCode }, "usedCount", 1);
+    offerCodeDoc = await saga.inc(
+      OfferCode,
+      { code: pendingOrder.offerCode },
+      "usedCount",
+      1,
+    );
   }
 
-  const seq = await Counter.next("invoice-hrms", () => Invoice.countDocuments());
+  const seq = await Counter.next("invoice-hrms", () =>
+    Invoice.countDocuments(),
+  );
   const invoiceNumber = `INV-HRMS-${String(seq).padStart(4, "0")}`;
   await saga.create(Invoice, {
     company: company._id,
@@ -489,7 +509,9 @@ async function _createCompanyAndActivateSteps({
     ? `${process.env.FRONTEND_URL}/`
     : "https://hrms.pixelatenest.com/";
 
-  require("../services/creditsService").onSubscriptionPaid(company._id, subscription).catch((err) => console.error("[Credits]", err.message));
+  require("../services/creditsService")
+    .onSubscriptionPaid(company._id, subscription)
+    .catch((err) => console.error("[Credits]", err.message));
   sendPaymentConfirmations({
     toEmail: req.user.email || company.email,
     toName: req.user.name || company.name,
@@ -528,24 +550,41 @@ async function _createCompanyAndActivateSteps({
   });
 }
 
-async function _activateSubscriptionSteps({ lookup, update, invoiceExtra, res, req, saga }) {
+async function _activateSubscriptionSteps({
+  lookup,
+  update,
+  invoiceExtra,
+  res,
+  req,
+  saga,
+}) {
   const subscription = await Subscription.findOne(lookup);
   if (!subscription) {
     res.status(404);
     throw new Error("Order not found. Please contact support.");
   }
   // The payment must belong to the signed-in user's own company.
-  if (req?.user?.company && String(subscription.company) !== String(req.user.company)) {
+  if (
+    req?.user?.company &&
+    String(subscription.company) !== String(req.user.company)
+  ) {
     res.status(403);
     throw new Error("This order does not belong to your company.");
   }
   // Replay guard: the same gateway payment must not create a second invoice / offer redemption / notification.
-  const sameRazorpay = update.razorpayPaymentId && subscription.razorpayPaymentId === update.razorpayPaymentId;
-    if (subscription.paymentStatus === "completed" && sameRazorpay) {
+  const sameRazorpay =
+    update.razorpayPaymentId &&
+    subscription.razorpayPaymentId === update.razorpayPaymentId;
+  if (subscription.paymentStatus === "completed" && sameRazorpay) {
     return res.json({
       success: true,
       message: "Payment already processed",
-      data: { plan: subscription.plan, billingCycle: subscription.billingCycle, amount: subscription.amountPaid, renewalDate: subscription.renewalDate },
+      data: {
+        plan: subscription.plan,
+        billingCycle: subscription.billingCycle,
+        amount: subscription.amountPaid,
+        renewalDate: subscription.renewalDate,
+      },
     });
   }
 
@@ -577,13 +616,24 @@ async function _activateSubscriptionSteps({ lookup, update, invoiceExtra, res, r
     renewalDate.setMonth(renewalDate.getMonth() + bonusMonths);
   }
 
-  await saga.patch(Subscription, subscription._id, { startDate, renewalDate, status: "active", amountPaid, ...update });
+  await saga.patch(Subscription, subscription._id, {
+    startDate,
+    renewalDate,
+    status: "active",
+    amountPaid,
+    ...update,
+  });
   const updatedSub = await Subscription.findById(subscription._id);
 
   // Record offer code usage (invoiceNumber assigned just below)
   let offerCodeDoc = null;
   if (subscription.offerCode) {
-    offerCodeDoc = await saga.inc(OfferCode, { code: subscription.offerCode }, "usedCount", 1);
+    offerCodeDoc = await saga.inc(
+      OfferCode,
+      { code: subscription.offerCode },
+      "usedCount",
+      1,
+    );
   }
 
   await saga.patch(Company, company._id, {
@@ -591,7 +641,9 @@ async function _activateSubscriptionSteps({ lookup, update, invoiceExtra, res, r
     subscription: updatedSub._id,
   });
 
-  const seq = await Counter.next("invoice-hrms", () => Invoice.countDocuments());
+  const seq = await Counter.next("invoice-hrms", () =>
+    Invoice.countDocuments(),
+  );
   const invoiceNumber = `INV-HRMS-${String(seq).padStart(4, "0")}`;
   await saga.create(Invoice, {
     company: company._id,
@@ -625,7 +677,9 @@ async function _activateSubscriptionSteps({ lookup, update, invoiceExtra, res, r
     ? `${process.env.FRONTEND_URL}/`
     : "https://hrms.pixelatenest.com/";
 
-  require("../services/creditsService").onSubscriptionPaid(company._id, updatedSub).catch((err) => console.error("[Credits]", err.message));
+  require("../services/creditsService")
+    .onSubscriptionPaid(company._id, updatedSub)
+    .catch((err) => console.error("[Credits]", err.message));
   sendPaymentConfirmations({
     toEmail: user?.email || company.email,
     toName: user?.name || company.name,
@@ -685,8 +739,10 @@ async function _withRefundSaga(args, steps) {
     );
   }
 }
-const _createCompanyAndActivate = (args) => _withRefundSaga(args, _createCompanyAndActivateSteps);
-const _activateSubscription = (args) => _withRefundSaga(args, _activateSubscriptionSteps);
+const _createCompanyAndActivate = (args) =>
+  _withRefundSaga(args, _createCompanyAndActivateSteps);
+const _activateSubscription = (args) =>
+  _withRefundSaga(args, _activateSubscriptionSteps);
 
 // Activates a paid Razorpay order without a signed-in browser (used when only the webhook told us about the payment).
 // Same code path as the browser's verify call, so the saga/refund protection is identical.
@@ -703,15 +759,35 @@ async function provisionRazorpay({ orderId, paymentId }) {
       return this;
     },
   };
-  const update = { razorpayPaymentId: paymentId, paymentMethod: "razorpay", paymentStatus: "completed" };
-  const invoiceExtra = { razorpayOrderId: orderId, razorpayPaymentId: paymentId };
+  const update = {
+    razorpayPaymentId: paymentId,
+    paymentMethod: "razorpay",
+    paymentStatus: "completed",
+  };
+  const invoiceExtra = {
+    razorpayOrderId: orderId,
+    razorpayPaymentId: paymentId,
+  };
   const pendingOrder = await PendingOrder.findOne({ orderId });
   if (pendingOrder) {
     const user = await User.findById(pendingOrder.user);
-    if (!user) throw new Error("The user who started this order no longer exists");
-    return _createCompanyAndActivate({ pendingOrder, req: { user }, update, invoiceExtra, res });
+    if (!user)
+      throw new Error("The user who started this order no longer exists");
+    return _createCompanyAndActivate({
+      pendingOrder,
+      req: { user },
+      update,
+      invoiceExtra,
+      res,
+    });
   }
-  return _activateSubscription({ req: {}, lookup: { razorpayOrderId: orderId }, update, invoiceExtra, res });
+  return _activateSubscription({
+    req: {},
+    lookup: { razorpayOrderId: orderId },
+    update,
+    invoiceExtra,
+    res,
+  });
 }
 
 const verifyPayment = asyncHandler(async (req, res) => {

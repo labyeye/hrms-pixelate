@@ -293,11 +293,22 @@ export default function DocumentsScreen() {
             rows={docs}
             cols={[
               { header: 'Emp Code', value: (d: any) => d.employee?.employeeId },
-              { header: 'Employee', value: (d: any) => `${d.employee?.firstName || ''} ${d.employee?.lastName || ''}`.trim() },
+              {
+                header: 'Employee',
+                value: (d: any) =>
+                  `${d.employee?.firstName || ''} ${d.employee?.lastName || ''}`.trim(),
+              },
               { header: 'Document', value: (d: any) => d.name },
               { header: 'Type', value: (d: any) => d.docType },
-              { header: 'Expiry', value: (d: any) => (d.expiryDate ? String(d.expiryDate).slice(0, 10) : '') },
-              { header: 'Uploaded', value: (d: any) => String(d.createdAt || '').slice(0, 10) },
+              {
+                header: 'Expiry',
+                value: (d: any) =>
+                  d.expiryDate ? String(d.expiryDate).slice(0, 10) : '',
+              },
+              {
+                header: 'Uploaded',
+                value: (d: any) => String(d.createdAt || '').slice(0, 10),
+              },
             ]}
           />
         )}
@@ -314,8 +325,7 @@ export default function DocumentsScreen() {
             setShowUpload(true);
           }}
         >
-          <Plus size={14} color={C.white} />
-          <Text style={styles.addBtnText}>Upload</Text>
+          <Plus size={24} color={C.primary} />
         </TouchableOpacity>
       </View>
 
@@ -392,119 +402,119 @@ export default function DocumentsScreen() {
       )}
 
       {/* Upload Modal */}
-      <Modal
-        visible={showUpload}
-        transparent
-        animationType="fade"
-      >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        <SafeAreaView style={styles.safe} edges={[]}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Upload Document</Text>
-            <TouchableOpacity onPress={() => setShowUpload(false)}>
-              <X size={22} color={C.black} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            contentContainerStyle={{ padding: 20, gap: 16 }}
-            keyboardShouldPersistTaps="handled"
-          >
-            {/* File picker */}
-            <TouchableOpacity style={styles.filePicker} onPress={pickImage}>
-              {pickedFile ? (
-                <>
-                  <ImageIcon size={24} color={C.primary} />
-                  <Text style={styles.filePickerName} numberOfLines={1}>
-                    {pickedFile.fileName || 'Image selected'}
-                  </Text>
-                  <Text style={styles.filePickerSize}>
-                    {formatBytes(pickedFile.fileSize || 0)}
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <Upload size={24} color="#9CA3AF" />
-                  <Text style={styles.filePickerPlaceholder}>
-                    Tap to pick an image
-                  </Text>
-                  <Text style={styles.filePickerHint}>JPG, PNG supported</Text>
-                </>
-              )}
-            </TouchableOpacity>
-
-            <View>
-              <Text style={styles.fieldLabel}>Document Name *</Text>
-              <TextInput
-                style={styles.fieldInput}
-                value={uploadForm.name}
-                onChangeText={v => setUploadForm(p => ({ ...p, name: v }))}
-                placeholder="e.g. Aadhaar Card"
-                placeholderTextColor="#9CA3AF"
-              />
-            </View>
-
-            <View>
-              <Text style={styles.fieldLabel}>Document Type</Text>
-              <TouchableOpacity
-                style={styles.selectBtn}
-                onPress={() => setShowDocTypePicker(true)}
-              >
-                <Text style={styles.selectBtnText}>
-                  {DOC_TYPES.find(t => t.value === uploadForm.docType)?.label ||
-                    'Other'}
-                </Text>
-                <ChevronDown size={16} color={C.black} />
-              </TouchableOpacity>
-            </View>
-
-            <DatePickerField
-              label="Expiry Date (optional)"
-              value={uploadForm.expiryDate}
-              onChange={v => setUploadForm(p => ({ ...p, expiryDate: v }))}
-            />
-
-            {!isEmployee && employees.length > 0 && (
-              <View>
-                <Text style={styles.fieldLabel}>Employee (optional)</Text>
-                <TouchableOpacity
-                  style={styles.selectBtn}
-                  onPress={() => setShowEmpPicker(true)}
-                >
-                  <Text style={styles.selectBtnText}>
-                    {uploadForm.employeeId
-                      ? (() => {
-                          const e = employees.find(
-                            x => x._id === uploadForm.employeeId,
-                          );
-                          return e
-                            ? `${e.firstName} ${e.lastName}`
-                            : 'Select employee';
-                        })()
-                      : 'Select employee'}
-                  </Text>
-                  <ChevronDown size={16} color={C.black} />
+      <Modal visible={showUpload} transparent animationType="fade">
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            <SafeAreaView style={styles.safe} edges={[]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Upload Document</Text>
+                <TouchableOpacity onPress={() => setShowUpload(false)}>
+                  <X size={22} color={C.black} />
                 </TouchableOpacity>
               </View>
-            )}
+              <ScrollView
+                contentContainerStyle={{ padding: 20, gap: 16 }}
+                keyboardShouldPersistTaps="handled"
+              >
+                {/* File picker */}
+                <TouchableOpacity style={styles.filePicker} onPress={pickImage}>
+                  {pickedFile ? (
+                    <>
+                      <ImageIcon size={24} color={C.primary} />
+                      <Text style={styles.filePickerName} numberOfLines={1}>
+                        {pickedFile.fileName || 'Image selected'}
+                      </Text>
+                      <Text style={styles.filePickerSize}>
+                        {formatBytes(pickedFile.fileSize || 0)}
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <Upload size={24} color="#9CA3AF" />
+                      <Text style={styles.filePickerPlaceholder}>
+                        Tap to pick an image
+                      </Text>
+                      <Text style={styles.filePickerHint}>
+                        JPG, PNG supported
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.submitBtn}
-              onPress={handleUpload}
-              disabled={uploading}
-            >
-              {uploading ? (
-                <ActivityIndicator color={C.white} />
-              ) : (
-                <>
-                  <Upload size={16} color={C.white} />
-                  <Text style={styles.submitBtnText}>Upload Document</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </View></View>
-</Modal>
+                <View>
+                  <Text style={styles.fieldLabel}>Document Name *</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={uploadForm.name}
+                    onChangeText={v => setUploadForm(p => ({ ...p, name: v }))}
+                    placeholder="e.g. Aadhaar Card"
+                    placeholderTextColor="#9CA3AF"
+                  />
+                </View>
+
+                <View>
+                  <Text style={styles.fieldLabel}>Document Type</Text>
+                  <TouchableOpacity
+                    style={styles.selectBtn}
+                    onPress={() => setShowDocTypePicker(true)}
+                  >
+                    <Text style={styles.selectBtnText}>
+                      {DOC_TYPES.find(t => t.value === uploadForm.docType)
+                        ?.label || 'Other'}
+                    </Text>
+                    <ChevronDown size={16} color={C.black} />
+                  </TouchableOpacity>
+                </View>
+
+                <DatePickerField
+                  label="Expiry Date (optional)"
+                  value={uploadForm.expiryDate}
+                  onChange={v => setUploadForm(p => ({ ...p, expiryDate: v }))}
+                />
+
+                {!isEmployee && employees.length > 0 && (
+                  <View>
+                    <Text style={styles.fieldLabel}>Employee (optional)</Text>
+                    <TouchableOpacity
+                      style={styles.selectBtn}
+                      onPress={() => setShowEmpPicker(true)}
+                    >
+                      <Text style={styles.selectBtnText}>
+                        {uploadForm.employeeId
+                          ? (() => {
+                              const e = employees.find(
+                                x => x._id === uploadForm.employeeId,
+                              );
+                              return e
+                                ? `${e.firstName} ${e.lastName}`
+                                : 'Select employee';
+                            })()
+                          : 'Select employee'}
+                      </Text>
+                      <ChevronDown size={16} color={C.black} />
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                <TouchableOpacity
+                  style={styles.submitBtn}
+                  onPress={handleUpload}
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <ActivityIndicator color={C.white} />
+                  ) : (
+                    <>
+                      <Upload size={16} color={C.white} />
+                      <Text style={styles.submitBtnText}>Upload Document</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
+            </SafeAreaView>
+          </View>
+        </View>
+      </Modal>
 
       {otpModal}
 
@@ -629,7 +639,7 @@ export default function DocumentsScreen() {
                 style={{
                   color: '#fff',
                   fontSize: 14,
-                  fontWeight: '700',
+                  fontWeight: '400',
                   position: 'absolute',
                   top: 52,
                   left: 20,
@@ -639,17 +649,27 @@ export default function DocumentsScreen() {
               >
                 {previewDoc.name}
               </Text>
-              {previewDoc.dataUri && /^image\//.test(previewDoc.mimeType || '') ? (
+              {previewDoc.dataUri &&
+              /^image\//.test(previewDoc.mimeType || '') ? (
                 <Image
                   source={{ uri: previewDoc.dataUri }}
                   style={{ width: '90%', height: '70%' }}
                   resizeMode="contain"
                 />
               ) : (
-                <View style={{ alignItems: 'center', gap: 12, paddingHorizontal: 30 }}>
+                <View
+                  style={{
+                    alignItems: 'center',
+                    gap: 12,
+                    paddingHorizontal: 30,
+                  }}
+                >
                   <FileText size={60} color="#fff" />
-                  <Text style={{ color: '#aaa', fontSize: 13, textAlign: 'center' }}>
-                    PDF files can be opened from the NestHR web app. Images preview here.
+                  <Text
+                    style={{ color: '#aaa', fontSize: 13, textAlign: 'center' }}
+                  >
+                    PDF files can be opened from the NestHR web app. Images
+                    preview here.
                   </Text>
                 </View>
               )}
@@ -674,26 +694,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   backBtn: { padding: 4 },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: C.black },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: C.primary,
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderColor: C.black,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
+  headerTitle: { fontSize: 20, fontWeight: '400', color: C.black },
+  addBtn: { padding: 4 },
   addBtnText: {
     color: C.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   filterBar: {
@@ -717,7 +723,7 @@ const styles = StyleSheet.create({
   chipActive: { borderColor: C.primary, backgroundColor: '#EFF6FF' },
   chipText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     color: '#6B7280',
     textTransform: 'uppercase',
   },
@@ -730,14 +736,14 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '400',
     color: '#6B7280',
     marginTop: 12,
   },
   emptySubtitle: {
     fontSize: 13,
     color: '#9CA3AF',
-    fontWeight: '500',
+    fontWeight: '400',
     textAlign: 'center',
     marginTop: 6,
   },
@@ -775,9 +781,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  docName: { fontWeight: '700', fontSize: 13, color: C.black },
+  docName: { fontWeight: '400', fontSize: 13, color: C.black },
   docMeta: { fontSize: 11, color: '#6B7280', marginTop: 2 },
-  docEmp: { fontSize: 11, color: C.primary, fontWeight: '600', marginTop: 1 },
+  docEmp: { fontSize: 11, color: C.primary, fontWeight: '400', marginTop: 1 },
   docDate: { fontSize: 10, color: '#9CA3AF', marginTop: 1 },
   cardActions: { flexDirection: 'row', gap: 6 },
   actionBtn: {
@@ -803,7 +809,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: C.black },
+  modalTitle: { fontSize: 18, fontWeight: '400', color: C.black },
   filePicker: {
     borderWidth: 2,
     borderRadius: 8,
@@ -820,16 +826,16 @@ const styles = StyleSheet.create({
   },
   filePickerName: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.primary,
     textAlign: 'center',
   },
   filePickerSize: { fontSize: 12, color: '#6B7280' },
-  filePickerPlaceholder: { fontSize: 14, fontWeight: '600', color: '#9CA3AF' },
+  filePickerPlaceholder: { fontSize: 14, fontWeight: '400', color: '#9CA3AF' },
   filePickerHint: { fontSize: 12, color: '#D1D5DB' },
   fieldLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.black,
     marginBottom: 6,
@@ -846,7 +852,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
     backgroundColor: C.white,
   },
@@ -865,7 +871,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: C.white,
   },
-  selectBtnText: { fontSize: 14, fontWeight: '500', color: C.black },
+  selectBtnText: { fontSize: 14, fontWeight: '400', color: C.black },
   submitBtn: {
     backgroundColor: C.primary,
     borderWidth: 2,
@@ -884,7 +890,7 @@ const styles = StyleSheet.create({
   },
   submitBtnText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 14,
     textTransform: 'uppercase',
   },
@@ -909,7 +915,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  sheetTitle: { fontSize: 16, fontWeight: '700', color: C.black },
+  sheetTitle: { fontSize: 16, fontWeight: '400', color: C.black },
   sheetOption: {
     paddingHorizontal: 20,
     paddingVertical: 14,
@@ -917,5 +923,5 @@ const styles = StyleSheet.create({
     borderBottomColor: C.black,
   },
   sheetOptionActive: { backgroundColor: '#EFF6FF' },
-  sheetOptionText: { fontSize: 15, fontWeight: '600', color: C.black },
+  sheetOptionText: { fontSize: 15, fontWeight: '400', color: C.black },
 });

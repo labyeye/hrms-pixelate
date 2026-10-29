@@ -7,7 +7,9 @@ const mongoose = require("mongoose");
 
 const uri = process.env.CHECK_MONGO_URI;
 if (!uri || !/credits_check/.test(uri)) {
-  console.error("Set CHECK_MONGO_URI to a throwaway database whose name contains credits_check");
+  console.error(
+    "Set CHECK_MONGO_URI to a throwaway database whose name contains credits_check",
+  );
   process.exit(1);
 }
 
@@ -18,8 +20,18 @@ const stub = (rel, exports) => {
   require.cache[p] = { id: p, filename: p, loaded: true, exports };
 };
 const mails = [];
-stub("services/razorpayService.js", { createOrder: async ({ amount }) => ({ orderId: `order_${++orderSeq}`, keyId: "k", amount, currency: "INR" }), verifySignature: () => true });
-stub("services/notificationService.js", { sendLowCreditsEmail: async (m) => mails.push(m) });
+stub("services/razorpayService.js", {
+  createOrder: async ({ amount }) => ({
+    orderId: `order_${++orderSeq}`,
+    keyId: "k",
+    amount,
+    currency: "INR",
+  }),
+  verifySignature: () => true,
+});
+stub("services/notificationService.js", {
+  sendLowCreditsEmail: async (m) => mails.push(m),
+});
 
 const credits = require("../services/creditsService");
 const CreditWallet = require("../models/CreditWallet");
@@ -32,29 +44,54 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 (async () => {
   await mongoose.connect(uri);
   await mongoose.connection.dropDatabase();
-  await Promise.all([CreditWallet.init(), CreditLedger.init(), CreditTopup.init()]);
+  await Promise.all([
+    CreditWallet.init(),
+    CreditLedger.init(),
+    CreditTopup.init(),
+  ]);
 
   // 1. no wallet = not metered = free
   const free = oid();
-  assert.deepStrictEqual(await credits.reserve(free, { template: "t", phone: "9199" }), { ok: true, free: true });
+  assert.deepStrictEqual(
+    await credits.reserve(free, { template: "t", phone: "9199" }),
+    { ok: true, free: true },
+  );
 
   // 2. 20 parallel sends on 1 credit at 0.2 each: exactly 5 get through, balance never negative
   const c = oid();
   await credits.enable(c);
-  await CreditWallet.updateOne({ company: c }, { $set: { balance: credits.toUnits(1) } });
-  const holds = await Promise.all(Array.from({ length: 20 }, () => credits.reserve(c, { template: "neshr_checkin", phone: "919876543210" })));
+  await CreditWallet.updateOne(
+    { company: c },
+    { $set: { balance: credits.toUnits(1) } },
+  );
+  const holds = await Promise.all(
+    Array.from({ length: 20 }, () =>
+      credits.reserve(c, { template: "neshr_checkin", phone: "919876543210" }),
+    ),
+  );
   const okHolds = holds.filter((h) => h.ok);
   assert.strictEqual(okHolds.length, 5, "only 5 of 20 may be charged");
   assert.strictEqual((await CreditWallet.findOne({ company: c })).balance, 0);
-  assert.strictEqual(await CreditLedger.countDocuments({ company: c, type: "skipped" }), 15, "skipped sends are logged");
+  assert.strictEqual(
+    await CreditLedger.countDocuments({ company: c, type: "skipped" }),
+    15,
+    "skipped sends are logged",
+  );
 
   // 3. refund gives the credit back exactly once
   assert.strictEqual(await credits.refund(okHolds[0]), true);
-  assert.strictEqual(await credits.refund(okHolds[0]), false, "second refund is a no-op");
+  assert.strictEqual(
+    await credits.refund(okHolds[0]),
+    false,
+    "second refund is a no-op",
+  );
   assert.strictEqual((await credits.getBalance(c)).total, 0.2);
 
   // 4. Meta says "failed" later: refund by message id, once
-  const h = await credits.reserve(c, { template: "neshr_checkin", phone: "919876543210" });
+  const h = await credits.reserve(c, {
+    template: "neshr_checkin",
+    phone: "919876543210",
+  });
   assert(h.ok);
   await credits.commit(h, "wamid.ABC");
   assert.strictEqual((await credits.getBalance(c)).total, 0);
@@ -63,13 +100,27 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   assert.strictEqual((await credits.getBalance(c)).total, 0.2);
 
   // 5. bonus: idempotent, spent before paid credits, expires
-  assert.strictEqual(await credits.grantBonus(c, { credits: 1, refId: "sub:1" }), true);
-  assert.strictEqual(await credits.grantBonus(c, { credits: 1, refId: "sub:1" }), false, "same refId never pays twice");
+  assert.strictEqual(
+    await credits.grantBonus(c, { credits: 1, refId: "sub:1" }),
+    true,
+  );
+  assert.strictEqual(
+    await credits.grantBonus(c, { credits: 1, refId: "sub:1" }),
+    false,
+    "same refId never pays twice",
+  );
   let b = await credits.getBalance(c);
   assert.strictEqual(b.bonus, 1);
   const r = await credits.reserve(c, { template: "t", phone: "919876543210" });
-  assert.strictEqual((await CreditLedger.findById(r.ledgerId)).bucket, "bonus", "bonus is spent first");
-  await CreditWallet.updateOne({ company: c }, { $set: { bonusExpiresAt: new Date(Date.now() - 1000) } });
+  assert.strictEqual(
+    (await CreditLedger.findById(r.ledgerId)).bucket,
+    "bonus",
+    "bonus is spent first",
+  );
+  await CreditWallet.updateOne(
+    { company: c },
+    { $set: { bonusExpiresAt: new Date(Date.now() - 1000) } },
+  );
   b = await credits.getBalance(c);
   assert.strictEqual(b.bonus, 0, "expired bonus does not count");
   assert.strictEqual(b.total, 0.2);
@@ -83,25 +134,51 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     credits.completeTopup({ orderId: order.orderId, paymentId: "pay_1" }),
     credits.completeTopup({ orderId: order.orderId, paymentId: "pay_1" }),
   ]);
-  assert.strictEqual(results.filter(Boolean).length, 1, "exactly one caller credits the wallet");
+  assert.strictEqual(
+    results.filter(Boolean).length,
+    1,
+    "exactly one caller credits the wallet",
+  );
   assert.strictEqual((await credits.getBalance(t)).total, 1000);
-  assert.match((await CreditTopup.findOne({ orderId: order.orderId })).invoiceNumber, /^CR-HRMS-\d{4}$/);
-  await assert.rejects(credits.createTopup({ _id: oid(), company: free }, "p1000"), /not enabled/, "unmetered company cannot top up");
-  await assert.rejects(credits.createTopup({ _id: oid(), company: t }, "nope"), /Unknown/);
+  assert.match(
+    (await CreditTopup.findOne({ orderId: order.orderId })).invoiceNumber,
+    /^CR-HRMS-\d{4}$/,
+  );
+  await assert.rejects(
+    credits.createTopup({ _id: oid(), company: free }, "p1000"),
+    /not enabled/,
+    "unmetered company cannot top up",
+  );
+  await assert.rejects(
+    credits.createTopup({ _id: oid(), company: t }, "nope"),
+    /Unknown/,
+  );
 
   // 7. daily cap stops a runaway loop
   const d = oid();
   await credits.enable(d);
-  await CreditWallet.updateOne({ company: d }, { $set: { balance: credits.toUnits(100), dailyCap: 3 } });
-  const capped = await Promise.all(Array.from({ length: 6 }, () => credits.reserve(d, { template: "t", phone: "919876543210" })));
+  await CreditWallet.updateOne(
+    { company: d },
+    { $set: { balance: credits.toUnits(100), dailyCap: 3 } },
+  );
+  const capped = await Promise.all(
+    Array.from({ length: 6 }, () =>
+      credits.reserve(d, { template: "t", phone: "919876543210" }),
+    ),
+  );
   assert.strictEqual(capped.filter((x) => x.ok).length, 3);
   assert.strictEqual(capped.find((x) => !x.ok).reason, "daily_cap");
 
   // 8. low-balance email: one per level, re-armed by a top-up
   const l = oid();
-  await mongoose.connection.collection("companies").insertOne({ _id: l, name: "Acme", email: "admin@acme.test" });
+  await mongoose.connection
+    .collection("companies")
+    .insertOne({ _id: l, name: "Acme", email: "admin@acme.test" });
   await credits.enable(l);
-  await CreditWallet.updateOne({ company: l }, { $set: { balance: credits.toUnits(50.2) } }); // 0.2 above the 50 line
+  await CreditWallet.updateOne(
+    { company: l },
+    { $set: { balance: credits.toUnits(50.2) } },
+  ); // 0.2 above the 50 line
   await credits.reserve(l, { template: "t", phone: "919876543210" }); // -> exactly 50: not low yet
   await sleep(150);
   assert.strictEqual(mails.length, 0);
@@ -127,7 +204,14 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       res.statusCode = metaStatus;
       if (metaStatus === 200) sent.push(JSON.parse(body));
       cb(res);
-      res.emit("data", JSON.stringify(metaStatus === 200 ? { messages: [{ id: `wamid.${sent.length}` }] } : { error: "rejected" }));
+      res.emit(
+        "data",
+        JSON.stringify(
+          metaStatus === 200
+            ? { messages: [{ id: `wamid.${sent.length}` }] }
+            : { error: "rejected" },
+        ),
+      );
       res.emit("end");
     };
     return req;
@@ -136,24 +220,64 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const Setting = require("../models/Setting");
   const m = oid();
   await credits.enable(m);
-  await CreditWallet.updateOne({ company: m }, { $set: { balance: credits.toUnits(10) } });
+  await CreditWallet.updateOne(
+    { company: m },
+    { $set: { balance: credits.toUnits(10) } },
+  );
   await Setting.create({ company: m, whatsappEnabled: true });
-  const leave = { firstName: "Asha", leaveType: "casual", startDate: new Date(), endDate: new Date(), days: 1 };
+  const leave = {
+    firstName: "Asha",
+    leaveType: "casual",
+    startDate: new Date(),
+    endDate: new Date(),
+    days: 1,
+  };
   const bal = async () => (await credits.getBalance(m)).total;
 
   await wa.sendLeaveApproved("9876543210", leave, m); // plan has no whatsapp tier, but credits make it work
   assert.strictEqual(sent.length, 1, "leave message goes out");
   assert.strictEqual(await bal(), 9.8, "and costs 0.2");
 
-  await Setting.updateOne({ company: m }, { $set: { whatsappSendLeaveAlert: "HR" } });
+  await Setting.updateOne(
+    { company: m },
+    { $set: { whatsappSendLeaveAlert: "HR" } },
+  );
   await wa.sendLeaveApproved("9876543210", leave, m); // employee copy is off
   assert.strictEqual(sent.length, 1);
-  await wa.sendLeaveAppliedHR("9876543210", { empName: "Asha", empId: "E1", leaveType: "casual", startDate: new Date(), endDate: new Date(), days: 1 }, m);
+  await wa.sendLeaveAppliedHR(
+    "9876543210",
+    {
+      empName: "Asha",
+      empId: "E1",
+      leaveType: "casual",
+      startDate: new Date(),
+      endDate: new Date(),
+      days: 1,
+    },
+    m,
+  );
   assert.strictEqual(sent.length, 2, "HR copy still goes");
-  await Setting.updateOne({ company: m }, { $set: { whatsappSendLeaveAlert: "Off" } });
-  await wa.sendLeaveAppliedHR("9876543210", { empName: "Asha", empId: "E1", leaveType: "casual", startDate: new Date(), endDate: new Date(), days: 1 }, m);
+  await Setting.updateOne(
+    { company: m },
+    { $set: { whatsappSendLeaveAlert: "Off" } },
+  );
+  await wa.sendLeaveAppliedHR(
+    "9876543210",
+    {
+      empName: "Asha",
+      empId: "E1",
+      leaveType: "casual",
+      startDate: new Date(),
+      endDate: new Date(),
+      days: 1,
+    },
+    m,
+  );
   assert.strictEqual(sent.length, 2, "Off sends nothing");
-  await Setting.updateOne({ company: m }, { $set: { whatsappSendLeaveAlert: "Both" } });
+  await Setting.updateOne(
+    { company: m },
+    { $set: { whatsappSendLeaveAlert: "Both" } },
+  );
 
   metaStatus = 400; // Meta rejects: the credit comes back
   const before = await bal();
@@ -161,17 +285,31 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   assert.strictEqual(await bal(), before, "rejected send is refunded");
   metaStatus = 200;
 
-  await CreditWallet.updateOne({ company: m }, { $set: { balance: 0, bonusBalance: 0 } });
+  await CreditWallet.updateOne(
+    { company: m },
+    { $set: { balance: 0, bonusBalance: 0 } },
+  );
   const n = sent.length;
   await wa.sendLeaveApproved("9876543210", leave, m);
   assert.strictEqual(sent.length, n, "no credits: nothing is sent");
-  assert.strictEqual((await CreditLedger.findOne({ company: m, type: "skipped" }).sort({ createdAt: -1 })).note, "low_balance");
+  assert.strictEqual(
+    (
+      await CreditLedger.findOne({ company: m, type: "skipped" }).sort({
+        createdAt: -1,
+      })
+    ).note,
+    "low_balance",
+  );
 
   // OTPs: zero balance, still delivered, and the wallet/ledger are never touched
   const ledgerBefore = await CreditLedger.countDocuments({});
   await wa.sendPhoneOtp("9876543210", { otp: "123456" });
   assert.strictEqual(sent.length, n + 1, "OTP is sent with 0 credits");
-  assert.strictEqual(await CreditLedger.countDocuments({}), ledgerBefore, "OTP never creates a ledger row");
+  assert.strictEqual(
+    await CreditLedger.countDocuments({}),
+    ledgerBefore,
+    "OTP never creates a ledger row",
+  );
 
   console.log("credits checks passed");
   await mongoose.disconnect();

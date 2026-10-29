@@ -765,8 +765,18 @@ export default function BiometricPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b-2 border-black bg-[#024BAB]/5">
-                        {["Location", "Address", "Description", "Devices", "Status", "Actions"].map((h) => (
-                          <th key={h} className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
+                        {[
+                          "Location",
+                          "Address",
+                          "Description",
+                          "Devices",
+                          "Status",
+                          "Actions",
+                        ].map((h) => (
+                          <th
+                            key={h}
+                            className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider"
+                          >
                             {h}
                           </th>
                         ))}
@@ -774,17 +784,32 @@ export default function BiometricPage() {
                     </thead>
                     <tbody>
                       {locations.map((loc, i) => (
-                        <tr key={loc._id} className={cn("border-b border-black/10 hover:bg-[#024BAB]/5", i % 2 && "bg-[#F8FAFF]")}>
+                        <tr
+                          key={loc._id}
+                          className={cn(
+                            "border-b border-black/10 hover:bg-[#024BAB]/5",
+                            i % 2 && "bg-[#F8FAFF]",
+                          )}
+                        >
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
                               <MapPin className="w-4 h-4 text-[#024BAB] shrink-0" />
-                              <span className="font-bold text-black">{loc.name}</span>
+                              <span className="font-bold text-black">
+                                {loc.name}
+                              </span>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-xs text-gray-600">{loc.address || "—"}</td>
-                          <td className="px-4 py-3 text-xs text-gray-500">{loc.description || "—"}</td>
+                          <td className="px-4 py-3 text-xs text-gray-600">
+                            {loc.address || "—"}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-gray-500">
+                            {loc.description || "—"}
+                          </td>
                           <td className="px-4 py-3 text-xs font-bold">
-                            {devices.filter((d) => d.location?._id === loc._id).length}
+                            {
+                              devices.filter((d) => d.location?._id === loc._id)
+                                .length
+                            }
                           </td>
                           <td className="px-4 py-3">
                             <span
@@ -910,8 +935,18 @@ export default function BiometricPage() {
                         <table className="w-full text-sm">
                           <thead>
                             <tr className="border-b-2 border-black bg-[#024BAB]/5">
-                              {["Device", "Location", "Connection", "NFC Cards", "Last Seen", "Status"].map((h) => (
-                                <th key={h} className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
+                              {[
+                                "Device",
+                                "Location",
+                                "Connection",
+                                "NFC Cards",
+                                "Last Seen",
+                                "Status",
+                              ].map((h) => (
+                                <th
+                                  key={h}
+                                  className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider"
+                                >
                                   {h}
                                 </th>
                               ))}
@@ -926,10 +961,15 @@ export default function BiometricPage() {
                                   "border-b border-black/10 cursor-pointer transition-colors",
                                   selectedDevice?._id === dev._id
                                     ? "bg-blue-50 outline outline-2 -outline-offset-2 outline-[#024BAB]"
-                                    : cn("hover:bg-[#024BAB]/5", i % 2 && "bg-[#F8FAFF]"),
+                                    : cn(
+                                        "hover:bg-[#024BAB]/5",
+                                        i % 2 && "bg-[#F8FAFF]",
+                                      ),
                                 )}
                               >
-                                <td className="px-4 py-3 font-bold text-black">{dev.name}</td>
+                                <td className="px-4 py-3 font-bold text-black">
+                                  {dev.name}
+                                </td>
                                 <td className="px-4 py-3 text-xs text-gray-600">
                                   <span className="flex items-center gap-1">
                                     <MapPin className="w-3 h-3" />
@@ -938,14 +978,27 @@ export default function BiometricPage() {
                                 </td>
                                 <td className="px-4 py-3 text-xs">
                                   {dev.activated ? (
-                                    <span className="font-bold text-[#00C48C]">Connected{dev.deviceMeta?.model ? ` · ${dev.deviceMeta.model}` : ""}</span>
+                                    <span className="font-bold text-[#00C48C]">
+                                      Connected
+                                      {dev.deviceMeta?.model
+                                        ? ` · ${dev.deviceMeta.model}`
+                                        : ""}
+                                    </span>
                                   ) : (
-                                    <span className="font-bold text-[#FA731C]">Awaiting connection</span>
+                                    <span className="font-bold text-[#FA731C]">
+                                      Awaiting connection
+                                    </span>
                                   )}
                                 </td>
-                                <td className="px-4 py-3 text-xs font-bold">{dev.nfcCards.length}/10</td>
+                                <td className="px-4 py-3 text-xs font-bold">
+                                  {dev.nfcCards.length}/10
+                                </td>
                                 <td className="px-4 py-3 text-xs text-gray-500">
-                                  {dev.lastSeenAt ? new Date(dev.lastSeenAt).toLocaleString("en-IN") : "Never"}
+                                  {dev.lastSeenAt
+                                    ? new Date(dev.lastSeenAt).toLocaleString(
+                                        "en-IN",
+                                      )
+                                    : "Never"}
                                 </td>
                                 <td className="px-4 py-3">
                                   <span
@@ -1315,17 +1368,21 @@ export default function BiometricPage() {
           {tab === "logs" && (
             <div>
               <div className="flex mb-5 border-2 border-black w-fit bg-white">
-                {([
-                  ["punches", "Employee Punches"],
-                  ["device", "Device Communication"],
-                ] as const).map(([k, label], i) => (
+                {(
+                  [
+                    ["punches", "Employee Punches"],
+                    ["device", "Device Communication"],
+                  ] as const
+                ).map(([k, label], i) => (
                   <button
                     key={k}
                     onClick={() => setLogView(k)}
                     className={cn(
                       "px-4 py-2 text-xs font-bold uppercase",
                       i === 0 && "border-r-2 border-black",
-                      logView === k ? "bg-[#024BAB] text-white" : "bg-white hover:bg-gray-50",
+                      logView === k
+                        ? "bg-[#024BAB] text-white"
+                        : "bg-white hover:bg-gray-50",
                     )}
                   >
                     {label}
@@ -1334,228 +1391,228 @@ export default function BiometricPage() {
               </div>
               {logView === "device" && <DeviceProtocolLog devices={devices} />}
               <div className={logView === "device" ? "hidden" : ""}>
-              <div className="border-2 border-black bg-white mb-6">
-                <div className="flex items-center justify-between p-4 border-b-2 border-black">
-                  <h3 className="font-bold text-sm text-black uppercase tracking-wider">
-                    Device Sync Log
-                  </h3>
-                </div>
-                <div className="overflow-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b-2 border-black bg-[#024BAB]/5">
-                        {["Device", "Location", "Last Sync", "Status"].map(
-                          (h) => (
-                            <th
-                              key={h}
-                              className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider"
-                            >
-                              {h}
-                            </th>
-                          ),
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {devices.length === 0 ? (
-                        <tr>
-                          <td
-                            colSpan={4}
-                            className="px-4 py-6 text-center text-sm text-muted-foreground"
-                          >
-                            No devices configured
-                          </td>
+                <div className="border-2 border-black bg-white mb-6">
+                  <div className="flex items-center justify-between p-4 border-b-2 border-black">
+                    <h3 className="font-bold text-sm text-black uppercase tracking-wider">
+                      Device Sync Log
+                    </h3>
+                  </div>
+                  <div className="overflow-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b-2 border-black bg-[#024BAB]/5">
+                          {["Device", "Location", "Last Sync", "Status"].map(
+                            (h) => (
+                              <th
+                                key={h}
+                                className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider"
+                              >
+                                {h}
+                              </th>
+                            ),
+                          )}
                         </tr>
-                      ) : (
-                        devices.map((dev, i) => (
+                      </thead>
+                      <tbody>
+                        {devices.length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan={4}
+                              className="px-4 py-6 text-center text-sm text-muted-foreground"
+                            >
+                              No devices configured
+                            </td>
+                          </tr>
+                        ) : (
+                          devices.map((dev, i) => (
+                            <tr
+                              key={dev._id}
+                              className={cn(
+                                "border-b border-black/10",
+                                i % 2 !== 0 && "bg-[#F8FAFF]",
+                              )}
+                            >
+                              <td className="px-4 py-3 font-bold text-black">
+                                {dev.name}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-muted-foreground">
+                                {dev.location?.name || "—"}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-black">
+                                {dev.lastSeenAt
+                                  ? new Date(dev.lastSeenAt).toLocaleString(
+                                      "en-IN",
+                                    )
+                                  : "Never"}
+                              </td>
+                              <td className="px-4 py-3">
+                                <span
+                                  className={cn(
+                                    "px-2 py-0.5 text-xs font-bold border-2",
+                                    dev.isActive
+                                      ? "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]"
+                                      : "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]",
+                                  )}
+                                >
+                                  {dev.isActive ? "Online" : "Offline"}
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-3 mb-6">
+                  <select
+                    value={logFilter.locationId}
+                    onChange={(e) =>
+                      setLogFilter((p) => ({
+                        ...p,
+                        locationId: e.target.value,
+                      }))
+                    }
+                    className="border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none"
+                  >
+                    <option value="">All Locations</option>
+                    {locations.map((l) => (
+                      <option key={l._id} value={l._id}>
+                        {l.name}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="date"
+                    value={logFilter.date}
+                    onChange={(e) =>
+                      setLogFilter((p) => ({ ...p, date: e.target.value }))
+                    }
+                    className="border-2 border-black px-3 py-2 text-sm font-medium focus:outline-none"
+                  />
+                  <button
+                    onClick={fetchLogs}
+                    className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-bold text-sm uppercase"
+                  >
+                    <RefreshCw className="w-4 h-4" /> Refresh
+                  </button>
+                </div>
+
+                {logsLoading ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-[#024BAB]" />
+                  </div>
+                ) : logs.length === 0 ? (
+                  <div className="text-center py-12 bg-white border-2 border-black">
+                    <Activity className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="font-bold text-gray-500">
+                      No biometric activity found
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-white border-2 border-black overflow-hidden">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b-2 border-black bg-[#024BAB]/5">
+                          <th className="text-left px-4 py-3 text-xs font-bold uppercase">
+                            Employee
+                          </th>
+                          <th className="text-left px-4 py-3 text-xs font-bold uppercase">
+                            Location
+                          </th>
+                          <th className="text-left px-4 py-3 text-xs font-bold uppercase">
+                            Device
+                          </th>
+                          <th className="text-left px-4 py-3 text-xs font-bold uppercase">
+                            Method
+                          </th>
+                          <th className="text-left px-4 py-3 text-xs font-bold uppercase">
+                            Type
+                          </th>
+                          <th className="text-left px-4 py-3 text-xs font-bold uppercase">
+                            Time
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {logs.map((log, i) => (
                           <tr
-                            key={dev._id}
+                            key={log._id}
                             className={cn(
-                              "border-b border-black/10",
-                              i % 2 !== 0 && "bg-[#F8FAFF]",
+                              "border-b border-gray-100",
+                              i % 2 === 0 ? "bg-white" : "bg-gray-50/50",
                             )}
                           >
-                            <td className="px-4 py-3 font-bold text-black">
-                              {dev.name}
+                            <td className="px-4 py-3">
+                              <p className="font-bold text-sm">
+                                {log.employee.firstName} {log.employee.lastName}
+                              </p>
+                              <p className="text-xs text-gray-500 font-mono">
+                                {log.employee.employeeId}
+                              </p>
                             </td>
-                            <td className="px-4 py-3 text-sm text-muted-foreground">
-                              {dev.location?.name || "—"}
+                            <td className="px-4 py-3">
+                              <p className="text-sm font-medium flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-gray-400" />
+                                {log.location.name}
+                              </p>
                             </td>
-                            <td className="px-4 py-3 text-sm text-black">
-                              {dev.lastSeenAt
-                                ? new Date(dev.lastSeenAt).toLocaleString(
-                                    "en-IN",
-                                  )
-                                : "Never"}
+                            <td className="px-4 py-3 text-sm font-medium text-gray-600">
+                              {log.device.name}
                             </td>
                             <td className="px-4 py-3">
                               <span
                                 className={cn(
-                                  "px-2 py-0.5 text-xs font-bold border-2",
-                                  dev.isActive
-                                    ? "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]"
-                                    : "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]",
+                                  "text-xs font-bold uppercase px-2 py-0.5 border-2",
+                                  log.method === "nfc"
+                                    ? "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB]"
+                                    : log.method === "face"
+                                      ? "bg-[#A855F7]/10 text-[#A855F7] border-[#A855F7]"
+                                      : "bg-gray-100 text-gray-500 border-gray-300",
                                 )}
                               >
-                                {dev.isActive ? "Online" : "Offline"}
+                                {log.method === "nfc"
+                                  ? "NFC"
+                                  : log.method === "face"
+                                    ? "Face"
+                                    : "PIN"}
+                              </span>
+                              {log.nfcUid && (
+                                <p className="text-xs font-mono text-gray-400 mt-0.5">
+                                  {log.nfcUid}
+                                </p>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span
+                                className={cn(
+                                  "text-xs font-bold uppercase px-2 py-0.5 border-2 flex items-center gap-1 w-fit",
+                                  log.type === "check_in"
+                                    ? "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]"
+                                    : "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C]",
+                                )}
+                              >
+                                <Clock className="w-3 h-3" />
+                                {log.type === "check_in"
+                                  ? "Check In"
+                                  : "Check Out"}
                               </span>
                             </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-3 mb-6">
-                <select
-                  value={logFilter.locationId}
-                  onChange={(e) =>
-                    setLogFilter((p) => ({
-                      ...p,
-                      locationId: e.target.value,
-                    }))
-                  }
-                  className="border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none"
-                >
-                  <option value="">All Locations</option>
-                  {locations.map((l) => (
-                    <option key={l._id} value={l._id}>
-                      {l.name}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="date"
-                  value={logFilter.date}
-                  onChange={(e) =>
-                    setLogFilter((p) => ({ ...p, date: e.target.value }))
-                  }
-                  className="border-2 border-black px-3 py-2 text-sm font-medium focus:outline-none"
-                />
-                <button
-                  onClick={fetchLogs}
-                  className="flex items-center gap-2 bg-[#024BAB] text-white border-2 border-black px-4 py-2 font-bold text-sm uppercase"
-                >
-                  <RefreshCw className="w-4 h-4" /> Refresh
-                </button>
-              </div>
-
-              {logsLoading ? (
-                <div className="flex justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-[#024BAB]" />
-                </div>
-              ) : logs.length === 0 ? (
-                <div className="text-center py-12 bg-white border-2 border-black">
-                  <Activity className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="font-bold text-gray-500">
-                    No biometric activity found
-                  </p>
-                </div>
-              ) : (
-                <div className="bg-white border-2 border-black overflow-hidden">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b-2 border-black bg-[#024BAB]/5">
-                        <th className="text-left px-4 py-3 text-xs font-bold uppercase">
-                          Employee
-                        </th>
-                        <th className="text-left px-4 py-3 text-xs font-bold uppercase">
-                          Location
-                        </th>
-                        <th className="text-left px-4 py-3 text-xs font-bold uppercase">
-                          Device
-                        </th>
-                        <th className="text-left px-4 py-3 text-xs font-bold uppercase">
-                          Method
-                        </th>
-                        <th className="text-left px-4 py-3 text-xs font-bold uppercase">
-                          Type
-                        </th>
-                        <th className="text-left px-4 py-3 text-xs font-bold uppercase">
-                          Time
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {logs.map((log, i) => (
-                        <tr
-                          key={log._id}
-                          className={cn(
-                            "border-b border-gray-100",
-                            i % 2 === 0 ? "bg-white" : "bg-gray-50/50",
-                          )}
-                        >
-                          <td className="px-4 py-3">
-                            <p className="font-bold text-sm">
-                              {log.employee.firstName} {log.employee.lastName}
-                            </p>
-                            <p className="text-xs text-gray-500 font-mono">
-                              {log.employee.employeeId}
-                            </p>
-                          </td>
-                          <td className="px-4 py-3">
-                            <p className="text-sm font-medium flex items-center gap-1">
-                              <MapPin className="w-3 h-3 text-gray-400" />
-                              {log.location.name}
-                            </p>
-                          </td>
-                          <td className="px-4 py-3 text-sm font-medium text-gray-600">
-                            {log.device.name}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span
-                              className={cn(
-                                "text-xs font-bold uppercase px-2 py-0.5 border-2",
-                                log.method === "nfc"
-                                  ? "bg-[#024BAB]/10 text-[#024BAB] border-[#024BAB]"
-                                  : log.method === "face"
-                                    ? "bg-[#A855F7]/10 text-[#A855F7] border-[#A855F7]"
-                                    : "bg-gray-100 text-gray-500 border-gray-300",
-                              )}
-                            >
-                              {log.method === "nfc"
-                                ? "NFC"
-                                : log.method === "face"
-                                  ? "Face"
-                                  : "PIN"}
-                            </span>
-                            {log.nfcUid && (
-                              <p className="text-xs font-mono text-gray-400 mt-0.5">
-                                {log.nfcUid}
+                            <td className="px-4 py-3 text-sm text-gray-600 font-medium">
+                              <p>
+                                {new Date(log.timestamp).toLocaleDateString()}
                               </p>
-                            )}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span
-                              className={cn(
-                                "text-xs font-bold uppercase px-2 py-0.5 border-2 flex items-center gap-1 w-fit",
-                                log.type === "check_in"
-                                  ? "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]"
-                                  : "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C]",
-                              )}
-                            >
-                              <Clock className="w-3 h-3" />
-                              {log.type === "check_in"
-                                ? "Check In"
-                                : "Check Out"}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-600 font-medium">
-                            <p>
-                              {new Date(log.timestamp).toLocaleDateString()}
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              {new Date(log.timestamp).toLocaleTimeString()}
-                            </p>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                              <p className="text-xs text-gray-400">
+                                {new Date(log.timestamp).toLocaleTimeString()}
+                              </p>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           )}

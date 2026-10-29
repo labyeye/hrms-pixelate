@@ -145,10 +145,24 @@ const processPayroll = asyncHandler(async (req, res) => {
   // One query per collection for the whole run (was 4 sequential queries per employee).
   const empIdList = employees.map((e) => e._id);
   const [existingRows, attRows, txRows, loanRows] = await Promise.all([
-    Payroll.find({ employee: { $in: empIdList }, month: m, year: y }).select("employee").lean(),
-    Attendance.find({ employee: { $in: empIdList }, date: { $gte: startDate, $lte: endDate } }),
-    Transaction.find({ employee: { $in: empIdList }, company: req.user.company, status: "pending", date: { $gte: startDate, $lte: endDate } }),
-    Loan.find({ employee: { $in: empIdList }, company: req.user.company, status: "active" }),
+    Payroll.find({ employee: { $in: empIdList }, month: m, year: y })
+      .select("employee")
+      .lean(),
+    Attendance.find({
+      employee: { $in: empIdList },
+      date: { $gte: startDate, $lte: endDate },
+    }),
+    Transaction.find({
+      employee: { $in: empIdList },
+      company: req.user.company,
+      status: "pending",
+      date: { $gte: startDate, $lte: endDate },
+    }),
+    Loan.find({
+      employee: { $in: empIdList },
+      company: req.user.company,
+      status: "active",
+    }),
   ]);
   const groupByEmployee = (rows) => {
     const map = new Map();
@@ -170,7 +184,11 @@ const processPayroll = asyncHandler(async (req, res) => {
     const attendances = attByEmp.get(String(emp._id)) || [];
 
     if (attendances.length === 0) {
-      skipped.push({ employee: emp._id, name: `${emp.firstName} ${emp.lastName}`, reason: "No attendance records in the pay period" });
+      skipped.push({
+        employee: emp._id,
+        name: `${emp.firstName} ${emp.lastName}`,
+        reason: "No attendance records in the pay period",
+      });
       continue;
     }
 
@@ -468,7 +486,11 @@ const processPayroll = asyncHandler(async (req, res) => {
   if (payrolls.length) {
     await Payroll.insertMany(payrolls);
   }
-  res.json({ success: true, message: `${payrolls.length} payrolls processed`, skipped });
+  res.json({
+    success: true,
+    message: `${payrolls.length} payrolls processed`,
+    skipped,
+  });
 });
 
 const updatePayroll = asyncHandler(async (req, res) => {
@@ -973,6 +995,7 @@ async function buildPayrollPreviews(companyId, m, y, employeeIds) {
         lastName: emp.lastName,
         employeeId: emp.employeeId,
         designation: emp.designation,
+        avatar: emp.avatar, // shown in the dashboard performance table
       },
       month: m,
       year: y,

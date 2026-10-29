@@ -49,9 +49,7 @@ export default function DepartmentsPage() {
     message: string;
   }>({ show: false, type: "success", title: "", message: "" });
   const [search, setSearch] = useState("");
-  const [sortKey, setSortKey] = useState<"name" | "headcount">(
-    "name",
-  );
+  const [sortKey, setSortKey] = useState<"name" | "headcount">("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const load = useCallback(async () => {
@@ -95,10 +93,8 @@ export default function DepartmentsPage() {
     if (!ok) return;
     setSaving(true);
     try {
-      if (editDept)
-        await departmentAPI.update(editDept._id, form);
-      else
-        await departmentAPI.create(form);
+      if (editDept) await departmentAPI.update(editDept._id, form);
+      else await departmentAPI.create(form);
       setActionModal({
         show: true,
         type: "success",
@@ -160,13 +156,27 @@ export default function DepartmentsPage() {
         <div className="flex flex-wrap items-center gap-2">
           <ImportButton
             name="departments"
-            headers={["Name", "Code", "Shift Start (HH:MM)", "Shift End (HH:MM)", "Description"]}
-            example={["Engineering", "ENG", "09:00", "18:00", "Product engineering"]}
+            headers={[
+              "Name",
+              "Code",
+              "Shift Start (HH:MM)",
+              "Shift End (HH:MM)",
+              "Description",
+            ]}
+            example={[
+              "Engineering",
+              "ENG",
+              "09:00",
+              "18:00",
+              "Product engineering",
+            ]}
             onRows={async (rows) => {
               let ok = 0;
               for (const r of rows) {
                 const name = String(r["Name"] || "").trim();
-                const code = String(r["Code"] || "").trim().toUpperCase();
+                const code = String(r["Code"] || "")
+                  .trim()
+                  .toUpperCase();
                 if (!name || !code) continue;
                 try {
                   await departmentAPI.create({
@@ -189,7 +199,13 @@ export default function DepartmentsPage() {
             cols={[
               { header: "Code", value: (d) => d.code },
               { header: "Department", value: (d) => d.name },
-              { header: "Shift Timings", value: (d: any) => (d.shiftStartTime ? `${d.shiftStartTime} - ${d.shiftEndTime}` : "") },
+              {
+                header: "Shift Timings",
+                value: (d: any) =>
+                  d.shiftStartTime
+                    ? `${d.shiftStartTime} - ${d.shiftEndTime}`
+                    : "",
+              },
               { header: "Headcount", value: (d) => d.headcount || 0 },
               { header: "Head", value: (d: any) => d.head?.name || "" },
             ]}

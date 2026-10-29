@@ -17,6 +17,7 @@ import LottieView from 'lottie-react-native';
 import { User, Mail, Lock, ArrowLeft } from 'lucide-react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { C } from '../../theme';
+import LegalLinks from '../../components/LegalLinks';
 import PasswordChecklist from '../../components/PasswordChecklist';
 import { passwordOk } from '../../utils/passwordRules';
 
@@ -29,6 +30,7 @@ export default function RegisterScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password.trim()) {
@@ -36,7 +38,17 @@ export default function RegisterScreen({ navigation }: any) {
       return;
     }
     if (!passwordOk(password)) {
-      Alert.alert('Validation', 'Please meet every point in the password checklist');
+      Alert.alert(
+        'Validation',
+        'Please meet every point in the password checklist',
+      );
+      return;
+    }
+    if (!agreed) {
+      Alert.alert(
+        'Validation',
+        'Please accept the Terms of Service and Privacy Policy',
+      );
       return;
     }
     setLoading(true);
@@ -115,9 +127,49 @@ export default function RegisterScreen({ navigation }: any) {
                   secureTextEntry={f.secure}
                 />
               </View>
-              {f.secure && !!f.value && <PasswordChecklist password={f.value} />}
+              {f.secure && !!f.value && (
+                <PasswordChecklist password={f.value} />
+              )}
             </View>
           ))}
+
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              gap: 10,
+              marginBottom: 14,
+            }}
+            onPress={() => setAgreed(a => !a)}
+            activeOpacity={0.8}
+          >
+            <View
+              style={{
+                width: 20,
+                height: 20,
+                marginTop: 1,
+                borderWidth: 2,
+                borderColor: C.primary,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: agreed ? C.primary : C.white,
+              }}
+            >
+              {agreed && (
+                <Text
+                  style={{ color: C.white, fontWeight: '400', fontSize: 12 }}
+                >
+                  ✓
+                </Text>
+              )}
+            </View>
+            <View style={{ flex: 1 }}>
+              <LegalLinks
+                prefix="I agree to the"
+                style={{ textAlign: 'left' }}
+              />
+            </View>
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.btnPrimary}
@@ -150,7 +202,7 @@ const styles = StyleSheet.create({
   lottie: { width: '100%', height: 220, alignSelf: 'center' },
   title: {
     fontSize: 36,
-    fontWeight: '600',
+    fontWeight: '400',
     color: C.black,
     marginTop: 12,
     marginBottom: 18,
@@ -159,7 +211,7 @@ const styles = StyleSheet.create({
   field: { marginBottom: 16 },
   label: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.black,
     marginBottom: 6,
@@ -182,7 +234,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingRight: 12,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
   },
   btnPrimary: {
@@ -200,7 +252,7 @@ const styles = StyleSheet.create({
   },
   btnPrimaryText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 14,
     textTransform: 'uppercase',
   },
@@ -211,5 +263,5 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: 20,
   },
-  backLinkText: { fontSize: 13, color: C.primary, fontWeight: '700' },
+  backLinkText: { fontSize: 13, color: C.primary, fontWeight: '400' },
 });

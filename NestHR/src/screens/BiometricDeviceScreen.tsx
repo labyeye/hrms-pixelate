@@ -87,7 +87,9 @@ const EMPTY_DEV = { name: '', location: '' };
 
 export default function BiometricDeviceScreen() {
   const navigation = useNavigation<any>();
-  const [tab, setTab] = useState<'locations' | 'devices' | 'adms' | 'logs'>('locations');
+  const [tab, setTab] = useState<'locations' | 'devices' | 'adms' | 'logs'>(
+    'locations',
+  );
   const [devLogs, setDevLogs] = useState<any[]>([]);
   const [devLogsLoading, setDevLogsLoading] = useState(false);
   const [logDevice, setLogDevice] = useState('');
@@ -486,11 +488,10 @@ export default function BiometricDeviceScreen() {
           <TouchableOpacity
             style={styles.addBtn}
             onPress={tab === 'locations' ? openLocCreate : openDevCreate}
+            accessibilityLabel={tab === 'locations' ? 'Location' : 'Device'}
+            hitSlop={8}
           >
-            <Plus size={14} color={C.white} />
-            <Text style={styles.addBtnText}>
-              {tab === 'locations' ? 'Location' : 'Device'}
-            </Text>
+            <Plus size={24} color={C.primary} />
           </TouchableOpacity>
         )}
       </View>
@@ -520,229 +521,335 @@ export default function BiometricDeviceScreen() {
       </View>
 
       {(tab === 'locations' || tab === 'devices') && (
-      <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={C.primary}
-          />
-        }
-      >
-        {tab === 'locations' ? (
-          locations.length === 0 ? (
+        <ScrollView
+          contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={C.primary}
+            />
+          }
+        >
+          {tab === 'locations' ? (
+            locations.length === 0 ? (
+              <View style={styles.empty}>
+                <MapPin size={32} color="#D1D5DB" />
+                <Text style={styles.emptyText}>No locations yet</Text>
+                <Text style={styles.emptySub}>
+                  Tap + to add your first location
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.card}>
+                <View style={[styles.tblRow, styles.tblHead]}>
+                  <Text style={[styles.tblH, { flex: 3 }]}>Location</Text>
+                  <Text
+                    style={[styles.tblH, { flex: 1.2, textAlign: 'center' }]}
+                  >
+                    Devices
+                  </Text>
+                  <Text
+                    style={[styles.tblH, { flex: 1.3, textAlign: 'center' }]}
+                  >
+                    Status
+                  </Text>
+                  <Text
+                    style={[styles.tblH, { width: 62, textAlign: 'right' }]}
+                  >
+                    Actions
+                  </Text>
+                </View>
+                {locations.map((loc, i) => (
+                  <View
+                    key={loc._id}
+                    style={[
+                      styles.tblRow,
+                      i % 2 ? { backgroundColor: '#F8FAFF' } : null,
+                    ]}
+                  >
+                    <View style={{ flex: 3, paddingRight: 6 }}>
+                      <Text style={styles.rowTitle}>{loc.name}</Text>
+                      {loc.address ? (
+                        <Text style={styles.rowSub}>{loc.address}</Text>
+                      ) : null}
+                      {loc.description ? (
+                        <Text style={styles.rowSub}>{loc.description}</Text>
+                      ) : null}
+                    </View>
+                    <Text
+                      style={[styles.tblC, { flex: 1.2, textAlign: 'center' }]}
+                    >
+                      {devices.filter(d => d.location?._id === loc._id).length}
+                    </Text>
+                    <View style={{ flex: 1.3, alignItems: 'center' }}>
+                      <Text
+                        style={[
+                          styles.tblPill,
+                          loc.isActive
+                            ? { color: C.success, borderColor: C.success }
+                            : { color: '#6B7280', borderColor: '#9CA3AF' },
+                        ]}
+                      >
+                        {loc.isActive ? 'ACTIVE' : 'INACTIVE'}
+                      </Text>
+                    </View>
+                    <View
+                      style={{
+                        width: 62,
+                        flexDirection: 'row',
+                        justifyContent: 'flex-end',
+                      }}
+                    >
+                      <TouchableOpacity
+                        onPress={() => openLocEdit(loc)}
+                        style={styles.iconBtn}
+                      >
+                        <Edit2 size={14} color={C.primary} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => deleteLocation(loc)}
+                        style={styles.iconBtn}
+                      >
+                        <Trash2 size={14} color={C.danger} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )
+          ) : devices.length === 0 ? (
             <View style={styles.empty}>
-              <MapPin size={32} color="#D1D5DB" />
-              <Text style={styles.emptyText}>No locations yet</Text>
+              <Cpu size={32} color="#D1D5DB" />
+              <Text style={styles.emptyText}>No devices yet</Text>
               <Text style={styles.emptySub}>
-                Tap + to add your first location
+                Add a biometric device to a location
               </Text>
             </View>
           ) : (
             <View style={styles.card}>
               <View style={[styles.tblRow, styles.tblHead]}>
-                <Text style={[styles.tblH, { flex: 3 }]}>Location</Text>
-                <Text style={[styles.tblH, { flex: 1.2, textAlign: 'center' }]}>Devices</Text>
-                <Text style={[styles.tblH, { flex: 1.3, textAlign: 'center' }]}>Status</Text>
-                <Text style={[styles.tblH, { width: 62, textAlign: 'right' }]}>Actions</Text>
+                <Text style={[styles.tblH, { flex: 2.4 }]}>Device</Text>
+                <Text style={[styles.tblH, { flex: 2 }]}>Location</Text>
+                <Text style={[styles.tblH, { flex: 1.5, textAlign: 'center' }]}>
+                  Status
+                </Text>
+                <Text style={[styles.tblH, { width: 18 }]} />
               </View>
-              {locations.map((loc, i) => (
-                <View key={loc._id} style={[styles.tblRow, i % 2 ? { backgroundColor: '#F8FAFF' } : null]}>
-                  <View style={{ flex: 3, paddingRight: 6 }}>
-                    <Text style={styles.rowTitle}>{loc.name}</Text>
-                    {loc.address ? <Text style={styles.rowSub}>{loc.address}</Text> : null}
-                    {loc.description ? <Text style={styles.rowSub}>{loc.description}</Text> : null}
-                  </View>
-                  <Text style={[styles.tblC, { flex: 1.2, textAlign: 'center' }]}>
-                    {devices.filter(d => d.location?._id === loc._id).length}
-                  </Text>
-                  <View style={{ flex: 1.3, alignItems: 'center' }}>
-                    <Text
-                      style={[
-                        styles.tblPill,
-                        loc.isActive
-                          ? { color: C.success, borderColor: C.success }
-                          : { color: '#6B7280', borderColor: '#9CA3AF' },
-                      ]}
-                    >
-                      {loc.isActive ? 'ACTIVE' : 'INACTIVE'}
-                    </Text>
-                  </View>
-                  <View style={{ width: 62, flexDirection: 'row', justifyContent: 'flex-end' }}>
-                    <TouchableOpacity onPress={() => openLocEdit(loc)} style={styles.iconBtn}>
-                      <Edit2 size={14} color={C.primary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => deleteLocation(loc)} style={styles.iconBtn}>
-                      <Trash2 size={14} color={C.danger} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))}
-            </View>
-          )
-        ) : devices.length === 0 ? (
-          <View style={styles.empty}>
-            <Cpu size={32} color="#D1D5DB" />
-            <Text style={styles.emptyText}>No devices yet</Text>
-            <Text style={styles.emptySub}>
-              Add a biometric device to a location
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.card}>
-            <View style={[styles.tblRow, styles.tblHead]}>
-              <Text style={[styles.tblH, { flex: 2.4 }]}>Device</Text>
-              <Text style={[styles.tblH, { flex: 2 }]}>Location</Text>
-              <Text style={[styles.tblH, { flex: 1.5, textAlign: 'center' }]}>Status</Text>
-              <Text style={[styles.tblH, { width: 18 }]} />
-            </View>
-            {devices.map((dev, i) => (
-              <View key={dev._id}>
-                <TouchableOpacity
-                  style={[styles.tblRow, i % 2 ? { backgroundColor: '#F8FAFF' } : null]}
-                  onPress={() =>
-                    setExpandedDev(expandedDev === dev._id ? null : dev._id)
-                  }
-                  activeOpacity={0.8}
-                >
-                  <View style={{ flex: 2.4, paddingRight: 6 }}>
-                    <Text style={styles.rowTitle}>{dev.name}</Text>
-                    <Text style={styles.rowSub}>
-                      {dev.lastSeenAt ? `Seen ${new Date(dev.lastSeenAt).toLocaleDateString('en-IN')}` : 'Never seen'}
-                    </Text>
-                  </View>
-                  <Text style={[styles.tblC, { flex: 2 }]} numberOfLines={2}>
-                    {dev.location?.name || '—'}
-                  </Text>
-                  <View style={{ flex: 1.5, alignItems: 'center' }}>
-                    <Text
-                      style={[
-                        styles.tblPill,
-                        dev.activated
-                          ? { color: C.success, borderColor: C.success }
-                          : { color: '#6B7280', borderColor: '#9CA3AF' },
-                      ]}
-                    >
-                      {dev.activated ? 'ACTIVE' : 'PENDING'}
-                    </Text>
-                  </View>
-                  {expandedDev === dev._id ? (
-                    <ChevronUp size={14} color="#9CA3AF" />
-                  ) : (
-                    <ChevronDown size={14} color="#9CA3AF" />
-                  )}
-                </TouchableOpacity>
-
-                {expandedDev === dev._id && (
-                  <View style={styles.devDetail}>
-                    {dev.activationCode && !dev.activated && (
-                      <View style={styles.codeBox}>
-                        <Text style={styles.codeLabel}>ACTIVATION CODE</Text>
-                        <Text style={styles.codeValue}>
-                          {dev.activationCode}
-                        </Text>
-                        <Text style={styles.codeSub}>
-                          Enter this code on the physical device to pair it
-                        </Text>
-                      </View>
-                    )}
-                    {dev.lastSeenAt && (
-                      <Text style={styles.lastSeen}>
-                        Last seen: {new Date(dev.lastSeenAt).toLocaleString()}
+              {devices.map((dev, i) => (
+                <View key={dev._id}>
+                  <TouchableOpacity
+                    style={[
+                      styles.tblRow,
+                      i % 2 ? { backgroundColor: '#F8FAFF' } : null,
+                    ]}
+                    onPress={() =>
+                      setExpandedDev(expandedDev === dev._id ? null : dev._id)
+                    }
+                    activeOpacity={0.8}
+                  >
+                    <View style={{ flex: 2.4, paddingRight: 6 }}>
+                      <Text style={styles.rowTitle}>{dev.name}</Text>
+                      <Text style={styles.rowSub}>
+                        {dev.lastSeenAt
+                          ? `Seen ${new Date(dev.lastSeenAt).toLocaleDateString('en-IN')}`
+                          : 'Never seen'}
                       </Text>
-                    )}
-                    <View style={styles.devActions}>
-                      <TouchableOpacity
-                        style={styles.devActionBtn}
-                        onPress={() => deleteDevice(dev)}
+                    </View>
+                    <Text style={[styles.tblC, { flex: 2 }]} numberOfLines={2}>
+                      {dev.location?.name || '—'}
+                    </Text>
+                    <View style={{ flex: 1.5, alignItems: 'center' }}>
+                      <Text
+                        style={[
+                          styles.tblPill,
+                          dev.activated
+                            ? { color: C.success, borderColor: C.success }
+                            : { color: '#6B7280', borderColor: '#9CA3AF' },
+                        ]}
                       >
-                        <Trash2 size={13} color={C.danger} />
-                        <Text
-                          style={[styles.devActionText, { color: C.danger }]}
+                        {dev.activated ? 'ACTIVE' : 'PENDING'}
+                      </Text>
+                    </View>
+                    {expandedDev === dev._id ? (
+                      <ChevronUp size={14} color="#9CA3AF" />
+                    ) : (
+                      <ChevronDown size={14} color="#9CA3AF" />
+                    )}
+                  </TouchableOpacity>
+
+                  {expandedDev === dev._id && (
+                    <View style={styles.devDetail}>
+                      {dev.activationCode && !dev.activated && (
+                        <View style={styles.codeBox}>
+                          <Text style={styles.codeLabel}>ACTIVATION CODE</Text>
+                          <Text style={styles.codeValue}>
+                            {dev.activationCode}
+                          </Text>
+                          <Text style={styles.codeSub}>
+                            Enter this code on the physical device to pair it
+                          </Text>
+                        </View>
+                      )}
+                      {dev.lastSeenAt && (
+                        <Text style={styles.lastSeen}>
+                          Last seen: {new Date(dev.lastSeenAt).toLocaleString()}
+                        </Text>
+                      )}
+                      <View style={styles.devActions}>
+                        <TouchableOpacity
+                          style={styles.devActionBtn}
+                          onPress={() => deleteDevice(dev)}
                         >
-                          Delete
+                          <Trash2 size={13} color={C.danger} />
+                          <Text
+                            style={[styles.devActionText, { color: C.danger }]}
+                          >
+                            Delete
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.syncBtn}
+                        onPress={() => handleSync(dev._id)}
+                      >
+                        <RefreshCw size={13} color={C.white} />
+                        <Text style={styles.syncBtnText}>
+                          Sync All Employees
                         </Text>
                       </TouchableOpacity>
                     </View>
-                    <TouchableOpacity
-                      style={styles.syncBtn}
-                      onPress={() => handleSync(dev._id)}
-                    >
-                      <RefreshCw size={13} color={C.white} />
-                      <Text style={styles.syncBtnText}>Sync All Employees</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
-            ))}
-          </View>
-        )}
-      </ScrollView>
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
       )}
 
       {/* ── Activity Logs: everything the hardware device sent and how the server answered ── */}
       {tab === 'logs' && (
         <ScrollView
           contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 10 }}
-          refreshControl={<RefreshControl refreshing={devLogsLoading} onRefresh={fetchDevLogs} tintColor={C.primary} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={devLogsLoading}
+              onRefresh={fetchDevLogs}
+              tintColor={C.primary}
+            />
+          }
         >
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 8 }}
+          >
             {[{ _id: '', name: 'All devices' }, ...devices].map((d: any) => (
               <TouchableOpacity
                 key={d._id || 'all'}
-                style={[styles.logChip, logDevice === d._id && { backgroundColor: C.primary }]}
+                style={[
+                  styles.logChip,
+                  logDevice === d._id && { backgroundColor: C.primary },
+                ]}
                 onPress={() => setLogDevice(d._id)}
               >
-                <Text style={[styles.logChipText, logDevice === d._id && { color: C.white }]}>{d.name}</Text>
+                <Text
+                  style={[
+                    styles.logChipText,
+                    logDevice === d._id && { color: C.white },
+                  ]}
+                >
+                  {d.name}
+                </Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
           {devLogsLoading ? (
-            <ActivityIndicator color={C.primary} style={{ paddingVertical: 30 }} />
+            <ActivityIndicator
+              color={C.primary}
+              style={{ paddingVertical: 30 }}
+            />
           ) : devLogs.length === 0 ? (
             <View style={styles.empty}>
               <Radio size={32} color="#D1D5DB" />
               <Text style={styles.emptyText}>No device communication yet</Text>
-              <Text style={styles.emptySub}>Logs appear when an ADMS device connects (kept 30 days)</Text>
+              <Text style={styles.emptySub}>
+                Logs appear when an ADMS device connects (kept 30 days)
+              </Text>
             </View>
           ) : (
             <View style={styles.card}>
               <View style={[styles.tblRow, styles.tblHead]}>
                 <Text style={[styles.tblH, { flex: 1.6 }]}>Time</Text>
                 <Text style={[styles.tblH, { flex: 2 }]}>Event</Text>
-                <Text style={[styles.tblH, { flex: 1, textAlign: 'center' }]}>Status</Text>
+                <Text style={[styles.tblH, { flex: 1, textAlign: 'center' }]}>
+                  Status
+                </Text>
               </View>
               {devLogs.map((l, i) => {
-                const col = l.status === 'ok' ? C.success : l.status === 'warn' ? C.secondary : C.danger;
+                const col =
+                  l.status === 'ok'
+                    ? C.success
+                    : l.status === 'warn'
+                      ? C.secondary
+                      : C.danger;
                 return (
                   <View key={l._id}>
                     <TouchableOpacity
-                      style={[styles.tblRow, i % 2 ? { backgroundColor: '#F8FAFF' } : null]}
-                      onPress={() => setOpenLog(openLog === l._id ? null : l._id)}
+                      style={[
+                        styles.tblRow,
+                        i % 2 ? { backgroundColor: '#F8FAFF' } : null,
+                      ]}
+                      onPress={() =>
+                        setOpenLog(openLog === l._id ? null : l._id)
+                      }
                       activeOpacity={0.8}
                     >
                       <View style={{ flex: 1.6 }}>
-                        <Text style={styles.rowTitle}>{new Date(l.createdAt).toLocaleTimeString('en-IN')}</Text>
-                        <Text style={styles.rowSub}>{new Date(l.createdAt).toLocaleDateString('en-IN')}</Text>
+                        <Text style={styles.rowTitle}>
+                          {new Date(l.createdAt).toLocaleTimeString('en-IN')}
+                        </Text>
+                        <Text style={styles.rowSub}>
+                          {new Date(l.createdAt).toLocaleDateString('en-IN')}
+                        </Text>
                       </View>
                       <View style={{ flex: 2, paddingRight: 4 }}>
-                        <Text style={styles.rowTitle}>{String(l.event).replace(/_/g, ' ')}</Text>
-                        <Text style={styles.rowSub}>{l.device?.name || l.serialNumber || ''}</Text>
+                        <Text style={styles.rowTitle}>
+                          {String(l.event).replace(/_/g, ' ')}
+                        </Text>
+                        <Text style={styles.rowSub}>
+                          {l.device?.name || l.serialNumber || ''}
+                        </Text>
                       </View>
                       <View style={{ flex: 1, alignItems: 'center' }}>
-                        <Text style={[styles.tblPill, { color: col, borderColor: col }]}>{String(l.status).toUpperCase()}</Text>
+                        <Text
+                          style={[
+                            styles.tblPill,
+                            { color: col, borderColor: col },
+                          ]}
+                        >
+                          {String(l.status).toUpperCase()}
+                        </Text>
                       </View>
                     </TouchableOpacity>
                     {openLog === l._id && (
                       <View style={styles.logDetail}>
-                        {!!l.summary && <Text style={styles.logSummary}>{l.summary}</Text>}
+                        {!!l.summary && (
+                          <Text style={styles.logSummary}>{l.summary}</Text>
+                        )}
                         <Text style={styles.logLabel}>DEVICE → SERVER</Text>
-                        <Text style={styles.logCode}>{l.requestData || '(empty)'}</Text>
-                        <Text style={styles.logLabel}>
-                          SERVER → DEVICE{l.deviceReturnCode != null ? ` · device Return=${l.deviceReturnCode}` : ''}
+                        <Text style={styles.logCode}>
+                          {l.requestData || '(empty)'}
                         </Text>
-                        <Text style={styles.logCode}>{l.responseData || '(empty)'}</Text>
+                        <Text style={styles.logLabel}>
+                          SERVER → DEVICE
+                          {l.deviceReturnCode != null
+                            ? ` · device Return=${l.deviceReturnCode}`
+                            : ''}
+                        </Text>
+                        <Text style={styles.logCode}>
+                          {l.responseData || '(empty)'}
+                        </Text>
                       </View>
                     )}
                   </View>
@@ -835,7 +942,7 @@ export default function BiometricDeviceScreen() {
                 </View>
                 <Text style={admsS.hint}>
                   Find it on the device:{' '}
-                  <Text style={{ fontWeight: '700' }}>
+                  <Text style={{ fontWeight: '400' }}>
                     Menu → System Info → Device SN
                   </Text>
                 </Text>
@@ -1370,17 +1477,60 @@ export default function BiometricDeviceScreen() {
 }
 
 const styles = StyleSheet.create({
-  tblRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 6, borderTopWidth: 1, borderTopColor: '#E5E7EB' },
-  tblHead: { backgroundColor: '#EFF6FF', borderTopWidth: 0, borderBottomWidth: 2, borderBottomColor: C.black },
-  tblH: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase', color: C.black },
-  tblC: { fontSize: 12, fontWeight: '600', color: C.black },
-  tblPill: { fontSize: 9, fontWeight: '800', borderWidth: 1.5, paddingHorizontal: 5, paddingVertical: 1 },
-  logChip: { borderWidth: 2, borderColor: C.black, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: C.white },
-  logChipText: { fontSize: 11, fontWeight: '700', color: C.black },
-  logDetail: { backgroundColor: '#F9FAFB', padding: 10, gap: 4, borderTopWidth: 1, borderTopColor: '#E5E7EB' },
-  logSummary: { fontSize: 12, fontWeight: '700', color: C.black },
-  logLabel: { fontSize: 9, fontWeight: '800', color: '#6B7280', marginTop: 4 },
-  logCode: { fontSize: 10, fontFamily: 'monospace', color: C.black, backgroundColor: C.white, borderWidth: 1, borderColor: '#D1D5DB', padding: 6 },
+  tblRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  tblHead: {
+    backgroundColor: '#EFF6FF',
+    borderTopWidth: 0,
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
+  },
+  tblH: {
+    fontSize: 10,
+    fontWeight: '400',
+    textTransform: 'uppercase',
+    color: C.black,
+  },
+  tblC: { fontSize: 12, fontWeight: '400', color: C.black },
+  tblPill: {
+    fontSize: 9,
+    fontWeight: '400',
+    borderWidth: 1.5,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  logChip: {
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: C.white,
+  },
+  logChipText: { fontSize: 11, fontWeight: '400', color: C.black },
+  logDetail: {
+    backgroundColor: '#F9FAFB',
+    padding: 10,
+    gap: 4,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  logSummary: { fontSize: 12, fontWeight: '400', color: C.black },
+  logLabel: { fontSize: 9, fontWeight: '400', color: '#6B7280', marginTop: 4 },
+  logCode: {
+    fontSize: 10,
+    fontFamily: 'monospace',
+    color: C.black,
+    backgroundColor: C.white,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    padding: 6,
+  },
   safe: { flex: 1, backgroundColor: '#F8F9FA' },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: {
@@ -1394,26 +1544,12 @@ const styles = StyleSheet.create({
     borderBottomColor: C.black,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: C.black },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: C.primary,
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderColor: C.black,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
+  headerTitle: { fontSize: 18, fontWeight: '400', color: C.black },
+  addBtn: { padding: 4 },
   addBtnText: {
     color: C.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   tabs: {
@@ -1432,7 +1568,7 @@ const styles = StyleSheet.create({
   tabActive: { borderBottomColor: C.primary },
   tabText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     color: '#9CA3AF',
     textTransform: 'uppercase',
   },
@@ -1455,7 +1591,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   rowBorder: { borderTopWidth: 2, borderTopColor: C.black },
-  rowTitle: { fontSize: 14, fontWeight: '700', color: C.black },
+  rowTitle: { fontSize: 14, fontWeight: '400', color: C.black },
   rowSub: { fontSize: 11, color: '#6B7280', marginTop: 2 },
   locIcon: {
     width: 36,
@@ -1485,7 +1621,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 3,
   },
-  badgeText: { fontSize: 9, fontWeight: '700', textTransform: 'uppercase' },
+  badgeText: { fontSize: 9, fontWeight: '400', textTransform: 'uppercase' },
   devDetail: {
     backgroundColor: '#F8F9FA',
     borderTopWidth: 2,
@@ -1506,14 +1642,14 @@ const styles = StyleSheet.create({
   },
   codeLabel: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: '#6B7280',
     letterSpacing: 0.5,
   },
   codeValue: {
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.primary,
     letterSpacing: 4,
     marginVertical: 4,
@@ -1537,7 +1673,7 @@ const styles = StyleSheet.create({
   },
   devActionText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   syncBtn: {
@@ -1559,11 +1695,11 @@ const styles = StyleSheet.create({
   syncBtnText: {
     color: C.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   empty: { alignItems: 'center', paddingVertical: 60, gap: 8 },
-  emptyText: { fontSize: 14, fontWeight: '700', color: '#6B7280' },
+  emptyText: { fontSize: 14, fontWeight: '400', color: '#6B7280' },
   emptySub: { fontSize: 12, color: '#9CA3AF' },
   overlay: {
     flex: 1,
@@ -1585,11 +1721,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: C.black },
+  modalTitle: { fontSize: 18, fontWeight: '400', color: C.black },
   field: { marginBottom: 14 },
   fieldLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: '#6B7280',
     marginBottom: 6,
@@ -1606,7 +1742,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
   },
   saveBtn: {
@@ -1628,7 +1764,7 @@ const styles = StyleSheet.create({
   saveBtnText: {
     color: C.white,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   locOption: {
@@ -1646,7 +1782,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   locOptionSelected: { borderColor: C.primary, backgroundColor: '#EFF6FF' },
-  locOptionText: { fontSize: 14, fontWeight: '600', color: C.black },
+  locOptionText: { fontSize: 14, fontWeight: '400', color: C.black },
 });
 
 const admsS = StyleSheet.create({
@@ -1675,10 +1811,10 @@ const admsS = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepNum: { color: C.white, fontSize: 11, fontWeight: '700' },
+  stepNum: { color: C.white, fontSize: 11, fontWeight: '400' },
   stepTitle: {
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '400',
     color: C.black,
     textTransform: 'uppercase',
   },
@@ -1696,7 +1832,7 @@ const admsS = StyleSheet.create({
     backgroundColor: '#FAFAFA',
   },
   deviceCardActive: { borderColor: C.primary, backgroundColor: '#EFF6FF' },
-  deviceName: { fontSize: 13, fontWeight: '800', color: C.black },
+  deviceName: { fontSize: 13, fontWeight: '400', color: C.black },
   deviceSub: { fontSize: 11, color: '#6B7280', marginTop: 2 },
   snBadge: {
     borderWidth: 2,
@@ -1712,7 +1848,7 @@ const admsS = StyleSheet.create({
   snBadgeText: {
     textTransform: 'uppercase',
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.success,
   },
   saveSerialBtn: {
@@ -1733,7 +1869,7 @@ const admsS = StyleSheet.create({
   saveSerialBtnText: {
     color: C.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   serialRegistered: {
@@ -1742,7 +1878,7 @@ const admsS = StyleSheet.create({
     gap: 5,
     marginTop: 8,
   },
-  serialRegisteredText: { fontSize: 11, color: C.success, fontWeight: '700' },
+  serialRegisteredText: { fontSize: 11, color: C.success, fontWeight: '400' },
   empHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1770,7 +1906,7 @@ const admsS = StyleSheet.create({
   syncAllBtnText: {
     color: C.white,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   empRow: {
@@ -1782,7 +1918,7 @@ const admsS = StyleSheet.create({
     flexWrap: 'wrap',
   },
   empRowBorder: { borderTopWidth: 2, borderTopColor: C.black },
-  empName: { fontSize: 12, fontWeight: '700', color: C.black },
+  empName: { fontSize: 12, fontWeight: '400', color: C.black },
   empId: {
     fontSize: 12,
     color: '#6B7280',
@@ -1821,7 +1957,7 @@ const admsS = StyleSheet.create({
   idChipSet: { borderColor: C.success, backgroundColor: '#F0FDF4' },
   idChipUnset: { borderColor: C.black, borderStyle: 'dashed' },
   rfidChipSet: { borderColor: C.primary, backgroundColor: '#EFF6FF' },
-  idChipText: { fontSize: 12, fontWeight: '700' },
+  idChipText: { fontSize: 12, fontWeight: '400' },
   actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1837,7 +1973,7 @@ const admsS = StyleSheet.create({
     paddingVertical: 5,
     backgroundColor: C.white,
   },
-  actionBtnText: { fontSize: 12, fontWeight: '700', color: C.black },
+  actionBtnText: { fontSize: 12, fontWeight: '400', color: C.black },
   cmdHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1861,7 +1997,7 @@ const admsS = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
-  refreshBtnText: { fontSize: 11, fontWeight: '700', color: C.black },
+  refreshBtnText: { fontSize: 11, fontWeight: '400', color: C.black },
   cmdRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1872,7 +2008,7 @@ const admsS = StyleSheet.create({
   },
   cmdType: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.black,
     textTransform: 'uppercase',
   },
@@ -1891,7 +2027,7 @@ const admsS = StyleSheet.create({
   cmdPending: { borderColor: '#FA731C', backgroundColor: '#FFF7ED' },
   cmdSent: { borderColor: C.primary, backgroundColor: '#EFF6FF' },
   cmdFailed: { borderColor: C.danger, backgroundColor: '#FEF2F2' },
-  cmdStatusText: { fontSize: 9, fontWeight: '800', textTransform: 'uppercase' },
+  cmdStatusText: { fontSize: 9, fontWeight: '400', textTransform: 'uppercase' },
   rfidEmpBox: {
     backgroundColor: '#EFF6FF',
     borderWidth: 2,
@@ -1904,6 +2040,6 @@ const admsS = StyleSheet.create({
     padding: 12,
     marginBottom: 14,
   },
-  rfidEmpName: { fontSize: 14, fontWeight: '700', color: C.black },
+  rfidEmpName: { fontSize: 14, fontWeight: '400', color: C.black },
   rfidEmpId: { fontSize: 11, color: '#6B7280', marginTop: 2 },
 });

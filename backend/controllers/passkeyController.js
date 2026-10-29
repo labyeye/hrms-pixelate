@@ -12,7 +12,10 @@ const {
   assertSignInAllowed,
   completeSignIn,
 } = require("../utils/signIn");
-const { assertNewPassword, finishPasswordReset } = require("./securityController");
+const {
+  assertNewPassword,
+  finishPasswordReset,
+} = require("./securityController");
 
 const hostOf = (u) => {
   try {
@@ -24,9 +27,7 @@ const hostOf = (u) => {
 // The passkey is bound to this domain. For one passkey on web + mobile use a parent
 // domain of the web app (e.g. pixelatenest.com) and host the iOS association file there.
 const RP_ID =
-  process.env.PASSKEY_RP_ID ||
-  hostOf(process.env.FRONTEND_URL) ||
-  "localhost";
+  process.env.PASSKEY_RP_ID || hostOf(process.env.FRONTEND_URL) || "localhost";
 const RP_NAME = "NestHR";
 const ORIGINS = [
   `https://${RP_ID}`,
@@ -46,7 +47,9 @@ const signChallenge = (challenge, purpose, uid) =>
 
 const readChallenge = (res, token, purpose) => {
   try {
-    const p = jwt.verify(token, process.env.JWT_SECRET, { algorithms: ["HS256"] });
+    const p = jwt.verify(token, process.env.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
     if (p.purpose === purpose) return p;
   } catch {
     /* fall through */
@@ -120,7 +123,10 @@ const registerVerify = asyncHandler(async (req, res) => {
     publicKey: Buffer.from(cred.publicKey).toString("base64url"),
     counter: cred.counter,
     transports: cred.transports || [],
-    name: String(name || "").trim().slice(0, 60) || "Passkey",
+    name:
+      String(name || "")
+        .trim()
+        .slice(0, 60) || "Passkey",
   });
   await user.save();
   res.json({ success: true, message: "Passkey added" });
@@ -170,7 +176,12 @@ const authOptions = (purpose, userVerification) =>
 const loginOptions = authOptions("login", "preferred");
 const resetOptions = authOptions("reset", "required");
 
-async function verifyAssertion(res, assertion, challenge, requireUserVerification) {
+async function verifyAssertion(
+  res,
+  assertion,
+  challenge,
+  requireUserVerification,
+) {
   const user = await findForSignIn(
     { "passkeys.credentialId": assertion.id },
     "+passkeys",

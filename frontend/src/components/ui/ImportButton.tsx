@@ -37,7 +37,12 @@ export function ImportButton({ name, headers, example, onRows }: Props) {
         onClick={() => input.current?.click()}
         className="flex items-center gap-2 px-4 py-2 bg-white text-black text-sm font-bold border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-50 disabled:opacity-60"
       >
-        {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4 text-[#00A36C]" />} Import
+        {busy ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <FileSpreadsheet className="w-4 h-4 text-[#00A36C]" />
+        )}{" "}
+        Import
       </button>
       <button
         type="button"
@@ -47,7 +52,13 @@ export function ImportButton({ name, headers, example, onRows }: Props) {
       >
         Sample
       </button>
-      <input ref={input} type="file" accept=".xlsx,.xls,.csv" hidden onChange={(e) => pick(e.target.files?.[0])} />
+      <input
+        ref={input}
+        type="file"
+        accept=".xlsx,.xls,.csv"
+        hidden
+        onChange={(e) => pick(e.target.files?.[0])}
+      />
     </div>
   );
 }

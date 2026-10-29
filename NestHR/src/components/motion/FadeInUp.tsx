@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleProp, ViewStyle } from 'react-native';
 import { useReduceMotion } from './useReduceMotion';
+import { useFocusReplay } from './useFocusReplay';
 
 interface Props {
   children: React.ReactNode;
@@ -20,6 +21,7 @@ export default function FadeInUp({
   style,
 }: Props) {
   const reduce = useReduceMotion();
+  const replay = useFocusReplay();
   const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -27,6 +29,7 @@ export default function FadeInUp({
       progress.setValue(1);
       return;
     }
+    progress.setValue(0);
     Animated.timing(progress, {
       toValue: 1,
       duration,
@@ -34,7 +37,7 @@ export default function FadeInUp({
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
-  }, [reduce, delay, duration, progress]);
+  }, [reduce, replay, delay, duration, progress]);
 
   return (
     <Animated.View

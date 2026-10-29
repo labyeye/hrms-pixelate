@@ -231,152 +231,156 @@ export default function SalaryHeadsScreen() {
         />
       )}
 
-      <Modal
-        visible={modal}
-        transparent
-        animationType="fade"
-      >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        <SafeAreaView style={s.safe} edges={['top']}>
-          <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>
-              {editing ? 'Edit Component' : 'New Component'}
-            </Text>
-            <TouchableOpacity onPress={() => setModal(false)}>
-              <X size={22} color={C.black} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            contentContainerStyle={{ padding: 20, gap: 16 }}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View>
-              <Text style={s.fieldLabel}>Component Name *</Text>
-              <TextInput
-                style={s.fieldInput}
-                value={form.name}
-                onChangeText={v => setForm((p: any) => ({ ...p, name: v }))}
-                placeholder="e.g. HRA, PF, Medical Allowance"
-                placeholderTextColor={C.textLight}
-              />
-            </View>
-
-            <View>
-              <Text style={s.fieldLabel}>Type *</Text>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  gap: 8,
-                  flexWrap: 'wrap',
-                  marginTop: 4,
-                }}
-              >
-                {TYPES.map(t => (
-                  <TouchableOpacity
-                    key={t}
-                    style={[
-                      s.chip,
-                      form.type === t && {
-                        backgroundColor: TYPE_COLOR[t],
-                        borderColor: TYPE_COLOR[t],
-                      },
-                    ]}
-                    onPress={() => setForm((p: any) => ({ ...p, type: t }))}
-                  >
-                    <Text
-                      style={[
-                        s.chipText,
-                        form.type === t && { color: C.white },
-                      ]}
-                    >
-                      {t}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            <View>
-              <Text style={s.fieldLabel}>Calculation Method</Text>
-              <View style={{ gap: 6, marginTop: 4 }}>
-                {CALC_METHODS.map(m => (
-                  <TouchableOpacity
-                    key={m.key}
-                    style={[
-                      s.radioRow,
-                      form.calcMethod === m.key && s.radioRowActive,
-                    ]}
-                    onPress={() =>
-                      setForm((p: any) => ({ ...p, calcMethod: m.key }))
-                    }
-                  >
-                    <View
-                      style={[
-                        s.radioCircle,
-                        form.calcMethod === m.key && s.radioCircleActive,
-                      ]}
-                    />
-                    <Text
-                      style={[
-                        s.radioText,
-                        form.calcMethod === m.key && {
-                          color: C.primary,
-                          fontWeight: '700',
-                        },
-                      ]}
-                    >
-                      {m.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            <View>
-              <Text style={s.fieldLabel}>
-                {form.calcMethod === 'fixed' ? 'Amount (₹)' : 'Percentage (%)'}
-              </Text>
-              <TextInput
-                style={s.fieldInput}
-                value={form.amount}
-                onChangeText={v => setForm((p: any) => ({ ...p, amount: v }))}
-                keyboardType="numeric"
-                placeholder={form.calcMethod === 'fixed' ? '5000' : '12'}
-                placeholderTextColor={C.textLight}
-              />
-            </View>
-
-            <TouchableOpacity
-              style={[s.checkRow, form.taxable && s.checkRowActive]}
-              onPress={() =>
-                setForm((p: any) => ({ ...p, taxable: !p.taxable }))
-              }
-            >
-              <View style={[s.checkbox, form.taxable && s.checkboxActive]}>
-                {form.taxable && <Check size={12} color={C.white} />}
-              </View>
-              <Text style={[s.checkText, form.taxable && { color: C.primary }]}>
-                Taxable Component
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={s.submitBtn}
-              onPress={handleSave}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator color={C.white} />
-              ) : (
-                <Text style={s.submitBtnText}>
-                  {editing ? 'Update Component' : 'Create Component'}
+      <Modal visible={modal} transparent animationType="fade">
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            <SafeAreaView style={s.safe} edges={['top']}>
+              <View style={s.modalHeader}>
+                <Text style={s.modalTitle}>
+                  {editing ? 'Edit Component' : 'New Component'}
                 </Text>
-              )}
-            </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </View></View>
-</Modal>
+                <TouchableOpacity onPress={() => setModal(false)}>
+                  <X size={22} color={C.black} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView
+                contentContainerStyle={{ padding: 20, gap: 16 }}
+                keyboardShouldPersistTaps="handled"
+              >
+                <View>
+                  <Text style={s.fieldLabel}>Component Name *</Text>
+                  <TextInput
+                    style={s.fieldInput}
+                    value={form.name}
+                    onChangeText={v => setForm((p: any) => ({ ...p, name: v }))}
+                    placeholder="e.g. HRA, PF, Medical Allowance"
+                    placeholderTextColor={C.textLight}
+                  />
+                </View>
+
+                <View>
+                  <Text style={s.fieldLabel}>Type *</Text>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      gap: 8,
+                      flexWrap: 'wrap',
+                      marginTop: 4,
+                    }}
+                  >
+                    {TYPES.map(t => (
+                      <TouchableOpacity
+                        key={t}
+                        style={[
+                          s.chip,
+                          form.type === t && {
+                            backgroundColor: TYPE_COLOR[t],
+                            borderColor: TYPE_COLOR[t],
+                          },
+                        ]}
+                        onPress={() => setForm((p: any) => ({ ...p, type: t }))}
+                      >
+                        <Text
+                          style={[
+                            s.chipText,
+                            form.type === t && { color: C.white },
+                          ]}
+                        >
+                          {t}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                <View>
+                  <Text style={s.fieldLabel}>Calculation Method</Text>
+                  <View style={{ gap: 6, marginTop: 4 }}>
+                    {CALC_METHODS.map(m => (
+                      <TouchableOpacity
+                        key={m.key}
+                        style={[
+                          s.radioRow,
+                          form.calcMethod === m.key && s.radioRowActive,
+                        ]}
+                        onPress={() =>
+                          setForm((p: any) => ({ ...p, calcMethod: m.key }))
+                        }
+                      >
+                        <View
+                          style={[
+                            s.radioCircle,
+                            form.calcMethod === m.key && s.radioCircleActive,
+                          ]}
+                        />
+                        <Text
+                          style={[
+                            s.radioText,
+                            form.calcMethod === m.key && {
+                              color: C.primary,
+                              fontWeight: '400',
+                            },
+                          ]}
+                        >
+                          {m.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                <View>
+                  <Text style={s.fieldLabel}>
+                    {form.calcMethod === 'fixed'
+                      ? 'Amount (₹)'
+                      : 'Percentage (%)'}
+                  </Text>
+                  <TextInput
+                    style={s.fieldInput}
+                    value={form.amount}
+                    onChangeText={v =>
+                      setForm((p: any) => ({ ...p, amount: v }))
+                    }
+                    keyboardType="numeric"
+                    placeholder={form.calcMethod === 'fixed' ? '5000' : '12'}
+                    placeholderTextColor={C.textLight}
+                  />
+                </View>
+
+                <TouchableOpacity
+                  style={[s.checkRow, form.taxable && s.checkRowActive]}
+                  onPress={() =>
+                    setForm((p: any) => ({ ...p, taxable: !p.taxable }))
+                  }
+                >
+                  <View style={[s.checkbox, form.taxable && s.checkboxActive]}>
+                    {form.taxable && <Check size={12} color={C.white} />}
+                  </View>
+                  <Text
+                    style={[s.checkText, form.taxable && { color: C.primary }]}
+                  >
+                    Taxable Component
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={s.submitBtn}
+                  onPress={handleSave}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <ActivityIndicator color={C.white} />
+                  ) : (
+                    <Text style={s.submitBtnText}>
+                      {editing ? 'Update Component' : 'Create Component'}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
+            </SafeAreaView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -393,7 +397,7 @@ const s = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  title: { fontSize: 20, fontWeight: '700', color: C.black },
+  title: { fontSize: 20, fontWeight: '400', color: C.black },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -412,12 +416,12 @@ const s = StyleSheet.create({
   addBtnText: {
     color: C.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
-  emptyText: { fontSize: 14, fontWeight: '700', color: C.textMuted },
+  emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
   card: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -431,8 +435,8 @@ const s = StyleSheet.create({
     borderColor: C.black,
     padding: 14,
   },
-  headName: { fontSize: 15, fontWeight: '700', color: C.black },
-  headSub: { fontSize: 12, color: C.textMuted, fontWeight: '500' },
+  headName: { fontSize: 15, fontWeight: '400', color: C.black },
+  headSub: { fontSize: 12, color: C.textMuted, fontWeight: '400' },
   typeBadge: {
     borderWidth: 2,
     borderRadius: 999,
@@ -442,7 +446,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 1,
   },
-  typeBadgeText: { textTransform: 'uppercase', fontSize: 9, fontWeight: '700' },
+  typeBadgeText: { textTransform: 'uppercase', fontSize: 9, fontWeight: '400' },
   taxBadge: {
     borderWidth: 2,
     borderRadius: 999,
@@ -456,7 +460,7 @@ const s = StyleSheet.create({
   taxBadgeText: {
     textTransform: 'uppercase',
     fontSize: 8,
-    fontWeight: '700',
+    fontWeight: '400',
     color: '#92400E',
   },
   iconBtn: {
@@ -481,10 +485,10 @@ const s = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: C.black },
+  modalTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   fieldLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.black,
     marginBottom: 6,
@@ -501,7 +505,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
     backgroundColor: C.white,
   },
@@ -516,7 +520,7 @@ const s = StyleSheet.create({
     borderRadius: 8,
     borderColor: C.black,
   },
-  chipText: { fontSize: 11, fontWeight: '700', color: C.black },
+  chipText: { fontSize: 11, fontWeight: '400', color: C.black },
   radioRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -541,7 +545,7 @@ const s = StyleSheet.create({
     borderColor: '#9CA3AF',
   },
   radioCircleActive: { borderColor: C.primary, backgroundColor: C.primary },
-  radioText: { fontSize: 13, fontWeight: '600', color: C.black },
+  radioText: { fontSize: 13, fontWeight: '400', color: C.black },
   checkRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -567,7 +571,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   checkboxActive: { backgroundColor: C.primary, borderColor: C.primary },
-  checkText: { fontSize: 13, fontWeight: '700', color: C.black },
+  checkText: { fontSize: 13, fontWeight: '400', color: C.black },
   submitBtn: {
     backgroundColor: C.primary,
     borderWidth: 2,
@@ -583,7 +587,7 @@ const s = StyleSheet.create({
   },
   submitBtnText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 14,
     textTransform: 'uppercase',
   },

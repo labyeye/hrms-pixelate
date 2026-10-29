@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useFocusReplay } from '../motion/useFocusReplay';
 import { Animated, Easing, LayoutChangeEvent, View } from 'react-native';
 import Svg, {
   Circle,
@@ -44,6 +45,7 @@ export default function AnimatedLineChart({
 }: Props) {
   const [w, setW] = useState(280);
   const reduce = useReduceMotion();
+  const replay = useFocusReplay();
   const progress = useRef(new Animated.Value(0)).current;
   const key = data.map(d => d.value).join(',');
 
@@ -56,7 +58,7 @@ export default function AnimatedLineChart({
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
-  }, [key, reduce, progress]);
+  }, [key, reduce, replay, progress]);
 
   const onLayout = (e: LayoutChangeEvent) => {
     const next = Math.floor(e.nativeEvent.layout.width);

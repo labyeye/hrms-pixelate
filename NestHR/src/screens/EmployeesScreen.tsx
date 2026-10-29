@@ -68,6 +68,7 @@ import {
   CheckSquare,
   Square,
   Clock,
+  SlidersHorizontal,
 } from 'lucide-react-native';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import {
@@ -83,7 +84,10 @@ import {
 import { Employee } from '../types/hrms';
 import { C } from '../theme';
 import { CENTER } from '../components/common/centerModal';
-import FilterBar from '../components/common/FilterBar';
+import SlideInCard from '../components/motion/SlideInCard';
+import HeaderIconBtn from '../components/common/HeaderIconBtn';
+import SearchModal from '../components/common/SearchModal';
+import FilterSortModal from '../components/common/FilterSortModal';
 import ExportButton from '../components/common/ExportButton';
 import StatTile, { tileGrid } from '../components/common/StatTile';
 import PhoneField from '../components/common/PhoneField';
@@ -176,6 +180,9 @@ export default function EmployeesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [sortKey, setSortKey] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [departments, setDepartments] = useState<any[]>([]);
@@ -213,7 +220,10 @@ export default function EmployeesScreen() {
       const [res, att] = await Promise.all([
         employeeAPI.getAll(),
         attendanceAPI
-          .getSummary({ month: String(now.getMonth() + 1), year: String(now.getFullYear()) })
+          .getSummary({
+            month: String(now.getMonth() + 1),
+            year: String(now.getFullYear()),
+          })
           .catch(() => null),
       ]);
       const data: Employee[] = res.data || [];
@@ -257,8 +267,22 @@ export default function EmployeesScreen() {
       );
     }
     if (statusFilter) list = list.filter(e => e.status === statusFilter);
+    if (sortKey) {
+      const nm = (e: Employee) => `${e.firstName} ${e.lastName}`.toLowerCase();
+      list = [...list].sort((a, b) =>
+        sortKey === 'name'
+          ? nm(a).localeCompare(nm(b))
+          : sortKey === 'name_desc'
+            ? nm(b).localeCompare(nm(a))
+            : String(a.employeeId || '').localeCompare(
+                String(b.employeeId || ''),
+                undefined,
+                { numeric: true },
+              ),
+      );
+    }
     setFiltered(list);
-  }, [search, statusFilter, employees]);
+  }, [search, statusFilter, sortKey, employees]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -378,7 +402,8 @@ export default function EmployeesScreen() {
     setSameAddress(
       !pa ||
         (pa === (emp as any).address &&
-          ((emp as any).permanentPincode || (emp as any).pincode) === (emp as any).pincode),
+          ((emp as any).permanentPincode || (emp as any).pincode) ===
+            (emp as any).pincode),
     );
     setActiveTab(0);
     setShowForm(true);
@@ -712,17 +737,26 @@ export default function EmployeesScreen() {
   // 6-digit pincode -> city + state (free India Post API); user can still edit/pick manually.
   const onPincode = async (v: string, prefix: '' | 'permanent') => {
     const pin = v.replace(/\D/g, '').slice(0, 6);
-    const k = (f: string) => (prefix ? prefix + f[0].toUpperCase() + f.slice(1) : f);
+    const k = (f: string) =>
+      prefix ? prefix + f[0].toUpperCase() + f.slice(1) : f;
     setForm(p => ({ ...p, [k('pincode')]: pin }));
     setFormDirty(true);
     if (pin.length === 6) {
       const hit = await lookupPincode(pin);
-      if (hit) setForm(p => ({ ...p, [k('city')]: hit.city, [k('state')]: hit.state }));
+      if (hit)
+        setForm(p => ({
+          ...p,
+          [k('city')]: hit.city,
+          [k('state')]: hit.state,
+        }));
     }
   };
 
   const AddressBlock = (prefix: '' | 'permanent') => {
-    const k = (f: string) => (prefix ? prefix + f[0].toUpperCase() + f.slice(1) : f) as keyof typeof EMPTY_FORM;
+    const k = (f: string) =>
+      (prefix
+        ? prefix + f[0].toUpperCase() + f.slice(1)
+        : f) as keyof typeof EMPTY_FORM;
     return (
       <>
         <View>
@@ -772,28 +806,36 @@ export default function EmployeesScreen() {
   const toggleSel = (id: string) =>
     setSelected(p => (p.includes(id) ? p.filter(x => x !== id) : [...p, id]));
 
-  const bulkRun = (label: string, fn: (id: string) => Promise<any>, destructive = false) => {
-    Alert.alert(`${label} ${selected.length} employee(s)?`, destructive ? 'This cannot be undone.' : '', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: label,
-        style: destructive ? 'destructive' : 'default',
-        onPress: async () => {
-          setBulkBusy(true);
-          let done = 0;
-          for (const id of selected) {
-            try {
-              await fn(id);
-              done++;
-            } catch {}
-          }
-          setBulkBusy(false);
-          Alert.alert(`${label}: ${done}/${selected.length} done`);
-          setSelected([]);
-          load();
+  const bulkRun = (
+    label: string,
+    fn: (id: string) => Promise<any>,
+    destructive = false,
+  ) => {
+    Alert.alert(
+      `${label} ${selected.length} employee(s)?`,
+      destructive ? 'This cannot be undone.' : '',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: label,
+          style: destructive ? 'destructive' : 'default',
+          onPress: async () => {
+            setBulkBusy(true);
+            let done = 0;
+            for (const id of selected) {
+              try {
+                await fn(id);
+                done++;
+              } catch {}
+            }
+            setBulkBusy(false);
+            Alert.alert(`${label}: ${done}/${selected.length} done`);
+            setSelected([]);
+            load();
+          },
         },
-      },
-    ]);
+      ],
+    );
   };
 
   const now0 = new Date();
@@ -801,14 +843,27 @@ export default function EmployeesScreen() {
     const d = (e as any).joinDate || (e as any).joiningDate;
     if (!d) return false;
     const dt = new Date(d);
-    return dt.getMonth() === now0.getMonth() && dt.getFullYear() === now0.getFullYear();
+    return (
+      dt.getMonth() === now0.getMonth() &&
+      dt.getFullYear() === now0.getFullYear()
+    );
   }).length;
-  const cnt = (st: string) => employees.filter(e => (e.status as string) === st).length;
+  const cnt = (st: string) =>
+    employees.filter(e => (e.status as string) === st).length;
   const attDen =
-    (attSummary.present || 0) + (attSummary.late || 0) + (attSummary.half_day || 0) +
-    (attSummary.absent || 0) + (attSummary.on_leave || 0);
+    (attSummary.present || 0) +
+    (attSummary.late || 0) +
+    (attSummary.half_day || 0) +
+    (attSummary.absent || 0) +
+    (attSummary.on_leave || 0);
   const attPct = attDen
-    ? Math.round((((attSummary.present || 0) + (attSummary.late || 0) + (attSummary.half_day || 0) * 0.5) / attDen) * 100)
+    ? Math.round(
+        (((attSummary.present || 0) +
+          (attSummary.late || 0) +
+          (attSummary.half_day || 0) * 0.5) /
+          attDen) *
+          100,
+      )
     : 0;
 
   const getDeptName = (dept: any) => {
@@ -825,9 +880,24 @@ export default function EmployeesScreen() {
           <Users size={20} color={C.primary} />
           <Text style={styles.headerTitle}>Employees</Text>
         </View>
-        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+          <HeaderIconBtn
+            label="Search"
+            icon={<Search size={22} color={C.black} />}
+            dot={!!search}
+            onPress={() => setSearchOpen(true)}
+          />
+          <HeaderIconBtn
+            label="Filter and sort"
+            icon={<SlidersHorizontal size={22} color={C.black} />}
+            dot={!!statusFilter || !!sortKey}
+            onPress={() => setFilterOpen(true)}
+          />
           <TouchableOpacity
-            style={[styles.selectBtn, selectMode && { backgroundColor: C.black }]}
+            style={[
+              styles.selectBtn,
+              selectMode && { backgroundColor: C.black },
+            ]}
             onPress={() => {
               setSelectMode(v => !v);
               setSelected([]);
@@ -841,19 +911,29 @@ export default function EmployeesScreen() {
             rows={filtered}
             cols={[
               { header: 'Emp ID', value: (e: any) => e.employeeId },
-              { header: 'Name', value: (e: any) => `${e.firstName} ${e.lastName}` },
+              {
+                header: 'Name',
+                value: (e: any) => `${e.firstName} ${e.lastName}`,
+              },
               { header: 'Department', value: (e: any) => e.department?.name },
               { header: 'Designation', value: (e: any) => e.designation },
               { header: 'Phone', value: (e: any) => e.phone },
               { header: 'Email', value: (e: any) => e.email },
-              { header: 'Salary', value: (e: any) => e.salary ?? e.monthlySalary ?? 0 },
+              {
+                header: 'Salary',
+                value: (e: any) => e.salary ?? e.monthlySalary ?? 0,
+              },
               { header: 'Loan Balance', value: (e: any) => e.loanBalance ?? 0 },
               { header: 'Status', value: (e: any) => e.status },
             ]}
           />
-          <TouchableOpacity style={styles.addBtn} onPress={openCreate}>
-            <Plus size={14} color={C.white} />
-            <Text style={styles.addBtnText}>Add</Text>
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={openCreate}
+            accessibilityLabel="Add"
+            hitSlop={8}
+          >
+            <Plus size={24} color={C.primary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -862,27 +942,45 @@ export default function EmployeesScreen() {
         <View style={styles.bulkBar}>
           <Text style={styles.bulkText}>{selected.length} selected</Text>
           <TouchableOpacity
-            onPress={() => setSelected(selected.length === filtered.length ? [] : filtered.map(e => e._id))}
+            onPress={() =>
+              setSelected(
+                selected.length === filtered.length
+                  ? []
+                  : filtered.map(e => e._id),
+              )
+            }
           >
-            <Text style={styles.bulkLink}>{selected.length === filtered.length ? 'Clear' : 'All'}</Text>
+            <Text style={styles.bulkLink}>
+              {selected.length === filtered.length ? 'Clear' : 'All'}
+            </Text>
           </TouchableOpacity>
           {selected.length > 0 && !bulkBusy && (
             <>
               <TouchableOpacity
                 style={[styles.bulkBtn, { backgroundColor: C.success }]}
-                onPress={() => bulkRun('Activate', id => employeeAPI.update(id, { status: 'active' }))}
+                onPress={() =>
+                  bulkRun('Activate', id =>
+                    employeeAPI.update(id, { status: 'active' }),
+                  )
+                }
               >
                 <Text style={styles.bulkBtnText}>Active</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.bulkBtn, { backgroundColor: '#6B7280' }]}
-                onPress={() => bulkRun('Deactivate', id => employeeAPI.update(id, { status: 'inactive' }))}
+                onPress={() =>
+                  bulkRun('Deactivate', id =>
+                    employeeAPI.update(id, { status: 'inactive' }),
+                  )
+                }
               >
                 <Text style={styles.bulkBtnText}>Inactive</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.bulkBtn, { backgroundColor: C.danger }]}
-                onPress={() => bulkRun('Terminate', id => employeeAPI.delete(id), true)}
+                onPress={() =>
+                  bulkRun('Terminate', id => employeeAPI.delete(id), true)
+                }
               >
                 <Text style={styles.bulkBtnText}>Terminate</Text>
               </TouchableOpacity>
@@ -892,29 +990,39 @@ export default function EmployeesScreen() {
         </View>
       )}
 
-      <View style={styles.searchWrap}>
-        <Search size={15} color={C.textMuted} />
-        <TextInput
-          style={styles.searchInput}
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Search by name, ID or email…"
-          placeholderTextColor={C.textLight}
-        />
-        {search.length > 0 && (
-          <TouchableOpacity onPress={() => setSearch('')}>
-            <X size={14} color={C.textMuted} />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      <FilterBar
-        value={statusFilter}
-        onChange={setStatusFilter}
-        options={[
+      <SearchModal
+        visible={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        value={search}
+        onChange={setSearch}
+        placeholder="Search by name, ID or email…"
+        items={employees.map(e => ({
+          key: e._id,
+          title: `${e.firstName} ${e.lastName}`.trim(),
+          subtitle: [e.employeeId, e.email].filter(Boolean).join(' · '),
+        }))}
+      />
+      <FilterSortModal
+        visible={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        filterTitle="Status"
+        filterOptions={[
           { key: '', label: 'All' },
           ...Object.keys(STATUS_CONFIG).map(k => ({ key: k, label: k })),
         ]}
+        filterValue={statusFilter}
+        onFilter={setStatusFilter}
+        sortOptions={[
+          { key: '', label: 'Employee ID' },
+          { key: 'name', label: 'Name A–Z' },
+          { key: 'name_desc', label: 'Name Z–A' },
+        ]}
+        sortValue={sortKey}
+        onSort={setSortKey}
+        onReset={() => {
+          setStatusFilter('');
+          setSortKey('');
+        }}
       />
 
       {loading ? (
@@ -934,160 +1042,180 @@ export default function EmployeesScreen() {
             />
           }
           showsVerticalScrollIndicator={false}
-          
+
           ListEmptyComponent={
             <View style={styles.empty}>
               <Users size={40} color="#D1D5DB" />
               <Text style={styles.emptyText}>No employees found</Text>
             </View>
           }
-          renderItem={({ item }) => {
-            const statusColor = STATUS_COLOR[item.status] || '#9CA3AF';
-            return (
-              <TouchableOpacity
-                style={styles.card}
-                onPress={() => (selectMode ? toggleSel(item._id) : setDetailEmp(item))}
-                activeOpacity={0.85}
-              >
-                <View style={styles.cardTop}>
-                  {selectMode &&
-                    (selected.includes(item._id) ? (
-                      <CheckSquare size={20} color={C.primary} style={{ marginRight: 8, marginTop: 12 }} />
-                    ) : (
-                      <Square size={20} color={C.black} style={{ marginRight: 8, marginTop: 12 }} />
-                    ))}
-                  {(item as any).avatar ? (
-                    <Image
-                      source={{ uri: (item as any).avatar }}
-                      style={[styles.avatarImg, { borderColor: statusColor }]}
-                    />
-                  ) : (
-                    <View
-                      style={[
-                        styles.avatar,
-                        {
-                          backgroundColor: C.primary,
-                          borderColor: statusColor,
-                        },
-                      ]}
-                    >
-                      <Text style={styles.avatarText}>
-                        {item.firstName[0]}
-                        {item.lastName[0]}
-                      </Text>
-                    </View>
-                  )}
-                  <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={styles.empIdChip}>{item.employeeId}</Text>
-                    <Text style={styles.empName}>
-                      {item.firstName} {item.lastName}
-                    </Text>
-                    <Text style={styles.empDesig} numberOfLines={1}>
-                      {item.designation || getDeptName(item.department)}
-                    </Text>
-                    {(item as any).loanBalance > 0 && (
-                      <View style={styles.loanBadge}>
-                        <Text style={styles.loanBadgeText}>
-                          Loan: ₹{((item as any).loanBalance / 1000).toFixed(1)}
-                          K
+          renderItem={({ item, index }) => (
+            <SlideInCard index={index}>
+              {(() => {
+                const statusColor = STATUS_COLOR[item.status] || '#9CA3AF';
+                return (
+                  <TouchableOpacity
+                    style={styles.card}
+                    onPress={() =>
+                      selectMode ? toggleSel(item._id) : setDetailEmp(item)
+                    }
+                    activeOpacity={0.85}
+                  >
+                    <View style={styles.cardTop}>
+                      {selectMode &&
+                        (selected.includes(item._id) ? (
+                          <CheckSquare
+                            size={20}
+                            color={C.primary}
+                            style={{ marginRight: 8, marginTop: 12 }}
+                          />
+                        ) : (
+                          <Square
+                            size={20}
+                            color={C.black}
+                            style={{ marginRight: 8, marginTop: 12 }}
+                          />
+                        ))}
+                      {(item as any).avatar ? (
+                        <Image
+                          source={{ uri: (item as any).avatar }}
+                          style={[
+                            styles.avatarImg,
+                            { borderColor: statusColor },
+                          ]}
+                        />
+                      ) : (
+                        <View
+                          style={[
+                            styles.avatar,
+                            {
+                              backgroundColor: C.primary,
+                              borderColor: statusColor,
+                            },
+                          ]}
+                        >
+                          <Text style={styles.avatarText}>
+                            {item.firstName[0]}
+                            {item.lastName[0]}
+                          </Text>
+                        </View>
+                      )}
+                      <View style={{ flex: 1, marginLeft: 12 }}>
+                        <Text style={styles.empIdChip}>{item.employeeId}</Text>
+                        <Text style={styles.empName}>
+                          {item.firstName} {item.lastName}
+                        </Text>
+                        <Text style={styles.empDesig} numberOfLines={1}>
+                          {item.designation || getDeptName(item.department)}
+                        </Text>
+                        {(item as any).loanBalance > 0 && (
+                          <View style={styles.loanBadge}>
+                            <Text style={styles.loanBadgeText}>
+                              Loan: ₹
+                              {((item as any).loanBalance / 1000).toFixed(1)}K
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          {
+                            backgroundColor: statusColor,
+                            borderColor: C.black,
+                          },
+                        ]}
+                      >
+                        <Text style={[styles.statusText, { color: C.white }]}>
+                          {item.status.replace('_', ' ').toUpperCase()}
                         </Text>
                       </View>
-                    )}
-                  </View>
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      { backgroundColor: statusColor, borderColor: C.black },
-                    ]}
-                  >
-                    <Text style={[styles.statusText, { color: C.white }]}>
-                      {item.status.replace('_', ' ').toUpperCase()}
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.cardMeta}>
-                  {item.designation && (
-                    <View
-                      style={[
-                        styles.metaItem,
-                        { backgroundColor: '#FBFBFB', flex: 1 },
-                      ]}
-                    >
-                      <User size={12} color={C.black} />
-                      <Text style={styles.metaText} numberOfLines={1}>
-                        {item.designation}
-                      </Text>
                     </View>
-                  )}
-                  {(item as any).phone && (
-                    <View
-                      style={[
-                        styles.metaItem,
-                        { flexShrink: 0, backgroundColor: '#FBFBFB' },
-                      ]}
-                    >
-                      <Phone size={12} color={C.black} />
-                      <Text
-                        style={[styles.metaText, { flex: 0 }]}
-                        numberOfLines={1}
-                      >
-                        {(item as any).phone}
-                      </Text>
+                    <View style={styles.cardMeta}>
+                      {item.designation && (
+                        <View
+                          style={[
+                            styles.metaItem,
+                            { backgroundColor: '#FBFBFB', flex: 1 },
+                          ]}
+                        >
+                          <User size={12} color={C.black} />
+                          <Text style={styles.metaText} numberOfLines={1}>
+                            {item.designation}
+                          </Text>
+                        </View>
+                      )}
+                      {(item as any).phone && (
+                        <View
+                          style={[
+                            styles.metaItem,
+                            { flexShrink: 0, backgroundColor: '#FBFBFB' },
+                          ]}
+                        >
+                          <Phone size={12} color={C.black} />
+                          <Text
+                            style={[styles.metaText, { flex: 0 }]}
+                            numberOfLines={1}
+                          >
+                            {(item as any).phone}
+                          </Text>
+                        </View>
+                      )}
+                      {(item.salary || (item as any).monthlySalary) && (
+                        <View
+                          style={[
+                            styles.metaItem,
+                            { flexShrink: 0, backgroundColor: '#fbbb90ff' },
+                          ]}
+                        >
+                          <Briefcase size={12} color={C.black} />
+                          <Text
+                            style={[styles.metaText, { flex: 0 }]}
+                            numberOfLines={1}
+                          >
+                            ₹
+                            {(
+                              (item as any).monthlySalary ||
+                              item.salary ||
+                              0
+                            ).toLocaleString()}
+                            /mo
+                          </Text>
+                        </View>
+                      )}
                     </View>
-                  )}
-                  {(item.salary || (item as any).monthlySalary) && (
-                    <View
-                      style={[
-                        styles.metaItem,
-                        { flexShrink: 0, backgroundColor: '#fbbb90ff' },
-                      ]}
-                    >
-                      <Briefcase size={12} color={C.black} />
-                      <Text
-                        style={[styles.metaText, { flex: 0 }]}
-                        numberOfLines={1}
-                      >
-                        ₹
-                        {(
-                          (item as any).monthlySalary ||
-                          item.salary ||
-                          0
-                        ).toLocaleString()}
-                        /mo
-                      </Text>
+                    <View style={styles.cardBottom}>
+                      <View style={styles.typePill}>
+                        <Text style={styles.typePillText}>
+                          {item.employmentType.replace('_', ' ').toUpperCase()}
+                        </Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        <TouchableOpacity
+                          onPress={e => {
+                            e.stopPropagation?.();
+                            openEdit(item);
+                          }}
+                          style={styles.editBtn}
+                        >
+                          <Edit2 size={13} color={C.primary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={e => {
+                            e.stopPropagation?.();
+                            handleDelete(item);
+                          }}
+                          style={styles.deleteBtn}
+                        >
+                          <Trash2 size={13} color={C.danger} />
+                        </TouchableOpacity>
+                      </View>
                     </View>
-                  )}
-                </View>
-                <View style={styles.cardBottom}>
-                  <View style={styles.typePill}>
-                    <Text style={styles.typePillText}>
-                      {item.employmentType.replace('_', ' ').toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={{ flexDirection: 'row', gap: 6 }}>
-                    <TouchableOpacity
-                      onPress={e => {
-                        e.stopPropagation?.();
-                        openEdit(item);
-                      }}
-                      style={styles.editBtn}
-                    >
-                      <Edit2 size={13} color={C.primary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={e => {
-                        e.stopPropagation?.();
-                        handleDelete(item);
-                      }}
-                      style={styles.deleteBtn}
-                    >
-                      <Trash2 size={13} color={C.danger} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            );
-          }}
+                  </TouchableOpacity>
+                );
+              })()}
+            </SlideInCard>
+          )}
         />
       )}
 
@@ -1106,959 +1234,760 @@ export default function EmployeesScreen() {
           }
         }}
       >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        {detailEmp && (
-          <SafeAreaView style={styles.safe} edges={[]}>
-            {/* Header — changes based on current view */}
-            <View style={styles.modalHeader}>
-              {actionModal ? (
-                <TouchableOpacity
-                  onPress={() => setActionModal(null)}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-                >
-                  <X
-                    size={18}
-                    color={C.black}
-                    style={{ transform: [{ rotate: '180deg' }] }}
-                  />
-                  <Text style={[styles.modalTitle, { fontSize: 16 }]}>
-                    {ACTION_ITEMS.find(a => a.key === actionModal)?.label}
-                  </Text>
-                </TouchableOpacity>
-              ) : showMore ? (
-                <TouchableOpacity
-                  onPress={() => setShowMore(false)}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-                >
-                  <ArrowLeft size={20} color={C.black} />
-                  <Text style={[styles.modalTitle, { fontSize: 16 }]}>
-                    More Details
-                  </Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity onPress={() => setDetailEmp(null)}>
-                  <ArrowLeft size={22} color={C.black} />
-                </TouchableOpacity>
-              )}
-              {!actionModal && !showMore ? (
-                <TouchableOpacity onPress={() => setShowMore(true)}>
-                  <FileText size={22} color={C.black} />
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  onPress={() => {
-                    setActionModal(null);
-                    setShowMore(false);
-                    setDetailEmp(null);
-                  }}
-                >
-                  <X size={22} color={C.black} />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* ── MAIN DETAIL VIEW ── */}
-            {!actionModal && !showMore && (
-              <ScrollView
-                contentContainerStyle={{ paddingBottom: 40 }}
-                showsVerticalScrollIndicator={false}
-              >
-                {/* Photo */}
-                <View
-                  style={{ borderBottomWidth: 2, borderBottomColor: C.black }}
-                >
-                  {(detailEmp as any).avatar ? (
-                    <Image
-                      source={{ uri: (detailEmp as any).avatar }}
-                      style={{ width: '100%', height: 260 }}
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <View
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            {detailEmp && (
+              <SafeAreaView style={styles.safe} edges={[]}>
+                {/* Header — changes based on current view */}
+                <View style={styles.modalHeader}>
+                  {actionModal ? (
+                    <TouchableOpacity
+                      onPress={() => setActionModal(null)}
                       style={{
-                        width: '100%',
-                        height: 260,
-                        backgroundColor: C.primary,
+                        flexDirection: 'row',
                         alignItems: 'center',
-                        justifyContent: 'center',
+                        gap: 6,
                       }}
                     >
-                      <Text
-                        style={{
-                          color: C.white,
-                          fontSize: 64,
-                          fontWeight: '700',
-                        }}
-                      >
-                        {detailEmp.firstName[0]}
-                        {detailEmp.lastName[0]}
+                      <X
+                        size={18}
+                        color={C.black}
+                        style={{ transform: [{ rotate: '180deg' }] }}
+                      />
+                      <Text style={[styles.modalTitle, { fontSize: 16 }]}>
+                        {ACTION_ITEMS.find(a => a.key === actionModal)?.label}
                       </Text>
-                    </View>
+                    </TouchableOpacity>
+                  ) : showMore ? (
+                    <TouchableOpacity
+                      onPress={() => setShowMore(false)}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                      }}
+                    >
+                      <ArrowLeft size={20} color={C.black} />
+                      <Text style={[styles.modalTitle, { fontSize: 16 }]}>
+                        More Details
+                      </Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity onPress={() => setDetailEmp(null)}>
+                      <ArrowLeft size={22} color={C.black} />
+                    </TouchableOpacity>
+                  )}
+                  {!actionModal && !showMore ? (
+                    <TouchableOpacity onPress={() => setShowMore(true)}>
+                      <FileText size={22} color={C.black} />
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setActionModal(null);
+                        setShowMore(false);
+                        setDetailEmp(null);
+                      }}
+                    >
+                      <X size={22} color={C.black} />
+                    </TouchableOpacity>
                   )}
                 </View>
 
-                <View style={{ padding: 16, gap: 14 }}>
-                  {/* Name + Emp ID */}
-                  <View>
+                {/* ── MAIN DETAIL VIEW ── */}
+                {!actionModal && !showMore && (
+                  <ScrollView
+                    contentContainerStyle={{ paddingBottom: 40 }}
+                    showsVerticalScrollIndicator={false}
+                  >
+                    {/* Photo */}
                     <View
                       style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        gap: 10,
+                        borderBottomWidth: 2,
+                        borderBottomColor: C.black,
                       }}
                     >
-                      <Text
-                        style={{
-                          flex: 1,
-                          fontSize: 22,
-                          fontWeight: '800',
-                          color: C.black,
-                        }}
-                        numberOfLines={2}
-                      >
-                        {detailEmp.firstName} {detailEmp.lastName}
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          fontWeight: '700',
-                          color: C.black,
-                        }}
-                      >
-                        {detailEmp.employeeId}
-                      </Text>
+                      {(detailEmp as any).avatar ? (
+                        <Image
+                          source={{ uri: (detailEmp as any).avatar }}
+                          style={{ width: '100%', height: 260 }}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View
+                          style={{
+                            width: '100%',
+                            height: 260,
+                            backgroundColor: C.primary,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: C.white,
+                              fontSize: 64,
+                              fontWeight: '400',
+                            }}
+                          >
+                            {detailEmp.firstName[0]}
+                            {detailEmp.lastName[0]}
+                          </Text>
+                        </View>
+                      )}
                     </View>
-                    <Text
-                      style={{ fontSize: 13, color: C.textMuted, marginTop: 2 }}
-                    >
-                      {detailEmp.designation || '—'}
-                    </Text>
-                  </View>
 
-                  {/* Email / Phone / Salary chips */}
-                  <View
-                    style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
+                    <View style={{ padding: 16, gap: 14 }}>
+                      {/* Name + Emp ID */}
+                      <View>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            gap: 10,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              flex: 1,
+                              fontSize: 22,
+                              fontWeight: '400',
+                              color: C.black,
+                            }}
+                            numberOfLines={2}
+                          >
+                            {detailEmp.firstName} {detailEmp.lastName}
+                          </Text>
+                          <Text
+                            style={{
+                              fontSize: 13,
+                              fontWeight: '400',
+                              color: C.black,
+                            }}
+                          >
+                            {detailEmp.employeeId}
+                          </Text>
+                        </View>
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            color: C.textMuted,
+                            marginTop: 2,
+                          }}
+                        >
+                          {detailEmp.designation || '—'}
+                        </Text>
+                      </View>
+
+                      {/* Email / Phone / Salary chips */}
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          flexWrap: 'wrap',
+                          gap: 8,
+                        }}
+                      >
+                        {(
+                          [
+                            [
+                              Mail,
+                              detailEmp.email,
+                              detailEmp.email
+                                ? () =>
+                                    Linking.openURL(`mailto:${detailEmp.email}`)
+                                : undefined,
+                            ],
+                            [
+                              Phone,
+                              (detailEmp as any).phone,
+                              (detailEmp as any).phone
+                                ? () =>
+                                    Linking.openURL(
+                                      `tel:${(detailEmp as any).phone}`,
+                                    )
+                                : undefined,
+                            ],
+                            [
+                              IndianRupee,
+                              (detailEmp as any).monthlySalary ||
+                              detailEmp.salary ||
+                              0
+                                ? Number(
+                                    (detailEmp as any).monthlySalary ||
+                                      detailEmp.salary ||
+                                      0,
+                                  ).toLocaleString('en-IN')
+                                : '',
+                              undefined,
+                            ],
+                          ] as [
+                            React.ComponentType<any>,
+                            string,
+                            (() => void) | undefined,
+                          ][]
+                        )
+                          .filter(([, v]) => !!v)
+                          .map(([Icon, value, onPress], i) => (
+                            <TouchableOpacity
+                              key={i}
+                              disabled={!onPress}
+                              onPress={onPress}
+                              activeOpacity={0.7}
+                              style={{
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: 6,
+                                paddingVertical: 6,
+                                paddingHorizontal: 12,
+                                borderWidth: 2,
+                                borderColor: C.black,
+                                borderRadius: 999,
+                                maxWidth: '100%',
+                              }}
+                            >
+                              <Icon size={13} color={C.primary} />
+                              <Text
+                                style={{
+                                  fontSize: 12,
+                                  fontWeight: '400',
+                                  color: C.black,
+                                  flexShrink: 1,
+                                }}
+                                numberOfLines={1}
+                              >
+                                {value}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                      </View>
+
+                      {/* Quick actions */}
+                      <View>
+                        <Text style={styles.sectionDividerText}>
+                          Quick Actions
+                        </Text>
+                        <View style={styles.actionGrid}>
+                          {ACTION_ITEMS.map(
+                            ({ key, label, icon: Icon, color }) => (
+                              <TouchableOpacity
+                                key={key}
+                                style={styles.actionCell}
+                                onPress={() => openAction(key)}
+                                activeOpacity={0.75}
+                              >
+                                <View
+                                  style={[
+                                    styles.actionIcon,
+                                    {
+                                      backgroundColor: color + '18',
+                                      borderColor: color,
+                                    },
+                                  ]}
+                                >
+                                  <Icon size={20} color={color} />
+                                </View>
+                                <Text style={styles.actionLabel}>{label}</Text>
+                              </TouchableOpacity>
+                            ),
+                          )}
+                        </View>
+                      </View>
+                    </View>
+                  </ScrollView>
+                )}
+
+                {/* ── MORE DETAILS VIEW ── */}
+                {!actionModal && showMore && (
+                  <ScrollView
+                    contentContainerStyle={{
+                      padding: 16,
+                      gap: 14,
+                      paddingBottom: 40,
+                    }}
+                    showsVerticalScrollIndicator={false}
                   >
-                    {(
-                      [
+                    <InfoSection
+                      title="Employment"
+                      icon={Briefcase}
+                      rows={[
+                        [Briefcase, 'Designation', detailEmp.designation],
                         [
-                          Mail,
-                          detailEmp.email,
-                          detailEmp.email
-                            ? () => Linking.openURL(`mailto:${detailEmp.email}`)
-                            : undefined,
+                          Building2,
+                          'Department',
+                          getDeptName(detailEmp.department),
                         ],
                         [
-                          Phone,
-                          (detailEmp as any).phone,
-                          (detailEmp as any).phone
-                            ? () =>
-                                Linking.openURL(
-                                  `tel:${(detailEmp as any).phone}`,
-                                )
-                            : undefined,
+                          Timer,
+                          'Employment Type',
+                          detailEmp.employmentType
+                            ?.replace('_', ' ')
+                            .toUpperCase(),
+                        ],
+                        [
+                          CalendarDays,
+                          'Joining Date',
+                          detailEmp.joiningDate
+                            ? new Date(
+                                detailEmp.joiningDate,
+                              ).toLocaleDateString('en-IN', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                              })
+                            : '',
+                        ],
+                        [
+                          UserCheck,
+                          'Status',
+                          detailEmp.status.replace('_', ' ').toUpperCase(),
                         ],
                         [
                           IndianRupee,
+                          'Monthly Salary',
                           (detailEmp as any).monthlySalary ||
                           detailEmp.salary ||
                           0
-                            ? Number(
-                                (detailEmp as any).monthlySalary ||
-                                  detailEmp.salary ||
-                                  0,
-                              ).toLocaleString('en-IN')
+                            ? `₹${Number((detailEmp as any).monthlySalary || detailEmp.salary || 0).toLocaleString('en-IN')}`
                             : '',
-                          undefined,
                         ],
-                      ] as [
-                        React.ComponentType<any>,
-                        string,
-                        (() => void) | undefined,
-                      ][]
-                    )
-                      .filter(([, v]) => !!v)
-                      .map(([Icon, value, onPress], i) => (
-                        <TouchableOpacity
-                          key={i}
-                          disabled={!onPress}
-                          onPress={onPress}
-                          activeOpacity={0.7}
+                        [
+                          Landmark,
+                          'Loan Balance',
+                          (detailEmp as any).loanBalance > 0
+                            ? `₹${(detailEmp as any).loanBalance.toLocaleString('en-IN')}`
+                            : '',
+                        ],
+                        [
+                          Wallet,
+                          'Advance Balance',
+                          (detailEmp as any).advanceBalance > 0
+                            ? `₹${(detailEmp as any).advanceBalance.toLocaleString('en-IN')}`
+                            : '',
+                        ],
+                      ]}
+                    />
+
+                    {/* Contact Information */}
+                    <InfoSection
+                      title="Contact Information"
+                      icon={Phone}
+                      rows={[
+                        [Mail, 'Email', detailEmp.email],
+                        [Phone, 'Phone', (detailEmp as any).phone],
+                        [
+                          PhoneCall,
+                          'Alternate Phone',
+                          (detailEmp as any).alternatePhone,
+                        ],
+                        [
+                          Mail,
+                          'Personal Email',
+                          (detailEmp as any).personalEmail,
+                        ],
+                        [User, 'Gender', (detailEmp as any).gender],
+                        [
+                          CalendarDays,
+                          'Date of Birth',
+                          (detailEmp as any).dateOfBirth
+                            ? new Date(
+                                (detailEmp as any).dateOfBirth,
+                              ).toLocaleDateString('en-IN', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                              })
+                            : '',
+                        ],
+                        [
+                          Siren,
+                          'Emergency Contact',
+                          (detailEmp as any).emergencyContact,
+                        ],
+                        [House, 'Address', (detailEmp as any).address],
+                        [
+                          MapPin,
+                          'Permanent Address',
+                          (detailEmp as any).permanentAddress,
+                        ],
+                        [Building2, 'City', (detailEmp as any).city],
+                        [Map, 'State', (detailEmp as any).state],
+                        [Hash, 'Pincode', (detailEmp as any).pincode],
+                      ]}
+                    />
+
+                    {/* Banking & Compliance */}
+                    <InfoSection
+                      title="Banking & Compliance"
+                      icon={Briefcase}
+                      rows={[
+                        [Landmark, 'Bank', (detailEmp as any).bankName],
+                        [
+                          CreditCard,
+                          'Account No.',
+                          (detailEmp as any).bankAccountNumber,
+                        ],
+                        [
+                          UserCheck,
+                          'Account Holder',
+                          (detailEmp as any).accountHolderName,
+                        ],
+                        [Hash, 'IFSC', (detailEmp as any).ifscCode],
+                        [IdCard, 'PAN', (detailEmp as any).panNumber],
+                        [
+                          Fingerprint,
+                          'Aadhar',
+                          (detailEmp as any).aadharNumber,
+                        ],
+                        [FileText, 'PF No.', (detailEmp as any).pfNumber],
+                        [ShieldCheck, 'UAN', (detailEmp as any).uanNumber],
+                        [ShieldCheck, 'ESIC', (detailEmp as any).esicNumber],
+                      ]}
+                    />
+
+                    {/* Personal Details */}
+                    <InfoSection
+                      title="Personal Details"
+                      icon={Users}
+                      hideEmpty
+                      rows={[
+                        [User, 'Father', (detailEmp as any).fatherName],
+                        [User, 'Mother', (detailEmp as any).motherName],
+                        [Heart, 'Spouse', (detailEmp as any).spouseName],
+                        [
+                          HeartHandshake,
+                          'Marital Status',
+                          (detailEmp as any).maritalStatus,
+                        ],
+                        [Droplet, 'Blood Group', (detailEmp as any).bloodGroup],
+                        [Globe, 'Nationality', (detailEmp as any).nationality],
+                        [Church, 'Religion', (detailEmp as any).religion],
+                      ]}
+                    />
+
+                    {/* Professional Background */}
+                    <InfoSection
+                      title="Professional Background"
+                      icon={Briefcase}
+                      hideEmpty
+                      rows={[
+                        [
+                          GraduationCap,
+                          'Qualification',
+                          (detailEmp as any).qualification,
+                        ],
+                        [
+                          Briefcase,
+                          'Experience',
+                          (detailEmp as any).totalExperience,
+                        ],
+                        [
+                          Building,
+                          'Previous Company',
+                          (detailEmp as any).previousCompany,
+                        ],
+                      ]}
+                    />
+
+                    {/* Edit profile button */}
+                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                      <TouchableOpacity
+                        style={[styles.submitBtn, { flex: 1 }]}
+                        onPress={() => {
+                          setDetailEmp(null);
+                          openEdit(detailEmp);
+                        }}
+                      >
+                        <Edit2 size={14} color={C.white} />
+                        <Text style={styles.submitBtnText}>Edit Profile</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.navBtn, { flex: 1 }]}
+                        onPress={() => setDetailEmp(null)}
+                      >
+                        <Text style={styles.navBtnText}>Close</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </ScrollView>
+                )}
+
+                {/* ── ACTION VIEW (replaces detail content in-place) ── */}
+                {!!actionModal && (
+                  <ScrollView
+                    contentContainerStyle={{
+                      padding: 20,
+                      gap: 14,
+                      paddingBottom: 40,
+                    }}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                  >
+                    {/* Employee badge */}
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: 12,
+                        backgroundColor: C.primary + '12',
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderColor: C.primary,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 18,
+                          backgroundColor: C.primary,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Text
                           style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            gap: 6,
-                            paddingVertical: 6,
-                            paddingHorizontal: 12,
-                            borderWidth: 2,
-                            borderColor: C.black,
-                            borderRadius: 999,
-                            maxWidth: '100%',
+                            color: C.white,
+                            fontWeight: '400',
+                            fontSize: 13,
                           }}
                         >
-                          <Icon size={13} color={C.primary} />
+                          {detailEmp.firstName[0]}
+                          {detailEmp.lastName[0]}
+                        </Text>
+                      </View>
+                      <View>
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            fontWeight: '400',
+                            color: C.black,
+                          }}
+                        >
+                          {detailEmp.firstName} {detailEmp.lastName}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: C.textMuted }}>
+                          {detailEmp.employeeId}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* ALLOWANCE / PENALTY / OVERTIME */}
+                    {(actionModal === 'allowance' ||
+                      actionModal === 'penalty' ||
+                      actionModal === 'overtime') && (
+                      <>
+                        {actionModal === 'overtime' ? (
+                          <View>
+                            <Text style={styles.fieldLabel}>Hours *</Text>
+                            <TextInput
+                              style={styles.fieldInput}
+                              keyboardType="numeric"
+                              placeholder="e.g. 2.5"
+                              placeholderTextColor={C.textLight}
+                              value={actionForm.hours || ''}
+                              onChangeText={v =>
+                                setActionForm((p: any) => ({ ...p, hours: v }))
+                              }
+                            />
+                          </View>
+                        ) : (
+                          <View>
+                            <Text style={styles.fieldLabel}>Amount (₹) *</Text>
+                            <TextInput
+                              style={styles.fieldInput}
+                              keyboardType="numeric"
+                              placeholder="e.g. 500"
+                              placeholderTextColor={C.textLight}
+                              value={actionForm.amount || ''}
+                              onChangeText={v =>
+                                setActionForm((p: any) => ({ ...p, amount: v }))
+                              }
+                            />
+                          </View>
+                        )}
+                        <DatePickerField
+                          label="Date *"
+                          value={actionForm.date || ''}
+                          onChange={v =>
+                            setActionForm((p: any) => ({ ...p, date: v }))
+                          }
+                        />
+                        <View>
+                          <Text style={styles.fieldLabel}>Remark</Text>
+                          <TextInput
+                            style={[styles.fieldInput, { minHeight: 70 }]}
+                            multiline
+                            placeholder="Optional note…"
+                            placeholderTextColor={C.textLight}
+                            value={actionForm.remark || ''}
+                            onChangeText={v =>
+                              setActionForm((p: any) => ({ ...p, remark: v }))
+                            }
+                          />
+                        </View>
+                      </>
+                    )}
+
+                    {/* LOAN */}
+                    {actionModal === 'loan' && (
+                      <>
+                        <View>
+                          <Text style={styles.fieldLabel}>
+                            Loan Amount (₹) *
+                          </Text>
+                          <TextInput
+                            style={styles.fieldInput}
+                            keyboardType="numeric"
+                            placeholder="e.g. 10000"
+                            placeholderTextColor={C.textLight}
+                            value={actionForm.amount || ''}
+                            onChangeText={v =>
+                              setActionForm((p: any) => ({ ...p, amount: v }))
+                            }
+                          />
+                        </View>
+                        <View>
+                          <Text style={styles.fieldLabel}>Monthly EMI (₹)</Text>
+                          <TextInput
+                            style={styles.fieldInput}
+                            keyboardType="numeric"
+                            placeholder="e.g. 1000"
+                            placeholderTextColor={C.textLight}
+                            value={actionForm.monthlyEmi || ''}
+                            onChangeText={v =>
+                              setActionForm((p: any) => ({
+                                ...p,
+                                monthlyEmi: v,
+                              }))
+                            }
+                          />
+                        </View>
+                        <View>
+                          <Text style={styles.fieldLabel}>Reason</Text>
+                          <TextInput
+                            style={[styles.fieldInput, { minHeight: 70 }]}
+                            multiline
+                            placeholder="Loan purpose…"
+                            placeholderTextColor={C.textLight}
+                            value={actionForm.reason || ''}
+                            onChangeText={v =>
+                              setActionForm((p: any) => ({ ...p, reason: v }))
+                            }
+                          />
+                        </View>
+                      </>
+                    )}
+
+                    {/* ADVANCE */}
+                    {actionModal === 'advance' && (
+                      <>
+                        <View>
+                          <Text style={styles.fieldLabel}>
+                            Advance Amount (₹) *
+                          </Text>
+                          <TextInput
+                            style={styles.fieldInput}
+                            keyboardType="numeric"
+                            placeholder="e.g. 2000"
+                            placeholderTextColor={C.textLight}
+                            value={actionForm.amount || ''}
+                            onChangeText={v =>
+                              setActionForm((p: any) => ({ ...p, amount: v }))
+                            }
+                          />
+                        </View>
+                        <View>
+                          <Text style={styles.fieldLabel}>Reason</Text>
+                          <TextInput
+                            style={[styles.fieldInput, { minHeight: 70 }]}
+                            multiline
+                            placeholder="Advance purpose…"
+                            placeholderTextColor={C.textLight}
+                            value={actionForm.reason || ''}
+                            onChangeText={v =>
+                              setActionForm((p: any) => ({ ...p, reason: v }))
+                            }
+                          />
+                        </View>
+                      </>
+                    )}
+
+                    {/* PAY SALARY */}
+                    {actionModal === 'salary' && (
+                      <>
+                        <View style={{ flexDirection: 'row', gap: 12 }}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.fieldLabel}>Month *</Text>
+                            <TextInput
+                              style={styles.fieldInput}
+                              keyboardType="numeric"
+                              placeholder="1–12"
+                              placeholderTextColor={C.textLight}
+                              value={actionForm.month || ''}
+                              onChangeText={v =>
+                                setActionForm((p: any) => ({ ...p, month: v }))
+                              }
+                            />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.fieldLabel}>Year *</Text>
+                            <TextInput
+                              style={styles.fieldInput}
+                              keyboardType="numeric"
+                              placeholder="2025"
+                              placeholderTextColor={C.textLight}
+                              value={actionForm.year || ''}
+                              onChangeText={v =>
+                                setActionForm((p: any) => ({ ...p, year: v }))
+                              }
+                            />
+                          </View>
+                        </View>
+                        <View
+                          style={{
+                            padding: 12,
+                            backgroundColor: '#FFF7ED',
+                            borderWidth: 2,
+                            borderColor: C.warning,
+                          }}
+                        >
                           <Text
                             style={{
                               fontSize: 12,
-                              fontWeight: '700',
-                              color: C.black,
-                              flexShrink: 1,
+                              color: C.warning,
+                              fontWeight: '400',
                             }}
-                            numberOfLines={1}
                           >
-                            {value}
+                            This will process and mark salary as paid for the
+                            selected month.
                           </Text>
-                        </TouchableOpacity>
-                      ))}
-                  </View>
+                        </View>
+                      </>
+                    )}
 
-                  {/* Quick actions */}
-                  <View>
-                    <Text style={styles.sectionDividerText}>Quick Actions</Text>
-                    <View style={styles.actionGrid}>
-                      {ACTION_ITEMS.map(({ key, label, icon: Icon, color }) => (
-                        <TouchableOpacity
-                          key={key}
-                          style={styles.actionCell}
-                          onPress={() => openAction(key)}
-                          activeOpacity={0.75}
-                        >
-                          <View
-                            style={[
-                              styles.actionIcon,
-                              {
-                                backgroundColor: color + '18',
-                                borderColor: color,
-                              },
-                            ]}
-                          >
-                            <Icon size={20} color={color} />
-                          </View>
-                          <Text style={styles.actionLabel}>{label}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </View>
-                </View>
-              </ScrollView>
-            )}
-
-            {/* ── MORE DETAILS VIEW ── */}
-            {!actionModal && showMore && (
-              <ScrollView
-                contentContainerStyle={{
-                  padding: 16,
-                  gap: 14,
-                  paddingBottom: 40,
-                }}
-                showsVerticalScrollIndicator={false}
-              >
-                <InfoSection
-                  title="Employment"
-                  icon={Briefcase}
-                  rows={[
-                    [Briefcase, 'Designation', detailEmp.designation],
-                    [
-                      Building2,
-                      'Department',
-                      getDeptName(detailEmp.department),
-                    ],
-                    [
-                      Timer,
-                      'Employment Type',
-                      detailEmp.employmentType?.replace('_', ' ').toUpperCase(),
-                    ],
-                    [
-                      CalendarDays,
-                      'Joining Date',
-                      detailEmp.joiningDate
-                        ? new Date(detailEmp.joiningDate).toLocaleDateString(
-                            'en-IN',
-                            {
-                              day: '2-digit',
-                              month: 'short',
-                              year: 'numeric',
-                            },
-                          )
-                        : '',
-                    ],
-                    [
-                      UserCheck,
-                      'Status',
-                      detailEmp.status.replace('_', ' ').toUpperCase(),
-                    ],
-                    [
-                      IndianRupee,
-                      'Monthly Salary',
-                      (detailEmp as any).monthlySalary || detailEmp.salary || 0
-                        ? `₹${Number((detailEmp as any).monthlySalary || detailEmp.salary || 0).toLocaleString('en-IN')}`
-                        : '',
-                    ],
-                    [
-                      Landmark,
-                      'Loan Balance',
-                      (detailEmp as any).loanBalance > 0
-                        ? `₹${(detailEmp as any).loanBalance.toLocaleString('en-IN')}`
-                        : '',
-                    ],
-                    [
-                      Wallet,
-                      'Advance Balance',
-                      (detailEmp as any).advanceBalance > 0
-                        ? `₹${(detailEmp as any).advanceBalance.toLocaleString('en-IN')}`
-                        : '',
-                    ],
-                  ]}
-                />
-
-                {/* Contact Information */}
-                <InfoSection
-                  title="Contact Information"
-                  icon={Phone}
-                  rows={[
-                    [Mail, 'Email', detailEmp.email],
-                    [Phone, 'Phone', (detailEmp as any).phone],
-                    [
-                      PhoneCall,
-                      'Alternate Phone',
-                      (detailEmp as any).alternatePhone,
-                    ],
-                    [Mail, 'Personal Email', (detailEmp as any).personalEmail],
-                    [User, 'Gender', (detailEmp as any).gender],
-                    [
-                      CalendarDays,
-                      'Date of Birth',
-                      (detailEmp as any).dateOfBirth
-                        ? new Date(
-                            (detailEmp as any).dateOfBirth,
-                          ).toLocaleDateString('en-IN', {
-                            day: '2-digit',
-                            month: 'short',
-                            year: 'numeric',
-                          })
-                        : '',
-                    ],
-                    [
-                      Siren,
-                      'Emergency Contact',
-                      (detailEmp as any).emergencyContact,
-                    ],
-                    [House, 'Address', (detailEmp as any).address],
-                    [
-                      MapPin,
-                      'Permanent Address',
-                      (detailEmp as any).permanentAddress,
-                    ],
-                    [Building2, 'City', (detailEmp as any).city],
-                    [Map, 'State', (detailEmp as any).state],
-                    [Hash, 'Pincode', (detailEmp as any).pincode],
-                  ]}
-                />
-
-                {/* Banking & Compliance */}
-                <InfoSection
-                  title="Banking & Compliance"
-                  icon={Briefcase}
-                  rows={[
-                    [Landmark, 'Bank', (detailEmp as any).bankName],
-                    [
-                      CreditCard,
-                      'Account No.',
-                      (detailEmp as any).bankAccountNumber,
-                    ],
-                    [
-                      UserCheck,
-                      'Account Holder',
-                      (detailEmp as any).accountHolderName,
-                    ],
-                    [Hash, 'IFSC', (detailEmp as any).ifscCode],
-                    [IdCard, 'PAN', (detailEmp as any).panNumber],
-                    [Fingerprint, 'Aadhar', (detailEmp as any).aadharNumber],
-                    [FileText, 'PF No.', (detailEmp as any).pfNumber],
-                    [ShieldCheck, 'UAN', (detailEmp as any).uanNumber],
-                    [ShieldCheck, 'ESIC', (detailEmp as any).esicNumber],
-                  ]}
-                />
-
-                {/* Personal Details */}
-                <InfoSection
-                  title="Personal Details"
-                  icon={Users}
-                  hideEmpty
-                  rows={[
-                    [User, 'Father', (detailEmp as any).fatherName],
-                    [User, 'Mother', (detailEmp as any).motherName],
-                    [Heart, 'Spouse', (detailEmp as any).spouseName],
-                    [
-                      HeartHandshake,
-                      'Marital Status',
-                      (detailEmp as any).maritalStatus,
-                    ],
-                    [Droplet, 'Blood Group', (detailEmp as any).bloodGroup],
-                    [Globe, 'Nationality', (detailEmp as any).nationality],
-                    [Church, 'Religion', (detailEmp as any).religion],
-                  ]}
-                />
-
-                {/* Professional Background */}
-                <InfoSection
-                  title="Professional Background"
-                  icon={Briefcase}
-                  hideEmpty
-                  rows={[
-                    [
-                      GraduationCap,
-                      'Qualification',
-                      (detailEmp as any).qualification,
-                    ],
-                    [
-                      Briefcase,
-                      'Experience',
-                      (detailEmp as any).totalExperience,
-                    ],
-                    [
-                      Building,
-                      'Previous Company',
-                      (detailEmp as any).previousCompany,
-                    ],
-                  ]}
-                />
-
-                {/* Edit profile button */}
-                <View style={{ flexDirection: 'row', gap: 10 }}>
-                  <TouchableOpacity
-                    style={[styles.submitBtn, { flex: 1 }]}
-                    onPress={() => {
-                      setDetailEmp(null);
-                      openEdit(detailEmp);
-                    }}
-                  >
-                    <Edit2 size={14} color={C.white} />
-                    <Text style={styles.submitBtnText}>Edit Profile</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.navBtn, { flex: 1 }]}
-                    onPress={() => setDetailEmp(null)}
-                  >
-                    <Text style={styles.navBtnText}>Close</Text>
-                  </TouchableOpacity>
-                </View>
-              </ScrollView>
-            )}
-
-            {/* ── ACTION VIEW (replaces detail content in-place) ── */}
-            {!!actionModal && (
-              <ScrollView
-                contentContainerStyle={{
-                  padding: 20,
-                  gap: 14,
-                  paddingBottom: 40,
-                }}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-              >
-                {/* Employee badge */}
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: 12,
-                    backgroundColor: C.primary + '12',
-                    borderWidth: 2,
-                    borderRadius: 8,
-                    borderColor: C.primary,
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 18,
-                      backgroundColor: C.primary,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: C.white,
-                        fontWeight: '700',
-                        fontSize: 13,
-                      }}
-                    >
-                      {detailEmp.firstName[0]}
-                      {detailEmp.lastName[0]}
-                    </Text>
-                  </View>
-                  <View>
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        fontWeight: '700',
-                        color: C.black,
-                      }}
-                    >
-                      {detailEmp.firstName} {detailEmp.lastName}
-                    </Text>
-                    <Text style={{ fontSize: 11, color: C.textMuted }}>
-                      {detailEmp.employeeId}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* ALLOWANCE / PENALTY / OVERTIME */}
-                {(actionModal === 'allowance' ||
-                  actionModal === 'penalty' ||
-                  actionModal === 'overtime') && (
-                  <>
-                    {actionModal === 'overtime' ? (
+                    {/* CREDENTIALS */}
+                    {actionModal === 'credentials' && (
                       <View>
-                        <Text style={styles.fieldLabel}>Hours *</Text>
+                        <Text style={styles.fieldLabel}>New Password *</Text>
                         <TextInput
                           style={styles.fieldInput}
-                          keyboardType="numeric"
-                          placeholder="e.g. 2.5"
+                          secureTextEntry
+                          placeholder="Min 6 characters"
                           placeholderTextColor={C.textLight}
-                          value={actionForm.hours || ''}
+                          value={actionForm.password || ''}
                           onChangeText={v =>
-                            setActionForm((p: any) => ({ ...p, hours: v }))
-                          }
-                        />
-                      </View>
-                    ) : (
-                      <View>
-                        <Text style={styles.fieldLabel}>Amount (₹) *</Text>
-                        <TextInput
-                          style={styles.fieldInput}
-                          keyboardType="numeric"
-                          placeholder="e.g. 500"
-                          placeholderTextColor={C.textLight}
-                          value={actionForm.amount || ''}
-                          onChangeText={v =>
-                            setActionForm((p: any) => ({ ...p, amount: v }))
+                            setActionForm((p: any) => ({ ...p, password: v }))
                           }
                         />
                       </View>
                     )}
-                    <DatePickerField
-                      label="Date *"
-                      value={actionForm.date || ''}
-                      onChange={v =>
-                        setActionForm((p: any) => ({ ...p, date: v }))
-                      }
-                    />
-                    <View>
-                      <Text style={styles.fieldLabel}>Remark</Text>
-                      <TextInput
-                        style={[styles.fieldInput, { minHeight: 70 }]}
-                        multiline
-                        placeholder="Optional note…"
-                        placeholderTextColor={C.textLight}
-                        value={actionForm.remark || ''}
-                        onChangeText={v =>
-                          setActionForm((p: any) => ({ ...p, remark: v }))
-                        }
-                      />
-                    </View>
-                  </>
-                )}
 
-                {/* LOAN */}
-                {actionModal === 'loan' && (
-                  <>
-                    <View>
-                      <Text style={styles.fieldLabel}>Loan Amount (₹) *</Text>
-                      <TextInput
-                        style={styles.fieldInput}
-                        keyboardType="numeric"
-                        placeholder="e.g. 10000"
-                        placeholderTextColor={C.textLight}
-                        value={actionForm.amount || ''}
-                        onChangeText={v =>
-                          setActionForm((p: any) => ({ ...p, amount: v }))
-                        }
-                      />
-                    </View>
-                    <View>
-                      <Text style={styles.fieldLabel}>Monthly EMI (₹)</Text>
-                      <TextInput
-                        style={styles.fieldInput}
-                        keyboardType="numeric"
-                        placeholder="e.g. 1000"
-                        placeholderTextColor={C.textLight}
-                        value={actionForm.monthlyEmi || ''}
-                        onChangeText={v =>
-                          setActionForm((p: any) => ({ ...p, monthlyEmi: v }))
-                        }
-                      />
-                    </View>
-                    <View>
-                      <Text style={styles.fieldLabel}>Reason</Text>
-                      <TextInput
-                        style={[styles.fieldInput, { minHeight: 70 }]}
-                        multiline
-                        placeholder="Loan purpose…"
-                        placeholderTextColor={C.textLight}
-                        value={actionForm.reason || ''}
-                        onChangeText={v =>
-                          setActionForm((p: any) => ({ ...p, reason: v }))
-                        }
-                      />
-                    </View>
-                  </>
-                )}
-
-                {/* ADVANCE */}
-                {actionModal === 'advance' && (
-                  <>
-                    <View>
-                      <Text style={styles.fieldLabel}>
-                        Advance Amount (₹) *
-                      </Text>
-                      <TextInput
-                        style={styles.fieldInput}
-                        keyboardType="numeric"
-                        placeholder="e.g. 2000"
-                        placeholderTextColor={C.textLight}
-                        value={actionForm.amount || ''}
-                        onChangeText={v =>
-                          setActionForm((p: any) => ({ ...p, amount: v }))
-                        }
-                      />
-                    </View>
-                    <View>
-                      <Text style={styles.fieldLabel}>Reason</Text>
-                      <TextInput
-                        style={[styles.fieldInput, { minHeight: 70 }]}
-                        multiline
-                        placeholder="Advance purpose…"
-                        placeholderTextColor={C.textLight}
-                        value={actionForm.reason || ''}
-                        onChangeText={v =>
-                          setActionForm((p: any) => ({ ...p, reason: v }))
-                        }
-                      />
-                    </View>
-                  </>
-                )}
-
-                {/* PAY SALARY */}
-                {actionModal === 'salary' && (
-                  <>
-                    <View style={{ flexDirection: 'row', gap: 12 }}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.fieldLabel}>Month *</Text>
-                        <TextInput
-                          style={styles.fieldInput}
-                          keyboardType="numeric"
-                          placeholder="1–12"
-                          placeholderTextColor={C.textLight}
-                          value={actionForm.month || ''}
-                          onChangeText={v =>
-                            setActionForm((p: any) => ({ ...p, month: v }))
-                          }
-                        />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.fieldLabel}>Year *</Text>
-                        <TextInput
-                          style={styles.fieldInput}
-                          keyboardType="numeric"
-                          placeholder="2025"
-                          placeholderTextColor={C.textLight}
-                          value={actionForm.year || ''}
-                          onChangeText={v =>
-                            setActionForm((p: any) => ({ ...p, year: v }))
-                          }
-                        />
-                      </View>
-                    </View>
-                    <View
-                      style={{
-                        padding: 12,
-                        backgroundColor: '#FFF7ED',
-                        borderWidth: 2,
-                        borderColor: C.warning,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          color: C.warning,
-                          fontWeight: '600',
-                        }}
-                      >
-                        This will process and mark salary as paid for the
-                        selected month.
-                      </Text>
-                    </View>
-                  </>
-                )}
-
-                {/* CREDENTIALS */}
-                {actionModal === 'credentials' && (
-                  <View>
-                    <Text style={styles.fieldLabel}>New Password *</Text>
-                    <TextInput
-                      style={styles.fieldInput}
-                      secureTextEntry
-                      placeholder="Min 6 characters"
-                      placeholderTextColor={C.textLight}
-                      value={actionForm.password || ''}
-                      onChangeText={v =>
-                        setActionForm((p: any) => ({ ...p, password: v }))
-                      }
-                    />
-                  </View>
-                )}
-
-                {/* ATTENDANCE LOG */}
-                {actionModal === 'attendance' &&
-                  (actionRecordsLoading ? (
-                    <ActivityIndicator color={C.primary} />
-                  ) : actionRecords.length === 0 ? (
-                    <Text
-                      style={{
-                        color: C.textMuted,
-                        textAlign: 'center',
-                        marginTop: 20,
-                      }}
-                    >
-                      No attendance records found
-                    </Text>
-                  ) : (
-                    <View style={{ gap: 8 }}>
-                      {actionRecords.map((r: any) => (
-                        <View
-                          key={r._id}
-                          style={{
-                            borderWidth: 2,
-                            borderColor: C.black,
-                            padding: 12,
-                            backgroundColor: C.white,
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                          }}
-                        >
-                          <View>
-                            <Text
-                              style={{
-                                fontSize: 13,
-                                fontWeight: '700',
-                                color: C.black,
-                              }}
-                            >
-                              {r.date
-                                ? new Date(r.date).toLocaleDateString('en-IN', {
-                                    day: '2-digit',
-                                    month: 'short',
-                                    year: 'numeric',
-                                  })
-                                : '—'}
-                            </Text>
-                            <View
-                              style={{
-                                flexDirection: 'row',
-                                gap: 8,
-                                marginTop: 4,
-                              }}
-                            >
-                              {r.checkIn && (
-                                <View
-                                  style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    gap: 3,
-                                  }}
-                                >
-                                  <LogIn size={10} color={C.success} />
-                                  <Text
-                                    style={{ fontSize: 11, color: C.textMuted }}
-                                  >
-                                    {new Date(r.checkIn).toLocaleTimeString(
-                                      [],
-                                      { hour: '2-digit', minute: '2-digit' },
-                                    )}
-                                  </Text>
-                                </View>
-                              )}
-                              {r.checkOut && (
-                                <View
-                                  style={{
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
-                                    gap: 3,
-                                  }}
-                                >
-                                  <LogOut size={10} color={C.danger} />
-                                  <Text
-                                    style={{ fontSize: 11, color: C.textMuted }}
-                                  >
-                                    {new Date(r.checkOut).toLocaleTimeString(
-                                      [],
-                                      { hour: '2-digit', minute: '2-digit' },
-                                    )}
-                                  </Text>
-                                </View>
-                              )}
-                            </View>
-                          </View>
-                          <View
-                            style={{
-                              paddingHorizontal: 8,
-                              paddingVertical: 3,
-                              borderWidth: 2,
-                              borderColor: C.black,
-                            }}
-                          >
-                            <Text
-                              style={{
-                                fontSize: 12,
-                                fontWeight: '700',
-                                color: C.black,
-                              }}
-                            >
-                              {r.status?.toUpperCase()}
-                            </Text>
-                          </View>
-                        </View>
-                      ))}
-                    </View>
-                  ))}
-
-                {/* PAYMENT HISTORY */}
-                {actionModal === 'payroll' &&
-                  (actionRecordsLoading ? (
-                    <ActivityIndicator color={C.primary} />
-                  ) : actionRecords.length === 0 ? (
-                    <Text
-                      style={{
-                        color: C.textMuted,
-                        textAlign: 'center',
-                        marginTop: 20,
-                      }}
-                    >
-                      No payroll records found
-                    </Text>
-                  ) : (
-                    <View style={{ gap: 8 }}>
-                      {actionRecords.map((r: any) => (
-                        <View
-                          key={r._id}
-                          style={{
-                            borderWidth: 2,
-                            borderColor: C.black,
-                            padding: 12,
-                            backgroundColor: C.white,
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                          }}
-                        >
-                          <View>
-                            <Text
-                              style={{
-                                fontSize: 13,
-                                fontWeight: '700',
-                                color: C.black,
-                              }}
-                            >
-                              {r.month}/{r.year}
-                            </Text>
-                            <Text
-                              style={{
-                                fontSize: 12,
-                                color: C.textMuted,
-                                marginTop: 2,
-                              }}
-                            >
-                              Net: ₹{(r.netSalary || 0).toLocaleString()}
-                            </Text>
-                          </View>
-                          <View
-                            style={{
-                              paddingHorizontal: 8,
-                              paddingVertical: 3,
-                              borderWidth: 2,
-                              borderColor:
-                                r.status === 'paid' ? C.success : C.warning,
-                              backgroundColor:
-                                r.status === 'paid' ? '#F0FDF4' : '#FFF7ED',
-                            }}
-                          >
-                            <Text
-                              style={{
-                                fontSize: 12,
-                                fontWeight: '700',
-                                color:
-                                  r.status === 'paid' ? C.success : C.warning,
-                              }}
-                            >
-                              {r.status?.toUpperCase()}
-                            </Text>
-                          </View>
-                        </View>
-                      ))}
-                    </View>
-                  ))}
-
-                {/* LEAVE BALANCE */}
-                {actionModal === 'leaves' &&
-                  (actionRecordsLoading ? (
-                    <ActivityIndicator color={C.primary} />
-                  ) : (
-                    <View style={{ gap: 8 }}>
-                      {(['pending', 'approved', 'rejected'] as const).map(
-                        status => {
-                          const count = actionRecords.filter(
-                            (l: any) => l.status === status,
-                          ).length;
-                          const colors: Record<string, string> = {
-                            pending: C.warning,
-                            approved: C.success,
-                            rejected: C.danger,
-                          };
-                          return (
-                            <View
-                              key={status}
-                              style={{
-                                flexDirection: 'row',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                padding: 14,
-                                borderWidth: 2,
-                                borderRadius: 8,
-                                borderColor: colors[status],
-                                backgroundColor: colors[status] + '10',
-                              }}
-                            >
-                              <Text
-                                style={{
-                                  fontSize: 13,
-                                  fontWeight: '700',
-                                  color: colors[status],
-                                  textTransform: 'uppercase',
-                                }}
-                              >
-                                {status}
-                              </Text>
-                              <Text
-                                style={{
-                                  fontSize: 22,
-                                  fontWeight: '800',
-                                  color: colors[status],
-                                }}
-                              >
-                                {count}
-                              </Text>
-                            </View>
-                          );
-                        },
-                      )}
-                      {actionRecords.length === 0 && (
+                    {/* ATTENDANCE LOG */}
+                    {actionModal === 'attendance' &&
+                      (actionRecordsLoading ? (
+                        <ActivityIndicator color={C.primary} />
+                      ) : actionRecords.length === 0 ? (
                         <Text
                           style={{
                             color: C.textMuted,
@@ -2066,590 +1995,866 @@ export default function EmployeesScreen() {
                             marginTop: 20,
                           }}
                         >
-                          No leave records found
+                          No attendance records found
                         </Text>
-                      )}
-                    </View>
-                  ))}
-
-                {/* Submit for form actions */}
-                {[
-                  'allowance',
-                  'penalty',
-                  'overtime',
-                  'loan',
-                  'advance',
-                  'salary',
-                  'credentials',
-                ].includes(actionModal) && (
-                  <TouchableOpacity
-                    style={styles.submitBtn}
-                    onPress={submitAction}
-                    disabled={actionLoading}
-                  >
-                    {actionLoading ? (
-                      <ActivityIndicator color={C.white} />
-                    ) : (
-                      <Text style={styles.submitBtnText}>Confirm</Text>
-                    )}
-                  </TouchableOpacity>
-                )}
-              </ScrollView>
-            )}
-          </SafeAreaView>
-        )}
-      </View></View>
-</Modal>
-
-      <Modal
-        visible={showForm}
-        transparent
-        animationType="fade"
-      >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        <SafeAreaView style={styles.safe} edges={[]}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>
-              {editingEmp ? 'Edit Employee' : 'Add Employee'}
-            </Text>
-            <TouchableOpacity onPress={closeForm}>
-              <X size={22} color={C.black} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Tabs */}
-          <View style={styles.tabBar}>
-            {TABS.map((tab, i) => (
-              <TouchableOpacity
-                key={tab}
-                style={[
-                  styles.tabItem,
-                  activeTab === i && styles.tabItemActive,
-                ]}
-                onPress={() => setActiveTab(i)}
-              >
-                <Text
-                  style={[
-                    styles.tabText,
-                    activeTab === i && styles.tabTextActive,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {tab}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={{ padding: 20, gap: 16 }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {/* ── Tab 1: Basic Info ── */}
-            {activeTab === 0 && (
-              <>
-                {/* Photo picker */}
-                <View style={styles.photoPicker}>
-                  <TouchableOpacity
-                    onPress={pickPhoto}
-                    style={styles.photoWrap}
-                    activeOpacity={0.8}
-                  >
-                    {avatarUri ? (
-                      <Image
-                        source={{ uri: avatarUri }}
-                        style={styles.photoImg}
-                      />
-                    ) : (
-                      <View style={styles.photoPlaceholder}>
-                        <Text style={styles.photoInitials}>
-                          {form.firstName
-                            ? form.firstName[0].toUpperCase()
-                            : '?'}
-                          {form.lastName ? form.lastName[0].toUpperCase() : ''}
-                        </Text>
-                      </View>
-                    )}
-                    <View style={styles.photoEditBadge}>
-                      <Text style={styles.photoEditText}>EDIT</Text>
-                    </View>
-                  </TouchableOpacity>
-                  <Text style={styles.photoHint}>Tap to update photo</Text>
-                </View>
-
-                <View style={{ flexDirection: 'row', gap: 12 }}>
-                  <View style={{ flex: 1 }}>
-                    {F('First Name *', 'firstName', { placeholder: 'John' })}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    {F('Last Name *', 'lastName', { placeholder: 'Doe' })}
-                  </View>
-                </View>
-                {F('Work Email *', 'email', {
-                  placeholder: 'john@company.com',
-                  keyboardType: 'email-address',
-                  autoCapitalize: 'none',
-                })}
-                <View>
-                  <Text style={styles.fieldLabel}>Mobile</Text>
-                  <PhoneField
-                    value={form.phone}
-                    onChange={v => {
-                      setForm(p => ({ ...p, phone: v }));
-                      setFormDirty(true);
-                    }}
-                    placeholder="Mobile number"
-                  />
-                </View>
-                {F('Designation', 'designation', {
-                  placeholder: 'e.g. Software Engineer',
-                })}
-                <DatePickerField
-                  label="Joining Date"
-                  value={form.joiningDate}
-                  onChange={v => setForm(p => ({ ...p, joiningDate: v }))}
-                />
-                <View>
-                  <Text style={styles.fieldLabel}>Gender</Text>
-                  <PickerField
-                    title="Select gender"
-                    value={form.gender}
-                    placeholder="Select gender"
-                    options={GENDERS.map(g => ({ value: g, label: g.charAt(0).toUpperCase() + g.slice(1) }))}
-                    onChange={v => {
-                      setForm(p => ({ ...p, gender: v }));
-                      setFormDirty(true);
-                    }}
-                  />
-                </View>
-                <View>
-                  <Text style={styles.fieldLabel}>Department</Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ gap: 8, marginTop: 4 }}
-                  >
-                    {departments.map(d => (
-                      <TouchableOpacity
-                        key={d._id}
-                        style={[
-                          styles.selChip,
-                          form.department === d._id && styles.selChipActive,
-                        ]}
-                        onPress={() =>
-                          setForm(p => ({
-                            ...p,
-                            department: p.department === d._id ? '' : d._id,
-                          }))
-                        }
-                      >
-                        <Text
-                          style={[
-                            styles.selChipText,
-                            form.department === d._id && { color: C.white },
-                          ]}
-                        >
-                          {d.name}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-                {Select(
-                  'Employment Type',
-                  'employmentType',
-                  EMP_TYPES.map(t => ({
-                    value: t,
-                    label: t.replace('_', ' ').toUpperCase(),
-                  })),
-                )}
-                {editingEmp &&
-                  Select(
-                    'Status',
-                    'status',
-                    STATUSES.map(s => ({
-                      value: s,
-                      label: s.replace('_', ' ').toUpperCase(),
-                    })),
-                  )}
-                {!editingEmp &&
-                  F('Default Password', 'defaultPassword', {
-                    placeholder: 'Leave blank to auto-generate',
-                    secureTextEntry: true,
-                  })}
-              </>
-            )}
-
-            {/* ── Tab 2: Attendance ── */}
-            {activeTab === 1 && (
-              <>
-                <View>
-                  <Text style={styles.fieldLabel}>Work Days Per Week</Text>
-                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
-                    {WORK_DAYS.map(d => (
-                      <TouchableOpacity
-                        key={d}
-                        style={[
-                          styles.selChip,
-                          form.workDaysPerWeek === d && styles.selChipActive,
-                        ]}
-                        onPress={() =>
-                          setForm(p => ({ ...p, workDaysPerWeek: d }))
-                        }
-                      >
-                        <Text
-                          style={[
-                            styles.selChipText,
-                            form.workDaysPerWeek === d && { color: C.white },
-                          ]}
-                        >
-                          {d} Days
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-                <View style={styles.toggleRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.fieldLabel}>Enable Overtime</Text>
-                    <Text style={styles.toggleHint}>
-                      Allow OT calculation for this employee
-                    </Text>
-                  </View>
-                  <Switch
-                    value={form.enableOvertime}
-                    onValueChange={v =>
-                      setForm(p => ({ ...p, enableOvertime: v }))
-                    }
-                    trackColor={{ true: C.primary, false: '#D1D5DB' }}
-                    thumbColor={C.white}
-                  />
-                </View>
-                {form.enableOvertime &&
-                  F('OT Rate (₹/hr)', 'otRate', {
-                    keyboardType: 'numeric',
-                    placeholder: '50',
-                  })}
-                {F('Biometric User ID', 'biometricUserId', {
-                  placeholder: 'Device user ID',
-                  keyboardType: 'numeric',
-                })}
-                <View>
-                  <Text style={styles.fieldLabel}>Shift</Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ gap: 8, marginTop: 4 }}
-                  >
-                    <TouchableOpacity
-                      style={[
-                        styles.selChip,
-                        !form.shift && styles.selChipActive,
-                      ]}
-                      onPress={() => setForm(p => ({ ...p, shift: '' }))}
-                    >
-                      <Text
-                        style={[
-                          styles.selChipText,
-                          !form.shift && { color: C.white },
-                        ]}
-                      >
-                        None
-                      </Text>
-                    </TouchableOpacity>
-                    {shifts.map(sh => (
-                      <TouchableOpacity
-                        key={sh._id}
-                        style={[
-                          styles.selChip,
-                          form.shift === sh._id && styles.selChipActive,
-                        ]}
-                        onPress={() => setForm(p => ({ ...p, shift: sh._id }))}
-                      >
-                        <Text
-                          style={[
-                            styles.selChipText,
-                            form.shift === sh._id && { color: C.white },
-                          ]}
-                        >
-                          {sh.name}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              </>
-            )}
-
-            {/* ── Tab 3: Salary ── */}
-            {activeTab === 2 && (
-              <>
-                {F('Monthly Salary (₹) *', 'monthlySalary', {
-                  keyboardType: 'numeric',
-                  placeholder: '50000',
-                })}
-                {editingEmp &&
-                  ((editingEmp as any).salaryHistory?.length || 0) > 0 && (
-                    <View style={{ marginTop: 4, marginBottom: 12 }}>
-                      <Text style={styles.fieldLabel}>Salary History</Text>
-                      <View
-                        style={{
-                          borderWidth: 2,
-                          borderRadius: 8,
-                          borderColor: C.black,
-                          marginTop: 6,
-                        }}
-                      >
-                        {[...((editingEmp as any).salaryHistory || [])]
-                          .sort(
-                            (a: any, b: any) =>
-                              new Date(b.effectiveFrom).getTime() -
-                              new Date(a.effectiveFrom).getTime(),
-                          )
-                          .map((h: any, i: number) => (
+                      ) : (
+                        <View style={{ gap: 8 }}>
+                          {actionRecords.map((r: any) => (
                             <View
-                              key={h._id || i}
+                              key={r._id}
                               style={{
+                                borderWidth: 2,
+                                borderColor: C.black,
+                                padding: 12,
+                                backgroundColor: C.white,
                                 flexDirection: 'row',
                                 justifyContent: 'space-between',
                                 alignItems: 'center',
-                                paddingHorizontal: 12,
-                                paddingVertical: 10,
-                                borderTopWidth: i > 0 ? 1 : 0,
-                                borderTopColor: C.black,
                               }}
                             >
-                              <Text
-                                style={{ fontSize: 12, color: C.textMuted }}
-                              >
-                                {new Date(h.effectiveFrom).toLocaleDateString(
-                                  'en-IN',
-                                  {
-                                    day: '2-digit',
-                                    month: 'short',
-                                    year: 'numeric',
-                                  },
-                                )}
-                                {h.changedByName ? ` — ${h.changedByName}` : ''}
-                              </Text>
-                              <Text
+                              <View>
+                                <Text
+                                  style={{
+                                    fontSize: 13,
+                                    fontWeight: '400',
+                                    color: C.black,
+                                  }}
+                                >
+                                  {r.date
+                                    ? new Date(r.date).toLocaleDateString(
+                                        'en-IN',
+                                        {
+                                          day: '2-digit',
+                                          month: 'short',
+                                          year: 'numeric',
+                                        },
+                                      )
+                                    : '—'}
+                                </Text>
+                                <View
+                                  style={{
+                                    flexDirection: 'row',
+                                    gap: 8,
+                                    marginTop: 4,
+                                  }}
+                                >
+                                  {r.checkIn && (
+                                    <View
+                                      style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        gap: 3,
+                                      }}
+                                    >
+                                      <LogIn size={10} color={C.success} />
+                                      <Text
+                                        style={{
+                                          fontSize: 11,
+                                          color: C.textMuted,
+                                        }}
+                                      >
+                                        {new Date(r.checkIn).toLocaleTimeString(
+                                          [],
+                                          {
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                          },
+                                        )}
+                                      </Text>
+                                    </View>
+                                  )}
+                                  {r.checkOut && (
+                                    <View
+                                      style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        gap: 3,
+                                      }}
+                                    >
+                                      <LogOut size={10} color={C.danger} />
+                                      <Text
+                                        style={{
+                                          fontSize: 11,
+                                          color: C.textMuted,
+                                        }}
+                                      >
+                                        {new Date(
+                                          r.checkOut,
+                                        ).toLocaleTimeString([], {
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                        })}
+                                      </Text>
+                                    </View>
+                                  )}
+                                </View>
+                              </View>
+                              <View
                                 style={{
-                                  fontSize: 13,
-                                  fontWeight: '700',
-                                  color: C.black,
+                                  paddingHorizontal: 8,
+                                  paddingVertical: 3,
+                                  borderWidth: 2,
+                                  borderColor: C.black,
                                 }}
                               >
-                                ₹{h.amount.toLocaleString('en-IN')}
-                              </Text>
+                                <Text
+                                  style={{
+                                    fontSize: 12,
+                                    fontWeight: '400',
+                                    color: C.black,
+                                  }}
+                                >
+                                  {r.status?.toUpperCase()}
+                                </Text>
+                              </View>
                             </View>
                           ))}
+                        </View>
+                      ))}
+
+                    {/* PAYMENT HISTORY */}
+                    {actionModal === 'payroll' &&
+                      (actionRecordsLoading ? (
+                        <ActivityIndicator color={C.primary} />
+                      ) : actionRecords.length === 0 ? (
+                        <Text
+                          style={{
+                            color: C.textMuted,
+                            textAlign: 'center',
+                            marginTop: 20,
+                          }}
+                        >
+                          No payroll records found
+                        </Text>
+                      ) : (
+                        <View style={{ gap: 8 }}>
+                          {actionRecords.map((r: any) => (
+                            <View
+                              key={r._id}
+                              style={{
+                                borderWidth: 2,
+                                borderColor: C.black,
+                                padding: 12,
+                                backgroundColor: C.white,
+                                flexDirection: 'row',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                              }}
+                            >
+                              <View>
+                                <Text
+                                  style={{
+                                    fontSize: 13,
+                                    fontWeight: '400',
+                                    color: C.black,
+                                  }}
+                                >
+                                  {r.month}/{r.year}
+                                </Text>
+                                <Text
+                                  style={{
+                                    fontSize: 12,
+                                    color: C.textMuted,
+                                    marginTop: 2,
+                                  }}
+                                >
+                                  Net: ₹{(r.netSalary || 0).toLocaleString()}
+                                </Text>
+                              </View>
+                              <View
+                                style={{
+                                  paddingHorizontal: 8,
+                                  paddingVertical: 3,
+                                  borderWidth: 2,
+                                  borderColor:
+                                    r.status === 'paid' ? C.success : C.warning,
+                                  backgroundColor:
+                                    r.status === 'paid' ? '#F0FDF4' : '#FFF7ED',
+                                }}
+                              >
+                                <Text
+                                  style={{
+                                    fontSize: 12,
+                                    fontWeight: '400',
+                                    color:
+                                      r.status === 'paid'
+                                        ? C.success
+                                        : C.warning,
+                                  }}
+                                >
+                                  {r.status?.toUpperCase()}
+                                </Text>
+                              </View>
+                            </View>
+                          ))}
+                        </View>
+                      ))}
+
+                    {/* LEAVE BALANCE */}
+                    {actionModal === 'leaves' &&
+                      (actionRecordsLoading ? (
+                        <ActivityIndicator color={C.primary} />
+                      ) : (
+                        <View style={{ gap: 8 }}>
+                          {(['pending', 'approved', 'rejected'] as const).map(
+                            status => {
+                              const count = actionRecords.filter(
+                                (l: any) => l.status === status,
+                              ).length;
+                              const colors: Record<string, string> = {
+                                pending: C.warning,
+                                approved: C.success,
+                                rejected: C.danger,
+                              };
+                              return (
+                                <View
+                                  key={status}
+                                  style={{
+                                    flexDirection: 'row',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    padding: 14,
+                                    borderWidth: 2,
+                                    borderRadius: 8,
+                                    borderColor: colors[status],
+                                    backgroundColor: colors[status] + '10',
+                                  }}
+                                >
+                                  <Text
+                                    style={{
+                                      fontSize: 13,
+                                      fontWeight: '400',
+                                      color: colors[status],
+                                      textTransform: 'uppercase',
+                                    }}
+                                  >
+                                    {status}
+                                  </Text>
+                                  <Text
+                                    style={{
+                                      fontSize: 22,
+                                      fontWeight: '400',
+                                      color: colors[status],
+                                    }}
+                                  >
+                                    {count}
+                                  </Text>
+                                </View>
+                              );
+                            },
+                          )}
+                          {actionRecords.length === 0 && (
+                            <Text
+                              style={{
+                                color: C.textMuted,
+                                textAlign: 'center',
+                                marginTop: 20,
+                              }}
+                            >
+                              No leave records found
+                            </Text>
+                          )}
+                        </View>
+                      ))}
+
+                    {/* Submit for form actions */}
+                    {[
+                      'allowance',
+                      'penalty',
+                      'overtime',
+                      'loan',
+                      'advance',
+                      'salary',
+                      'credentials',
+                    ].includes(actionModal) && (
+                      <TouchableOpacity
+                        style={styles.submitBtn}
+                        onPress={submitAction}
+                        disabled={actionLoading}
+                      >
+                        {actionLoading ? (
+                          <ActivityIndicator color={C.white} />
+                        ) : (
+                          <Text style={styles.submitBtnText}>Confirm</Text>
+                        )}
+                      </TouchableOpacity>
+                    )}
+                  </ScrollView>
+                )}
+              </SafeAreaView>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showForm} transparent animationType="fade">
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            <SafeAreaView style={styles.safe} edges={[]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>
+                  {editingEmp ? 'Edit Employee' : 'Add Employee'}
+                </Text>
+                <TouchableOpacity onPress={closeForm}>
+                  <X size={22} color={C.black} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Tabs */}
+              <View style={styles.tabBar}>
+                {TABS.map((tab, i) => (
+                  <TouchableOpacity
+                    key={tab}
+                    style={[
+                      styles.tabItem,
+                      activeTab === i && styles.tabItemActive,
+                    ]}
+                    onPress={() => setActiveTab(i)}
+                  >
+                    <Text
+                      style={[
+                        styles.tabText,
+                        activeTab === i && styles.tabTextActive,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {tab}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <ScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={{ padding: 20, gap: 16 }}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                {/* ── Tab 1: Basic Info ── */}
+                {activeTab === 0 && (
+                  <>
+                    {/* Photo picker */}
+                    <View style={styles.photoPicker}>
+                      <TouchableOpacity
+                        onPress={pickPhoto}
+                        style={styles.photoWrap}
+                        activeOpacity={0.8}
+                      >
+                        {avatarUri ? (
+                          <Image
+                            source={{ uri: avatarUri }}
+                            style={styles.photoImg}
+                          />
+                        ) : (
+                          <View style={styles.photoPlaceholder}>
+                            <Text style={styles.photoInitials}>
+                              {form.firstName
+                                ? form.firstName[0].toUpperCase()
+                                : '?'}
+                              {form.lastName
+                                ? form.lastName[0].toUpperCase()
+                                : ''}
+                            </Text>
+                          </View>
+                        )}
+                        <View style={styles.photoEditBadge}>
+                          <Text style={styles.photoEditText}>EDIT</Text>
+                        </View>
+                      </TouchableOpacity>
+                      <Text style={styles.photoHint}>Tap to update photo</Text>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                      <View style={{ flex: 1 }}>
+                        {F('First Name *', 'firstName', {
+                          placeholder: 'John',
+                        })}
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        {F('Last Name *', 'lastName', { placeholder: 'Doe' })}
                       </View>
                     </View>
-                  )}
-                {F('PF Number', 'pfNumber', {
-                  placeholder: 'PF account number',
-                  autoCapitalize: 'characters',
-                })}
-                {F('UAN Number', 'uanNumber', {
-                  placeholder: 'Universal Account Number',
-                  keyboardType: 'numeric',
-                })}
-                {F('ESIC Number', 'esicNumber', {
-                  placeholder: 'ESIC account number',
-                })}
-              </>
-            )}
+                    {F('Work Email *', 'email', {
+                      placeholder: 'john@company.com',
+                      keyboardType: 'email-address',
+                      autoCapitalize: 'none',
+                    })}
+                    <View>
+                      <Text style={styles.fieldLabel}>Mobile</Text>
+                      <PhoneField
+                        value={form.phone}
+                        onChange={v => {
+                          setForm(p => ({ ...p, phone: v }));
+                          setFormDirty(true);
+                        }}
+                        placeholder="Mobile number"
+                      />
+                    </View>
+                    {F('Designation', 'designation', {
+                      placeholder: 'e.g. Software Engineer',
+                    })}
+                    <DatePickerField
+                      label="Joining Date"
+                      value={form.joiningDate}
+                      onChange={v => setForm(p => ({ ...p, joiningDate: v }))}
+                    />
+                    <View>
+                      <Text style={styles.fieldLabel}>Gender</Text>
+                      <PickerField
+                        title="Select gender"
+                        value={form.gender}
+                        placeholder="Select gender"
+                        options={GENDERS.map(g => ({
+                          value: g,
+                          label: g.charAt(0).toUpperCase() + g.slice(1),
+                        }))}
+                        onChange={v => {
+                          setForm(p => ({ ...p, gender: v }));
+                          setFormDirty(true);
+                        }}
+                      />
+                    </View>
+                    <View>
+                      <Text style={styles.fieldLabel}>Department</Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ gap: 8, marginTop: 4 }}
+                      >
+                        {departments.map(d => (
+                          <TouchableOpacity
+                            key={d._id}
+                            style={[
+                              styles.selChip,
+                              form.department === d._id && styles.selChipActive,
+                            ]}
+                            onPress={() =>
+                              setForm(p => ({
+                                ...p,
+                                department: p.department === d._id ? '' : d._id,
+                              }))
+                            }
+                          >
+                            <Text
+                              style={[
+                                styles.selChipText,
+                                form.department === d._id && { color: C.white },
+                              ]}
+                            >
+                              {d.name}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                    {Select(
+                      'Employment Type',
+                      'employmentType',
+                      EMP_TYPES.map(t => ({
+                        value: t,
+                        label: t.replace('_', ' ').toUpperCase(),
+                      })),
+                    )}
+                    {editingEmp &&
+                      Select(
+                        'Status',
+                        'status',
+                        STATUSES.map(s => ({
+                          value: s,
+                          label: s.replace('_', ' ').toUpperCase(),
+                        })),
+                      )}
+                    {!editingEmp &&
+                      F('Default Password', 'defaultPassword', {
+                        placeholder: 'Leave blank to auto-generate',
+                        secureTextEntry: true,
+                      })}
+                  </>
+                )}
 
-            {/* ── Tab 4: Other Info ── */}
-            {activeTab === 3 && (
-              <>
-                <DatePickerField
-                  label="Date of Birth"
-                  value={form.dateOfBirth}
-                  onChange={v => setForm(p => ({ ...p, dateOfBirth: v }))}
-                  maximumDate={new Date()}
-                />
-                <View>
-                  <Text style={styles.fieldLabel}>Emergency Contact</Text>
-                  <PhoneField
-                    value={form.emergencyContact}
-                    onChange={v => {
-                      setForm(p => ({ ...p, emergencyContact: v }));
-                      setFormDirty(true);
-                    }}
-                    placeholder="Emergency number"
-                  />
-                </View>
-                {F('Current Address', 'address', {
-                  placeholder: 'House no., street, area',
-                  multiline: true,
-                })}
-                {AddressBlock('')}
-                <View style={styles.toggleRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.fieldLabel}>Permanent address same as current</Text>
-                    <Text style={styles.toggleHint}>Turn off to enter a different permanent address</Text>
-                  </View>
-                  <Switch
-                    value={sameAddress}
-                    onValueChange={setSameAddress}
-                    trackColor={{ true: C.primary, false: '#D1D5DB' }}
-                    thumbColor={C.white}
-                  />
-                </View>
-                {!sameAddress && (
+                {/* ── Tab 2: Attendance ── */}
+                {activeTab === 1 && (
                   <>
-                    {F('Permanent Address', 'permanentAddress', {
+                    <View>
+                      <Text style={styles.fieldLabel}>Work Days Per Week</Text>
+                      <View
+                        style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}
+                      >
+                        {WORK_DAYS.map(d => (
+                          <TouchableOpacity
+                            key={d}
+                            style={[
+                              styles.selChip,
+                              form.workDaysPerWeek === d &&
+                                styles.selChipActive,
+                            ]}
+                            onPress={() =>
+                              setForm(p => ({ ...p, workDaysPerWeek: d }))
+                            }
+                          >
+                            <Text
+                              style={[
+                                styles.selChipText,
+                                form.workDaysPerWeek === d && {
+                                  color: C.white,
+                                },
+                              ]}
+                            >
+                              {d} Days
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
+                    <View style={styles.toggleRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.fieldLabel}>Enable Overtime</Text>
+                        <Text style={styles.toggleHint}>
+                          Allow OT calculation for this employee
+                        </Text>
+                      </View>
+                      <Switch
+                        value={form.enableOvertime}
+                        onValueChange={v =>
+                          setForm(p => ({ ...p, enableOvertime: v }))
+                        }
+                        trackColor={{ true: C.primary, false: '#D1D5DB' }}
+                        thumbColor={C.white}
+                      />
+                    </View>
+                    {form.enableOvertime &&
+                      F('OT Rate (₹/hr)', 'otRate', {
+                        keyboardType: 'numeric',
+                        placeholder: '50',
+                      })}
+                    {F('Biometric User ID', 'biometricUserId', {
+                      placeholder: 'Device user ID',
+                      keyboardType: 'numeric',
+                    })}
+                    <View>
+                      <Text style={styles.fieldLabel}>Shift</Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ gap: 8, marginTop: 4 }}
+                      >
+                        <TouchableOpacity
+                          style={[
+                            styles.selChip,
+                            !form.shift && styles.selChipActive,
+                          ]}
+                          onPress={() => setForm(p => ({ ...p, shift: '' }))}
+                        >
+                          <Text
+                            style={[
+                              styles.selChipText,
+                              !form.shift && { color: C.white },
+                            ]}
+                          >
+                            None
+                          </Text>
+                        </TouchableOpacity>
+                        {shifts.map(sh => (
+                          <TouchableOpacity
+                            key={sh._id}
+                            style={[
+                              styles.selChip,
+                              form.shift === sh._id && styles.selChipActive,
+                            ]}
+                            onPress={() =>
+                              setForm(p => ({ ...p, shift: sh._id }))
+                            }
+                          >
+                            <Text
+                              style={[
+                                styles.selChipText,
+                                form.shift === sh._id && { color: C.white },
+                              ]}
+                            >
+                              {sh.name}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  </>
+                )}
+
+                {/* ── Tab 3: Salary ── */}
+                {activeTab === 2 && (
+                  <>
+                    {F('Monthly Salary (₹) *', 'monthlySalary', {
+                      keyboardType: 'numeric',
+                      placeholder: '50000',
+                    })}
+                    {editingEmp &&
+                      ((editingEmp as any).salaryHistory?.length || 0) > 0 && (
+                        <View style={{ marginTop: 4, marginBottom: 12 }}>
+                          <Text style={styles.fieldLabel}>Salary History</Text>
+                          <View
+                            style={{
+                              borderWidth: 2,
+                              borderRadius: 8,
+                              borderColor: C.black,
+                              marginTop: 6,
+                            }}
+                          >
+                            {[...((editingEmp as any).salaryHistory || [])]
+                              .sort(
+                                (a: any, b: any) =>
+                                  new Date(b.effectiveFrom).getTime() -
+                                  new Date(a.effectiveFrom).getTime(),
+                              )
+                              .map((h: any, i: number) => (
+                                <View
+                                  key={h._id || i}
+                                  style={{
+                                    flexDirection: 'row',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    paddingHorizontal: 12,
+                                    paddingVertical: 10,
+                                    borderTopWidth: i > 0 ? 1 : 0,
+                                    borderTopColor: C.black,
+                                  }}
+                                >
+                                  <Text
+                                    style={{ fontSize: 12, color: C.textMuted }}
+                                  >
+                                    {new Date(
+                                      h.effectiveFrom,
+                                    ).toLocaleDateString('en-IN', {
+                                      day: '2-digit',
+                                      month: 'short',
+                                      year: 'numeric',
+                                    })}
+                                    {h.changedByName
+                                      ? ` — ${h.changedByName}`
+                                      : ''}
+                                  </Text>
+                                  <Text
+                                    style={{
+                                      fontSize: 13,
+                                      fontWeight: '400',
+                                      color: C.black,
+                                    }}
+                                  >
+                                    ₹{h.amount.toLocaleString('en-IN')}
+                                  </Text>
+                                </View>
+                              ))}
+                          </View>
+                        </View>
+                      )}
+                    {F('PF Number', 'pfNumber', {
+                      placeholder: 'PF account number',
+                      autoCapitalize: 'characters',
+                    })}
+                    {F('UAN Number', 'uanNumber', {
+                      placeholder: 'Universal Account Number',
+                      keyboardType: 'numeric',
+                    })}
+                    {F('ESIC Number', 'esicNumber', {
+                      placeholder: 'ESIC account number',
+                    })}
+                  </>
+                )}
+
+                {/* ── Tab 4: Other Info ── */}
+                {activeTab === 3 && (
+                  <>
+                    <DatePickerField
+                      label="Date of Birth"
+                      value={form.dateOfBirth}
+                      onChange={v => setForm(p => ({ ...p, dateOfBirth: v }))}
+                      maximumDate={new Date()}
+                    />
+                    <View>
+                      <Text style={styles.fieldLabel}>Emergency Contact</Text>
+                      <PhoneField
+                        value={form.emergencyContact}
+                        onChange={v => {
+                          setForm(p => ({ ...p, emergencyContact: v }));
+                          setFormDirty(true);
+                        }}
+                        placeholder="Emergency number"
+                      />
+                    </View>
+                    {F('Current Address', 'address', {
                       placeholder: 'House no., street, area',
                       multiline: true,
                     })}
-                    {AddressBlock('permanent')}
+                    {AddressBlock('')}
+                    <View style={styles.toggleRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.fieldLabel}>
+                          Permanent address same as current
+                        </Text>
+                        <Text style={styles.toggleHint}>
+                          Turn off to enter a different permanent address
+                        </Text>
+                      </View>
+                      <Switch
+                        value={sameAddress}
+                        onValueChange={setSameAddress}
+                        trackColor={{ true: C.primary, false: '#D1D5DB' }}
+                        thumbColor={C.white}
+                      />
+                    </View>
+                    {!sameAddress && (
+                      <>
+                        {F('Permanent Address', 'permanentAddress', {
+                          placeholder: 'House no., street, area',
+                          multiline: true,
+                        })}
+                        {AddressBlock('permanent')}
+                      </>
+                    )}
+                    {F('PAN Number', 'panNumber', {
+                      placeholder: 'ABCDE1234F',
+                      autoCapitalize: 'characters',
+                    })}
+                    {F('Aadhar Number', 'aadharNumber', {
+                      placeholder: '12-digit Aadhar',
+                      keyboardType: 'numeric',
+                    })}
+
+                    <View style={styles.sectionDivider}>
+                      <Text style={styles.sectionDividerText}>
+                        Personal Details
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                      <View style={{ flex: 1 }}>
+                        {F('Father Name', 'fatherName', {
+                          placeholder: "Father's name",
+                        })}
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        {F('Mother Name', 'motherName', {
+                          placeholder: "Mother's name",
+                        })}
+                      </View>
+                    </View>
+                    {Select('Marital Status', 'maritalStatus', [
+                      { value: 'single', label: 'Single' },
+                      { value: 'married', label: 'Married' },
+                      { value: 'divorced', label: 'Divorced' },
+                      { value: 'widowed', label: 'Widowed' },
+                    ])}
+                    {form.maritalStatus === 'married' &&
+                      F('Spouse Name', 'spouseName', {
+                        placeholder: "Spouse's name",
+                      })}
+                    {Select('Blood Group', 'bloodGroup', [
+                      { value: 'A+', label: 'A+' },
+                      { value: 'A-', label: 'A-' },
+                      { value: 'B+', label: 'B+' },
+                      { value: 'B-', label: 'B-' },
+                      { value: 'O+', label: 'O+' },
+                      { value: 'O-', label: 'O-' },
+                      { value: 'AB+', label: 'AB+' },
+                      { value: 'AB-', label: 'AB-' },
+                    ])}
+                    {F('Nationality', 'nationality', {
+                      placeholder: 'e.g. Indian',
+                    })}
+                    {F('Religion', 'religion', { placeholder: 'e.g. Hindu' })}
+                    {F('Personal Email', 'personalEmail', {
+                      placeholder: 'personal@email.com',
+                      keyboardType: 'email-address',
+                      autoCapitalize: 'none',
+                    })}
+                    <View>
+                      <Text style={styles.fieldLabel}>Alternate Phone</Text>
+                      <PhoneField
+                        value={form.alternatePhone}
+                        onChange={v => {
+                          setForm(p => ({ ...p, alternatePhone: v }));
+                          setFormDirty(true);
+                        }}
+                        placeholder="Alternate number"
+                      />
+                    </View>
+
+                    <View style={styles.sectionDivider}>
+                      <Text style={styles.sectionDividerText}>
+                        Professional Background
+                      </Text>
+                    </View>
+                    {F('Qualification', 'qualification', {
+                      placeholder: 'e.g. B.Tech, MBA',
+                    })}
+                    {F('Total Experience', 'totalExperience', {
+                      placeholder: 'e.g. 3 years',
+                    })}
+                    {F('Previous Company', 'previousCompany', {
+                      placeholder: 'Last employer name',
+                    })}
+
+                    <View style={styles.sectionDivider}>
+                      <Text style={styles.sectionDividerText}>
+                        Bank Details
+                      </Text>
+                    </View>
+                    {F('Account Holder Name', 'accountHolderName', {
+                      placeholder: 'As per bank records',
+                    })}
+                    {F('Bank Account Number', 'bankAccountNumber', {
+                      placeholder: 'Account number',
+                      keyboardType: 'numeric',
+                    })}
+                    {F('IFSC Code', 'ifscCode', {
+                      placeholder: 'e.g. SBIN0001234',
+                      autoCapitalize: 'characters',
+                    })}
+                    {F('Bank Name', 'bankName', {
+                      placeholder: 'e.g. State Bank of India',
+                    })}
                   </>
                 )}
-                {F('PAN Number', 'panNumber', {
-                  placeholder: 'ABCDE1234F',
-                  autoCapitalize: 'characters',
-                })}
-                {F('Aadhar Number', 'aadharNumber', {
-                  placeholder: '12-digit Aadhar',
-                  keyboardType: 'numeric',
-                })}
 
-                <View style={styles.sectionDivider}>
-                  <Text style={styles.sectionDividerText}>
-                    Personal Details
-                  </Text>
-                </View>
-                <View style={{ flexDirection: 'row', gap: 12 }}>
-                  <View style={{ flex: 1 }}>
-                    {F('Father Name', 'fatherName', {
-                      placeholder: "Father's name",
-                    })}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    {F('Mother Name', 'motherName', {
-                      placeholder: "Mother's name",
-                    })}
-                  </View>
-                </View>
-                {Select('Marital Status', 'maritalStatus', [
-                  { value: 'single', label: 'Single' },
-                  { value: 'married', label: 'Married' },
-                  { value: 'divorced', label: 'Divorced' },
-                  { value: 'widowed', label: 'Widowed' },
-                ])}
-                {form.maritalStatus === 'married' &&
-                  F('Spouse Name', 'spouseName', {
-                    placeholder: "Spouse's name",
-                  })}
-                {Select('Blood Group', 'bloodGroup', [
-                  { value: 'A+', label: 'A+' },
-                  { value: 'A-', label: 'A-' },
-                  { value: 'B+', label: 'B+' },
-                  { value: 'B-', label: 'B-' },
-                  { value: 'O+', label: 'O+' },
-                  { value: 'O-', label: 'O-' },
-                  { value: 'AB+', label: 'AB+' },
-                  { value: 'AB-', label: 'AB-' },
-                ])}
-                {F('Nationality', 'nationality', {
-                  placeholder: 'e.g. Indian',
-                })}
-                {F('Religion', 'religion', { placeholder: 'e.g. Hindu' })}
-                {F('Personal Email', 'personalEmail', {
-                  placeholder: 'personal@email.com',
-                  keyboardType: 'email-address',
-                  autoCapitalize: 'none',
-                })}
-                <View>
-                  <Text style={styles.fieldLabel}>Alternate Phone</Text>
-                  <PhoneField
-                    value={form.alternatePhone}
-                    onChange={v => {
-                      setForm(p => ({ ...p, alternatePhone: v }));
-                      setFormDirty(true);
-                    }}
-                    placeholder="Alternate number"
-                  />
-                </View>
-
-                <View style={styles.sectionDivider}>
-                  <Text style={styles.sectionDividerText}>
-                    Professional Background
-                  </Text>
-                </View>
-                {F('Qualification', 'qualification', {
-                  placeholder: 'e.g. B.Tech, MBA',
-                })}
-                {F('Total Experience', 'totalExperience', {
-                  placeholder: 'e.g. 3 years',
-                })}
-                {F('Previous Company', 'previousCompany', {
-                  placeholder: 'Last employer name',
-                })}
-
-                <View style={styles.sectionDivider}>
-                  <Text style={styles.sectionDividerText}>Bank Details</Text>
-                </View>
-                {F('Account Holder Name', 'accountHolderName', {
-                  placeholder: 'As per bank records',
-                })}
-                {F('Bank Account Number', 'bankAccountNumber', {
-                  placeholder: 'Account number',
-                  keyboardType: 'numeric',
-                })}
-                {F('IFSC Code', 'ifscCode', {
-                  placeholder: 'e.g. SBIN0001234',
-                  autoCapitalize: 'characters',
-                })}
-                {F('Bank Name', 'bankName', {
-                  placeholder: 'e.g. State Bank of India',
-                })}
-              </>
-            )}
-
-            {/* Nav + Submit */}
-            <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
-              {activeTab > 0 && (
-                <TouchableOpacity
-                  style={styles.navBtn}
-                  onPress={() => setActiveTab(p => p - 1)}
-                >
-                  <Text style={styles.navBtnText}>← Previous</Text>
-                </TouchableOpacity>
-              )}
-              {activeTab < TABS.length - 1 ? (
-                <TouchableOpacity
-                  style={[styles.submitBtn, { flex: 1 }]}
-                  onPress={() => setActiveTab(p => p + 1)}
-                >
-                  <Text style={styles.submitBtnText}>Next →</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  style={[styles.submitBtn, { flex: 1 }]}
-                  onPress={handleSave}
-                  disabled={saving}
-                >
-                  {saving ? (
-                    <ActivityIndicator color={C.white} />
-                  ) : (
-                    <>
-                      <Check size={16} color={C.white} />
-                      <Text style={styles.submitBtnText}>
-                        {editingEmp ? 'Update Employee' : 'Create Employee'}
-                      </Text>
-                    </>
+                {/* Nav + Submit */}
+                <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+                  {activeTab > 0 && (
+                    <TouchableOpacity
+                      style={styles.navBtn}
+                      onPress={() => setActiveTab(p => p - 1)}
+                    >
+                      <Text style={styles.navBtnText}>← Previous</Text>
+                    </TouchableOpacity>
                   )}
-                </TouchableOpacity>
-              )}
-            </View>
-          </ScrollView>
-        </SafeAreaView>
-      </View></View>
-</Modal>
+                  {activeTab < TABS.length - 1 ? (
+                    <TouchableOpacity
+                      style={[styles.submitBtn, { flex: 1 }]}
+                      onPress={() => setActiveTab(p => p + 1)}
+                    >
+                      <Text style={styles.submitBtnText}>Next →</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={[styles.submitBtn, { flex: 1 }]}
+                      onPress={handleSave}
+                      disabled={saving}
+                    >
+                      {saving ? (
+                        <ActivityIndicator color={C.white} />
+                      ) : (
+                        <>
+                          <Check size={16} color={C.white} />
+                          <Text style={styles.submitBtnText}>
+                            {editingEmp ? 'Update Employee' : 'Create Employee'}
+                          </Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </ScrollView>
+            </SafeAreaView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -2704,7 +2909,7 @@ const styles = StyleSheet.create({
     borderBottomColor: C.black,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: C.black },
+  headerTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   countBadge: {
     backgroundColor: C.primary,
     paddingHorizontal: 7,
@@ -2713,26 +2918,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderColor: C.black,
   },
-  countText: { color: C.white, fontSize: 12, fontWeight: '700' },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: C.primary,
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderColor: C.black,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
+  countText: { color: C.white, fontSize: 12, fontWeight: '400' },
+  addBtn: { padding: 4 },
   addBtnText: {
     color: C.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   searchWrap: {
@@ -2745,7 +2936,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
-  searchInput: { flex: 1, fontSize: 14, fontWeight: '500', color: C.black },
+  searchInput: { flex: 1, fontSize: 14, fontWeight: '400', color: C.black },
   filterBar: {
     flexShrink: 0,
     backgroundColor: C.white,
@@ -2769,19 +2960,19 @@ const styles = StyleSheet.create({
   },
   summaryCount: {
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: '400',
     lineHeight: Platform.OS === 'android' ? 28 : 24,
     includeFontPadding: false,
   } as any,
   summaryStatus: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
-  emptyText: { fontSize: 14, fontWeight: '700', color: C.textMuted },
+  emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
@@ -2810,13 +3001,13 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: C.black,
   },
-  avatarText: { color: C.white, fontWeight: '700', fontSize: 14 },
-  empName: { fontSize: 15, fontWeight: '700', color: C.black },
+  avatarText: { color: C.white, fontWeight: '400', fontSize: 14 },
+  empName: { fontSize: 15, fontWeight: '400', color: C.black },
   empId: { fontSize: 11, color: C.textMuted, fontFamily: 'monospace' },
   empIdChip: {
     alignSelf: 'flex-start',
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '400',
     color: C.primary,
     backgroundColor: C.primary + '18',
     borderWidth: 1.5,
@@ -2848,10 +3039,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  bulkText: { fontWeight: '700', fontSize: 12, color: C.black },
-  bulkLink: { fontWeight: '700', fontSize: 12, color: C.primary },
-  bulkBtn: { borderWidth: 2, borderColor: C.black, paddingHorizontal: 8, paddingVertical: 4 },
-  bulkBtnText: { color: C.white, fontWeight: '700', fontSize: 11 },
+  bulkText: { fontWeight: '400', fontSize: 12, color: C.black },
+  bulkLink: { fontWeight: '400', fontSize: 12, color: C.primary },
+  bulkBtn: {
+    borderWidth: 2,
+    borderColor: C.black,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  bulkBtnText: { color: C.white, fontWeight: '400', fontSize: 11 },
   statusCard: {
     borderWidth: 2,
     borderRadius: 8,
@@ -2875,8 +3071,14 @@ const styles = StyleSheet.create({
     borderColor: C.black,
     borderRadius: 6,
   },
-  statusNum: { fontSize: 20, fontWeight: '800', color: C.black },
-  statusLbl: { fontSize: 10, fontWeight: '700', color: C.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+  statusNum: { fontSize: 20, fontWeight: '400', color: C.black },
+  statusLbl: {
+    fontSize: 10,
+    fontWeight: '400',
+    color: C.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   attCard: {
     borderWidth: 2,
     borderRadius: 8,
@@ -2889,12 +3091,17 @@ const styles = StyleSheet.create({
     padding: 12,
     gap: 8,
   },
-  progTrack: { height: 12, borderWidth: 2, borderColor: C.black, backgroundColor: '#F3F4F6' },
+  progTrack: {
+    height: 12,
+    borderWidth: 2,
+    borderColor: C.black,
+    backgroundColor: '#F3F4F6',
+  },
   progFill: { height: '100%' },
   empDesig: {
     fontSize: 12,
     color: C.textMuted,
-    fontWeight: '500',
+    fontWeight: '400',
     marginTop: 1,
   },
   statusBadge: {
@@ -2906,7 +3113,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  statusText: { fontSize: 9, fontWeight: '700' },
+  statusText: { fontSize: 9, fontWeight: '400' },
   editBtn: {
     width: 30,
     height: 30,
@@ -2946,7 +3153,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: C.white,
   },
-  metaText: { fontSize: 11, color: C.black, fontWeight: '800', flexShrink: 1 },
+  metaText: { fontSize: 11, color: C.black, fontWeight: '400', flexShrink: 1 },
   cardBottom: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -2961,8 +3168,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
-  typePillText: { fontSize: 9, fontWeight: '700', color: C.primary },
-  joinDate: { fontSize: 11, color: C.textMuted, fontWeight: '500' },
+  typePillText: { fontSize: 9, fontWeight: '400', color: C.primary },
+  joinDate: { fontSize: 11, color: C.textMuted, fontWeight: '400' },
   loanBadge: {
     backgroundColor: '#FEF2F2',
     borderWidth: 2,
@@ -2972,7 +3179,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     alignSelf: 'flex-start',
   },
-  loanBadgeText: { fontSize: 12, fontWeight: '700', color: C.danger },
+  loanBadgeText: { fontSize: 12, fontWeight: '400', color: C.danger },
   // Modal
   modalHeader: {
     flexDirection: 'row',
@@ -2983,7 +3190,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  modalTitle: { fontSize: 20, fontWeight: '600', color: C.black },
+  modalTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   tabBar: {
     flexDirection: 'row',
     height: 40,
@@ -3002,12 +3209,12 @@ const styles = StyleSheet.create({
   tabItemActive: { borderBottomColor: C.primary },
   tabText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.textMuted,
     textTransform: 'uppercase',
     textAlign: 'center',
   },
-  tabTextActive: { color: C.primary, fontWeight: '700' },
+  tabTextActive: { color: C.primary, fontWeight: '400' },
   photoPicker: { alignItems: 'center', paddingVertical: 8 },
   photoWrap: { position: 'relative' },
   photoImg: {
@@ -3027,7 +3234,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  photoInitials: { color: C.white, fontSize: 28, fontWeight: '700' },
+  photoInitials: { color: C.white, fontSize: 28, fontWeight: '400' },
   photoEditBadge: {
     position: 'absolute',
     bottom: 2,
@@ -3039,11 +3246,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  photoEditText: { color: C.white, fontSize: 7, fontWeight: '700' },
-  photoHint: { fontSize: 11, color: C.black, fontWeight: '500', marginTop: 8 },
+  photoEditText: { color: C.white, fontSize: 7, fontWeight: '400' },
+  photoHint: { fontSize: 11, color: C.black, fontWeight: '400', marginTop: 8 },
   fieldLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.black,
     marginBottom: 5,
@@ -3052,7 +3259,7 @@ const styles = StyleSheet.create({
   fieldError: {
     fontSize: 11,
     color: C.danger,
-    fontWeight: '600',
+    fontWeight: '400',
     marginTop: 3,
     marginLeft: 2,
   },
@@ -3067,7 +3274,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
     backgroundColor: C.white,
   },
@@ -3079,7 +3286,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   selChipActive: { backgroundColor: C.primary },
-  selChipText: { fontSize: 11, fontWeight: '700', color: C.black },
+  selChipText: { fontSize: 11, fontWeight: '400', color: C.black },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -3094,7 +3301,7 @@ const styles = StyleSheet.create({
   toggleHint: {
     fontSize: 11,
     color: C.textMuted,
-    fontWeight: '500',
+    fontWeight: '400',
     marginTop: 1,
   },
   sectionDivider: {
@@ -3104,7 +3311,7 @@ const styles = StyleSheet.create({
   },
   sectionDividerText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.black,
     textTransform: 'uppercase',
     letterSpacing: 1,
@@ -3123,7 +3330,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: C.white,
   },
-  navBtnText: { fontWeight: '700', fontSize: 13, color: C.black },
+  navBtnText: { fontWeight: '400', fontSize: 13, color: C.black },
   submitBtn: {
     backgroundColor: C.primary,
     borderWidth: 2,
@@ -3141,7 +3348,7 @@ const styles = StyleSheet.create({
   },
   submitBtnText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 14,
     textTransform: 'uppercase',
   },
@@ -3175,7 +3382,7 @@ const styles = StyleSheet.create({
   },
   actionLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.black,
     textAlign: 'center',
     textTransform: 'uppercase',
@@ -3231,20 +3438,20 @@ const styles = StyleSheet.create({
   },
   infoRowLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
   infoRowValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '400',
     color: C.black,
     marginTop: 1,
   },
   infoSectionTitle: {
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '400',
     color: C.black,
     textTransform: 'uppercase',
     letterSpacing: 0.5,

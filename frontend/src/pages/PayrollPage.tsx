@@ -554,7 +554,9 @@ export default function PayrollPage() {
         <>
           {money(p.otPay, "+", "text-[#F59E0B]")}
           {(p.overtimeHours ?? 0) > 0 && (
-            <p className="text-[10px] text-muted-foreground">{Number(p.overtimeHours).toFixed(2)}h</p>
+            <p className="text-[10px] text-muted-foreground">
+              {Number(p.overtimeHours).toFixed(2)}h
+            </p>
           )}
         </>
       ),
@@ -567,18 +569,58 @@ export default function PayrollPage() {
       cell: (p) => (
         <>
           {money(p.absentDeduction, "-", "text-red-500")}
-          {p.absentDays > 0 && <p className="text-[10px] text-muted-foreground">{p.absentDays}d</p>}
+          {p.absentDays > 0 && (
+            <p className="text-[10px] text-muted-foreground">{p.absentDays}d</p>
+          )}
         </>
       ),
     },
-    { key: "late", label: "Late", cls: "text-red-500", val: (p) => p.lateDeductionAmount ?? 0, cell: (p) => money(p.lateDeductionAmount, "-", "text-red-500") },
-    { key: "half", label: "Half Day", cls: "text-red-500", val: (p) => p.halfDayDeduction ?? 0, cell: (p) => money(p.halfDayDeduction, "-", "text-red-500") },
-    { key: "early", label: "Early Out", cls: "text-red-500", val: (p) => p.earlyCheckoutDeduction ?? 0, cell: (p) => money(p.earlyCheckoutDeduction, "-", "text-red-500") },
-    { key: "penalty", label: "Penalty", cls: "text-red-500", val: (p) => p.penaltyAmount ?? 0, cell: (p) => money(p.penaltyAmount, "-", "text-red-500") },
-    { key: "bonus", label: "Bonus / Allow", cls: "text-[#00C48C]", val: (p) => p.otherAllowances ?? 0, cell: (p) => money(p.otherAllowances, "+", "text-[#00C48C]") },
-    { key: "loan", label: "Loan / Advance", cls: "text-[#FA731C]", val: (p) => p.loanDeduction ?? 0, cell: (p) => money(p.loanDeduction, "-", "text-[#FA731C]") },
+    {
+      key: "late",
+      label: "Late",
+      cls: "text-red-500",
+      val: (p) => p.lateDeductionAmount ?? 0,
+      cell: (p) => money(p.lateDeductionAmount, "-", "text-red-500"),
+    },
+    {
+      key: "half",
+      label: "Half Day",
+      cls: "text-red-500",
+      val: (p) => p.halfDayDeduction ?? 0,
+      cell: (p) => money(p.halfDayDeduction, "-", "text-red-500"),
+    },
+    {
+      key: "early",
+      label: "Early Out",
+      cls: "text-red-500",
+      val: (p) => p.earlyCheckoutDeduction ?? 0,
+      cell: (p) => money(p.earlyCheckoutDeduction, "-", "text-red-500"),
+    },
+    {
+      key: "penalty",
+      label: "Penalty",
+      cls: "text-red-500",
+      val: (p) => p.penaltyAmount ?? 0,
+      cell: (p) => money(p.penaltyAmount, "-", "text-red-500"),
+    },
+    {
+      key: "bonus",
+      label: "Bonus / Allow",
+      cls: "text-[#00C48C]",
+      val: (p) => p.otherAllowances ?? 0,
+      cell: (p) => money(p.otherAllowances, "+", "text-[#00C48C]"),
+    },
+    {
+      key: "loan",
+      label: "Loan / Advance",
+      cls: "text-[#FA731C]",
+      val: (p) => p.loanDeduction ?? 0,
+      cell: (p) => money(p.loanDeduction, "-", "text-[#FA731C]"),
+    },
   ];
-  const optionalCols = allOptionalCols.filter((c) => displayedPayrolls.some((p) => c.val(p) > 0));
+  const optionalCols = allOptionalCols.filter((c) =>
+    displayedPayrolls.some((p) => c.val(p) > 0),
+  );
 
   return (
     <AppLayout title="Payroll">
@@ -629,19 +671,51 @@ export default function PayrollPage() {
             rows={displayedPayrolls}
             cols={[
               { header: "Emp Code", value: (p: any) => p.employee?.employeeId },
-              { header: "Employee", value: (p: any) => `${p.employee?.firstName || ""} ${p.employee?.lastName || ""}`.trim() },
-              { header: "Designation", value: (p: any) => p.employee?.designation },
-              { header: "Cost / Hour", value: (p: any) => (p.hourlyRate ? Number(p.hourlyRate).toFixed(2) : "") },
+              {
+                header: "Employee",
+                value: (p: any) =>
+                  `${p.employee?.firstName || ""} ${p.employee?.lastName || ""}`.trim(),
+              },
+              {
+                header: "Designation",
+                value: (p: any) => p.employee?.designation,
+              },
+              {
+                header: "Cost / Hour",
+                value: (p: any) =>
+                  p.hourlyRate ? Number(p.hourlyRate).toFixed(2) : "",
+              },
               { header: "Basic", value: (p: any) => p.basicSalary },
-              { header: "Earned Basic", value: (p: any) => p.earnedBasic ?? p.basicSalary },
+              {
+                header: "Earned Basic",
+                value: (p: any) => p.earnedBasic ?? p.basicSalary,
+              },
               { header: "OT", value: (p: any) => p.otPay || 0 },
-              { header: "Absent Ded.", value: (p: any) => p.absentDeduction || 0 },
-              { header: "Late Ded.", value: (p: any) => p.lateDeductionAmount || 0 },
-              { header: "Half Day Ded.", value: (p: any) => p.halfDayDeduction || 0 },
-              { header: "Early Out Ded.", value: (p: any) => p.earlyCheckoutDeduction || 0 },
+              {
+                header: "Absent Ded.",
+                value: (p: any) => p.absentDeduction || 0,
+              },
+              {
+                header: "Late Ded.",
+                value: (p: any) => p.lateDeductionAmount || 0,
+              },
+              {
+                header: "Half Day Ded.",
+                value: (p: any) => p.halfDayDeduction || 0,
+              },
+              {
+                header: "Early Out Ded.",
+                value: (p: any) => p.earlyCheckoutDeduction || 0,
+              },
               { header: "Penalty", value: (p: any) => p.penaltyAmount || 0 },
-              { header: "Bonus/Allow", value: (p: any) => p.otherAllowances || 0 },
-              { header: "Loan/Advance", value: (p: any) => p.loanDeduction || 0 },
+              {
+                header: "Bonus/Allow",
+                value: (p: any) => p.otherAllowances || 0,
+              },
+              {
+                header: "Loan/Advance",
+                value: (p: any) => p.loanDeduction || 0,
+              },
               { header: "Gross", value: (p: any) => p.grossSalary },
               { header: "Net Salary", value: (p: any) => p.netSalary },
               { header: "Status", value: (p: any) => p.status },
@@ -896,14 +970,20 @@ export default function PayrollPage() {
                   { label: "Designation", cls: "" },
                   { label: "Cost / Hr", cls: "text-right" },
                   { label: "Salary", cls: "text-right" },
-                  ...optionalCols.map((c) => ({ label: c.label, cls: `text-right ${c.cls}` })),
+                  ...optionalCols.map((c) => ({
+                    label: c.label,
+                    cls: `text-right ${c.cls}`,
+                  })),
                   { label: "Net Salary", cls: "text-right" },
                   { label: "Status", cls: "" },
                   { label: "Actions", cls: "" },
                 ].map(({ label, cls }) => (
                   <th
                     key={label}
-                    className={cn("px-4 py-3 text-xs font-bold text-black uppercase tracking-wider", cls)}
+                    className={cn(
+                      "px-4 py-3 text-xs font-bold text-black uppercase tracking-wider",
+                      cls,
+                    )}
                   >
                     {label}
                   </th>
@@ -937,23 +1017,36 @@ export default function PayrollPage() {
                       )}
                       <div>
                         <p className="font-bold text-black text-xs whitespace-nowrap">
-                          {(p.employee as any)?.firstName} {(p.employee as any)?.lastName}
+                          {(p.employee as any)?.firstName}{" "}
+                          {(p.employee as any)?.lastName}
                         </p>
-                        
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-xs text-black">{(p.employee as any)?.designation || "—"}</td>
+                  <td className="px-4 py-3 text-xs text-black">
+                    {(p.employee as any)?.designation || "—"}
+                  </td>
                   <td className="px-4 py-3 text-right text-xs font-bold text-black">
                     {p.hourlyRate ? `₹${Number(p.hourlyRate).toFixed(2)}` : "—"}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <p className="text-xs font-bold text-black">{formatCurrency(p.earnedBasic ?? p.basicSalary)}</p>
-                    <p className="text-[10px] text-muted-foreground">of {formatCurrency(p.basicSalary)}</p>
+                    <p className="text-xs font-bold text-black">
+                      {formatCurrency(p.earnedBasic ?? p.basicSalary)}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      of {formatCurrency(p.basicSalary)}
+                    </p>
                   </td>
                   {optionalCols.map((c) => (
-                    <td key={c.key} className="px-4 py-3 text-right text-xs font-bold">
-                      {c.val(p) > 0 ? c.cell(p) : <span className="text-muted-foreground">—</span>}
+                    <td
+                      key={c.key}
+                      className="px-4 py-3 text-right text-xs font-bold"
+                    >
+                      {c.val(p) > 0 ? (
+                        c.cell(p)
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </td>
                   ))}
 
@@ -986,24 +1079,24 @@ export default function PayrollPage() {
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         {p.status === "processed" && (
+                          <button
+                            onClick={() => handleMarkPaid(p._id)}
+                            className="flex items-center gap-1 text-xs font-bold border-2 border-black px-2 py-1 hover:bg-[#024BAB] hover:text-white transition-colors whitespace-nowrap"
+                          >
+                            <CheckCircle className="w-3 h-3" /> Mark Paid
+                          </button>
+                        )}
+                        {p.status === "paid" && (
+                          <span className="text-xs text-[#00C48C] font-bold flex items-center gap-1">
+                            <CheckCircle className="w-3.5 h-3.5" /> Paid
+                          </span>
+                        )}
                         <button
-                          onClick={() => handleMarkPaid(p._id)}
-                          className="flex items-center gap-1 text-xs font-bold border-2 border-black px-2 py-1 hover:bg-[#024BAB] hover:text-white transition-colors whitespace-nowrap"
+                          onClick={() => printPayslip(p, company)}
+                          className="flex items-center gap-1 text-xs font-bold border-2 border-black px-2 py-1 hover:bg-black hover:text-white transition-colors whitespace-nowrap"
                         >
-                          <CheckCircle className="w-3 h-3" /> Mark Paid
+                          <Printer className="w-3 h-3" /> Payslip
                         </button>
-                      )}
-                      {p.status === "paid" && (
-                        <span className="text-xs text-[#00C48C] font-bold flex items-center gap-1">
-                          <CheckCircle className="w-3.5 h-3.5" /> Paid
-                        </span>
-                      )}
-                      <button
-                        onClick={() => printPayslip(p, company)}
-                        className="flex items-center gap-1 text-xs font-bold border-2 border-black px-2 py-1 hover:bg-black hover:text-white transition-colors whitespace-nowrap"
-                      >
-                        <Printer className="w-3 h-3" /> Payslip
-                      </button>
                       </div>
                       {/* Slip receipt confirmation */}
                       {p.slipReceived === "received" ? (

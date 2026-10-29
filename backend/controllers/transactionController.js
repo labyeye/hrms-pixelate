@@ -22,7 +22,10 @@ const createTransaction = asyncHandler(async (req, res) => {
     throw new Error("employee, type and date are required");
   }
 
-  const target = await Employee.findOne({ _id: employee, company: req.user.company }).populate("shift");
+  const target = await Employee.findOne({
+    _id: employee,
+    company: req.user.company,
+  }).populate("shift");
   if (!target) {
     res.status(404);
     throw new Error("Employee not found");

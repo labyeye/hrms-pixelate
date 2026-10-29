@@ -376,92 +376,94 @@ export default function OfferLettersScreen() {
       )}
 
       {/* Create / Edit Modal */}
-      <Modal
-        visible={showForm}
-        transparent
-        animationType="fade"
-      >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        <SafeAreaView style={s.safe} edges={['top']}>
-          <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>
-              {editing ? 'Edit Offer Letter' : 'New Offer Letter'}
-            </Text>
-            <TouchableOpacity onPress={() => setShowForm(false)}>
-              <X size={22} color={C.black} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            contentContainerStyle={{ padding: 20, gap: 16 }}
-            keyboardShouldPersistTaps="handled"
-          >
-            {F('Candidate Name *', 'candidateName', {
-              placeholder: 'Full name',
-            })}
-            {F('Email', 'candidateEmail', {
-              placeholder: 'candidate@email.com',
-              keyboardType: 'email-address',
-              autoCapitalize: 'none',
-            })}
-            {F('Designation *', 'designation', {
-              placeholder: 'e.g. Software Engineer',
-            })}
-            {F('Department', 'department', { placeholder: 'e.g. Engineering' })}
-
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <View style={{ flex: 1 }}>
-                <DatePickerField
-                  label="Joining Date"
-                  value={form.joiningDate}
-                  onChange={v =>
-                    setForm((p: any) => ({ ...p, joiningDate: v }))
-                  }
-                />
+      <Modal visible={showForm} transparent animationType="fade">
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            <SafeAreaView style={s.safe} edges={['top']}>
+              <View style={s.modalHeader}>
+                <Text style={s.modalTitle}>
+                  {editing ? 'Edit Offer Letter' : 'New Offer Letter'}
+                </Text>
+                <TouchableOpacity onPress={() => setShowForm(false)}>
+                  <X size={22} color={C.black} />
+                </TouchableOpacity>
               </View>
-              <View style={{ flex: 1 }}>
-                {F('Monthly CTC (₹)', 'ctc', {
-                  keyboardType: 'numeric',
-                  placeholder: '50000',
-                })}
-              </View>
-            </View>
-
-            <View>
-              <Text style={s.fieldLabel}>Employment Type</Text>
-              <TouchableOpacity
-                style={s.selectBtn}
-                onPress={() => setShowEmpTypePicker(true)}
+              <ScrollView
+                contentContainerStyle={{ padding: 20, gap: 16 }}
+                keyboardShouldPersistTaps="handled"
               >
-                <Text style={s.selectBtnText}>{form.employmentType}</Text>
-              </TouchableOpacity>
-            </View>
+                {F('Candidate Name *', 'candidateName', {
+                  placeholder: 'Full name',
+                })}
+                {F('Email', 'candidateEmail', {
+                  placeholder: 'candidate@email.com',
+                  keyboardType: 'email-address',
+                  autoCapitalize: 'none',
+                })}
+                {F('Designation *', 'designation', {
+                  placeholder: 'e.g. Software Engineer',
+                })}
+                {F('Department', 'department', {
+                  placeholder: 'e.g. Engineering',
+                })}
 
-            {F('Work Location', 'location', { placeholder: 'e.g. Mumbai' })}
-            {F('Validity (days)', 'validityDays', {
-              keyboardType: 'numeric',
-              placeholder: '7',
-            })}
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <View style={{ flex: 1 }}>
+                    <DatePickerField
+                      label="Joining Date"
+                      value={form.joiningDate}
+                      onChange={v =>
+                        setForm((p: any) => ({ ...p, joiningDate: v }))
+                      }
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    {F('Monthly CTC (₹)', 'ctc', {
+                      keyboardType: 'numeric',
+                      placeholder: '50000',
+                    })}
+                  </View>
+                </View>
 
-            <TouchableOpacity
-              style={s.submitBtn}
-              onPress={handleSave}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator color={C.white} />
-              ) : (
-                <>
-                  <Send size={16} color={C.white} />
-                  <Text style={s.submitBtnText}>
-                    {editing ? 'Update Offer Letter' : 'Create Offer Letter'}
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </View></View>
-</Modal>
+                <View>
+                  <Text style={s.fieldLabel}>Employment Type</Text>
+                  <TouchableOpacity
+                    style={s.selectBtn}
+                    onPress={() => setShowEmpTypePicker(true)}
+                  >
+                    <Text style={s.selectBtnText}>{form.employmentType}</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {F('Work Location', 'location', { placeholder: 'e.g. Mumbai' })}
+                {F('Validity (days)', 'validityDays', {
+                  keyboardType: 'numeric',
+                  placeholder: '7',
+                })}
+
+                <TouchableOpacity
+                  style={s.submitBtn}
+                  onPress={handleSave}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <ActivityIndicator color={C.white} />
+                  ) : (
+                    <>
+                      <Send size={16} color={C.white} />
+                      <Text style={s.submitBtnText}>
+                        {editing
+                          ? 'Update Offer Letter'
+                          : 'Create Offer Letter'}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
+            </SafeAreaView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Employment Type Picker */}
       <Modal visible={showEmpTypePicker} animationType="slide" transparent>
@@ -514,7 +516,7 @@ const s = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  title: { fontSize: 20, fontWeight: '700', color: C.black },
+  title: { fontSize: 20, fontWeight: '400', color: C.black },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -533,13 +535,13 @@ const s = StyleSheet.create({
   addBtnText: {
     color: C.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
-  emptyText: { fontSize: 14, fontWeight: '700', color: '#9CA3AF' },
-  emptyHint: { fontSize: 12, color: '#D1D5DB', fontWeight: '500' },
+  emptyText: { fontSize: 14, fontWeight: '400', color: '#9CA3AF' },
+  emptyHint: { fontSize: 12, color: '#D1D5DB', fontWeight: '400' },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
@@ -566,8 +568,8 @@ const s = StyleSheet.create({
     borderRadius: 8,
     borderColor: C.black,
   },
-  cardName: { fontSize: 14, fontWeight: '700', color: C.black },
-  cardSub: { fontSize: 11, color: C.primary, fontWeight: '700', marginTop: 2 },
+  cardName: { fontSize: 14, fontWeight: '400', color: C.black },
+  cardSub: { fontSize: 11, color: C.primary, fontWeight: '400', marginTop: 2 },
   cardDate: { fontSize: 12, color: '#6B7280', marginTop: 2 },
   badge: {
     borderWidth: 2,
@@ -581,7 +583,7 @@ const s = StyleSheet.create({
   badgeText: {
     textTransform: 'uppercase',
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '400',
     letterSpacing: 0.5,
   },
   cardActions: { flexDirection: 'row', gap: 8, paddingTop: 10 },
@@ -602,7 +604,7 @@ const s = StyleSheet.create({
   actionBtnText: {
     color: C.primary,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   modalHeader: {
@@ -614,10 +616,10 @@ const s = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: C.black },
+  modalTitle: { fontSize: 18, fontWeight: '400', color: C.black },
   fieldLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.black,
     marginBottom: 6,
@@ -634,7 +636,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
     backgroundColor: C.white,
   },
@@ -650,7 +652,7 @@ const s = StyleSheet.create({
     paddingVertical: 11,
     backgroundColor: C.white,
   },
-  selectBtnText: { fontSize: 14, fontWeight: '500', color: C.black },
+  selectBtnText: { fontSize: 14, fontWeight: '400', color: C.black },
   submitBtn: {
     backgroundColor: C.primary,
     borderWidth: 2,
@@ -669,7 +671,7 @@ const s = StyleSheet.create({
   },
   submitBtnText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 14,
     textTransform: 'uppercase',
   },
@@ -693,7 +695,7 @@ const s = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  pickerSheetTitle: { fontSize: 16, fontWeight: '700', color: C.black },
+  pickerSheetTitle: { fontSize: 16, fontWeight: '400', color: C.black },
   sheetOption: {
     paddingHorizontal: 20,
     paddingVertical: 14,
@@ -701,5 +703,5 @@ const s = StyleSheet.create({
     borderBottomColor: C.black,
   },
   sheetOptionActive: { backgroundColor: '#EFF6FF' },
-  sheetOptionText: { fontSize: 15, fontWeight: '600', color: C.black },
+  sheetOptionText: { fontSize: 15, fontWeight: '400', color: C.black },
 });

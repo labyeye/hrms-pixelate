@@ -1284,352 +1284,376 @@ function ReportModal({
   const needsYear = !!report.needsYear;
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-        animationType="fade"
-    >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-      <SafeAreaView style={ms.safe} edges={['top']}>
-        {/* Header */}
-        <View style={ms.header}>
-          <View style={{ flex: 1 }}>
-            <Text style={ms.title}>{report.label}</Text>
-            <Text style={ms.desc} numberOfLines={2}>
-              {report.desc}
-            </Text>
-          </View>
-          <TouchableOpacity onPress={onClose} style={ms.closeBtn}>
-            <X size={20} color={C.black} />
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView
-          contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }}
-          showsVerticalScrollIndicator={false}
-          stickyHeaderIndices={[]}
-        >
-          {/* Employee picker — only for employee-report */}
-          {isEmpReport && (
-            <View style={ms.filterBlock}>
-              <Text style={ms.filterLabel}>Step 1 — Select Employee</Text>
-              <View style={ms.searchRow}>
-                <Search size={14} color={C.textMuted} />
-                <TextInput
-                  style={ms.searchInput}
-                  placeholder="Search by name or ID..."
-                  placeholderTextColor={C.textMuted}
-                  value={empSearch}
-                  onChangeText={setEmpSearch}
-                />
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={CENTER.overlay}>
+        <View style={CENTER.card}>
+          <SafeAreaView style={ms.safe} edges={['top']}>
+            {/* Header */}
+            <View style={ms.header}>
+              <View style={{ flex: 1 }}>
+                <Text style={ms.title}>{report.label}</Text>
+                <Text style={ms.desc} numberOfLines={2}>
+                  {report.desc}
+                </Text>
               </View>
-              {empLoading ? (
-                <ActivityIndicator
-                  color={C.primary}
-                  style={{ marginVertical: 12 }}
-                />
-              ) : (
-                <ScrollView
-                  style={{ maxHeight: 200 }}
-                  showsVerticalScrollIndicator={false}
-                >
-                  {allEmployees
-                    .filter(e => {
-                      const q = empSearch.toLowerCase();
-                      return (
-                        !q ||
-                        `${e.firstName} ${e.lastName}`
-                          .toLowerCase()
-                          .includes(q) ||
-                        (e.employeeId || '').toLowerCase().includes(q)
-                      );
-                    })
-                    .map(emp => {
-                      const name = `${emp.firstName} ${emp.lastName}`;
-                      const bg = avatarBgM(name);
-                      const ini = initialsM(name);
-                      const isSelected = selectedEmp?._id === emp._id;
-                      return (
-                        <TouchableOpacity
-                          key={emp._id}
-                          style={[ms.empRow, isSelected && ms.empRowSelected]}
-                          onPress={() => {
-                            setSelectedEmp(emp);
-                            setGenerated(false);
-                          }}
-                        >
-                          <View style={[ms.empAvatar, { backgroundColor: bg }]}>
-                            <Text style={ms.empAvatarText}>{ini}</Text>
-                          </View>
-                          <View style={{ flex: 1 }}>
-                            <Text
-                              style={[
-                                ms.empName,
-                                isSelected && { color: C.white },
-                              ]}
-                            >
-                              {name}
-                            </Text>
-                            <Text
-                              style={[
-                                ms.empSub,
-                                isSelected && { color: C.white + 'cc' },
-                              ]}
-                            >
-                              {emp.employeeId} ·{' '}
-                              {emp.department?.name || emp.designation}
-                            </Text>
-                          </View>
-                          {isSelected && <User size={14} color={C.white} />}
-                        </TouchableOpacity>
-                      );
-                    })}
-                </ScrollView>
-              )}
+              <TouchableOpacity onPress={onClose} style={ms.closeBtn}>
+                <X size={20} color={C.black} />
+              </TouchableOpacity>
+            </View>
 
-              {selectedEmp && (
-                <>
-                  <Text style={[ms.filterLabel, { marginTop: 14 }]}>
-                    Step 2 — Report Type
-                  </Text>
-                  <View style={{ gap: 8 }}>
-                    {EMP_REPORT_SUB_TYPES.map(sub => {
-                      const active = empSubType === sub.id;
-                      return (
-                        <TouchableOpacity
-                          key={sub.id}
-                          style={[
-                            ms.subTypeBtn,
-                            active && {
-                              backgroundColor: C.primary,
-                              borderColor: C.primary,
-                            },
-                          ]}
-                          onPress={() => {
-                            setEmpSubType(sub.id);
-                            setGenerated(false);
-                          }}
-                        >
-                          <Text
-                            style={[
-                              ms.subTypeBtnLabel,
-                              active && { color: C.white },
-                            ]}
-                          >
-                            {sub.label}
-                          </Text>
-                          <Text
-                            style={[
-                              ms.subTypeBtnDesc,
-                              active && { color: C.white + 'cc' },
-                            ]}
-                          >
-                            {sub.desc}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
+            <ScrollView
+              contentContainerStyle={{
+                padding: 16,
+                gap: 14,
+                paddingBottom: 40,
+              }}
+              showsVerticalScrollIndicator={false}
+              stickyHeaderIndices={[]}
+            >
+              {/* Employee picker — only for employee-report */}
+              {isEmpReport && (
+                <View style={ms.filterBlock}>
+                  <Text style={ms.filterLabel}>Step 1 — Select Employee</Text>
+                  <View style={ms.searchRow}>
+                    <Search size={14} color={C.textMuted} />
+                    <TextInput
+                      style={ms.searchInput}
+                      placeholder="Search by name or ID..."
+                      placeholderTextColor={C.textMuted}
+                      value={empSearch}
+                      onChangeText={setEmpSearch}
+                    />
                   </View>
-                </>
-              )}
-            </View>
-          )}
-
-          {/* Filters — hidden for employee-report (uses picker above) */}
-          {!isEmpReport && (
-            <View style={ms.filterBlock}>
-              {needsMonth && (
-                <>
-                  <Text style={ms.filterLabel}>Month</Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ gap: 6 }}
-                  >
-                    {MONTHS.map((m, i) => {
-                      const val = String(i + 1);
-                      const active = month === val;
-                      return (
-                        <TouchableOpacity
-                          key={m}
-                          style={[ms.chip, active && ms.chipActive]}
-                          onPress={() => {
-                            setMonth(val);
-                            setGenerated(false);
-                          }}
-                        >
-                          <Text
-                            style={[ms.chipText, active && { color: C.white }]}
-                          >
-                            {m}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                </>
-              )}
-              {(needsMonth || needsYear) && (
-                <>
-                  <Text
-                    style={[ms.filterLabel, { marginTop: needsMonth ? 10 : 0 }]}
-                  >
-                    Year
-                  </Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ gap: 6 }}
-                  >
-                    {YEARS.map(y => {
-                      const val = String(y);
-                      const active = year === val;
-                      return (
-                        <TouchableOpacity
-                          key={y}
-                          style={[ms.chip, active && ms.chipActive]}
-                          onPress={() => {
-                            setYear(val);
-                            setGenerated(false);
-                          }}
-                        >
-                          <Text
-                            style={[ms.chipText, active && { color: C.white }]}
-                          >
-                            {y}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                </>
-              )}
-              {needsDept && departments.length > 0 && (
-                <>
-                  <Text style={[ms.filterLabel, { marginTop: 10 }]}>
-                    Department
-                  </Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ gap: 6 }}
-                  >
-                    {[{ _id: 'all', name: 'All Depts' }, ...departments].map(
-                      d => {
-                        const active = dept === d._id;
-                        return (
-                          <TouchableOpacity
-                            key={d._id}
-                            style={[ms.chip, active && ms.chipActive]}
-                            onPress={() => {
-                              setDept(d._id);
-                              setGenerated(false);
-                            }}
-                          >
-                            <Text
-                              style={[
-                                ms.chipText,
-                                active && { color: C.white },
-                              ]}
-                            >
-                              {d.name}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      },
-                    )}
-                  </ScrollView>
-                </>
-              )}
-            </View>
-          )}
-
-          {/* Generate button */}
-          <TouchableOpacity
-            style={[
-              ms.genBtn,
-              {
-                backgroundColor: report.color,
-                opacity: isEmpReport && !selectedEmp ? 0.4 : 1,
-              },
-            ]}
-            onPress={handleGenerate}
-            disabled={loading || (isEmpReport && !selectedEmp)}
-          >
-            {loading ? (
-              <ActivityIndicator color={C.white} />
-            ) : (
-              <Text style={ms.genBtnText}>Generate Report</Text>
-            )}
-          </TouchableOpacity>
-
-          {/* Table */}
-          {generated && rows.length === 0 && (
-            <View style={ms.empty}>
-              <AlertCircle size={32} color="#D1D5DB" />
-              <Text style={ms.emptyText}>No data for selected period</Text>
-            </View>
-          )}
-
-          {generated && rows.length > 0 && (
-            <>
-              {/* Export buttons */}
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <TouchableOpacity
-                  style={[
-                    ms.exportBtn,
-                    { backgroundColor: C.primary, flex: 1 },
-                  ]}
-                  onPress={handleShareCSV}
-                >
-                  <Download size={13} color={C.white} />
-                  <Text style={ms.exportBtnText}>CSV ({rows.length})</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[ms.exportBtn, { backgroundColor: C.danger, flex: 1 }]}
-                  onPress={handlePDF}
-                >
-                  <FileText size={13} color={C.white} />
-                  <Text style={ms.exportBtnText}>PDF / Print</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Scrollable table */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator
-                style={ms.tableOuter}
-              >
-                <View>
-                  {/* Header row */}
-                  <View style={ms.tableHeaderRow}>
-                    {headers.map((h, i) => (
-                      <Text key={i} style={ms.tableHeaderCell}>
-                        {h}
-                      </Text>
-                    ))}
-                  </View>
-                  {/* Data rows */}
-                  {rows.map((row, ri) => (
-                    <View
-                      key={ri}
-                      style={[ms.tableRow, ri % 2 !== 0 && ms.tableRowAlt]}
+                  {empLoading ? (
+                    <ActivityIndicator
+                      color={C.primary}
+                      style={{ marginVertical: 12 }}
+                    />
+                  ) : (
+                    <ScrollView
+                      style={{ maxHeight: 200 }}
+                      showsVerticalScrollIndicator={false}
                     >
-                      {row.map((cell, ci) => (
-                        <Text key={ci} style={ms.tableCell} numberOfLines={1}>
-                          {cell}
-                        </Text>
+                      {allEmployees
+                        .filter(e => {
+                          const q = empSearch.toLowerCase();
+                          return (
+                            !q ||
+                            `${e.firstName} ${e.lastName}`
+                              .toLowerCase()
+                              .includes(q) ||
+                            (e.employeeId || '').toLowerCase().includes(q)
+                          );
+                        })
+                        .map(emp => {
+                          const name = `${emp.firstName} ${emp.lastName}`;
+                          const bg = avatarBgM(name);
+                          const ini = initialsM(name);
+                          const isSelected = selectedEmp?._id === emp._id;
+                          return (
+                            <TouchableOpacity
+                              key={emp._id}
+                              style={[
+                                ms.empRow,
+                                isSelected && ms.empRowSelected,
+                              ]}
+                              onPress={() => {
+                                setSelectedEmp(emp);
+                                setGenerated(false);
+                              }}
+                            >
+                              <View
+                                style={[ms.empAvatar, { backgroundColor: bg }]}
+                              >
+                                <Text style={ms.empAvatarText}>{ini}</Text>
+                              </View>
+                              <View style={{ flex: 1 }}>
+                                <Text
+                                  style={[
+                                    ms.empName,
+                                    isSelected && { color: C.white },
+                                  ]}
+                                >
+                                  {name}
+                                </Text>
+                                <Text
+                                  style={[
+                                    ms.empSub,
+                                    isSelected && { color: C.white + 'cc' },
+                                  ]}
+                                >
+                                  {emp.employeeId} ·{' '}
+                                  {emp.department?.name || emp.designation}
+                                </Text>
+                              </View>
+                              {isSelected && <User size={14} color={C.white} />}
+                            </TouchableOpacity>
+                          );
+                        })}
+                    </ScrollView>
+                  )}
+
+                  {selectedEmp && (
+                    <>
+                      <Text style={[ms.filterLabel, { marginTop: 14 }]}>
+                        Step 2 — Report Type
+                      </Text>
+                      <View style={{ gap: 8 }}>
+                        {EMP_REPORT_SUB_TYPES.map(sub => {
+                          const active = empSubType === sub.id;
+                          return (
+                            <TouchableOpacity
+                              key={sub.id}
+                              style={[
+                                ms.subTypeBtn,
+                                active && {
+                                  backgroundColor: C.primary,
+                                  borderColor: C.primary,
+                                },
+                              ]}
+                              onPress={() => {
+                                setEmpSubType(sub.id);
+                                setGenerated(false);
+                              }}
+                            >
+                              <Text
+                                style={[
+                                  ms.subTypeBtnLabel,
+                                  active && { color: C.white },
+                                ]}
+                              >
+                                {sub.label}
+                              </Text>
+                              <Text
+                                style={[
+                                  ms.subTypeBtnDesc,
+                                  active && { color: C.white + 'cc' },
+                                ]}
+                              >
+                                {sub.desc}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </>
+                  )}
+                </View>
+              )}
+
+              {/* Filters — hidden for employee-report (uses picker above) */}
+              {!isEmpReport && (
+                <View style={ms.filterBlock}>
+                  {needsMonth && (
+                    <>
+                      <Text style={ms.filterLabel}>Month</Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ gap: 6 }}
+                      >
+                        {MONTHS.map((m, i) => {
+                          const val = String(i + 1);
+                          const active = month === val;
+                          return (
+                            <TouchableOpacity
+                              key={m}
+                              style={[ms.chip, active && ms.chipActive]}
+                              onPress={() => {
+                                setMonth(val);
+                                setGenerated(false);
+                              }}
+                            >
+                              <Text
+                                style={[
+                                  ms.chipText,
+                                  active && { color: C.white },
+                                ]}
+                              >
+                                {m}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </ScrollView>
+                    </>
+                  )}
+                  {(needsMonth || needsYear) && (
+                    <>
+                      <Text
+                        style={[
+                          ms.filterLabel,
+                          { marginTop: needsMonth ? 10 : 0 },
+                        ]}
+                      >
+                        Year
+                      </Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ gap: 6 }}
+                      >
+                        {YEARS.map(y => {
+                          const val = String(y);
+                          const active = year === val;
+                          return (
+                            <TouchableOpacity
+                              key={y}
+                              style={[ms.chip, active && ms.chipActive]}
+                              onPress={() => {
+                                setYear(val);
+                                setGenerated(false);
+                              }}
+                            >
+                              <Text
+                                style={[
+                                  ms.chipText,
+                                  active && { color: C.white },
+                                ]}
+                              >
+                                {y}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </ScrollView>
+                    </>
+                  )}
+                  {needsDept && departments.length > 0 && (
+                    <>
+                      <Text style={[ms.filterLabel, { marginTop: 10 }]}>
+                        Department
+                      </Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ gap: 6 }}
+                      >
+                        {[
+                          { _id: 'all', name: 'All Depts' },
+                          ...departments,
+                        ].map(d => {
+                          const active = dept === d._id;
+                          return (
+                            <TouchableOpacity
+                              key={d._id}
+                              style={[ms.chip, active && ms.chipActive]}
+                              onPress={() => {
+                                setDept(d._id);
+                                setGenerated(false);
+                              }}
+                            >
+                              <Text
+                                style={[
+                                  ms.chipText,
+                                  active && { color: C.white },
+                                ]}
+                              >
+                                {d.name}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </ScrollView>
+                    </>
+                  )}
+                </View>
+              )}
+
+              {/* Generate button */}
+              <TouchableOpacity
+                style={[
+                  ms.genBtn,
+                  {
+                    backgroundColor: report.color,
+                    opacity: isEmpReport && !selectedEmp ? 0.4 : 1,
+                  },
+                ]}
+                onPress={handleGenerate}
+                disabled={loading || (isEmpReport && !selectedEmp)}
+              >
+                {loading ? (
+                  <ActivityIndicator color={C.white} />
+                ) : (
+                  <Text style={ms.genBtnText}>Generate Report</Text>
+                )}
+              </TouchableOpacity>
+
+              {/* Table */}
+              {generated && rows.length === 0 && (
+                <View style={ms.empty}>
+                  <AlertCircle size={32} color="#D1D5DB" />
+                  <Text style={ms.emptyText}>No data for selected period</Text>
+                </View>
+              )}
+
+              {generated && rows.length > 0 && (
+                <>
+                  {/* Export buttons */}
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                    <TouchableOpacity
+                      style={[
+                        ms.exportBtn,
+                        { backgroundColor: C.primary, flex: 1 },
+                      ]}
+                      onPress={handleShareCSV}
+                    >
+                      <Download size={13} color={C.white} />
+                      <Text style={ms.exportBtnText}>CSV ({rows.length})</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        ms.exportBtn,
+                        { backgroundColor: C.danger, flex: 1 },
+                      ]}
+                      onPress={handlePDF}
+                    >
+                      <FileText size={13} color={C.white} />
+                      <Text style={ms.exportBtnText}>PDF / Print</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Scrollable table */}
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator
+                    style={ms.tableOuter}
+                  >
+                    <View>
+                      {/* Header row */}
+                      <View style={ms.tableHeaderRow}>
+                        {headers.map((h, i) => (
+                          <Text key={i} style={ms.tableHeaderCell}>
+                            {h}
+                          </Text>
+                        ))}
+                      </View>
+                      {/* Data rows */}
+                      {rows.map((row, ri) => (
+                        <View
+                          key={ri}
+                          style={[ms.tableRow, ri % 2 !== 0 && ms.tableRowAlt]}
+                        >
+                          {row.map((cell, ci) => (
+                            <Text
+                              key={ci}
+                              style={ms.tableCell}
+                              numberOfLines={1}
+                            >
+                              {cell}
+                            </Text>
+                          ))}
+                        </View>
                       ))}
                     </View>
-                  ))}
-                </View>
-              </ScrollView>
-            </>
-          )}
-        </ScrollView>
-      </SafeAreaView>
-    </View></View>
-</Modal>
+                  </ScrollView>
+                </>
+              )}
+            </ScrollView>
+          </SafeAreaView>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -1770,8 +1794,8 @@ const s = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  logoText: { fontSize: 16, fontWeight: '700', color: C.black },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: C.black, flex: 1 },
+  logoText: { fontSize: 16, fontWeight: '400', color: C.black },
+  headerTitle: { fontSize: 20, fontWeight: '400', color: C.black, flex: 1 },
   countBadge: {
     backgroundColor: C.primary,
     paddingHorizontal: 7,
@@ -1784,7 +1808,7 @@ const s = StyleSheet.create({
     borderRadius: 8,
     borderColor: C.black,
   },
-  countText: { color: C.white, fontSize: 12, fontWeight: '700' },
+  countText: { color: C.white, fontSize: 12, fontWeight: '400' },
   catBar: {
     maxHeight: 48,
     backgroundColor: C.white,
@@ -1809,7 +1833,7 @@ const s = StyleSheet.create({
   },
   catChipText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.black,
     textAlign: 'center',
@@ -1834,15 +1858,15 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardLabel: { fontSize: 14, fontWeight: '700', color: C.black },
+  cardLabel: { fontSize: 14, fontWeight: '400', color: C.black },
   cardDesc: {
     fontSize: 11,
     color: C.textMuted,
-    fontWeight: '500',
+    fontWeight: '400',
     lineHeight: 16,
   },
   catTag: { paddingHorizontal: 6, paddingVertical: 1 },
-  catTagText: { fontSize: 8, fontWeight: '700', color: C.white },
+  catTagText: { fontSize: 8, fontWeight: '400', color: C.white },
 });
 
 const CELL_W = 120;
@@ -1857,11 +1881,11 @@ const ms = StyleSheet.create({
     borderBottomColor: C.black,
     gap: 12,
   },
-  title: { fontSize: 18, fontWeight: '700', color: C.black },
+  title: { fontSize: 18, fontWeight: '400', color: C.black },
   desc: {
     fontSize: 12,
     color: C.textMuted,
-    fontWeight: '500',
+    fontWeight: '400',
     marginTop: 2,
     lineHeight: 17,
   },
@@ -1879,7 +1903,7 @@ const ms = StyleSheet.create({
   },
   filterLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.textMuted,
     marginBottom: 8,
@@ -1898,7 +1922,7 @@ const ms = StyleSheet.create({
     backgroundColor: C.white,
   },
   chipActive: { backgroundColor: C.primary, borderColor: C.primary },
-  chipText: { fontSize: 11, fontWeight: '700', color: C.black },
+  chipText: { fontSize: 11, fontWeight: '400', color: C.black },
   genBtn: {
     paddingVertical: 14,
     alignItems: 'center',
@@ -1912,7 +1936,7 @@ const ms = StyleSheet.create({
   },
   genBtnText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 14,
     textTransform: 'uppercase',
   },
@@ -1932,12 +1956,12 @@ const ms = StyleSheet.create({
   },
   exportBtnText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 12,
     textTransform: 'uppercase',
   },
   empty: { alignItems: 'center', paddingVertical: 40, gap: 10 },
-  emptyText: { fontSize: 14, fontWeight: '700', color: C.textMuted },
+  emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
   tableOuter: {
     borderWidth: 2,
     borderRightWidth: 4,
@@ -1958,7 +1982,7 @@ const ms = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 10,
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.black,
   },
@@ -1973,7 +1997,7 @@ const ms = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 9,
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
   },
   searchRow: {
@@ -1994,7 +2018,7 @@ const ms = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
     padding: 0,
   },
@@ -2022,17 +2046,17 @@ const ms = StyleSheet.create({
   },
   empAvatarText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.white,
   },
   empName: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.black,
   },
   empSub: {
     fontSize: 10,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.textMuted,
     marginTop: 1,
   },
@@ -2049,12 +2073,12 @@ const ms = StyleSheet.create({
   },
   subTypeBtnLabel: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.black,
   },
   subTypeBtnDesc: {
     fontSize: 10,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.textMuted,
     marginTop: 2,
   },

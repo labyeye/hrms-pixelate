@@ -20,7 +20,7 @@ import {
 import { useFaceDetector } from 'react-native-vision-camera-face-detector';
 import { Worklets } from 'react-native-worklets-core';
 import { X, CheckCircle2, AlertCircle } from 'lucide-react-native';
-import { attendanceAPI } from '../api/api';
+import { attendanceAPI, localNotificationsAPI } from '../api/api';
 import { getCurrentPosition } from '../utils/location';
 import { C } from '../theme';
 
@@ -112,6 +112,16 @@ export default function FaceCheckInScreen({ navigation, route }: any) {
         `[FaceCheckIn] photo=${tPhoto - t0}ms location=${tLocation - tPhoto}ms verify=${tDone - tLocation}ms total=${tDone - t0}ms`,
       );
 
+      const at = new Date().toLocaleTimeString('en-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      localNotificationsAPI
+        .add({
+          title: action === 'checkin' ? 'Checked in' : 'Checked out',
+          body: `Your attendance ${action === 'checkin' ? 'check-in' : 'check-out'} was recorded at ${at}.`,
+        })
+        .catch(() => {});
       setStatus('success');
       setTimeout(() => navigation.goBack(), 900);
     } catch (e: any) {
@@ -307,7 +317,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   closeBtn: { padding: 4 },
-  headerTitle: { color: C.white, fontWeight: '700', fontSize: 15 },
+  headerTitle: { color: C.white, fontWeight: '400', fontSize: 15 },
   cameraWrap: { flex: 1, backgroundColor: '#000000' },
   guideWrap: {
     position: 'absolute',
@@ -338,7 +348,7 @@ const styles = StyleSheet.create({
   },
   msgTitle: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 16,
     textAlign: 'center',
   },
@@ -360,13 +370,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
   },
-  settingsBtnText: { color: C.white, fontWeight: '700', fontSize: 13 },
+  settingsBtnText: { color: C.white, fontWeight: '400', fontSize: 13 },
   footer: {
     paddingHorizontal: 24,
     paddingVertical: 20,
     alignItems: 'center',
   },
-  footerText: { color: C.white, fontSize: 13, fontWeight: '600' },
+  footerText: { color: C.white, fontSize: 13, fontWeight: '400' },
   progressTrack: {
     width: '100%',
     height: 6,

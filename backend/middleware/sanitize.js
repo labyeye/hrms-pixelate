@@ -13,7 +13,8 @@ function strip(value) {
     const proto = Object.getPrototypeOf(value);
     if (proto !== Object.prototype && proto !== null) return value; // Date, Buffer, ...
     for (const key of Object.keys(value)) {
-      if (key.startsWith("$") || key.includes(".") || BAD_KEYS.has(key)) delete value[key];
+      if (key.startsWith("$") || key.includes(".") || BAD_KEYS.has(key))
+        delete value[key];
       else value[key] = strip(value[key]);
     }
   }
@@ -31,8 +32,16 @@ module.exports.strip = strip;
 
 if (require.main === module) {
   const assert = require("assert");
-  const a = strip({ deviceToken: { $ne: null }, ok: "x", n: { "a.b": 1, deep: [{ $gt: 1, keep: 2 }] } });
-  assert.deepStrictEqual(a, { deviceToken: {}, ok: "x", n: { deep: [{ keep: 2 }] } });
+  const a = strip({
+    deviceToken: { $ne: null },
+    ok: "x",
+    n: { "a.b": 1, deep: [{ $gt: 1, keep: 2 }] },
+  });
+  assert.deepStrictEqual(a, {
+    deviceToken: {},
+    ok: "x",
+    n: { deep: [{ keep: 2 }] },
+  });
   const evil = strip(JSON.parse('{"__proto__": {"admin": true}, "x": 1}'));
   assert.deepStrictEqual(Object.keys(evil), ["x"]);
   assert.ok(strip(new Date()) instanceof Date);

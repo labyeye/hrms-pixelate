@@ -50,12 +50,28 @@ export function HeaderBtn({
   color?: string;
   icon?: React.ReactNode;
 }) {
+  // With an icon the action is icon-only (no border or fill) so the header keeps its space.
+  if (React.isValidElement(icon)) {
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        style={{ padding: 4 }}
+      >
+        {React.cloneElement(icon as React.ReactElement<any>, {
+          size: 24,
+          color,
+        })}
+      </TouchableOpacity>
+    );
+  }
   return (
     <TouchableOpacity
       style={[styles.headerBtn, { borderColor: color, backgroundColor: color }]}
       onPress={onPress}
     >
-      {icon}
       <Text style={styles.headerBtnText}>{label}</Text>
     </TouchableOpacity>
   );
@@ -73,7 +89,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: '#000',
   },
-  title: { fontSize: 20, fontWeight: '700', color: '#000' },
+  title: { fontSize: 20, fontWeight: '400', color: '#000' },
   body: { flex: 1 },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   headerBtn: {
@@ -92,7 +108,7 @@ const styles = StyleSheet.create({
   headerBtnText: {
     color: '#fff',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
 });

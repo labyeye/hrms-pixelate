@@ -26,6 +26,7 @@ import {
   Eye,
   CheckCircle2,
   FileText,
+  SlidersHorizontal,
 } from 'lucide-react-native';
 import { TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -38,7 +39,9 @@ import { Payroll } from '../types/hrms';
 import { C } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import ExportButton from '../components/common/ExportButton';
-import FilterBar from '../components/common/FilterBar';
+import HeaderIconBtn from '../components/common/HeaderIconBtn';
+import SearchModal from '../components/common/SearchModal';
+import FilterSortModal from '../components/common/FilterSortModal';
 import PickerField from '../components/common/PickerField';
 
 const GEN_MONTHS = [
@@ -78,6 +81,9 @@ export default function PayrollScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [search, setSearch] = useState('');
+  const [sortKey, setSortKey] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [selected, setSelected] = useState<Payroll | null>(null);
   const [showGenModal, setShowGenModal] = useState(false);
   const [showTaxModal, setShowTaxModal] = useState(false);
@@ -126,6 +132,15 @@ export default function PayrollScreen() {
     }
     return true;
   });
+  if (sortKey) {
+    const nm = (p: any) =>
+      `${p.employee?.firstName || ''} ${p.employee?.lastName || ''}`.toLowerCase();
+    filtered.sort((a: any, b: any) =>
+      sortKey === 'name'
+        ? nm(a).localeCompare(nm(b))
+        : (b.netSalary || 0) - (a.netSalary || 0),
+    );
+  }
 
   const totalNet = payrolls.reduce((sum, p) => sum + (p.netSalary || 0), 0);
   const totalGross = payrolls.reduce((sum, p) => sum + (p.grossSalary || 0), 0);
@@ -206,8 +221,8 @@ export default function PayrollScreen() {
     const name = isEmployee
       ? user?.name || 'Employee'
       : emp
-      ? `${emp.firstName} ${emp.lastName}`
-      : 'Employee';
+        ? `${emp.firstName} ${emp.lastName}`
+        : 'Employee';
     const text = [
       `━━━━━━━━━━━━━━━━━━━━`,
       `SALARY SLIP — ${period}`,
@@ -364,6 +379,30 @@ export default function PayrollScreen() {
             {isEmployee ? 'My Payslips' : 'Payroll'}
           </Text>
         </View>
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: 10,
+            alignItems: 'center',
+            flex: 1,
+            justifyContent: 'flex-end',
+          }}
+        >
+          {!isEmployee && (
+            <HeaderIconBtn
+              label="Search"
+              icon={<Search size={22} color={C.black} />}
+              dot={!!search}
+              onPress={() => setSearchOpen(true)}
+            />
+          )}
+          <HeaderIconBtn
+            label="Filter and sort"
+            icon={<SlidersHorizontal size={22} color={C.black} />}
+            dot={!!statusFilter || !!sortKey}
+            onPress={() => setFilterOpen(true)}
+          />
+        </View>
         {!isEmployee && (
           <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
             {payrolls.length > 0 && (
@@ -478,31 +517,31 @@ export default function PayrollScreen() {
           >
             <View>
               <Text
-                style={{ fontSize: 9, fontWeight: '700', color: C.textMuted }}
+                style={{ fontSize: 9, fontWeight: '400', color: C.textMuted }}
               >
                 PROJECTED TAX
               </Text>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>
+              <Text style={{ fontSize: 13, fontWeight: '400', color: C.black }}>
                 ₹14,500
               </Text>
             </View>
             <View>
               <Text
-                style={{ fontSize: 9, fontWeight: '700', color: C.textMuted }}
+                style={{ fontSize: 9, fontWeight: '400', color: C.textMuted }}
               >
                 TDS DEDUCTED
               </Text>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>
+              <Text style={{ fontSize: 13, fontWeight: '400', color: C.black }}>
                 ₹4,500
               </Text>
             </View>
             <View>
               <Text
-                style={{ fontSize: 9, fontWeight: '700', color: C.textMuted }}
+                style={{ fontSize: 9, fontWeight: '400', color: C.textMuted }}
               >
                 TAX REGIME
               </Text>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: C.black }}>
+              <Text style={{ fontSize: 13, fontWeight: '400', color: C.black }}>
                 New Regime
               </Text>
             </View>
@@ -529,36 +568,43 @@ export default function PayrollScreen() {
         </View>
       )}
 
-      {!isEmployee && (
-        <View style={styles.searchWrap}>
-          <Search size={15} color={C.textMuted} />
-          <TextInput
-            style={styles.searchInput}
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search by employee name…"
-            placeholderTextColor={C.textLight}
-          />
-          {search.length > 0 && (
-            <TouchableOpacity onPress={() => setSearch('')}>
-              <X size={14} color={C.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
-      {/* Status filters */}
-      <FilterBar
-        value={statusFilter}
-        onChange={setStatusFilter}
-        toggle={false}
-        options={[
+      <SearchModal
+        visible={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        value={search}
+        onChange={setSearch}
+        placeholder="Search by employee name…"
+        items={payrolls.map((p: any) => ({
+          key: p._id,
+          title:
+            `${p.employee?.firstName || ''} ${p.employee?.lastName || ''}`.trim(),
+          subtitle: p.employee?.employeeId,
+        }))}
+      />
+      <FilterSortModal
+        visible={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        filterTitle="Status"
+        filterOptions={[
           { key: '', label: 'All' },
           { key: 'pending', label: 'Pending' },
           { key: 'processed', label: 'Processed' },
           { key: 'paid', label: 'Paid' },
           { key: 'cancelled', label: 'Cancelled' },
         ]}
+        filterValue={statusFilter}
+        onFilter={setStatusFilter}
+        sortOptions={[
+          { key: '', label: 'Default' },
+          { key: 'name', label: 'Employee A–Z' },
+          { key: 'net', label: 'Highest net pay' },
+        ]}
+        sortValue={sortKey}
+        onSort={setSortKey}
+        onReset={() => {
+          setStatusFilter('');
+          setSortKey('');
+        }}
       />
 
       {loading ? (
@@ -621,8 +667,8 @@ export default function PayrollScreen() {
                       {isEmployee
                         ? user?.name || 'My Payslip'
                         : emp
-                        ? `${emp.firstName} ${emp.lastName}`
-                        : 'Employee'}
+                          ? `${emp.firstName} ${emp.lastName}`
+                          : 'Employee'}
                     </Text>
                     <Text style={styles.empSub}>
                       {isEmployee
@@ -891,7 +937,7 @@ export default function PayrollScreen() {
                       <Text
                         style={{
                           fontSize: 13,
-                          fontWeight: '600',
+                          fontWeight: '400',
                           color: C.textMuted,
                         }}
                       >
@@ -913,7 +959,7 @@ export default function PayrollScreen() {
                               <Text
                                 style={{
                                   fontSize: 13,
-                                  fontWeight: '700',
+                                  fontWeight: '400',
                                   color: C.black,
                                 }}
                               >
@@ -932,7 +978,7 @@ export default function PayrollScreen() {
                                   <Text
                                     style={{
                                       fontSize: 9,
-                                      fontWeight: '700',
+                                      fontWeight: '400',
                                       color: '#92400E',
                                     }}
                                   >
@@ -953,7 +999,7 @@ export default function PayrollScreen() {
                                   <Text
                                     style={{
                                       fontSize: 9,
-                                      fontWeight: '700',
+                                      fontWeight: '400',
                                       color: C.success,
                                     }}
                                   >
@@ -989,7 +1035,7 @@ export default function PayrollScreen() {
                             <Text
                               style={{
                                 fontSize: 14,
-                                fontWeight: '700',
+                                fontWeight: '400',
                                 color: C.success,
                               }}
                             >
@@ -1000,7 +1046,7 @@ export default function PayrollScreen() {
                                 style={{
                                   fontSize: 10,
                                   color: C.danger,
-                                  fontWeight: '600',
+                                  fontWeight: '400',
                                 }}
                               >
                                 -₹{(p.totalDeductions || 0).toLocaleString()}
@@ -1178,7 +1224,7 @@ export default function PayrollScreen() {
                         <Text
                           style={[
                             styles.detailVal,
-                            row.bold && { fontWeight: '700' },
+                            row.bold && { fontWeight: '400' },
                             row.color ? { color: row.color } : {},
                             row.large ? { fontSize: 20 } : {},
                             val === 0 && { color: C.textMuted },
@@ -1363,7 +1409,7 @@ const styles = StyleSheet.create({
   codeChip: {
     alignSelf: 'flex-start',
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '400',
     color: C.primary,
     backgroundColor: C.primary + '18',
     borderWidth: 1.5,
@@ -1374,7 +1420,7 @@ const styles = StyleSheet.create({
   },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
   adjChip: { borderWidth: 1.5, paddingHorizontal: 6, paddingVertical: 2 },
-  adjText: { fontSize: 10, fontWeight: '700' },
+  adjText: { fontSize: 10, fontWeight: '400' },
   safe: { flex: 1, backgroundColor: '#F8F9FA' },
   taxCard: {
     backgroundColor: C.white,
@@ -1391,7 +1437,7 @@ const styles = StyleSheet.create({
   },
   taxTitle: {
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '400',
     color: C.black,
     textTransform: 'uppercase',
   },
@@ -1414,7 +1460,7 @@ const styles = StyleSheet.create({
   taxBtnText: {
     color: C.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   submitBtn: {
@@ -1433,7 +1479,7 @@ const styles = StyleSheet.create({
   },
   submitBtnText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 13,
     textTransform: 'uppercase',
   },
@@ -1448,7 +1494,7 @@ const styles = StyleSheet.create({
     borderBottomColor: C.black,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: C.black },
+  headerTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   summaryRow: {
     flexDirection: 'row',
     backgroundColor: C.white,
@@ -1471,11 +1517,11 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.textMuted,
   },
-  summaryVal: { fontSize: 20, fontWeight: '600', color: C.black, marginTop: 4 },
+  summaryVal: { fontSize: 20, fontWeight: '400', color: C.black, marginTop: 4 },
   filterBar: {
     maxHeight: 48,
     backgroundColor: C.white,
@@ -1498,14 +1544,14 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: C.primary },
   chipText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.black,
     textTransform: 'uppercase',
     marginTop: 3,
   },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
-  emptyText: { fontSize: 14, fontWeight: '700', color: C.textMuted },
+  emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
@@ -1532,9 +1578,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  empAvatarText: { color: C.white, fontSize: 16, fontWeight: '700' },
-  empName: { fontSize: 15, fontWeight: '700', color: C.black },
-  empSub: { fontSize: 11, color: C.textMuted, fontWeight: '500' },
+  empAvatarText: { color: C.white, fontSize: 16, fontWeight: '400' },
+  empName: { fontSize: 15, fontWeight: '400', color: C.black },
+  empSub: { fontSize: 11, color: C.textMuted, fontWeight: '400' },
   statusBadge: {
     borderWidth: 2,
     borderRadius: 999,
@@ -1547,7 +1593,7 @@ const styles = StyleSheet.create({
   statusBadgeText: {
     textTransform: 'uppercase',
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: '400',
   },
   salaryRow: { flexDirection: 'row', gap: 8, paddingTop: 12 },
   salaryItem: {
@@ -1563,13 +1609,13 @@ const styles = StyleSheet.create({
   },
   salaryLabel: {
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: '#000000',
   },
   salaryVal: {
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '400',
     color: '#000000',
     marginTop: 3,
   },
@@ -1584,7 +1630,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
-  searchInput: { flex: 1, fontSize: 14, fontWeight: '500', color: C.black },
+  searchInput: { flex: 1, fontSize: 14, fontWeight: '400', color: C.black },
   processBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1620,7 +1666,7 @@ const styles = StyleSheet.create({
   processBtnText: {
     color: C.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   modalHeader: {
@@ -1632,7 +1678,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: C.black },
+  modalTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1652,13 +1698,13 @@ const styles = StyleSheet.create({
   },
   detailSectionLabel: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '400',
     color: C.black,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
   },
-  detailLabel: { fontSize: 13, fontWeight: '600', color: C.textMuted },
-  detailVal: { fontSize: 15, fontWeight: '700', color: C.black },
+  detailLabel: { fontSize: 13, fontWeight: '400', color: C.textMuted },
+  detailVal: { fontSize: 15, fontWeight: '400', color: C.black },
   genBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1669,7 +1715,7 @@ const styles = StyleSheet.create({
   genBtnText: {
     color: C.primary,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   genNote: {
@@ -1683,10 +1729,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0FDF4',
     padding: 12,
   },
-  genNoteText: { fontSize: 13, fontWeight: '500', color: C.black },
+  genNoteText: { fontSize: 13, fontWeight: '400', color: C.black },
   fieldLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.black,
     marginBottom: 5,
@@ -1703,7 +1749,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
     backgroundColor: C.white,
   },
@@ -1725,7 +1771,7 @@ const styles = StyleSheet.create({
   },
   genSubmitBtnText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 14,
     textTransform: 'uppercase',
   },
@@ -1778,7 +1824,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     justifyContent: 'center',
   },
-  slipReceivedText: { fontSize: 12, fontWeight: '700', color: C.success },
+  slipReceivedText: { fontSize: 12, fontWeight: '400', color: C.success },
   pdfBtn: {
     flexDirection: 'row',
     alignItems: 'center',

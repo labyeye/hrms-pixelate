@@ -27,6 +27,8 @@ import {
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { employeeAPI } from '../api/api';
+import HeaderIconBtn from '../components/common/HeaderIconBtn';
+import SearchModal from '../components/common/SearchModal';
 import { C } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 
@@ -45,6 +47,7 @@ export default function CredentialsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
   const [modal, setModal] = useState<{ emp: any } | null>(null);
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -126,23 +129,27 @@ export default function CredentialsScreen() {
         </TouchableOpacity>
         <KeyRound size={20} color={C.primary} />
         <Text style={s.title}>Employee Credentials</Text>
+        <View style={{ flex: 1 }} />
+        <HeaderIconBtn
+          label="Search"
+          icon={<Search size={22} color={C.black} />}
+          dot={!!search}
+          onPress={() => setSearchOpen(true)}
+        />
       </View>
 
-      <View style={s.searchWrap}>
-        <Search size={15} color={C.textMuted} />
-        <TextInput
-          style={s.searchInput}
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Search by name, email or ID…"
-          placeholderTextColor={C.textLight}
-        />
-        {search.length > 0 && (
-          <TouchableOpacity onPress={() => setSearch('')}>
-            <X size={14} color={C.textMuted} />
-          </TouchableOpacity>
-        )}
-      </View>
+      <SearchModal
+        visible={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        value={search}
+        onChange={setSearch}
+        placeholder="Search by name, email or ID…"
+        items={employees.map(e => ({
+          key: e._id,
+          title: `${e.firstName} ${e.lastName}`.trim(),
+          subtitle: [e.employeeId, e.email].filter(Boolean).join(' · '),
+        }))}
+      />
 
       {loading ? (
         <View style={s.loader}>
@@ -176,7 +183,9 @@ export default function CredentialsScreen() {
                   </View>
                   <Text style={s.updated}>
                     Updated{' '}
-                    {new Date(item.updatedAt || item.joinDate || Date.now()).toLocaleDateString('en-IN', {
+                    {new Date(
+                      item.updatedAt || item.joinDate || Date.now(),
+                    ).toLocaleDateString('en-IN', {
                       day: '2-digit',
                       month: 'short',
                       year: 'numeric',
@@ -185,7 +194,10 @@ export default function CredentialsScreen() {
                 </View>
                 <View style={s.nameRow}>
                   {item.avatar ? (
-                    <Image source={{ uri: item.avatar }} style={s.photoCircle} />
+                    <Image
+                      source={{ uri: item.avatar }}
+                      style={s.photoCircle}
+                    />
                   ) : (
                     <View style={s.cardAvatar}>
                       <Text style={s.cardAvatarText}>
@@ -205,7 +217,10 @@ export default function CredentialsScreen() {
                       {item.designation || '—'}
                     </Text>
                   </View>
-                  <TouchableOpacity style={s.resetBtn} onPress={() => openReset(item)}>
+                  <TouchableOpacity
+                    style={s.resetBtn}
+                    onPress={() => openReset(item)}
+                  >
                     <RefreshCw size={12} color={C.white} />
                     <Text style={s.resetBtnText}>Reset</Text>
                   </TouchableOpacity>
@@ -216,107 +231,116 @@ export default function CredentialsScreen() {
         />
       )}
 
-      <Modal
-        visible={!!modal}
-        transparent
-        animationType="fade"
-      >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        <SafeAreaView style={s.safe} edges={['top']}>
-          <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>Reset Password</Text>
-            <TouchableOpacity onPress={() => setModal(null)}>
-              <X size={22} color={C.black} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            contentContainerStyle={{ padding: 20, gap: 16 }}
-            keyboardShouldPersistTaps="handled"
-          >
-            {modal && (
-              <View style={s.empInfoBox}>
-                {modal.emp.avatar ? (
-                  <Image
-                    source={{ uri: modal.emp.avatar }}
-                    style={s.photoCircle}
-                  />
-                ) : (
-                  <View style={s.cardAvatar}>
-                    <Text style={s.cardAvatarText}>
-                      {modal.emp.firstName?.[0]}
-                      {modal.emp.lastName?.[0]}
-                    </Text>
-                  </View>
-                )}
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={s.empName}>
-                    {modal.emp.firstName} {modal.emp.lastName}
-                  </Text>
-                  <Text style={s.empSub}>{modal.emp.email}</Text>
-                </View>
-              </View>
-            )}
-
-            <View>
-              <Text style={s.fieldLabel}>New Password *</Text>
-              <View style={s.pwRow}>
-                <TextInput
-                  style={[s.fieldInput, { flex: 1 }]}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="Min 6 characters"
-                  placeholderTextColor={C.textLight}
-                  secureTextEntry={!showPw}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity
-                  style={s.eyeBtn}
-                  onPress={() => setShowPw(p => !p)}
-                >
-                  {showPw ? (
-                    <EyeOff size={18} color={C.textMuted} />
-                  ) : (
-                    <Eye size={18} color={C.textMuted} />
-                  )}
+      <Modal visible={!!modal} transparent animationType="fade">
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            <SafeAreaView style={s.safe} edges={['top']}>
+              <View style={s.modalHeader}>
+                <Text style={s.modalTitle}>Reset Password</Text>
+                <TouchableOpacity onPress={() => setModal(null)}>
+                  <X size={22} color={C.black} />
                 </TouchableOpacity>
               </View>
-            </View>
+              <ScrollView
+                contentContainerStyle={{ padding: 20, gap: 16 }}
+                keyboardShouldPersistTaps="handled"
+              >
+                {modal && (
+                  <View style={s.empInfoBox}>
+                    {modal.emp.avatar ? (
+                      <Image
+                        source={{ uri: modal.emp.avatar }}
+                        style={s.photoCircle}
+                      />
+                    ) : (
+                      <View style={s.cardAvatar}>
+                        <Text style={s.cardAvatarText}>
+                          {modal.emp.firstName?.[0]}
+                          {modal.emp.lastName?.[0]}
+                        </Text>
+                      </View>
+                    )}
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={s.empName}>
+                        {modal.emp.firstName} {modal.emp.lastName}
+                      </Text>
+                      <Text style={s.empSub}>{modal.emp.email}</Text>
+                    </View>
+                  </View>
+                )}
 
-            <TouchableOpacity
-              style={s.genBtn}
-              onPress={() => {
-                setPassword(genPassword());
-                setShowPw(true);
-              }}
-            >
-              <RefreshCw size={13} color={C.primary} />
-              <Text style={s.genBtnText}>Generate Strong Password</Text>
-            </TouchableOpacity>
+                <View>
+                  <Text style={s.fieldLabel}>New Password *</Text>
+                  <View style={s.pwRow}>
+                    <TextInput
+                      style={[s.fieldInput, { flex: 1 }]}
+                      value={password}
+                      onChangeText={setPassword}
+                      placeholder="Min 6 characters"
+                      placeholderTextColor={C.textLight}
+                      secureTextEntry={!showPw}
+                      autoCapitalize="none"
+                    />
+                    <TouchableOpacity
+                      style={s.eyeBtn}
+                      onPress={() => setShowPw(p => !p)}
+                    >
+                      {showPw ? (
+                        <EyeOff size={18} color={C.textMuted} />
+                      ) : (
+                        <Eye size={18} color={C.textMuted} />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
 
-            <TouchableOpacity
-              style={s.submitBtn}
-              onPress={handleReset}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator color={C.white} />
-              ) : (
-                <Text style={s.submitBtnText}>Reset Password</Text>
-              )}
-            </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </View></View>
-</Modal>
+                <TouchableOpacity
+                  style={s.genBtn}
+                  onPress={() => {
+                    setPassword(genPassword());
+                    setShowPw(true);
+                  }}
+                >
+                  <RefreshCw size={13} color={C.primary} />
+                  <Text style={s.genBtnText}>Generate Strong Password</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={s.submitBtn}
+                  onPress={handleReset}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <ActivityIndicator color={C.white} />
+                  ) : (
+                    <Text style={s.submitBtnText}>Reset Password</Text>
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
+            </SafeAreaView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  codeChip: { backgroundColor: C.primary + '18', borderWidth: 2, borderColor: C.primary, paddingHorizontal: 8, paddingVertical: 2 },
-  codeText: { fontSize: 12, fontWeight: '800', color: C.primary },
-  updated: { fontSize: 10, color: C.textMuted, fontWeight: '600' },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  codeChip: {
+    backgroundColor: C.primary + '18',
+    borderWidth: 2,
+    borderColor: C.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  codeText: { fontSize: 12, fontWeight: '400', color: C.primary },
+  updated: { fontSize: 10, color: C.textMuted, fontWeight: '400' },
   nameRow: { flexDirection: 'row', alignItems: 'center' },
   safe: { flex: 1, backgroundColor: '#F8F9FA' },
   header: {
@@ -329,7 +353,7 @@ const s = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  title: { fontSize: 20, fontWeight: '700', color: C.black },
+  title: { fontSize: 20, fontWeight: '400', color: C.black },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -340,10 +364,10 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
-  searchInput: { flex: 1, fontSize: 14, fontWeight: '500', color: C.black },
+  searchInput: { flex: 1, fontSize: 14, fontWeight: '400', color: C.black },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
-  emptyText: { fontSize: 14, fontWeight: '700', color: C.textMuted },
+  emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -371,7 +395,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardAvatarText: { color: C.white, fontSize: 13, fontWeight: '700' },
+  cardAvatarText: { color: C.white, fontSize: 13, fontWeight: '400' },
   photoCircle: {
     width: 44,
     height: 44,
@@ -379,8 +403,8 @@ const s = StyleSheet.create({
     borderWidth: 2,
     borderColor: C.black,
   },
-  empName: { fontSize: 14, fontWeight: '700', color: C.black },
-  empSub: { fontSize: 11, color: C.textMuted, fontWeight: '500' },
+  empName: { fontSize: 14, fontWeight: '400', color: C.black },
+  empSub: { fontSize: 11, color: C.textMuted, fontWeight: '400' },
   empId: {
     fontSize: 12,
     color: C.textLight,
@@ -405,7 +429,7 @@ const s = StyleSheet.create({
   resetBtnText: {
     color: C.white,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   modalHeader: {
@@ -417,7 +441,7 @@ const s = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: C.black },
+  modalTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   empInfoBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -433,7 +457,7 @@ const s = StyleSheet.create({
   },
   fieldLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.black,
     marginBottom: 6,
@@ -450,7 +474,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
     backgroundColor: C.white,
   },
@@ -481,7 +505,7 @@ const s = StyleSheet.create({
     backgroundColor: '#EFF6FF',
     paddingVertical: 11,
   },
-  genBtnText: { color: C.primary, fontWeight: '700', fontSize: 13 },
+  genBtnText: { color: C.primary, fontWeight: '400', fontSize: 13 },
   submitBtn: {
     backgroundColor: C.primary,
     borderWidth: 2,
@@ -496,7 +520,7 @@ const s = StyleSheet.create({
   },
   submitBtnText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 14,
     textTransform: 'uppercase',
   },

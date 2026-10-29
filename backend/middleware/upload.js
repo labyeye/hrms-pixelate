@@ -49,10 +49,16 @@ const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 
 // Extensions come from the (magic-byte checked) type, never from the client's file name; SVG is not accepted
 // because it can carry script.
-const IMAGE_EXT = { "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp" };
+const IMAGE_EXT = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+};
 const DOC_EXT = { ...IMAGE_EXT, "application/pdf": ".pdf" };
 const imageFilter = (_req, file, cb) =>
-  IMAGE_EXT[file.mimetype] ? cb(null, true) : cb(new Error("Only JPG, PNG or WEBP images are allowed"), false);
+  IMAGE_EXT[file.mimetype]
+    ? cb(null, true)
+    : cb(new Error("Only JPG, PNG or WEBP images are allowed"), false);
 const safeId = (v) => String(v || "").replace(/[^a-fA-F0-9]/g, "");
 
 const employeeDocStorage = multer.diskStorage({
@@ -113,7 +119,10 @@ const avatarStorage = multer.diskStorage({
     cb(null, dir);
   },
   filename(req, file, cb) {
-    cb(null, `avatar_${crypto.randomUUID()}${IMAGE_EXT[file.mimetype] || ".jpg"}`);
+    cb(
+      null,
+      `avatar_${crypto.randomUUID()}${IMAGE_EXT[file.mimetype] || ".jpg"}`,
+    );
   },
 });
 
@@ -131,7 +140,10 @@ const posterStorage = multer.diskStorage({
     cb(null, dir);
   },
   filename(_req, file, cb) {
-    cb(null, `poster_${crypto.randomUUID()}${IMAGE_EXT[file.mimetype] || ".jpg"}`);
+    cb(
+      null,
+      `poster_${crypto.randomUUID()}${IMAGE_EXT[file.mimetype] || ".jpg"}`,
+    );
   },
 });
 

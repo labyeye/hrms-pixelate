@@ -29,6 +29,7 @@ import {
 } from 'lucide-react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { authAPI } from '../../api/api';
+import LegalLinks from '../../components/LegalLinks';
 import { C } from '../../theme';
 import WhatsAppIcon from '../../components/common/WhatsAppIcon';
 
@@ -569,6 +570,10 @@ export default function LoginScreen({ navigation }: any) {
             </>
           )}
         </>
+        <LegalLinks
+          prefix="By signing in you agree to the"
+          style={{ marginTop: 20 }}
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -586,7 +591,7 @@ const styles = StyleSheet.create({
   lottieOtp: { width: '100%', height: 300, marginTop: -204, marginBottom: 24 },
   cardTitle: {
     fontSize: 36,
-    fontWeight: '600',
+    fontWeight: '400',
     color: '#000',
     marginBottom: 18,
     textAlign: 'left',
@@ -594,7 +599,7 @@ const styles = StyleSheet.create({
   field: { marginBottom: 16 },
   label: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.black,
     marginBottom: 6,
@@ -618,7 +623,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingRight: 12,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
   },
   eyeBtn: { padding: 12 },
@@ -640,13 +645,13 @@ const styles = StyleSheet.create({
   },
   btnPrimaryText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 14,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   forgotBtn: { alignItems: 'center', paddingVertical: 10 },
-  forgotText: { fontSize: 13, fontWeight: '700', color: C.primary },
+  forgotText: { fontSize: 13, fontWeight: '400', color: C.primary },
   orRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -655,7 +660,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   orLine: { flex: 1, height: 1, backgroundColor: '#E5E7EB' },
-  orText: { fontSize: 12, fontWeight: '600', color: C.textMuted },
+  orText: { fontSize: 12, fontWeight: '400', color: C.textMuted },
   altBtn: {
     alignSelf: 'center',
     width: 50,
@@ -669,7 +674,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 6,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '400',
     color: C.textMuted,
   },
   otpInput: {
@@ -684,7 +689,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '400',
     letterSpacing: 10,
     textAlign: 'center',
     color: C.black,

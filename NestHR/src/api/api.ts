@@ -113,10 +113,18 @@ export const authAPI = {
   login: (email: string, password: string) =>
     request('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password, client: 'mobile' }),
+      body: JSON.stringify({
+        email,
+        password,
+        client: 'mobile',
+        acceptTerms: true,
+      }),
     }),
   register: (body: { name: string; email: string; password: string }) =>
-    request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
+    request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ ...body, acceptTerms: true }),
+    }),
   getMe: () => request('/auth/me'),
   updateProfile: (body: object) =>
     request('/auth/profile', { method: 'PUT', body: JSON.stringify(body) }),
@@ -128,7 +136,7 @@ export const authAPI = {
   verifyPhoneOtp: (phone: string, otp: string) =>
     request('/auth/otp/verify', {
       method: 'POST',
-      body: JSON.stringify({ phone, otp }),
+      body: JSON.stringify({ phone, otp, acceptTerms: true }),
     }),
   setup2FA: () =>
     request('/auth/2fa/setup', { method: 'POST', body: JSON.stringify({}) }),
@@ -145,7 +153,7 @@ export const authAPI = {
   verify2FA: (pendingToken: string, token: string) =>
     request('/auth/2fa/verify', {
       method: 'POST',
-      body: JSON.stringify({ pendingToken, token }),
+      body: JSON.stringify({ pendingToken, token, acceptTerms: true }),
     }),
   // Password reset by WhatsApp code / authenticator app
   forgotPasswordMethods: (email: string) =>
@@ -226,7 +234,7 @@ export const authAPI = {
   loginVerifyEmailOtp: (email: string, otp: string) =>
     request('/auth/login/email-otp/verify', {
       method: 'POST',
-      body: JSON.stringify({ email, otp }),
+      body: JSON.stringify({ email, otp, acceptTerms: true }),
     }),
 
   // Verify the current / a new email with a code sent to it
@@ -414,6 +422,35 @@ export const attendanceAPI = {
     } catch (err: any) {
       clearTimeout(timer);
       throw err;
+    }
+  },
+};
+
+// Admin-only spare-device kiosk (wall-mounted phone/tablet): the server recognises WHO is in the photo and toggles
+// that employee's check-in / check-out for today.
+export const kioskAPI = {
+  mark: async (photo: { uri: string; type: string; name: string }) => {
+    const token = await getToken();
+    const formData = new FormData();
+    formData.append('photo', photo as any);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30_000);
+    try {
+      const res = await fetch(`${BASE_URL}/attendance/kiosk-face`, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: formData,
+      });
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {} // gateway HTML page - fall through to statusMsg
+      if (!res.ok) throw new Error(data.message || statusMsg(res.status));
+      return data as { success: boolean; locked?: boolean; data: any };
+    } finally {
+      clearTimeout(timer);
     }
   },
 };
@@ -1041,9 +1078,12 @@ export interface LocalNotification {
   body: string;
   ts: number;
   read: boolean;
+  /** Optional dedupe key (e.g. `announcement:<id>`): adding the same key twice keeps one entry. */
+  key?: string;
 }
 
 const NOTIF_KEY = 'hrms_notifications';
+const SEEN_ANNOUNCEMENTS_KEY = 'hrms_seen_announcements';
 
 export const localNotificationsAPI = {
   getAll: async (): Promise<LocalNotification[]> => {
@@ -1057,9 +1097,10 @@ export const localNotificationsAPI = {
   },
   add: async (n: Omit<LocalNotification, 'id' | 'ts' | 'read'>) => {
     const all = await localNotificationsAPI.getAll();
+    if (n.key && all.some(x => x.key === n.key)) return null;
     const entry: LocalNotification = {
       ...n,
-      id: Date.now().toString(),
+      id: `${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
       ts: Date.now(),
       read: false,
     };
@@ -1083,6 +1124,40 @@ export const localNotificationsAPI = {
     await storage.setItem(NOTIF_KEY, '[]');
   },
 };
+
+/**
+ * Turns announcements posted since the last check into in-app notifications. The first run only records what already
+ * exists, so installing the app doesn't flood the bell with old announcements. Returns how many new ones were added.
+ * (Delivery while the app is closed needs push - see services/pushNotificationService.ts.)
+ */
+export async function syncAnnouncementNotifications(): Promise<number> {
+  const res: any = await announcementAPI.getAll();
+  const list: any[] = Array.isArray(res?.data) ? res.data : [];
+  const raw = await storage.getItem(SEEN_ANNOUNCEMENTS_KEY);
+  let seen: string[] | null = null;
+  try {
+    seen = raw ? JSON.parse(raw) : null;
+  } catch {
+    seen = null;
+  }
+  const ids = list.map(a => String(a._id));
+  if (seen) {
+    const known = new Set(seen);
+    for (const a of list.filter(x => !known.has(String(x._id))).reverse()) {
+      await localNotificationsAPI.add({
+        key: `announcement:${a._id}`,
+        title: 'New announcement',
+        body: String(a.title || 'A new announcement was posted'),
+      });
+    }
+  }
+  const added = seen ? ids.filter(id => !seen!.includes(id)).length : 0;
+  await storage.setItem(
+    SEEN_ANNOUNCEMENTS_KEY,
+    JSON.stringify([...new Set([...(seen || []), ...ids])].slice(-200)),
+  );
+  return added;
+}
 
 // Terms & Privacy acceptance (backend /api/legal). Used by components/TermsGate.
 export const legalAPI = {

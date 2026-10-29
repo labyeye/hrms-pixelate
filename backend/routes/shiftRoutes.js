@@ -10,7 +10,17 @@ const router = express.Router();
 
 router.get("/", protect, getShifts);
 router.post("/", protect, authorize("super_admin", "hr_manager"), createShift);
-router.put("/:id", protect, authorize("super_admin", "hr_manager"), updateShift);
-router.delete("/:id", protect, authorize("super_admin", "hr_manager"), deleteShift);
+router.put(
+  "/:id",
+  protect,
+  authorize("super_admin", "hr_manager"),
+  updateShift,
+);
+router.delete(
+  "/:id",
+  protect,
+  authorize("super_admin", "hr_manager"),
+  deleteShift,
+);
 
 module.exports = router;

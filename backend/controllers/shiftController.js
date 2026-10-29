@@ -11,7 +11,10 @@ const getShifts = asyncHandler(async (req, res) => {
 });
 
 const createShift = asyncHandler(async (req, res) => {
-  const shift = await Shift.create({ ...bodyFor(Shift, req.body), company: req.user.company });
+  const shift = await Shift.create({
+    ...bodyFor(Shift, req.body),
+    company: req.user.company,
+  });
   res.status(201).json({ success: true, data: shift });
 });
 

@@ -71,16 +71,8 @@ router.post("/forgot-password", limiter(5), forgotPassword);
 router.post("/reset-password/:token", limiter(5), resetPassword);
 
 router.get("/forgot-password/methods", limiter(10), forgotPasswordMethods);
-router.post(
-  "/forgot-password/whatsapp",
-  limiter(5),
-  forgotPasswordWhatsapp,
-);
-router.post(
-  "/reset-password/otp/whatsapp",
-  limiter(5),
-  resetPasswordWithOtp,
-);
+router.post("/forgot-password/whatsapp", limiter(5), forgotPasswordWhatsapp);
+router.post("/reset-password/otp/whatsapp", limiter(5), resetPasswordWithOtp);
 router.post("/reset-password/otp/totp", limiter(5), resetPasswordWithTotp);
 
 router.post("/phone/send-otp", protect, limiter(10), sendPhoneVerifyOtp);
@@ -129,6 +121,11 @@ router.post("/reset/backup", limiter(10), resetPasswordWithBackupCode);
 router.post("/login/email-otp/send", limiter(5), loginRequestEmailOtp);
 router.post("/login/email-otp/verify", limiter(10), loginVerifyEmailOtp);
 router.post("/contact/email/send-otp", protect, limiter(5), sendEmailVerifyOtp);
-router.post("/contact/email/verify-otp", protect, limiter(10), verifyEmailVerifyOtp);
+router.post(
+  "/contact/email/verify-otp",
+  protect,
+  limiter(10),
+  verifyEmailVerifyOtp,
+);
 
 module.exports = router;

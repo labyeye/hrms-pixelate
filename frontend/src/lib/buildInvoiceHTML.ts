@@ -113,8 +113,9 @@ export function buildInvoiceHTML(inv: any): string {
   const description = `${planName} — ${cycle} Subscription`;
 
   const invoiceDate = fmtDate(inv.paidAt || inv.createdAt);
-  const invoiceNumber =
-    esc(inv.invoiceNumber || inv._id?.toString().slice(-8).toUpperCase() || "—");
+  const invoiceNumber = esc(
+    inv.invoiceNumber || inv._id?.toString().slice(-8).toUpperCase() || "—",
+  );
 
   const clientName = esc(company.name || "—");
   const clientAddress = [

@@ -73,12 +73,20 @@ router.post(
     const Employee = require("../models/Employee");
     const { validateMagicBytes } = require("../middleware/upload");
     try {
-      if (!req.file) return res.status(400).json({ success: false, message: "No file uploaded" });
+      if (!req.file)
+        return res
+          .status(400)
+          .json({ success: false, message: "No file uploaded" });
       // Only employees of the caller's own company; the stray upload is removed otherwise.
-      const employee = await Employee.findOne({ _id: req.params.id, company: req.user.company }).select("_id");
+      const employee = await Employee.findOne({
+        _id: req.params.id,
+        company: req.user.company,
+      }).select("_id");
       if (!employee) {
         fs.unlink(req.file.path, () => {});
-        return res.status(404).json({ success: false, message: "Employee not found" });
+        return res
+          .status(404)
+          .json({ success: false, message: "Employee not found" });
       }
       await validateMagicBytes(req.file.path); // throws and deletes the file when it isn't really an image
       const baseUrl = `${req.protocol}://${req.get("host")}`;

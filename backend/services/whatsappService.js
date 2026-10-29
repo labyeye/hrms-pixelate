@@ -105,9 +105,13 @@ async function sendTemplate(
 
   // WhatsApp credits: a metered company pays per message, charged before sending and refunded if Meta rejects it.
   // companyId is null for platform messages (OTP, subscription welcome) which are never charged.
-  const hold = companyId ? await credits.reserve(companyId, { template: templateName, phone }) : null;
+  const hold = companyId
+    ? await credits.reserve(companyId, { template: templateName, phone })
+    : null;
   if (hold && !hold.ok) {
-    console.warn(`[WA] not sent (${hold.reason}) company=${companyId} template=${templateName}`);
+    console.warn(
+      `[WA] not sent (${hold.reason}) company=${companyId} template=${templateName}`,
+    );
     return;
   }
   let sent;
@@ -151,7 +155,12 @@ function postToMeta(phoneNumberId, accessToken, body) {
 
 // ─── Internal: check company WhatsApp gate ────────────────────────────────────
 
-async function getCompanySetting(eventKey, companyId, audience = null, alertKey = null) {
+async function getCompanySetting(
+  eventKey,
+  companyId,
+  audience = null,
+  alertKey = null,
+) {
   if (!companyId) {
     console.warn(`[WA-DEBUG] getCompanySetting: companyId is null/undefined`);
     return null;
@@ -187,7 +196,12 @@ async function getCompanySetting(eventKey, companyId, audience = null, alertKey 
   }
   // who gets it: Both (default) | Employee | HR | Off. Every copy costs a credit, so the company decides.
   const who = (alertKey && setting[alertKey]) || "Both";
-  if (audience && (who === "Off" || (who === "Employee" && audience === "hr") || (who === "HR" && audience === "employee"))) {
+  if (
+    audience &&
+    (who === "Off" ||
+      (who === "Employee" && audience === "hr") ||
+      (who === "HR" && audience === "employee"))
+  ) {
     return null;
   }
   console.log(
@@ -208,7 +222,12 @@ async function sendCheckIn(
   companyId,
 ) {
   try {
-    const s = await getCompanySetting("whatsappNotifyCheckIn", companyId, "employee", "whatsappSendPunchAlert");
+    const s = await getCompanySetting(
+      "whatsappNotifyCheckIn",
+      companyId,
+      "employee",
+      "whatsappSendPunchAlert",
+    );
     if (!s) return;
     const t = new Date(time).toLocaleTimeString("en-IN", {
       hour: "2-digit",
@@ -242,7 +261,12 @@ async function sendCheckOut(
   companyId,
 ) {
   try {
-    const s = await getCompanySetting("whatsappNotifyCheckIn", companyId, "employee", "whatsappSendPunchAlert");
+    const s = await getCompanySetting(
+      "whatsappNotifyCheckIn",
+      companyId,
+      "employee",
+      "whatsappSendPunchAlert",
+    );
     if (!s) return;
     const t = new Date(time).toLocaleTimeString("en-IN", {
       hour: "2-digit",
@@ -275,7 +299,12 @@ async function sendLeaveSubmitted(
   companyId,
 ) {
   try {
-    const s = await getCompanySetting("whatsappNotifyLeave", companyId, "employee", "whatsappSendLeaveAlert");
+    const s = await getCompanySetting(
+      "whatsappNotifyLeave",
+      companyId,
+      "employee",
+      "whatsappSendLeaveAlert",
+    );
     if (!s) return;
     const type = leaveType.charAt(0).toUpperCase() + leaveType.slice(1);
     const from = new Date(startDate).toLocaleDateString("en-IN");
@@ -303,7 +332,12 @@ async function sendLeaveApproved(
   companyId,
 ) {
   try {
-    const s = await getCompanySetting("whatsappNotifyLeave", companyId, "employee", "whatsappSendLeaveAlert");
+    const s = await getCompanySetting(
+      "whatsappNotifyLeave",
+      companyId,
+      "employee",
+      "whatsappSendLeaveAlert",
+    );
     if (!s) return;
     const type = leaveType.charAt(0).toUpperCase() + leaveType.slice(1);
     const from = new Date(startDate).toLocaleDateString("en-IN");
@@ -331,7 +365,12 @@ async function sendLeaveRejected(
   companyId,
 ) {
   try {
-    const s = await getCompanySetting("whatsappNotifyLeave", companyId, "employee", "whatsappSendLeaveAlert");
+    const s = await getCompanySetting(
+      "whatsappNotifyLeave",
+      companyId,
+      "employee",
+      "whatsappSendLeaveAlert",
+    );
     if (!s) return;
     const type = leaveType.charAt(0).toUpperCase() + leaveType.slice(1);
     await sendTemplate(
@@ -357,7 +396,12 @@ async function sendLeaveAppliedHR(
   companyId,
 ) {
   try {
-    const s = await getCompanySetting("whatsappNotifyLeave", companyId, "hr", "whatsappSendLeaveAlert");
+    const s = await getCompanySetting(
+      "whatsappNotifyLeave",
+      companyId,
+      "hr",
+      "whatsappSendLeaveAlert",
+    );
     if (!s) return;
     const type = leaveType.charAt(0).toUpperCase() + leaveType.slice(1);
     const from = new Date(startDate).toLocaleDateString("en-IN");
@@ -387,7 +431,12 @@ async function sendCheckInHR(
   companyId,
 ) {
   try {
-    const s = await getCompanySetting("whatsappNotifyCheckIn", companyId, "hr", "whatsappSendPunchAlert");
+    const s = await getCompanySetting(
+      "whatsappNotifyCheckIn",
+      companyId,
+      "hr",
+      "whatsappSendPunchAlert",
+    );
     if (!s) return;
     const t = new Date(time).toLocaleTimeString("en-IN", {
       hour: "2-digit",
@@ -417,7 +466,12 @@ async function sendCheckOutHR(
   companyId,
 ) {
   try {
-    const s = await getCompanySetting("whatsappNotifyCheckIn", companyId, "hr", "whatsappSendPunchAlert");
+    const s = await getCompanySetting(
+      "whatsappNotifyCheckIn",
+      companyId,
+      "hr",
+      "whatsappSendPunchAlert",
+    );
     if (!s) return;
     const t = new Date(time).toLocaleTimeString("en-IN", {
       hour: "2-digit",
@@ -508,7 +562,12 @@ async function sendSalaryPaid(
       maximumFractionDigits: 0,
     }).format(n || 0);
   try {
-    const s = await getCompanySetting("whatsappNotifyPayroll", companyId, "employee", "whatsappSendTxnAlert");
+    const s = await getCompanySetting(
+      "whatsappNotifyPayroll",
+      companyId,
+      "employee",
+      "whatsappSendTxnAlert",
+    );
     if (!s) return;
 
     const extraComponents = [];
@@ -617,7 +676,12 @@ async function sendAttendanceStatus(
   const statusLabel = ATTENDANCE_STATUS_LABELS[status];
   if (!statusLabel) return; // skip holiday / weekend / on_leave
   try {
-    const s = await getCompanySetting("whatsappNotifyCheckIn", companyId, "employee", "whatsappSendPunchAlert");
+    const s = await getCompanySetting(
+      "whatsappNotifyCheckIn",
+      companyId,
+      "employee",
+      "whatsappSendPunchAlert",
+    );
     if (!s) return;
     const d = new Date(date).toLocaleDateString("en-IN");
     await sendTemplate(
@@ -648,7 +712,12 @@ async function sendLoanSubmitted(
   companyId,
 ) {
   try {
-    const s = await getCompanySetting("whatsappNotifyLeave", companyId, "employee", "whatsappSendLeaveAlert");
+    const s = await getCompanySetting(
+      "whatsappNotifyLeave",
+      companyId,
+      "employee",
+      "whatsappSendLeaveAlert",
+    );
     if (!s) return;
     const label = type === "advance" ? "Salary Advance" : "Loan";
     await sendTemplate(
@@ -674,7 +743,12 @@ async function sendLoanApproved(
   companyId,
 ) {
   try {
-    const s = await getCompanySetting("whatsappNotifyLeave", companyId, "employee", "whatsappSendLeaveAlert");
+    const s = await getCompanySetting(
+      "whatsappNotifyLeave",
+      companyId,
+      "employee",
+      "whatsappSendLeaveAlert",
+    );
     if (!s) return;
     const label = type === "advance" ? "Salary Advance" : "Loan";
     await sendTemplate(
@@ -700,7 +774,12 @@ async function sendLoanRejected(
   companyId,
 ) {
   try {
-    const s = await getCompanySetting("whatsappNotifyLeave", companyId, "employee", "whatsappSendLeaveAlert");
+    const s = await getCompanySetting(
+      "whatsappNotifyLeave",
+      companyId,
+      "employee",
+      "whatsappSendLeaveAlert",
+    );
     if (!s) return;
     const label = type === "advance" ? "Salary Advance" : "Loan";
     await sendTemplate(
@@ -726,7 +805,12 @@ async function sendLoanAppliedHR(
   companyId,
 ) {
   try {
-    const s = await getCompanySetting("whatsappNotifyLeave", companyId, "hr", "whatsappSendLeaveAlert");
+    const s = await getCompanySetting(
+      "whatsappNotifyLeave",
+      companyId,
+      "hr",
+      "whatsappSendLeaveAlert",
+    );
     if (!s) return;
     const label = type === "advance" ? "Salary Advance" : "Loan";
     await sendTemplate(

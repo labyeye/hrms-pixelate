@@ -29,13 +29,17 @@ import {
   Package,
   FileText,
   ChevronDown,
+  Search,
+  SlidersHorizontal,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { exitAPI, employeeAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import { C } from '../theme';
 import { CENTER } from '../components/common/centerModal';
-import FilterBar from '../components/common/FilterBar';
+import HeaderIconBtn from '../components/common/HeaderIconBtn';
+import SearchModal from '../components/common/SearchModal';
+import FilterSortModal from '../components/common/FilterSortModal';
 
 const REASONS = [
   { value: 'personal', label: 'Personal' },
@@ -99,6 +103,10 @@ export default function ExitManagementScreen() {
   const [showCreate, setShowCreate] = useState(false);
   const [selected, setSelected] = useState<any>(null);
   const [statusFilter, setStatusFilter] = useState('');
+  const [search, setSearch] = useState('');
+  const [sortKey, setSortKey] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [form, setForm] = useState<any>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [showReasonPicker, setShowReasonPicker] = useState(false);
@@ -293,6 +301,21 @@ export default function ExitManagementScreen() {
     );
   };
 
+  const empName = (r: any) =>
+    (r.employee
+      ? `${r.employee.firstName} ${r.employee.lastName}`
+      : ''
+    ).toLowerCase();
+  const shownRecords = (
+    search
+      ? records.filter(r => empName(r).includes(search.toLowerCase()))
+      : records
+  )
+    .slice()
+    .sort((a, b) =>
+      sortKey === 'name' ? empName(a).localeCompare(empName(b)) : 0,
+    );
+
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <View style={s.header}>
@@ -305,29 +328,69 @@ export default function ExitManagementScreen() {
         <LogOut size={20} color={C.primary} />
         <Text style={s.title}>Exit Management</Text>
         <View style={{ flex: 1 }} />
-        {isHR && (
-          <TouchableOpacity
-            style={s.addBtn}
-            onPress={() => {
-              setForm(EMPTY_FORM);
-              setShowCreate(true);
-            }}
-          >
-            <Plus size={14} color={C.white} />
-            <Text style={s.addBtnText}>New</Text>
-          </TouchableOpacity>
-        )}
+        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+          <HeaderIconBtn
+            label="Search"
+            icon={<Search size={22} color={C.black} />}
+            dot={!!search}
+            onPress={() => setSearchOpen(true)}
+          />
+          <HeaderIconBtn
+            label="Filter and sort"
+            icon={<SlidersHorizontal size={22} color={C.black} />}
+            dot={!!statusFilter || !!sortKey}
+            onPress={() => setFilterOpen(true)}
+          />
+          {isHR && (
+            <TouchableOpacity
+              style={s.addBtn}
+              onPress={() => {
+                setForm(EMPTY_FORM);
+                setShowCreate(true);
+              }}
+              accessibilityLabel="New exit"
+              hitSlop={8}
+            >
+              <Plus size={24} color={C.primary} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
-      {/* Status Filter */}
-      <FilterBar
-        value={statusFilter}
-        onChange={setStatusFilter}
-        toggle={false}
-        options={[{ value: '', label: 'All' }, ...STATUSES].map(st => ({
+      <SearchModal
+        visible={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        value={search}
+        onChange={setSearch}
+        placeholder="Search by employee…"
+        items={records.map((r: any) => ({
+          key: r._id,
+          title: r.employee
+            ? `${r.employee.firstName} ${r.employee.lastName}`
+            : '—',
+          subtitle: r.employee?.employeeId,
+        }))}
+      />
+      <FilterSortModal
+        visible={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        filterTitle="Status"
+        filterOptions={[{ value: '', label: 'All' }, ...STATUSES].map(st => ({
           key: st.value,
           label: st.label,
         }))}
+        filterValue={statusFilter}
+        onFilter={setStatusFilter}
+        sortOptions={[
+          { key: '', label: 'Default' },
+          { key: 'name', label: 'Employee A–Z' },
+        ]}
+        sortValue={sortKey}
+        onSort={setSortKey}
+        onReset={() => {
+          setStatusFilter('');
+          setSortKey('');
+        }}
       />
 
       {loading ? (
@@ -336,7 +399,7 @@ export default function ExitManagementScreen() {
         </View>
       ) : (
         <FlatList
-          data={records}
+          data={shownRecords}
           keyExtractor={i => i._id}
           renderItem={renderRecord}
           contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 40 }}
@@ -358,122 +421,125 @@ export default function ExitManagementScreen() {
       )}
 
       {/* Create Modal */}
-      <Modal
-        visible={showCreate}
-        transparent
-        animationType="fade"
-      >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        <SafeAreaView style={s.safe} edges={['top']}>
-          <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>Initiate Exit</Text>
-            <TouchableOpacity onPress={() => setShowCreate(false)}>
-              <X size={22} color={C.black} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            contentContainerStyle={{ padding: 20, gap: 16 }}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View>
-              <Text style={s.label}>Employee *</Text>
-              <View style={s.picker}>
-                {employees.length === 0 ? (
-                  <Text style={s.pickerPlaceholder}>No employees loaded</Text>
-                ) : (
-                  <ScrollView style={{ maxHeight: 160 }}>
-                    {employees.map(e => (
-                      <TouchableOpacity
-                        key={e._id}
-                        style={[
-                          s.pickerOption,
-                          form.employee === e._id && s.pickerOptionActive,
-                        ]}
-                        onPress={() =>
-                          setForm((p: any) => ({ ...p, employee: e._id }))
-                        }
-                      >
-                        <Text
-                          style={[
-                            s.pickerOptionText,
-                            form.employee === e._id && { color: C.primary },
-                          ]}
-                        >
-                          {e.firstName} {e.lastName} (
-                          {e.employeeId || e._id.slice(-4)})
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                )}
+      <Modal visible={showCreate} transparent animationType="fade">
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            <SafeAreaView style={s.safe} edges={['top']}>
+              <View style={s.modalHeader}>
+                <Text style={s.modalTitle}>Initiate Exit</Text>
+                <TouchableOpacity onPress={() => setShowCreate(false)}>
+                  <X size={22} color={C.black} />
+                </TouchableOpacity>
               </View>
-            </View>
-
-            <DatePickerField
-              label="Resignation Date *"
-              value={form.resignationDate}
-              onChange={v =>
-                setForm((p: any) => ({ ...p, resignationDate: v }))
-              }
-            />
-
-            <View>
-              <Text style={s.label}>Notice Period (days)</Text>
-              <TextInput
-                style={s.input}
-                value={form.noticePeriodDays}
-                onChangeText={v =>
-                  setForm((p: any) => ({ ...p, noticePeriodDays: v }))
-                }
-                keyboardType="numeric"
-                placeholder="30"
-                placeholderTextColor="#9CA3AF"
-              />
-            </View>
-
-            <View>
-              <Text style={s.label}>Reason *</Text>
-              <TouchableOpacity
-                style={s.selectBtn}
-                onPress={() => setShowReasonPicker(true)}
+              <ScrollView
+                contentContainerStyle={{ padding: 20, gap: 16 }}
+                keyboardShouldPersistTaps="handled"
               >
-                <Text style={s.selectBtnText}>
-                  {REASONS.find(r => r.value === form.reason)?.label ||
-                    'Select reason'}
-                </Text>
-                <ChevronDown size={16} color={C.black} />
-              </TouchableOpacity>
-            </View>
+                <View>
+                  <Text style={s.label}>Employee *</Text>
+                  <View style={s.picker}>
+                    {employees.length === 0 ? (
+                      <Text style={s.pickerPlaceholder}>
+                        No employees loaded
+                      </Text>
+                    ) : (
+                      <ScrollView style={{ maxHeight: 160 }}>
+                        {employees.map(e => (
+                          <TouchableOpacity
+                            key={e._id}
+                            style={[
+                              s.pickerOption,
+                              form.employee === e._id && s.pickerOptionActive,
+                            ]}
+                            onPress={() =>
+                              setForm((p: any) => ({ ...p, employee: e._id }))
+                            }
+                          >
+                            <Text
+                              style={[
+                                s.pickerOptionText,
+                                form.employee === e._id && { color: C.primary },
+                              ]}
+                            >
+                              {e.firstName} {e.lastName} (
+                              {e.employeeId || e._id.slice(-4)})
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    )}
+                  </View>
+                </View>
 
-            <View>
-              <Text style={s.label}>Reason Details</Text>
-              <TextInput
-                style={[s.input, { minHeight: 70, textAlignVertical: 'top' }]}
-                value={form.reasonDetails}
-                onChangeText={v =>
-                  setForm((p: any) => ({ ...p, reasonDetails: v }))
-                }
-                multiline
-                placeholder="Additional details..."
-                placeholderTextColor="#9CA3AF"
-              />
-            </View>
+                <DatePickerField
+                  label="Resignation Date *"
+                  value={form.resignationDate}
+                  onChange={v =>
+                    setForm((p: any) => ({ ...p, resignationDate: v }))
+                  }
+                />
 
-            <TouchableOpacity
-              style={s.submitBtn}
-              onPress={handleCreate}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator color={C.white} />
-              ) : (
-                <Text style={s.submitBtnText}>Initiate Exit Process</Text>
-              )}
-            </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </View></View>
-</Modal>
+                <View>
+                  <Text style={s.label}>Notice Period (days)</Text>
+                  <TextInput
+                    style={s.input}
+                    value={form.noticePeriodDays}
+                    onChangeText={v =>
+                      setForm((p: any) => ({ ...p, noticePeriodDays: v }))
+                    }
+                    keyboardType="numeric"
+                    placeholder="30"
+                    placeholderTextColor="#9CA3AF"
+                  />
+                </View>
+
+                <View>
+                  <Text style={s.label}>Reason *</Text>
+                  <TouchableOpacity
+                    style={s.selectBtn}
+                    onPress={() => setShowReasonPicker(true)}
+                  >
+                    <Text style={s.selectBtnText}>
+                      {REASONS.find(r => r.value === form.reason)?.label ||
+                        'Select reason'}
+                    </Text>
+                    <ChevronDown size={16} color={C.black} />
+                  </TouchableOpacity>
+                </View>
+
+                <View>
+                  <Text style={s.label}>Reason Details</Text>
+                  <TextInput
+                    style={[
+                      s.input,
+                      { minHeight: 70, textAlignVertical: 'top' },
+                    ]}
+                    value={form.reasonDetails}
+                    onChangeText={v =>
+                      setForm((p: any) => ({ ...p, reasonDetails: v }))
+                    }
+                    multiline
+                    placeholder="Additional details..."
+                    placeholderTextColor="#9CA3AF"
+                  />
+                </View>
+
+                <TouchableOpacity
+                  style={s.submitBtn}
+                  onPress={handleCreate}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <ActivityIndicator color={C.white} />
+                  ) : (
+                    <Text style={s.submitBtnText}>Initiate Exit Process</Text>
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
+            </SafeAreaView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Reason Picker Modal */}
       <Modal visible={showReasonPicker} animationType="slide" transparent>
@@ -512,197 +578,205 @@ export default function ExitManagementScreen() {
       </Modal>
 
       {/* Detail / Update Modal */}
-      <Modal
-        visible={!!selected}
-        transparent
-        animationType="fade"
-      >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        {selected && (
-          <SafeAreaView style={s.safe} edges={['top']}>
-            <View style={s.modalHeader}>
-              <Text style={s.modalTitle}>
-                {selected.employee
-                  ? `${selected.employee.firstName} ${selected.employee.lastName}`
-                  : 'Exit Record'}
-              </Text>
-              <TouchableOpacity onPress={() => setSelected(null)}>
-                <X size={22} color={C.black} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView
-              contentContainerStyle={{ padding: 20, gap: 16 }}
-              keyboardShouldPersistTaps="handled"
-            >
-              {/* Status update */}
-              {isHR && (
-                <>
-                  <View>
-                    <Text style={s.label}>Status</Text>
-                    <TouchableOpacity
-                      style={s.selectBtn}
-                      onPress={() => setShowStatusPicker(true)}
-                    >
-                      <Text style={s.selectBtnText}>
-                        {STATUSES.find(s2 => s2.value === editStatusVal)
-                          ?.label || editStatusVal}
-                      </Text>
-                      <ChevronDown size={16} color={C.black} />
-                    </TouchableOpacity>
-                  </View>
-
-                  <DatePickerField
-                    label="Last Working Day"
-                    value={editLastDay}
-                    onChange={setEditLastDay}
-                  />
-
-                  <View>
-                    <Text style={s.label}>FnF Amount (₹)</Text>
-                    <TextInput
-                      style={s.input}
-                      value={editFnfAmount}
-                      onChangeText={setEditFnfAmount}
-                      keyboardType="numeric"
-                      placeholder="0"
-                      placeholderTextColor="#9CA3AF"
-                    />
-                  </View>
-
-                  <View>
-                    <Text style={s.label}>FnF Status</Text>
-                    <View style={s.toggleRow}>
-                      {FNF_STATUSES.map(fs => (
-                        <TouchableOpacity
-                          key={fs.value}
-                          style={[
-                            s.toggleBtn,
-                            editFnfStatus === fs.value && s.toggleBtnActive,
-                          ]}
-                          onPress={() => setEditFnfStatus(fs.value)}
-                        >
-                          <Text
-                            style={[
-                              s.toggleBtnText,
-                              editFnfStatus === fs.value && { color: C.white },
-                            ]}
-                          >
-                            {fs.label}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </View>
-
-                  <View style={s.checkRow}>
-                    <TouchableOpacity
-                      onPress={() => setEditInterviewDone(p => !p)}
-                      style={s.checkbox}
-                    >
-                      {editInterviewDone && (
-                        <CheckCircle2 size={18} color={C.success} />
-                      )}
-                      {!editInterviewDone && <View style={s.checkboxEmpty} />}
-                    </TouchableOpacity>
-                    <Text style={s.checkLabel}>Exit Interview Done</Text>
-                  </View>
-
-                  <View style={s.checkRow}>
-                    <TouchableOpacity
-                      onPress={() => setEditAssetsReturned(p => !p)}
-                      style={s.checkbox}
-                    >
-                      {editAssetsReturned && (
-                        <CheckCircle2 size={18} color={C.success} />
-                      )}
-                      {!editAssetsReturned && <View style={s.checkboxEmpty} />}
-                    </TouchableOpacity>
-                    <Text style={s.checkLabel}>Assets Returned</Text>
-                  </View>
-
-                  <View style={s.checkRow}>
-                    <TouchableOpacity
-                      onPress={() => setEditExpLetter(p => !p)}
-                      style={s.checkbox}
-                    >
-                      {editExpLetter && (
-                        <CheckCircle2 size={18} color={C.success} />
-                      )}
-                      {!editExpLetter && <View style={s.checkboxEmpty} />}
-                    </TouchableOpacity>
-                    <Text style={s.checkLabel}>Experience Letter Issued</Text>
-                  </View>
-
-                  <View>
-                    <Text style={s.label}>Exit Interview Notes</Text>
-                    <TextInput
-                      style={[
-                        s.input,
-                        { minHeight: 70, textAlignVertical: 'top' },
-                      ]}
-                      value={editNotes}
-                      onChangeText={setEditNotes}
-                      multiline
-                      placeholder="Notes from exit interview..."
-                      placeholderTextColor="#9CA3AF"
-                    />
-                  </View>
-
-                  <TouchableOpacity
-                    style={s.submitBtn}
-                    onPress={handleUpdateStatus}
-                    disabled={updatingStatus}
-                  >
-                    {updatingStatus ? (
-                      <ActivityIndicator color={C.white} />
-                    ) : (
-                      <Text style={s.submitBtnText}>Update Exit Record</Text>
-                    )}
+      <Modal visible={!!selected} transparent animationType="fade">
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            {selected && (
+              <SafeAreaView style={s.safe} edges={['top']}>
+                <View style={s.modalHeader}>
+                  <Text style={s.modalTitle}>
+                    {selected.employee
+                      ? `${selected.employee.firstName} ${selected.employee.lastName}`
+                      : 'Exit Record'}
+                  </Text>
+                  <TouchableOpacity onPress={() => setSelected(null)}>
+                    <X size={22} color={C.black} />
                   </TouchableOpacity>
-                </>
-              )}
+                </View>
+                <ScrollView
+                  contentContainerStyle={{ padding: 20, gap: 16 }}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {/* Status update */}
+                  {isHR && (
+                    <>
+                      <View>
+                        <Text style={s.label}>Status</Text>
+                        <TouchableOpacity
+                          style={s.selectBtn}
+                          onPress={() => setShowStatusPicker(true)}
+                        >
+                          <Text style={s.selectBtnText}>
+                            {STATUSES.find(s2 => s2.value === editStatusVal)
+                              ?.label || editStatusVal}
+                          </Text>
+                          <ChevronDown size={16} color={C.black} />
+                        </TouchableOpacity>
+                      </View>
 
-              {/* Read-only info for non-HR */}
-              {!isHR && (
-                <>
-                  <InfoRow
-                    label="Resignation Date"
-                    value={fmt(selected.resignationDate)}
-                  />
-                  <InfoRow
-                    label="Last Working Day"
-                    value={fmt(selected.lastWorkingDay)}
-                  />
-                  <InfoRow
-                    label="Notice Period"
-                    value={`${selected.noticePeriodDays} days`}
-                  />
-                  <InfoRow
-                    label="Reason"
-                    value={
-                      REASONS.find(r => r.value === selected.reason)?.label ||
-                      selected.reason
-                    }
-                  />
-                  <InfoRow
-                    label="Status"
-                    value={statusCfg(selected.status).label}
-                  />
-                  <InfoRow
-                    label="FnF Amount"
-                    value={`₹${(selected.fnfAmount || 0).toLocaleString('en-IN')}`}
-                  />
-                  <InfoRow
-                    label="FnF Status"
-                    value={selected.fnfStatus || '—'}
-                  />
-                </>
-              )}
-            </ScrollView>
-          </SafeAreaView>
-        )}
-      </View></View>
-</Modal>
+                      <DatePickerField
+                        label="Last Working Day"
+                        value={editLastDay}
+                        onChange={setEditLastDay}
+                      />
+
+                      <View>
+                        <Text style={s.label}>FnF Amount (₹)</Text>
+                        <TextInput
+                          style={s.input}
+                          value={editFnfAmount}
+                          onChangeText={setEditFnfAmount}
+                          keyboardType="numeric"
+                          placeholder="0"
+                          placeholderTextColor="#9CA3AF"
+                        />
+                      </View>
+
+                      <View>
+                        <Text style={s.label}>FnF Status</Text>
+                        <View style={s.toggleRow}>
+                          {FNF_STATUSES.map(fs => (
+                            <TouchableOpacity
+                              key={fs.value}
+                              style={[
+                                s.toggleBtn,
+                                editFnfStatus === fs.value && s.toggleBtnActive,
+                              ]}
+                              onPress={() => setEditFnfStatus(fs.value)}
+                            >
+                              <Text
+                                style={[
+                                  s.toggleBtnText,
+                                  editFnfStatus === fs.value && {
+                                    color: C.white,
+                                  },
+                                ]}
+                              >
+                                {fs.label}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </View>
+
+                      <View style={s.checkRow}>
+                        <TouchableOpacity
+                          onPress={() => setEditInterviewDone(p => !p)}
+                          style={s.checkbox}
+                        >
+                          {editInterviewDone && (
+                            <CheckCircle2 size={18} color={C.success} />
+                          )}
+                          {!editInterviewDone && (
+                            <View style={s.checkboxEmpty} />
+                          )}
+                        </TouchableOpacity>
+                        <Text style={s.checkLabel}>Exit Interview Done</Text>
+                      </View>
+
+                      <View style={s.checkRow}>
+                        <TouchableOpacity
+                          onPress={() => setEditAssetsReturned(p => !p)}
+                          style={s.checkbox}
+                        >
+                          {editAssetsReturned && (
+                            <CheckCircle2 size={18} color={C.success} />
+                          )}
+                          {!editAssetsReturned && (
+                            <View style={s.checkboxEmpty} />
+                          )}
+                        </TouchableOpacity>
+                        <Text style={s.checkLabel}>Assets Returned</Text>
+                      </View>
+
+                      <View style={s.checkRow}>
+                        <TouchableOpacity
+                          onPress={() => setEditExpLetter(p => !p)}
+                          style={s.checkbox}
+                        >
+                          {editExpLetter && (
+                            <CheckCircle2 size={18} color={C.success} />
+                          )}
+                          {!editExpLetter && <View style={s.checkboxEmpty} />}
+                        </TouchableOpacity>
+                        <Text style={s.checkLabel}>
+                          Experience Letter Issued
+                        </Text>
+                      </View>
+
+                      <View>
+                        <Text style={s.label}>Exit Interview Notes</Text>
+                        <TextInput
+                          style={[
+                            s.input,
+                            { minHeight: 70, textAlignVertical: 'top' },
+                          ]}
+                          value={editNotes}
+                          onChangeText={setEditNotes}
+                          multiline
+                          placeholder="Notes from exit interview..."
+                          placeholderTextColor="#9CA3AF"
+                        />
+                      </View>
+
+                      <TouchableOpacity
+                        style={s.submitBtn}
+                        onPress={handleUpdateStatus}
+                        disabled={updatingStatus}
+                      >
+                        {updatingStatus ? (
+                          <ActivityIndicator color={C.white} />
+                        ) : (
+                          <Text style={s.submitBtnText}>
+                            Update Exit Record
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    </>
+                  )}
+
+                  {/* Read-only info for non-HR */}
+                  {!isHR && (
+                    <>
+                      <InfoRow
+                        label="Resignation Date"
+                        value={fmt(selected.resignationDate)}
+                      />
+                      <InfoRow
+                        label="Last Working Day"
+                        value={fmt(selected.lastWorkingDay)}
+                      />
+                      <InfoRow
+                        label="Notice Period"
+                        value={`${selected.noticePeriodDays} days`}
+                      />
+                      <InfoRow
+                        label="Reason"
+                        value={
+                          REASONS.find(r => r.value === selected.reason)
+                            ?.label || selected.reason
+                        }
+                      />
+                      <InfoRow
+                        label="Status"
+                        value={statusCfg(selected.status).label}
+                      />
+                      <InfoRow
+                        label="FnF Amount"
+                        value={`₹${(selected.fnfAmount || 0).toLocaleString('en-IN')}`}
+                      />
+                      <InfoRow
+                        label="FnF Status"
+                        value={selected.fnfStatus || '—'}
+                      />
+                    </>
+                  )}
+                </ScrollView>
+              </SafeAreaView>
+            )}
+          </View>
+        </View>
+      </Modal>
 
       {/* Status Picker Modal */}
       <Modal visible={showStatusPicker} animationType="slide" transparent>
@@ -751,7 +825,7 @@ function CheckItem({ label, done }: { label: string; done: boolean }) {
         style={{
           fontSize: 10,
           color: done ? C.success : '#9CA3AF',
-          fontWeight: '600',
+          fontWeight: '400',
         }}
       >
         {label}
@@ -766,7 +840,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
       <Text
         style={{
           fontSize: 11,
-          fontWeight: '700',
+          fontWeight: '400',
           textTransform: 'uppercase',
           color: '#6B7280',
           letterSpacing: 0.5,
@@ -777,7 +851,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
       <Text
         style={{
           fontSize: 14,
-          fontWeight: '600',
+          fontWeight: '400',
           color: C.black,
           marginTop: 2,
         }}
@@ -800,26 +874,12 @@ const s = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  title: { fontSize: 20, fontWeight: '700', color: C.black },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: C.primary,
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderColor: C.black,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
+  title: { fontSize: 20, fontWeight: '400', color: C.black },
+  addBtn: { padding: 4 },
   addBtnText: {
     color: C.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   filterBar: {
@@ -843,14 +903,14 @@ const s = StyleSheet.create({
   filterChipActive: { borderColor: C.primary, backgroundColor: '#EFF6FF' },
   filterChipText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     color: '#6B7280',
     textTransform: 'uppercase',
   },
   filterChipTextActive: { color: C.primary },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
-  emptyText: { fontSize: 14, fontWeight: '700', color: '#9CA3AF' },
+  emptyText: { fontSize: 14, fontWeight: '400', color: '#9CA3AF' },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
@@ -881,8 +941,8 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  empName: { fontSize: 14, fontWeight: '700', color: C.black },
-  empSub: { fontSize: 11, color: '#6B7280', fontWeight: '500', marginTop: 2 },
+  empName: { fontSize: 14, fontWeight: '400', color: C.black },
+  empSub: { fontSize: 11, color: '#6B7280', fontWeight: '400', marginTop: 2 },
   badge: {
     borderWidth: 2,
     borderRadius: 999,
@@ -895,12 +955,12 @@ const s = StyleSheet.create({
   badgeText: {
     textTransform: 'uppercase',
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '400',
     letterSpacing: 0.5,
   },
   cardBody: { gap: 4, marginBottom: 10 },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  infoText: { fontSize: 12, color: '#6B7280', fontWeight: '500' },
+  infoText: { fontSize: 12, color: '#6B7280', fontWeight: '400' },
   cardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -930,10 +990,10 @@ const s = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: C.black },
+  modalTitle: { fontSize: 18, fontWeight: '400', color: C.black },
   label: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.black,
     marginBottom: 6,
@@ -950,7 +1010,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
     backgroundColor: C.white,
   },
@@ -972,7 +1032,7 @@ const s = StyleSheet.create({
     borderBottomColor: C.black,
   },
   pickerOptionActive: { backgroundColor: '#EFF6FF' },
-  pickerOptionText: { fontSize: 14, fontWeight: '500', color: C.black },
+  pickerOptionText: { fontSize: 14, fontWeight: '400', color: C.black },
   selectBtn: {
     borderWidth: 2,
     borderRadius: 8,
@@ -988,7 +1048,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: C.white,
   },
-  selectBtnText: { fontSize: 14, fontWeight: '500', color: C.black },
+  selectBtnText: { fontSize: 14, fontWeight: '400', color: C.black },
   submitBtn: {
     backgroundColor: C.primary,
     borderWidth: 2,
@@ -1005,7 +1065,7 @@ const s = StyleSheet.create({
   },
   submitBtnText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 14,
     textTransform: 'uppercase',
   },
@@ -1029,7 +1089,7 @@ const s = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  pickerSheetTitle: { fontSize: 16, fontWeight: '700', color: C.black },
+  pickerSheetTitle: { fontSize: 16, fontWeight: '400', color: C.black },
   sheetOption: {
     paddingHorizontal: 20,
     paddingVertical: 14,
@@ -1037,7 +1097,7 @@ const s = StyleSheet.create({
     borderBottomColor: C.black,
   },
   sheetOptionActive: { backgroundColor: '#EFF6FF' },
-  sheetOptionText: { fontSize: 15, fontWeight: '600', color: C.black },
+  sheetOptionText: { fontSize: 15, fontWeight: '400', color: C.black },
   toggleRow: { flexDirection: 'row', gap: 8 },
   toggleBtn: {
     flex: 1,
@@ -1055,7 +1115,7 @@ const s = StyleSheet.create({
   toggleBtnActive: { backgroundColor: C.primary },
   toggleBtnText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.black,
     textTransform: 'uppercase',
   },
@@ -1072,5 +1132,5 @@ const s = StyleSheet.create({
     borderWidth: 2,
     borderColor: C.black,
   },
-  checkLabel: { fontSize: 14, fontWeight: '600', color: C.black },
+  checkLabel: { fontSize: 14, fontWeight: '400', color: C.black },
 });

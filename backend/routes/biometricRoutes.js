@@ -102,7 +102,11 @@ router.delete(
 );
 
 router.get("/logs", getLogs);
-router.get("/device-logs", authorize("super_admin", "hr_manager"), getDeviceActivityLogs);
+router.get(
+  "/device-logs",
+  authorize("super_admin", "hr_manager"),
+  getDeviceActivityLogs,
+);
 
 router.put(
   "/devices/:id/serial",
@@ -138,8 +142,16 @@ router.post(
   saveFaceDescriptor,
 );
 // Face data is biometric PII and the kiosk is operated by HR: employees must not read templates or punch for others.
-router.get("/face-descriptors", authorize("super_admin", "hr_manager"), getFaceDescriptors);
-router.post("/face-attendance", authorize("super_admin", "hr_manager"), faceAttendance);
+router.get(
+  "/face-descriptors",
+  authorize("super_admin", "hr_manager"),
+  getFaceDescriptors,
+);
+router.post(
+  "/face-attendance",
+  authorize("super_admin", "hr_manager"),
+  faceAttendance,
+);
 
 router.post(
   "/devices/:id/enroll-fingerprint",

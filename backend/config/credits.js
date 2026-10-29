@@ -16,5 +16,6 @@ module.exports = {
   DAILY_CAP: 3000, // messages per company per day; a loop/bug can't drain a wallet
   BONUS_DAYS: 90,
   // free credits on a paid subscription, by plan size (maxEmployees)
-  bonusFor: (maxEmployees) => (maxEmployees <= 25 ? 500 : maxEmployees <= 50 ? 1000 : 1500),
+  bonusFor: (maxEmployees) =>
+    maxEmployees <= 25 ? 500 : maxEmployees <= 50 ? 1000 : 1500,
 };

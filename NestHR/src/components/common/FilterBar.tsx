@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
   pillActive: { backgroundColor: C.primary },
   text: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.black,
     textTransform: 'uppercase',
     letterSpacing: 0.4,

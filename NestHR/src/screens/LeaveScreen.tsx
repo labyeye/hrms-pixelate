@@ -31,6 +31,8 @@ import {
   Trash2,
   Paperclip,
   Camera,
+  Search,
+  SlidersHorizontal,
 } from 'lucide-react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { leaveAPI, attendanceSettingsAPI } from '../api/api';
@@ -39,7 +41,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { LeaveRequest } from '../types/hrms';
 import { C } from '../theme';
 import { CENTER } from '../components/common/centerModal';
-import FilterBar from '../components/common/FilterBar';
+import HeaderIconBtn from '../components/common/HeaderIconBtn';
+import SearchModal from '../components/common/SearchModal';
+import FilterSortModal from '../components/common/FilterSortModal';
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> =
   {
@@ -69,6 +73,10 @@ export default function LeaveScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [leaveTypeFilter, setLeaveTypeFilter] = useState('');
+  const [search, setSearch] = useState('');
+  const [sortKey, setSortKey] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -81,7 +89,9 @@ export default function LeaveScreen() {
   });
   const [pickedDoc, setPickedDoc] = useState<any>(null);
   // employee _id -> free (allowance) leave used / allowed this month, shown to HR
-  const [usageMap, setUsageMap] = useState<Record<string, { used: number; allowed: number }>>({});
+  const [usageMap, setUsageMap] = useState<
+    Record<string, { used: number; allowed: number }>
+  >({});
   const DOC_REQUIRED_TYPES = ['sick', 'casual'];
   const [approveModal, setApproveModal] = useState<{
     visible: boolean;
@@ -110,11 +120,15 @@ export default function LeaveScreen() {
       const res = await leaveAPI.getAll();
       setLeaves(res.data || []);
       if (!isEmployee) {
-        const bal: any = await attendanceSettingsAPI.getBalanceSummary().catch(() => null);
+        const bal: any = await attendanceSettingsAPI
+          .getBalanceSummary()
+          .catch(() => null);
         if (bal?.success) {
           const m: Record<string, { used: number; allowed: number }> = {};
           for (const r of bal.data) {
-            const rows = (r.leaveUsed || []).filter((l: any) => l.daysAllowed > 0);
+            const rows = (r.leaveUsed || []).filter(
+              (l: any) => l.daysAllowed > 0,
+            );
             m[r.employee._id] = {
               used: rows.reduce((t: number, l: any) => t + l.daysUsed, 0),
               allowed: rows.reduce((t: number, l: any) => t + l.daysAllowed, 0),
@@ -144,8 +158,31 @@ export default function LeaveScreen() {
   const filtered = leaves.filter(l => {
     if (statusFilter && l.status !== statusFilter) return false;
     if (leaveTypeFilter && l.leaveType !== leaveTypeFilter) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      const name =
+        `${l.employee?.firstName || ''} ${l.employee?.lastName || ''}`.toLowerCase();
+      if (
+        !name.includes(q) &&
+        !String(l.leaveType || '')
+          .toLowerCase()
+          .includes(q)
+      )
+        return false;
+    }
     return true;
   });
+  if (sortKey) {
+    const nm = (l: any) =>
+      `${l.employee?.firstName || ''} ${l.employee?.lastName || ''}`.toLowerCase();
+    filtered.sort((a: any, b: any) =>
+      sortKey === 'name'
+        ? nm(a).localeCompare(nm(b))
+        : sortKey === 'days'
+          ? (b.days || 0) - (a.days || 0)
+          : new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
+    );
+  }
 
   // Change 2: leave usage per type (for employee balance strip)
   const leaveUsage = LEAVE_TYPES.reduce(
@@ -416,23 +453,62 @@ export default function LeaveScreen() {
           <Calendar size={20} color={C.primary} />
           <Text style={styles.headerTitle}>Leave Requests</Text>
         </View>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+          <HeaderIconBtn
+            label="Search"
+            icon={<Search size={22} color={C.black} />}
+            dot={!!search}
+            onPress={() => setSearchOpen(true)}
+          />
+          <HeaderIconBtn
+            label="Filter and sort"
+            icon={<SlidersHorizontal size={22} color={C.black} />}
+            dot={!!statusFilter || !!leaveTypeFilter || !!sortKey}
+            onPress={() => setFilterOpen(true)}
+          />
           <ExportButton
             name="leave_requests"
             label=""
             rows={filtered}
             cols={[
               { header: 'Emp Code', value: (l: any) => l.employee?.employeeId },
-              { header: 'Employee', value: (l: any) => `${l.employee?.firstName || ''} ${l.employee?.lastName || ''}`.trim() },
-              { header: 'Designation', value: (l: any) => l.employee?.designation },
-              { header: 'Free Leave Used', value: (l: any) => { const u = usageMap[l.employee?._id]; return u ? `${u.used}/${u.allowed}` : ''; } },
+              {
+                header: 'Employee',
+                value: (l: any) =>
+                  `${l.employee?.firstName || ''} ${l.employee?.lastName || ''}`.trim(),
+              },
+              {
+                header: 'Designation',
+                value: (l: any) => l.employee?.designation,
+              },
+              {
+                header: 'Free Leave Used',
+                value: (l: any) => {
+                  const u = usageMap[l.employee?._id];
+                  return u ? `${u.used}/${u.allowed}` : '';
+                },
+              },
               { header: 'Type', value: (l: any) => l.leaveType },
-              { header: 'From', value: (l: any) => String(l.startDate).slice(0, 10) },
-              { header: 'To', value: (l: any) => String(l.endDate).slice(0, 10) },
+              {
+                header: 'From',
+                value: (l: any) => String(l.startDate).slice(0, 10),
+              },
+              {
+                header: 'To',
+                value: (l: any) => String(l.endDate).slice(0, 10),
+              },
               { header: 'Days', value: (l: any) => l.days },
               { header: 'Reason', value: (l: any) => l.reason },
               { header: 'Status', value: (l: any) => l.status },
-              { header: 'Paid/Unpaid', value: (l: any) => (l.status === 'approved' ? (l.deductSalary ? 'Unpaid' : 'Paid') : '') },
+              {
+                header: 'Paid/Unpaid',
+                value: (l: any) =>
+                  l.status === 'approved'
+                    ? l.deductSalary
+                      ? 'Unpaid'
+                      : 'Paid'
+                    : '',
+              },
             ]}
           />
           <TouchableOpacity
@@ -441,21 +517,60 @@ export default function LeaveScreen() {
               setPickedDoc(null);
               setShowForm(true);
             }}
+            accessibilityLabel="Apply"
+            hitSlop={8}
           >
-            <Plus size={14} color={C.white} />
-            <Text style={styles.addBtnText}>Apply</Text>
+            <Plus size={24} color={C.primary} />
           </TouchableOpacity>
         </View>
       </View>
 
-      <FilterBar
-        value={statusFilter}
-        onChange={setStatusFilter}
-        options={[
+      <SearchModal
+        visible={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        value={search}
+        onChange={setSearch}
+        placeholder="Search by employee or leave type…"
+        items={leaves.map((l: any) => ({
+          key: l._id,
+          title:
+            `${l.employee?.firstName || ''} ${l.employee?.lastName || ''}`.trim() ||
+            String(l.leaveType),
+          subtitle: `${l.leaveType} · ${l.status}`,
+        }))}
+      />
+      <FilterSortModal
+        visible={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        filterTitle="Status"
+        filterOptions={[
+          { key: '', label: 'All' },
           { key: 'pending', label: 'Pending' },
           { key: 'approved', label: 'Approved' },
           { key: 'rejected', label: 'Rejected' },
         ]}
+        filterValue={statusFilter}
+        onFilter={setStatusFilter}
+        filter2Title="Leave type"
+        filter2Options={[
+          { key: '', label: 'All' },
+          ...LEAVE_TYPES.map(t => ({ key: t, label: t })),
+        ]}
+        filter2Value={leaveTypeFilter}
+        onFilter2={setLeaveTypeFilter}
+        sortOptions={[
+          { key: '', label: 'Default' },
+          { key: 'date', label: 'Start date' },
+          { key: 'name', label: 'Employee A–Z' },
+          { key: 'days', label: 'Most days' },
+        ]}
+        sortValue={sortKey}
+        onSort={setSortKey}
+        onReset={() => {
+          setStatusFilter('');
+          setLeaveTypeFilter('');
+          setSortKey('');
+        }}
       />
 
       {/* Change 2: Leave balance strip (employee only) */}
@@ -484,16 +599,6 @@ export default function LeaveScreen() {
           })}
         </ScrollView>
       )}
-
-      {/* Change 1: Functional filter chips */}
-      <FilterBar
-        value={leaveTypeFilter}
-        onChange={setLeaveTypeFilter}
-        options={[
-          { key: '', label: 'All' },
-          ...LEAVE_TYPES.map(t => ({ key: t, label: t })),
-        ]}
-      />
 
       {loading ? (
         <View style={styles.loader}>
@@ -572,7 +677,9 @@ export default function LeaveScreen() {
                     </View>
                   </View>
                   <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={styles.codeChip}>{emp?.employeeId || '—'}</Text>
+                    <Text style={styles.codeChip}>
+                      {emp?.employeeId || '—'}
+                    </Text>
                     <Text style={styles.empName} numberOfLines={1}>
                       {emp
                         ? `${emp.firstName} ${emp.lastName}`.toUpperCase()
@@ -583,7 +690,8 @@ export default function LeaveScreen() {
                     </Text>
                     {!isEmployee && usageMap[emp?._id]?.allowed > 0 && (
                       <Text style={styles.freeLeave}>
-                        Free leave: {usageMap[emp._id].used}/{usageMap[emp._id].allowed} d
+                        Free leave: {usageMap[emp._id].used}/
+                        {usageMap[emp._id].allowed} d
                       </Text>
                     )}
                   </View>
@@ -595,7 +703,9 @@ export default function LeaveScreen() {
                           { backgroundColor: cfg.bg, borderColor: cfg.color },
                         ]}
                       >
-                        <Text style={[styles.statusTagText, { color: cfg.color }]}>
+                        <Text
+                          style={[styles.statusTagText, { color: cfg.color }]}
+                        >
                           {item.status.toUpperCase()}
                         </Text>
                       </View>
@@ -604,14 +714,24 @@ export default function LeaveScreen() {
                           style={[
                             styles.statusTag,
                             (item as any).deductSalary
-                              ? { backgroundColor: '#FFF1E6', borderColor: C.secondary }
-                              : { backgroundColor: '#E7F9F1', borderColor: C.success },
+                              ? {
+                                  backgroundColor: '#FFF1E6',
+                                  borderColor: C.secondary,
+                                }
+                              : {
+                                  backgroundColor: '#E7F9F1',
+                                  borderColor: C.success,
+                                },
                           ]}
                         >
                           <Text
                             style={[
                               styles.statusTagText,
-                              { color: (item as any).deductSalary ? C.secondary : C.success },
+                              {
+                                color: (item as any).deductSalary
+                                  ? C.secondary
+                                  : C.success,
+                              },
                             ]}
                           >
                             {(item as any).deductSalary ? 'UNPAID' : 'PAID'}
@@ -620,8 +740,12 @@ export default function LeaveScreen() {
                       )}
                     </View>
                     <View style={styles.typeDays}>
-                      <Text style={styles.typeText}>{item.leaveType?.replace('_', ' ').toUpperCase()}</Text>
-                      <Text style={styles.typeText}>{days ? `${days}d` : ''}</Text>
+                      <Text style={styles.typeText}>
+                        {item.leaveType?.replace('_', ' ').toUpperCase()}
+                      </Text>
+                      <Text style={styles.typeText}>
+                        {days ? `${days}d` : ''}
+                      </Text>
                     </View>
                   </View>
                 </View>
@@ -921,284 +1045,291 @@ export default function LeaveScreen() {
       </Modal>
 
       {/* Edit Leave Modal (employee only) */}
-      <Modal
-        visible={showEditForm}
-        transparent
-        animationType="fade"
-      >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        <SafeAreaView style={styles.safe} edges={[]}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Edit Leave Request</Text>
-            <TouchableOpacity
-              onPress={() => {
-                setShowEditForm(false);
-                setEditLeave(null);
-              }}
-            >
-              <X size={22} color={C.black} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            contentContainerStyle={{ padding: 20, gap: 16 }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <View>
-              <Text style={styles.fieldLabel}>Leave Type</Text>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  flexWrap: 'wrap',
-                  gap: 8,
-                  marginTop: 6,
-                }}
+      <Modal visible={showEditForm} transparent animationType="fade">
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            <SafeAreaView style={styles.safe} edges={[]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Edit Leave Request</Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowEditForm(false);
+                    setEditLeave(null);
+                  }}
+                >
+                  <X size={22} color={C.black} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView
+                contentContainerStyle={{ padding: 20, gap: 16 }}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
               >
-                {LEAVE_TYPES.map(t => (
-                  <TouchableOpacity
-                    key={t}
-                    style={[
-                      styles.selChip,
-                      editForm.leaveType === t && styles.selChipActive,
-                    ]}
-                    onPress={() => setEditForm(p => ({ ...p, leaveType: t }))}
+                <View>
+                  <Text style={styles.fieldLabel}>Leave Type</Text>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                      gap: 8,
+                      marginTop: 6,
+                    }}
                   >
-                    <Text
-                      style={[
-                        styles.selChipText,
-                        editForm.leaveType === t && { color: C.white },
-                      ]}
-                    >
-                      {t.toUpperCase()}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-            {editForm.leaveType === 'hourly' ? (
-              <View>
-                <DatePickerField
-                  label="Date *"
-                  value={editForm.startDate}
-                  onChange={v => setEditForm(p => ({ ...p, startDate: v }))}
-                />
-              </View>
-            ) : (
-              <View style={{ flexDirection: 'row', gap: 12 }}>
-                <View style={{ flex: 1 }}>
-                  <DatePickerField
-                    label="Start Date *"
-                    value={editForm.startDate}
-                    onChange={v => setEditForm(p => ({ ...p, startDate: v }))}
-                  />
+                    {LEAVE_TYPES.map(t => (
+                      <TouchableOpacity
+                        key={t}
+                        style={[
+                          styles.selChip,
+                          editForm.leaveType === t && styles.selChipActive,
+                        ]}
+                        onPress={() =>
+                          setEditForm(p => ({ ...p, leaveType: t }))
+                        }
+                      >
+                        <Text
+                          style={[
+                            styles.selChipText,
+                            editForm.leaveType === t && { color: C.white },
+                          ]}
+                        >
+                          {t.toUpperCase()}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <DatePickerField
-                    label="End Date *"
-                    value={editForm.endDate}
-                    onChange={v => setEditForm(p => ({ ...p, endDate: v }))}
-                  />
-                </View>
-              </View>
-            )}
+                {editForm.leaveType === 'hourly' ? (
+                  <View>
+                    <DatePickerField
+                      label="Date *"
+                      value={editForm.startDate}
+                      onChange={v => setEditForm(p => ({ ...p, startDate: v }))}
+                    />
+                  </View>
+                ) : (
+                  <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <View style={{ flex: 1 }}>
+                      <DatePickerField
+                        label="Start Date *"
+                        value={editForm.startDate}
+                        onChange={v =>
+                          setEditForm(p => ({ ...p, startDate: v }))
+                        }
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <DatePickerField
+                        label="End Date *"
+                        value={editForm.endDate}
+                        onChange={v => setEditForm(p => ({ ...p, endDate: v }))}
+                      />
+                    </View>
+                  </View>
+                )}
 
-            {editForm.leaveType === 'hourly' && (
-              <View style={{ flexDirection: 'row', gap: 12 }}>
-                <View style={{ flex: 1 }}>
-                  <TimePickerField
-                    label="Start Time *"
-                    value={editForm.startHour}
-                    onChange={v => setEditForm(p => ({ ...p, startHour: v }))}
+                {editForm.leaveType === 'hourly' && (
+                  <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <View style={{ flex: 1 }}>
+                      <TimePickerField
+                        label="Start Time *"
+                        value={editForm.startHour}
+                        onChange={v =>
+                          setEditForm(p => ({ ...p, startHour: v }))
+                        }
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <TimePickerField
+                        label="End Time *"
+                        value={editForm.endHour}
+                        onChange={v => setEditForm(p => ({ ...p, endHour: v }))}
+                      />
+                    </View>
+                  </View>
+                )}
+                <View>
+                  <Text style={styles.fieldLabel}>Reason *</Text>
+                  <TextInput
+                    style={[styles.fieldInput, { minHeight: 100 }]}
+                    value={editForm.reason}
+                    onChangeText={v => setEditForm(p => ({ ...p, reason: v }))}
+                    placeholder="Explain your reason…"
+                    placeholderTextColor={C.textLight}
+                    multiline
                   />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <TimePickerField
-                    label="End Time *"
-                    value={editForm.endHour}
-                    onChange={v => setEditForm(p => ({ ...p, endHour: v }))}
-                  />
-                </View>
-              </View>
-            )}
-            <View>
-              <Text style={styles.fieldLabel}>Reason *</Text>
-              <TextInput
-                style={[styles.fieldInput, { minHeight: 100 }]}
-                value={editForm.reason}
-                onChangeText={v => setEditForm(p => ({ ...p, reason: v }))}
-                placeholder="Explain your reason…"
-                placeholderTextColor={C.textLight}
-                multiline
-              />
-            </View>
-            <TouchableOpacity
-              style={styles.submitBtn}
-              onPress={handleUpdate}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator color={C.white} />
-              ) : (
-                <Text style={styles.submitBtnText}>Update Leave Request</Text>
-              )}
-            </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </View></View>
-</Modal>
+                <TouchableOpacity
+                  style={styles.submitBtn}
+                  onPress={handleUpdate}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <ActivityIndicator color={C.white} />
+                  ) : (
+                    <Text style={styles.submitBtnText}>
+                      Update Leave Request
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
+            </SafeAreaView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Apply Leave Modal */}
-      <Modal
-        visible={showForm}
-        transparent
-        animationType="fade"
-      >
-<View style={CENTER.overlay}><View style={CENTER.card}>
-        <SafeAreaView style={styles.safe} edges={[]}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Apply for Leave</Text>
-            <TouchableOpacity onPress={() => setShowForm(false)}>
-              <X size={22} color={C.black} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            contentContainerStyle={{ padding: 20, gap: 16 }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <View>
-              <Text style={styles.fieldLabel}>Leave Type</Text>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  flexWrap: 'wrap',
-                  gap: 8,
-                  marginTop: 6,
-                }}
+      <Modal visible={showForm} transparent animationType="fade">
+        <View style={CENTER.overlay}>
+          <View style={CENTER.card}>
+            <SafeAreaView style={styles.safe} edges={[]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Apply for Leave</Text>
+                <TouchableOpacity onPress={() => setShowForm(false)}>
+                  <X size={22} color={C.black} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView
+                contentContainerStyle={{ padding: 20, gap: 16 }}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
               >
-                {LEAVE_TYPES.map(t => (
-                  <TouchableOpacity
-                    key={t}
-                    style={[
-                      styles.selChip,
-                      form.leaveType === t && styles.selChipActive,
-                    ]}
-                    onPress={() => setForm(p => ({ ...p, leaveType: t }))}
+                <View>
+                  <Text style={styles.fieldLabel}>Leave Type</Text>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      flexWrap: 'wrap',
+                      gap: 8,
+                      marginTop: 6,
+                    }}
                   >
-                    <Text
-                      style={[
-                        styles.selChipText,
-                        form.leaveType === t && { color: C.white },
-                      ]}
-                    >
-                      {t.toUpperCase()}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-            {form.leaveType === 'hourly' ? (
-              <View>
-                <DatePickerField
-                  label="Date *"
-                  value={form.startDate}
-                  onChange={v => setForm(p => ({ ...p, startDate: v }))}
-                />
-              </View>
-            ) : (
-              <View style={{ flexDirection: 'row', gap: 12 }}>
-                <View style={{ flex: 1 }}>
-                  <DatePickerField
-                    label="Start Date *"
-                    value={form.startDate}
-                    onChange={v => setForm(p => ({ ...p, startDate: v }))}
-                  />
+                    {LEAVE_TYPES.map(t => (
+                      <TouchableOpacity
+                        key={t}
+                        style={[
+                          styles.selChip,
+                          form.leaveType === t && styles.selChipActive,
+                        ]}
+                        onPress={() => setForm(p => ({ ...p, leaveType: t }))}
+                      >
+                        <Text
+                          style={[
+                            styles.selChipText,
+                            form.leaveType === t && { color: C.white },
+                          ]}
+                        >
+                          {t.toUpperCase()}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <DatePickerField
-                    label="End Date *"
-                    value={form.endDate}
-                    onChange={v => setForm(p => ({ ...p, endDate: v }))}
-                  />
-                </View>
-              </View>
-            )}
-
-            {form.leaveType === 'hourly' && (
-              <View style={{ flexDirection: 'row', gap: 12 }}>
-                <View style={{ flex: 1 }}>
-                  <TimePickerField
-                    label="Start Time *"
-                    value={form.startHour}
-                    onChange={v => setForm(p => ({ ...p, startHour: v }))}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <TimePickerField
-                    label="End Time *"
-                    value={form.endHour}
-                    onChange={v => setForm(p => ({ ...p, endHour: v }))}
-                  />
-                </View>
-              </View>
-            )}
-            <View>
-              <Text style={styles.fieldLabel}>Reason *</Text>
-              <TextInput
-                style={[styles.fieldInput, { minHeight: 100 }]}
-                value={form.reason}
-                onChangeText={v => setForm(p => ({ ...p, reason: v }))}
-                placeholder="Explain your reason…"
-                placeholderTextColor={C.textLight}
-                multiline
-              />
-            </View>
-            <View>
-              <Text style={styles.fieldLabel}>
-                Supporting Document
-                {DOC_REQUIRED_TYPES.includes(form.leaveType)
-                  ? ' *'
-                  : ' (optional)'}
-              </Text>
-              <TouchableOpacity style={styles.docPicker} onPress={pickDocument}>
-                {pickedDoc ? (
-                  <>
-                    <Paperclip size={18} color={C.primary} />
-                    <Text style={styles.docPickerText} numberOfLines={1}>
-                      {pickedDoc.fileName || 'Document selected'}
-                    </Text>
-                  </>
+                {form.leaveType === 'hourly' ? (
+                  <View>
+                    <DatePickerField
+                      label="Date *"
+                      value={form.startDate}
+                      onChange={v => setForm(p => ({ ...p, startDate: v }))}
+                    />
+                  </View>
                 ) : (
-                  <>
-                    <Camera size={18} color="#9CA3AF" />
-                    <Text style={styles.docPickerPlaceholder}>
-                      Tap to attach a photo/scan
-                    </Text>
-                  </>
+                  <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <View style={{ flex: 1 }}>
+                      <DatePickerField
+                        label="Start Date *"
+                        value={form.startDate}
+                        onChange={v => setForm(p => ({ ...p, startDate: v }))}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <DatePickerField
+                        label="End Date *"
+                        value={form.endDate}
+                        onChange={v => setForm(p => ({ ...p, endDate: v }))}
+                      />
+                    </View>
+                  </View>
                 )}
-              </TouchableOpacity>
-              {DOC_REQUIRED_TYPES.includes(form.leaveType) && (
-                <Text style={styles.hint}>
-                  Required for sick/casual leave — retake the photo to correct a
-                  mistake.
-                </Text>
-              )}
-            </View>
-            <TouchableOpacity
-              style={styles.submitBtn}
-              onPress={handleApply}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator color={C.white} />
-              ) : (
-                <Text style={styles.submitBtnText}>Submit Application</Text>
-              )}
-            </TouchableOpacity>
-          </ScrollView>
-        </SafeAreaView>
-      </View></View>
-</Modal>
+
+                {form.leaveType === 'hourly' && (
+                  <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <View style={{ flex: 1 }}>
+                      <TimePickerField
+                        label="Start Time *"
+                        value={form.startHour}
+                        onChange={v => setForm(p => ({ ...p, startHour: v }))}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <TimePickerField
+                        label="End Time *"
+                        value={form.endHour}
+                        onChange={v => setForm(p => ({ ...p, endHour: v }))}
+                      />
+                    </View>
+                  </View>
+                )}
+                <View>
+                  <Text style={styles.fieldLabel}>Reason *</Text>
+                  <TextInput
+                    style={[styles.fieldInput, { minHeight: 100 }]}
+                    value={form.reason}
+                    onChangeText={v => setForm(p => ({ ...p, reason: v }))}
+                    placeholder="Explain your reason…"
+                    placeholderTextColor={C.textLight}
+                    multiline
+                  />
+                </View>
+                <View>
+                  <Text style={styles.fieldLabel}>
+                    Supporting Document
+                    {DOC_REQUIRED_TYPES.includes(form.leaveType)
+                      ? ' *'
+                      : ' (optional)'}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.docPicker}
+                    onPress={pickDocument}
+                  >
+                    {pickedDoc ? (
+                      <>
+                        <Paperclip size={18} color={C.primary} />
+                        <Text style={styles.docPickerText} numberOfLines={1}>
+                          {pickedDoc.fileName || 'Document selected'}
+                        </Text>
+                      </>
+                    ) : (
+                      <>
+                        <Camera size={18} color="#9CA3AF" />
+                        <Text style={styles.docPickerPlaceholder}>
+                          Tap to attach a photo/scan
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                  {DOC_REQUIRED_TYPES.includes(form.leaveType) && (
+                    <Text style={styles.hint}>
+                      Required for sick/casual leave — retake the photo to
+                      correct a mistake.
+                    </Text>
+                  )}
+                </View>
+                <TouchableOpacity
+                  style={styles.submitBtn}
+                  onPress={handleApply}
+                  disabled={saving}
+                >
+                  {saving ? (
+                    <ActivityIndicator color={C.white} />
+                  ) : (
+                    <Text style={styles.submitBtnText}>Submit Application</Text>
+                  )}
+                </TouchableOpacity>
+              </ScrollView>
+            </SafeAreaView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1207,7 +1338,7 @@ const styles = StyleSheet.create({
   codeChip: {
     alignSelf: 'flex-start',
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '400',
     color: C.primary,
     backgroundColor: C.primary + '18',
     borderWidth: 1.5,
@@ -1216,10 +1347,15 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
     marginBottom: 3,
   },
-  freeLeave: { fontSize: 11, fontWeight: '700', color: C.primary, marginTop: 2 },
+  freeLeave: {
+    fontSize: 11,
+    fontWeight: '400',
+    color: C.primary,
+    marginTop: 2,
+  },
   statusLine: { flexDirection: 'row', gap: 4, alignItems: 'center' },
   typeDays: { flexDirection: 'row', gap: 6 },
-  typeText: { fontSize: 10, fontWeight: '700', color: C.textMuted },
+  typeText: { fontSize: 10, fontWeight: '400', color: C.textMuted },
   safe: { flex: 1, backgroundColor: C.bg },
   header: {
     flexDirection: 'row',
@@ -1232,26 +1368,12 @@ const styles = StyleSheet.create({
     borderBottomColor: C.black,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: C.black },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: C.primary,
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderColor: C.black,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
+  headerTitle: { fontSize: 20, fontWeight: '400', color: C.black },
+  addBtn: { padding: 4 },
   addBtnText: {
     color: C.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   summaryRow: {
@@ -1273,10 +1395,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     alignItems: 'center',
   },
-  summaryVal: { fontSize: 22, fontWeight: '700' },
+  summaryVal: { fontSize: 22, fontWeight: '400' },
   summaryLabel: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     marginTop: 2,
   },
@@ -1303,13 +1425,13 @@ const styles = StyleSheet.create({
   },
   balanceType: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.black,
     textTransform: 'uppercase',
   },
   balanceDays: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     marginTop: 2,
   },
   filterBar: {
@@ -1334,11 +1456,11 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary,
     borderColor: C.primary,
   },
-  chipText: { fontSize: 12, fontWeight: '700', color: C.black },
+  chipText: { fontSize: 12, fontWeight: '400', color: C.black },
   chipTextActive: { color: C.white },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
-  emptyText: { fontSize: 14, fontWeight: '700', color: C.textMuted },
+  emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
@@ -1354,7 +1476,7 @@ const styles = StyleSheet.create({
   photoWrap: { position: 'relative', width: 48, height: 48 },
   empPhoto: { width: 48, height: 48, borderRadius: 24 },
   empPhotoFallback: { alignItems: 'center', justifyContent: 'center' },
-  empPhotoInitials: { fontSize: 16, fontWeight: '700' },
+  empPhotoInitials: { fontSize: 16, fontWeight: '400' },
   statusBadgeOverlay: {
     position: 'absolute',
     bottom: -2,
@@ -1368,17 +1490,17 @@ const styles = StyleSheet.create({
   },
   empName: {
     fontSize: 15,
-    fontWeight: '800',
+    fontWeight: '400',
     color: C.black,
     letterSpacing: 0.2,
   },
-  empSub: { fontSize: 11, color: '#9CA3AF', fontWeight: '600', marginTop: 2 },
+  empSub: { fontSize: 11, color: '#9CA3AF', fontWeight: '400', marginTop: 2 },
   statusTag: {
     borderWidth: 1.5,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
-  statusTagText: { fontSize: 9, fontWeight: '700', letterSpacing: 0.3 },
+  statusTagText: { fontSize: 9, fontWeight: '400', letterSpacing: 0.3 },
   cardDivider: {
     height: 1,
     backgroundColor: '#F0F1F3',
@@ -1396,8 +1518,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  statLabel: { fontSize: 10, color: '#9CA3AF', fontWeight: '600' },
-  statValue: { fontSize: 15, fontWeight: '700', color: C.black },
+  statLabel: { fontSize: 10, color: '#9CA3AF', fontWeight: '400' },
+  statValue: { fontSize: 15, fontWeight: '400', color: C.black },
   reason: {
     fontSize: 12,
     color: C.textMuted,
@@ -1461,7 +1583,7 @@ const styles = StyleSheet.create({
   actionBtnText: {
     color: C.white,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   modalHeader: {
@@ -1473,10 +1595,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: C.black },
+  modalTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   fieldLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.black,
     marginBottom: 5,
@@ -1493,7 +1615,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 11,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '400',
     color: C.black,
     backgroundColor: C.white,
   },
@@ -1509,7 +1631,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   selChipActive: { backgroundColor: C.primary },
-  selChipText: { fontSize: 11, fontWeight: '700', color: C.black },
+  selChipText: { fontSize: 11, fontWeight: '400', color: C.black },
   docPicker: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1526,8 +1648,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: '#F9FAFB',
   },
-  docPickerText: { flex: 1, fontSize: 13, fontWeight: '700', color: C.primary },
-  docPickerPlaceholder: { fontSize: 13, fontWeight: '600', color: '#9CA3AF' },
+  docPickerText: { flex: 1, fontSize: 13, fontWeight: '400', color: C.primary },
+  docPickerPlaceholder: { fontSize: 13, fontWeight: '400', color: '#9CA3AF' },
   hint: { fontSize: 11, color: '#9CA3AF', marginTop: 4 },
   submitBtn: {
     backgroundColor: C.primary,
@@ -1544,7 +1666,7 @@ const styles = StyleSheet.create({
   },
   submitBtnText: {
     color: C.white,
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 14,
     textTransform: 'uppercase',
   },
@@ -1568,7 +1690,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 380,
   },
-  approveModalTitle: { fontSize: 18, fontWeight: '700', color: C.black },
+  approveModalTitle: { fontSize: 18, fontWeight: '400', color: C.black },
   approveModalSub: {
     fontSize: 12,
     color: C.textMuted,
@@ -1577,7 +1699,7 @@ const styles = StyleSheet.create({
   },
   approveModalLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.black,
     marginBottom: 8,
@@ -1596,7 +1718,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   toggleOptActive: {},
-  toggleOptText: { fontSize: 13, fontWeight: '700', color: C.black },
+  toggleOptText: { fontSize: 13, fontWeight: '400', color: C.black },
   toggleOptSub: { fontSize: 10, color: C.textMuted, marginTop: 2 },
   approveModalActions: { flexDirection: 'row', gap: 10 },
   approveModalCancel: {
@@ -1611,7 +1733,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: 'center',
   },
-  approveModalCancelText: { fontSize: 13, fontWeight: '700', color: C.black },
+  approveModalCancelText: { fontSize: 13, fontWeight: '400', color: C.black },
   approveModalConfirm: {
     flex: 1,
     flexDirection: 'row',
@@ -1630,7 +1752,7 @@ const styles = StyleSheet.create({
   },
   approveModalConfirmText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.white,
     textTransform: 'uppercase',
   },

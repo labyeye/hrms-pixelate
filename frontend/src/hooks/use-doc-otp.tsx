@@ -17,7 +17,10 @@ export function useDocOtp() {
   const [otp, setOtp] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
-  const pending = useRef<{ ok: (t: string) => void; no: (e: Error) => void } | null>(null);
+  const pending = useRef<{
+    ok: (t: string) => void;
+    no: (e: Error) => void;
+  } | null>(null);
 
   const sendCode = async () => {
     setMsg("");
@@ -82,7 +85,8 @@ export function useDocOtp() {
         </div>
         <div className="p-5 space-y-3">
           <p className="text-xs text-muted-foreground">
-            This is a confidential document. Enter the 6-digit OTP sent to your WhatsApp. Access stays unlocked for 15 minutes.
+            This is a confidential document. Enter the 6-digit OTP sent to your
+            WhatsApp. Access stays unlocked for 15 minutes.
           </p>
           <input
             autoFocus
@@ -102,7 +106,10 @@ export function useDocOtp() {
           >
             {busy ? "Verifying..." : "Verify & Open"}
           </button>
-          <button onClick={sendCode} className="w-full text-xs font-bold text-[#024BAB] hover:underline">
+          <button
+            onClick={sendCode}
+            className="w-full text-xs font-bold text-[#024BAB] hover:underline"
+          >
             Resend OTP
           </button>
         </div>

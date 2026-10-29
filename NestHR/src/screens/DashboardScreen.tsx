@@ -267,7 +267,6 @@ function AdminDashboard({ navigation }: any) {
             })}
           </View>
 
-
           {!!stats?.dailyStats?.length && (
             <>
               <Text style={styles.sectionLabel}>Daily Attendance</Text>
@@ -1293,9 +1292,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  greet: { fontSize: 12, color: C.textMuted, fontWeight: '500' },
-  name: { fontSize: 20, fontWeight: '700', color: C.black },
-  company: { fontSize: 11, color: C.textMuted, fontWeight: '500' },
+  greet: { fontSize: 12, color: C.textMuted, fontWeight: '400' },
+  name: { fontSize: 20, fontWeight: '400', color: C.black },
+  company: { fontSize: 11, color: C.textMuted, fontWeight: '400' },
   headerAvatarWrap: { marginRight: 10, marginTop: 8 },
   headerAvatar: {
     width: 44,
@@ -1309,7 +1308,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerAvatarText: { color: C.white, fontSize: 18, fontWeight: '700' },
+  headerAvatarText: { color: C.white, fontSize: 18, fontWeight: '400' },
   bellBtn: { padding: 4, position: 'relative', marginTop: 12 },
   bellBadge: {
     position: 'absolute',
@@ -1323,7 +1322,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 3,
   },
-  bellBadgeText: { color: C.white, fontSize: 9, fontWeight: '700' },
+  bellBadgeText: { color: C.white, fontSize: 9, fontWeight: '400' },
   essWishCard: {
     backgroundColor: '#FDF2F8',
     borderWidth: 2,
@@ -1338,14 +1337,14 @@ const styles = StyleSheet.create({
   },
   essWishTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.black,
   },
   essWishText: {
     fontSize: 12,
     color: C.black,
     marginTop: 2,
-    fontWeight: '500',
+    fontWeight: '400',
   },
   essGrid: {
     flexDirection: 'row',
@@ -1366,13 +1365,13 @@ const styles = StyleSheet.create({
   },
   essGridCardLabel: {
     fontSize: 8,
-    fontWeight: '800',
+    fontWeight: '400',
     color: C.textMuted,
     marginTop: 4,
   },
   essGridCardVal: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.black,
     marginTop: 2,
   },
@@ -1395,7 +1394,7 @@ const styles = StyleSheet.create({
   },
   essSectionTitle: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '400',
     color: C.black,
     textTransform: 'uppercase',
     marginBottom: 8,
@@ -1408,7 +1407,7 @@ const styles = StyleSheet.create({
   },
   essAnnounceTitle: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.black,
   },
   essAnnounceBody: {
@@ -1430,7 +1429,7 @@ const styles = StyleSheet.create({
   },
   essAnnounceBadgeText: {
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
   essAnnounceDot: {
@@ -1456,7 +1455,7 @@ const styles = StyleSheet.create({
   essAckBtnText: {
     color: C.white,
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
 
@@ -1477,10 +1476,10 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 16,
   },
-  errorText: { fontSize: 12, color: C.danger, fontWeight: '700', flex: 1 },
+  errorText: { fontSize: 12, color: C.danger, fontWeight: '400', flex: 1 },
   sectionLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
     color: C.textMuted,
     marginBottom: 10,
@@ -1515,10 +1514,10 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderRadius: 50,
   },
-  statValue: { fontSize: 19, fontWeight: '700', color: C.black },
+  statValue: { fontSize: 19, fontWeight: '400', color: C.black },
   statLabel: {
     fontSize: 8,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
@@ -1527,18 +1526,18 @@ const styles = StyleSheet.create({
 
   // Today's attendance donut
   donutRow: { flexDirection: 'row', alignItems: 'center', gap: 20 },
-  donutCenterVal: { fontSize: 18, fontWeight: '800', color: C.black },
-  donutCenterLabel: { fontSize: 9, color: C.textMuted, fontWeight: '600' },
+  donutCenterVal: { fontSize: 18, fontWeight: '400', color: C.black },
+  donutCenterLabel: { fontSize: 9, color: C.textMuted, fontWeight: '400' },
   donutLegend: { flex: 1, gap: 10 },
   donutLegendRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   donutDot: { width: 10, height: 10, borderRadius: 5 },
   donutLegendLabel: {
     flex: 1,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '400',
     color: C.black,
   },
-  donutLegendVal: { fontSize: 14, fontWeight: '800', color: C.black },
+  donutLegendVal: { fontSize: 14, fontWeight: '400', color: C.black },
 
   // Shared card
   card: {
@@ -1567,8 +1566,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  quickLabel: { flex: 1, fontSize: 13, fontWeight: '600', color: C.black },
-  quickVal: { fontSize: 16, fontWeight: '700', color: C.black },
+  quickLabel: { flex: 1, fontSize: 13, fontWeight: '400', color: C.black },
+  quickVal: { fontSize: 16, fontWeight: '400', color: C.black },
 
   // Employee: Profile banner
   profileBanner: {
@@ -1602,18 +1601,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  profileBannerAvatarText: { color: C.white, fontSize: 22, fontWeight: '700' },
-  profileBannerName: { fontSize: 16, fontWeight: '700', color: C.black },
+  profileBannerAvatarText: { color: C.white, fontSize: 22, fontWeight: '400' },
+  profileBannerName: { fontSize: 16, fontWeight: '400', color: C.black },
   profileBannerRole: {
     fontSize: 12,
     color: C.textMuted,
-    fontWeight: '500',
+    fontWeight: '400',
     marginTop: 2,
   },
   profileBannerEmpId: {
     fontSize: 11,
     color: C.primary,
-    fontWeight: '700',
+    fontWeight: '400',
     marginTop: 2,
   },
   profileBannerStats: { flexDirection: 'row' },
@@ -1623,11 +1622,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     gap: 3,
   },
-  profileBannerStatVal: { fontSize: 13, fontWeight: '700', color: C.black },
+  profileBannerStatVal: { fontSize: 13, fontWeight: '400', color: C.black },
   profileBannerStatLabel: {
     fontSize: 12,
     color: C.textMuted,
-    fontWeight: '500',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
 
@@ -1658,7 +1657,7 @@ const styles = StyleSheet.create({
   todayStatusText: {
     color: C.white,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     letterSpacing: 0.5,
   },
   todayTimes: { flexDirection: 'row', gap: 20 },
@@ -1666,12 +1665,12 @@ const styles = StyleSheet.create({
   todayTimeLabel: {
     fontSize: 12,
     color: C.textMuted,
-    fontWeight: '600',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
-  todayTimeVal: { fontSize: 14, fontWeight: '700', color: C.black },
+  todayTimeVal: { fontSize: 14, fontWeight: '400', color: C.black },
   todayAbsent: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  todayAbsentText: { fontSize: 13, color: C.textMuted, fontWeight: '500' },
+  todayAbsentText: { fontSize: 13, color: C.textMuted, fontWeight: '400' },
 
   // Employee: Month stats
   monthStats: { flexDirection: 'row', gap: 8, marginBottom: 4 },
@@ -1703,10 +1702,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderColor: C.black,
   },
-  monthStatVal: { fontSize: 22, fontWeight: '700' },
+  monthStatVal: { fontSize: 22, fontWeight: '400' },
   monthStatLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.black,
     textTransform: 'uppercase',
   },
@@ -1729,7 +1728,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   payslipLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  payslipMonth: { fontSize: 15, fontWeight: '700', color: C.black },
+  payslipMonth: { fontSize: 15, fontWeight: '400', color: C.black },
   payslipStatus: {
     borderWidth: 2,
     borderRadius: 999,
@@ -1737,11 +1736,11 @@ const styles = StyleSheet.create({
     borderRightWidth: 4,
     borderBottomWidth: 4,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.success,
     marginTop: 2,
   },
-  payslipNet: { fontSize: 22, fontWeight: '700', color: C.black },
+  payslipNet: { fontSize: 22, fontWeight: '400', color: C.black },
 
   // Employee: Recent attendance
   attRow: {
@@ -1752,11 +1751,11 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   attBorder: { borderTopWidth: 2, borderTopColor: C.black },
-  attDate: { fontSize: 12, fontWeight: '600', color: C.black, width: 90 },
+  attDate: { fontSize: 12, fontWeight: '400', color: C.black, width: 90 },
   attBadge: { paddingHorizontal: 8, paddingVertical: 3 },
-  attBadgeText: { fontSize: 9, fontWeight: '700' },
+  attBadgeText: { fontSize: 9, fontWeight: '400' },
   attTimes: { flex: 1, alignItems: 'flex-end' },
-  attTime: { fontSize: 11, fontWeight: '600', color: C.black },
+  attTime: { fontSize: 11, fontWeight: '400', color: C.black },
 
   // Employee: 3-day tabs
   tabBar: {
@@ -1781,7 +1780,7 @@ const styles = StyleSheet.create({
   tabBtnActive: { backgroundColor: C.primary },
   tabBtnText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.black,
     textTransform: 'uppercase',
   },
@@ -1789,7 +1788,7 @@ const styles = StyleSheet.create({
   tabBtnDate: {
     fontSize: 10,
     color: C.textMuted,
-    fontWeight: '500',
+    fontWeight: '400',
     marginTop: 2,
   },
   tabBtnDateActive: { color: '#93C5FD' },
@@ -1813,23 +1812,23 @@ const styles = StyleSheet.create({
   attDayStatusText: {
     color: C.white,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '400',
     letterSpacing: 0.5,
   },
   attDayRow: { flexDirection: 'row', alignItems: 'center' },
   attDayItem: { flex: 1, alignItems: 'center', gap: 5 },
   attDayItemLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '400',
     color: C.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
   },
-  attDayItemVal: { fontSize: 15, fontWeight: '700', color: C.black },
+  attDayItemVal: { fontSize: 15, fontWeight: '400', color: C.black },
   attDayDivider: { width: 2, height: 48, backgroundColor: '#000000' },
   attDayEmpty: { alignItems: 'center', gap: 6, paddingVertical: 10 },
-  attDayEmptyText: { fontSize: 13, fontWeight: '700', color: C.textMuted },
-  attDayEmptyDate: { fontSize: 11, color: C.textLight, fontWeight: '500' },
+  attDayEmptyText: { fontSize: 13, fontWeight: '400', color: C.textMuted },
+  attDayEmptyDate: { fontSize: 11, color: C.textLight, fontWeight: '400' },
 
   // Employee: Quick actions
   quickActions: { flexDirection: 'row', gap: 10, marginBottom: 4 },
@@ -1851,7 +1850,7 @@ const styles = StyleSheet.create({
   quickActionText: {
     color: C.white,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '400',
     textTransform: 'uppercase',
   },
 
@@ -1900,7 +1899,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  photoModalInitials: { fontSize: 72, fontWeight: '700', color: C.white },
+  photoModalInitials: { fontSize: 72, fontWeight: '400', color: C.white },
   photoModalBtns: { flexDirection: 'row', gap: 16 },
   photoModalEditBtn: {
     flexDirection: 'row',
@@ -1932,7 +1931,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
   },
-  photoModalBtnText: { color: C.white, fontSize: 13, fontWeight: '700' },
+  photoModalBtnText: { color: C.white, fontSize: 13, fontWeight: '400' },
   rangeRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1975,7 +1974,7 @@ const styles = StyleSheet.create({
   payValue: {
     fontFamily: FONT.bold,
     fontSize: 30,
-    fontWeight: '800',
+    fontWeight: '400',
     color: C.black,
     marginVertical: 4,
   },
@@ -2006,7 +2005,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  perfAvatarText: { color: C.white, fontSize: 14, fontWeight: '700' },
+  perfAvatarText: { color: C.white, fontSize: 14, fontWeight: '400' },
   perfName: { fontFamily: FONT.bold, fontSize: 14, color: C.black },
   perfBarTrack: {
     height: 8,
