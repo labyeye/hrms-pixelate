@@ -52,16 +52,10 @@ const allGroups: NavGroup[] = [
         roles: ["super_admin", "hr_manager", "hr_executive", "department_head"],
       },
       {
-        title: "My Profile",
+        title: "My Dashboard",
         href: "/my-profile",
         icon: User,
-        roles: [
-          "super_admin",
-          "hr_manager",
-          "hr_executive",
-          "department_head",
-          "employee",
-        ],
+        roles: ["employee"],
       },
     ],
   },

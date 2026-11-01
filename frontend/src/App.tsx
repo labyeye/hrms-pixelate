@@ -23,6 +23,7 @@ const PerformanceReportPage = lazy(
   () => import("./pages/PerformanceReportPage"),
 );
 const DepartmentsPage = lazy(() => import("./pages/DepartmentsPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -180,6 +181,14 @@ function AppRoutes() {
               <BillingRoute>
                 <BillingPage />
               </BillingRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
             }
           />
           <Route

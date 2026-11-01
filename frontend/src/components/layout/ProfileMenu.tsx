@@ -145,7 +145,7 @@ export function ProfileMenu() {
           )}
 
           <button
-            onClick={() => go("/my-profile")}
+            onClick={() => go("/profile")}
             className="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-black hover:bg-[#024BAB]/5 text-left"
           >
             <UserIcon className="w-3.5 h-3.5" /> My profile
