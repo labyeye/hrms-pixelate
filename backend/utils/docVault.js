@@ -18,12 +18,13 @@ const MAX_TRIES = 5;
 
 // DOC_ENC_KEY (any string) is preferred; falling back to JWT_SECRET keeps dev setups working.
 // ponytail: rotating this key makes old files unreadable, add a key-id byte if rotation is needed.
-const key = () =>
-  crypto.scryptSync(
-    process.env.DOC_ENC_KEY || process.env.JWT_SECRET,
-    "nesthr-doc-vault",
-    32,
-  );
+const deriveKey = (secret) => crypto.scryptSync(secret, "nesthr-doc-vault", 32);
+const key = () => deriveKey(process.env.DOC_ENC_KEY || process.env.JWT_SECRET);
+// Files written before DOC_ENC_KEY was set were sealed with the JWT_SECRET-derived key; still readable after the switch.
+const legacyKey = () =>
+  process.env.DOC_ENC_KEY && process.env.JWT_SECRET
+    ? deriveKey(process.env.JWT_SECRET)
+    : null;
 
 const isEncrypted = (buf) =>
   buf.length > MAGIC.length + 28 && buf.subarray(0, MAGIC.length).equals(MAGIC);
@@ -38,13 +39,18 @@ function encryptBuffer(plain) {
 function decryptBuffer(buf) {
   if (!isEncrypted(buf)) return buf;
   const o = MAGIC.length;
-  const d = crypto.createDecipheriv(
-    "aes-256-gcm",
-    key(),
-    buf.subarray(o, o + 12),
-  );
-  d.setAuthTag(buf.subarray(o + 12, o + 28));
-  return Buffer.concat([d.update(buf.subarray(o + 28)), d.final()]);
+  const open = (k) => {
+    const d = crypto.createDecipheriv("aes-256-gcm", k, buf.subarray(o, o + 12));
+    d.setAuthTag(buf.subarray(o + 12, o + 28));
+    return Buffer.concat([d.update(buf.subarray(o + 28)), d.final()]);
+  };
+  try {
+    return open(key());
+  } catch (e) {
+    const old = legacyKey();
+    if (!old) throw e;
+    return open(old);
+  }
 }
 
 /** Encrypts a file in place (no-op if already encrypted). */

@@ -55,7 +55,7 @@ export function ImportButton({ name, headers, example, onRows }: Props) {
       <input
         ref={input}
         type="file"
-        accept=".xlsx,.xls,.csv"
+        accept=".xlsx,.csv"
         hidden
         onChange={(e) => pick(e.target.files?.[0])}
       />

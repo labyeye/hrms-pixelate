@@ -9,7 +9,7 @@ react {
     autolinkLibrariesWithApp()
 }
 
-def enableProguardInReleaseBuilds = false
+def enableProguardInReleaseBuilds = true
 
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
@@ -27,6 +27,15 @@ android {
         versionName "1.7"
     }
     signingConfigs {
+        release {
+            // Real upload key: set NESTHR_STORE_FILE / _STORE_PASSWORD / _KEY_ALIAS / _KEY_PASSWORD in ~/.gradle/gradle.properties
+            if (project.hasProperty('NESTHR_STORE_FILE')) {
+                storeFile file(NESTHR_STORE_FILE)
+                storePassword NESTHR_STORE_PASSWORD
+                keyAlias NESTHR_KEY_ALIAS
+                keyPassword NESTHR_KEY_PASSWORD
+            }
+        }
         debug {
             storeFile file('debug.keystore')
             storePassword 'android'
@@ -39,7 +48,7 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            signingConfig signingConfigs.debug
+            signingConfig project.hasProperty('NESTHR_STORE_FILE') ? signingConfigs.release : signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }

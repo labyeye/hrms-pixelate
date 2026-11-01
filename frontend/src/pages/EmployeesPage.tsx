@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
-import * as XLSX from "xlsx";
+import { writeSheet, readRows } from "@/lib/sheets";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import {
@@ -755,62 +755,54 @@ export default function EmployeesPage() {
   const downloadTemplate = () => {
     const headerRow = IMPORT_HEADERS.map((h) => h.label);
     const exampleRow = IMPORT_HEADERS.map((h) => h.example);
-    const ws = XLSX.utils.aoa_to_sheet([headerRow, exampleRow]);
-    ws["!cols"] = IMPORT_HEADERS.map(() => ({ wch: 22 }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Employees");
-    XLSX.writeFile(wb, "nesthr_employees_template.xlsx");
+    void writeSheet(
+      "nesthr_employees_template.xlsx",
+      "Employees",
+      [headerRow, exampleRow],
+      22,
+    );
   };
 
   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const wb = XLSX.read(evt.target?.result, {
-        type: "array",
-        cellDates: true,
-      });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const raw: any[][] = XLSX.utils.sheet_to_json(ws, {
-        header: 1,
-        defval: "",
-      });
-      if (raw.length < 2) {
-        alert("Sheet is empty or has no data rows.");
-        return;
-      }
+    e.target.value = "";
+    readRows(file)
+      .then((raw: any[][]) => {
+        if (raw.length < 2) {
+          alert("Sheet is empty or has no data rows.");
+          return;
+        }
 
-      const headerRow = (raw[0] as string[]).map((h) => String(h).trim());
-      const labelToKey: Record<string, string> = {};
-      IMPORT_HEADERS.forEach((h) => {
-        labelToKey[h.label.toLowerCase()] = h.key;
-      });
-
-      const parsed = raw
-        .slice(1)
-        .filter((r) => r.some((c) => c !== ""))
-        .map((row) => {
-          const obj: Record<string, string> = {};
-          headerRow.forEach((hdr, i) => {
-            const key = labelToKey[hdr.toLowerCase()];
-            if (key) {
-              const val = row[i];
-              if (val instanceof Date) {
-                obj[key] = val.toISOString().split("T")[0];
-              } else {
-                obj[key] = String(val ?? "").trim();
-              }
-            }
-          });
-          return obj;
+        const headerRow = (raw[0] as string[]).map((h) => String(h).trim());
+        const labelToKey: Record<string, string> = {};
+        IMPORT_HEADERS.forEach((h) => {
+          labelToKey[h.label.toLowerCase()] = h.key;
         });
 
-      setImportRows(parsed);
-      setImportStep("preview");
-    };
-    reader.readAsArrayBuffer(file);
-    e.target.value = "";
+        const parsed = raw
+          .slice(1)
+          .filter((r) => r.some((c) => c !== ""))
+          .map((row) => {
+            const obj: Record<string, string> = {};
+            headerRow.forEach((hdr, i) => {
+              const key = labelToKey[hdr.toLowerCase()];
+              if (key) {
+                const val = row[i];
+                if (val instanceof Date) {
+                  obj[key] = val.toISOString().split("T")[0];
+                } else {
+                  obj[key] = String(val ?? "").trim();
+                }
+              }
+            });
+            return obj;
+          });
+
+        setImportRows(parsed);
+        setImportStep("preview");
+      })
+      .catch((err: any) => alert(err?.message || "Could not read the file."));
   };
 
   const handleImport = async () => {
@@ -4522,7 +4514,7 @@ export default function EmployeesPage() {
                     <input
                       ref={importFileRef}
                       type="file"
-                      accept=".xlsx,.xls"
+                      accept=".xlsx,.csv"
                       className="hidden"
                       onChange={handleImportFile}
                     />

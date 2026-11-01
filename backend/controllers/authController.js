@@ -582,10 +582,9 @@ const sendOtp = asyncHandler(async (req, res) => {
     throw new Error("Phone number is required");
   }
 
-  console.log(`[WA-OTP] controller entered, raw phone=${phone}`);
-  const normalised = to10(phone);
+    const normalised = to10(phone);
   const user = await findUserByPhone(normalised);
-  console.log(`[WA-OTP] lookup phone=${normalised} found=${!!user}`);
+  console.log(`[WA-OTP] lookup found=${!!user}`);
   if (!user) {
     // Return generic success to avoid user enumeration
     console.warn(

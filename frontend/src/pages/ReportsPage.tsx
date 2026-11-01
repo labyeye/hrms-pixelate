@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { buildReportHTML, ReportCompany } from "@/lib/reportPrintHTML";
-import * as XLSX from "xlsx";
+import { writeSheet } from "@/lib/sheets";
 import {
   BarChart,
   Bar,
@@ -365,10 +365,7 @@ function exportCSV(rows: string[][], filename: string) {
 }
 
 function exportXLSX(rows: string[][], filename: string) {
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Report");
-  XLSX.writeFile(wb, filename.replace(".csv", ".xlsx"));
+  void writeSheet(filename.replace(".csv", ".xlsx"), "Report", rows);
 }
 
 function printReport(

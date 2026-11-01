@@ -8,7 +8,7 @@ const generateToken = (id, tokenVersion = 0, sid) =>
     { id, ...(tokenVersion && { tv: tokenVersion }), ...(sid && { sid }) },
     process.env.JWT_SECRET,
     {
-      expiresIn: "30d",
+      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
       algorithm: "HS256",
     },
   );

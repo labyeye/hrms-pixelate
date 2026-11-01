@@ -1,5 +1,6 @@
 import { createAsyncStorage } from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import * as Keychain from 'react-native-keychain';
 import { API_BASE_URL } from '../config/env';
 import { announceRefund, isRefundMessage } from '../utils/refundNotice';
 
@@ -8,10 +9,29 @@ const BASE_URL = API_BASE_URL;
 const storage = createAsyncStorage('hrms');
 const TOKEN_KEY = 'hrms_token';
 
-export const getToken = async (): Promise<string | null> =>
-  storage.getItem(TOKEN_KEY);
-export const setToken = (t: string) => storage.setItem(TOKEN_KEY, t);
-export const removeToken = () => storage.removeItem(TOKEN_KEY);
+// The JWT lives in the Android Keystore / iOS Keychain, not in plain AsyncStorage. A token left in AsyncStorage by an
+// older app version is moved over on first read.
+const KC_SERVICE = 'hrms_token';
+
+export const getToken = async (): Promise<string | null> => {
+  try {
+    const c = await Keychain.getGenericPassword({ service: KC_SERVICE });
+    if (c) return c.password;
+  } catch {}
+  const legacy = await storage.getItem(TOKEN_KEY);
+  if (legacy) {
+    await setToken(legacy);
+    await storage.removeItem(TOKEN_KEY);
+  }
+  return legacy;
+};
+export const setToken = async (t: string) => {
+  await Keychain.setGenericPassword('token', t, { service: KC_SERVICE });
+};
+export const removeToken = async () => {
+  await Keychain.resetGenericPassword({ service: KC_SERVICE }).catch(() => {});
+  await storage.removeItem(TOKEN_KEY);
+};
 
 const NETWORK_MSG =
   'Cannot reach the server. Please check your internet connection and try again.';

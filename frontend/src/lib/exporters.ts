@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+import { writeSheet, readObjects } from "./sheets";
 import jsPDF from "jspdf";
 
 export interface ExportCol<T = any> {
@@ -14,13 +14,7 @@ export function exportExcel<T>(name: string, cols: ExportCol<T>[], rows: T[]) {
     cols.map((c) => c.header),
     ...rows.map((r) => cols.map((c) => cell(c.value(r)))),
   ];
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(
-    wb,
-    XLSX.utils.aoa_to_sheet(aoa),
-    name.slice(0, 31),
-  );
-  XLSX.writeFile(wb, `${name}_${stamp()}.xlsx`);
+  void writeSheet(`${name}_${stamp()}.xlsx`, name, aoa);
 }
 
 // ponytail: plain-text table, long cells are clipped; swap in jspdf-autotable if wrapping is needed.
@@ -67,14 +61,7 @@ export function exportPdf<T>(name: string, cols: ExportCol<T>[], rows: T[]) {
 
 /** Reads the first sheet of an .xlsx/.xls/.csv file into header-keyed objects. */
 export async function readSheet(file: File): Promise<Record<string, any>[]> {
-  const wb = XLSX.read(await file.arrayBuffer(), {
-    type: "array",
-    cellDates: true,
-  });
-  return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {
-    defval: "",
-    raw: false,
-  });
+  return readObjects(file);
 }
 
 export function downloadTemplate(
@@ -82,11 +69,5 @@ export function downloadTemplate(
   headers: string[],
   example: (string | number)[],
 ) {
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(
-    wb,
-    XLSX.utils.aoa_to_sheet([headers, example]),
-    "Template",
-  );
-  XLSX.writeFile(wb, `${name}_template.xlsx`);
+  void writeSheet(`${name}_template.xlsx`, "Template", [headers, example]);
 }

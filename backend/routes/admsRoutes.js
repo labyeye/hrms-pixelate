@@ -334,6 +334,18 @@ async function resolveDevice(sn) {
   );
 }
 
+// Optional: ADMS_ALLOWED_IPS="1.2.3.4,5.6.7.8" restricts device endpoints to the office/NAT IPs (devices cannot send secrets).
+const admsAllowed = (process.env.ADMS_ALLOWED_IPS || "")
+  .split(",")
+  .map((x) => x.trim())
+  .filter(Boolean);
+if (admsAllowed.length)
+  router.use((req, res, next) =>
+    admsAllowed.includes((req.ip || "").replace(/^::ffff:/, ""))
+      ? next()
+      : res.status(403).type("text/plain").send("Forbidden"),
+  );
+
 router.get(["/cdata", "/cdata.aspx"], async (req, res) => {
   const { SN } = req.query;
   res.set("Content-Type", "text/plain");
