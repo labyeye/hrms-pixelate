@@ -1132,7 +1132,7 @@ export default function SettingsPage() {
               {}
               {activeTab === "general" && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <InputField
                       label="Company Name"
                       name="companyName"
@@ -1194,6 +1194,15 @@ export default function SettingsPage() {
                       type="url"
                       onChange={handleChange}
                     />
+                    <TextAreaField
+                    label="Company Address"
+                    name="companyAddress"
+                    value={settings?.companyAddress || ""}
+                    placeholder="Enter full company address"
+                    rows={3}
+                    required
+                    onChange={handleChange}
+                  />
                   </div>
 
                   {}
@@ -1320,15 +1329,7 @@ export default function SettingsPage() {
                     </div>
                   </div>
 
-                  <TextAreaField
-                    label="Company Address"
-                    name="companyAddress"
-                    value={settings?.companyAddress || ""}
-                    placeholder="Enter full company address"
-                    rows={3}
-                    required
-                    onChange={handleChange}
-                  />
+                  
                 </div>
               )}
 

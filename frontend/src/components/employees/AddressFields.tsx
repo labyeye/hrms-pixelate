@@ -90,42 +90,44 @@ export function AddressFields({
           placeholder="House no., street, area"
         />
       </div>
-      <div>
-        <label className={label}>Pincode</label>
-        <div className="relative">
-          <input
-            inputMode="numeric"
-            maxLength={6}
-            value={value.pincode}
-            onChange={(e) =>
-              setPin(e.target.value.replace(/\D/g, "").slice(0, 6))
-            }
-            className={input}
-            placeholder="6-digit pincode"
-          />
-          {looking && (
-            <Loader2 className="w-4 h-4 animate-spin absolute right-3 top-3 text-[#024BAB]" />
-          )}
+      <div className="col-span-2 grid grid-cols-3 gap-4">
+        <div>
+          <label className={label}>Pincode</label>
+          <div className="relative">
+            <input
+              inputMode="numeric"
+              maxLength={6}
+              value={value.pincode}
+              onChange={(e) =>
+                setPin(e.target.value.replace(/\D/g, "").slice(0, 6))
+              }
+              className={input}
+              placeholder="6-digit pincode"
+            />
+            {looking && (
+              <Loader2 className="w-4 h-4 animate-spin absolute right-3 top-3 text-[#024BAB]" />
+            )}
+          </div>
+          {note && <p className="text-[10px] text-amber-700 mt-1">{note}</p>}
         </div>
-        {note && <p className="text-[10px] text-amber-700 mt-1">{note}</p>}
-      </div>
-      <div>
-        <label className={label}>City</label>
-        <input
-          value={value.city}
-          onChange={(e) => onChange({ ...value, city: e.target.value })}
-          className={input}
-          placeholder="City / District"
-        />
-      </div>
-      <div className="col-span-2">
-        <label className={label}>State</label>
-        <PickerSelect
-          value={value.state}
-          onChange={(state) => onChange({ ...value, state })}
-          options={INDIA_STATES}
-          placeholder="Select state"
-        />
+        <div>
+          <label className={label}>City</label>
+          <input
+            value={value.city}
+            onChange={(e) => onChange({ ...value, city: e.target.value })}
+            className={input}
+            placeholder="City / District"
+          />
+        </div>
+        <div>
+          <label className={label}>State</label>
+          <PickerSelect
+            value={value.state}
+            onChange={(state) => onChange({ ...value, state })}
+            options={INDIA_STATES}
+            placeholder="Select state"
+          />
+        </div>
       </div>
     </div>
   );

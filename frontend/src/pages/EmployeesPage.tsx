@@ -1840,23 +1840,6 @@ export default function EmployeesPage() {
                       </div>
                     </div>
 
-                    {}
-                    <div>
-                      <label className="block text-xs font-bold text-black mb-2">
-                        Gender
-                      </label>
-                      <PickerSelect
-                        value={form.gender}
-                        onChange={(g) => setForm({ ...form, gender: g })}
-                        placeholder="Select gender"
-                        options={[
-                          { value: "male", label: "Male" },
-                          { value: "female", label: "Female" },
-                          { value: "other", label: "Other" },
-                        ]}
-                      />
-                    </div>
-
                     {canAssignRole && (
                       <div className="grid grid-cols-3 gap-4">
                         <div>
@@ -1952,7 +1935,7 @@ export default function EmployeesPage() {
                       </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div>
                       {editEmp && (
                         <div>
                           <label className="block text-xs font-bold text-black mb-1">
@@ -1972,21 +1955,38 @@ export default function EmployeesPage() {
                         </div>
                       )}
                       {!editEmp && (
-                        <div>
-                          <label className="block text-xs font-bold text-black mb-1">
-                            Default Password
-                          </label>
-                          <input
-                            type="text"
-                            value={form.password}
-                            onChange={(e) =>
-                              setForm({ ...form, password: e.target.value })
-                            }
-                            minLength={6}
-                            title="Password must be at least 6 characters"
-                            className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                            placeholder="Min 6 characters (e.g. hrms@123)"
-                          />
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-black mb-1">
+                              Default Password
+                            </label>
+                            <input
+                              type="text"
+                              value={form.password}
+                              onChange={(e) =>
+                                setForm({ ...form, password: e.target.value })
+                              }
+                              minLength={6}
+                              title="Password must be at least 6 characters"
+                              className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                              placeholder="Min 6 characters (e.g. hrms@123)"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-black mb-2">
+                              Gender
+                            </label>
+                            <PickerSelect
+                              value={form.gender}
+                              onChange={(g) => setForm({ ...form, gender: g })}
+                              placeholder="Select gender"
+                              options={[
+                                { value: "male", label: "Male" },
+                                { value: "female", label: "Female" },
+                                { value: "other", label: "Other" },
+                              ]}
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
@@ -2641,7 +2641,7 @@ export default function EmployeesPage() {
                       <p className="text-xs font-bold uppercase tracking-wider text-[#024BAB] mb-4">
                         Compliance Numbers
                       </p>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-3 gap-4">
                         <div>
                           <label className="block text-xs font-bold text-black mb-1">
                             PF Number
