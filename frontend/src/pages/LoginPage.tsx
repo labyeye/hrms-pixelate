@@ -200,7 +200,7 @@ export default function LoginPage() {
         <img
           src={loginDash}
           alt="NestHR dashboard preview"
-          className="relative z-10 max-w-auto mx-auto"
+          className="relative z-10 w-full max-w-lg mt-10 mx-auto "
         />
 
         {}
@@ -208,10 +208,7 @@ export default function LoginPage() {
           <h1 className="text-4xl xl:text-3xl font-display font-bold text-white leading-tight mb-5">
             Every employee. Every payslip. One place.
           </h1>
-          <p className="text-white/70 text-base font-medium max-w-sm">
-            Manage your entire workforce — attendance, leaves, payroll and
-            reports — all from a single dashboard.
-          </p>
+          
         </div>
 
         {}

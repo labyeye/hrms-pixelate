@@ -2,13 +2,14 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import { AuthShell } from "@/components/auth/AuthShell";
-import { AlertCircle, ArrowRight } from "lucide-react";
+import { AlertCircle, ArrowRight, Eye, EyeOff } from "lucide-react";
 import PasswordChecklist from "@/components/PasswordChecklist";
 
 export default function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -76,14 +77,27 @@ export default function RegisterPage() {
           <label className="block text-xs font-bold text-black uppercase tracking-wider mb-1.5">
             Password
           </label>
-          <input
-            type="password"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            placeholder="Create a strong password"
-            className="w-full px-4 py-3 border-2 border-black text-sm font-medium bg-white focus:outline-none transition-colors"
-            required
-          />
+          <div className="flex border-2 border-black transition-colors">
+            <input
+              type={showPw ? "text" : "password"}
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              placeholder="Create a strong password"
+              className="flex-1 px-4 py-3 bg-white text-sm font-medium outline-none"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPw(!showPw)}
+              className="px-3 border-l-2 border-black hover:bg-gray-50 transition-colors"
+            >
+              {showPw ? (
+                <EyeOff className="w-4 h-4 text-black" />
+              ) : (
+                <Eye className="w-4 h-4 text-black" />
+              )}
+            </button>
+          </div>
           {form.password && <PasswordChecklist password={form.password} />}
         </div>
         <label className="flex items-start gap-2 text-xs text-gray-600">

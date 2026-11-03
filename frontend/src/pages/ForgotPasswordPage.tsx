@@ -9,6 +9,8 @@ import {
   MessageCircle,
   FileText,
   Fingerprint,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { authAPI } from "@/services/api";
 import nesthrlogo from "../../assets/logo.png";
@@ -68,6 +70,8 @@ export default function ForgotPasswordPage() {
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -323,27 +327,54 @@ export default function ForgotPasswordPage() {
               )}
               <div>
                 <label className={labelCls}>New password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Create a strong password"
-                  className="w-full px-3 py-3 border-2 border-black text-sm outline-none"
-                  required
-                  autoComplete="new-password"
-                />
+                <div className="flex border-2 border-black transition-colors">
+                  <input
+                    type={showPw ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Create a strong password"
+                    className="flex-1 px-3 py-3 bg-white text-sm outline-none"
+                    required
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw(!showPw)}
+                    className="px-3 border-l-2 border-black hover:bg-gray-50 transition-colors"
+                  >
+                    {showPw ? (
+                      <EyeOff className="w-4 h-4 text-black" />
+                    ) : (
+                      <Eye className="w-4 h-4 text-black" />
+                    )}
+                  </button>
+                </div>
                 {password && <PasswordChecklist password={password} />}
               </div>
               <div>
                 <label className={labelCls}>Confirm new password</label>
-                <input
-                  type="password"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  className="w-full px-3 py-3 border-2 border-black text-sm outline-none"
-                  required
-                  autoComplete="new-password"
-                />
+                <div className="flex border-2 border-black transition-colors">
+                  <input
+                    type={showConfirmPw ? "text" : "password"}
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    placeholder="Confirm your new password"
+                    className="flex-1 px-3 py-3 bg-white text-sm outline-none"
+                    required
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPw(!showConfirmPw)}
+                    className="px-3 border-l-2 border-black hover:bg-gray-50 transition-colors"
+                  >
+                    {showConfirmPw ? (
+                      <EyeOff className="w-4 h-4 text-black" />
+                    ) : (
+                      <Eye className="w-4 h-4 text-black" />
+                    )}
+                  </button>
+                </div>
               </div>
               <button type="submit" disabled={loading} className={btnCls}>
                 {loading
