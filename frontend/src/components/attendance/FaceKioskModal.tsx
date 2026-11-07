@@ -1,5 +1,5 @@
 // Full-screen face attendance kiosk for a spare wall-mounted phone / tablet / laptop signed in as admin.
-// Watches the camera, asks for a natural blink (blocks photos), then sends a frame to the server, which recognises the
+// Watches the camera, and once a face is steady sends a frame to the server, which recognises the
 // employee and toggles their day (first scan = check-in, next = check-out). Manual marking elsewhere is unchanged.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckCircle2, LogOut, ScanFace, X, XCircle } from "lucide-react";
@@ -25,7 +25,6 @@ export default function FaceKioskModal({
     startCamera,
     stopCamera,
     startLiveDetection,
-    captureFaceDescriptorWithLiveness,
   } = useFaceRecognition();
   const [result, setResult] = useState<Result | null>(null);
   const [hint, setHint] = useState("Look at the camera");
@@ -48,9 +47,9 @@ export default function FaceKioskModal({
 
   const scan = useCallback(async () => {
     busy.current = true;
-    setHint("Blink naturally…");
+    setHint("Scanning…");
     try {
-      await captureFaceDescriptorWithLiveness(); // liveness gate; the server re-derives the embedding from the photo
+      // No blink step: like a wall-mounted device, a steady face is enough. The server re-derives the embedding from the photo.
       const video = videoRef.current!;
       const canvas = document.createElement("canvas");
       canvas.width = video.videoWidth;
@@ -99,7 +98,7 @@ export default function FaceKioskModal({
         busy.current = false;
       }, RESULT_MS);
     }
-  }, [captureFaceDescriptorWithLiveness, onMarked, videoRef]);
+  }, [onMarked, videoRef]);
 
   // Start a scan once a face has stayed in frame for ~1s and we're not mid-scan or showing a result.
   useEffect(() => {

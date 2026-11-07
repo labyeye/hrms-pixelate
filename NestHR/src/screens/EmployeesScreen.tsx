@@ -12,12 +12,14 @@ import {
   Modal,
   ScrollView,
   Switch,
+  PermissionsAndroid,
   Image,
   Platform,
   Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DatePickerField } from '../components/common/DatePickerField';
+import { getCurrentPosition } from '../utils/location';
 import {
   Search,
   Plus,
@@ -133,6 +135,12 @@ const EMPTY_FORM = {
   otRate: '',
   biometricUserId: '',
   shift: '',
+  // Mobile geofenced attendance
+  geofenceAttendanceEnabled: false,
+  geofenceMode: 'specific',
+  geofenceLat: '',
+  geofenceLng: '',
+  geofenceRadiusMeters: '200',
   // Tab 3 Salary
   monthlySalary: '',
   pfNumber: '',
@@ -357,6 +365,13 @@ export default function EmployeesScreen() {
       otRate: String((emp as any).otRate ?? ''),
       biometricUserId: (emp as any).biometricUserId || '',
       shift: (emp as any).shift || '',
+      geofenceAttendanceEnabled: (emp as any).geofenceAttendanceEnabled === true,
+      geofenceMode: (emp as any).geofenceMode === 'any' ? 'any' : 'specific',
+      geofenceLat:
+        (emp as any).geofenceLat != null ? String((emp as any).geofenceLat) : '',
+      geofenceLng:
+        (emp as any).geofenceLng != null ? String((emp as any).geofenceLng) : '',
+      geofenceRadiusMeters: String((emp as any).geofenceRadiusMeters || 200),
       monthlySalary: String(
         (emp as any).monthlySalary || (emp as any).salary || '',
       ),
@@ -418,17 +433,49 @@ export default function EmployeesScreen() {
       errors.email = 'Enter a valid email address';
     if (!editingEmp && !form.monthlySalary)
       errors.monthlySalary = 'Monthly salary is required';
+    if (form.geofenceAttendanceEnabled && form.geofenceMode === 'specific') {
+      if (form.geofenceLat.trim() === '' || isNaN(Number(form.geofenceLat)))
+        errors.geofenceLat = 'Enter a valid latitude';
+      if (form.geofenceLng.trim() === '' || isNaN(Number(form.geofenceLng)))
+        errors.geofenceLng = 'Enter a valid longitude';
+    }
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) {
       // Navigate to tab with first error
       const tab1Fields = ['firstName', 'lastName', 'email'];
       const tab3Fields = ['monthlySalary'];
+      const tab2Fields = ['geofenceLat', 'geofenceLng'];
       const firstErr = Object.keys(errors)[0];
       if (tab1Fields.includes(firstErr)) setActiveTab(0);
+      else if (tab2Fields.includes(firstErr)) setActiveTab(1);
       else if (tab3Fields.includes(firstErr)) setActiveTab(2);
       return false;
     }
     return true;
+  };
+
+  // Fill the geofence centre from this phone's GPS (e.g. admin standing at the office).
+  const useMyLocation = async () => {
+    try {
+      if (Platform.OS === 'android') {
+        const g = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        );
+        if (g !== PermissionsAndroid.RESULTS.GRANTED) {
+          Alert.alert('Location permission needed', 'Allow location access to use your current position.');
+          return;
+        }
+      }
+      const pos = await getCurrentPosition();
+      setForm(f => ({
+        ...f,
+        geofenceLat: pos.latitude.toFixed(6),
+        geofenceLng: pos.longitude.toFixed(6),
+      }));
+      setFormDirty(true);
+    } catch (e: any) {
+      Alert.alert('Location unavailable', e?.message || 'Could not get your location');
+    }
   };
 
   const handleSave = async () => {
@@ -449,6 +496,11 @@ export default function EmployeesScreen() {
           ? parseFloat(form.monthlySalary)
           : undefined,
         otRate: form.otRate ? parseFloat(form.otRate) : undefined,
+        geofenceLat:
+          form.geofenceLat.trim() === '' ? undefined : Number(form.geofenceLat),
+        geofenceLng:
+          form.geofenceLng.trim() === '' ? undefined : Number(form.geofenceLng),
+        geofenceRadiusMeters: Number(form.geofenceRadiusMeters) || 200,
         salary: form.monthlySalary ? parseFloat(form.monthlySalary) : undefined,
       };
       if (!editingEmp && !body.defaultPassword) delete body.defaultPassword;
@@ -2577,6 +2629,88 @@ export default function EmployeesScreen() {
                         ))}
                       </ScrollView>
                     </View>
+
+                    {/* Mobile geofenced attendance (same fields as the web employee form) */}
+                    <Text style={[styles.fieldLabel, { marginTop: 8, color: C.primary }]}>
+                      Mobile Geofenced Attendance
+                    </Text>
+                    <View style={styles.toggleRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.fieldLabel}>
+                          Allow Mobile Camera Check-in/out
+                        </Text>
+                        <Text style={styles.toggleHint}>
+                          Employee can mark attendance from the app with a selfie,
+                          from anywhere or only at a specific location
+                        </Text>
+                      </View>
+                      <Switch
+                        value={form.geofenceAttendanceEnabled}
+                        onValueChange={v => {
+                          setForm(p => ({ ...p, geofenceAttendanceEnabled: v }));
+                          setFormDirty(true);
+                        }}
+                        trackColor={{ true: C.primary, false: '#D1D5DB' }}
+                        thumbColor={C.white}
+                      />
+                    </View>
+                    {form.geofenceAttendanceEnabled && (
+                      <>
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                          {(['any', 'specific'] as const).map(m => (
+                            <TouchableOpacity
+                              key={m}
+                              style={[
+                                styles.selChip,
+                                { flex: 1, alignItems: 'center' },
+                                form.geofenceMode === m && styles.selChipActive,
+                              ]}
+                              onPress={() => {
+                                setForm(p => ({ ...p, geofenceMode: m }));
+                                setFormDirty(true);
+                              }}
+                            >
+                              <Text
+                                style={[
+                                  styles.selChipText,
+                                  form.geofenceMode === m && { color: C.white },
+                                ]}
+                              >
+                                {m === 'any' ? 'Any Location' : 'Specific Location'}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                        {form.geofenceMode === 'any' ? (
+                          <Text style={styles.toggleHint}>
+                            Can check in/out from anywhere. Only face verification
+                            is required, no location restriction.
+                          </Text>
+                        ) : (
+                          <>
+                            {F('Latitude', 'geofenceLat', {
+                              keyboardType: 'numbers-and-punctuation',
+                              placeholder: 'e.g. 28.6139',
+                            })}
+                            {F('Longitude', 'geofenceLng', {
+                              keyboardType: 'numbers-and-punctuation',
+                              placeholder: 'e.g. 77.2090',
+                            })}
+                            {F('Radius (meters)', 'geofenceRadiusMeters', {
+                              keyboardType: 'numeric',
+                              placeholder: '200',
+                            })}
+                            <TouchableOpacity
+                              style={[styles.selChip, { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6 }]}
+                              onPress={useMyLocation}
+                            >
+                              <MapPin size={14} color={C.primary} />
+                              <Text style={styles.selChipText}>Use my current location</Text>
+                            </TouchableOpacity>
+                          </>
+                        )}
+                      </>
+                    )}
                   </>
                 )}
 

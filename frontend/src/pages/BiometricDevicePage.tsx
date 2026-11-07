@@ -74,7 +74,7 @@ export default function BiometricDevicePage() {
     cameraActive,
     startCamera: faceStartCamera,
     stopCamera: faceStopCamera,
-    captureFaceDescriptorWithLiveness,
+    captureFaceDescriptor: faceCaptureDescriptor,
   } = useFaceRecognition();
   const [faceVerifying, setFaceVerifying] = useState(false);
   const [faceStatus, setFaceStatus] = useState("");
@@ -231,9 +231,9 @@ export default function BiometricDevicePage() {
   const doFaceVerify = async () => {
     if (!token || faceVerifying) return;
     setFaceVerifying(true);
-    setFaceStatus("Look at the camera and blink naturally…");
+    setFaceStatus("Look at the camera…");
     try {
-      const descriptor = await captureFaceDescriptorWithLiveness();
+      const descriptor = await faceCaptureDescriptor();
       setFaceStatus("Verifying…");
       const res = await biometricAPI.faceAttendance(descriptor, token);
       showResult(res.data);
