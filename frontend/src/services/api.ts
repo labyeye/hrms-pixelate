@@ -430,6 +430,11 @@ export const payrollAPI = {
       `/payroll/export/tally?month=${month}&year=${year}`,
       `Tally_Salary_${month}_${year}.xml`,
     ),
+  exportBank: (month: number, year: number) =>
+    downloadFile(
+      `/payroll/export/bank?month=${month}&year=${year}`,
+      `Bank_Salary_${month}_${year}.csv`,
+    ),
   exportZoho: (month: number, year: number) =>
     downloadFile(
       `/payroll/export/zoho?month=${month}&year=${year}`,
@@ -822,6 +827,52 @@ export const loanAPI = {
   request: (body: object) =>
     request("/loans/request", { method: "POST", body: JSON.stringify(body) }),
   delete: (id: string) => request(`/loans/${id}`, { method: "DELETE" }),
+};
+
+export const expenseAPI = {
+  getAll: (status?: string) =>
+    request(`/expenses${status ? `?status=${status}` : ""}`),
+  create: async (form: FormData) => {
+    const token = getToken();
+    const res = await fetch(`${BASE_URL}/expenses`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+    const data = await res.json().catch(() => ({}) as any);
+    if (!res.ok) throw new Error(data.message || statusMsg(res.status));
+    return data;
+  },
+  act: (id: string, action: "approve" | "reject", note?: string) =>
+    request(`/expenses/${id}/action`, {
+      method: "PUT",
+      body: JSON.stringify({ action, note }),
+    }),
+  remove: (id: string) => request(`/expenses/${id}`, { method: "DELETE" }),
+  downloadBill: (id: string) => downloadFile(`/expenses/${id}/bill`, "bill"),
+  getWorkflow: () => request("/expenses/workflow"),
+  saveWorkflow: (steps: { role: string; aboveAmount: number }[]) =>
+    request("/expenses/workflow", {
+      method: "PUT",
+      body: JSON.stringify({ steps }),
+    }),
+};
+
+export const taxAPI = {
+  getMine: (fy: number) => request(`/tax/declaration?fy=${fy}`),
+  saveMine: (fy: number, body: object) =>
+    request("/tax/declaration", {
+      method: "PUT",
+      body: JSON.stringify({ ...body, fy }),
+    }),
+  list: (fy: number) => request(`/tax/declarations?fy=${fy}`),
+  review: (id: string, status: string, remark?: string) =>
+    request(`/tax/declarations/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ status, remark }),
+    }),
+  form16: (fy: number, employee?: string) =>
+    request(`/tax/form16?fy=${fy}${employee ? `&employee=${employee}` : ""}`),
 };
 
 export const branchAPI = {

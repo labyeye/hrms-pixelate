@@ -20,6 +20,7 @@ import {
   SlidersHorizontal,
   FileText,
   Banknote,
+  Receipt,
   LogOut,
   Shield,
   LifeBuoy,
@@ -137,6 +138,18 @@ const allGroups: NavGroup[] = [
         href: "/my-loans",
         icon: Banknote,
         roles: ["employee"],
+      },
+      {
+        title: "Expenses",
+        href: "/expenses",
+        icon: Receipt,
+        roles: ["super_admin", "hr_manager", "hr_executive", "department_head", "employee"],
+      },
+      {
+        title: "Tax & Form 16",
+        href: "/tax",
+        icon: FileText,
+        roles: ["super_admin", "hr_manager", "hr_executive", "department_head", "employee"],
       },
       {
         title: "Tasks",

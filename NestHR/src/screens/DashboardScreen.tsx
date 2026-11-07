@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Bell,
   IndianRupee,
+  Building2,
   Calendar,
   AlertCircle,
   LogIn,
@@ -75,6 +76,9 @@ const ADMIN_STATS = [
     icon: Clock,
     color: C.danger,
   },
+  { label: 'New Hires', key: 'newHires', icon: TrendingUp, color: '#65A30D' },
+  { label: 'Monthly Payroll', key: 'monthlyPayroll', icon: IndianRupee, color: '#FA731C' },
+  { label: 'Departments', key: 'departments', icon: Building2, color: '#024BAB' },
 ];
 
 type RangeKey = 'this' | '3m' | '6m' | '1y';
@@ -125,6 +129,10 @@ function AdminDashboard({ navigation }: any) {
       setStats({
         ...payload.stats,
         recentActivity: payload.recentHires,
+        recentHires: payload.recentHires || [],
+        pendingLeaveList: payload.pendingLeaveList || [],
+        deptHeadcounts: payload.deptHeadcounts || [],
+        monthlyPayroll: `₹${(payload.stats?.monthlyPayroll || 0).toLocaleString('en-IN')}`,
         dailyStats: payload.dailyStats || [],
         payTrend: payload.payTrend || [],
       });
@@ -178,6 +186,9 @@ function AdminDashboard({ navigation }: any) {
       navigation.navigate('Leave');
     else if (key === 'departments')
       navigation.navigate('More', { screen: 'Departments' });
+    else if (key === 'newHires') navigation.navigate('Employees');
+    else if (key === 'monthlyPayroll')
+      navigation.navigate('More', { screen: 'Payroll' });
   };
 
   return (
@@ -218,9 +229,27 @@ function AdminDashboard({ navigation }: any) {
             </View>
           )}
 
+          <Text style={styles.greetHead}>
+            {greet()}, {user?.name?.split(' ')[0]}
+          </Text>
+          {stats?.pendingLeaves > 0 && (
+            <TouchableOpacity
+              style={styles.alertStrip}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('Leave')}
+            >
+              <AlertCircle size={14} color="#FA731C" />
+              <Text style={styles.alertText}>
+                Action needed: {stats.pendingLeaves} leave request
+                {stats.pendingLeaves > 1 ? 's' : ''} pending
+              </Text>
+            </TouchableOpacity>
+          )}
           <Text style={styles.sectionLabel}>Overview</Text>
-          <View style={styles.grid}>
-            {ADMIN_STATS.map((s, i) => {
+          {[ADMIN_STATS.slice(0, 4), ADMIN_STATS.slice(4)].map((row, ri) => (
+          <View key={ri} style={styles.grid}>
+            {row.map((s, j) => {
+              const i = ri * 4 + j;
               const Icon = s.icon;
               const raw = stats?.[s.key];
               const numeric = typeof raw === 'number' ? raw : null;
@@ -266,6 +295,7 @@ function AdminDashboard({ navigation }: any) {
               );
             })}
           </View>
+          ))}
 
           {!!stats?.dailyStats?.length && (
             <>
@@ -296,6 +326,70 @@ function AdminDashboard({ navigation }: any) {
               </FadeInUp>
             </>
           )}
+
+          {!!stats?.deptHeadcounts?.length && (
+            <>
+              <Text style={styles.sectionLabel}>Headcount by Dept</Text>
+              <FadeInUp delay={ADMIN_STATS.length * 70 + 140} style={styles.card}>
+                <AnimatedBarChart
+                  legend
+                  series={[{ key: 'count', label: 'Employees', color: C.primary }]}
+                  data={stats.deptHeadcounts.map((d: any) => ({
+                    label: String(d.name || '').slice(0, 5),
+                    values: { count: d.count },
+                  }))}
+                />
+              </FadeInUp>
+            </>
+          )}
+
+          <Text style={styles.sectionLabel}>
+            Recent Hires{stats?.newHires ? ` · ${stats.newHires} this month` : ''}
+          </Text>
+          <View style={styles.card}>
+            {stats?.recentHires?.length ? (
+              stats.recentHires.slice(0, 5).map((e: any) => (
+                <TouchableOpacity
+                  key={e._id}
+                  style={styles.listRow}
+                  onPress={() => navigation.navigate('Employees')}
+                >
+                  <Text style={styles.listTitle}>
+                    {e.firstName} {e.lastName}
+                  </Text>
+                  <Text style={styles.listSub}>
+                    {[e.designation, e.department?.name].filter(Boolean).join(' · ')}
+                  </Text>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <Text style={styles.listSub}>No new hires this month</Text>
+            )}
+          </View>
+
+          <Text style={styles.sectionLabel}>
+            Pending Leave Requests{stats?.pendingLeaves ? ` · ${stats.pendingLeaves}` : ''}
+          </Text>
+          <View style={styles.card}>
+            {stats?.pendingLeaveList?.length ? (
+              stats.pendingLeaveList.slice(0, 5).map((l: any) => (
+                <TouchableOpacity
+                  key={l._id}
+                  style={styles.listRow}
+                  onPress={() => navigation.navigate('Leave')}
+                >
+                  <Text style={styles.listTitle}>
+                    {l.employee?.firstName} {l.employee?.lastName}
+                  </Text>
+                  <Text style={styles.listSub}>
+                    {l.leaveType} · {l.days} day{l.days > 1 ? 's' : ''}
+                  </Text>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <Text style={styles.listSub}>No pending requests</Text>
+            )}
+          </View>
 
           <View style={styles.rangeRow}>
             {RANGE_PILLS.map(r => (
@@ -1490,6 +1584,12 @@ const styles = StyleSheet.create({
   // Admin grid — 4 KPI cards in one row, NestLeads card style
   grid: { flexDirection: 'row', gap: 10, marginBottom: 8 },
   statCardWrap: { flex: 1 },
+  greetHead: { fontSize: 18, color: C.black, marginBottom: 10 },
+  alertStrip: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 2, borderColor: '#FA731C', backgroundColor: '#FA731C0D', padding: 10, marginBottom: 12 },
+  alertText: { fontSize: 12, color: '#FA731C' },
+  listRow: { paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  listTitle: { fontSize: 13, color: C.black },
+  listSub: { fontSize: 12, color: C.textMuted, textTransform: 'capitalize' },
   statCard: {
     flex: 1,
     borderWidth: 2,

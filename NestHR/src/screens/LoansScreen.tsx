@@ -34,6 +34,7 @@ import FadeInUp from '../components/motion/FadeInUp';
 import { C } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import ExportButton from '../components/common/ExportButton';
+import ImportButton from '../components/common/ImportButton';
 import HeaderIconBtn from '../components/common/HeaderIconBtn';
 import SearchModal from '../components/common/SearchModal';
 import FilterSortModal from '../components/common/FilterSortModal';
@@ -215,6 +216,43 @@ export default function LoansScreen() {
             onPress={() => setFilterOpen(true)}
           />
           {!isEmployee && (
+            <>
+            <ImportButton
+              name="loans"
+              headers={['Emp ID', 'Type (loan/advance)', 'Amount', 'Monthly EMI', 'Disbursed On (YYYY-MM-DD)', 'Reason']}
+              example={['EMP0001', 'loan', 50000, 5000, new Date().toISOString().slice(0, 10), 'Medical']}
+              onRows={async rows => {
+                let ok = 0;
+                const bad: string[] = [];
+                for (const r of rows) {
+                  const code = String(r['Emp ID'] || '').trim().toLowerCase();
+                  const emp = employees.find((e: any) => e.employeeId?.toLowerCase() === code);
+                  const amount = parseFloat(String(r['Amount']).replace(/,/g, ''));
+                  if (!emp || !(amount > 0)) {
+                    bad.push(String(r['Emp ID'] || '(blank)'));
+                    continue;
+                  }
+                  const type = String(r['Type (loan/advance)'] || 'loan').toLowerCase() === 'advance' ? 'advance' : 'loan';
+                  try {
+                    await loanAPI.create({
+                      employee: emp._id,
+                      type,
+                      amount,
+                      remainingBalance: amount,
+                      monthlyEmi: parseFloat(String(r['Monthly EMI']).replace(/,/g, '')) || 0,
+                      disbursedOn: String(r['Disbursed On (YYYY-MM-DD)'] || '').slice(0, 10) || new Date().toISOString().slice(0, 10),
+                      reason: String(r['Reason'] || ''),
+                      status: 'active',
+                    });
+                    ok++;
+                  } catch {
+                    bad.push(String(r['Emp ID']));
+                  }
+                }
+                load();
+                return `${ok} of ${rows.length} imported${bad.length ? `. Skipped: ${bad.slice(0, 5).join(', ')}` : ''}`;
+              }}
+            />
             <ExportButton
               name="loans_advances"
               label=""
@@ -242,6 +280,7 @@ export default function LoansScreen() {
                 { header: 'Reason', value: (l: any) => l.reason },
               ]}
             />
+            </>
           )}
           <TouchableOpacity
             style={styles.addBtn}

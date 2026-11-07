@@ -30,6 +30,7 @@ import {
   ArrowUp,
   ArrowDown,
   Eye,
+  Banknote,
 } from "lucide-react";
 import { ActionModal } from "@/components/ui/ActionModal";
 import tallyLogo from "../../assets/tally.png";
@@ -758,6 +759,17 @@ export default function PayrollPage() {
             className="bg-white text-black px-4 py-2 text-sm flex items-center gap-1.5 border-2 border-black disabled:opacity-40"
           >
             <img src={zohoBooksLogo} alt="Zoho" className="w-4 h-4" /> Zoho CSV
+          </button>
+          <button
+            onClick={() =>
+              payrollAPI
+                .exportBank(month, year)
+                .catch((e) => alert(e.message))
+            }
+            disabled={payrolls.length === 0}
+            className="bg-white text-black px-4 py-2 text-sm flex items-center gap-1.5 border-2 border-black disabled:opacity-40"
+          >
+            <Banknote className="w-4 h-4" /> Bank CSV
           </button>
           <button
             onClick={() => {

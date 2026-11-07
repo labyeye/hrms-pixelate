@@ -43,9 +43,13 @@ import {
   employeeAPI,
   leaveAPI,
   departmentAPI,
+  loanAPI,
+  biometricAPI,
+  auditAPI,
 } from '../api/api';
 import { C } from '../theme';
 import { CENTER } from '../components/common/centerModal';
+import AnalyticsView from '../components/reports/AnalyticsView';
 
 const { width: SW } = Dimensions.get('window');
 const MONTHS = [
@@ -234,6 +238,89 @@ const REPORTS: ReportDef[] = [
     color: C.danger,
     needsMonth: true,
     needsDept: true,
+  },
+  {
+    id: 'tally-export',
+    label: 'Tally Export',
+    desc: 'Monthly payroll as CSV for Tally ERP import.',
+    category: 'payroll',
+    icon: Download,
+    color: C.primary,
+    needsMonth: true,
+  },
+  {
+    id: 'loan-report',
+    label: 'Loan Report',
+    desc: 'Loan taken, EMI, cleared and balance per employee.',
+    category: 'payroll',
+    icon: BookOpen,
+    color: C.primary,
+  },
+  {
+    id: 'bonus-report',
+    label: 'Bonus Report',
+    desc: 'Yearly bonus (8.33% of annual basic) per employee.',
+    category: 'payroll',
+    icon: TrendingUp,
+    color: C.primary,
+    needsYear: true,
+    needsDept: true,
+  },
+  {
+    id: 'overtime-summary',
+    label: 'Overtime Summary',
+    desc: 'Overtime hours and amounts per employee.',
+    category: 'payroll',
+    icon: Clock,
+    color: C.primary,
+    needsMonth: true,
+    needsDept: true,
+  },
+  {
+    id: 'early-going-summary',
+    label: 'Early Going Summary',
+    desc: 'Early departures for the selected period.',
+    category: 'payroll',
+    icon: Clock,
+    color: C.primary,
+    needsMonth: true,
+    needsDept: true,
+  },
+  {
+    id: 'attendance-inout-vertical',
+    label: 'Attendance In/Out (Vertical)',
+    desc: 'Dates down, employees across, with In / Out times.',
+    category: 'attendance',
+    icon: Calendar,
+    color: C.success,
+    needsMonth: true,
+    needsDept: true,
+  },
+  {
+    id: 'locationwise',
+    label: 'Locationwise Report',
+    desc: 'Punch counts and unique employees per location.',
+    category: 'attendance',
+    icon: Building2,
+    color: C.success,
+    needsMonth: true,
+  },
+  {
+    id: 'punch-log',
+    label: 'Punch Log Detail',
+    desc: 'Every biometric/app punch with device and location.',
+    category: 'attendance',
+    icon: Clock,
+    color: C.success,
+    needsMonth: true,
+  },
+  {
+    id: 'attendance-history',
+    label: 'Attendance History',
+    desc: 'Audit trail of attendance edits (from this point forward).',
+    category: 'attendance',
+    icon: FileText,
+    color: C.success,
   },
   {
     id: 'employee-directory',
@@ -908,6 +995,166 @@ async function generateReport(
           fmtCur(emp.salary || 0),
           fmtDate(emp.joiningDate),
         ]),
+      };
+    }
+    case 'tally-export': {
+      const r = await payrollAPI.getAll({ month, year, limit: '5000' });
+      const data: any[] = r.data || [];
+      return {
+        headers: ['Employee Name', 'Employee ID', 'Designation', 'Department', 'Basic Salary', 'Earned Basic', 'Allowances', 'Overtime Pay', 'Gross Salary', 'Absent Deduction', 'Late Deduction', 'Half Day Deduction', 'Penalty', 'Loan / Advance EMI', 'Total Deductions', 'Net Salary', 'Working Days', 'Days Present', 'Leave Days', 'Absent Days', 'Hours Worked', 'Status'],
+        rows: data.map((p: any) => {
+          const e = p.employee || {};
+          return [
+            `${e.firstName || ''} ${e.lastName || ''}`.trim(), e.employeeId || '', e.designation || '', e.department?.name || '',
+            p.basicSalary || 0, p.earnedBasic ?? p.basicSalary ?? 0, p.otherAllowances || 0, p.otPay || 0, p.grossSalary || 0,
+            p.absentDeduction || 0, p.lateDeductionAmount || 0, p.halfDayDeduction || 0, p.penaltyAmount || 0, p.loanDeduction || 0,
+            p.totalDeductions || 0, p.netSalary || 0, p.workingDays || 0, p.presentDays || 0, p.leaveDays || 0, p.absentDays || 0,
+            Number(p.totalWorkHours ?? 0).toFixed(2), p.status || '',
+          ].map(String);
+        }),
+      };
+    }
+    case 'loan-report': {
+      const r = await loanAPI.getAll();
+      return {
+        headers: ['Emp ID', 'Employee', 'Department', 'Type', 'Loan Taken', 'Monthly EMI', 'Loan Cleared', 'Loan Balance', 'Status', 'Disbursed On'],
+        rows: (r.data || []).map((l: any) => [
+          l.employee?.employeeId || '—',
+          l.employee ? `${l.employee.firstName} ${l.employee.lastName}` : '—',
+          l.employee?.department?.name || '—',
+          l.type === 'advance' ? 'Advance' : 'Loan',
+          fmtCur(l.amount || 0), fmtCur(l.monthlyEmi || 0),
+          fmtCur((l.amount || 0) - (l.remainingBalance || 0)), fmtCur(l.remainingBalance || 0),
+          l.status?.toUpperCase() || '—', l.disbursedOn ? fmtDate(l.disbursedOn) : '—',
+        ]),
+      };
+    }
+    case 'bonus-report': {
+      const params: any = { year, limit: '5000' };
+      if (dept !== 'all') params.department = dept;
+      const res = await Promise.all(
+        Array.from({ length: 12 }, (_, i) => payrollAPI.getAll({ ...params, month: String(i + 1) })),
+      );
+      const map = new Map<string, any>();
+      res.flatMap((r: any) => r.data || []).forEach((p: any) => {
+        if (!p.employee) return;
+        const e = map.get(p.employee._id) || { emp: p.employee, basic: 0, n: 0 };
+        e.basic += p.basicSalary || 0;
+        e.n += 1;
+        map.set(p.employee._id, e);
+      });
+      const RATE = 0.0833;
+      return {
+        headers: ['Emp ID', 'Employee', 'Department', 'Months Paid', 'Annual Basic', 'Bonus Rate', 'Bonus Amount'],
+        rows: Array.from(map.values()).map(({ emp, basic, n }) => [
+          emp.employeeId || '—', `${emp.firstName} ${emp.lastName}`, emp.department?.name || '—',
+          String(n), fmtCur(basic), `${(RATE * 100).toFixed(2)}%`, fmtCur(Math.round(basic * RATE)),
+        ]),
+      };
+    }
+    case 'overtime-summary': {
+      const params: any = { month, year, limit: '5000' };
+      if (dept !== 'all') params.department = dept;
+      const [a, e] = await Promise.all([
+        attendanceAPI.getAll(params),
+        employeeAPI.getAll({ status: 'active', limit: '5000' }),
+      ]);
+      const rate = new Map<string, number>();
+      (e.data || []).forEach((x: any) => rate.set(x._id, x.otRate || 0));
+      const map = new Map<string, any>();
+      (a.data || []).filter((rec: any) => (rec.overtime || 0) > 0 && rec.employee).forEach((rec: any) => {
+        const x = map.get(rec.employee._id) || { emp: rec.employee, h: 0 };
+        x.h += rec.overtime || 0;
+        map.set(rec.employee._id, x);
+      });
+      return {
+        headers: ['Emp ID', 'Employee', 'Department', 'OT Hours', 'OT Rate/Hr', 'OT Amount'],
+        rows: Array.from(map.values()).map(({ emp, h }) => {
+          const r0 = rate.get(emp._id) || 0;
+          return [emp.employeeId || '—', `${emp.firstName} ${emp.lastName}`, emp.department?.name || '—',
+            `${h.toFixed(1)}h`, fmtCur(r0), fmtCur(Math.round(h * r0))];
+        }),
+      };
+    }
+    case 'early-going-summary': {
+      const params: any = { month, year, limit: '5000' };
+      if (dept !== 'all') params.department = dept;
+      const r = await attendanceAPI.getAll(params);
+      return {
+        headers: ['Date', 'Emp ID', 'Employee', 'Department', 'Check Out Time', 'Work Hours'],
+        rows: (r.data || []).filter((rec: any) => rec.earlyLeaving).map((rec: any) => [
+          fmtDate(rec.date), rec.employee?.employeeId || '—',
+          rec.employee ? `${rec.employee.firstName} ${rec.employee.lastName}` : '—',
+          rec.employee?.department?.name || '—', fmt(rec.checkOut), rec.workHours ? `${rec.workHours}h` : '—',
+        ]),
+      };
+    }
+    case 'attendance-inout-vertical': {
+      const params: any = { month, year, limit: '5000' };
+      if (dept !== 'all') params.department = dept;
+      const r = await attendanceAPI.getAll(params);
+      const names = new Map<string, string>();
+      const byDate = new Map<string, { t: number; m: Map<string, any> }>();
+      (r.data || []).filter((rec: any) => rec.employee).forEach((rec: any) => {
+        names.set(rec.employee._id, `${rec.employee.firstName} ${rec.employee.lastName}`);
+        const k = fmtDate(rec.date);
+        if (!byDate.has(k)) byDate.set(k, { t: new Date(rec.date).getTime(), m: new Map() });
+        byDate.get(k)!.m.set(rec.employee._id, rec);
+      });
+      const ids = Array.from(names.keys());
+      return {
+        headers: ['Date', ...ids.map(i => names.get(i)!)],
+        rows: Array.from(byDate.entries()).sort((x, y) => x[1].t - y[1].t).map(([k, v]) => [
+          k,
+          ...ids.map(i => {
+            const rec = v.m.get(i);
+            return rec ? `${fmt(rec.checkIn)} / ${fmt(rec.checkOut)}` : '—';
+          }),
+        ]),
+      };
+    }
+    case 'locationwise': {
+      const r = await biometricAPI.getLogs({ month, year, limit: '2000' });
+      const map = new Map<string, any>();
+      (r.data || []).forEach((log: any) => {
+        const k = log.location?._id || 'unknown';
+        const l = map.get(k) || { name: log.location?.name || 'Unknown Location', addr: log.location?.address || '—', i: 0, o: 0, emps: new Set<string>() };
+        if (log.type === 'check_in') l.i++; else l.o++;
+        if (log.employee?._id) l.emps.add(log.employee._id);
+        map.set(k, l);
+      });
+      return {
+        headers: ['Location', 'Address', 'Check-ins', 'Check-outs', 'Total Punches', 'Unique Employees'],
+        rows: Array.from(map.values()).map((l: any) => [l.name, l.addr, String(l.i), String(l.o), String(l.i + l.o), String(l.emps.size)]),
+      };
+    }
+    case 'punch-log': {
+      const r = await biometricAPI.getLogs({ month, year, limit: '2000' });
+      return {
+        headers: ['Date', 'Time', 'Emp ID', 'Employee', 'Type', 'Method', 'Device', 'Location'],
+        rows: (r.data || []).map((log: any) => [
+          fmtDate(log.timestamp), fmt(log.timestamp), log.employee?.employeeId || '—',
+          log.employee ? `${log.employee.firstName} ${log.employee.lastName}` : '—',
+          log.type === 'check_in' ? 'IN' : 'OUT', log.method?.toUpperCase() || '—',
+          log.device?.name || '—', log.location?.name || '—',
+        ]),
+      };
+    }
+    case 'attendance-history': {
+      const r = await auditAPI.getLogs({ entity: 'Attendance', limit: '5000' });
+      const io = (t: any) => (t ? `${fmt(t.checkIn)} / ${fmt(t.checkOut)}` : '—');
+      return {
+        headers: ['Changed At', 'Employee', 'Action', 'Old Status', 'Old In/Out', 'New Status', 'New In/Out', 'Changed By'],
+        rows: (r.data || []).map((log: any) => {
+          const d = log.details || {};
+          return [
+            `${fmtDate(log.createdAt)} ${fmt(log.createdAt)}`, d.employeeName || '—',
+            log.action === 'attendance.create' ? 'Created' : 'Updated',
+            d.before?.status?.toUpperCase() || '—', io(d.before),
+            d.after?.status?.toUpperCase() || '—', io(d.after),
+            log.user?.name || log.userName || '—',
+          ];
+        }),
       };
     }
     case 'employee-report':
@@ -1660,18 +1907,19 @@ function ReportModal({
 // ── Main screen ─────────────────────────────────────────────────────────────────
 export default function ReportsScreen() {
   const navigation = useNavigation<any>();
-  const [catFilter, setCatFilter] = useState<'all' | Category>('all');
+  const [catFilter, setCatFilter] = useState<'all' | 'analytics' | Category>('all');
   const [activeReport, setActiveReport] = useState<ReportDef | null>(null);
 
-  const CATS: { key: 'all' | Category; label: string }[] = [
+  const CATS: { key: 'all' | 'analytics' | Category; label: string }[] = [
     { key: 'all', label: 'All' },
     { key: 'payroll', label: 'Payroll' },
     { key: 'attendance', label: 'Attendance' },
     { key: 'employee', label: 'Employee' },
+    { key: 'analytics', label: 'Analytics' },
   ];
 
   const visible =
-    catFilter === 'all'
+    catFilter === 'all' || catFilter === 'analytics'
       ? REPORTS
       : REPORTS.filter(r => r.category === catFilter);
 
@@ -1701,7 +1949,7 @@ export default function ReportsScreen() {
         {CATS.map(c => {
           const active = catFilter === c.key;
           const color =
-            c.key === 'all' ? C.primary : CAT_COLORS[c.key as Category];
+            c.key === 'all' || c.key === 'analytics' ? C.primary : CAT_COLORS[c.key as Category];
           return (
             <TouchableOpacity
               key={c.key}
@@ -1722,6 +1970,9 @@ export default function ReportsScreen() {
         })}
       </ScrollView>
 
+      {catFilter === 'analytics' ? (
+        <AnalyticsView />
+      ) : (
       <FlatList
         data={visible}
         keyExtractor={item => item.id}
@@ -1772,6 +2023,7 @@ export default function ReportsScreen() {
           );
         }}
       />
+      )}
 
       <ReportModal
         report={activeReport}

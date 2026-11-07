@@ -21,7 +21,7 @@ async function fetchPayrolls(req) {
     month: m,
     year: y,
     status: { $in: ["processed", "paid"] },
-  }).populate("employee", "firstName lastName employeeId");
+  }).populate("employee", "firstName lastName employeeId bankAccount accountHolderName ifscCode bankName");
 }
 
 function empName(p) {
@@ -170,9 +170,56 @@ const exportZoho = asyncHandler(async (req, res) => {
   res.send(csv);
 });
 
+// Generic bulk-transfer CSV (most corporate banking portals accept this layout after minor column mapping).
+// Text fields are guarded against spreadsheet formula injection; rows lacking bank details are flagged, not dropped.
+const guard = (v) => (/^[=+\-@\t\r]/.test(String(v ?? "")) ? `\'${v}` : v);
+
+const exportBank = asyncHandler(async (req, res) => {
+  const payrolls = await fetchPayrolls(req);
+  if (payrolls === null) {
+    res.status(400);
+    throw new Error("month and year are required");
+  }
+  const narration = `Salary ${String(req.query.month).padStart(2, "0")}-${req.query.year}`;
+  let csv = csvRow([
+    "Sr No",
+    "Beneficiary Name",
+    "Account Number",
+    "IFSC",
+    "Bank Name",
+    "Amount",
+    "Narration",
+    "Employee ID",
+    "Remarks",
+  ]);
+  payrolls
+    .filter((p) => p.netSalary > 0)
+    .forEach((p, i) => {
+      const e = p.employee || {};
+      const missing = !e.bankAccount || !e.ifscCode;
+      csv += csvRow([
+        i + 1,
+        guard(e.accountHolderName || `${e.firstName || ""} ${e.lastName || ""}`.trim()),
+        guard(e.bankAccount || ""),
+        guard((e.ifscCode || "").toUpperCase()),
+        guard(e.bankName || ""),
+        p.netSalary.toFixed(2),
+        narration,
+        guard(e.employeeId || ""),
+        missing ? "BANK DETAILS MISSING" : "",
+      ]);
+    });
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename="Bank_Salary_${req.query.month}_${req.query.year}.csv"`,
+  );
+  res.send(csv);
+});
+
 function now_str() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-module.exports = { exportTally, exportZoho };
+module.exports = { exportTally, exportZoho, exportBank };

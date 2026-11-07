@@ -91,6 +91,7 @@ import HeaderIconBtn from '../components/common/HeaderIconBtn';
 import SearchModal from '../components/common/SearchModal';
 import FilterSortModal from '../components/common/FilterSortModal';
 import ExportButton from '../components/common/ExportButton';
+import ImportButton from '../components/common/ImportButton';
 import StatTile, { tileGrid } from '../components/common/StatTile';
 import PhoneField from '../components/common/PhoneField';
 import PickerField from '../components/common/PickerField';
@@ -103,6 +104,34 @@ const STATUS_COLOR: Record<string, string> = {
   on_leave: C.warning,
   exited: '#A855F7',
 };
+
+const IMPORT_COLS: [string, string, string][] = [
+  ['firstName', 'First Name', 'Rahul'],
+  ['lastName', 'Last Name', 'Sharma'],
+  ['email', 'Email', 'rahul@company.com'],
+  ['designation', 'Designation', 'Software Engineer'],
+  ['joinDate', 'Join Date', '2024-01-15'],
+  ['phone', 'Phone', '9876543210'],
+  ['department', 'Department', 'Engineering'],
+  ['employmentType', 'Employment Type', 'full_time'],
+  ['gender', 'Gender', 'male'],
+  ['salary', 'Salary', '35000'],
+  ['password', 'Password', 'hrms@123'],
+  ['shiftName', 'Shift Name', 'Morning Shift'],
+  ['dateOfBirth', 'Date of Birth', '1995-06-20'],
+  ['address', 'Address', '123 Main St, Mumbai'],
+  ['emergencyContact', 'Emergency Contact', '9876500000'],
+  ['bankAccount', 'Bank Account', '1234567890'],
+  ['accountHolderName', 'Account Holder Name', 'Rahul Sharma'],
+  ['ifscCode', 'IFSC Code', 'HDFC0001234'],
+  ['bankName', 'Bank Name', 'HDFC Bank'],
+  ['panNumber', 'PAN Number', 'ABCDE1234F'],
+  ['aadharNumber', 'Aadhar Number', '1234 5678 9012'],
+  ['uanNumber', 'UAN Number', '100123456789'],
+  ['esicNumber', 'ESIC Number', '12345678901234'],
+  ['pfNumber', 'PF Number', 'MH/12345/67890'],
+];
+const IMPORT_REQUIRED = ['firstName', 'lastName', 'email', 'designation', 'joinDate'];
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
   active: { color: C.success, bg: '#F0FDF4' },
@@ -957,6 +986,31 @@ export default function EmployeesScreen() {
           >
             <CheckSquare size={14} color={selectMode ? C.white : C.black} />
           </TouchableOpacity>
+          <ImportButton
+            name="employees"
+            headers={IMPORT_COLS.map(c => c[1])}
+            example={IMPORT_COLS.map(c => c[2])}
+            onRows={async rows => {
+              const byLabel: Record<string, string> = {};
+              IMPORT_COLS.forEach(c => (byLabel[c[1].toLowerCase()] = c[0]));
+              const mapped = rows.map(r => {
+                const o: Record<string, string> = {};
+                Object.keys(r).forEach(k => {
+                  const key = byLabel[k.toLowerCase()];
+                  if (key) o[key] = r[k];
+                });
+                return o;
+              });
+              const valid = mapped.filter(o => IMPORT_REQUIRED.every(k => o[k]));
+              const skipped = mapped.length - valid.length;
+              if (!valid.length)
+                return 'No valid rows. Required: First Name, Last Name, Email, Designation, Join Date.';
+              const res: any = await employeeAPI.bulkImport(valid);
+              load();
+              const fails = (res.results || []).filter((x: any) => x && x.success === false).slice(0, 3);
+              return `${res.imported ?? 0} imported, ${res.failed ?? 0} failed${skipped ? `, ${skipped} skipped (missing required fields)` : ''}${fails.length ? `\n\n${fails.map((x: any) => x.error || x.message || '').join('\n')}` : ''}`;
+            }}
+          />
           <ExportButton
             name="employees"
             label=""

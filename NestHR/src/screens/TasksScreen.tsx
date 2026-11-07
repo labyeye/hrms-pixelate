@@ -37,6 +37,7 @@ import SearchModal from '../components/common/SearchModal';
 import FilterSortModal from '../components/common/FilterSortModal';
 import ScreenLayout, { HeaderBtn } from '../components/common/ScreenLayout';
 import ExportButton from '../components/common/ExportButton';
+import ImportButton from '../components/common/ImportButton';
 import { C, FONT } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 
@@ -246,6 +247,39 @@ export default function TasksScreen() {
             icon={<SlidersHorizontal size={22} color={C.black} />}
             dot={statusFilter !== 'all' || priorityFilter !== 'all'}
             onPress={() => setFilterOpen(true)}
+          />
+          <ImportButton
+            name="tasks"
+            headers={['Title', 'Description', 'Assignee Emp ID', 'Priority (low/medium/high)', 'Due Date (YYYY-MM-DD)']}
+            example={['Prepare monthly report', 'Compile HR metrics', 'EMP0001', 'medium', new Date().toISOString().slice(0, 10)]}
+            onRows={async rows => {
+              let ok = 0;
+              const bad: string[] = [];
+              for (const r of rows) {
+                const title = String(r['Title'] || '').trim();
+                const code = String(r['Assignee Emp ID'] || '').trim().toLowerCase();
+                const emp = employees.find((e: any) => e.employeeId?.toLowerCase() === code);
+                if (!title || !emp) {
+                  bad.push(title || '(no title)');
+                  continue;
+                }
+                const pr = String(r['Priority (low/medium/high)'] || 'medium').toLowerCase();
+                try {
+                  await taskAPI.create({
+                    title,
+                    description: String(r['Description'] || ''),
+                    assignedTo: emp.user,
+                    priority: ['low', 'medium', 'high'].includes(pr) ? pr : 'medium',
+                    dueDate: String(r['Due Date (YYYY-MM-DD)'] || '').slice(0, 10),
+                  } as any);
+                  ok++;
+                } catch {
+                  bad.push(title);
+                }
+              }
+              load();
+              return `${ok} of ${rows.length} tasks imported${bad.length ? `. Skipped: ${bad.slice(0, 5).join(', ')}` : ''}`;
+            }}
           />
           <ExportButton
             name="tasks"

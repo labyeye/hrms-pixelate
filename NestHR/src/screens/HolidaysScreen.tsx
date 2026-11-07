@@ -33,6 +33,7 @@ import { holidayAPI } from '../api/api';
 import { C } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import ExportButton from '../components/common/ExportButton';
+import ImportButton from '../components/common/ImportButton';
 import StatTile, { tileGrid } from '../components/common/StatTile';
 
 const TYPE_COLOR: Record<string, string> = {
@@ -203,6 +204,31 @@ export default function HolidaysScreen() {
           </View>
         </View>
         <View style={{ flexDirection: 'row', gap: 8 }}>
+          <ImportButton
+            name="holidays"
+            headers={['Name', 'Date (YYYY-MM-DD)', 'Type (national/optional/restricted)', 'Description']}
+            example={['Republic Day', `${year}-01-26`, 'national', 'Public holiday']}
+            onRows={async rows => {
+              let ok = 0;
+              for (const r of rows) {
+                const name = String(r['Name'] || '').trim();
+                const date = String(r['Date (YYYY-MM-DD)'] || '').slice(0, 10);
+                const type = String(r['Type (national/optional/restricted)'] || 'national').toLowerCase();
+                if (!name || !/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+                try {
+                  await holidayAPI.create({
+                    name,
+                    date,
+                    type: ['optional', 'restricted'].includes(type) ? type : 'national',
+                    description: String(r['Description'] || ''),
+                  });
+                  ok++;
+                } catch {}
+              }
+              load();
+              return `${ok} of ${rows.length} holidays imported`;
+            }}
+          />
           <ExportButton
             name={`holidays_${year}`}
             label=""

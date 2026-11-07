@@ -191,6 +191,8 @@ app.use(
 );
 app.use("/api/late-approvals", require("./routes/lateApprovalRoutes"));
 app.use("/api/loans", require("./routes/loanRoutes"));
+app.use("/api/expenses", require("./routes/expenseRoutes"));
+app.use("/api/tax", require("./routes/taxRoutes"));
 app.use("/api/shifts", require("./routes/shiftRoutes"));
 app.use("/api/salary-heads", require("./routes/salaryHeadRoutes"));
 app.use("/api/designations", require("./routes/designationRoutes"));

@@ -12,6 +12,7 @@ const {
 const {
   exportTally,
   exportZoho,
+  exportBank,
 } = require("../controllers/payrollExportController");
 const { protect, authorize } = require("../middleware/auth");
 const router = express.Router();
@@ -66,6 +67,13 @@ router.get(
   protect,
   authorize("super_admin", "hr_manager"),
   exportZoho,
+);
+
+router.get(
+  "/export/bank",
+  protect,
+  authorize("super_admin", "hr_manager"),
+  exportBank,
 );
 
 module.exports = router;

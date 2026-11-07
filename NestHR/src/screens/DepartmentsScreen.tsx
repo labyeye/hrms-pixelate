@@ -27,6 +27,7 @@ import { useNavigation } from '@react-navigation/native';
 import { departmentAPI } from '../api/api';
 import { Department } from '../types/hrms';
 import ExportButton from '../components/common/ExportButton';
+import ImportButton from '../components/common/ImportButton';
 import { C } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 
@@ -154,6 +155,31 @@ export default function DepartmentsScreen() {
           <Text style={styles.headerTitle}>Departments</Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 8 }}>
+          <ImportButton
+            name="departments"
+            headers={['Name', 'Code', 'Shift Start (HH:MM)', 'Shift End (HH:MM)', 'Description']}
+            example={['Engineering', 'ENG', '09:00', '18:00', 'Product engineering']}
+            onRows={async rows => {
+              let ok = 0;
+              for (const r of rows) {
+                const name = String(r['Name'] || '').trim();
+                const code = String(r['Code'] || '').trim().toUpperCase();
+                if (!name || !code) continue;
+                try {
+                  await departmentAPI.create({
+                    name,
+                    code,
+                    shiftStartTime: String(r['Shift Start (HH:MM)'] || '09:00'),
+                    shiftEndTime: String(r['Shift End (HH:MM)'] || '18:00'),
+                    description: String(r['Description'] || ''),
+                  });
+                  ok++;
+                } catch {}
+              }
+              load();
+              return `${ok} of ${rows.length} departments imported`;
+            }}
+          />
           <ExportButton
             name="departments"
             rows={departments as any[]}

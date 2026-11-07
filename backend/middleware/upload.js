@@ -189,6 +189,24 @@ const uploadLeaveDocument = multer({
   limits: { fileSize: MAX_SIZE },
 }).single("document");
 
+// Expense claim bill (receipt / invoice) - never served publicly, see expenseController.downloadBill
+const expenseBillStorage = multer.diskStorage({
+  destination(_req, _file, cb) {
+    const dir = path.join(UPLOAD_BASE, "expense-bills");
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename(_req, file, cb) {
+    cb(null, `${Date.now()}_${crypto.randomUUID()}${DOC_EXT[file.mimetype] || ".bin"}`);
+  },
+});
+
+const uploadExpenseBill = multer({
+  storage: expenseBillStorage,
+  fileFilter,
+  limits: { fileSize: MAX_SIZE },
+}).single("bill");
+
 // Attendance self-mark selfie upload (mobile geofenced check-in/out)
 const attendanceSelfieStorage = multer.diskStorage({
   destination(_req, _file, cb) {
@@ -222,6 +240,7 @@ module.exports = {
   uploadCompanyLogo,
   uploadDocumentVault,
   uploadLeaveDocument,
+  uploadExpenseBill,
   uploadAvatar,
   uploadAnnouncementPoster,
   uploadAttendanceSelfie,

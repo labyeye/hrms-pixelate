@@ -297,6 +297,11 @@ export const employeeAPI = {
   getAll: (params?: Record<string, string>) =>
     request(`/employees${qs({ limit: '5000', ...params })}`),
   getMe: () => request('/employees/me'),
+  bulkImport: (employees: object[]) =>
+    request('/employees/bulk-import', {
+      method: 'POST',
+      body: JSON.stringify({ employees }),
+    }),
   getOne: (id: string) => request(`/employees/${id}`),
   create: (body: object) =>
     request('/employees', { method: 'POST', body: JSON.stringify(body) }),
