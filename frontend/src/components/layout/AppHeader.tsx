@@ -11,6 +11,8 @@ import {
   CalendarDays,
   FileEdit,
   AlarmClock,
+  Cake,
+  PartyPopper,
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ProfileMenu } from "./ProfileMenu";
@@ -20,7 +22,14 @@ interface AppHeaderProps {
   onMenuOpen: () => void;
 }
 
-type Kind = "checkin" | "checkout" | "leave" | "correction" | "late";
+type Kind =
+  | "checkin"
+  | "checkout"
+  | "leave"
+  | "correction"
+  | "late"
+  | "birthday"
+  | "anniversary";
 
 interface NotifEntry {
   id: string;
@@ -44,6 +53,8 @@ const KIND_LINK: Record<Kind, string> = {
   leave: "/leave",
   correction: "/attendance",
   late: "/late-approvals",
+  birthday: "/dashboard",
+  anniversary: "/dashboard",
 };
 
 function timeAgo(date: Date): string {
@@ -83,6 +94,18 @@ function describe(n: NotifEntry): {
         ? "text-red-600"
         : "text-[#FA731C]";
   switch (n.kind) {
+    case "birthday":
+      return {
+        icon: <Cake className="w-3 h-3 shrink-0" />,
+        text: `🎂 ${n.detail}`,
+        color: "text-[#FA731C]",
+      };
+    case "anniversary":
+      return {
+        icon: <PartyPopper className="w-3 h-3 shrink-0" />,
+        text: `🎉 ${n.detail}`,
+        color: "text-[#024BAB]",
+      };
     case "checkin":
       return {
         icon: <LogIn className="w-3 h-3 shrink-0" />,
@@ -173,7 +196,10 @@ export function AppHeader({ title, onMenuOpen }: AppHeaderProps) {
       ? true
       : filter === "attendance"
         ? n.kind === "checkin" || n.kind === "checkout"
-        : n.kind !== "checkin" && n.kind !== "checkout",
+        : n.kind !== "checkin" &&
+          n.kind !== "checkout" &&
+          n.kind !== "birthday" &&
+          n.kind !== "anniversary",
   );
 
   if (!user) return null;

@@ -4,6 +4,7 @@ const Attendance = require("../models/Attendance");
 const Leave = require("../models/Leave");
 const AttendanceCorrectionRequest = require("../models/AttendanceCorrectionRequest");
 const LateApproval = require("../models/LateApproval");
+const { celebrationsToday } = require("../utils/celebrations");
 
 const EMP_FIELDS = "firstName lastName avatar";
 const LIMIT = 40;
@@ -22,6 +23,8 @@ const getActivityFeed = asyncHandler(async (req, res) => {
   const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
   const since = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
+  const celebrations = await celebrationsToday(req.user.company); // everyone in the company sees these
+
   let empIds;
   if (isAdmin) {
     empIds = (
@@ -33,7 +36,8 @@ const getActivityFeed = asyncHandler(async (req, res) => {
       .lean();
     empIds = self ? [self._id] : [];
   }
-  if (!empIds.length) return res.json({ success: true, data: [], pending: 0 });
+  if (!empIds.length)
+    return res.json({ success: true, data: celebrations, pending: 0 });
 
   const [attendance, leaves, corrections, lates] = await Promise.all([
     Attendance.find({
@@ -120,6 +124,7 @@ const getActivityFeed = asyncHandler(async (req, res) => {
     });
   }
 
+  items.push(...celebrations);
   items.sort((x, y) => new Date(y.time) - new Date(x.time));
   const pending = items.filter((i) => i.status === "pending").length;
   res.json({ success: true, data: items.slice(0, 60), pending });
