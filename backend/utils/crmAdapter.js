@@ -27,6 +27,7 @@ const meta = {
   defaultRole: "hr_manager",
   ownerRole: "super_admin",
   createLimitDefaults: { maxEmployees: 50 },
+  supportsFree: true, // "Free / lifetime" checkbox on create
   createExtraFields: [
     { key: "gstNumber", label: "GST number" },
     { key: "industry", label: "Industry" },
@@ -192,10 +193,11 @@ exports.create = async (b) => {
       status: "active",
       createdBy: user._id,
     });
-    const amountPaid = Math.max(0, Number(b.amountPaid) || 0);
+    const free = b.free === true;
+    const amountPaid = free ? 0 : Math.max(0, Number(b.amountPaid) || 0);
     const sub = await Subscription.create({
       company: company._id,
-      plan: b.plan || "NestHR",
+      plan: b.plan || (free ? "Diwali Free" : "NestHR"),
       tier: b.flags?.whatsapp === false ? "web_mobile" : "web_mobile_whatsapp",
       employeeCount: max,
       monthlyPrice: 0,
@@ -203,9 +205,10 @@ exports.create = async (b) => {
       maxEmployees: max,
       billingCycle: "monthly",
       startDate: new Date(),
-      renewalDate: H.addMonths(b.months),
+      renewalDate: free ? new Date("2099-12-31") : H.addMonths(b.months),
       status: "active",
-      paymentStatus: amountPaid > 0 ? "completed" : "pending",
+      // non-owner logins need "completed"; a free grant is complete by definition
+      paymentStatus: free || amountPaid > 0 ? "completed" : "pending",
       amountPaid,
       notes: "Created from CRM dashboard",
     });

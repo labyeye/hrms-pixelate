@@ -3,6 +3,15 @@ const fs = require("fs");
 const path = require("path");
 const asyncHandler = require("express-async-handler");
 const Employee = require("../models/Employee");
+const Subscription = require("../models/Subscription");
+
+// Plan seat limit (Subscription.maxEmployees). 0/missing = no limit.
+const seatsFull = async (company) => {
+  const sub = await Subscription.findOne({ company }).select("maxEmployees").lean();
+  if (!sub?.maxEmployees) return false;
+  return (await Employee.countDocuments({ company, status: "active" })) >= sub.maxEmployees;
+};
+const SEAT_MSG = "Employee limit of your plan reached. Please contact Pixelate Nest to upgrade.";
 const User = require("../models/User");
 const Department = require("../models/Department");
 const {
@@ -213,6 +222,11 @@ const createEmployee = [
     if (salary !== undefined && (isNaN(Number(salary)) || Number(salary) < 0)) {
       res.status(400);
       throw new Error("Invalid salary value");
+    }
+
+    if (await seatsFull(req.user.company)) {
+      res.status(403);
+      throw new Error(SEAT_MSG);
     }
 
     let userId;
@@ -589,6 +603,11 @@ const bulkImportEmployees = asyncHandler(async (req, res) => {
           message:
             "Missing required field (firstName, lastName, email, designation, joinDate)",
         });
+        continue;
+      }
+
+      if (await seatsFull(req.user.company)) {
+        results.push({ row: i + 1, status: "error", message: SEAT_MSG });
         continue;
       }
 
