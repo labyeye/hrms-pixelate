@@ -6,6 +6,9 @@ const User = require("../models/User");
 const Employee = require("../models/Employee");
 const { helpers: H } = require("./crmAccounts");
 const terms = require("./terms");
+const credits = require("../services/creditsService");
+const cfg = require("../config/credits");
+const CreditLedger = require("../models/CreditLedger");
 
 const ROLES = User.schema.path("role").enumValues;
 
@@ -28,6 +31,7 @@ const meta = {
   ownerRole: "super_admin",
   createLimitDefaults: { maxEmployees: 50 },
   supportsFree: true, // "Free / lifetime" checkbox on create
+  supportsCredits: true, // balance + usage log + manual grant in Manage dialog
   createExtraFields: [
     { key: "gstNumber", label: "GST number" },
     { key: "industry", label: "Industry" },
@@ -214,6 +218,14 @@ exports.create = async (b) => {
     });
     company.subscription = sub._id;
     await company.save();
+    // WhatsApp is never free: meter every new account (balance starts at 0). Credits are added by hand from the CRM.
+    if (sub.tier !== "web_mobile") {
+      try {
+        await credits.enable(company._id);
+      } catch (e) {
+        console.error("CRM create: credits grant failed", e.message);
+      }
+    }
     user.company = company._id;
     await user.save();
     return { id: company._id, email, password, validTill: sub.renewalDate };
@@ -289,6 +301,40 @@ exports.setSubscription = async (id, b) => {
   if (!c.subscription)
     await Company.updateOne({ _id: c._id }, { subscription: sub._id });
   return { subscription: subView(sub.toObject()) };
+};
+
+exports.getCredits = async (id) => {
+  const [balance, rows] = await Promise.all([
+    credits.getBalance(id),
+    CreditLedger.find({ company: id }).sort({ createdAt: -1 }).limit(100).lean(),
+  ]);
+  return {
+    credits: balance,
+    log: rows.map((r) => ({
+      at: r.createdAt,
+      type: r.type,
+      credits: r.units / cfg.UNIT,
+      event: r.event,
+      phone: r.phone,
+      status: r.status,
+      note: r.note,
+    })),
+  };
+};
+
+exports.grantCredits = async (id, b) => {
+  const n = Number(b.credits);
+  if (!Number.isFinite(n) || n <= 0 || n > 100000)
+    throw H.fail("Credits must be between 1 and 100000");
+  if (!(await Company.exists({ _id: id })))
+    throw H.fail("Company not found", 404);
+  await credits.enable(id);
+  await credits.grantBonus(id, {
+    credits: n,
+    refId: `gift:${id}:${Date.now()}`,
+    note: String(b.note || "Granted from CRM").slice(0, 120),
+  });
+  return exports.getCredits(id);
 };
 
 exports.createUser = async (id, b) => {

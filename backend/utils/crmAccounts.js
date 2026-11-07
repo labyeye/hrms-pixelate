@@ -111,6 +111,13 @@ module.exports = (secretEnv, adapter) => {
     "/:id/subscription",
     h((req) => adapter.setSubscription(req.params.id, req.body || {})),
   );
+  if (adapter.getCredits) {
+    router.get("/:id/credits", h((req) => adapter.getCredits(req.params.id)));
+    router.post(
+      "/:id/credits",
+      h((req) => adapter.grantCredits(req.params.id, req.body || {})),
+    );
+  }
   router.post(
     "/:id/users",
     h(created((req) => adapter.createUser(req.params.id, req.body || {}))),
