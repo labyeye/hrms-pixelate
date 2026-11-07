@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useUsageTracker } from "@/hooks/useUsageTracker";
 import TermsGate from "@/components/TermsGate";
 import { lazy, Suspense } from "react";
+import { TopLoader } from "@/components/ui/TopLoader";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import IntroOnboarding from "@/components/IntroOnboarding";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -439,6 +440,7 @@ const App = () => (
         <AuthProvider>
           <CreditsProvider>
             <BrowserRouter>
+              <TopLoader />
               <AppRoutes />
               <TermsGate />
               <IntroOnboarding />
