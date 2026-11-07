@@ -27,8 +27,11 @@ require("./utils/paymentSaga").startRefundSweep(); // keeps retrying refunds for
 
 const { startAttendanceAutoMarkJob } = require("./jobs/attendanceAutoMark");
 // Under PM2 cluster mode every worker runs this file; only worker 0 may own the hourly cron.
-if (!process.env.NODE_APP_INSTANCE || process.env.NODE_APP_INSTANCE === "0")
+const { startCelebrationWishesJob } = require("./jobs/celebrationWishes");
+if (!process.env.NODE_APP_INSTANCE || process.env.NODE_APP_INSTANCE === "0") {
   startAttendanceAutoMarkJob();
+  startCelebrationWishesJob();
+}
 
 const app = express();
 
