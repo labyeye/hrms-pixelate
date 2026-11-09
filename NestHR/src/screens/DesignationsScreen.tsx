@@ -24,13 +24,14 @@ import {
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { designationAPI, departmentAPI } from '../api/api';
-import { C } from '../theme';
+import { C, useResponsive } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 
 const EMPTY = { title: '', department: '', description: '', level: '' };
 
 export default function DesignationsScreen() {
   const navigation = useNavigation<any>();
+  const { isTablet, maxContentWidth } = useResponsive();
   const [designations, setDesignations] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -126,7 +127,7 @@ export default function DesignationsScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <View style={s.header}>
+      <View style={[s.header, isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={{ padding: 4, marginRight: 4 }}
@@ -148,9 +149,15 @@ export default function DesignationsScreen() {
         </View>
       ) : (
         <FlatList
+          key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
           data={designations}
           keyExtractor={i => i._id}
-          contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 32 }}
+          numColumns={isTablet ? 2 : 1}
+          columnWrapperStyle={isTablet ? s.colWrapper : undefined}
+          contentContainerStyle={[
+            { padding: 16, gap: 10, paddingBottom: 32 },
+            isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' },
+          ]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -166,7 +173,7 @@ export default function DesignationsScreen() {
             </View>
           }
           renderItem={({ item }) => (
-            <View style={s.card}>
+            <View style={[s.card, isTablet && s.cardTablet]}>
               <View style={s.cardIcon}>
                 <Briefcase size={18} color={C.primary} />
               </View>
@@ -402,6 +409,8 @@ const s = StyleSheet.create({
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
+  colWrapper: { gap: 12 },
+  cardTablet: { flex: 1 },
   card: {
     flexDirection: 'row',
     alignItems: 'flex-start',

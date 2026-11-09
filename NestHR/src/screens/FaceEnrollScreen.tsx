@@ -259,10 +259,10 @@ export default function FaceEnrollScreen({ navigation }: any) {
         ? 'Move your head slowly in a circle'
         : 'Position your face in the frame'
       : phase === 'straight'
-        ? 'Now look straight at the camera'
-        : phase === 'uploading'
-          ? 'Saving your Face ID…'
-          : '';
+      ? 'Now look straight at the camera'
+      : phase === 'uploading'
+      ? 'Saving your Face ID…'
+      : '';
 
   const overlay = () => {
     if (phase === 'no-permission')

@@ -12,7 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import { ChevronLeft, RotateCcw, Trash2 } from 'lucide-react-native';
 import { trashAPI } from '../api/api';
 import ScreenLayout from '../components/common/ScreenLayout';
-import { C, FONT } from '../theme';
+import { C, FONT, useResponsive, tabletContainerStyle } from '../theme';
 
 const TYPE_LABEL: Record<string, string> = {
   Leave: 'Leave Request',
@@ -37,6 +37,7 @@ const fmt = (d?: string) =>
 
 export default function TrashScreen() {
   const navigation = useNavigation<any>();
+  const { isTablet } = useResponsive();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -65,7 +66,9 @@ export default function TrashScreen() {
   const restore = (item: any) =>
     Alert.alert(
       'Restore item?',
-      `"${labelOf(item)}" will be restored to ${TYPE_LABEL[item.modelName] || item.modelName}.`,
+      `"${labelOf(item)}" will be restored to ${
+        TYPE_LABEL[item.modelName] || item.modelName
+      }.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -119,47 +122,52 @@ export default function TrashScreen() {
         Deleted tasks, announcements, documents and leave requests land here.
         Restore them or delete them forever.
       </Text>
-      <FlatList
-        data={items}
-        keyExtractor={i => i._id}
-        contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 10 }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        ListEmptyComponent={<Text style={s.empty}>Trash is empty</Text>}
-        renderItem={({ item }) => (
-          <View style={s.card}>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <View style={s.tag}>
-                <Text style={s.tagText}>
-                  {TYPE_LABEL[item.modelName] || item.modelName}
+      <View style={[{ flex: 1 }, tabletContainerStyle(isTablet)]}>
+        <FlatList
+          key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
+          data={items}
+          numColumns={isTablet ? 2 : 1}
+          columnWrapperStyle={isTablet ? s.colWrapper : undefined}
+          keyExtractor={i => i._id}
+          contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 10 }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          ListEmptyComponent={<Text style={s.empty}>Trash is empty</Text>}
+          renderItem={({ item }) => (
+            <View style={[s.card, isTablet && s.cardTablet]}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <View style={s.tag}>
+                  <Text style={s.tagText}>
+                    {TYPE_LABEL[item.modelName] || item.modelName}
+                  </Text>
+                </View>
+                <Text style={s.title} numberOfLines={2}>
+                  {labelOf(item)}
+                </Text>
+                <Text style={s.meta}>
+                  Deleted {fmt(item.createdAt)}
+                  {item.deletedByName ? ` by ${item.deletedByName}` : ''}
                 </Text>
               </View>
-              <Text style={s.title} numberOfLines={2}>
-                {labelOf(item)}
-              </Text>
-              <Text style={s.meta}>
-                Deleted {fmt(item.createdAt)}
-                {item.deletedByName ? ` by ${item.deletedByName}` : ''}
-              </Text>
+              <TouchableOpacity
+                style={[s.btn, { borderColor: C.primary }]}
+                onPress={() => restore(item)}
+                hitSlop={6}
+              >
+                <RotateCcw size={16} color={C.primary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.btn, { borderColor: C.danger }]}
+                onPress={() => purge(item)}
+                hitSlop={6}
+              >
+                <Trash2 size={16} color={C.danger} />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              style={[s.btn, { borderColor: C.primary }]}
-              onPress={() => restore(item)}
-              hitSlop={6}
-            >
-              <RotateCcw size={16} color={C.primary} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[s.btn, { borderColor: C.danger }]}
-              onPress={() => purge(item)}
-              hitSlop={6}
-            >
-              <Trash2 size={16} color={C.danger} />
-            </TouchableOpacity>
-          </View>
-        )}
-      />
+          )}
+        />
+      </View>
     </ScreenLayout>
   );
 }
@@ -193,6 +201,12 @@ const s = StyleSheet.create({
     borderColor: C.black,
     padding: 12,
     backgroundColor: '#fff',
+  },
+  cardTablet: {
+    flex: 1,
+  },
+  colWrapper: {
+    gap: 12,
   },
   tag: {
     alignSelf: 'flex-start',

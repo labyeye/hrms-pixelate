@@ -28,7 +28,7 @@ import { departmentAPI } from '../api/api';
 import { Department } from '../types/hrms';
 import ExportButton from '../components/common/ExportButton';
 import ImportButton from '../components/common/ImportButton';
-import { C } from '../theme';
+import { C, useResponsive } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 
 const EMPTY_FORM = {
@@ -41,6 +41,7 @@ const EMPTY_FORM = {
 
 export default function DepartmentsScreen() {
   const navigation = useNavigation<any>();
+  const { isTablet, maxContentWidth } = useResponsive();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -144,7 +145,7 @@ export default function DepartmentsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
+      <View style={[styles.header, isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' }]}>
         <View style={styles.headerLeft}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -157,13 +158,27 @@ export default function DepartmentsScreen() {
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <ImportButton
             name="departments"
-            headers={['Name', 'Code', 'Shift Start (HH:MM)', 'Shift End (HH:MM)', 'Description']}
-            example={['Engineering', 'ENG', '09:00', '18:00', 'Product engineering']}
+            headers={[
+              'Name',
+              'Code',
+              'Shift Start (HH:MM)',
+              'Shift End (HH:MM)',
+              'Description',
+            ]}
+            example={[
+              'Engineering',
+              'ENG',
+              '09:00',
+              '18:00',
+              'Product engineering',
+            ]}
             onRows={async rows => {
               let ok = 0;
               for (const r of rows) {
                 const name = String(r['Name'] || '').trim();
-                const code = String(r['Code'] || '').trim().toUpperCase();
+                const code = String(r['Code'] || '')
+                  .trim()
+                  .toUpperCase();
                 if (!name || !code) continue;
                 try {
                   await departmentAPI.create({
@@ -209,9 +224,15 @@ export default function DepartmentsScreen() {
         </View>
       ) : (
         <FlatList
+          key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
           data={departments}
           keyExtractor={item => item._id}
-          contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}
+          numColumns={isTablet ? 2 : 1}
+          columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
+          contentContainerStyle={[
+            { padding: 16, gap: 12, paddingBottom: 32 },
+            isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' },
+          ]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -231,7 +252,7 @@ export default function DepartmentsScreen() {
             const manager = dept.manager;
             const empCount = dept.headcount ?? dept.employeeCount ?? 0;
             return (
-              <View style={styles.deptCard}>
+              <View style={[styles.deptCard, isTablet && styles.cardTablet]}>
                 <View style={styles.cardTopRow}>
                   <View style={styles.deptIcon}>
                     <Building2 size={20} color={C.white} />
@@ -429,6 +450,8 @@ const styles = StyleSheet.create({
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
+  colWrapper: { gap: 12 },
+  cardTablet: { flex: 1 },
   deptCard: {
     backgroundColor: C.white,
     borderWidth: 2,

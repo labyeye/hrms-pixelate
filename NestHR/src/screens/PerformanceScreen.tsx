@@ -31,7 +31,7 @@ import { performanceAPI } from '../api/api';
 import { PerformanceReview } from '../types/hrms';
 import AnimatedNumber from '../components/motion/AnimatedNumber';
 import FadeInUp from '../components/motion/FadeInUp';
-import { C } from '../theme';
+import { C, useResponsive } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import HeaderIconBtn from '../components/common/HeaderIconBtn';
 import SearchModal from '../components/common/SearchModal';
@@ -55,6 +55,7 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
 
 export default function PerformanceScreen() {
   const navigation = useNavigation<any>();
+  const { isTablet, maxContentWidth } = useResponsive();
   const [reviews, setReviews] = useState<PerformanceReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -104,8 +105,8 @@ export default function PerformanceScreen() {
       sortKey === 'name'
         ? revName(a).localeCompare(revName(b))
         : sortKey === 'rating'
-          ? ((b as any).rating || 0) - ((a as any).rating || 0)
-          : 0,
+        ? ((b as any).rating || 0) - ((a as any).rating || 0)
+        : 0,
     );
 
   const handleCreate = async () => {
@@ -135,7 +136,7 @@ export default function PerformanceScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
+      <View style={[styles.header, isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' }]}>
         <View style={styles.headerLeft}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -240,9 +241,15 @@ export default function PerformanceScreen() {
         </View>
       ) : (
         <FlatList
+          key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
           data={filtered}
           keyExtractor={item => item._id}
-          contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 32 }}
+          numColumns={isTablet ? 2 : 1}
+          columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
+          contentContainerStyle={[
+            { padding: 16, gap: 10, paddingBottom: 32 },
+            isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' },
+          ]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -267,7 +274,7 @@ export default function PerformanceScreen() {
             const ratingColor =
               RATING_COLORS[Math.round(item.rating || 3)] || C.textMuted;
             return (
-              <View style={styles.card}>
+              <View style={[styles.card, isTablet && styles.cardTablet]}>
                 <View style={styles.cardTop}>
                   <View style={styles.avatar}>
                     <Text style={styles.avatarText}>
@@ -514,6 +521,8 @@ const styles = StyleSheet.create({
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
+  colWrapper: { gap: 12 },
+  cardTablet: { flex: 1 },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,

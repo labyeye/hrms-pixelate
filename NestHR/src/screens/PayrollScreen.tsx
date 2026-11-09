@@ -36,7 +36,7 @@ import { buildPayslipHTML } from '../utils/buildPayslipHTML';
 const tallylogo = require('../assets/images/tally.png');
 import { useAuth } from '../contexts/AuthContext';
 import { Payroll } from '../types/hrms';
-import { C } from '../theme';
+import { C, useResponsive, tabletContainerStyle } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import ExportButton from '../components/common/ExportButton';
 import HeaderIconBtn from '../components/common/HeaderIconBtn';
@@ -76,6 +76,7 @@ export default function PayrollScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
   const isEmployee = user?.role === 'employee';
+  const { isTablet, maxContentWidth } = useResponsive();
   const [payrolls, setPayrolls] = useState<Payroll[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -134,7 +135,9 @@ export default function PayrollScreen() {
   });
   if (sortKey) {
     const nm = (p: any) =>
-      `${p.employee?.firstName || ''} ${p.employee?.lastName || ''}`.toLowerCase();
+      `${p.employee?.firstName || ''} ${
+        p.employee?.lastName || ''
+      }`.toLowerCase();
     filtered.sort((a: any, b: any) =>
       sortKey === 'name'
         ? nm(a).localeCompare(nm(b))
@@ -221,8 +224,8 @@ export default function PayrollScreen() {
     const name = isEmployee
       ? user?.name || 'Employee'
       : emp
-        ? `${emp.firstName} ${emp.lastName}`
-        : 'Employee';
+      ? `${emp.firstName} ${emp.lastName}`
+      : 'Employee';
     const text = [
       `━━━━━━━━━━━━━━━━━━━━`,
       `SALARY SLIP — ${period}`,
@@ -366,7 +369,16 @@ export default function PayrollScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
+      >
         <View style={styles.headerLeft}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -486,7 +498,16 @@ export default function PayrollScreen() {
       </View>
 
       {/* Summary cards */}
-      <View style={styles.summaryRow}>
+      <View
+        style={[
+          styles.summaryRow,
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
+      >
         <View style={styles.summaryCard}>
           <Text style={styles.summaryLabel}>Total Gross</Text>
           <Text style={styles.summaryVal}>
@@ -576,8 +597,9 @@ export default function PayrollScreen() {
         placeholder="Search by employee name…"
         items={payrolls.map((p: any) => ({
           key: p._id,
-          title:
-            `${p.employee?.firstName || ''} ${p.employee?.lastName || ''}`.trim(),
+          title: `${p.employee?.firstName || ''} ${
+            p.employee?.lastName || ''
+          }`.trim(),
           subtitle: p.employee?.employeeId,
         }))}
       />
@@ -613,9 +635,19 @@ export default function PayrollScreen() {
         </View>
       ) : (
         <FlatList
+          key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
           data={filtered}
           keyExtractor={item => item._id}
-          contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 32 }}
+          numColumns={isTablet ? 2 : 1}
+          columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
+          contentContainerStyle={[
+            { padding: 16, gap: 10, paddingBottom: 32 },
+            isTablet && {
+              maxWidth: maxContentWidth,
+              width: '100%',
+              alignSelf: 'center',
+            },
+          ]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -640,7 +672,7 @@ export default function PayrollScreen() {
               item.month && item.year ? `${item.month}/${item.year}` : '—';
             return (
               <TouchableOpacity
-                style={styles.card}
+                style={[styles.card, isTablet && styles.cardTablet]}
                 onPress={() => setSelected(item)}
                 activeOpacity={0.85}
               >
@@ -667,8 +699,8 @@ export default function PayrollScreen() {
                       {isEmployee
                         ? user?.name || 'My Payslip'
                         : emp
-                          ? `${emp.firstName} ${emp.lastName}`
-                          : 'Employee'}
+                        ? `${emp.firstName} ${emp.lastName}`
+                        : 'Employee'}
                     </Text>
                     <Text style={styles.empSub}>
                       {isEmployee
@@ -1552,6 +1584,8 @@ const styles = StyleSheet.create({
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
+  colWrapper: { gap: 12 },
+  cardTablet: { flex: 1 },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,

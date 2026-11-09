@@ -185,7 +185,7 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
           const label =
             typeof options.tabBarLabel === 'string'
               ? options.tabBarLabel
-              : (options.title ?? route.name);
+              : options.title ?? route.name;
           const onPress = () => {
             const event = navigation.emit({
               type: 'tabPress',

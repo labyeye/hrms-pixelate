@@ -197,8 +197,8 @@ export default function CreditsScreen({ navigation }: any) {
                         {r.type === 'topup'
                           ? 'Top-up'
                           : r.type === 'bonus'
-                            ? 'Bonus credits'
-                            : EVENT_LABEL[r.event] || r.event || r.type}
+                          ? 'Bonus credits'
+                          : EVENT_LABEL[r.event] || r.event || r.type}
                       </Text>
                       <Text style={s.rowSub}>
                         {new Date(r.createdAt).toLocaleString('en-IN', {

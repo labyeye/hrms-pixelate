@@ -46,7 +46,7 @@ import {
 } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import { AttendanceRecord, Employee } from '../types/hrms';
-import { C } from '../theme';
+import { C, useResponsive, tabletContainerStyle } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import ExportButton from '../components/common/ExportButton';
 import SlideInCard from '../components/motion/SlideInCard';
@@ -146,6 +146,7 @@ function isoToTime(iso: string | undefined): string {
 export default function AttendanceScreen({ navigation }: any) {
   const { user } = useAuth();
   const isEmployee = user?.role === 'employee';
+  const { isTablet, maxContentWidth } = useResponsive();
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -460,14 +461,16 @@ export default function AttendanceScreen({ navigation }: any) {
   });
   if (sortKey) {
     const nm = (r: any) =>
-      `${r.employee?.firstName || ''} ${r.employee?.lastName || ''}`.toLowerCase();
+      `${r.employee?.firstName || ''} ${
+        r.employee?.lastName || ''
+      }`.toLowerCase();
     const t = (v: any) => (v ? new Date(v).getTime() : Infinity);
     filtered.sort((a: any, b: any) =>
       sortKey === 'name'
         ? nm(a).localeCompare(nm(b))
         : sortKey === 'name_desc'
-          ? nm(b).localeCompare(nm(a))
-          : t(a.checkIn) - t(b.checkIn),
+        ? nm(b).localeCompare(nm(a))
+        : t(a.checkIn) - t(b.checkIn),
     );
   }
 
@@ -521,7 +524,16 @@ export default function AttendanceScreen({ navigation }: any) {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
+      >
         <View style={styles.headerLeft}>
           <Clock size={20} color={C.primary} />
           <Text style={styles.headerTitle}>Attendance</Text>
@@ -557,7 +569,9 @@ export default function AttendanceScreen({ navigation }: any) {
                 {
                   header: 'Employee',
                   value: (r: any) =>
-                    `${r.employee?.firstName || ''} ${r.employee?.lastName || ''}`.trim(),
+                    `${r.employee?.firstName || ''} ${
+                      r.employee?.lastName || ''
+                    }`.trim(),
                 },
                 { header: 'Date', value: () => dateFilter },
                 {
@@ -623,7 +637,16 @@ export default function AttendanceScreen({ navigation }: any) {
         )}
       </View>
 
-      <View style={styles.dateRow}>
+      <View
+        style={[
+          styles.dateRow,
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
+      >
         <TouchableOpacity
           onPress={() => shiftDate(-1)}
           style={styles.dateBtnArrow}
@@ -761,8 +784,9 @@ export default function AttendanceScreen({ navigation }: any) {
             placeholder="Search by employee…"
             items={mergedRows.map((r: any) => ({
               key: String(r._id || r.employee?._id),
-              title:
-                `${r.employee?.firstName || ''} ${r.employee?.lastName || ''}`.trim(),
+              title: `${r.employee?.firstName || ''} ${
+                r.employee?.lastName || ''
+              }`.trim(),
               subtitle: r.employee?.employeeId,
             }))}
           />
@@ -801,10 +825,20 @@ export default function AttendanceScreen({ navigation }: any) {
         </View>
       ) : (
         <FlatList
+          key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
           data={filtered}
           keyExtractor={item => item._id}
           style={{ flex: 1 }}
-          contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 32 }}
+          numColumns={isTablet ? 2 : 1}
+          columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
+          contentContainerStyle={[
+            { padding: 16, gap: 10, paddingBottom: 32 },
+            isTablet && {
+              maxWidth: maxContentWidth,
+              width: '100%',
+              alignSelf: 'center',
+            },
+          ]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -820,7 +854,10 @@ export default function AttendanceScreen({ navigation }: any) {
             </View>
           }
           renderItem={({ item, index }) => (
-            <SlideInCard index={index}>
+            <SlideInCard
+              index={index}
+              style={isTablet ? styles.cardCol : undefined}
+            >
               {(() => {
                 const emp = item.employee as any;
                 const cfg = STATUS_CONFIG[item.status] || {
@@ -1211,7 +1248,10 @@ export default function AttendanceScreen({ navigation }: any) {
                   {row.map((day, ci) => {
                     if (day === 0)
                       return <View key={ci} style={styles.calCell} />;
-                    const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const dayStr = `${year}-${String(month + 1).padStart(
+                      2,
+                      '0',
+                    )}-${String(day).padStart(2, '0')}`;
                     const isSelected = dayStr === dateFilter;
                     const isToday = dayStr === todayStr;
                     return (
@@ -1843,6 +1883,8 @@ const styles = StyleSheet.create({
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
+  colWrapper: { gap: 12 },
+  cardCol: { flex: 1 },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,

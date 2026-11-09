@@ -25,7 +25,7 @@ import {
   XCircle,
 } from 'lucide-react-native';
 import { lateApprovalAPI } from '../api/api';
-import { C } from '../theme';
+import { C, useResponsive } from '../theme';
 import ExportButton from '../components/common/ExportButton';
 import StatTile, { tileGrid } from '../components/common/StatTile';
 
@@ -60,11 +60,15 @@ const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 // Use LOCAL date so IST midnight stored as UTC doesn't shift the day
 const localDate = (iso: string) => {
   const d = new Date(iso);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+    2,
+    '0',
+  )}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
 export default function LateApprovalsScreen() {
   const navigation = useNavigation<any>();
+  const { isTablet, maxContentWidth } = useResponsive();
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
@@ -131,7 +135,7 @@ export default function LateApprovalsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
+      <View style={[styles.header, isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={{ padding: 4, marginRight: 4 }}
@@ -149,7 +153,9 @@ export default function LateApprovalsScreen() {
             {
               header: 'Employee',
               value: (i: any) =>
-                `${i.employee?.firstName || ''} ${i.employee?.lastName || ''}`.trim(),
+                `${i.employee?.firstName || ''} ${
+                  i.employee?.lastName || ''
+                }`.trim(),
             },
             {
               header: 'Designation',
@@ -176,9 +182,15 @@ export default function LateApprovalsScreen() {
         </View>
       ) : (
         <FlatList
+          key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
           data={shown}
           keyExtractor={item => item._id}
-          contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 32 }}
+          numColumns={isTablet ? 2 : 1}
+          columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
+          contentContainerStyle={[
+            { padding: 16, gap: 10, paddingBottom: 32 },
+            isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' },
+          ]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -332,7 +344,7 @@ export default function LateApprovalsScreen() {
             const emp = item.employee as any;
             const pending = item.status === 'pending';
             return (
-              <View style={styles.card}>
+              <View style={[styles.card, isTablet && styles.cardTablet]}>
                 <View style={styles.topRow}>
                   <Text style={styles.codeChip}>{emp?.employeeId || '—'}</Text>
                   <View
@@ -357,7 +369,9 @@ export default function LateApprovalsScreen() {
                     >
                       {pending
                         ? 'PENDING'
-                        : `MARKED · ${(LABEL[item.resolvedStatus] || '').toUpperCase()}`}
+                        : `MARKED · ${(
+                            LABEL[item.resolvedStatus] || ''
+                          ).toUpperCase()}`}
                     </Text>
                   </View>
                 </View>
@@ -485,6 +499,8 @@ const styles = StyleSheet.create({
   },
   dayNum: { fontSize: 18, fontWeight: '400', color: C.black },
   dayBadge: { fontSize: 10, fontWeight: '400', marginTop: 2 },
+  colWrapper: { gap: 12 },
+  cardTablet: { flex: 1 },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,

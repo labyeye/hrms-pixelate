@@ -15,21 +15,32 @@ const KC_SERVICE = 'hrms_token';
 
 export const getToken = async (): Promise<string | null> => {
   try {
-    const c = await Keychain.getGenericPassword({ service: KC_SERVICE });
-    if (c) return c.password;
+    if (Keychain && typeof Keychain.getGenericPassword === 'function') {
+      const c = await Keychain.getGenericPassword({ service: KC_SERVICE });
+      if (c && c.password) return c.password;
+    }
   } catch {}
-  const legacy = await storage.getItem(TOKEN_KEY);
-  if (legacy) {
-    await setToken(legacy);
-    await storage.removeItem(TOKEN_KEY);
-  }
-  return legacy;
+  return storage.getItem(TOKEN_KEY);
 };
+
 export const setToken = async (t: string) => {
-  await Keychain.setGenericPassword('token', t, { service: KC_SERVICE });
+  try {
+    if (Keychain && typeof Keychain.setGenericPassword === 'function') {
+      await Keychain.setGenericPassword('token', t, { service: KC_SERVICE });
+    }
+  } catch {}
+  // Always store in AsyncStorage as well to guarantee reliability across environments
+  await storage.setItem(TOKEN_KEY, t);
 };
+
 export const removeToken = async () => {
-  await Keychain.resetGenericPassword({ service: KC_SERVICE }).catch(() => {});
+  try {
+    if (Keychain && typeof Keychain.resetGenericPassword === 'function') {
+      await Keychain.resetGenericPassword({ service: KC_SERVICE }).catch(
+        () => {},
+      );
+    }
+  } catch {}
   await storage.removeItem(TOKEN_KEY);
 };
 
@@ -39,14 +50,14 @@ const statusMsg = (s: number) =>
   s === 429
     ? 'Too many attempts. Please wait a minute and try again.'
     : s === 413
-      ? 'That file is too large. Please choose a smaller one.'
-      : s === 403
-        ? 'You do not have permission to do this.'
-        : s === 404
-          ? 'We could not find what you were looking for.'
-          : s >= 500
-            ? 'Something went wrong on our side. Please try again in a moment.'
-            : 'Something went wrong. Please try again.';
+    ? 'That file is too large. Please choose a smaller one.'
+    : s === 403
+    ? 'You do not have permission to do this.'
+    : s === 404
+    ? 'We could not find what you were looking for.'
+    : s >= 500
+    ? 'Something went wrong on our side. Please try again in a moment.'
+    : 'Something went wrong. Please try again.';
 
 const TIMEOUT_MS = 15_000;
 const GET_RETRIES = 2;
@@ -75,7 +86,9 @@ async function request<T = any>(
       headers: {
         'Content-Type': 'application/json',
         'X-Device-Platform': Platform.OS,
-        'X-Device-Name': `${Platform.OS === 'ios' ? 'iOS' : 'Android'} ${Platform.Version}`,
+        'X-Device-Name': `${Platform.OS === 'ios' ? 'iOS' : 'Android'} ${
+          Platform.Version
+        }`,
         'Cache-Control': 'no-cache, no-store',
         Pragma: 'no-cache',
         'If-None-Match': '',

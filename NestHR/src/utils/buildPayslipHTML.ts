@@ -60,7 +60,9 @@ export function buildPayslipHTML(payroll: any, companyName?: string): string {
   const deductionsRows = deductions
     .map(
       d =>
-        `<tr><td>${d.label}</td><td class="amount neg">${fmt(d.value)}</td></tr>`,
+        `<tr><td>${d.label}</td><td class="amount neg">${fmt(
+          d.value,
+        )}</td></tr>`,
     )
     .join('');
 
@@ -139,7 +141,9 @@ td.neg { color:#DC2626; }
     </div>
     <div class="emp-block">
       <div class="field-label">Department</div>
-      <div class="field-value">${(emp?.department as any)?.name || emp?.department || '—'}</div>
+      <div class="field-value">${
+        (emp?.department as any)?.name || emp?.department || '—'
+      }</div>
     </div>
   </div>
 
@@ -154,11 +158,15 @@ td.neg { color:#DC2626; }
     </div>
     <div class="summary-item">
       <div class="s-label">Days Absent</div>
-      <div class="s-value" style="color:#DC2626">${payroll.absentDays || 0}</div>
+      <div class="s-value" style="color:#DC2626">${
+        payroll.absentDays || 0
+      }</div>
     </div>
     <div class="summary-item">
       <div class="s-label">Hours Worked</div>
-      <div class="s-value">${Number(payroll.totalWorkHours || 0).toFixed(1)}h</div>
+      <div class="s-value">${Number(payroll.totalWorkHours || 0).toFixed(
+        1,
+      )}h</div>
     </div>
     <div class="summary-item">
       <div class="s-label">Status</div>
@@ -171,14 +179,18 @@ td.neg { color:#DC2626; }
       <div class="table-header">Earnings</div>
       <table><tbody>
         ${earningsRows}
-        <tr style="background:#f8f8f8;font-weight:700"><td>Gross Salary</td><td class="amount">${fmt(payroll.grossSalary || 0)}</td></tr>
+        <tr style="background:#f8f8f8;font-weight:700"><td>Gross Salary</td><td class="amount">${fmt(
+          payroll.grossSalary || 0,
+        )}</td></tr>
       </tbody></table>
     </div>
     <div class="table-block">
       <div class="table-header">Deductions</div>
       <table><tbody>
         ${deductionsRows}
-        <tr style="background:#fff0f0;font-weight:700"><td>Total Deductions</td><td class="amount neg">${fmt(payroll.totalDeductions || 0)}</td></tr>
+        <tr style="background:#fff0f0;font-weight:700"><td>Total Deductions</td><td class="amount neg">${fmt(
+          payroll.totalDeductions || 0,
+        )}</td></tr>
       </tbody></table>
     </div>
   </div>
@@ -186,21 +198,29 @@ td.neg { color:#DC2626; }
   <div class="totals-row">
     <div class="total-block">
       <div class="total-label">Gross Salary</div>
-      <div class="total-value">₹${(payroll.grossSalary || 0).toLocaleString('en-IN')}</div>
+      <div class="total-value">₹${(payroll.grossSalary || 0).toLocaleString(
+        'en-IN',
+      )}</div>
     </div>
     <div class="total-block">
       <div class="total-label">Total Deductions</div>
-      <div class="total-value" style="color:#DC2626">-₹${(payroll.totalDeductions || 0).toLocaleString('en-IN')}</div>
+      <div class="total-value" style="color:#DC2626">-₹${(
+        payroll.totalDeductions || 0
+      ).toLocaleString('en-IN')}</div>
     </div>
   </div>
 
   <div class="net-section">
     <div class="net-label">NET SALARY PAYABLE</div>
-    <div class="net-amount">₹${(payroll.netSalary || 0).toLocaleString('en-IN')}</div>
+    <div class="net-amount">₹${(payroll.netSalary || 0).toLocaleString(
+      'en-IN',
+    )}</div>
   </div>
 
   <div class="footer">
-    <p>This is a computer-generated pay slip and does not require a signature. | Generated on ${new Date().toLocaleDateString('en-IN')}</p>
+    <p>This is a computer-generated pay slip and does not require a signature. | Generated on ${new Date().toLocaleDateString(
+      'en-IN',
+    )}</p>
   </div>
 </div>
 </body>

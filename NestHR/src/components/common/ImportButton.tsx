@@ -19,7 +19,12 @@ interface Props {
 }
 
 /** Import (pick Excel/CSV) + Sample (share template) pair, mirrors the web ImportButton. */
-export default function ImportButton({ name, headers, example, onRows }: Props) {
+export default function ImportButton({
+  name,
+  headers,
+  example,
+  onRows,
+}: Props) {
   const [busy, setBusy] = useState(false);
   const run = async () => {
     setBusy(true);

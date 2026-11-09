@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { C } from '../../theme';
+import { useResponsive } from '../../theme/responsive';
 
 interface Props {
   children: React.ReactNode;
@@ -22,18 +23,42 @@ export default function ScreenLayout({
   right,
   loading,
 }: Props) {
+  const { isTablet, maxContentWidth } = useResponsive();
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>{title}</Text>
-        {right && <View>{right}</View>}
+        <View
+          style={[
+            styles.headerInner,
+            isTablet && {
+              maxWidth: maxContentWidth,
+              alignSelf: 'center',
+              width: '100%',
+            },
+          ]}
+        >
+          <Text style={styles.title}>{title}</Text>
+          {right && <View>{right}</View>}
+        </View>
       </View>
       {loading ? (
         <View style={styles.loader}>
           <ActivityIndicator size="large" color={C.primary} />
         </View>
       ) : (
-        <View style={styles.body}>{children}</View>
+        <View
+          style={[
+            styles.body,
+            isTablet && {
+              maxWidth: maxContentWidth,
+              width: '100%',
+              alignSelf: 'center',
+            },
+          ]}
+        >
+          {children}
+        </View>
       )}
     </SafeAreaView>
   );
@@ -80,14 +105,16 @@ export function HeaderBtn({
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
     backgroundColor: '#fff',
     borderBottomWidth: 2,
     borderBottomColor: '#000',
+  },
+  headerInner: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   title: { fontSize: 20, fontWeight: '400', color: '#000' },
   body: { flex: 1 },

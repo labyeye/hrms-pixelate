@@ -658,7 +658,9 @@ export default function AttendanceSettingsScreen() {
                         {
                           header: 'Employee',
                           value: (r: any) =>
-                            `${r.employee?.firstName || ''} ${r.employee?.lastName || ''}`.trim(),
+                            `${r.employee?.firstName || ''} ${
+                              r.employee?.lastName || ''
+                            }`.trim(),
                         },
                         {
                           header: 'Designation',

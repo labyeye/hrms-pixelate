@@ -35,7 +35,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { exitAPI, employeeAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
-import { C } from '../theme';
+import { C, useResponsive, tabletContainerStyle } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import HeaderIconBtn from '../components/common/HeaderIconBtn';
 import SearchModal from '../components/common/SearchModal';
@@ -94,6 +94,7 @@ function fmt(d?: string) {
 export default function ExitManagementScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
+  const { isTablet } = useResponsive();
   const isHR = user?.role !== 'employee';
 
   const [records, setRecords] = useState<any[]>([]);
@@ -229,7 +230,7 @@ export default function ExitManagementScreen() {
     const emp = item.employee;
     return (
       <TouchableOpacity
-        style={s.card}
+        style={[s.card, isTablet && s.cardTablet]}
         onPress={() => openDetail(item)}
         activeOpacity={0.8}
       >
@@ -398,26 +399,31 @@ export default function ExitManagementScreen() {
           <ActivityIndicator size="large" color={C.primary} />
         </View>
       ) : (
-        <FlatList
-          data={shownRecords}
-          keyExtractor={i => i._id}
-          renderItem={renderRecord}
-          contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 40 }}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={C.primary}
-            />
-          }
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View style={s.empty}>
-              <LogOut size={40} color="#D1D5DB" />
-              <Text style={s.emptyText}>No exit records found</Text>
-            </View>
-          }
-        />
+        <View style={[{ flex: 1 }, tabletContainerStyle(isTablet)]}>
+          <FlatList
+            key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
+            data={shownRecords}
+            numColumns={isTablet ? 2 : 1}
+            columnWrapperStyle={isTablet ? s.colWrapper : undefined}
+            keyExtractor={i => i._id}
+            renderItem={renderRecord}
+            contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 40 }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={C.primary}
+              />
+            }
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={s.empty}>
+                <LogOut size={40} color="#D1D5DB" />
+                <Text style={s.emptyText}>No exit records found</Text>
+              </View>
+            }
+          />
+        </View>
       )}
 
       {/* Create Modal */}
@@ -763,7 +769,9 @@ export default function ExitManagementScreen() {
                       />
                       <InfoRow
                         label="FnF Amount"
-                        value={`₹${(selected.fnfAmount || 0).toLocaleString('en-IN')}`}
+                        value={`₹${(selected.fnfAmount || 0).toLocaleString(
+                          'en-IN',
+                        )}`}
                       />
                       <InfoRow
                         label="FnF Status"
@@ -921,6 +929,12 @@ const s = StyleSheet.create({
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     padding: 14,
+  },
+  cardTablet: {
+    flex: 1,
+  },
+  colWrapper: {
+    gap: 12,
   },
   cardHeader: {
     flexDirection: 'row',

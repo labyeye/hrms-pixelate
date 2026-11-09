@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native';
+export * from './responsive';
 
 export const FONT = {
   regular: 'DMSans-Regular',

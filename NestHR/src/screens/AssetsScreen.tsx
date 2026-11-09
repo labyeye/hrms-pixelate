@@ -21,7 +21,7 @@ import {
   RefreshCw,
 } from 'lucide-react-native';
 import { assetAPI } from '../api/api';
-import { C } from '../theme';
+import { C, useResponsive } from '../theme';
 
 const STATUS_CONFIG: Record<
   string,
@@ -49,6 +49,7 @@ const STATUS_CONFIG: Record<
 
 export default function AssetsScreen() {
   const navigation = useNavigation<any>();
+  const { isTablet, maxContentWidth } = useResponsive();
   const [assets, setAssets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -158,7 +159,7 @@ export default function AssetsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backBtn}
@@ -182,10 +183,20 @@ export default function AssetsScreen() {
         </View>
       ) : (
         <FlatList
+          key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
           data={assets}
           keyExtractor={item => item._id}
-          renderItem={renderAsset}
-          contentContainerStyle={{ padding: 16 }}
+          numColumns={isTablet ? 2 : 1}
+          columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
+          renderItem={({ item }) => (
+            <View style={isTablet ? styles.cardCol : undefined}>
+              {renderAsset({ item })}
+            </View>
+          )}
+          contentContainerStyle={[
+            { padding: 16, gap: 10 },
+            isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' },
+          ]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -194,7 +205,6 @@ export default function AssetsScreen() {
               tintColor={C.primary}
             />
           }
-          ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -222,6 +232,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 40,
   },
+  colWrapper: { gap: 12 },
+  cardCol: { flex: 1 },
   emptyTitle: {
     fontSize: 15,
     fontWeight: '400',

@@ -24,7 +24,7 @@ import {
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { salaryHeadAPI } from '../api/api';
-import { C } from '../theme';
+import { C, useResponsive } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 
 const TYPES = ['Earning', 'Deduction', 'Variable'];
@@ -49,6 +49,7 @@ const TYPE_COLOR: Record<string, string> = {
 
 export default function SalaryHeadsScreen() {
   const navigation = useNavigation<any>();
+  const { isTablet, maxContentWidth } = useResponsive();
   const [heads, setHeads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -133,7 +134,7 @@ export default function SalaryHeadsScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <View style={s.header}>
+      <View style={[s.header, isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={{ padding: 4, marginRight: 4 }}
@@ -155,9 +156,15 @@ export default function SalaryHeadsScreen() {
         </View>
       ) : (
         <FlatList
+          key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
           data={heads}
           keyExtractor={i => i._id}
-          contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 32 }}
+          numColumns={isTablet ? 2 : 1}
+          columnWrapperStyle={isTablet ? s.colWrapper : undefined}
+          contentContainerStyle={[
+            { padding: 16, gap: 10, paddingBottom: 32 },
+            isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' },
+          ]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -175,7 +182,7 @@ export default function SalaryHeadsScreen() {
           renderItem={({ item }) => {
             const tc = TYPE_COLOR[item.type] || C.textMuted;
             return (
-              <View style={s.card}>
+              <View style={[s.card, isTablet && s.cardTablet]}>
                 <View style={{ flex: 1 }}>
                   <View
                     style={{
@@ -422,6 +429,8 @@ const s = StyleSheet.create({
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
+  colWrapper: { gap: 12 },
+  cardTablet: { flex: 1 },
   card: {
     flexDirection: 'row',
     alignItems: 'flex-start',

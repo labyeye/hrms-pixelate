@@ -130,8 +130,18 @@ export function buildInvoiceHTML(inv: any): string {
   const clientPhone = company.phone || '';
 
   const taxRows = isInterState
-    ? `<tr><td>998314</td><td style="text-align:right">${fmt(base)}</td><td style="text-align:right">18%</td><td style="text-align:right">${fmt(igst)}</td><td style="text-align:right">${fmt(igst)}</td></tr>`
-    : `<tr><td>998314</td><td style="text-align:right">${fmt(base)}</td><td style="text-align:right">9%</td><td style="text-align:right">${fmt(cgst)}</td><td style="text-align:right">9%</td><td style="text-align:right">${fmt(sgst)}</td><td style="text-align:right">${fmt(taxAmt)}</td></tr>`;
+    ? `<tr><td>998314</td><td style="text-align:right">${fmt(
+        base,
+      )}</td><td style="text-align:right">18%</td><td style="text-align:right">${fmt(
+        igst,
+      )}</td><td style="text-align:right">${fmt(igst)}</td></tr>`
+    : `<tr><td>998314</td><td style="text-align:right">${fmt(
+        base,
+      )}</td><td style="text-align:right">9%</td><td style="text-align:right">${fmt(
+        cgst,
+      )}</td><td style="text-align:right">9%</td><td style="text-align:right">${fmt(
+        sgst,
+      )}</td><td style="text-align:right">${fmt(taxAmt)}</td></tr>`;
 
   const taxHeader = isInterState
     ? `<tr><th>HSN/SAC</th><th>Taxable Value</th><th>IGST Rate</th><th>IGST Amt</th><th>Total Tax</th></tr>`
@@ -237,8 +247,12 @@ td { padding: 7px 4px; font-size: 8pt; color: #111; border-bottom: 0.5pt solid #
       <div class="meta-row"><span class="meta-label">Invoice No.</span><span class="meta-value">: ${invoiceNumber}</span></div>
       <div class="meta-row"><span class="meta-label">Invoice Date</span><span class="meta-value">: ${invoiceDate}</span></div>
       <div class="meta-row"><span class="meta-label">Due Date</span><span class="meta-value">: ${invoiceDate}</span></div>
-      <div class="meta-row"><span class="meta-label">Place of Service</span><span class="meta-value">: ${company.state || 'Bihar'}</span></div>
-      <div class="meta-row"><span class="meta-label">Supply Type</span><span class="meta-value">: ${isInterState ? 'Inter-State' : 'Intra-State'}</span></div>
+      <div class="meta-row"><span class="meta-label">Place of Service</span><span class="meta-value">: ${
+        company.state || 'Bihar'
+      }</span></div>
+      <div class="meta-row"><span class="meta-label">Supply Type</span><span class="meta-value">: ${
+        isInterState ? 'Inter-State' : 'Intra-State'
+      }</span></div>
     </div>
   </div>
 
@@ -247,9 +261,17 @@ td { padding: 7px 4px; font-size: 8pt; color: #111; border-bottom: 0.5pt solid #
       <div class="party-label">Bill To</div>
       <div class="party-name">${clientName}</div>
       ${clientAddress ? `<div class="party-line">${clientAddress}</div>` : ''}
-      ${clientEmail ? `<div class="party-line">Email: ${clientEmail}</div>` : ''}
-      ${clientPhone ? `<div class="party-line">Phone: ${clientPhone}</div>` : ''}
-      ${clientGST ? `<div class="party-line" style="font-weight:700">GSTIN: ${clientGST}</div>` : ''}
+      ${
+        clientEmail ? `<div class="party-line">Email: ${clientEmail}</div>` : ''
+      }
+      ${
+        clientPhone ? `<div class="party-line">Phone: ${clientPhone}</div>` : ''
+      }
+      ${
+        clientGST
+          ? `<div class="party-line" style="font-weight:700">GSTIN: ${clientGST}</div>`
+          : ''
+      }
       ${clientPAN ? `<div class="party-line">PAN: ${clientPAN}</div>` : ''}
     </div>
   </div>
@@ -311,16 +333,30 @@ td { padding: 7px 4px; font-size: 8pt; color: #111; border-bottom: 0.5pt solid #
       </div>
     </div>
     <div class="bottom-right">
-      <div class="total-row"><span class="total-label">Subtotal</span><span class="total-value">${fmt(base)}</span></div>
-      <div class="total-row"><span class="total-label">Taxable Amount</span><span class="total-value">${fmt(base)}</span></div>
+      <div class="total-row"><span class="total-label">Subtotal</span><span class="total-value">${fmt(
+        base,
+      )}</span></div>
+      <div class="total-row"><span class="total-label">Taxable Amount</span><span class="total-value">${fmt(
+        base,
+      )}</span></div>
       ${
         isInterState
-          ? `<div class="total-row"><span class="total-label">IGST (18%)</span><span class="total-value">${fmt(igst)}</span></div>`
-          : `<div class="total-row"><span class="total-label">CGST (9%)</span><span class="total-value">${fmt(cgst)}</span></div>
-           <div class="total-row"><span class="total-label">SGST (9%)</span><span class="total-value">${fmt(sgst)}</span></div>`
+          ? `<div class="total-row"><span class="total-label">IGST (18%)</span><span class="total-value">${fmt(
+              igst,
+            )}</span></div>`
+          : `<div class="total-row"><span class="total-label">CGST (9%)</span><span class="total-value">${fmt(
+              cgst,
+            )}</span></div>
+           <div class="total-row"><span class="total-label">SGST (9%)</span><span class="total-value">${fmt(
+             sgst,
+           )}</span></div>`
       }
-      <div class="grand-row"><span class="grand-label">Grand Total</span><span class="grand-value">${fmt(total)}</span></div>
-      <div class="total-row"><span class="total-label">(−) Amount Paid</span><span class="total-value">${fmt(total)}</span></div>
+      <div class="grand-row"><span class="grand-label">Grand Total</span><span class="grand-value">${fmt(
+        total,
+      )}</span></div>
+      <div class="total-row"><span class="total-label">(−) Amount Paid</span><span class="total-value">${fmt(
+        total,
+      )}</span></div>
       <div class="balance-row"><span class="balance-label">Balance Due</span><span class="balance-value">Rs. 0.00</span></div>
     </div>
   </div>
@@ -332,8 +368,22 @@ td { padding: 7px 4px; font-size: 8pt; color: #111; border-bottom: 0.5pt solid #
       <tfoot>
         ${
           isInterState
-            ? `<tr><td><strong>Total</strong></td><td style="text-align:right"><strong>${fmt(base)}</strong></td><td></td><td style="text-align:right"><strong>${fmt(igst)}</strong></td><td style="text-align:right"><strong>${fmt(igst)}</strong></td></tr>`
-            : `<tr><td><strong>Total</strong></td><td style="text-align:right"><strong>${fmt(base)}</strong></td><td></td><td style="text-align:right"><strong>${fmt(cgst)}</strong></td><td></td><td style="text-align:right"><strong>${fmt(sgst)}</strong></td><td style="text-align:right"><strong>${fmt(taxAmt)}</strong></td></tr>`
+            ? `<tr><td><strong>Total</strong></td><td style="text-align:right"><strong>${fmt(
+                base,
+              )}</strong></td><td></td><td style="text-align:right"><strong>${fmt(
+                igst,
+              )}</strong></td><td style="text-align:right"><strong>${fmt(
+                igst,
+              )}</strong></td></tr>`
+            : `<tr><td><strong>Total</strong></td><td style="text-align:right"><strong>${fmt(
+                base,
+              )}</strong></td><td></td><td style="text-align:right"><strong>${fmt(
+                cgst,
+              )}</strong></td><td></td><td style="text-align:right"><strong>${fmt(
+                sgst,
+              )}</strong></td><td style="text-align:right"><strong>${fmt(
+                taxAmt,
+              )}</strong></td></tr>`
         }
       </tfoot>
     </table>

@@ -652,7 +652,9 @@ export default function BiometricDeviceScreen() {
                       <Text style={styles.rowTitle}>{dev.name}</Text>
                       <Text style={styles.rowSub}>
                         {dev.lastSeenAt
-                          ? `Seen ${new Date(dev.lastSeenAt).toLocaleDateString('en-IN')}`
+                          ? `Seen ${new Date(dev.lastSeenAt).toLocaleDateString(
+                              'en-IN',
+                            )}`
                           : 'Never seen'}
                       </Text>
                     </View>
@@ -791,8 +793,8 @@ export default function BiometricDeviceScreen() {
                   l.status === 'ok'
                     ? C.success
                     : l.status === 'warn'
-                      ? C.secondary
-                      : C.danger;
+                    ? C.secondary
+                    : C.danger;
                 return (
                   <View key={l._id}>
                     <TouchableOpacity

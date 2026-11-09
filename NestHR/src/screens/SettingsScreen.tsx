@@ -99,9 +99,15 @@ export default function SettingsScreen() {
   const handleSave = async () => {
     const f: any = form;
     if (f.bankIFSC && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(f.bankIFSC))
-      return Alert.alert('Invalid IFSC', 'Format: 4 letters + 0 + 6 alphanumeric (e.g. SBIN0001234)');
+      return Alert.alert(
+        'Invalid IFSC',
+        'Format: 4 letters + 0 + 6 alphanumeric (e.g. SBIN0001234)',
+      );
     if (f.bankAccountNumber && !/^\d{9,18}$/.test(f.bankAccountNumber))
-      return Alert.alert('Invalid account number', 'Account number must be 9-18 digits');
+      return Alert.alert(
+        'Invalid account number',
+        'Account number must be 9-18 digits',
+      );
     setSaving(true);
     try {
       await settingsAPI.update(form);
@@ -321,20 +327,45 @@ export default function SettingsScreen() {
           </View>
           <View style={styles.card}>
             {[
-              { label: 'Bank Name', key: 'bankName', ph: 'e.g. State Bank of India' },
+              {
+                label: 'Bank Name',
+                key: 'bankName',
+                ph: 'e.g. State Bank of India',
+              },
               { label: 'Bank Branch', key: 'bankBranch', ph: 'Branch' },
-              { label: 'Account Holder Name', key: 'bankAccountName', ph: 'As per bank records' },
-              { label: 'Account Number', key: 'bankAccountNumber', ph: '9-18 digit account number', num: true },
-              { label: 'IFSC Code', key: 'bankIFSC', ph: 'e.g. SBIN0001234', ifsc: true },
+              {
+                label: 'Account Holder Name',
+                key: 'bankAccountName',
+                ph: 'As per bank records',
+              },
+              {
+                label: 'Account Number',
+                key: 'bankAccountNumber',
+                ph: '9-18 digit account number',
+                num: true,
+              },
+              {
+                label: 'IFSC Code',
+                key: 'bankIFSC',
+                ph: 'e.g. SBIN0001234',
+                ifsc: true,
+              },
             ].map((f: any, i) => (
-              <View key={f.key} style={[styles.fieldRow, i > 0 && styles.fieldBorder]}>
+              <View
+                key={f.key}
+                style={[styles.fieldRow, i > 0 && styles.fieldBorder]}
+              >
                 <View style={{ flex: 1 }}>
                   <Text style={styles.fieldLabel}>{f.label}</Text>
                   <TextInput
                     style={styles.fieldInput}
                     value={(form as any)[f.key] || ''}
                     onChangeText={v => {
-                      const x = f.num ? v.replace(/\D/g, '').slice(0, 18) : f.ifsc ? v.toUpperCase().slice(0, 11) : v;
+                      const x = f.num
+                        ? v.replace(/\D/g, '').slice(0, 18)
+                        : f.ifsc
+                        ? v.toUpperCase().slice(0, 11)
+                        : v;
                       setForm(p => ({ ...p, [f.key]: x }));
                     }}
                     placeholder={f.ph}
@@ -364,14 +395,21 @@ export default function SettingsScreen() {
                     ['present', 'Present'],
                     ['absent', 'Absent'],
                   ].map(([v, l]) => {
-                    const on = ((form as any).singlePunchAction || 'half_day') === v;
+                    const on =
+                      ((form as any).singlePunchAction || 'half_day') === v;
                     return (
                       <TouchableOpacity
                         key={v}
                         style={[styles.chip, on && styles.chipOn]}
-                        onPress={() => setForm(p => ({ ...p, singlePunchAction: v }))}
+                        onPress={() =>
+                          setForm(p => ({ ...p, singlePunchAction: v }))
+                        }
                       >
-                        <Text style={[styles.chipText, on && styles.chipTextOn]}>{l}</Text>
+                        <Text
+                          style={[styles.chipText, on && styles.chipTextOn]}
+                        >
+                          {l}
+                        </Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -380,12 +418,17 @@ export default function SettingsScreen() {
             </View>
             <View style={[styles.fieldRow, styles.fieldBorder]}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.fieldLabel}>Double Punch Interval (minutes, 1-60)</Text>
+                <Text style={styles.fieldLabel}>
+                  Double Punch Interval (minutes, 1-60)
+                </Text>
                 <TextInput
                   style={styles.fieldInput}
                   value={String((form as any).doublePunchInterval ?? 5)}
                   onChangeText={v => {
-                    const n = Math.min(60, Math.max(0, parseInt(v.replace(/\D/g, ''), 10) || 0));
+                    const n = Math.min(
+                      60,
+                      Math.max(0, parseInt(v.replace(/\D/g, ''), 10) || 0),
+                    );
                     setForm(p => ({ ...p, doublePunchInterval: n }));
                   }}
                   keyboardType="number-pad"
@@ -401,38 +444,118 @@ export default function SettingsScreen() {
           {
             title: 'WhatsApp',
             items: [
-              ['whatsappEnabled', 'Enable WhatsApp Notifications', 'Send automated WhatsApp messages to employees'],
-              ['whatsappSendPunchAlert', 'Check-in / Check-out alerts', 'Alert on every punch'],
-              ['whatsappSendLeaveAlert', 'Leave & loan alerts', 'Alert on leave and loan updates'],
-              ['whatsappNotifyLeave', 'Leave Approved / Rejected', 'Notify employee when HR decides on a leave'],
-              ['whatsappNotifyPayroll', 'Salary Credited', 'Notify employee when payroll is marked paid'],
-              ['whatsappNotifyCheckIn', 'Biometric Check-In / Check-Out', 'Notify when attendance is recorded via device'],
+              [
+                'whatsappEnabled',
+                'Enable WhatsApp Notifications',
+                'Send automated WhatsApp messages to employees',
+              ],
+              [
+                'whatsappSendPunchAlert',
+                'Check-in / Check-out alerts',
+                'Alert on every punch',
+              ],
+              [
+                'whatsappSendLeaveAlert',
+                'Leave & loan alerts',
+                'Alert on leave and loan updates',
+              ],
+              [
+                'whatsappNotifyLeave',
+                'Leave Approved / Rejected',
+                'Notify employee when HR decides on a leave',
+              ],
+              [
+                'whatsappNotifyPayroll',
+                'Salary Credited',
+                'Notify employee when payroll is marked paid',
+              ],
+              [
+                'whatsappNotifyCheckIn',
+                'Biometric Check-In / Check-Out',
+                'Notify when attendance is recorded via device',
+              ],
             ],
           },
           {
             title: 'Employee App',
             items: [
-              ['essEnabled', 'Enable Employee Login', 'Allow employees to log into the portal'],
-              ['essAllowPunch', 'Allow Self-Service Punch', 'Employees can mark attendance from mobile'],
-              ['essAllowSalarySlip', 'View Salary Slip', 'Employees can download their salary slips'],
-              ['essAllowAttendance', 'View Attendance', 'Employees can check their attendance records'],
-              ['essAllowPayHistory', 'View Pay History', 'Employees can see past salary payments'],
-              ['essAllowLeave', 'Apply for Leave', 'Employees can submit leave requests'],
-              ['essAllowHoliday', 'View Holiday List', 'Employees can see the holiday calendar'],
-              ['essAllowMissPunch', 'Report Miss Punch', 'Employees can flag missing punch entries'],
-              ['essAllowWorkReport', 'Submit Work Report', 'Employees can post daily work reports'],
-              ['essAllowAdvance', 'Request Advance / Payment', 'Employees can raise advance salary requests'],
+              [
+                'essEnabled',
+                'Enable Employee Login',
+                'Allow employees to log into the portal',
+              ],
+              [
+                'essAllowPunch',
+                'Allow Self-Service Punch',
+                'Employees can mark attendance from mobile',
+              ],
+              [
+                'essAllowSalarySlip',
+                'View Salary Slip',
+                'Employees can download their salary slips',
+              ],
+              [
+                'essAllowAttendance',
+                'View Attendance',
+                'Employees can check their attendance records',
+              ],
+              [
+                'essAllowPayHistory',
+                'View Pay History',
+                'Employees can see past salary payments',
+              ],
+              [
+                'essAllowLeave',
+                'Apply for Leave',
+                'Employees can submit leave requests',
+              ],
+              [
+                'essAllowHoliday',
+                'View Holiday List',
+                'Employees can see the holiday calendar',
+              ],
+              [
+                'essAllowMissPunch',
+                'Report Miss Punch',
+                'Employees can flag missing punch entries',
+              ],
+              [
+                'essAllowWorkReport',
+                'Submit Work Report',
+                'Employees can post daily work reports',
+              ],
+              [
+                'essAllowAdvance',
+                'Request Advance / Payment',
+                'Employees can raise advance salary requests',
+              ],
             ],
           },
           {
             title: 'System',
             items: [
-              ['autoSalary', 'Auto Salary Processing', 'Automatically process salaries on pay day'],
-              ['bioSync', 'Biometric Auto-Sync', 'Sync punches from biometric devices automatically'],
+              [
+                'autoSalary',
+                'Auto Salary Processing',
+                'Automatically process salaries on pay day',
+              ],
+              [
+                'bioSync',
+                'Biometric Auto-Sync',
+                'Sync punches from biometric devices automatically',
+              ],
               ['smsEnabled', 'SMS Notifications', 'Send SMS alerts'],
               ['emailNotif', 'Email Notifications', 'Send email alerts'],
-              ['showCTC', 'Show CTC to Employees', 'Display cost-to-company in employee portal'],
-              ['branchwise', 'Branch-wise Reporting', 'Filter all reports by branch/location'],
+              [
+                'showCTC',
+                'Show CTC to Employees',
+                'Display cost-to-company in employee portal',
+              ],
+              [
+                'branchwise',
+                'Branch-wise Reporting',
+                'Filter all reports by branch/location',
+              ],
             ],
           },
         ].map(g => (
@@ -444,12 +567,16 @@ export default function SettingsScreen() {
             {g.title === 'WhatsApp' && credits?.metered && (
               <Text style={styles.toggleDesc}>
                 WhatsApp credits: {fmtCredits(credits.total)}
-                {credits.zero ? ' — messages are paused' : ''} · {credits.ratePerMessage} credit per message
+                {credits.zero ? ' — messages are paused' : ''} ·{' '}
+                {credits.ratePerMessage} credit per message
               </Text>
             )}
             <View style={styles.card}>
               {g.items.map(([k, l, d], i) => (
-                <View key={k} style={[styles.toggleRow, i > 0 && styles.fieldBorder]}>
+                <View
+                  key={k}
+                  style={[styles.toggleRow, i > 0 && styles.fieldBorder]}
+                >
                   <View style={{ flex: 1 }}>
                     <Text style={styles.toggleLabel}>{l}</Text>
                     <Text style={styles.toggleDesc}>{d}</Text>
@@ -474,16 +601,49 @@ export default function SettingsScreen() {
           </View>
           <View style={styles.card}>
             {[
-              { key: 'dashboardType', label: 'Dashboard Type', opts: [['Normal', 'Normal'], ['Advanced', 'Advanced'], ['Compact', 'Compact']] },
-              { key: 'timeFormat', label: 'Time Format', opts: [['12', '12 Hour'], ['24', '24 Hour']] },
-              { key: 'currency', label: 'Currency', opts: ['INR', 'USD', 'EUR', 'GBP', 'AED'].map(x => [x, x]) },
+              {
+                key: 'dashboardType',
+                label: 'Dashboard Type',
+                opts: [
+                  ['Normal', 'Normal'],
+                  ['Advanced', 'Advanced'],
+                  ['Compact', 'Compact'],
+                ],
+              },
+              {
+                key: 'timeFormat',
+                label: 'Time Format',
+                opts: [
+                  ['12', '12 Hour'],
+                  ['24', '24 Hour'],
+                ],
+              },
+              {
+                key: 'currency',
+                label: 'Currency',
+                opts: ['INR', 'USD', 'EUR', 'GBP', 'AED'].map(x => [x, x]),
+              },
               {
                 key: 'state',
                 label: 'State (for PT slab)',
-                opts: ['Maharashtra', 'Karnataka', 'Delhi', 'Tamil Nadu', 'West Bengal', 'Gujarat', 'Telangana', 'Andhra Pradesh', 'Kerala', 'Rajasthan'].map(x => [x, x]),
+                opts: [
+                  'Maharashtra',
+                  'Karnataka',
+                  'Delhi',
+                  'Tamil Nadu',
+                  'West Bengal',
+                  'Gujarat',
+                  'Telangana',
+                  'Andhra Pradesh',
+                  'Kerala',
+                  'Rajasthan',
+                ].map(x => [x, x]),
               },
             ].map((f, i) => (
-              <View key={f.key} style={[styles.fieldRow, i > 0 && styles.fieldBorder]}>
+              <View
+                key={f.key}
+                style={[styles.fieldRow, i > 0 && styles.fieldBorder]}
+              >
                 <View style={{ flex: 1 }}>
                   <Text style={styles.fieldLabel}>{f.label}</Text>
                   <View style={styles.chipRow}>
@@ -495,7 +655,11 @@ export default function SettingsScreen() {
                           style={[styles.chip, on && styles.chipOn]}
                           onPress={() => setForm(p => ({ ...p, [f.key]: v }))}
                         >
-                          <Text style={[styles.chipText, on && styles.chipTextOn]}>{l}</Text>
+                          <Text
+                            style={[styles.chipText, on && styles.chipTextOn]}
+                          >
+                            {l}
+                          </Text>
                         </TouchableOpacity>
                       );
                     })}
@@ -504,8 +668,16 @@ export default function SettingsScreen() {
               </View>
             ))}
             {[
-              { key: 'empCodePrefix', label: 'Employee Code Prefix', ph: 'e.g. EMP, HR, 1' },
-              { key: 'empCodeSuffix', label: 'Employee Code Suffix', ph: 'e.g. 2026, IND' },
+              {
+                key: 'empCodePrefix',
+                label: 'Employee Code Prefix',
+                ph: 'e.g. EMP, HR, 1',
+              },
+              {
+                key: 'empCodeSuffix',
+                label: 'Employee Code Suffix',
+                ph: 'e.g. 2026, IND',
+              },
             ].map(f => (
               <View key={f.key} style={[styles.fieldRow, styles.fieldBorder]}>
                 <View style={{ flex: 1 }}>
@@ -581,7 +753,7 @@ export default function SettingsScreen() {
                           styles.selChipActive,
                       ]}
                       onPress={() =>
-                        setForm(p => ({ ...p, salaryMode: o.value }) as any)
+                        setForm(p => ({ ...p, salaryMode: o.value } as any))
                       }
                     >
                       <Text
@@ -617,7 +789,7 @@ export default function SettingsScreen() {
                             styles.selChipActive,
                         ]}
                         onPress={() =>
-                          setForm(p => ({ ...p, salaryPayDay: d }) as any)
+                          setForm(p => ({ ...p, salaryPayDay: d } as any))
                         }
                       >
                         <Text
@@ -657,7 +829,7 @@ export default function SettingsScreen() {
                             ...p,
                             salaryCycleStartDay:
                               Number(v.replace(/\D/g, '')) || 1,
-                          }) as any,
+                          } as any),
                       )
                     }
                     keyboardType="numeric"
@@ -676,7 +848,7 @@ export default function SettingsScreen() {
                             ...p,
                             salaryCycleEndDay:
                               Number(v.replace(/\D/g, '')) || 31,
-                          }) as any,
+                          } as any),
                       )
                     }
                     keyboardType="numeric"
@@ -899,7 +1071,9 @@ export default function SettingsScreen() {
                       setShow2FASetup(false);
                       Alert.alert(
                         '2FA enabled',
-                        `Save these backup codes now — each works once if you lose your authenticator:\n\n${(r.data?.backupCodes || []).join('   ')}`,
+                        `Save these backup codes now — each works once if you lose your authenticator:\n\n${(
+                          r.data?.backupCodes || []
+                        ).join('   ')}`,
                       );
                     } catch (e: any) {
                       Alert.alert('Invalid Code', e.message);
@@ -1047,7 +1221,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
-  chip: { borderWidth: 2, borderColor: '#000', paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#fff' },
+  chip: {
+    borderWidth: 2,
+    borderColor: '#000',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#fff',
+  },
   chipOn: { backgroundColor: C.primary },
   chipText: { fontSize: 12, color: '#000' },
   chipTextOn: { color: '#fff' },

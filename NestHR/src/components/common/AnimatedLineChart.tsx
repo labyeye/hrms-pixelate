@@ -78,7 +78,9 @@ export default function AnimatedLineChart({
   }));
   const line = pts.map((p, i) => `${i ? 'L' : 'M'}${p.x},${p.y}`).join(' ');
   const area = pts.length
-    ? `${line} L${pts[pts.length - 1].x},${padT + plotH} L${pts[0].x},${padT + plotH} Z`
+    ? `${line} L${pts[pts.length - 1].x},${padT + plotH} L${pts[0].x},${
+        padT + plotH
+      } Z`
     : '';
   let len = 0;
   for (let i = 1; i < pts.length; i++) {

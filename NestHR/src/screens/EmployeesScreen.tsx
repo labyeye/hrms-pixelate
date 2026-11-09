@@ -84,7 +84,7 @@ import {
   leaveAPI,
 } from '../api/api';
 import { Employee } from '../types/hrms';
-import { C } from '../theme';
+import { C, useResponsive, tabletContainerStyle } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import SlideInCard from '../components/motion/SlideInCard';
 import HeaderIconBtn from '../components/common/HeaderIconBtn';
@@ -131,7 +131,13 @@ const IMPORT_COLS: [string, string, string][] = [
   ['esicNumber', 'ESIC Number', '12345678901234'],
   ['pfNumber', 'PF Number', 'MH/12345/67890'],
 ];
-const IMPORT_REQUIRED = ['firstName', 'lastName', 'email', 'designation', 'joinDate'];
+const IMPORT_REQUIRED = [
+  'firstName',
+  'lastName',
+  'email',
+  'designation',
+  'joinDate',
+];
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
   active: { color: C.success, bg: '#F0FDF4' },
@@ -310,12 +316,12 @@ export default function EmployeesScreen() {
         sortKey === 'name'
           ? nm(a).localeCompare(nm(b))
           : sortKey === 'name_desc'
-            ? nm(b).localeCompare(nm(a))
-            : String(a.employeeId || '').localeCompare(
-                String(b.employeeId || ''),
-                undefined,
-                { numeric: true },
-              ),
+          ? nm(b).localeCompare(nm(a))
+          : String(a.employeeId || '').localeCompare(
+              String(b.employeeId || ''),
+              undefined,
+              { numeric: true },
+            ),
       );
     }
     setFiltered(list);
@@ -394,12 +400,17 @@ export default function EmployeesScreen() {
       otRate: String((emp as any).otRate ?? ''),
       biometricUserId: (emp as any).biometricUserId || '',
       shift: (emp as any).shift || '',
-      geofenceAttendanceEnabled: (emp as any).geofenceAttendanceEnabled === true,
+      geofenceAttendanceEnabled:
+        (emp as any).geofenceAttendanceEnabled === true,
       geofenceMode: (emp as any).geofenceMode === 'any' ? 'any' : 'specific',
       geofenceLat:
-        (emp as any).geofenceLat != null ? String((emp as any).geofenceLat) : '',
+        (emp as any).geofenceLat != null
+          ? String((emp as any).geofenceLat)
+          : '',
       geofenceLng:
-        (emp as any).geofenceLng != null ? String((emp as any).geofenceLng) : '',
+        (emp as any).geofenceLng != null
+          ? String((emp as any).geofenceLng)
+          : '',
       geofenceRadiusMeters: String((emp as any).geofenceRadiusMeters || 200),
       monthlySalary: String(
         (emp as any).monthlySalary || (emp as any).salary || '',
@@ -491,7 +502,10 @@ export default function EmployeesScreen() {
           PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         );
         if (g !== PermissionsAndroid.RESULTS.GRANTED) {
-          Alert.alert('Location permission needed', 'Allow location access to use your current position.');
+          Alert.alert(
+            'Location permission needed',
+            'Allow location access to use your current position.',
+          );
           return;
         }
       }
@@ -503,7 +517,10 @@ export default function EmployeesScreen() {
       }));
       setFormDirty(true);
     } catch (e: any) {
-      Alert.alert('Location unavailable', e?.message || 'Could not get your location');
+      Alert.alert(
+        'Location unavailable',
+        e?.message || 'Could not get your location',
+      );
     }
   };
 
@@ -649,8 +666,8 @@ export default function EmployeesScreen() {
           actionModal === 'allowance'
             ? 'Allowance/Bonus'
             : actionModal === 'overtime'
-              ? 'Overtime'
-              : 'Penalty';
+            ? 'Overtime'
+            : 'Penalty';
         Alert.alert('Success', `${label} added successfully`);
       } else if (actionModal === 'loan' || actionModal === 'advance') {
         await loanAPI.create({
@@ -947,6 +964,8 @@ export default function EmployeesScreen() {
       )
     : 0;
 
+  const { isTablet, maxContentWidth } = useResponsive();
+
   const getDeptName = (dept: any) => {
     if (!dept) return 'No department';
     if (typeof dept === 'string')
@@ -956,7 +975,16 @@ export default function EmployeesScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
+      >
         <View style={styles.headerLeft}>
           <Users size={20} color={C.primary} />
           <Text style={styles.headerTitle}>Employees</Text>
@@ -1001,14 +1029,26 @@ export default function EmployeesScreen() {
                 });
                 return o;
               });
-              const valid = mapped.filter(o => IMPORT_REQUIRED.every(k => o[k]));
+              const valid = mapped.filter(o =>
+                IMPORT_REQUIRED.every(k => o[k]),
+              );
               const skipped = mapped.length - valid.length;
               if (!valid.length)
                 return 'No valid rows. Required: First Name, Last Name, Email, Designation, Join Date.';
               const res: any = await employeeAPI.bulkImport(valid);
               load();
-              const fails = (res.results || []).filter((x: any) => x && x.success === false).slice(0, 3);
-              return `${res.imported ?? 0} imported, ${res.failed ?? 0} failed${skipped ? `, ${skipped} skipped (missing required fields)` : ''}${fails.length ? `\n\n${fails.map((x: any) => x.error || x.message || '').join('\n')}` : ''}`;
+              const fails = (res.results || [])
+                .filter((x: any) => x && x.success === false)
+                .slice(0, 3);
+              return `${res.imported ?? 0} imported, ${res.failed ?? 0} failed${
+                skipped ? `, ${skipped} skipped (missing required fields)` : ''
+              }${
+                fails.length
+                  ? `\n\n${fails
+                      .map((x: any) => x.error || x.message || '')
+                      .join('\n')}`
+                  : ''
+              }`;
             }}
           />
           <ExportButton
@@ -1137,9 +1177,19 @@ export default function EmployeesScreen() {
         </View>
       ) : (
         <FlatList
+          key={isTablet ? 'tablet-grid-3' : 'mobile-list'}
           data={filtered}
           keyExtractor={item => item._id}
-          contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 32 }}
+          numColumns={isTablet ? 3 : 1}
+          columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
+          contentContainerStyle={[
+            { padding: 16, gap: 10, paddingBottom: 32 },
+            isTablet && {
+              maxWidth: maxContentWidth,
+              width: '100%',
+              alignSelf: 'center',
+            },
+          ]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -1148,7 +1198,6 @@ export default function EmployeesScreen() {
             />
           }
           showsVerticalScrollIndicator={false}
-
           ListEmptyComponent={
             <View style={styles.empty}>
               <Users size={40} color="#D1D5DB" />
@@ -1156,12 +1205,18 @@ export default function EmployeesScreen() {
             </View>
           }
           renderItem={({ item, index }) => (
-            <SlideInCard index={index}>
+            <SlideInCard
+              index={index}
+              style={isTablet ? styles.cardCol : undefined}
+            >
               {(() => {
                 const statusColor = STATUS_COLOR[item.status] || '#9CA3AF';
                 return (
                   <TouchableOpacity
-                    style={styles.card}
+                    style={[
+                      styles.card,
+                      isTablet && { flex: 1, minHeight: 180 },
+                    ]}
                     onPress={() =>
                       selectMode ? toggleSel(item._id) : setDetailEmp(item)
                     }
@@ -1654,21 +1709,29 @@ export default function EmployeesScreen() {
                           (detailEmp as any).monthlySalary ||
                           detailEmp.salary ||
                           0
-                            ? `₹${Number((detailEmp as any).monthlySalary || detailEmp.salary || 0).toLocaleString('en-IN')}`
+                            ? `₹${Number(
+                                (detailEmp as any).monthlySalary ||
+                                  detailEmp.salary ||
+                                  0,
+                              ).toLocaleString('en-IN')}`
                             : '',
                         ],
                         [
                           Landmark,
                           'Loan Balance',
                           (detailEmp as any).loanBalance > 0
-                            ? `₹${(detailEmp as any).loanBalance.toLocaleString('en-IN')}`
+                            ? `₹${(detailEmp as any).loanBalance.toLocaleString(
+                                'en-IN',
+                              )}`
                             : '',
                         ],
                         [
                           Wallet,
                           'Advance Balance',
                           (detailEmp as any).advanceBalance > 0
-                            ? `₹${(detailEmp as any).advanceBalance.toLocaleString('en-IN')}`
+                            ? `₹${(
+                                detailEmp as any
+                              ).advanceBalance.toLocaleString('en-IN')}`
                             : '',
                         ],
                       ]}
@@ -2685,7 +2748,12 @@ export default function EmployeesScreen() {
                     </View>
 
                     {/* Mobile geofenced attendance (same fields as the web employee form) */}
-                    <Text style={[styles.fieldLabel, { marginTop: 8, color: C.primary }]}>
+                    <Text
+                      style={[
+                        styles.fieldLabel,
+                        { marginTop: 8, color: C.primary },
+                      ]}
+                    >
                       Mobile Geofenced Attendance
                     </Text>
                     <View style={styles.toggleRow}>
@@ -2694,14 +2762,17 @@ export default function EmployeesScreen() {
                           Allow Mobile Camera Check-in/out
                         </Text>
                         <Text style={styles.toggleHint}>
-                          Employee can mark attendance from the app with a selfie,
-                          from anywhere or only at a specific location
+                          Employee can mark attendance from the app with a
+                          selfie, from anywhere or only at a specific location
                         </Text>
                       </View>
                       <Switch
                         value={form.geofenceAttendanceEnabled}
                         onValueChange={v => {
-                          setForm(p => ({ ...p, geofenceAttendanceEnabled: v }));
+                          setForm(p => ({
+                            ...p,
+                            geofenceAttendanceEnabled: v,
+                          }));
                           setFormDirty(true);
                         }}
                         trackColor={{ true: C.primary, false: '#D1D5DB' }}
@@ -2730,15 +2801,17 @@ export default function EmployeesScreen() {
                                   form.geofenceMode === m && { color: C.white },
                                 ]}
                               >
-                                {m === 'any' ? 'Any Location' : 'Specific Location'}
+                                {m === 'any'
+                                  ? 'Any Location'
+                                  : 'Specific Location'}
                               </Text>
                             </TouchableOpacity>
                           ))}
                         </View>
                         {form.geofenceMode === 'any' ? (
                           <Text style={styles.toggleHint}>
-                            Can check in/out from anywhere. Only face verification
-                            is required, no location restriction.
+                            Can check in/out from anywhere. Only face
+                            verification is required, no location restriction.
                           </Text>
                         ) : (
                           <>
@@ -2755,11 +2828,21 @@ export default function EmployeesScreen() {
                               placeholder: '200',
                             })}
                             <TouchableOpacity
-                              style={[styles.selChip, { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6 }]}
+                              style={[
+                                styles.selChip,
+                                {
+                                  flexDirection: 'row',
+                                  alignItems: 'center',
+                                  alignSelf: 'flex-start',
+                                  gap: 6,
+                                },
+                              ]}
                               onPress={useMyLocation}
                             >
                               <MapPin size={14} color={C.primary} />
-                              <Text style={styles.selChipText}>Use my current location</Text>
+                              <Text style={styles.selChipText}>
+                                Use my current location
+                              </Text>
                             </TouchableOpacity>
                           </>
                         )}
@@ -3161,6 +3244,8 @@ const styles = StyleSheet.create({
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
+  colWrapper: { gap: 12 },
+  cardCol: { flex: 1 },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,

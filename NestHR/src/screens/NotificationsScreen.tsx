@@ -28,7 +28,7 @@ import {
   syncAnnouncementNotifications,
   LocalNotification,
 } from '../api/api';
-import { C } from '../theme';
+import { C, useResponsive } from '../theme';
 
 function relativeTime(ts: number) {
   const diff = Date.now() - ts;
@@ -54,6 +54,7 @@ function getIcon(title: string) {
 
 export default function NotificationsScreen() {
   const navigation = useNavigation<any>();
+  const { isTablet, maxContentWidth } = useResponsive();
   const [notifications, setNotifications] = useState<LocalNotification[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -153,7 +154,7 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
+      <View style={[styles.header, isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' }]}>
         <View style={styles.headerLeft}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -197,11 +198,20 @@ export default function NotificationsScreen() {
         </View>
       ) : (
         <FlatList
+          key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
           data={notifications}
           keyExtractor={n => n.id}
-          renderItem={renderItem}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          numColumns={isTablet ? 2 : 1}
+          columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
+          renderItem={({ item }) => (
+            <View style={isTablet ? styles.cardTablet : undefined}>
+              {renderItem({ item })}
+            </View>
+          )}
+          contentContainerStyle={[
+            { padding: 16, gap: 10, paddingBottom: 40 },
+            isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' },
+          ]}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <View>
@@ -301,7 +311,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     backgroundColor: C.white,
+    borderWidth: 2,
+    borderColor: C.black,
+    borderRadius: 8,
   },
+  colWrapper: { gap: 12 },
+  cardTablet: { flex: 1 },
   notifUnread: { backgroundColor: '#FAFBFF' },
   iconWrap: {
     width: 36,

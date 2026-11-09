@@ -28,7 +28,7 @@ import {
 } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { supportAPI } from '../api/api';
-import { C, S } from '../theme';
+import { C, S, useResponsive, tabletContainerStyle } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 
 const ISSUE_TYPES = [
@@ -100,6 +100,7 @@ const formatDate = (iso: string) =>
 
 export default function SupportScreen({ navigation }: any) {
   const { user } = useAuth();
+  const { isTablet } = useResponsive();
   const isAdmin = ['super_admin', 'hr_manager', 'hr_executive'].includes(
     user?.role || '',
   );
@@ -213,7 +214,7 @@ export default function SupportScreen({ navigation }: any) {
     const pColor = PRIORITY_COLORS[item.priority] || C.black;
     return (
       <TouchableOpacity
-        style={styles.ticketCard}
+        style={[styles.ticketCard, isTablet && styles.ticketCardTablet]}
         onPress={() => setSelectedTicket(item)}
         activeOpacity={0.75}
       >
@@ -283,7 +284,7 @@ export default function SupportScreen({ navigation }: any) {
             onRefresh={() => load(true)}
           />
         }
-        contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+        contentContainerStyle={[{ padding: 16, paddingBottom: 40 }, tabletContainerStyle(isTablet)]}
         showsVerticalScrollIndicator={false}
       >
         {/* Summary row */}
@@ -318,7 +319,10 @@ export default function SupportScreen({ navigation }: any) {
           </View>
         ) : (
           <FlatList
+            key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
             data={tickets}
+            numColumns={isTablet ? 2 : 1}
+            columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
             keyExtractor={t => t._id}
             renderItem={renderTicket}
             scrollEnabled={false}
@@ -878,6 +882,12 @@ const styles = StyleSheet.create({
     borderColor: C.black,
     padding: 14,
     marginBottom: 10,
+  },
+  ticketCardTablet: {
+    flex: 1,
+  },
+  colWrapper: {
+    gap: 12,
   },
   ticketTop: {
     flexDirection: 'row',

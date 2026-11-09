@@ -30,7 +30,7 @@ import {
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { holidayAPI } from '../api/api';
-import { C } from '../theme';
+import { C, useResponsive, tabletContainerStyle } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import ExportButton from '../components/common/ExportButton';
 import ImportButton from '../components/common/ImportButton';
@@ -63,6 +63,7 @@ const EMPTY_FORM = { name: '', date: '', type: 'national', description: '' };
 
 export default function HolidaysScreen() {
   const navigation = useNavigation<any>();
+  const { isTablet } = useResponsive();
   const [holidays, setHolidays] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -206,20 +207,34 @@ export default function HolidaysScreen() {
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <ImportButton
             name="holidays"
-            headers={['Name', 'Date (YYYY-MM-DD)', 'Type (national/optional/restricted)', 'Description']}
-            example={['Republic Day', `${year}-01-26`, 'national', 'Public holiday']}
+            headers={[
+              'Name',
+              'Date (YYYY-MM-DD)',
+              'Type (national/optional/restricted)',
+              'Description',
+            ]}
+            example={[
+              'Republic Day',
+              `${year}-01-26`,
+              'national',
+              'Public holiday',
+            ]}
             onRows={async rows => {
               let ok = 0;
               for (const r of rows) {
                 const name = String(r['Name'] || '').trim();
                 const date = String(r['Date (YYYY-MM-DD)'] || '').slice(0, 10);
-                const type = String(r['Type (national/optional/restricted)'] || 'national').toLowerCase();
+                const type = String(
+                  r['Type (national/optional/restricted)'] || 'national',
+                ).toLowerCase();
                 if (!name || !/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
                 try {
                   await holidayAPI.create({
                     name,
                     date,
-                    type: ['optional', 'restricted'].includes(type) ? type : 'national',
+                    type: ['optional', 'restricted'].includes(type)
+                      ? type
+                      : 'national',
                     description: String(r['Description'] || ''),
                   });
                   ok++;
@@ -269,7 +284,7 @@ export default function HolidaysScreen() {
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 32 }}
+          contentContainerStyle={[{ padding: 16, gap: 12, paddingBottom: 32 }, tabletContainerStyle(isTablet)]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -413,42 +428,44 @@ export default function HolidaysScreen() {
               No holidays this month. Tap a date to add one.
             </Text>
           ) : (
-            monthHolidays.map(item => {
-              const color = TYPE_COLOR[item.type] || C.textMuted;
-              const d = new Date(item.date);
-              return (
-                <TouchableOpacity
-                  key={item._id}
-                  style={styles.card}
-                  onPress={() => setDayModal(String(item.date).slice(0, 10))}
-                >
-                  <View style={[styles.dateBadge, { backgroundColor: color }]}>
-                    <Text style={styles.dateDay}>{d.getDate()}</Text>
-                    <Text style={styles.dateMonth}>
-                      {d.toLocaleString('en', { month: 'short' }).toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={{ flex: 1, marginLeft: 14 }}>
-                    <Text style={styles.holidayName}>{item.name}</Text>
-                    <View style={styles.metaRow}>
-                      <View
-                        style={[
-                          styles.typePill,
-                          { backgroundColor: color, borderColor: C.black },
-                        ]}
-                      >
-                        <Text style={[styles.typePillText, { color: C.white }]}>
-                          {item.type?.toUpperCase()}
-                        </Text>
-                      </View>
-                      <Text style={styles.weekday}>
-                        {d.toLocaleDateString('en-IN', { weekday: 'long' })}
+            <View style={isTablet ? styles.holidayGrid : undefined}>
+              {monthHolidays.map(item => {
+                const color = TYPE_COLOR[item.type] || C.textMuted;
+                const d = new Date(item.date);
+                return (
+                  <TouchableOpacity
+                    key={item._id}
+                    style={[styles.card, isTablet && styles.cardTablet]}
+                    onPress={() => setDayModal(String(item.date).slice(0, 10))}
+                  >
+                    <View style={[styles.dateBadge, { backgroundColor: color }]}>
+                      <Text style={styles.dateDay}>{d.getDate()}</Text>
+                      <Text style={styles.dateMonth}>
+                        {d.toLocaleString('en', { month: 'short' }).toUpperCase()}
                       </Text>
                     </View>
-                  </View>
-                </TouchableOpacity>
-              );
-            })
+                    <View style={{ flex: 1, marginLeft: 14 }}>
+                      <Text style={styles.holidayName}>{item.name}</Text>
+                      <View style={styles.metaRow}>
+                        <View
+                          style={[
+                            styles.typePill,
+                            { backgroundColor: color, borderColor: C.black },
+                          ]}
+                        >
+                          <Text style={[styles.typePillText, { color: C.white }]}>
+                            {item.type?.toUpperCase()}
+                          </Text>
+                        </View>
+                        <Text style={styles.weekday}>
+                          {d.toLocaleDateString('en-IN', { weekday: 'long' })}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           )}
         </ScrollView>
       )}
@@ -792,6 +809,15 @@ const styles = StyleSheet.create({
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     padding: 14,
+  },
+  cardTablet: {
+    flex: 1,
+    minWidth: '48%',
+  },
+  holidayGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
   },
   dateBadge: {
     width: 52,

@@ -54,10 +54,10 @@ const scoreColor = (s: number | null) =>
   s == null
     ? '#9CA3AF'
     : s >= 80
-      ? C.success
-      : s >= 50
-        ? C.secondary
-        : C.danger;
+    ? C.success
+    : s >= 50
+    ? C.secondary
+    : C.danger;
 const money = (n: number) => `₹${Number(n || 0).toLocaleString('en-IN')}`;
 
 /** HR / admin: every active employee's performance for a month — stat tiles, graphs, then the detail table. */
@@ -156,7 +156,9 @@ export default function PerformanceOverview() {
               value={withLoan.length}
               sub={
                 withLoan.length
-                  ? `${money(withLoan.reduce((t, r) => t + r.loanBalance, 0))} due`
+                  ? `${money(
+                      withLoan.reduce((t, r) => t + r.loanBalance, 0),
+                    )} due`
                   : undefined
               }
               icon={Banknote}

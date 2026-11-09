@@ -39,7 +39,7 @@ import { leaveAPI, attendanceSettingsAPI } from '../api/api';
 import ExportButton from '../components/common/ExportButton';
 import { useAuth } from '../contexts/AuthContext';
 import { LeaveRequest } from '../types/hrms';
-import { C } from '../theme';
+import { C, useResponsive, tabletContainerStyle } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import HeaderIconBtn from '../components/common/HeaderIconBtn';
 import SearchModal from '../components/common/SearchModal';
@@ -68,6 +68,7 @@ const LEAVE_TYPES = [
 export default function LeaveScreen() {
   const { user } = useAuth();
   const isEmployee = user?.role === 'employee';
+  const { isTablet, maxContentWidth } = useResponsive();
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -160,8 +161,9 @@ export default function LeaveScreen() {
     if (leaveTypeFilter && l.leaveType !== leaveTypeFilter) return false;
     if (search) {
       const q = search.toLowerCase();
-      const name =
-        `${l.employee?.firstName || ''} ${l.employee?.lastName || ''}`.toLowerCase();
+      const name = `${l.employee?.firstName || ''} ${
+        l.employee?.lastName || ''
+      }`.toLowerCase();
       if (
         !name.includes(q) &&
         !String(l.leaveType || '')
@@ -174,28 +176,27 @@ export default function LeaveScreen() {
   });
   if (sortKey) {
     const nm = (l: any) =>
-      `${l.employee?.firstName || ''} ${l.employee?.lastName || ''}`.toLowerCase();
+      `${l.employee?.firstName || ''} ${
+        l.employee?.lastName || ''
+      }`.toLowerCase();
     filtered.sort((a: any, b: any) =>
       sortKey === 'name'
         ? nm(a).localeCompare(nm(b))
         : sortKey === 'days'
-          ? (b.days || 0) - (a.days || 0)
-          : new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
+        ? (b.days || 0) - (a.days || 0)
+        : new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
     );
   }
 
   // Change 2: leave usage per type (for employee balance strip)
-  const leaveUsage = LEAVE_TYPES.reduce(
-    (acc, t) => {
-      const approved = leaves.filter(
-        l => l.leaveType === t && l.status === 'approved',
-      );
-      const days = approved.reduce((s, l) => s + (l.days || 0), 0);
-      acc[t] = days;
-      return acc;
-    },
-    {} as Record<string, number>,
-  );
+  const leaveUsage = LEAVE_TYPES.reduce((acc, t) => {
+    const approved = leaves.filter(
+      l => l.leaveType === t && l.status === 'approved',
+    );
+    const days = approved.reduce((s, l) => s + (l.days || 0), 0);
+    acc[t] = days;
+    return acc;
+  }, {} as Record<string, number>);
 
   const pickDocument = () => {
     Alert.alert('Attach Document', 'Choose source', [
@@ -448,7 +449,16 @@ export default function LeaveScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
+      >
         <View style={styles.headerLeft}>
           <Calendar size={20} color={C.primary} />
           <Text style={styles.headerTitle}>Leave Requests</Text>
@@ -475,7 +485,9 @@ export default function LeaveScreen() {
               {
                 header: 'Employee',
                 value: (l: any) =>
-                  `${l.employee?.firstName || ''} ${l.employee?.lastName || ''}`.trim(),
+                  `${l.employee?.firstName || ''} ${
+                    l.employee?.lastName || ''
+                  }`.trim(),
               },
               {
                 header: 'Designation',
@@ -534,8 +546,9 @@ export default function LeaveScreen() {
         items={leaves.map((l: any) => ({
           key: l._id,
           title:
-            `${l.employee?.firstName || ''} ${l.employee?.lastName || ''}`.trim() ||
-            String(l.leaveType),
+            `${l.employee?.firstName || ''} ${
+              l.employee?.lastName || ''
+            }`.trim() || String(l.leaveType),
           subtitle: `${l.leaveType} · ${l.status}`,
         }))}
       />
@@ -606,9 +619,19 @@ export default function LeaveScreen() {
         </View>
       ) : (
         <FlatList
+          key={isTablet ? 'tablet-grid-3' : 'mobile-list'}
           data={filtered}
           keyExtractor={item => item._id}
-          contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 32 }}
+          numColumns={isTablet ? 3 : 1}
+          columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
+          contentContainerStyle={[
+            { padding: 16, gap: 10, paddingBottom: 32 },
+            isTablet && {
+              maxWidth: maxContentWidth,
+              width: '100%',
+              alignSelf: 'center',
+            },
+          ]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -641,7 +664,7 @@ export default function LeaveScreen() {
                 }`.toUpperCase()
               : '?';
             return (
-              <View style={[styles.card]}>
+              <View style={[styles.card, isTablet && styles.cardTablet]}>
                 <View style={styles.cardRow}>
                   <View style={styles.photoWrap}>
                     {emp?.avatar ? (
@@ -1461,6 +1484,8 @@ const styles = StyleSheet.create({
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
+  colWrapper: { gap: 12 },
+  cardTablet: { flex: 1 },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,

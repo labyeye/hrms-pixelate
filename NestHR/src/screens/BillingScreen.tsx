@@ -30,10 +30,7 @@ import { billingAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import { C } from '../theme';
 
-const fmtDate = (
-  d?: string | Date | null,
-  opts?: Intl.DateTimeFormatOptions,
-) =>
+const fmtDate = (d?: string | Date | null, opts?: Intl.DateTimeFormatOptions) =>
   d
     ? new Date(d).toLocaleDateString(
         'en-IN',
@@ -202,10 +199,10 @@ export default function BillingScreen() {
                 {isTrial
                   ? `Free trial — ${daysLeft ?? 0} days left`
                   : isCancelled
-                    ? 'Cancelling'
-                    : isActive
-                      ? 'Paid & Active'
-                      : 'Inactive'}
+                  ? 'Cancelling'
+                  : isActive
+                  ? 'Paid & Active'
+                  : 'Inactive'}
               </Text>
             </View>
           </View>

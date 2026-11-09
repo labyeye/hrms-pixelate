@@ -92,7 +92,9 @@ export default function FaceKioskScreen({ navigation }: any) {
           ok: true,
           out: true,
           title: data.employee.name,
-          sub: `Checked out at ${time}${data.workHours ? ` · ${Number(data.workHours).toFixed(1)} hrs` : ''}`,
+          sub: `Checked out at ${time}${
+            data.workHours ? ` · ${Number(data.workHours).toFixed(1)} hrs` : ''
+          }`,
         });
       }
     } catch (e: any) {

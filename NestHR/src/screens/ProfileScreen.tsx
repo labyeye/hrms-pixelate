@@ -53,7 +53,7 @@ import { useNavigation } from '@react-navigation/native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { useAuth } from '../contexts/AuthContext';
 import { authAPI, employeeAPI } from '../api/api';
-import { C } from '../theme';
+import { C, useResponsive, tabletContainerStyle } from '../theme';
 import WhatsAppIcon from '../components/common/WhatsAppIcon';
 import PasswordChecklist from '../components/PasswordChecklist';
 import { passwordOk } from '../utils/passwordRules';
@@ -220,6 +220,7 @@ const digits = (v: string) => (v || '').replace(/\D/g, '');
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
+  const { isTablet, maxContentWidth } = useResponsive();
   const { user, updateUser } = useAuth();
 
   const [name, setName] = useState(user?.name || '');
@@ -514,7 +515,16 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <View style={s.header}>
+      <View
+        style={[
+          s.header,
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
+      >
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={{ padding: 4, marginRight: 4 }}
@@ -530,7 +540,14 @@ export default function ProfileScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
-          contentContainerStyle={{ padding: 16, gap: 20, paddingBottom: 40 }}
+          contentContainerStyle={[
+            { padding: 16, gap: 20, paddingBottom: 40 },
+            isTablet && {
+              maxWidth: maxContentWidth,
+              width: '100%',
+              alignSelf: 'center',
+            },
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >

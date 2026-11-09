@@ -31,7 +31,7 @@ import { loanAPI, employeeAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import AnimatedNumber from '../components/motion/AnimatedNumber';
 import FadeInUp from '../components/motion/FadeInUp';
-import { C } from '../theme';
+import { C, useResponsive } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import ExportButton from '../components/common/ExportButton';
 import ImportButton from '../components/common/ImportButton';
@@ -60,6 +60,7 @@ const EMPTY_FORM = {
 export default function LoansScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
+  const { isTablet, maxContentWidth } = useResponsive();
   const isEmployee = user?.role === 'employee';
   const [loans, setLoans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -115,8 +116,8 @@ export default function LoansScreen() {
       sortKey === 'name'
         ? loanName(a).localeCompare(loanName(b))
         : sortKey === 'amount'
-          ? (b.amount || 0) - (a.amount || 0)
-          : 0,
+        ? (b.amount || 0) - (a.amount || 0)
+        : 0,
     );
 
   const handleGiveLoan = async () => {
@@ -187,7 +188,7 @@ export default function LoansScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
+      <View style={[styles.header, isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' }]}>
         <View style={styles.headerLeft}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -217,69 +218,108 @@ export default function LoansScreen() {
           />
           {!isEmployee && (
             <>
-            <ImportButton
-              name="loans"
-              headers={['Emp ID', 'Type (loan/advance)', 'Amount', 'Monthly EMI', 'Disbursed On (YYYY-MM-DD)', 'Reason']}
-              example={['EMP0001', 'loan', 50000, 5000, new Date().toISOString().slice(0, 10), 'Medical']}
-              onRows={async rows => {
-                let ok = 0;
-                const bad: string[] = [];
-                for (const r of rows) {
-                  const code = String(r['Emp ID'] || '').trim().toLowerCase();
-                  const emp = employees.find((e: any) => e.employeeId?.toLowerCase() === code);
-                  const amount = parseFloat(String(r['Amount']).replace(/,/g, ''));
-                  if (!emp || !(amount > 0)) {
-                    bad.push(String(r['Emp ID'] || '(blank)'));
-                    continue;
+              <ImportButton
+                name="loans"
+                headers={[
+                  'Emp ID',
+                  'Type (loan/advance)',
+                  'Amount',
+                  'Monthly EMI',
+                  'Disbursed On (YYYY-MM-DD)',
+                  'Reason',
+                ]}
+                example={[
+                  'EMP0001',
+                  'loan',
+                  50000,
+                  5000,
+                  new Date().toISOString().slice(0, 10),
+                  'Medical',
+                ]}
+                onRows={async rows => {
+                  let ok = 0;
+                  const bad: string[] = [];
+                  for (const r of rows) {
+                    const code = String(r['Emp ID'] || '')
+                      .trim()
+                      .toLowerCase();
+                    const emp = employees.find(
+                      (e: any) => e.employeeId?.toLowerCase() === code,
+                    );
+                    const amount = parseFloat(
+                      String(r['Amount']).replace(/,/g, ''),
+                    );
+                    if (!emp || !(amount > 0)) {
+                      bad.push(String(r['Emp ID'] || '(blank)'));
+                      continue;
+                    }
+                    const type =
+                      String(
+                        r['Type (loan/advance)'] || 'loan',
+                      ).toLowerCase() === 'advance'
+                        ? 'advance'
+                        : 'loan';
+                    try {
+                      await loanAPI.create({
+                        employee: emp._id,
+                        type,
+                        amount,
+                        remainingBalance: amount,
+                        monthlyEmi:
+                          parseFloat(
+                            String(r['Monthly EMI']).replace(/,/g, ''),
+                          ) || 0,
+                        disbursedOn:
+                          String(r['Disbursed On (YYYY-MM-DD)'] || '').slice(
+                            0,
+                            10,
+                          ) || new Date().toISOString().slice(0, 10),
+                        reason: String(r['Reason'] || ''),
+                        status: 'active',
+                      });
+                      ok++;
+                    } catch {
+                      bad.push(String(r['Emp ID']));
+                    }
                   }
-                  const type = String(r['Type (loan/advance)'] || 'loan').toLowerCase() === 'advance' ? 'advance' : 'loan';
-                  try {
-                    await loanAPI.create({
-                      employee: emp._id,
-                      type,
-                      amount,
-                      remainingBalance: amount,
-                      monthlyEmi: parseFloat(String(r['Monthly EMI']).replace(/,/g, '')) || 0,
-                      disbursedOn: String(r['Disbursed On (YYYY-MM-DD)'] || '').slice(0, 10) || new Date().toISOString().slice(0, 10),
-                      reason: String(r['Reason'] || ''),
-                      status: 'active',
-                    });
-                    ok++;
-                  } catch {
-                    bad.push(String(r['Emp ID']));
-                  }
-                }
-                load();
-                return `${ok} of ${rows.length} imported${bad.length ? `. Skipped: ${bad.slice(0, 5).join(', ')}` : ''}`;
-              }}
-            />
-            <ExportButton
-              name="loans_advances"
-              label=""
-              rows={filtered}
-              cols={[
-                {
-                  header: 'Emp Code',
-                  value: (l: any) => l.employee?.employeeId,
-                },
-                {
-                  header: 'Employee',
-                  value: (l: any) =>
-                    `${l.employee?.firstName || ''} ${l.employee?.lastName || ''}`.trim(),
-                },
-                { header: 'Type', value: (l: any) => l.type },
-                { header: 'Amount', value: (l: any) => l.amount },
-                { header: 'Monthly EMI', value: (l: any) => l.monthlyEmi },
-                { header: 'Remaining', value: (l: any) => l.remainingBalance },
-                {
-                  header: 'Disbursed On',
-                  value: (l: any) =>
-                    l.disbursedOn ? String(l.disbursedOn).slice(0, 10) : '',
-                },
-                { header: 'Status', value: (l: any) => l.status },
-                { header: 'Reason', value: (l: any) => l.reason },
-              ]}
-            />
+                  load();
+                  return `${ok} of ${rows.length} imported${
+                    bad.length ? `. Skipped: ${bad.slice(0, 5).join(', ')}` : ''
+                  }`;
+                }}
+              />
+              <ExportButton
+                name="loans_advances"
+                label=""
+                rows={filtered}
+                cols={[
+                  {
+                    header: 'Emp Code',
+                    value: (l: any) => l.employee?.employeeId,
+                  },
+                  {
+                    header: 'Employee',
+                    value: (l: any) =>
+                      `${l.employee?.firstName || ''} ${
+                        l.employee?.lastName || ''
+                      }`.trim(),
+                  },
+                  { header: 'Type', value: (l: any) => l.type },
+                  { header: 'Amount', value: (l: any) => l.amount },
+                  { header: 'Monthly EMI', value: (l: any) => l.monthlyEmi },
+                  {
+                    header: 'Remaining',
+                    value: (l: any) => l.remainingBalance,
+                  },
+                  {
+                    header: 'Disbursed On',
+                    value: (l: any) =>
+                      l.disbursedOn ? String(l.disbursedOn).slice(0, 10) : '',
+                  },
+                  { header: 'Status', value: (l: any) => l.status },
+                  { header: 'Reason', value: (l: any) => l.reason },
+                ]}
+              />
             </>
           )}
           <TouchableOpacity
@@ -373,9 +413,15 @@ export default function LoansScreen() {
         </View>
       ) : (
         <FlatList
+          key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
           data={filtered}
           keyExtractor={item => item._id}
-          contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 32 }}
+          numColumns={isTablet ? 2 : 1}
+          columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
+          contentContainerStyle={[
+            { padding: 16, gap: 10, paddingBottom: 32 },
+            isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' },
+          ]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -399,7 +445,7 @@ export default function LoansScreen() {
             const emp = item.employee as any;
             const monthlyEmi = item.monthlyEmi || null;
             return (
-              <View style={styles.card}>
+              <View style={[styles.card, isTablet && styles.cardTablet]}>
                 <View style={styles.cardTop}>
                   {emp?.avatar ? (
                     <Image
@@ -410,7 +456,9 @@ export default function LoansScreen() {
                     <View style={styles.empInitials}>
                       <Text style={styles.empInitialsText}>
                         {emp
-                          ? `${(emp.firstName || '')[0] || ''}${(emp.lastName || '')[0] || ''}`
+                          ? `${(emp.firstName || '')[0] || ''}${
+                              (emp.lastName || '')[0] || ''
+                            }`
                           : '?'}
                       </Text>
                     </View>
@@ -534,7 +582,9 @@ export default function LoansScreen() {
                             ) : (
                               <View style={styles.empPickerInitials}>
                                 <Text style={styles.empPickerInitialsText}>
-                                  {`${(e.firstName || '')[0] || ''}${(e.lastName || '')[0] || ''}`}
+                                  {`${(e.firstName || '')[0] || ''}${
+                                    (e.lastName || '')[0] || ''
+                                  }`}
                                 </Text>
                               </View>
                             )}
@@ -739,6 +789,8 @@ const styles = StyleSheet.create({
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
+  colWrapper: { gap: 12 },
+  cardTablet: { flex: 1 },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,

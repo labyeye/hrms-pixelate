@@ -12,7 +12,7 @@ const esc = (v: unknown) =>
   text(v).replace(
     /[&<>"]/g,
     c =>
-      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string,
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string),
   );
 
 /** CSV opens in Excel; handed to the native share sheet (same approach as the Reports screen). */

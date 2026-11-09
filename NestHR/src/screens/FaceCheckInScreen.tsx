@@ -109,7 +109,9 @@ export default function FaceCheckInScreen({ navigation, route }: any) {
       });
       const tDone = Date.now();
       console.log(
-        `[FaceCheckIn] photo=${tPhoto - t0}ms location=${tLocation - tPhoto}ms verify=${tDone - tLocation}ms total=${tDone - t0}ms`,
+        `[FaceCheckIn] photo=${tPhoto - t0}ms location=${
+          tLocation - tPhoto
+        }ms verify=${tDone - tLocation}ms total=${tDone - t0}ms`,
       );
 
       const at = new Date().toLocaleTimeString('en-IN', {
@@ -119,7 +121,9 @@ export default function FaceCheckInScreen({ navigation, route }: any) {
       localNotificationsAPI
         .add({
           title: action === 'checkin' ? 'Checked in' : 'Checked out',
-          body: `Your attendance ${action === 'checkin' ? 'check-in' : 'check-out'} was recorded at ${at}.`,
+          body: `Your attendance ${
+            action === 'checkin' ? 'check-in' : 'check-out'
+          } was recorded at ${at}.`,
         })
         .catch(() => {});
       setStatus('success');

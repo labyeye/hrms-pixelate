@@ -30,7 +30,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { authAPI } from '../../api/api';
 import LegalLinks from '../../components/LegalLinks';
-import { C } from '../../theme';
+import { C, useResponsive } from '../../theme';
 import WhatsAppIcon from '../../components/common/WhatsAppIcon';
 
 const loginAnim = require('../../assets/lottie/login.json');
@@ -39,6 +39,7 @@ const otpAnim = require('../../assets/lottie/otp.json');
 export default function LoginScreen({ navigation }: any) {
   const { login, loginWithToken } = useAuth();
   const insets = useSafeAreaInsets();
+  const { isTablet } = useResponsive();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -213,6 +214,7 @@ export default function LoginScreen({ navigation }: any) {
         contentContainerStyle={[
           styles.scroll,
           { paddingTop: insets.top + 32, paddingBottom: insets.bottom + 24 },
+          isTablet && { maxWidth: 520, width: '100%', alignSelf: 'center' },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}

@@ -36,7 +36,7 @@ import HeaderIconBtn from '../components/common/HeaderIconBtn';
 import SearchModal from '../components/common/SearchModal';
 import FilterSortModal from '../components/common/FilterSortModal';
 import ScreenLayout, { HeaderBtn } from '../components/common/ScreenLayout';
-import { C, FONT } from '../theme';
+import { C, FONT, useResponsive } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 
 // The backend only lets these roles post or delete.
@@ -86,6 +86,7 @@ const pretty = (s: string) => s.replace(/_/g, ' ');
 export default function AnnouncementsScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
+  const { isTablet, maxContentWidth } = useResponsive();
   const isAdmin = ADMIN_ROLES.includes(user?.role || '');
 
   const [items, setItems] = useState<any[]>([]);
@@ -330,9 +331,19 @@ export default function AnnouncementsScreen() {
       />
 
       <FlatList
+        key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
         data={shown}
         keyExtractor={a => a._id}
-        contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 10 }}
+        numColumns={isTablet ? 2 : 1}
+        columnWrapperStyle={isTablet ? s.colWrapper : undefined}
+        contentContainerStyle={[
+          { padding: 16, paddingBottom: 40, gap: 10 },
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -343,7 +354,7 @@ export default function AnnouncementsScreen() {
           const open = openId === a._id;
           return (
             <TouchableOpacity
-              style={[s.card, !read && s.cardUnread]}
+              style={[s.card, !read && s.cardUnread, isTablet && s.cardTablet]}
               activeOpacity={0.9}
               onPress={() => toggleOpen(a)}
             >
@@ -689,6 +700,8 @@ const s = StyleSheet.create({
     textTransform: 'uppercase',
   },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+  colWrapper: { gap: 12 },
+  cardTablet: { flex: 1 },
   card: {
     borderWidth: 2,
     borderRadius: 8,

@@ -176,31 +176,31 @@ export default function ForgotPasswordScreen({ navigation }: any) {
     step === 'email'
       ? 'Forgot password?'
       : step === 'choose'
-        ? 'How do you want to reset it?'
-        : step === 'code'
-          ? method === 'whatsapp'
-            ? 'Enter WhatsApp code'
-            : method === 'backup'
-              ? 'Enter a backup code'
-              : method === 'passkey'
-                ? 'Choose a new password'
-                : 'Enter authenticator code'
-          : 'All set';
+      ? 'How do you want to reset it?'
+      : step === 'code'
+      ? method === 'whatsapp'
+        ? 'Enter WhatsApp code'
+        : method === 'backup'
+        ? 'Enter a backup code'
+        : method === 'passkey'
+        ? 'Choose a new password'
+        : 'Enter authenticator code'
+      : 'All set';
 
   const sub =
     step === 'email'
       ? 'Enter the email address you registered with to see how you can reset your password.'
       : step === 'choose'
-        ? 'Choose one of the methods set up on your account.'
-        : step === 'code'
-          ? method === 'whatsapp'
-            ? 'We sent a 6-digit code to your verified WhatsApp number.'
-            : method === 'backup'
-              ? 'Enter one of your saved backup codes. It stops working after this.'
-              : method === 'passkey'
-                ? 'Pick a new password, then confirm it with your passkey.'
-                : 'Open your authenticator app and enter the current 6-digit code (or a backup code).'
-          : '';
+      ? 'Choose one of the methods set up on your account.'
+      : step === 'code'
+      ? method === 'whatsapp'
+        ? 'We sent a 6-digit code to your verified WhatsApp number.'
+        : method === 'backup'
+        ? 'Enter one of your saved backup codes. It stops working after this.'
+        : method === 'passkey'
+        ? 'Pick a new password, then confirm it with your passkey.'
+        : 'Open your authenticator app and enter the current 6-digit code (or a backup code).'
+      : '';
 
   return (
     <KeyboardAvoidingView
@@ -299,8 +299,8 @@ export default function ForgotPasswordScreen({ navigation }: any) {
                         method === 'whatsapp'
                           ? 'WhatsApp Code'
                           : method === 'backup'
-                            ? 'Backup Code'
-                            : 'Authenticator Code'
+                          ? 'Backup Code'
+                          : 'Authenticator Code'
                       }
                       value={code}
                       onChangeText={setCode}
@@ -353,8 +353,8 @@ export default function ForgotPasswordScreen({ navigation }: any) {
                   {step === 'code'
                     ? 'Choose a different method'
                     : step === 'choose'
-                      ? 'Back'
-                      : 'Back to Sign In'}
+                    ? 'Back'
+                    : 'Back to Sign In'}
                 </Text>
               </TouchableOpacity>
             </>

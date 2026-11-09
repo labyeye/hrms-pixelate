@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { fmtCredits, useCreditBalance } from '../../hooks/useCreditBalance';
 import { C } from '../../theme';
+import { useResponsive } from '../../theme/responsive';
 
 interface Props {
   name?: string;
@@ -28,6 +29,7 @@ export default function AppHeader({
   onBell,
   onAvatar,
 }: Props) {
+  const { isTablet, maxContentWidth } = useResponsive();
   const h = new Date().getHours();
   const greeting =
     h < 12 ? 'Good Morning' : h < 17 ? 'Good Afternoon' : 'Good Evening';
@@ -40,59 +42,74 @@ export default function AppHeader({
   const badge = isPaid ? 'Premium' : sub?.isTrial ? 'Trial' : null;
   return (
     <View style={s.wrap}>
-      <View style={s.row}>
-        <TouchableOpacity onPress={onMenu} hitSlop={10}>
-          <Menu size={26} color={C.black} />
-        </TouchableOpacity>
-        <View style={s.right}>
-          <TouchableOpacity onPress={onSearch} hitSlop={10}>
-            <Search size={24} color={C.black} />
+      <View
+        style={[
+          s.inner,
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
+      >
+        <View style={s.row}>
+          <TouchableOpacity onPress={onMenu} hitSlop={10}>
+            <Menu size={26} color={C.black} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={onBell} hitSlop={10}>
-            <Bell size={24} color={C.black} />
-            {unread > 0 && <View style={s.dot} />}
-          </TouchableOpacity>
-          {badge && (
-            <TouchableOpacity
-              onPress={() => navigation.navigate('More', { screen: 'Billing' })}
-              activeOpacity={0.8}
-              style={s.badge}
-            >
-              <Crown size={12} color={C.primary} />
-              <Text style={s.badgeText}>{badge}</Text>
+          <View style={s.right}>
+            <TouchableOpacity onPress={onSearch} hitSlop={10}>
+              <Search size={24} color={C.black} />
             </TouchableOpacity>
-          )}
-          {credits?.metered && (
-            <TouchableOpacity
-              onPress={() => navigation.navigate('More', { screen: 'Credits' })}
-              activeOpacity={0.8}
-              style={[
-                s.pill,
-                credits.zero ? s.pillZero : credits.low ? s.pillLow : null,
-              ]}
-            >
-              <Coins size={13} color={C.white} />
-              <Text style={s.pillText}>{fmtCredits(credits.total)}</Text>
+            <TouchableOpacity onPress={onBell} hitSlop={10}>
+              <Bell size={24} color={C.black} />
+              {unread > 0 && <View style={s.dot} />}
             </TouchableOpacity>
-          )}
-          <TouchableOpacity onPress={onAvatar} activeOpacity={0.8}>
-            {avatar ? (
-              <Image source={{ uri: avatar }} style={s.avatar} />
-            ) : (
-              <View style={[s.avatar, s.avatarFb]}>
-                <Text style={s.avatarText}>
-                  {(name || 'U')[0].toUpperCase()}
-                </Text>
-              </View>
+            {badge && (
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate('More', { screen: 'Billing' })
+                }
+                activeOpacity={0.8}
+                style={s.badge}
+              >
+                <Crown size={12} color={C.primary} />
+                <Text style={s.badgeText}>{badge}</Text>
+              </TouchableOpacity>
             )}
-          </TouchableOpacity>
+            {credits?.metered && (
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate('More', { screen: 'Credits' })
+                }
+                activeOpacity={0.8}
+                style={[
+                  s.pill,
+                  credits.zero ? s.pillZero : credits.low ? s.pillLow : null,
+                ]}
+              >
+                <Coins size={13} color={C.white} />
+                <Text style={s.pillText}>{fmtCredits(credits.total)}</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity onPress={onAvatar} activeOpacity={0.8}>
+              {avatar ? (
+                <Image source={{ uri: avatar }} style={s.avatar} />
+              ) : (
+                <View style={[s.avatar, s.avatarFb]}>
+                  <Text style={s.avatarText}>
+                    {(name || 'U')[0].toUpperCase()}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
+        <Text style={s.greet}>
+          {greeting}, {first}{' '}
+          <Hand size={14} color="#475569" style={{ marginLeft: 4 }} />
+        </Text>
+        <Text style={s.title}>{title}</Text>
       </View>
-      <Text style={s.greet}>
-        {greeting}, {first}{' '}
-        <Hand size={14} color="#475569" style={{ marginLeft: 4 }} />
-      </Text>
-      <Text style={s.title}>{title}</Text>
     </View>
   );
 }
@@ -103,6 +120,9 @@ const s = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 0,
     backgroundColor: C.white,
+  },
+  inner: {
+    width: '100%',
   },
   row: {
     flexDirection: 'row',

@@ -32,7 +32,7 @@ import { useNavigation } from '@react-navigation/native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { documentAPI, employeeAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
-import { C } from '../theme';
+import { C, useResponsive, tabletContainerStyle } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import { useDocOtp } from '../hooks/useDocOtp';
 import ExportButton from '../components/common/ExportButton';
@@ -60,6 +60,7 @@ function formatBytes(bytes: number) {
 export default function DocumentsScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
+  const { isTablet } = useResponsive();
   const isEmployee = user?.role === 'employee';
 
   const [docs, setDocs] = useState<any[]>([]);
@@ -207,7 +208,7 @@ export default function DocumentsScreen() {
 
   const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity
-      style={styles.card}
+      style={[styles.card, isTablet && styles.cardTablet]}
       onPress={() => openDoc(item)}
       activeOpacity={0.85}
     >
@@ -296,7 +297,9 @@ export default function DocumentsScreen() {
               {
                 header: 'Employee',
                 value: (d: any) =>
-                  `${d.employee?.firstName || ''} ${d.employee?.lastName || ''}`.trim(),
+                  `${d.employee?.firstName || ''} ${
+                    d.employee?.lastName || ''
+                  }`.trim(),
               },
               { header: 'Document', value: (d: any) => d.name },
               { header: 'Type', value: (d: any) => d.docType },
@@ -383,22 +386,27 @@ export default function DocumentsScreen() {
           </Text>
         </View>
       ) : (
-        <FlatList
-          data={docs}
-          keyExtractor={d => d._id}
-          renderItem={renderItem}
-          contentContainerStyle={{ padding: 16 }}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[C.primary]}
-              tintColor={C.primary}
-            />
-          }
-          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-          showsVerticalScrollIndicator={false}
-        />
+        <View style={[{ flex: 1 }, tabletContainerStyle(isTablet)]}>
+          <FlatList
+            key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
+            data={docs}
+            numColumns={isTablet ? 2 : 1}
+            columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
+            keyExtractor={d => d._id}
+            renderItem={renderItem}
+            contentContainerStyle={{ padding: 16 }}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[C.primary]}
+                tintColor={C.primary}
+              />
+            }
+            ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
       )}
 
       {/* Upload Modal */}
@@ -760,6 +768,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+  },
+  cardTablet: {
+    flex: 1,
+    marginBottom: 8,
+  },
+  colWrapper: {
+    gap: 12,
   },
   cardLeft: {
     flex: 1,

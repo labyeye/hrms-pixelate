@@ -102,7 +102,9 @@ export function DatePickerField({
   const handleDone = () => {
     const maxDay = new Date(year, month, 0).getDate();
     const safeDay = Math.min(day, maxDay);
-    const str = `${year}-${String(month).padStart(2, '0')}-${String(safeDay).padStart(2, '0')}`;
+    const str = `${year}-${String(month).padStart(2, '0')}-${String(
+      safeDay,
+    ).padStart(2, '0')}`;
     onChange(str);
     setShow(false);
   };

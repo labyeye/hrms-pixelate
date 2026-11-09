@@ -38,7 +38,7 @@ import FilterSortModal from '../components/common/FilterSortModal';
 import ScreenLayout, { HeaderBtn } from '../components/common/ScreenLayout';
 import ExportButton from '../components/common/ExportButton';
 import ImportButton from '../components/common/ImportButton';
-import { C, FONT } from '../theme';
+import { C, FONT, useResponsive } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 
 // Same rule as the web page and the backend: only these roles assign/edit/delete.
@@ -88,6 +88,7 @@ const isLate = (t: any) =>
 export default function TasksScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
+  const { isTablet, maxContentWidth } = useResponsive();
   const canAssign = ASSIGN_ROLES.includes(user?.role || '');
 
   const [tasks, setTasks] = useState<any[]>([]);
@@ -250,27 +251,50 @@ export default function TasksScreen() {
           />
           <ImportButton
             name="tasks"
-            headers={['Title', 'Description', 'Assignee Emp ID', 'Priority (low/medium/high)', 'Due Date (YYYY-MM-DD)']}
-            example={['Prepare monthly report', 'Compile HR metrics', 'EMP0001', 'medium', new Date().toISOString().slice(0, 10)]}
+            headers={[
+              'Title',
+              'Description',
+              'Assignee Emp ID',
+              'Priority (low/medium/high)',
+              'Due Date (YYYY-MM-DD)',
+            ]}
+            example={[
+              'Prepare monthly report',
+              'Compile HR metrics',
+              'EMP0001',
+              'medium',
+              new Date().toISOString().slice(0, 10),
+            ]}
             onRows={async rows => {
               let ok = 0;
               const bad: string[] = [];
               for (const r of rows) {
                 const title = String(r['Title'] || '').trim();
-                const code = String(r['Assignee Emp ID'] || '').trim().toLowerCase();
-                const emp = employees.find((e: any) => e.employeeId?.toLowerCase() === code);
+                const code = String(r['Assignee Emp ID'] || '')
+                  .trim()
+                  .toLowerCase();
+                const emp = employees.find(
+                  (e: any) => e.employeeId?.toLowerCase() === code,
+                );
                 if (!title || !emp) {
                   bad.push(title || '(no title)');
                   continue;
                 }
-                const pr = String(r['Priority (low/medium/high)'] || 'medium').toLowerCase();
+                const pr = String(
+                  r['Priority (low/medium/high)'] || 'medium',
+                ).toLowerCase();
                 try {
                   await taskAPI.create({
                     title,
                     description: String(r['Description'] || ''),
                     assignedTo: emp.user,
-                    priority: ['low', 'medium', 'high'].includes(pr) ? pr : 'medium',
-                    dueDate: String(r['Due Date (YYYY-MM-DD)'] || '').slice(0, 10),
+                    priority: ['low', 'medium', 'high'].includes(pr)
+                      ? pr
+                      : 'medium',
+                    dueDate: String(r['Due Date (YYYY-MM-DD)'] || '').slice(
+                      0,
+                      10,
+                    ),
                   } as any);
                   ok++;
                 } catch {
@@ -278,7 +302,9 @@ export default function TasksScreen() {
                 }
               }
               load();
-              return `${ok} of ${rows.length} tasks imported${bad.length ? `. Skipped: ${bad.slice(0, 5).join(', ')}` : ''}`;
+              return `${ok} of ${rows.length} tasks imported${
+                bad.length ? `. Skipped: ${bad.slice(0, 5).join(', ')}` : ''
+              }`;
             }}
           />
           <ExportButton
@@ -377,16 +403,26 @@ export default function TasksScreen() {
       />
 
       <FlatList
+        key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
         data={shown}
         keyExtractor={t => t._id}
-        contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 10 }}
+        numColumns={isTablet ? 2 : 1}
+        columnWrapperStyle={isTablet ? s.colWrapper : undefined}
+        contentContainerStyle={[
+          { padding: 16, paddingBottom: 40, gap: 10 },
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         ListEmptyComponent={<Text style={s.empty}>No tasks found</Text>}
         renderItem={({ item: t }) => (
           <TouchableOpacity
-            style={s.card}
+            style={[s.card, isTablet && s.cardTablet]}
             activeOpacity={0.85}
             onPress={() => setSelected(t)}
           >
@@ -675,8 +711,8 @@ export default function TasksScreen() {
                     {saving
                       ? 'Saving...'
                       : editing
-                        ? 'Save Changes'
-                        : 'Assign Task'}
+                      ? 'Save Changes'
+                      : 'Assign Task'}
                   </Text>
                 </TouchableOpacity>
               </ScrollView>
@@ -774,6 +810,8 @@ const s = StyleSheet.create({
     textTransform: 'uppercase',
   },
   pillGap: { width: 6 },
+  colWrapper: { gap: 12 },
+  cardTablet: { flex: 1 },
   card: {
     borderWidth: 2,
     borderRadius: 8,

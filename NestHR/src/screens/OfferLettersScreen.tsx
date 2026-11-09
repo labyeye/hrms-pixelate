@@ -31,7 +31,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { offerLetterAPI, employeeAPI, companyAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
-import { C } from '../theme';
+import { C, useResponsive } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import RNPrint from 'react-native-print';
 
@@ -91,17 +91,25 @@ function buildOfferLetterHTML(data: any): string {
 </div>
 <h1>Offer Letter</h1>
 <p>Dear <strong>${data.candidateName}</strong>,</p>
-<p>We are pleased to offer you the position of <strong>${data.designation}</strong> at <strong>${data.companyName || 'our company'}</strong>.</p>
+<p>We are pleased to offer you the position of <strong>${
+    data.designation
+  }</strong> at <strong>${data.companyName || 'our company'}</strong>.</p>
 <table>
   <tr><th>Detail</th><th>Information</th></tr>
   <tr><td>Position</td><td>${data.designation}</td></tr>
   <tr><td>Department</td><td>${data.department || '—'}</td></tr>
   <tr><td>Start Date</td><td>${data.joiningDate || '—'}</td></tr>
-  <tr><td>Employment Type</td><td>${data.employmentType || 'Full-time'}</td></tr>
-  <tr><td>Monthly CTC</td><td>₹${Number(data.ctc || 0).toLocaleString('en-IN')}</td></tr>
+  <tr><td>Employment Type</td><td>${
+    data.employmentType || 'Full-time'
+  }</td></tr>
+  <tr><td>Monthly CTC</td><td>₹${Number(data.ctc || 0).toLocaleString(
+    'en-IN',
+  )}</td></tr>
   <tr><td>Work Location</td><td>${data.location || 'Office'}</td></tr>
 </table>
-<p style="margin-top:20px">This offer is valid for <strong>${data.validityDays || 7} days</strong> from the date of issue.</p>
+<p style="margin-top:20px">This offer is valid for <strong>${
+    data.validityDays || 7
+  } days</strong> from the date of issue.</p>
 <div class="footer">
   <p>We look forward to welcoming you to our team.</p>
   <div class="sig-line">Authorised Signatory</div>
@@ -114,6 +122,7 @@ function buildOfferLetterHTML(data: any): string {
 export default function OfferLettersScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
+  const { isTablet, maxContentWidth } = useResponsive();
   const isHR = user?.role !== 'employee';
 
   const [letters, setLetters] = useState<any[]>([]);
@@ -325,7 +334,7 @@ export default function OfferLettersScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <View style={s.header}>
+      <View style={[s.header, isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={{ padding: 4, marginRight: 4 }}
@@ -349,10 +358,20 @@ export default function OfferLettersScreen() {
         </View>
       ) : (
         <FlatList
+          key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
           data={letters}
           keyExtractor={i => i._id}
-          renderItem={renderItem}
-          contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 32 }}
+          numColumns={isTablet ? 2 : 1}
+          columnWrapperStyle={isTablet ? s.colWrapper : undefined}
+          renderItem={({ item }) => (
+            <View style={isTablet ? s.cardTablet : undefined}>
+              {renderItem({ item })}
+            </View>
+          )}
+          contentContainerStyle={[
+            { padding: 16, gap: 10, paddingBottom: 32 },
+            isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' },
+          ]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -542,6 +561,8 @@ const s = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
   emptyText: { fontSize: 14, fontWeight: '400', color: '#9CA3AF' },
   emptyHint: { fontSize: 12, color: '#D1D5DB', fontWeight: '400' },
+  colWrapper: { gap: 12 },
+  cardTablet: { flex: 1 },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,

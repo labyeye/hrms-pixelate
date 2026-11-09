@@ -43,7 +43,7 @@ import {
   Trash2,
 } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
-import { C } from '../theme';
+import { C, useResponsive } from '../theme';
 
 const MENU_ITEMS = [
   {
@@ -267,6 +267,13 @@ const TILE_W = (Dimensions.get('window').width - 32 - 12) / 2;
 
 export default function MoreScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
+  const { isTablet, width: screenWidth, maxContentWidth } = useResponsive();
+  const containerWidth = isTablet
+    ? Math.min(screenWidth, maxContentWidth || screenWidth)
+    : screenWidth;
+  const numColumns = isTablet ? (containerWidth > 900 ? 4 : 3) : 2;
+  const tileWidth = (containerWidth - 32 - (numColumns - 1) * 12) / numColumns;
+
   const { user, logout } = useAuth();
   const isEmployee = user?.role === 'employee';
   const [unreadCount, setUnreadCount] = useState(0);
@@ -303,14 +310,14 @@ export default function MoreScreen({ navigation }: any) {
       isEmployee && item.key === 'Payroll'
         ? 'My Payslips'
         : isEmployee && item.key === 'Loans'
-          ? 'My Loans'
-          : item.label,
+        ? 'My Loans'
+        : item.label,
     desc:
       isEmployee && item.key === 'Payroll'
         ? 'View your salary payslips'
         : isEmployee && item.key === 'Loans'
-          ? 'Request a loan or salary advance'
-          : item.desc,
+        ? 'Request a loan or salary advance'
+        : item.desc,
   }));
 
   const sections = GROUPS.map(g => ({
@@ -335,7 +342,16 @@ export default function MoreScreen({ navigation }: any) {
   return (
     <View style={[styles.safe, { paddingTop: insets.top }]}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
+      >
         <Text style={styles.headerTitle}>More</Text>
         <TouchableOpacity
           style={styles.bellBtn}
@@ -358,6 +374,11 @@ export default function MoreScreen({ navigation }: any) {
         contentContainerStyle={[
           styles.scroll,
           { paddingBottom: insets.bottom + 32 },
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
         ]}
       >
         {/* Profile hero */}
@@ -442,7 +463,7 @@ export default function MoreScreen({ navigation }: any) {
                 return (
                   <TouchableOpacity
                     key={item.key}
-                    style={styles.tile}
+                    style={[styles.tile, { width: tileWidth }]}
                     activeOpacity={0.8}
                     onPress={() => navigation.navigate(item.key)}
                   >
@@ -591,7 +612,6 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   tile: {
     ...box,
-    width: TILE_W,
     backgroundColor: '#fff',
     padding: 12,
     gap: 6,
