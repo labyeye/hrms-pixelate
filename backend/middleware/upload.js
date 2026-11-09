@@ -204,8 +204,8 @@ const expenseBillStorage = multer.diskStorage({
 const uploadExpenseBill = multer({
   storage: expenseBillStorage,
   fileFilter,
-  limits: { fileSize: MAX_SIZE },
-}).single("bill");
+  limits: { fileSize: MAX_SIZE, files: 5 },
+}).array("bills", 5);
 
 // Attendance self-mark selfie upload (mobile geofenced check-in/out)
 const attendanceSelfieStorage = multer.diskStorage({

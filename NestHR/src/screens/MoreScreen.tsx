@@ -41,6 +41,7 @@ import {
   ListChecks,
   Megaphone,
   Trash2,
+  Receipt,
 } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { C, useResponsive } from '../theme';
@@ -75,6 +76,12 @@ const MENU_ITEMS = [
     label: 'Loans',
     icon: CreditCard,
     desc: 'Employee loan management',
+  },
+  {
+    key: 'Expenses',
+    label: 'Expenses',
+    icon: Receipt,
+    desc: 'Reimbursement claims & approvals',
   },
   {
     key: 'Reports',
@@ -206,6 +213,7 @@ const EMPLOYEE_MENU_KEYS = new Set([
   'Payroll',
   'Holidays',
   'Loans',
+  'Expenses',
   'Notifications',
   'Support',
   'Documents',
@@ -230,7 +238,7 @@ const GROUPS: { title: string; color: string; keys: string[] }[] = [
   {
     title: 'Payroll & Growth',
     color: '#22c55e',
-    keys: ['Payroll', 'Loans', 'Performance', 'Reports'],
+    keys: ['Payroll', 'Loans', 'Expenses', 'Performance', 'Reports'],
   },
   {
     title: 'Attendance',

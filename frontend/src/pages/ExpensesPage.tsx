@@ -4,7 +4,7 @@ import { expenseAPI } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { Receipt, Plus, X, Paperclip, Trash2, Settings2 } from "lucide-react";
+import { Receipt, Plus, X, Paperclip, Trash2, Settings2, RotateCcw, Wallet, AlertTriangle } from "lucide-react";
 
 const CATEGORIES = [
   ["travel", "Travel"],
@@ -15,12 +15,19 @@ const CATEGORIES = [
   ["office", "Office supplies"],
   ["other", "Other"],
 ];
+const PAY_MODES = [
+  ["bank_transfer", "Bank transfer"],
+  ["upi", "UPI"],
+  ["cash", "Cash"],
+  ["cheque", "Cheque"],
+];
 const ROLE_LABEL: Record<string, string> = {
   department_head: "Department Head",
   hr_manager: "HR Manager",
   super_admin: "Super Admin",
 };
 const STATUS_CLS: Record<string, string> = {
+  draft: "bg-gray-50 border-gray-400 text-gray-700",
   pending: "bg-orange-50 border-orange-500 text-orange-800",
   approved: "bg-blue-50 border-blue-500 text-blue-800",
   paid: "bg-green-50 border-green-500 text-green-800",
@@ -43,13 +50,34 @@ type Claim = {
   notes: string;
   status: string;
   hasBill: boolean;
+  billCount?: number;
+  details?: Record<string, any>;
+  approvedAmount?: number;
+  policyExceeded?: boolean;
+  payment?: { mode?: string; paidOn?: string; reference?: string };
+  resubmissionOf?: string;
   canAct: boolean;
   steps: Step[];
   employee?: { firstName: string; lastName: string; employeeId: string };
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
-const EMPTY = { title: "", category: "other", amount: "", date: today(), notes: "" };
+const EMPTY = {
+  title: "",
+  category: "other",
+  amount: "",
+  date: today(),
+  notes: "",
+  vendor: "",
+  from: "",
+  to: "",
+  distanceKm: "",
+  fuelLitres: "",
+  checkIn: "",
+  checkOut: "",
+};
+type Form = typeof EMPTY;
+type Policy = { limits: Record<string, number>; billRequiredAbove: number };
 
 export default function ExpensesPage() {
   const { user } = useAuth();
@@ -58,8 +86,13 @@ export default function ExpensesPage() {
   const canApprove = isHR || user?.role === "department_head";
   const [claims, setClaims] = useState<Claim[]>([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState<typeof EMPTY | null>(null);
-  const [bill, setBill] = useState<File | null>(null);
+  const [form, setForm] = useState<Form | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [bills, setBills] = useState<File[]>([]);
+  const [policy, setPolicy] = useState<Policy>({ limits: {}, billRequiredAbove: 0 });
+  const [polForm, setPolForm] = useState<Policy | null>(null);
+  const [payFor, setPayFor] = useState<Claim | null>(null);
+  const [pay, setPay] = useState({ mode: "bank_transfer", reference: "", paidOn: today() });
   const [saving, setSaving] = useState(false);
   const [flow, setFlow] = useState<Step[] | null>(null);
 
@@ -78,19 +111,22 @@ export default function ExpensesPage() {
   }, []);
   useEffect(() => {
     load();
+    expenseAPI.getPolicy().then((r) => setPolicy(r.data)).catch(() => {});
   }, [load]);
 
-  const submit = async () => {
+  const submit = async (draft: boolean) => {
     if (!form) return;
     const fd = new FormData();
-    Object.entries(form).forEach(([k, v]) => fd.append(k, v));
-    if (bill) fd.append("bill", bill);
+    Object.entries(form).forEach(([k, v]) => v !== "" && fd.append(k, v));
+    if (draft) fd.append("draft", "true");
+    bills.forEach((f) => fd.append("bills", f));
     setSaving(true);
     try {
-      await expenseAPI.create(fd);
-      toast({ title: "Claim submitted" });
+      await expenseAPI.create(fd, editId || undefined);
+      toast({ title: draft ? "Draft saved" : "Claim submitted" });
       setForm(null);
-      setBill(null);
+      setEditId(null);
+      setBills([]);
       load();
     } catch (e) {
       err(e);
@@ -99,12 +135,82 @@ export default function ExpensesPage() {
     }
   };
 
+  const editDraft = (c: Claim) => {
+    const d = c.details || {};
+    const dt = (v?: string) => (v ? v.slice(0, 10) : "");
+    setEditId(c._id);
+    setBills([]);
+    setForm({
+      ...EMPTY,
+      title: c.title,
+      category: c.category,
+      amount: String(c.amount),
+      date: dt(c.date),
+      notes: c.notes || "",
+      vendor: d.vendor || "",
+      from: d.from || "",
+      to: d.to || "",
+      distanceKm: d.distanceKm != null ? String(d.distanceKm) : "",
+      fuelLitres: d.fuelLitres != null ? String(d.fuelLitres) : "",
+      checkIn: dt(d.checkIn),
+      checkOut: dt(d.checkOut),
+    });
+  };
+
+  const resubmit = async (c: Claim) => {
+    try {
+      await expenseAPI.resubmit(c._id);
+      toast({ title: "Claim resubmitted for approval" });
+      load();
+    } catch (e) {
+      err(e);
+    }
+  };
+
+  const doPay = async () => {
+    if (!payFor) return;
+    try {
+      await expenseAPI.markPaid(payFor._id, pay);
+      toast({ title: "Marked as paid" });
+      setPayFor(null);
+      load();
+    } catch (e) {
+      err(e);
+    }
+  };
+
+  const savePolicy = async () => {
+    if (!polForm) return;
+    try {
+      await expenseAPI.savePolicy(polForm);
+      setPolicy(polForm);
+      toast({ title: "Expense policy saved" });
+      setPolForm(null);
+    } catch (e) {
+      err(e);
+    }
+  };
+
   const act = async (c: Claim, action: "approve" | "reject") => {
     const note =
       action === "reject" ? window.prompt("Reason for rejection?") || "" : "";
     if (action === "reject" && !note) return;
+    let approved: number | undefined;
+    if (action === "approve") {
+      const v = window.prompt(
+        `Amount to approve (claimed ${fmt(c.amount)}). Leave as is for full amount.`,
+        String(c.approvedAmount ?? c.amount),
+      );
+      if (v === null) return;
+      approved = Number(v);
+    }
+    let reason = note;
+    if (approved !== undefined && approved < c.amount) {
+      reason = window.prompt("Reason for the reduced amount?") || "";
+      if (!reason) return;
+    }
     try {
-      await expenseAPI.act(c._id, action, note);
+      await expenseAPI.act(c._id, action, reason, approved);
       load();
     } catch (e) {
       err(e);
@@ -134,6 +240,20 @@ export default function ExpensesPage() {
   const inbox = claims.filter((c) => c.canAct);
   const input = "border-2 border-black px-3 py-2 text-sm w-full";
 
+  const detailLine = (c: Claim) => {
+    const d = c.details || {};
+    const dd = (v?: string) => new Date(v!).toLocaleDateString("en-IN");
+    return [
+      d.from || d.to ? `${d.from || "?"} → ${d.to || "?"}` : "",
+      d.distanceKm != null ? `${d.distanceKm} km` : "",
+      d.fuelLitres != null ? `${d.fuelLitres} L` : "",
+      d.checkIn ? `${dd(d.checkIn)}${d.checkOut ? ` – ${dd(d.checkOut)}` : ""}` : "",
+      d.vendor || "",
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  };
+
   const Row = ({ c }: { c: Claim }) => (
     <div className="bg-white border-2 border-black px-5 py-4 flex flex-wrap items-center justify-between gap-4">
       <div className="min-w-[180px]">
@@ -146,6 +266,23 @@ export default function ExpensesPage() {
           {new Date(c.date).toLocaleDateString("en-IN")}
         </p>
         {c.notes && <p className="text-xs text-gray-600 mt-1">{c.notes}</p>}
+        {detailLine(c) && (
+          <p className="text-xs text-gray-600 mt-1">{detailLine(c)}</p>
+        )}
+        {c.policyExceeded && (
+          <p className="text-xs text-orange-700 font-bold mt-1 flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3" /> Above policy limit
+          </p>
+        )}
+        {c.status === "paid" && c.payment?.paidOn && (
+          <p className="text-xs text-green-700 mt-1">
+            Paid {new Date(c.payment.paidOn).toLocaleDateString("en-IN")} via{" "}
+            {c.payment.mode === "payroll"
+              ? "payroll"
+              : PAY_MODES.find((m) => m[0] === c.payment?.mode)?.[1]}
+            {c.payment.reference ? ` · ${c.payment.reference}` : ""}
+          </p>
+        )}
       </div>
       <div className="flex gap-1 flex-wrap">
         {c.steps.map((s, i) => (
@@ -165,7 +302,12 @@ export default function ExpensesPage() {
           </span>
         ))}
       </div>
-      <p className="font-bold">{fmt(c.amount)}</p>
+      <div className="text-right">
+        <p className="font-bold">{fmt(c.approvedAmount ?? c.amount)}</p>
+        {c.approvedAmount != null && c.approvedAmount < c.amount && (
+          <p className="text-[10px] text-gray-500 line-through">{fmt(c.amount)}</p>
+        )}
+      </div>
       <span
         className={cn(
           "text-[10px] font-bold uppercase border-2 px-2 py-0.5",
@@ -175,12 +317,38 @@ export default function ExpensesPage() {
         {c.status}
       </span>
       <div className="flex gap-2 items-center">
-        {c.hasBill && (
+        {Array.from({ length: c.billCount || 0 }, (_, i) => (
           <button
-            title="Download bill"
-            onClick={() => expenseAPI.downloadBill(c._id).catch(err)}
+            key={i}
+            title={`Download bill ${i + 1}`}
+            onClick={() => expenseAPI.downloadBill(c._id, i).catch(err)}
           >
             <Paperclip className="w-4 h-4" />
+          </button>
+        ))}
+        {c.status === "draft" && (
+          <button
+            onClick={() => editDraft(c)}
+            className="bg-white px-3 py-1 text-xs font-bold border-2 border-black"
+          >
+            Edit / Submit
+          </button>
+        )}
+        {c.status === "rejected" && !canApprove && !c.resubmissionOf && (
+          <button
+            title="Resubmit"
+            onClick={() => resubmit(c)}
+            className="bg-white px-3 py-1 text-xs font-bold border-2 border-black flex items-center gap-1"
+          >
+            <RotateCcw className="w-3 h-3" /> Resubmit
+          </button>
+        )}
+        {c.status === "approved" && isHR && (
+          <button
+            onClick={() => setPayFor(c)}
+            className="bg-white px-3 py-1 text-xs font-bold border-2 border-black flex items-center gap-1"
+          >
+            <Wallet className="w-3 h-3" /> Mark paid
           </button>
         )}
         {c.canAct && (
@@ -200,7 +368,7 @@ export default function ExpensesPage() {
           </>
         )}
         {!canApprove &&
-          c.status === "pending" &&
+          (c.status === "draft" || c.status === "pending") &&
           c.steps.every((s) => s.status === "pending") && (
             <button
               title="Withdraw"
@@ -233,6 +401,14 @@ export default function ExpensesPage() {
           <div className="flex gap-2">
             {isHR && (
               <button
+                onClick={() => setPolForm({ ...policy })}
+                className="bg-white border-2 border-black px-4 py-2 text-sm flex items-center gap-1.5 font-bold"
+              >
+                <Settings2 className="w-4 h-4" /> Policy Limits
+              </button>
+            )}
+            {isHR && (
+              <button
                 onClick={openFlow}
                 className="bg-white border-2 border-black px-4 py-2 text-sm flex items-center gap-1.5 font-bold"
               >
@@ -240,7 +416,11 @@ export default function ExpensesPage() {
               </button>
             )}
             <button
-              onClick={() => setForm({ ...EMPTY })}
+              onClick={() => {
+                setEditId(null);
+                setBills([]);
+                setForm({ ...EMPTY });
+              }}
               className="border-2 bg-[#024BAB] text-white px-4 py-2 text-sm flex items-center gap-1.5 font-bold"
             >
               <Plus className="w-4 h-4" /> New Claim
@@ -282,7 +462,9 @@ export default function ExpensesPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white border-2 border-black w-full max-w-md p-5 space-y-3">
             <div className="flex justify-between items-center">
-              <h3 className="font-bold text-lg">New expense claim</h3>
+              <h3 className="font-bold text-lg">
+                {editId ? "Edit draft" : "New expense claim"}
+              </h3>
               <button onClick={() => setForm(null)}>
                 <X className="w-5 h-5" />
               </button>
@@ -315,6 +497,13 @@ export default function ExpensesPage() {
                 onChange={(e) => setForm({ ...form, amount: e.target.value })}
               />
             </div>
+            {policy.limits[form.category] > 0 && (
+              <p className="text-xs text-gray-600">
+                Policy limit for this category: {fmt(policy.limits[form.category])}
+                {Number(form.amount) > policy.limits[form.category] &&
+                  " — your claim is above it and will be flagged"}
+              </p>
+            )}
             <input
               className={input}
               type="date"
@@ -322,6 +511,46 @@ export default function ExpensesPage() {
               value={form.date}
               onChange={(e) => setForm({ ...form, date: e.target.value })}
             />
+            {form.category === "travel" && (
+              <div className="grid grid-cols-3 gap-3">
+                <input className={input} placeholder="From" value={form.from} onChange={(e) => setForm({ ...form, from: e.target.value })} />
+                <input className={input} placeholder="To" value={form.to} onChange={(e) => setForm({ ...form, to: e.target.value })} />
+                <input className={input} type="number" min={0} placeholder="Distance (km)" value={form.distanceKm} onChange={(e) => setForm({ ...form, distanceKm: e.target.value })} />
+              </div>
+            )}
+            {form.category === "fuel" && (
+              <div className="grid grid-cols-2 gap-3">
+                <input className={input} type="number" min={0} placeholder="Distance (km)" value={form.distanceKm} onChange={(e) => setForm({ ...form, distanceKm: e.target.value })} />
+                <input className={input} type="number" min={0} placeholder="Litres" value={form.fuelLitres} onChange={(e) => setForm({ ...form, fuelLitres: e.target.value })} />
+              </div>
+            )}
+            {form.category === "lodging" && (
+              <div className="grid grid-cols-2 gap-3">
+                <label className="text-xs font-bold">
+                  Check-in
+                  <input className={input} type="date" value={form.checkIn} onChange={(e) => setForm({ ...form, checkIn: e.target.value })} />
+                </label>
+                <label className="text-xs font-bold">
+                  Check-out
+                  <input className={input} type="date" min={form.checkIn} value={form.checkOut} onChange={(e) => setForm({ ...form, checkOut: e.target.value })} />
+                </label>
+              </div>
+            )}
+            {form.category !== "travel" && (
+              <input
+                className={input}
+                placeholder={
+                  form.category === "lodging"
+                    ? "Hotel name"
+                    : form.category === "fuel"
+                      ? "Petrol pump"
+                      : "Vendor / shop (optional)"
+                }
+                maxLength={100}
+                value={form.vendor}
+                onChange={(e) => setForm({ ...form, vendor: e.target.value })}
+              />
+            )}
             <textarea
               className={input}
               rows={2}
@@ -330,18 +559,139 @@ export default function ExpensesPage() {
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
             />
+            <div>
+              <input
+                type="file"
+                multiple
+                accept="image/*,application/pdf"
+                onChange={(e) => setBills(Array.from(e.target.files || []).slice(0, 5))}
+                className="text-sm"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Up to 5 bills (JPG, PNG, WEBP or PDF)
+                {policy.billRequiredAbove > 0 &&
+                  `; required above ${fmt(policy.billRequiredAbove)}`}
+                {editId && "; new files are added to existing bills"}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                disabled={saving || !form.title || !form.amount}
+                onClick={() => submit(true)}
+                className="flex-1 bg-white py-2 font-bold border-2 border-black disabled:opacity-40"
+              >
+                Save draft
+              </button>
+              <button
+                disabled={saving || !form.title || !form.amount}
+                onClick={() => submit(false)}
+                className="flex-1 bg-[#024BAB] text-white py-2 font-bold border-2 border-black disabled:opacity-40"
+              >
+                {saving ? "Submitting…" : "Submit claim"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {polForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white border-2 border-black w-full max-w-md p-5 space-y-3">
+            <div className="flex justify-between items-center">
+              <h3 className="font-bold text-lg">Expense policy limits</h3>
+              <button onClick={() => setPolForm(null)}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-gray-600">
+              Max amount per claim by category (blank = no limit). Claims above
+              a limit are flagged for approvers.
+            </p>
+            {CATEGORIES.map(([v, l]) => (
+              <label key={v} className="flex items-center gap-3 text-sm font-bold">
+                <span className="w-36">{l}</span>
+                <input
+                  className={input}
+                  type="number"
+                  min={0}
+                  placeholder="₹ limit"
+                  value={polForm.limits[v] || ""}
+                  onChange={(e) =>
+                    setPolForm({
+                      ...polForm,
+                      limits: { ...polForm.limits, [v]: Number(e.target.value) },
+                    })
+                  }
+                />
+              </label>
+            ))}
+            <label className="flex items-center gap-3 text-sm font-bold">
+              <span className="w-36">Bill required above</span>
+              <input
+                className={input}
+                type="number"
+                min={0}
+                placeholder="₹ (0 = never)"
+                value={polForm.billRequiredAbove || ""}
+                onChange={(e) =>
+                  setPolForm({ ...polForm, billRequiredAbove: Number(e.target.value) })
+                }
+              />
+            </label>
+            <button
+              onClick={savePolicy}
+              className="w-full bg-[#024BAB] text-white py-2 font-bold border-2 border-black"
+            >
+              Save policy
+            </button>
+          </div>
+        </div>
+      )}
+
+      {payFor && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white border-2 border-black w-full max-w-sm p-5 space-y-3">
+            <div className="flex justify-between items-center">
+              <h3 className="font-bold text-lg">
+                Pay {fmt(payFor.approvedAmount ?? payFor.amount)}
+              </h3>
+              <button onClick={() => setPayFor(null)}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-gray-600">
+              Settles the claim now instead of adding it to payroll.
+            </p>
+            <select
+              className={input}
+              value={pay.mode}
+              onChange={(e) => setPay({ ...pay, mode: e.target.value })}
+            >
+              {PAY_MODES.map(([v, l]) => (
+                <option key={v} value={v}>
+                  {l}
+                </option>
+              ))}
+            </select>
             <input
-              type="file"
-              accept="image/*,application/pdf"
-              onChange={(e) => setBill(e.target.files?.[0] || null)}
-              className="text-sm"
+              className={input}
+              placeholder="Reference / UTR / cheque no."
+              maxLength={100}
+              value={pay.reference}
+              onChange={(e) => setPay({ ...pay, reference: e.target.value })}
+            />
+            <input
+              className={input}
+              type="date"
+              max={today()}
+              value={pay.paidOn}
+              onChange={(e) => setPay({ ...pay, paidOn: e.target.value })}
             />
             <button
-              disabled={saving || !form.title || !form.amount}
-              onClick={submit}
-              className="w-full bg-[#024BAB] text-white py-2 font-bold border-2 border-black disabled:opacity-40"
+              onClick={doPay}
+              className="w-full bg-[#024BAB] text-white py-2 font-bold border-2 border-black"
             >
-              {saving ? "Submitting…" : "Submit claim"}
+              Confirm payment
             </button>
           </div>
         </div>

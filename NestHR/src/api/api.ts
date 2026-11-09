@@ -649,6 +649,77 @@ export const loanAPI = {
   delete: (id: string) => request(`/loans/${id}`, { method: 'DELETE' }),
 };
 
+type BillFile = { uri: string; type: string; name: string };
+
+export const expenseAPI = {
+  getAll: (params?: Record<string, string>) =>
+    request(`/expenses${qs(params)}`),
+  // Multipart create/edit (up to 5 bills). Pass id to edit a draft.
+  save: async (
+    body: Record<string, any>,
+    bills: BillFile[],
+    id?: string,
+  ) => {
+    const token = await getToken();
+    const formData = new FormData();
+    Object.entries(body).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '')
+        formData.append(k, String(v));
+    });
+    bills.forEach(b => formData.append('bills', b as any));
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30_000);
+    try {
+      const res = await fetch(`${BASE_URL}/expenses${id ? `/${id}` : ''}`, {
+        method: id ? 'PUT' : 'POST',
+        signal: controller.signal,
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: formData,
+      });
+      clearTimeout(timer);
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {}
+      if (!res.ok) throw new Error(data.message || statusMsg(res.status));
+      return data;
+    } catch (err: any) {
+      clearTimeout(timer);
+      throw err;
+    }
+  },
+  act: (
+    id: string,
+    action: 'approve' | 'reject',
+    note?: string,
+    approvedAmount?: number,
+  ) =>
+    request(`/expenses/${id}/action`, {
+      method: 'PUT',
+      body: JSON.stringify({ action, note, approvedAmount }),
+    }),
+  remove: (id: string) => request(`/expenses/${id}`, { method: 'DELETE' }),
+  resubmit: (id: string) =>
+    request(`/expenses/${id}/resubmit`, { method: 'POST', body: '{}' }),
+  markPaid: (
+    id: string,
+    body: { mode: string; reference?: string; paidOn?: string },
+  ) =>
+    request(`/expenses/${id}/pay`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  // Short-lived signed URL for opening a bill in the phone's browser / PDF viewer.
+  billUrl: async (id: string, index: number) => {
+    const r = await request(`/expenses/${id}/bill-link/${index}`);
+    return `${BASE_URL}${r.data.path}`;
+  },
+  getPolicy: () => request('/expenses/policy'),
+  savePolicy: (body: object) =>
+    request('/expenses/policy', { method: 'PUT', body: JSON.stringify(body) }),
+};
+
 export const departmentShiftAPI = {
   getAll: () => request('/departments'),
 };

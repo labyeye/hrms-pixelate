@@ -832,10 +832,10 @@ export const loanAPI = {
 export const expenseAPI = {
   getAll: (status?: string) =>
     request(`/expenses${status ? `?status=${status}` : ""}`),
-  create: async (form: FormData) => {
+  create: async (form: FormData, id?: string) => {
     const token = getToken();
-    const res = await fetch(`${BASE_URL}/expenses`, {
-      method: "POST",
+    const res = await fetch(`${BASE_URL}/expenses${id ? `/${id}` : ""}`, {
+      method: id ? "PUT" : "POST",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: form,
     });
@@ -843,13 +843,34 @@ export const expenseAPI = {
     if (!res.ok) throw new Error(data.message || statusMsg(res.status));
     return data;
   },
-  act: (id: string, action: "approve" | "reject", note?: string) =>
+  act: (
+    id: string,
+    action: "approve" | "reject",
+    note?: string,
+    approvedAmount?: number,
+  ) =>
     request(`/expenses/${id}/action`, {
       method: "PUT",
-      body: JSON.stringify({ action, note }),
+      body: JSON.stringify({ action, note, approvedAmount }),
     }),
   remove: (id: string) => request(`/expenses/${id}`, { method: "DELETE" }),
-  downloadBill: (id: string) => downloadFile(`/expenses/${id}/bill`, "bill"),
+  resubmit: (id: string, body: Record<string, any> = {}) =>
+    request(`/expenses/${id}/resubmit`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  markPaid: (
+    id: string,
+    body: { mode: string; reference?: string; paidOn?: string },
+  ) =>
+    request(`/expenses/${id}/pay`, { method: "PUT", body: JSON.stringify(body) }),
+  downloadBill: (id: string, index = 0) =>
+    downloadFile(`/expenses/${id}/bill/${index}`, "bill"),
+  getPolicy: () => request("/expenses/policy"),
+  savePolicy: (body: {
+    limits: Record<string, number>;
+    billRequiredAbove: number;
+  }) => request("/expenses/policy", { method: "PUT", body: JSON.stringify(body) }),
   getWorkflow: () => request("/expenses/workflow"),
   saveWorkflow: (steps: { role: string; aboveAmount: number }[]) =>
     request("/expenses/workflow", {
