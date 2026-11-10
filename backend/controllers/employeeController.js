@@ -269,6 +269,14 @@ const createEmployee = [
         "An account with this email already exists in another organisation",
       );
     }
+    // A login can belong to only one employee. Linking a second employee to it
+    // is what made two people share one account (Chotu opened Prashant's).
+    if (existingUser && (await Employee.exists({ user: existingUser._id }))) {
+      res.status(409);
+      throw new Error(
+        "This email is already linked to another employee's login. Use a different email.",
+      );
+    }
     if (existingUser) {
       userId = existingUser._id;
       if (role) {
