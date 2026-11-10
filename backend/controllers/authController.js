@@ -86,14 +86,20 @@ async function findUserByPhone(normalised) {
   const tail = /^\d{10}$/.test(normalised)
     ? { $regex: `${normalised}$` }
     : null;
-  const user =
-    (await User.findOne({ phone: { $in: variants } })) ||
-    (tail && (await User.findOne({ phone: tail })));
-  if (user) return user;
+  // Employee.phone is what HR edits, so it wins over a possibly stale User.phone
+  // (a stale copy used to log people into someone else's account).
   const employee =
     (await Employee.findOne({ phone: { $in: variants } })) ||
     (tail && (await Employee.findOne({ phone: tail })));
-  return employee ? User.findById(employee.user) : null;
+  if (employee) {
+    const u = await User.findById(employee.user);
+    if (u) return u;
+  }
+  return (
+    (await User.findOne({ phone: { $in: variants } })) ||
+    (tail && (await User.findOne({ phone: tail }))) ||
+    null
+  );
 }
 
 // Shared by login 2FA and TOTP password reset: 10 bad codes lock the account

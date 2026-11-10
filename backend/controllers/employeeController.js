@@ -51,6 +51,28 @@ const createSchema = {
   joinDate: { required: true, type: "string" },
 };
 
+// Phone is the login identifier for OTP login, so one number = one person.
+// Compares on the last 10 digits so "+91 98..." and "98..." count as equal.
+const last10 = (p) => String(p || "").replace(/\D/g, "").slice(-10);
+async function phoneInUse(phone, excludeEmployee) {
+  const n = last10(phone);
+  if (n.length < 10) return false;
+  const tail = { $regex: `${n}$` };
+  const [emp, usr] = await Promise.all([
+    Employee.findOne({
+      phone: tail,
+      ...(excludeEmployee ? { _id: { $ne: excludeEmployee._id } } : {}),
+    }).select("_id"),
+    User.findOne({
+      phone: tail,
+      ...(excludeEmployee?.user ? { _id: { $ne: excludeEmployee.user } } : {}),
+    }).select("_id"),
+  ]);
+  return !!(emp || usr);
+}
+const PHONE_TAKEN_MSG =
+  "This phone number already belongs to another person. Each person needs a unique phone number.";
+
 const updateSchema = {
   firstName: { type: "string", minLength: 1, maxLength: 80 },
   lastName: { type: "string", minLength: 1, maxLength: 80 },
@@ -199,6 +221,11 @@ const createEmployee = [
     } = req.body;
 
     const normalizedEmail = email.toLowerCase().trim();
+
+    if (phone && (await phoneInUse(phone))) {
+      res.status(409);
+      throw new Error(PHONE_TAKEN_MSG);
+    }
 
     const ROLES = ["super_admin", "hr_manager", "department_head", "employee"];
     if (role && !ROLES.includes(role)) {
@@ -441,6 +468,16 @@ const updateEmployee = [
     ]);
 
     const previousSalary = employee.salary;
+    const previousPhone = employee.phone;
+    if (
+      typeof req.body.phone === "string" &&
+      req.body.phone &&
+      last10(req.body.phone) !== last10(previousPhone) &&
+      (await phoneInUse(req.body.phone, employee))
+    ) {
+      res.status(409);
+      throw new Error(PHONE_TAKEN_MSG);
+    }
 
     for (const key of allowed) {
       if (req.body[key] !== undefined) {
@@ -511,6 +548,18 @@ const updateEmployee = [
         );
         employee.department = req.body.headOfDepartment;
       }
+    }
+
+    // Keep the login account's phone in step with the employee's phone, otherwise
+    // phone-OTP login keeps resolving the old number to the wrong person.
+    if (
+      typeof req.body.phone === "string" &&
+      last10(employee.phone) !== last10(previousPhone)
+    ) {
+      await User.findByIdAndUpdate(employee.user, {
+        phone: employee.phone,
+        phoneVerified: false,
+      });
     }
 
     // Email is also the employee's login, so change both together (it was
