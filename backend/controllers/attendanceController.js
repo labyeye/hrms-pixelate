@@ -537,7 +537,7 @@ const selfMarkAttendance = asyncHandler(async (req, res) => {
     cleanup();
     res.status(403);
     throw new Error(
-      `You are ${Math.round(distanceMeters)}m away from the allowed location (max ${emp.geofenceRadiusMeters}m)`,
+      `You are ${Math.round(distanceMeters)}m away from the allowed location (max ${emp.geofenceRadiusMeters}m). Your GPS: ${lat.toFixed(5)},${lng.toFixed(5)}${accuracy ? ` (±${Math.round(accuracy)}m)` : ""}; saved office: ${emp.geofenceLat},${emp.geofenceLng}`,
     );
   }
 
