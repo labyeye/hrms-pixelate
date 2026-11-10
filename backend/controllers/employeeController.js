@@ -513,6 +513,32 @@ const updateEmployee = [
       }
     }
 
+    // Email is also the employee's login, so change both together (it was
+    // previously dropped silently because it wasn't in the allowed list).
+    if (typeof req.body.email === "string") {
+      const newEmail = req.body.email.toLowerCase().trim();
+      if (newEmail && newEmail !== employee.email) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+          res.status(400);
+          throw new Error("Enter a valid email address");
+        }
+        const [userTaken, empTaken] = await Promise.all([
+          User.findOne({ email: newEmail, _id: { $ne: employee.user } }),
+          Employee.findOne({
+            email: newEmail,
+            company: req.user.company,
+            _id: { $ne: employee._id },
+          }),
+        ]);
+        if (userTaken || empTaken) {
+          res.status(409);
+          throw new Error("This email is already used by another account");
+        }
+        await User.findByIdAndUpdate(employee.user, { email: newEmail });
+        employee.email = newEmail;
+      }
+    }
+
     await employee.save();
     await employee.populate("department", "name code");
     await logAudit(req, "employee_updated", "Employee", employee._id, {
