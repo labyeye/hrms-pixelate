@@ -530,16 +530,10 @@ const selfMarkAttendance = asyncHandler(async (req, res) => {
     geofenceMode === "specific"
       ? haversineMeters(lat, lng, emp.geofenceLat, emp.geofenceLng)
       : null;
-  if (
-    geofenceMode === "specific" &&
-    distanceMeters > emp.geofenceRadiusMeters
-  ) {
-    cleanup();
-    res.status(403);
-    throw new Error(
-      `You are ${Math.round(distanceMeters)}m away from the allowed location (max ${emp.geofenceRadiusMeters}m). Your GPS: ${lat.toFixed(5)},${lng.toFixed(5)}${accuracy ? ` (±${Math.round(accuracy)}m)` : ""}; saved office: ${emp.geofenceLat},${emp.geofenceLng}`,
-    );
-  }
+  // Out of range is not rejected: the check-in is recorded and parked in the
+  // HR/Admin approval queue (same queue as late approvals) with the distance.
+  const outOfRange =
+    geofenceMode === "specific" && distanceMeters > emp.geofenceRadiusMeters;
 
   if (!Array.isArray(emp.faceDescriptor) || emp.faceDescriptor.length !== 128) {
     cleanup();
@@ -588,7 +582,17 @@ const selfMarkAttendance = asyncHandler(async (req, res) => {
       : await resolveStatus(emp._id, now, "present");
 
     let approvalPending = false;
-    if (computedStatus === "late") {
+    if (outOfRange && !holiday) {
+      approvalPending = true;
+      await LateApproval.create({
+        employee: emp._id,
+        company: req.user.company,
+        date: d,
+        checkInTime: now,
+        minutesLate: 0,
+        reason: `Out of range: ${Math.round(distanceMeters)}m from office (allowed ${emp.geofenceRadiusMeters}m). GPS ${lat.toFixed(5)},${lng.toFixed(5)}${accuracy ? ` ±${Math.round(accuracy)}m` : ""}`,
+      });
+    } else if (computedStatus === "late") {
       approvalPending = await handleLateAllowance(
         emp._id,
         req.user.company,
@@ -602,7 +606,8 @@ const selfMarkAttendance = asyncHandler(async (req, res) => {
       {
         employee: emp._id,
         date: d,
-        status: computedStatus,
+        // not counted until HR approves an out-of-range check-in
+        status: outOfRange && !holiday ? "absent" : computedStatus,
         checkIn: holiday ? undefined : now,
         approvalPending,
         verifyMode: "geo_camera",
@@ -641,9 +646,13 @@ const selfMarkAttendance = asyncHandler(async (req, res) => {
     );
   }
 
-  await notifyAttendanceStatus(emp, d, record.status, req.user.company);
+  const pendingApproval =
+    action === "checkin" && outOfRange && !!record.approvalPending;
+  if (!pendingApproval) {
+    await notifyAttendanceStatus(emp, d, record.status, req.user.company);
+  }
 
-  res.json({ success: true, data: record });
+  res.json({ success: true, data: record, pendingApproval });
 });
 
 // Spare-device attendance kiosk (admin / HR signed in on a wall-mounted phone or tablet): identifies WHO is in the
@@ -708,6 +717,28 @@ const kioskFaceMark = asyncHandler(async (req, res) => {
 
   const record = await Attendance.findOne({ employee: emp._id, date: d });
 
+  // Optional explicit action from the web kiosk ("checkin" | "checkout").
+  // Without it the old toggle behaviour applies.
+  const action = ["checkin", "checkout"].includes(req.body?.action)
+    ? req.body.action
+    : null;
+  if (action === "checkout" && !record?.checkIn) {
+    res.status(400);
+    throw new Error(`${name}: not checked in today, so cannot check out`);
+  }
+  if (action === "checkin" && record?.checkIn) {
+    return res.json({
+      success: true,
+      locked: true,
+      data: {
+        employee: who,
+        type: "check_in",
+        message: "Already checked in",
+        timestamp: record.checkIn,
+      },
+    });
+  }
+
   if (!record?.checkIn) {
     const holiday = await isHolidayDate(req.user.company, d);
     const status = holiday
@@ -758,7 +789,7 @@ const kioskFaceMark = asyncHandler(async (req, res) => {
       },
     });
   }
-  if (now - record.checkIn < KIOSK_MIN_GAP_MS) {
+  if (!action && now - record.checkIn < KIOSK_MIN_GAP_MS) {
     return res.json({
       success: true,
       locked: true,

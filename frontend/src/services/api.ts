@@ -332,8 +332,9 @@ export const attendanceAPI = {
   bulkMark: (body: object) =>
     request("/attendance/bulk", { method: "POST", body: JSON.stringify(body) }),
   // Admin-only spare-device kiosk: a face photo is matched against all enrolled employees and their day is toggled.
-  kioskFace: async (photo: Blob) => {
+  kioskFace: async (photo: Blob, action?: "checkin" | "checkout") => {
     const form = new FormData();
+    if (action) form.append("action", action);
     form.append("photo", photo, "kiosk.jpg");
     const token = getToken();
     let res: Response;

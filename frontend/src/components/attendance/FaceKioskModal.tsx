@@ -29,6 +29,9 @@ export default function FaceKioskModal({
   const [result, setResult] = useState<Result | null>(null);
   const [hint, setHint] = useState("Look at the camera");
   const [fatal, setFatal] = useState("");
+  const [action, setAction] = useState<"checkin" | "checkout">("checkin");
+  const actionRef = useRef(action);
+  actionRef.current = action;
   const busy = useRef(false);
   const cooldownUntil = useRef(0);
   const faceSince = useRef<number | null>(null);
@@ -63,7 +66,10 @@ export default function FaceKioskModal({
         ),
       );
       setHint("Verifying…");
-      const { data, locked } = await attendanceAPI.kioskFace(blob);
+      const { data, locked } = await attendanceAPI.kioskFace(
+        blob,
+        actionRef.current,
+      );
       const time = new Date(data.timestamp).toLocaleTimeString("en-IN", {
         hour: "2-digit",
         minute: "2-digit",
@@ -146,6 +152,21 @@ export default function FaceKioskModal({
           </p>
         )}
 
+        <div className="absolute top-4 flex gap-2">
+          {(["checkin", "checkout"] as const).map((a) => (
+            <button
+              key={a}
+              onClick={() => setAction(a)}
+              className={`border-2 px-5 py-2 text-sm font-bold ${
+                action === a
+                  ? "border-white bg-white text-black"
+                  : "border-white/40 text-white"
+              }`}
+            >
+              {a === "checkin" ? "Check In" : "Check Out"}
+            </button>
+          ))}
+        </div>
         {!result && !fatal && (
           <div className="absolute bottom-10 rounded-full bg-black/60 px-5 py-2 text-sm font-medium">
             {hint}
