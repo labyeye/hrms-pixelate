@@ -58,6 +58,7 @@ import { AddressFields } from "@/components/employees/AddressFields";
 import { useDocOtp } from "@/hooks/use-doc-otp";
 import { formatCurrency } from "@/lib/utils";
 import { ActionModal } from "@/components/ui/ActionModal";
+import CameraCaptureModal from "@/components/employees/CameraCaptureModal";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useToast } from "@/hooks/use-toast";
 
@@ -266,6 +267,9 @@ export default function EmployeesPage() {
     resumeDoc?: File;
   }>({});
   const [faceEnrolling, setFaceEnrolling] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  // Face captured while adding a new employee; enrolled right after the employee is created.
+  const [pendingFace, setPendingFace] = useState<File | null>(null);
   const faceEnrollInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const { withOtp, otpModal } = useDocOtp();
@@ -371,6 +375,7 @@ export default function EmployeesPage() {
 
   const openAdd = () => {
     setEditEmp(null);
+    setPendingFace(null);
     setForm(EMPTY_FORM);
     setDocFiles({});
     setAvatarPreview(null);
@@ -466,6 +471,12 @@ export default function EmployeesPage() {
     );
     setFormTab(0);
     setShowModal(true);
+  };
+
+  const onCameraCapture = (file: File) => {
+    setCameraOpen(false);
+    if (editEmp) handleEnrollFace(file);
+    else setPendingFace(file);
   };
 
   const handleEnrollFace = async (file: File) => {
@@ -577,6 +588,15 @@ export default function EmployeesPage() {
         savedId = res.data?._id;
       }
 
+      // Enroll the face scanned during "add" now that the employee exists
+      let faceFailed = "";
+      if (!editEmp && savedId && pendingFace) {
+        await employeeAPI.enrollFace(savedId, pendingFace).catch((e: any) => {
+          faceFailed = e.message || "Face could not be enrolled";
+        });
+        setPendingFace(null);
+      }
+
       // Upload documents if any were selected
       if (savedId && (docFiles.aadhaarDoc || docFiles.panDoc)) {
         await employeeAPI.uploadDocuments(savedId, docFiles).catch(() => {});
@@ -589,7 +609,9 @@ export default function EmployeesPage() {
         title: editEmp ? "Employee Updated" : "Employee Created",
         message: editEmp
           ? "Employee information updated successfully."
-          : "New employee added successfully.",
+          : faceFailed
+            ? `Employee added, but face scan failed: ${faceFailed}. Reopen edit to scan again.`
+            : "New employee added successfully.",
       });
       setTimeout(() => {
         setShowModal(false);
@@ -1611,6 +1633,12 @@ export default function EmployeesPage() {
       )}
 
       {}
+      {cameraOpen && (
+        <CameraCaptureModal
+          onCapture={onCameraCapture}
+          onClose={() => setCameraOpen(false)}
+        />
+      )}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="border-2 border-black bg-white w-full max-w-3xl max-h-[95vh] flex flex-col">
@@ -2385,6 +2413,14 @@ export default function EmployeesPage() {
                               <button
                                 type="button"
                                 disabled={faceEnrolling}
+                                onClick={() => setCameraOpen(true)}
+                                className="mr-2 text-xs font-bold text-white bg-[#024BAB] border-2 border-black px-3 py-2 disabled:opacity-50"
+                              >
+                                Scan Face with Camera
+                              </button>
+                              <button
+                                type="button"
+                                disabled={faceEnrolling}
                                 onClick={() =>
                                   faceEnrollInputRef.current?.click()
                                 }
@@ -2404,10 +2440,23 @@ export default function EmployeesPage() {
                               </button>
                             </div>
                           ) : (
-                            <p className="mt-4 pt-4 border-t border-black/10 text-xs text-muted-foreground">
-                              Save this employee first, then reopen edit to
-                              enroll their face for mobile attendance.
-                            </p>
+                            <div className="mt-4 pt-4 border-t border-black/10">
+                              <p className="text-sm font-bold text-black mb-1">
+                                Face Enrollment
+                              </p>
+                              <p className="text-xs text-muted-foreground mb-3">
+                                {pendingFace
+                                  ? "Face captured — it will be enrolled when you save this employee."
+                                  : "Scan the employee's face with the camera; it is enrolled when you save."}
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => setCameraOpen(true)}
+                                className="text-xs font-bold text-white bg-[#024BAB] border-2 border-black px-3 py-2"
+                              >
+                                {pendingFace ? "Re-scan Face" : "Scan Face with Camera"}
+                              </button>
+                            </div>
                           )}
                         </>
                       )}
