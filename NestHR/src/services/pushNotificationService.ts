@@ -22,7 +22,16 @@
  * 4. Uncomment the imports below once packages are installed.
  */
 
-// import messaging from '@react-native-firebase/messaging';
+import {
+  getMessaging,
+  requestPermission,
+  AuthorizationStatus,
+  getToken as getFcmToken,
+  onTokenRefresh,
+  onMessage,
+  onNotificationOpenedApp,
+  getInitialNotification,
+} from '@react-native-firebase/messaging';
 import { Alert, Platform } from 'react-native';
 import { getToken } from '../api/api';
 import { API_BASE_URL } from '../config/env';
@@ -43,53 +52,35 @@ async function registerFCMToken(fcmToken: string) {
 }
 
 export async function requestNotificationPermission(): Promise<boolean> {
-  // Uncomment after installing @react-native-firebase/messaging:
-  // const authStatus = await messaging().requestPermission();
-  // return (
-  //   authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-  //   authStatus === messaging.AuthorizationStatus.PROVISIONAL
-  // );
-  return false;
+  const st = await requestPermission(getMessaging());
+  return (
+    st === AuthorizationStatus.AUTHORIZED ||
+    st === AuthorizationStatus.PROVISIONAL
+  );
 }
 
 export async function setupPushNotifications(
   onNotification?: (data: any) => void,
 ) {
-  // Uncomment after installing @react-native-firebase/messaging:
+  const granted = await requestNotificationPermission();
+  if (!granted) return;
+  const m = getMessaging();
 
-  // const granted = await requestNotificationPermission();
-  // if (!granted) return;
+  const fcmToken = await getFcmToken(m);
+  if (fcmToken) await registerFCMToken(fcmToken);
+  onTokenRefresh(m, t => registerFCMToken(t));
 
-  // // Get FCM token and register with backend
-  // const fcmToken = await messaging().getToken();
-  // if (fcmToken) await registerFCMToken(fcmToken);
+  // Foreground message
+  onMessage(m, async msg => {
+    const { notification, data } = msg;
+    if (notification) {
+      Alert.alert(notification.title || 'Notification', notification.body || '');
+    }
+    onNotification?.(data);
+  });
 
-  // // Listen for token refresh
-  // messaging().onTokenRefresh(async token => {
-  //   await registerFCMToken(token);
-  // });
-
-  // // Foreground message handler
-  // messaging().onMessage(async remoteMessage => {
-  //   const { notification, data } = remoteMessage;
-  //   if (notification) {
-  //     Alert.alert(notification.title || 'Notification', notification.body || '');
-  //   }
-  //   onNotification?.(data);
-  // });
-
-  // // Background/quit message handler (tapped from notification tray)
-  // messaging().onNotificationOpenedApp(remoteMessage => {
-  //   onNotification?.(remoteMessage.data);
-  // });
-
-  // // Check if app was opened from a notification
-  // const initialNotification = await messaging().getInitialNotification();
-  // if (initialNotification) {
-  //   onNotification?.(initialNotification.data);
-  // }
-
-  console.log(
-    '[Push] FCM not configured yet — install @react-native-firebase packages first',
-  );
+  // Tapped from tray / opened from quit state
+  onNotificationOpenedApp(m, msg => onNotification?.(msg.data));
+  const initial = await getInitialNotification(m);
+  if (initial) onNotification?.(initial.data);
 }

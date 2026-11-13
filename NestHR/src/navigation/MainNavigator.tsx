@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { setupPushNotifications } from '../services/pushNotificationService';
 import {
   createBottomTabNavigator,
   BottomTabBarProps,
@@ -249,6 +250,11 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 export default function MainNavigator() {
   const { user } = useAuth();
   const isEmployee = user?.role === 'employee';
+
+  // Register this device for FCM push once logged in.
+  useEffect(() => {
+    if (user) setupPushNotifications().catch(() => {});
+  }, [user]);
 
   // New announcements become in-app notifications: checked on open, when the app returns to the foreground, and every minute.
   useEffect(() => {
