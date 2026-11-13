@@ -35,10 +35,10 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>NestHR needs camera access to update employee profile photos</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>NestHR uses your location while the app is open to verify that you are at your workplace when you mark attendance.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>NestHR uses your location to verify that you are at your workplace when you mark attendance. It is only used when you check in or out.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>NestHR uses your location while the app is open to verify that you are at your workplace when you mark attendance.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>NestHR saves photos you capture to your photo library</string>
 	<key>NSPhotoLibraryUsageDescription</key>
@@ -51,6 +51,10 @@
 		<string>DMSans-Medium.ttf</string>
 		<string>DMSans-Regular.ttf</string>
 		<string>DMSans-SemiBold.ttf</string>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>

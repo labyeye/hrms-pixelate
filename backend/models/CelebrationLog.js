@@ -5,7 +5,18 @@ const schema = new mongoose.Schema(
   {
     company: { type: mongoose.Schema.Types.ObjectId, required: true },
     ref: { type: String, required: true }, // employee / student id
-    kind: { type: String, enum: ["birthday", "anniversary"], required: true },
+    kind: {
+      type: String,
+      // *_app kinds are the in-app + push wishes; separate so they dedupe independently of the WhatsApp ones.
+      enum: [
+        "birthday",
+        "anniversary",
+        "birthday_app",
+        "anniversary_app",
+        "work_anniversary_app",
+      ],
+      required: true,
+    },
     year: { type: Number, required: true },
   },
   { timestamps: true },

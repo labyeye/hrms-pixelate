@@ -1,47 +1,30 @@
 /**
- * Push Notification Service
+ * Push notifications (Firebase Cloud Messaging).
  *
- * SETUP REQUIRED before this file works:
- *
- * 1. Install packages:
- *    npm install @react-native-firebase/app @react-native-firebase/messaging
- *
- * 2. Android:
- *    - Download google-services.json from Firebase Console → Project Settings
- *    - Place it at: android/app/google-services.json
- *    - In android/build.gradle, add: classpath('com.google.gms:google-services:4.3.15')
- *    - In android/app/build.gradle, add at bottom: apply plugin: 'com.google.gms.google-services'
- *
- * 3. iOS:
- *    - Download GoogleService-Info.plist from Firebase Console
- *    - Add to Xcode project (drag into ios/<ProjectName>/)
- *    - Run: cd ios && pod install
- *    - Enable Push Notifications capability in Xcode → Signing & Capabilities
- *    - Enable Background Modes → Remote notifications
- *
- * 4. Uncomment the imports below once packages are installed.
+ * Native setup lives in android/app/google-services.json, ios/NestHR/GoogleService-Info.plist and AppDelegate.swift.
+ * The Firebase module is loaded lazily so an app binary built before it was added keeps working (push is just off).
  */
-
-import {
-  getMessaging,
-  requestPermission,
-  AuthorizationStatus,
-  getToken as getFcmToken,
-  onTokenRefresh,
-  onMessage,
-  onNotificationOpenedApp,
-  getInitialNotification,
-} from '@react-native-firebase/messaging';
-import { Alert, Platform } from 'react-native';
-import { getToken } from '../api/api';
+import { Alert, PermissionsAndroid, Platform } from 'react-native';
+import { getToken as getAuthToken } from '../api/api';
 import { API_BASE_URL } from '../config/env';
 
-const BASE_URL = API_BASE_URL;
+type PushData = { type?: string; screen?: string; id?: string } | undefined;
+
+function fcm(): any | null {
+  try {
+    return require('@react-native-firebase/messaging');
+  } catch {
+    return null;
+  }
+}
+
+let currentToken: string | null = null;
 
 async function registerFCMToken(fcmToken: string) {
-  const authToken = await getToken();
+  const authToken = await getAuthToken();
   if (!authToken) return;
-  await fetch(`${BASE_URL}/push/fcm-register`, {
+  currentToken = fcmToken;
+  await fetch(`${API_BASE_URL}/push/fcm-register`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -52,35 +35,82 @@ async function registerFCMToken(fcmToken: string) {
 }
 
 export async function requestNotificationPermission(): Promise<boolean> {
-  const st = await requestPermission(getMessaging());
+  const m = fcm();
+  if (!m) return false;
+  if (Platform.OS === 'android') {
+    if (Number(Platform.Version) < 33) return true;
+    const res = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+    );
+    return res === PermissionsAndroid.RESULTS.GRANTED;
+  }
+  const status = await m.requestPermission(m.getMessaging());
   return (
-    st === AuthorizationStatus.AUTHORIZED ||
-    st === AuthorizationStatus.PROVISIONAL
+    status === m.AuthorizationStatus.AUTHORIZED ||
+    status === m.AuthorizationStatus.PROVISIONAL
   );
 }
 
+/**
+ * Asks for permission, registers this device with the backend and listens for pushes.
+ * onOpen fires when the user taps a notification (or "View" on the in-app alert).
+ * Returns a cleanup function. Never throws: without Firebase (old binary, simulator) it is a no-op.
+ */
 export async function setupPushNotifications(
-  onNotification?: (data: any) => void,
-) {
-  const granted = await requestNotificationPermission();
-  if (!granted) return;
-  const m = getMessaging();
+  onOpen?: (data: PushData) => void,
+): Promise<() => void> {
+  const m = fcm();
+  if (!m) return () => {};
+  try {
+    const messaging = m.getMessaging();
+    if (!(await requestNotificationPermission())) return () => {};
 
-  const fcmToken = await getFcmToken(m);
-  if (fcmToken) await registerFCMToken(fcmToken);
-  onTokenRefresh(m, t => registerFCMToken(t));
+    const token = await m.getToken(messaging);
+    if (token) await registerFCMToken(token);
 
-  // Foreground message
-  onMessage(m, async msg => {
-    const { notification, data } = msg;
-    if (notification) {
-      Alert.alert(notification.title || 'Notification', notification.body || '');
-    }
-    onNotification?.(data);
-  });
+    const unsubs: (() => void)[] = [
+      m.onTokenRefresh(messaging, (t: string) => {
+        registerFCMToken(t).catch(() => {});
+      }),
+      // App open: the system shows no banner, so show the message ourselves.
+      m.onMessage(messaging, async (msg: any) => {
+        const n = msg?.notification;
+        if (!n) return;
+        Alert.alert(n.title || 'Notification', n.body || '', [
+          { text: 'Dismiss', style: 'cancel' },
+          ...(onOpen && msg.data?.screen
+            ? [{ text: 'View', onPress: () => onOpen(msg.data) }]
+            : []),
+        ]);
+      }),
+      // App in background: user tapped the notification.
+      m.onNotificationOpenedApp(messaging, (msg: any) => onOpen?.(msg?.data)),
+    ];
 
-  // Tapped from tray / opened from quit state
-  onNotificationOpenedApp(m, msg => onNotification?.(msg.data));
-  const initial = await getInitialNotification(m);
-  if (initial) onNotification?.(initial.data);
+    // App was closed and got opened by tapping a notification.
+    const initial = await m.getInitialNotification(messaging);
+    if (initial) onOpen?.(initial.data);
+
+    return () => unsubs.forEach(u => u());
+  } catch (e: any) {
+    console.log('[Push] setup skipped:', e?.message);
+    return () => {};
+  }
+}
+
+/** Call before signing out so this phone stops receiving the previous user's notifications. */
+export async function unregisterPush() {
+  try {
+    const authToken = await getAuthToken();
+    if (!authToken || !currentToken) return;
+    await fetch(`${API_BASE_URL}/push/unsubscribe`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authToken}`,
+      },
+      body: JSON.stringify({ fcmToken: currentToken }),
+    });
+    currentToken = null;
+  } catch {}
 }
