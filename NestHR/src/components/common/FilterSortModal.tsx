@@ -96,7 +96,7 @@ export default function FilterSortModal({
         </View>
         <ScrollView
           style={{ maxHeight: 420 }}
-          contentContainerStyle={{ padding: 16, gap: 18 }}
+          contentContainerStyle={{ padding: 16, gap: 20 }}
         >
           {!!filterOptions?.length && (
             <View>
@@ -152,23 +152,22 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
-  title: { fontSize: 17, fontWeight: '400', color: '#000' },
+  title: { fontSize: 16, fontWeight: '400', color: '#000' },
   reset: { color: C.danger, fontWeight: '400', fontSize: 13 },
   group: {
     fontSize: 12,
     fontWeight: '400',
-    color: '#475569',
-    textTransform: 'uppercase',
+    color: '#374151',
     marginBottom: 8,
   },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 8,
     borderWidth: 2,
     borderColor: '#000',
     backgroundColor: '#fff',
@@ -184,7 +183,7 @@ const s = StyleSheet.create({
   apply: {
     marginHorizontal: 16,
     backgroundColor: C.primary,
-    paddingVertical: 13,
+    paddingVertical: 12,
     alignItems: 'center',
   },
   applyText: { color: '#fff', fontWeight: '400', fontSize: 14 },

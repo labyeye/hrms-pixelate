@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   header: {
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     backgroundColor: '#fff',
     borderBottomWidth: 2,
     borderBottomColor: '#000',
@@ -122,20 +122,19 @@ const styles = StyleSheet.create({
   headerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 8,
   },
   headerBtnText: {
     color: '#fff',
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
   },
 });

@@ -1,3 +1,4 @@
+import { sentence } from '../utils/text';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -38,6 +39,8 @@ import {
   KeyRound,
   ListChecks,
   SlidersHorizontal,
+  Ellipsis,
+  Download,
 } from 'lucide-react-native';
 import {
   attendanceAPI,
@@ -46,13 +49,14 @@ import {
 } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import { AttendanceRecord, Employee } from '../types/hrms';
-import { C, useResponsive, tabletContainerStyle } from '../theme';
+import { C, useResponsive } from '../theme';
 import { CENTER } from '../components/common/centerModal';
-import ExportButton from '../components/common/ExportButton';
+import { chooseExport } from '../utils/exporters';
 import SlideInCard from '../components/motion/SlideInCard';
 import HeaderIconBtn from '../components/common/HeaderIconBtn';
 import SearchModal from '../components/common/SearchModal';
 import FilterSortModal from '../components/common/FilterSortModal';
+import DashStatCard, { dashStatRow } from '../components/common/DashStatCard';
 import { TimePickerField } from '../components/common/DatePickerField';
 
 function openLocationInMaps(loc: { lat: number; lng: number }) {
@@ -86,18 +90,18 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> =
     late: { color: C.warning, bg: '#FEF3E2', icon: AlertCircle },
     half_day: { color: C.secondary, bg: '#FEEEE3', icon: AlertCircle },
     on_leave: { color: C.primary, bg: '#E8F0FB', icon: Calendar },
-    not_checked_in: { color: '#9CA3AF', bg: '#F3F4F6', icon: Clock },
-    weekend: { color: '#9CA3AF', bg: '#F3F4F6', icon: Calendar },
+    not_checked_in: { color: '#6B7280', bg: '#F3F4F6', icon: Clock },
+    weekend: { color: '#6B7280', bg: '#F3F4F6', icon: Calendar },
     holiday: { color: '#A855F7', bg: '#F4EBFC', icon: Calendar },
   };
 
 const VERIFY_MODE_LABELS: Record<string, string> = {
-  fingerprint: 'FINGERPRINT',
-  card: 'CARD',
-  face: 'FACE',
-  geo_camera: 'FACE',
-  password: 'PASSWORD',
-  auto: 'AUTO',
+  fingerprint: 'Fingerprint',
+  card: 'Card',
+  face: 'Face',
+  geo_camera: 'Face',
+  password: 'Password',
+  auto: 'Auto',
 };
 
 const VERIFY_MODE_ICONS: Record<string, any> = {
@@ -157,6 +161,7 @@ export default function AttendanceScreen({ navigation }: any) {
   const [sortKey, setSortKey] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedEmpId, setSelectedEmpId] = useState('');
@@ -218,7 +223,6 @@ export default function AttendanceScreen({ navigation }: any) {
   const todayRecord =
     isEmployee && dateFilter === todayStr ? records[0] : undefined;
 
-  // Face ID–style live enrollment screen (captures + uploads itself).
   const handleEnrollFace = async () => {
     const ok = await requestSelfMarkPermissions();
     if (!ok) {
@@ -253,8 +257,6 @@ export default function AttendanceScreen({ navigation }: any) {
     );
   };
 
-  // Opens the live face-scan screen, which captures + verifies + submits the
-  // check-in/out itself (auto-capture once a steady face is detected).
   const handleSelfMark = async (action: 'checkin' | 'checkout') => {
     setSelfMarking(action);
     try {
@@ -357,12 +359,11 @@ export default function AttendanceScreen({ navigation }: any) {
     loadEmps();
   }, [loadEmps]);
 
-  // Refresh today's record when returning from the face-scan check-in/out screen.
   useFocusEffect(
     useCallback(() => {
       if (isEmployee) {
         load(false);
-        loadMyEmployee(); // pick up a face enrolled on the FaceEnroll screen
+        loadMyEmployee();
       }
     }, [isEmployee, load, loadMyEmployee]),
   );
@@ -522,8 +523,50 @@ export default function AttendanceScreen({ navigation }: any) {
     if (r.status in summary) summary[r.status]++;
   });
 
+  const exportCols = [
+    {
+      header: 'Emp Code',
+      value: (r: any) => r.employee?.employeeId,
+    },
+    {
+      header: 'Employee',
+      value: (r: any) =>
+        `${r.employee?.firstName || ''} ${r.employee?.lastName || ''}`.trim(),
+    },
+    { header: 'Date', value: () => dateFilter },
+    {
+      header: 'Check In',
+      value: (r: any) =>
+        r.checkIn
+          ? new Date(r.checkIn).toLocaleTimeString('en-IN', {
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : '',
+    },
+    {
+      header: 'Check Out',
+      value: (r: any) =>
+        r.checkOut
+          ? new Date(r.checkOut).toLocaleTimeString('en-IN', {
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : '',
+    },
+    {
+      header: 'Hours',
+      value: (r: any) => (r.workHours ? Number(r.workHours).toFixed(1) : ''),
+    },
+    {
+      header: 'Status',
+      value: (r: any) => String(r.status || '').replace(/_/g, ' '),
+    },
+  ];
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      {/* Concise Header matching EmployeesScreen */}
       <View
         style={[
           styles.header,
@@ -538,13 +581,9 @@ export default function AttendanceScreen({ navigation }: any) {
           <Clock size={20} color={C.primary} />
           <Text style={styles.headerTitle}>Attendance</Text>
         </View>
-        {!isEmployee && (
+
+        {!isEmployee ? (
           <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-            <HeaderIconBtn
-              label="Face attendance kiosk"
-              icon={<ScanFace size={22} color={C.primary} />}
-              onPress={() => navigation.navigate('FaceKiosk')}
-            />
             <HeaderIconBtn
               label="Search"
               icon={<Search size={22} color={C.black} />}
@@ -557,64 +596,11 @@ export default function AttendanceScreen({ navigation }: any) {
               dot={!!statusFilter || !!sortKey}
               onPress={() => setFilterOpen(true)}
             />
-            <ExportButton
-              name={`attendance_${dateFilter}`}
-              label=""
-              rows={filtered}
-              cols={[
-                {
-                  header: 'Emp Code',
-                  value: (r: any) => r.employee?.employeeId,
-                },
-                {
-                  header: 'Employee',
-                  value: (r: any) =>
-                    `${r.employee?.firstName || ''} ${
-                      r.employee?.lastName || ''
-                    }`.trim(),
-                },
-                { header: 'Date', value: () => dateFilter },
-                {
-                  header: 'Check In',
-                  value: (r: any) =>
-                    r.checkIn
-                      ? new Date(r.checkIn).toLocaleTimeString('en-IN', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })
-                      : '',
-                },
-                {
-                  header: 'Check Out',
-                  value: (r: any) =>
-                    r.checkOut
-                      ? new Date(r.checkOut).toLocaleTimeString('en-IN', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })
-                      : '',
-                },
-                {
-                  header: 'Hours',
-                  value: (r: any) =>
-                    r.workHours ? Number(r.workHours).toFixed(1) : '',
-                },
-                {
-                  header: 'Status',
-                  value: (r: any) => String(r.status || '').replace(/_/g, ' '),
-                },
-              ]}
+            <HeaderIconBtn
+              label="More actions"
+              icon={<Ellipsis size={22} color={C.black} />}
+              onPress={() => setMenuOpen(true)}
             />
-            <TouchableOpacity
-              style={styles.bulkBtn}
-              onPress={() => {
-                setBulkSelected([]);
-                setBulkStatus('present');
-                setShowBulkModal(true);
-              }}
-            >
-              <ListChecks size={24} color={C.black} />
-            </TouchableOpacity>
             <TouchableOpacity
               style={styles.addBtn}
               onPress={openNew}
@@ -624,8 +610,7 @@ export default function AttendanceScreen({ navigation }: any) {
               <CheckCircle2 size={24} color={C.primary} />
             </TouchableOpacity>
           </View>
-        )}
-        {isEmployee && (
+        ) : (
           <TouchableOpacity
             style={styles.addBtn}
             onPress={() => setShowCorrectionModal(true)}
@@ -636,6 +621,66 @@ export default function AttendanceScreen({ navigation }: any) {
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Overflow Menu Modal matching EmployeesScreen */}
+      {!isEmployee && (
+        <Modal
+          visible={menuOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setMenuOpen(false)}
+        >
+          <TouchableOpacity
+            style={styles.menuOverlay}
+            activeOpacity={1}
+            onPress={() => setMenuOpen(false)}
+          >
+            <View style={styles.menuSheet}>
+              {[
+                {
+                  icon: ScanFace,
+                  label: 'Face attendance kiosk',
+                  onPress: () => {
+                    setMenuOpen(false);
+                    navigation.navigate('FaceKiosk');
+                  },
+                },
+                {
+                  icon: ListChecks,
+                  label: 'Bulk mark attendance',
+                  onPress: () => {
+                    setMenuOpen(false);
+                    setBulkSelected([]);
+                    setBulkStatus('present');
+                    setShowBulkModal(true);
+                  },
+                },
+                {
+                  icon: Download,
+                  label: 'Export attendance',
+                  onPress: () => {
+                    setMenuOpen(false);
+                    chooseExport(
+                      `attendance_${dateFilter}`,
+                      exportCols,
+                      filtered,
+                    );
+                  },
+                },
+              ].map(item => (
+                <TouchableOpacity
+                  key={item.label}
+                  style={styles.menuItem}
+                  onPress={item.onPress}
+                >
+                  <item.icon size={18} color={C.black} />
+                  <Text style={styles.menuText}>{item.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </TouchableOpacity>
+        </Modal>
+      )}
 
       <View
         style={[
@@ -662,7 +707,7 @@ export default function AttendanceScreen({ navigation }: any) {
           }}
           activeOpacity={0.7}
         >
-          <Calendar size={13} color={C.primary} />
+          <Calendar size={14} color={C.primary} />
           <Text style={styles.dateCurrentText}>
             {new Date(dateFilter + 'T00:00:00').toLocaleDateString('en-IN', {
               weekday: 'short',
@@ -759,7 +804,7 @@ export default function AttendanceScreen({ navigation }: any) {
             {hasFaceEnrolled && (
               <TouchableOpacity
                 onPress={handleResetFace}
-                style={{ marginTop: 10 }}
+                style={{ marginTop: 12 }}
               >
                 <Text
                   style={[
@@ -832,7 +877,7 @@ export default function AttendanceScreen({ navigation }: any) {
           numColumns={isTablet ? 2 : 1}
           columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
           contentContainerStyle={[
-            { padding: 16, gap: 10, paddingBottom: 32 },
+            { padding: 16, gap: 12, paddingBottom: 32 },
             isTablet && {
               maxWidth: maxContentWidth,
               width: '100%',
@@ -847,6 +892,40 @@ export default function AttendanceScreen({ navigation }: any) {
             />
           }
           showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            !isEmployee ? (
+              <View style={dashStatRow}>
+                <DashStatCard
+                  index={0}
+                  label="Present"
+                  value={summary.present}
+                  icon={STATUS_CONFIG.present.icon}
+                  color={STATUS_CONFIG.present.color}
+                />
+                <DashStatCard
+                  index={1}
+                  label="Absent"
+                  value={summary.absent}
+                  icon={STATUS_CONFIG.absent.icon}
+                  color={STATUS_CONFIG.absent.color}
+                />
+                <DashStatCard
+                  index={2}
+                  label="Late"
+                  value={summary.late}
+                  icon={STATUS_CONFIG.late.icon}
+                  color={STATUS_CONFIG.late.color}
+                />
+                <DashStatCard
+                  index={3}
+                  label="Half Day"
+                  value={summary.half_day}
+                  icon={STATUS_CONFIG.half_day.icon}
+                  color={STATUS_CONFIG.half_day.color}
+                />
+              </View>
+            ) : null
+          }
           ListEmptyComponent={
             <View style={styles.empty}>
               <Clock size={40} color="#D1D5DB" />
@@ -911,7 +990,7 @@ export default function AttendanceScreen({ navigation }: any) {
                     ? new Date(dateFilter + 'T00:00:00')
                         .toLocaleDateString('en-IN', { weekday: 'long' })
                         .toUpperCase()
-                    : item.status.replace(/_/g, ' ').toUpperCase();
+                    : sentence(item.status);
                 return (
                   <View style={[styles.card, { borderLeftColor: cfg.color }]}>
                     <View style={styles.cardRow}>
@@ -948,14 +1027,12 @@ export default function AttendanceScreen({ navigation }: any) {
                             },
                           ]}
                         >
-                          <Icon size={11} color={cfg.color} />
+                          <Icon size={14} color={cfg.color} />
                         </View>
                       </View>
                       <View style={{ flex: 1, marginLeft: 12 }}>
                         <Text style={styles.empName} numberOfLines={1}>
-                          {emp
-                            ? `${emp.firstName} ${emp.lastName}`.toUpperCase()
-                            : 'UNKNOWN'}
+                          {emp ? `${emp.firstName} ${emp.lastName}` : 'Unknown'}
                         </Text>
                         <Text style={styles.empSub}>
                           {emp?.employeeId || ''}
@@ -963,7 +1040,7 @@ export default function AttendanceScreen({ navigation }: any) {
                         </Text>
                         {!!deptName && (
                           <View style={styles.empDeptRow}>
-                            <Building2 size={11} color="#9CA3AF" />
+                            <Building2 size={14} color="#6B7280" />
                             <Text style={styles.empDeptText}>{deptName}</Text>
                           </View>
                         )}
@@ -997,7 +1074,7 @@ export default function AttendanceScreen({ navigation }: any) {
                                     right: 8,
                                   }}
                                 >
-                                  <XCircle size={13} color={C.white} />
+                                  <XCircle size={14} color={C.white} />
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                   style={styles.markBtn}
@@ -1011,7 +1088,7 @@ export default function AttendanceScreen({ navigation }: any) {
                                     right: 8,
                                   }}
                                 >
-                                  <CheckCircle2 size={13} color={C.white} />
+                                  <CheckCircle2 size={14} color={C.white} />
                                 </TouchableOpacity>
                               </View>
                             )
@@ -1039,7 +1116,7 @@ export default function AttendanceScreen({ navigation }: any) {
                                   { backgroundColor: '#E7F9F1' },
                                 ]}
                               >
-                                <LogIn size={12} color={C.success} />
+                                <LogIn size={14} color={C.success} />
                               </View>
                               <Text style={styles.statLabel}>Check In</Text>
                             </View>
@@ -1063,7 +1140,7 @@ export default function AttendanceScreen({ navigation }: any) {
                                   { backgroundColor: '#FDEBEB' },
                                 ]}
                               >
-                                <LogOut size={12} color={C.danger} />
+                                <LogOut size={14} color={C.danger} />
                               </View>
                               <Text style={styles.statLabel}>Check Out</Text>
                             </View>
@@ -1089,7 +1166,7 @@ export default function AttendanceScreen({ navigation }: any) {
                                       { backgroundColor: '#F0EBFC' },
                                     ]}
                                   >
-                                    <VerifyIcon size={12} color="#7C3AED" />
+                                    <VerifyIcon size={14} color="#7C3AED" />
                                   </View>
                                   <Text style={styles.statLabel}>Method</Text>
                                 </View>
@@ -1099,7 +1176,7 @@ export default function AttendanceScreen({ navigation }: any) {
                                   adjustsFontSizeToFit
                                 >
                                   {VERIFY_MODE_LABELS[verifyMode] ||
-                                    verifyMode.toUpperCase()}
+                                    sentence(verifyMode)}
                                 </Text>
                               </View>
                             </>
@@ -1116,7 +1193,7 @@ export default function AttendanceScreen({ navigation }: any) {
                       <View style={styles.timeRow}>
                         {workHours && (
                           <View style={styles.timePill}>
-                            <Clock size={11} color={C.primary} />
+                            <Clock size={14} color={C.primary} />
                             <Text style={styles.timeText}>{workHours}h</Text>
                           </View>
                         )}
@@ -1127,7 +1204,7 @@ export default function AttendanceScreen({ navigation }: any) {
                               { borderColor: C.warning },
                             ]}
                           >
-                            <Clock size={11} color={C.warning} />
+                            <Clock size={14} color={C.warning} />
                             <Text
                               style={[styles.timeText, { color: C.warning }]}
                             >
@@ -1142,7 +1219,7 @@ export default function AttendanceScreen({ navigation }: any) {
                               { borderColor: C.primary },
                             ]}
                           >
-                            <LogOut size={11} color={C.primary} />
+                            <LogOut size={14} color={C.primary} />
                             <Text
                               style={[styles.timeText, { color: C.primary }]}
                             >
@@ -1155,7 +1232,7 @@ export default function AttendanceScreen({ navigation }: any) {
                             style={styles.timePill}
                             onPress={() => showLocationOptions(item)}
                           >
-                            <MapPin size={11} color={C.primary} />
+                            <MapPin size={14} color={C.primary} />
                             <Text style={styles.timeText}>Location</Text>
                           </TouchableOpacity>
                         )}
@@ -1185,7 +1262,6 @@ export default function AttendanceScreen({ navigation }: any) {
           onPress={() => setShowCalendar(false)}
         >
           <TouchableOpacity activeOpacity={1} style={styles.calSheet}>
-            {/* Month navigation */}
             <View style={styles.calNavRow}>
               <TouchableOpacity
                 style={styles.calNavBtn}
@@ -1221,7 +1297,6 @@ export default function AttendanceScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
 
-            {/* Day-of-week headers */}
             <View style={styles.calDowRow}>
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
                 <Text key={d} style={styles.calDowText}>
@@ -1230,12 +1305,11 @@ export default function AttendanceScreen({ navigation }: any) {
               ))}
             </View>
 
-            {/* Grid */}
             {(() => {
               const { year, month } = calendarMonth;
               const firstDay = new Date(year, month, 1).getDay();
               const daysInMonth = new Date(year, month + 1, 0).getDate();
-              const todayStr = toDateStr(new Date());
+              const currentTodayStr = toDateStr(new Date());
               const cells: number[] = [];
               for (let i = 0; i < firstDay; i++) cells.push(0);
               for (let d = 1; d <= daysInMonth; d++) cells.push(d);
@@ -1253,7 +1327,7 @@ export default function AttendanceScreen({ navigation }: any) {
                       '0',
                     )}-${String(day).padStart(2, '0')}`;
                     const isSelected = dayStr === dateFilter;
-                    const isToday = dayStr === todayStr;
+                    const isToday = dayStr === currentTodayStr;
                     return (
                       <TouchableOpacity
                         key={ci}
@@ -1301,18 +1375,17 @@ export default function AttendanceScreen({ navigation }: any) {
                 <View style={styles.modalHeader}>
                   <Text style={styles.modalTitle}>Bulk Attendance</Text>
                   <TouchableOpacity onPress={() => setShowBulkModal(false)}>
-                    <X size={22} color={C.black} />
+                    <X size={24} color={C.black} />
                   </TouchableOpacity>
                 </View>
                 <ScrollView
                   contentContainerStyle={{
                     padding: 16,
-                    gap: 14,
+                    gap: 16,
                     paddingBottom: 32,
                   }}
                   showsVerticalScrollIndicator={false}
                 >
-                  {/* Status selector */}
                   <View>
                     <Text style={styles.fieldLabel}>Status *</Text>
                     <View
@@ -1340,14 +1413,13 @@ export default function AttendanceScreen({ navigation }: any) {
                                 bulkStatus === s && { color: C.white },
                               ]}
                             >
-                              {s.replace(/_/g, ' ').toUpperCase()}
+                              {sentence(s)}
                             </Text>
                           </TouchableOpacity>
                         ))}
                     </View>
                   </View>
 
-                  {/* Select all toggle */}
                   <TouchableOpacity
                     style={styles.bulkSelectAllRow}
                     onPress={() => {
@@ -1375,7 +1447,6 @@ export default function AttendanceScreen({ navigation }: any) {
                     <Text style={styles.bulkSelectAllText}>Select All</Text>
                   </TouchableOpacity>
 
-                  {/* Employee list */}
                   {employees.map(emp => {
                     const isWeekend = isWeekendForEmployee(dateFilter, emp);
                     if (isWeekend) return null;
@@ -1401,7 +1472,7 @@ export default function AttendanceScreen({ navigation }: any) {
                         >
                           {checked && <View style={styles.bulkCheckboxInner} />}
                         </View>
-                        <View style={{ flex: 1, marginLeft: 10 }}>
+                        <View style={{ flex: 1, marginLeft: 12 }}>
                           <Text style={styles.empOptionName}>
                             {emp.firstName} {emp.lastName}
                           </Text>
@@ -1414,7 +1485,6 @@ export default function AttendanceScreen({ navigation }: any) {
                   })}
                 </ScrollView>
 
-                {/* Mark selected button */}
                 <View
                   style={{
                     padding: 16,
@@ -1474,7 +1544,7 @@ export default function AttendanceScreen({ navigation }: any) {
                     {editRecord ? 'Edit Attendance' : 'Mark Attendance'}
                   </Text>
                   <TouchableOpacity onPress={closeModal}>
-                    <X size={22} color={C.black} />
+                    <X size={24} color={C.black} />
                   </TouchableOpacity>
                 </View>
                 <ScrollView
@@ -1555,7 +1625,7 @@ export default function AttendanceScreen({ navigation }: any) {
                                 form.status === s && { color: C.white },
                               ]}
                             >
-                              {s.replace(/_/g, ' ').toUpperCase()}
+                              {sentence(s)}
                             </Text>
                           </TouchableOpacity>
                         ))}
@@ -1626,7 +1696,7 @@ export default function AttendanceScreen({ navigation }: any) {
                   <TouchableOpacity
                     onPress={() => setShowCorrectionModal(false)}
                   >
-                    <X size={22} color={C.black} />
+                    <X size={24} color={C.black} />
                   </TouchableOpacity>
                 </View>
                 <ScrollView
@@ -1650,7 +1720,7 @@ export default function AttendanceScreen({ navigation }: any) {
                   <View>
                     <Text style={styles.fieldLabel}>Correction Type *</Text>
                     <View
-                      style={{ flexDirection: 'row', gap: 10, marginTop: 6 }}
+                      style={{ flexDirection: 'row', gap: 12, marginTop: 6 }}
                     >
                       {['regularization', 'missed_punch'].map(t => (
                         <TouchableOpacity
@@ -1669,7 +1739,7 @@ export default function AttendanceScreen({ navigation }: any) {
                               correctionForm.type === t && { color: C.white },
                             ]}
                           >
-                            {t.replace('_', ' ').toUpperCase()}
+                            {sentence(t)}
                           </Text>
                         </TouchableOpacity>
                       ))}
@@ -1747,12 +1817,31 @@ const styles = StyleSheet.create({
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   addBtn: { padding: 4 },
-  addBtnText: {
-    color: C.white,
-    fontSize: 12,
-    fontWeight: '400',
-    textTransform: 'uppercase',
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    alignItems: 'flex-end',
+    paddingTop: 96,
+    paddingHorizontal: 12,
   },
+  menuSheet: {
+    minWidth: 230,
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderColor: C.black,
+    backgroundColor: C.white,
+    paddingVertical: 4,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  menuText: { fontSize: 14, color: C.black },
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1760,55 +1849,12 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   dateBtnArrow: { width: 44, alignItems: 'center' },
   dateBtnArrowText: { fontSize: 24, fontWeight: '400', color: C.black },
   dateCurrent: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dateCurrentText: { fontSize: 13, fontWeight: '400', color: C.black },
-  summaryBar: {
-    flexShrink: 0,
-    maxHeight: 96,
-    backgroundColor: C.white,
-    borderBottomWidth: 2,
-    borderBottomColor: C.black,
-  },
-  summaryContent: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    flexDirection: 'row',
-    gap: 8,
-  },
-  summaryPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderWidth: 2,
-    borderRightWidth: 4,
-    borderBottomWidth: 4,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 76,
-  },
-  summaryCount: {
-    fontSize: 20,
-    fontWeight: '400',
-    lineHeight: Platform.OS === 'android' ? 28 : 24,
-    includeFontPadding: false,
-  } as any,
-  summaryStatus: {
-    borderWidth: 2,
-    borderRadius: 999,
-    borderColor: '#0A0A0A',
-    borderRightWidth: 4,
-    borderBottomWidth: 4,
-    fontSize: 10,
-    fontWeight: '400',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
   approvalBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1817,7 +1863,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.warning,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   approvalBannerText: {
     flex: 1,
@@ -1829,16 +1875,14 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
-    padding: 14,
-    gap: 10,
+    padding: 16,
+    gap: 12,
   },
   selfMarkHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   selfMarkHeaderText: {
     fontSize: 11,
     fontWeight: '400',
     color: C.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
   },
   selfMarkBtn: {
     flexDirection: 'row',
@@ -1848,8 +1892,8 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -1859,7 +1903,6 @@ const styles = StyleSheet.create({
     color: C.white,
     fontSize: 13,
     fontWeight: '400',
-    textTransform: 'uppercase',
   },
   selfMarkDoneRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   selfMarkDoneText: { fontSize: 13, fontWeight: '400', color: C.success },
@@ -1869,17 +1912,6 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     marginBottom: 4,
   },
-  searchWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: C.white,
-    borderBottomWidth: 2,
-    borderBottomColor: C.black,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  searchInput: { flex: 1, fontSize: 14, fontWeight: '400', color: C.black },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
@@ -1890,20 +1922,14 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: C.black,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
-    padding: 14,
+    padding: 16,
   },
   cardRow: { flexDirection: 'row', alignItems: 'center' },
   cardActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  statusIcon: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   photoWrap: { position: 'relative', width: 48, height: 48 },
   empPhoto: {
     width: 48,
@@ -1920,7 +1946,7 @@ const styles = StyleSheet.create({
     right: -2,
     width: 18,
     height: 18,
-    borderRadius: 9,
+    borderRadius: 8,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1929,18 +1955,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 3,
+    marginTop: 4,
   },
-  empDeptText: { fontSize: 11, color: '#9CA3AF', fontWeight: '400' },
+  empDeptText: { fontSize: 11, color: '#6B7280', fontWeight: '400' },
   cardDivider: {
     height: 1,
-    backgroundColor: '#F0F1F3',
+    backgroundColor: '#F3F4F6',
     marginTop: 12,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   statsRow: { flexDirection: 'row', alignItems: 'flex-start' },
-  statCol: { flex: 1, gap: 3 },
-  statDivider: { width: 1, backgroundColor: '#F0F1F3', marginHorizontal: 10 },
+  statCol: { flex: 1, gap: 4 },
+  statDivider: { width: 1, backgroundColor: '#F3F4F6', marginHorizontal: 12 },
   statLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   statIconWrap: {
     width: 22,
@@ -1950,38 +1976,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   statLabel: {
-    fontSize: 10,
-    color: '#9CA3AF',
+    fontSize: 11,
+    color: '#6B7280',
     fontWeight: '400',
   },
   statValue: { fontSize: 15, fontWeight: '400', color: C.black },
-  statSub: { fontSize: 10, color: '#B0B4BA', fontWeight: '400' },
-  verifyPill: {
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    paddingHorizontal: 6,
-    paddingVertical: 6,
-  },
-  verifyPillText: {
-    fontSize: 8,
-    fontWeight: '400',
-    color: C.textMuted,
-    textTransform: 'uppercase',
-  },
+  statSub: { fontSize: 11, color: '#B0B4BA', fontWeight: '400' },
   empName: {
     fontSize: 15,
     fontWeight: '400',
     color: C.black,
     letterSpacing: 0.2,
   },
-  empSub: { fontSize: 11, color: '#9CA3AF', fontWeight: '400', marginTop: 2 },
+  empSub: { fontSize: 11, color: '#6B7280', fontWeight: '400', marginTop: 2 },
   statusTag: {
     borderWidth: 1.5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
-  statusTagText: { fontSize: 9, fontWeight: '400', letterSpacing: 0.3 },
+  statusTagText: { fontSize: 11, fontWeight: '400' },
   editBtn: {
     borderWidth: 1.5,
     borderColor: C.primary,
@@ -1992,17 +2005,17 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: C.primary,
     borderRadius: 8,
-    padding: 7,
+    padding: 8,
     backgroundColor: C.primary,
   },
   absentBtn: {
     borderWidth: 1.5,
     borderColor: C.danger,
     borderRadius: 8,
-    padding: 7,
+    padding: 8,
     backgroundColor: C.danger,
   },
-  timeRow: { flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' },
+  timeRow: { flexDirection: 'row', gap: 8, marginTop: 12, flexWrap: 'wrap' },
   timePill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2049,7 +2062,6 @@ const styles = StyleSheet.create({
   editInfoLabel: {
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.primary,
     marginBottom: 4,
   },
@@ -2057,21 +2069,19 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.black,
-    marginBottom: 5,
-    letterSpacing: 0.5,
+    marginBottom: 4,
   },
   fieldInput: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingVertical: 12,
     fontSize: 14,
     fontWeight: '400',
     color: C.black,
@@ -2082,7 +2092,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderWidth: 2,
     borderColor: C.black,
     marginBottom: 4,
@@ -2108,12 +2118,12 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingVertical: 14,
+    paddingVertical: 16,
     alignItems: 'center',
     marginTop: 8,
   },
@@ -2121,34 +2131,24 @@ const styles = StyleSheet.create({
     color: C.white,
     fontWeight: '400',
     fontSize: 14,
-    textTransform: 'uppercase',
-  },
-  // Bulk button
-  bulkBtn: { padding: 4 },
-  bulkBtnText: {
-    color: C.primary,
-    fontSize: 12,
-    fontWeight: '400',
-    textTransform: 'uppercase',
   },
   bulkSelectAllRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
-    gap: 10,
+    gap: 12,
   },
   bulkSelectAllText: {
     fontSize: 13,
     fontWeight: '400',
     color: C.black,
-    textTransform: 'uppercase',
   },
   bulkEmpRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
@@ -2170,7 +2170,6 @@ const styles = StyleSheet.create({
     height: 10,
     backgroundColor: C.white,
   },
-  // Calendar modal
   calOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.45)',
@@ -2193,7 +2192,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   calNavBtn: { width: 36, alignItems: 'center' },
-  calNavArrow: { fontSize: 26, fontWeight: '400', color: C.black },
+  calNavArrow: { fontSize: 24, fontWeight: '400', color: C.black },
   calMonthLabel: { fontSize: 15, fontWeight: '400', color: C.black },
   calDowRow: {
     flexDirection: 'row',
@@ -2205,7 +2204,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '400',
     color: C.textMuted,
-    textTransform: 'uppercase',
   },
   calGridRow: {
     flexDirection: 'row',
@@ -2222,8 +2220,8 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,

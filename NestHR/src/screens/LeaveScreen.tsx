@@ -1,3 +1,4 @@
+import { sentence } from '../utils/text';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -12,6 +13,7 @@ import {
   ScrollView,
   TextInput,
   Image,
+  DeviceEventEmitter,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -29,21 +31,25 @@ import {
   AlertCircle,
   Pencil,
   Trash2,
-  Paperclip,
   Camera,
   Search,
   SlidersHorizontal,
+  FileText,
 } from 'lucide-react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { leaveAPI, attendanceSettingsAPI } from '../api/api';
 import ExportButton from '../components/common/ExportButton';
 import { useAuth } from '../contexts/AuthContext';
 import { LeaveRequest } from '../types/hrms';
-import { C, useResponsive, tabletContainerStyle } from '../theme';
+import { C, useResponsive } from '../theme';
+import FadeInUp from '../components/motion/FadeInUp';
+import AnimatedValue from '../components/motion/AnimatedValue';
+import SlideInCard from '../components/motion/SlideInCard';
 import { CENTER } from '../components/common/centerModal';
 import HeaderIconBtn from '../components/common/HeaderIconBtn';
 import SearchModal from '../components/common/SearchModal';
 import FilterSortModal from '../components/common/FilterSortModal';
+import DashStatCard, { dashStatRow } from '../components/common/DashStatCard';
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> =
   {
@@ -89,7 +95,6 @@ export default function LeaveScreen() {
     endHour: '',
   });
   const [pickedDoc, setPickedDoc] = useState<any>(null);
-  // employee _id -> free (allowance) leave used / allowed this month, shown to HR
   const [usageMap, setUsageMap] = useState<
     Record<string, { used: number; allowed: number }>
   >({});
@@ -120,6 +125,7 @@ export default function LeaveScreen() {
     try {
       const res = await leaveAPI.getAll();
       setLeaves(res.data || []);
+      DeviceEventEmitter.emit('leaves:changed');
       if (!isEmployee) {
         const bal: any = await attendanceSettingsAPI
           .getBalanceSummary()
@@ -155,7 +161,6 @@ export default function LeaveScreen() {
     setRefreshing(false);
   };
 
-  // Change 1: filter by both status and leave type
   const filtered = leaves.filter(l => {
     if (statusFilter && l.status !== statusFilter) return false;
     if (leaveTypeFilter && l.leaveType !== leaveTypeFilter) return false;
@@ -188,7 +193,6 @@ export default function LeaveScreen() {
     );
   }
 
-  // Change 2: leave usage per type (for employee balance strip)
   const leaveUsage = LEAVE_TYPES.reduce((acc, t) => {
     const approved = leaves.filter(
       l => l.leaveType === t && l.status === 'approved',
@@ -298,11 +302,9 @@ export default function LeaveScreen() {
     deductSalary?: boolean,
   ) => {
     if (action === 'rejected') {
-      // Change 4: open reject modal instead of Alert
       setRejectModal({ visible: true, leave, comment: '' });
       return;
     }
-    // For approval: show deductSalary modal
     setApproveModal({
       visible: true,
       leave,
@@ -314,7 +316,6 @@ export default function LeaveScreen() {
   const confirmApprove = async () => {
     if (!approveModal.leave) return;
     try {
-      // Change 3: pass comment to updateStatus
       await leaveAPI.updateStatus(approveModal.leave._id, {
         status: 'approved',
         deductSalary: approveModal.deductSalary,
@@ -446,6 +447,13 @@ export default function LeaveScreen() {
     const ms = new Date(e).getTime() - new Date(s).getTime();
     return Math.round(ms / 86400000) + 1;
   };
+
+  const calculatedDays =
+    form.leaveType === 'hourly'
+      ? 'Hourly'
+      : form.startDate && form.endDate
+      ? `${Math.max(1, daysBetween(form.startDate, form.endDate))} day(s)`
+      : null;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -586,7 +594,6 @@ export default function LeaveScreen() {
         }}
       />
 
-      {/* Change 2: Leave balance strip (employee only) */}
       {isEmployee && (
         <ScrollView
           horizontal
@@ -594,20 +601,23 @@ export default function LeaveScreen() {
           style={styles.balanceStrip}
           contentContainerStyle={{ gap: 8, paddingHorizontal: 16 }}
         >
-          {LEAVE_TYPES.map(t => {
+          {LEAVE_TYPES.map((t, i) => {
             const used = leaveUsage[t] ?? 0;
             return (
-              <View key={t} style={styles.balanceCard}>
-                <Text style={styles.balanceType}>{t.toUpperCase()}</Text>
-                <Text
+              <FadeInUp
+                key={t}
+                delay={Math.min(i, 8) * 70}
+                style={styles.balanceCard}
+              >
+                <Text style={styles.balanceType}>{sentence(t)}</Text>
+                <AnimatedValue
                   style={[
                     styles.balanceDays,
                     { color: used > 0 ? C.primary : C.textMuted },
                   ]}
-                >
-                  {used > 0 ? `${used}d used` : '0d'}
-                </Text>
-              </View>
+                  value={used > 0 ? `${used}d used` : '0d'}
+                />
+              </FadeInUp>
             );
           })}
         </ScrollView>
@@ -640,13 +650,45 @@ export default function LeaveScreen() {
             />
           }
           showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <View style={dashStatRow}>
+              <DashStatCard
+                index={0}
+                label="Total"
+                value={leaves.length}
+                icon={Calendar}
+                color={C.primary}
+              />
+              <DashStatCard
+                index={1}
+                label="Pending"
+                value={counts.pending}
+                icon={Clock}
+                color={C.warning}
+              />
+              <DashStatCard
+                index={2}
+                label="Approved"
+                value={counts.approved}
+                icon={CheckCircle2}
+                color={C.success}
+              />
+              <DashStatCard
+                index={3}
+                label="Rejected"
+                value={counts.rejected}
+                icon={XCircle}
+                color={C.danger}
+              />
+            </View>
+          }
           ListEmptyComponent={
             <View style={styles.empty}>
               <Calendar size={40} color="#D1D5DB" />
               <Text style={styles.emptyText}>No leave requests</Text>
             </View>
           }
-          renderItem={({ item }) => {
+          renderItem={({ item, index }) => {
             const cfg = STATUS_CONFIG[item.status] || {
               color: C.textMuted,
               bg: '#F3F4F6',
@@ -664,239 +706,241 @@ export default function LeaveScreen() {
                 }`.toUpperCase()
               : '?';
             return (
-              <View style={[styles.card, isTablet && styles.cardTablet]}>
-                <View style={styles.cardRow}>
-                  <View style={styles.photoWrap}>
-                    {emp?.avatar ? (
-                      <Image
-                        source={{ uri: emp.avatar }}
-                        style={styles.empPhoto}
-                      />
-                    ) : (
-                      <View
-                        style={[
-                          styles.empPhoto,
-                          styles.empPhotoFallback,
-                          { backgroundColor: cfg.bg },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.empPhotoInitials,
-                            { color: cfg.color },
-                          ]}
-                        >
-                          {initials}
-                        </Text>
-                      </View>
-                    )}
-                    <View
-                      style={[
-                        styles.statusBadgeOverlay,
-                        { backgroundColor: C.white, borderColor: cfg.color },
-                      ]}
-                    >
-                      <Icon size={11} color={cfg.color} />
-                    </View>
-                  </View>
-                  <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={styles.codeChip}>
-                      {emp?.employeeId || '—'}
-                    </Text>
-                    <Text style={styles.empName} numberOfLines={1}>
-                      {emp
-                        ? `${emp.firstName} ${emp.lastName}`.toUpperCase()
-                        : 'UNKNOWN'}
-                    </Text>
-                    <Text style={styles.empSub} numberOfLines={1}>
-                      {emp?.designation || '—'}
-                    </Text>
-                    {!isEmployee && usageMap[emp?._id]?.allowed > 0 && (
-                      <Text style={styles.freeLeave}>
-                        Free leave: {usageMap[emp._id].used}/
-                        {usageMap[emp._id].allowed} d
-                      </Text>
-                    )}
-                  </View>
-                  <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                    <View style={styles.statusLine}>
-                      <View
-                        style={[
-                          styles.statusTag,
-                          { backgroundColor: cfg.bg, borderColor: cfg.color },
-                        ]}
-                      >
-                        <Text
-                          style={[styles.statusTagText, { color: cfg.color }]}
-                        >
-                          {item.status.toUpperCase()}
-                        </Text>
-                      </View>
-                      {item.status === 'approved' && (
+              <SlideInCard
+                index={index}
+                style={isTablet ? styles.cardTablet : undefined}
+              >
+                <View style={styles.card}>
+                  <View style={styles.cardRow}>
+                    <View style={styles.photoWrap}>
+                      {emp?.avatar ? (
+                        <Image
+                          source={{ uri: emp.avatar }}
+                          style={styles.empPhoto}
+                        />
+                      ) : (
                         <View
                           style={[
-                            styles.statusTag,
-                            (item as any).deductSalary
-                              ? {
-                                  backgroundColor: '#FFF1E6',
-                                  borderColor: C.secondary,
-                                }
-                              : {
-                                  backgroundColor: '#E7F9F1',
-                                  borderColor: C.success,
-                                },
+                            styles.empPhoto,
+                            styles.empPhotoFallback,
+                            { backgroundColor: cfg.bg },
                           ]}
                         >
                           <Text
                             style={[
-                              styles.statusTagText,
-                              {
-                                color: (item as any).deductSalary
-                                  ? C.secondary
-                                  : C.success,
-                              },
+                              styles.empPhotoInitials,
+                              { color: cfg.color },
                             ]}
                           >
-                            {(item as any).deductSalary ? 'UNPAID' : 'PAID'}
+                            {initials}
                           </Text>
                         </View>
                       )}
-                    </View>
-                    <View style={styles.typeDays}>
-                      <Text style={styles.typeText}>
-                        {item.leaveType?.replace('_', ' ').toUpperCase()}
-                      </Text>
-                      <Text style={styles.typeText}>
-                        {days ? `${days}d` : ''}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-
-                <View style={styles.cardDivider} />
-                <View style={styles.statsRow}>
-                  <View style={styles.statCol}>
-                    <View style={styles.statLabelRow}>
                       <View
                         style={[
-                          styles.statIconWrap,
-                          { backgroundColor: '#E8F0FB' },
+                          styles.statusBadgeOverlay,
+                          { backgroundColor: C.white, borderColor: cfg.color },
                         ]}
                       >
-                        <Calendar size={12} color={C.primary} />
+                        <Icon size={14} color={cfg.color} />
                       </View>
-                      <Text style={styles.statLabel}>From</Text>
                     </View>
-                    <Text
-                      style={styles.statValue}
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                    >
-                      {formatDate(item.startDate)}
-                    </Text>
-                  </View>
-                  <View style={styles.statDivider} />
-                  <View style={styles.statCol}>
-                    <View style={styles.statLabelRow}>
-                      <View
-                        style={[
-                          styles.statIconWrap,
-                          { backgroundColor: '#E8F0FB' },
-                        ]}
-                      >
-                        <Calendar size={12} color={C.primary} />
-                      </View>
-                      <Text style={styles.statLabel}>To</Text>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={styles.codeChip}>
+                        {emp?.employeeId || '—'}
+                      </Text>
+                      <Text style={styles.empName} numberOfLines={1}>
+                        {emp ? `${emp.firstName} ${emp.lastName}` : 'Unknown'}
+                      </Text>
+                      <Text style={styles.empSub} numberOfLines={1}>
+                        {emp?.designation || '—'}
+                      </Text>
+                      {!isEmployee && usageMap[emp?._id]?.allowed > 0 && (
+                        <Text style={styles.freeLeave}>
+                          Free leave: {usageMap[emp._id].used}/
+                          {usageMap[emp._id].allowed} d
+                        </Text>
+                      )}
                     </View>
-                    <Text
-                      style={styles.statValue}
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                    >
-                      {formatDate(item.endDate)}
-                    </Text>
-                  </View>
-                  {days && (
-                    <>
-                      <View style={styles.statDivider} />
-                      <View style={styles.statCol}>
-                        <View style={styles.statLabelRow}>
+                    <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                      <View style={styles.statusLine}>
+                        <View
+                          style={[
+                            styles.statusTag,
+                            { backgroundColor: cfg.bg, borderColor: cfg.color },
+                          ]}
+                        >
+                          <Text
+                            style={[styles.statusTagText, { color: cfg.color }]}
+                          >
+                            {sentence(item.status)}
+                          </Text>
+                        </View>
+                        {item.status === 'approved' && (
                           <View
                             style={[
-                              styles.statIconWrap,
-                              { backgroundColor: '#F0EBFC' },
+                              styles.statusTag,
+                              (item as any).deductSalary
+                                ? {
+                                    backgroundColor: '#FFF1E6',
+                                    borderColor: C.secondary,
+                                  }
+                                : {
+                                    backgroundColor: '#E7F9F1',
+                                    borderColor: C.success,
+                                  },
                             ]}
                           >
-                            <Clock size={12} color="#7C3AED" />
+                            <Text
+                              style={[
+                                styles.statusTagText,
+                                {
+                                  color: (item as any).deductSalary
+                                    ? C.secondary
+                                    : C.success,
+                                },
+                              ]}
+                            >
+                              {(item as any).deductSalary ? 'Unpaid' : 'Paid'}
+                            </Text>
                           </View>
-                          <Text style={styles.statLabel}>Duration</Text>
-                        </View>
-                        <Text
-                          style={styles.statValue}
-                          numberOfLines={1}
-                          adjustsFontSizeToFit
-                        >
-                          {days}d
+                        )}
+                      </View>
+                      <View style={styles.typeDays}>
+                        <Text style={styles.typeText}>
+                          {sentence(item.leaveType)}
+                        </Text>
+                        <Text style={styles.typeText}>
+                          {days ? `${days}d` : ''}
                         </Text>
                       </View>
-                    </>
+                    </View>
+                  </View>
+
+                  <View style={styles.cardDivider} />
+                  <View style={styles.statsRow}>
+                    <View style={styles.statCol}>
+                      <View style={styles.statLabelRow}>
+                        <View
+                          style={[
+                            styles.statIconWrap,
+                            { backgroundColor: '#E8F0FB' },
+                          ]}
+                        >
+                          <Calendar size={14} color={C.primary} />
+                        </View>
+                        <Text style={styles.statLabel}>From</Text>
+                      </View>
+                      <Text
+                        style={styles.statValue}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                      >
+                        {formatDate(item.startDate)}
+                      </Text>
+                    </View>
+                    <View style={styles.statDivider} />
+                    <View style={styles.statCol}>
+                      <View style={styles.statLabelRow}>
+                        <View
+                          style={[
+                            styles.statIconWrap,
+                            { backgroundColor: '#E8F0FB' },
+                          ]}
+                        >
+                          <Calendar size={14} color={C.primary} />
+                        </View>
+                        <Text style={styles.statLabel}>To</Text>
+                      </View>
+                      <Text
+                        style={styles.statValue}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                      >
+                        {formatDate(item.endDate)}
+                      </Text>
+                    </View>
+                    {days && (
+                      <>
+                        <View style={styles.statDivider} />
+                        <View style={styles.statCol}>
+                          <View style={styles.statLabelRow}>
+                            <View
+                              style={[
+                                styles.statIconWrap,
+                                { backgroundColor: '#F0EBFC' },
+                              ]}
+                            >
+                              <Clock size={14} color="#7C3AED" />
+                            </View>
+                            <Text style={styles.statLabel}>Duration</Text>
+                          </View>
+                          <Text
+                            style={styles.statValue}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                          >
+                            {days}d
+                          </Text>
+                        </View>
+                      </>
+                    )}
+                  </View>
+
+                  {item.reason && (
+                    <Text style={styles.reason}>{item.reason}</Text>
+                  )}
+
+                  {(item as any).comment && (
+                    <Text style={styles.commentText}>
+                      "{(item as any).comment}"
+                    </Text>
+                  )}
+
+                  {item.status === 'pending' && !isEmployee && (
+                    <View style={styles.actionRow}>
+                      <TouchableOpacity
+                        style={styles.approveBtn}
+                        onPress={() => handleAction(item, 'approved')}
+                      >
+                        <Check size={14} color={C.white} />
+                        <Text style={styles.actionBtnText}>Approve</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.rejectBtn}
+                        onPress={() => handleAction(item, 'rejected')}
+                      >
+                        <X size={14} color={C.white} />
+                        <Text style={styles.actionBtnText}>Reject</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  {item.status === 'pending' && isEmployee && (
+                    <View style={styles.actionRow}>
+                      <TouchableOpacity
+                        style={styles.approveBtn}
+                        onPress={() => openEdit(item)}
+                      >
+                        <Pencil size={14} color={C.white} />
+                        <Text style={styles.actionBtnText}>Edit</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.rejectBtn}
+                        onPress={() => handleDelete(item)}
+                      >
+                        <Trash2 size={14} color={C.white} />
+                        <Text style={styles.actionBtnText}>Cancel</Text>
+                      </TouchableOpacity>
+                    </View>
                   )}
                 </View>
-
-                {item.reason && (
-                  <Text style={styles.reason}>{item.reason}</Text>
-                )}
-
-                {/* Change 4: show comment on card */}
-                {(item as any).comment && (
-                  <Text style={styles.commentText}>
-                    "{(item as any).comment}"
-                  </Text>
-                )}
-
-                {item.status === 'pending' && !isEmployee && (
-                  <View style={styles.actionRow}>
-                    <TouchableOpacity
-                      style={styles.approveBtn}
-                      onPress={() => handleAction(item, 'approved')}
-                    >
-                      <Check size={13} color={C.white} />
-                      <Text style={styles.actionBtnText}>Approve</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.rejectBtn}
-                      onPress={() => handleAction(item, 'rejected')}
-                    >
-                      <X size={13} color={C.white} />
-                      <Text style={styles.actionBtnText}>Reject</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-                {item.status === 'pending' && isEmployee && (
-                  <View style={styles.actionRow}>
-                    <TouchableOpacity
-                      style={styles.approveBtn}
-                      onPress={() => openEdit(item)}
-                    >
-                      <Pencil size={13} color={C.white} />
-                      <Text style={styles.actionBtnText}>Edit</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.rejectBtn}
-                      onPress={() => handleDelete(item)}
-                    >
-                      <Trash2 size={13} color={C.white} />
-                      <Text style={styles.actionBtnText}>Cancel</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
+              </SlideInCard>
             );
           }}
         />
       )}
 
-      {/* Change 3: Approve Leave Modal with comment */}
+      {/* Approve Leave Modal */}
       <Modal
         visible={approveModal.visible}
         transparent
@@ -917,7 +961,7 @@ export default function LeaveScreen() {
               <Text style={styles.approveModalSub}>
                 {(approveModal.leave.employee as any)?.firstName}{' '}
                 {(approveModal.leave.employee as any)?.lastName} ·{' '}
-                {approveModal.leave.leaveType?.toUpperCase()} ·{' '}
+                {sentence(approveModal.leave.leaveType)} ·{' '}
                 {approveModal.leave.days ?? '?'}d
               </Text>
             )}
@@ -1015,7 +1059,7 @@ export default function LeaveScreen() {
         </View>
       </Modal>
 
-      {/* Change 4: Reject Leave Modal */}
+      {/* Reject Leave Modal */}
       <Modal
         visible={rejectModal.visible}
         transparent
@@ -1031,7 +1075,7 @@ export default function LeaveScreen() {
               <Text style={styles.approveModalSub}>
                 {(rejectModal.leave.employee as any)?.firstName}{' '}
                 {(rejectModal.leave.employee as any)?.lastName} ·{' '}
-                {rejectModal.leave.leaveType?.toUpperCase()}
+                {sentence(rejectModal.leave.leaveType)}
               </Text>
             )}
             <Text style={styles.approveModalLabel}>Reason for rejection</Text>
@@ -1067,70 +1111,73 @@ export default function LeaveScreen() {
         </View>
       </Modal>
 
-      {/* Edit Leave Modal (employee only) */}
+      {/* Edit Leave Modal (clean horizontal pills + structured inputs) */}
       <Modal visible={showEditForm} transparent animationType="fade">
         <View style={CENTER.overlay}>
           <View style={CENTER.card}>
-            <SafeAreaView style={styles.safe} edges={[]}>
+            <SafeAreaView style={styles.modalSafe} edges={[]}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Edit Leave Request</Text>
+                <View style={styles.modalHeaderLeft}>
+                  <Calendar size={18} color={C.primary} />
+                  <Text style={styles.modalTitle}>Edit Leave Request</Text>
+                </View>
                 <TouchableOpacity
                   onPress={() => {
                     setShowEditForm(false);
                     setEditLeave(null);
                   }}
+                  style={styles.closeBtn}
                 >
-                  <X size={22} color={C.black} />
+                  <X size={20} color={C.black} />
                 </TouchableOpacity>
               </View>
               <ScrollView
-                contentContainerStyle={{ padding: 20, gap: 16 }}
+                contentContainerStyle={{ padding: 16, gap: 14 }}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
               >
                 <View>
-                  <Text style={styles.fieldLabel}>Leave Type</Text>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      flexWrap: 'wrap',
-                      gap: 8,
-                      marginTop: 6,
-                    }}
+                  <Text style={styles.fieldLabel}>LEAVE TYPE</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 8, paddingVertical: 2 }}
                   >
-                    {LEAVE_TYPES.map(t => (
-                      <TouchableOpacity
-                        key={t}
-                        style={[
-                          styles.selChip,
-                          editForm.leaveType === t && styles.selChipActive,
-                        ]}
-                        onPress={() =>
-                          setEditForm(p => ({ ...p, leaveType: t }))
-                        }
-                      >
-                        <Text
+                    {LEAVE_TYPES.map(t => {
+                      const active = editForm.leaveType === t;
+                      return (
+                        <TouchableOpacity
+                          key={t}
                           style={[
-                            styles.selChipText,
-                            editForm.leaveType === t && { color: C.white },
+                            styles.typeChip,
+                            active && styles.typeChipActive,
                           ]}
+                          onPress={() =>
+                            setEditForm(p => ({ ...p, leaveType: t }))
+                          }
                         >
-                          {t.toUpperCase()}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
+                          <Text
+                            style={[
+                              styles.typeChipText,
+                              active && styles.typeChipTextActive,
+                            ]}
+                          >
+                            {sentence(t)}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
                 </View>
+
                 {editForm.leaveType === 'hourly' ? (
-                  <View>
-                    <DatePickerField
-                      label="Date *"
-                      value={editForm.startDate}
-                      onChange={v => setEditForm(p => ({ ...p, startDate: v }))}
-                    />
-                  </View>
+                  <DatePickerField
+                    label="Date *"
+                    value={editForm.startDate}
+                    onChange={v => setEditForm(p => ({ ...p, startDate: v }))}
+                  />
                 ) : (
-                  <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
                     <View style={{ flex: 1 }}>
                       <DatePickerField
                         label="Start Date *"
@@ -1151,7 +1198,7 @@ export default function LeaveScreen() {
                 )}
 
                 {editForm.leaveType === 'hourly' && (
-                  <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
                     <View style={{ flex: 1 }}>
                       <TimePickerField
                         label="Start Time *"
@@ -1170,17 +1217,20 @@ export default function LeaveScreen() {
                     </View>
                   </View>
                 )}
+
                 <View>
-                  <Text style={styles.fieldLabel}>Reason *</Text>
+                  <Text style={styles.fieldLabel}>REASON *</Text>
                   <TextInput
-                    style={[styles.fieldInput, { minHeight: 100 }]}
+                    style={[styles.fieldInput, { minHeight: 80 }]}
                     value={editForm.reason}
                     onChangeText={v => setEditForm(p => ({ ...p, reason: v }))}
                     placeholder="Explain your reason…"
                     placeholderTextColor={C.textLight}
                     multiline
+                    textAlignVertical="top"
                   />
                 </View>
+
                 <TouchableOpacity
                   style={styles.submitBtn}
                   onPress={handleUpdate}
@@ -1189,9 +1239,12 @@ export default function LeaveScreen() {
                   {saving ? (
                     <ActivityIndicator color={C.white} />
                   ) : (
-                    <Text style={styles.submitBtnText}>
-                      Update Leave Request
-                    </Text>
+                    <>
+                      <Check size={16} color={C.white} />
+                      <Text style={styles.submitBtnText}>
+                        Update Leave Request
+                      </Text>
+                    </>
                   )}
                 </TouchableOpacity>
               </ScrollView>
@@ -1200,63 +1253,83 @@ export default function LeaveScreen() {
         </View>
       </Modal>
 
-      {/* Apply Leave Modal */}
+      {/* Apply Leave Modal (redesigned for clean hierarchy & compact spacing) */}
       <Modal visible={showForm} transparent animationType="fade">
         <View style={CENTER.overlay}>
           <View style={CENTER.card}>
-            <SafeAreaView style={styles.safe} edges={[]}>
+            <SafeAreaView style={styles.modalSafe} edges={[]}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Apply for Leave</Text>
-                <TouchableOpacity onPress={() => setShowForm(false)}>
-                  <X size={22} color={C.black} />
+                <View style={styles.modalHeaderLeft}>
+                  <Calendar size={18} color={C.primary} />
+                  <Text style={styles.modalTitle}>Apply for Leave</Text>
+                  {!!calculatedDays && (
+                    <View style={styles.durationPill}>
+                      <Text style={styles.durationPillText}>
+                        {calculatedDays}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <TouchableOpacity
+                  onPress={() => setShowForm(false)}
+                  style={styles.closeBtn}
+                >
+                  <X size={20} color={C.black} />
                 </TouchableOpacity>
               </View>
+
               <ScrollView
-                contentContainerStyle={{ padding: 20, gap: 16 }}
+                contentContainerStyle={{
+                  padding: 16,
+                  gap: 14,
+                  paddingBottom: 24,
+                }}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
               >
+                {/* Horizontal scrollable Leave Type chips */}
                 <View>
-                  <Text style={styles.fieldLabel}>Leave Type</Text>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      flexWrap: 'wrap',
-                      gap: 8,
-                      marginTop: 6,
-                    }}
+                  <Text style={styles.fieldLabel}>LEAVE TYPE</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 8, paddingVertical: 2 }}
                   >
-                    {LEAVE_TYPES.map(t => (
-                      <TouchableOpacity
-                        key={t}
-                        style={[
-                          styles.selChip,
-                          form.leaveType === t && styles.selChipActive,
-                        ]}
-                        onPress={() => setForm(p => ({ ...p, leaveType: t }))}
-                      >
-                        <Text
+                    {LEAVE_TYPES.map(t => {
+                      const active = form.leaveType === t;
+                      return (
+                        <TouchableOpacity
+                          key={t}
                           style={[
-                            styles.selChipText,
-                            form.leaveType === t && { color: C.white },
+                            styles.typeChip,
+                            active && styles.typeChipActive,
                           ]}
+                          onPress={() => setForm(p => ({ ...p, leaveType: t }))}
+                          activeOpacity={0.8}
                         >
-                          {t.toUpperCase()}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
+                          <Text
+                            style={[
+                              styles.typeChipText,
+                              active && styles.typeChipTextActive,
+                            ]}
+                          >
+                            {sentence(t)}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
                 </View>
+
+                {/* Date / Time Pickers */}
                 {form.leaveType === 'hourly' ? (
-                  <View>
-                    <DatePickerField
-                      label="Date *"
-                      value={form.startDate}
-                      onChange={v => setForm(p => ({ ...p, startDate: v }))}
-                    />
-                  </View>
+                  <DatePickerField
+                    label="Date *"
+                    value={form.startDate}
+                    onChange={v => setForm(p => ({ ...p, startDate: v }))}
+                  />
                 ) : (
-                  <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
                     <View style={{ flex: 1 }}>
                       <DatePickerField
                         label="Start Date *"
@@ -1275,7 +1348,7 @@ export default function LeaveScreen() {
                 )}
 
                 {form.leaveType === 'hourly' && (
-                  <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
                     <View style={{ flex: 1 }}>
                       <TimePickerField
                         label="Start Time *"
@@ -1292,60 +1365,105 @@ export default function LeaveScreen() {
                     </View>
                   </View>
                 )}
+
+                {/* Reason */}
                 <View>
-                  <Text style={styles.fieldLabel}>Reason *</Text>
+                  <Text style={styles.fieldLabel}>REASON *</Text>
                   <TextInput
-                    style={[styles.fieldInput, { minHeight: 100 }]}
+                    style={[styles.fieldInput, { minHeight: 80 }]}
                     value={form.reason}
                     onChangeText={v => setForm(p => ({ ...p, reason: v }))}
                     placeholder="Explain your reason…"
                     placeholderTextColor={C.textLight}
                     multiline
+                    textAlignVertical="top"
                   />
                 </View>
+
+                {/* Supporting Document Upload Box */}
                 <View>
-                  <Text style={styles.fieldLabel}>
-                    Supporting Document
-                    {DOC_REQUIRED_TYPES.includes(form.leaveType)
-                      ? ' *'
-                      : ' (optional)'}
-                  </Text>
+                  <View style={styles.docLabelRow}>
+                    <Text style={styles.fieldLabel}>
+                      SUPPORTING DOCUMENT
+                      {DOC_REQUIRED_TYPES.includes(form.leaveType)
+                        ? ' *'
+                        : ' (OPTIONAL)'}
+                    </Text>
+                    {pickedDoc && (
+                      <TouchableOpacity
+                        onPress={() => setPickedDoc(null)}
+                        hitSlop={8}
+                      >
+                        <Text style={styles.removeDocText}>Remove</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
                   <TouchableOpacity
-                    style={styles.docPicker}
+                    style={[
+                      styles.docPicker,
+                      pickedDoc && styles.docPickerAttached,
+                    ]}
                     onPress={pickDocument}
+                    activeOpacity={0.8}
                   >
                     {pickedDoc ? (
                       <>
-                        <Paperclip size={18} color={C.primary} />
-                        <Text style={styles.docPickerText} numberOfLines={1}>
-                          {pickedDoc.fileName || 'Document selected'}
-                        </Text>
+                        {pickedDoc.uri ? (
+                          <Image
+                            source={{ uri: pickedDoc.uri }}
+                            style={styles.docThumb}
+                          />
+                        ) : (
+                          <View style={styles.docIconBox}>
+                            <FileText size={18} color={C.primary} />
+                          </View>
+                        )}
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.docPickerText} numberOfLines={1}>
+                            {pickedDoc.fileName || 'Document attached'}
+                          </Text>
+                          <Text style={styles.docSubText}>
+                            Tap to replace photo
+                          </Text>
+                        </View>
+                        <CheckCircle2 size={18} color={C.success} />
                       </>
                     ) : (
                       <>
-                        <Camera size={18} color="#9CA3AF" />
-                        <Text style={styles.docPickerPlaceholder}>
-                          Tap to attach a photo/scan
-                        </Text>
+                        <View style={styles.docIconBox}>
+                          <Camera size={18} color={C.primary} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.docPickerPlaceholder}>
+                            Tap to attach a photo or scan
+                          </Text>
+                          {DOC_REQUIRED_TYPES.includes(form.leaveType) && (
+                            <Text style={styles.docSubText}>
+                              Required for {sentence(form.leaveType)} leave
+                            </Text>
+                          )}
+                        </View>
                       </>
                     )}
                   </TouchableOpacity>
-                  {DOC_REQUIRED_TYPES.includes(form.leaveType) && (
-                    <Text style={styles.hint}>
-                      Required for sick/casual leave — retake the photo to
-                      correct a mistake.
-                    </Text>
-                  )}
                 </View>
+
                 <TouchableOpacity
                   style={styles.submitBtn}
                   onPress={handleApply}
                   disabled={saving}
+                  activeOpacity={0.85}
                 >
                   {saving ? (
                     <ActivityIndicator color={C.white} />
                   ) : (
-                    <Text style={styles.submitBtnText}>Submit Application</Text>
+                    <>
+                      <Check size={16} color={C.white} />
+                      <Text style={styles.submitBtnText}>
+                        Submit Application
+                      </Text>
+                    </>
                   )}
                 </TouchableOpacity>
               </ScrollView>
@@ -1368,7 +1486,7 @@ const styles = StyleSheet.create({
     borderColor: C.primary,
     paddingHorizontal: 6,
     paddingVertical: 1,
-    marginBottom: 3,
+    marginBottom: 4,
   },
   freeLeave: {
     fontSize: 11,
@@ -1378,7 +1496,7 @@ const styles = StyleSheet.create({
   },
   statusLine: { flexDirection: 'row', gap: 4, alignItems: 'center' },
   typeDays: { flexDirection: 'row', gap: 6 },
-  typeText: { fontSize: 10, fontWeight: '400', color: C.textMuted },
+  typeText: { fontSize: 11, fontWeight: '400', color: C.textMuted },
   safe: { flex: 1, backgroundColor: C.bg },
   header: {
     flexDirection: 'row',
@@ -1393,39 +1511,6 @@ const styles = StyleSheet.create({
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   addBtn: { padding: 4 },
-  addBtnText: {
-    color: C.white,
-    fontSize: 12,
-    fontWeight: '400',
-    textTransform: 'uppercase',
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    backgroundColor: C.white,
-    borderBottomWidth: 2,
-    borderBottomColor: C.black,
-    padding: 12,
-    gap: 10,
-  },
-  summaryCard: {
-    flex: 1,
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  summaryVal: { fontSize: 22, fontWeight: '400' },
-  summaryLabel: {
-    fontSize: 9,
-    fontWeight: '400',
-    textTransform: 'uppercase',
-    marginTop: 2,
-  },
-  // Leave balance strip
   balanceStrip: {
     maxHeight: 52,
     backgroundColor: C.white,
@@ -1436,66 +1521,42 @@ const styles = StyleSheet.create({
   balanceCard: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 4,
     alignItems: 'center',
     minWidth: 72,
   },
   balanceType: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '400',
     color: C.black,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
   },
   balanceDays: {
     fontSize: 11,
     fontWeight: '400',
     marginTop: 2,
   },
-  filterBar: {
-    maxHeight: 48,
-    backgroundColor: C.white,
-    borderBottomWidth: 2,
-    borderBottomColor: C.black,
-    paddingVertical: 8,
-  },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderWidth: 2,
-    borderRightWidth: 4,
-    borderBottomWidth: 4,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderRadius: 8,
-    borderColor: C.black,
-  },
-  chipActive: {
-    backgroundColor: C.primary,
-    borderColor: C.primary,
-  },
-  chipText: { fontSize: 12, fontWeight: '400', color: C.black },
-  chipTextActive: { color: C.white },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
-  colWrapper: { gap: 12 },
+  colWrapper: { gap: 10 },
   cardTablet: { flex: 1 },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    padding: 14,
+    padding: 16,
   },
   cardRow: { flexDirection: 'row', alignItems: 'center' },
   photoWrap: { position: 'relative', width: 48, height: 48 },
@@ -1508,7 +1569,7 @@ const styles = StyleSheet.create({
     right: -2,
     width: 18,
     height: 18,
-    borderRadius: 9,
+    borderRadius: 8,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1519,22 +1580,22 @@ const styles = StyleSheet.create({
     color: C.black,
     letterSpacing: 0.2,
   },
-  empSub: { fontSize: 11, color: '#9CA3AF', fontWeight: '400', marginTop: 2 },
+  empSub: { fontSize: 11, color: '#6B7280', fontWeight: '400', marginTop: 2 },
   statusTag: {
     borderWidth: 1.5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
   },
-  statusTagText: { fontSize: 9, fontWeight: '400', letterSpacing: 0.3 },
+  statusTagText: { fontSize: 11, fontWeight: '400', letterSpacing: 0.3 },
   cardDivider: {
     height: 1,
-    backgroundColor: '#F0F1F3',
+    backgroundColor: '#F3F4F6',
     marginTop: 12,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   statsRow: { flexDirection: 'row', alignItems: 'flex-start' },
-  statCol: { flex: 1, gap: 3 },
-  statDivider: { width: 1, backgroundColor: '#F0F1F3', marginHorizontal: 10 },
+  statCol: { flex: 1, gap: 4 },
+  statDivider: { width: 1, backgroundColor: '#F3F4F6', marginHorizontal: 12 },
   statLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   statIconWrap: {
     width: 22,
@@ -1543,7 +1604,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  statLabel: { fontSize: 10, color: '#9CA3AF', fontWeight: '400' },
+  statLabel: { fontSize: 11, color: '#6B7280', fontWeight: '400' },
   statValue: { fontSize: 15, fontWeight: '400', color: C.black },
   reason: {
     fontSize: 12,
@@ -1554,8 +1615,8 @@ const styles = StyleSheet.create({
   commentInput: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -1609,92 +1670,174 @@ const styles = StyleSheet.create({
     color: C.white,
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
+  },
+
+  // Redesigned Apply / Edit Form Modal
+  modalSafe: {
+    flex: 1,
+    backgroundColor: C.white,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     backgroundColor: C.white,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  modalTitle: { fontSize: 20, fontWeight: '400', color: C.black },
+  modalHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '400',
+    color: C.black,
+  },
+  durationPill: {
+    backgroundColor: C.primary + '18',
+    borderWidth: 1.5,
+    borderColor: C.primary,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  durationPillText: {
+    fontSize: 11,
+    fontWeight: '400',
+    color: C.primary,
+  },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: C.black,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F8F9FA',
+  },
   fieldLabel: {
+    fontSize: 11,
+    fontWeight: '400',
+    color: C.textMuted,
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  typeChip: {
+    borderWidth: 1.5,
+    borderRadius: 8,
+    borderColor: C.black,
+    backgroundColor: C.white,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  typeChipActive: {
+    backgroundColor: C.primary,
+    borderColor: C.black,
+  },
+  typeChipText: {
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.black,
-    marginBottom: 5,
-    letterSpacing: 0.5,
+  },
+  typeChipTextActive: {
+    color: C.white,
   },
   fieldInput: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingVertical: 10,
     fontSize: 14,
     fontWeight: '400',
     color: C.black,
     backgroundColor: C.white,
   },
-  selChip: {
+  docLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  removeDocText: {
+    fontSize: 11,
+    color: C.danger,
+    fontWeight: '400',
+    marginBottom: 6,
+  },
+  docPicker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     borderWidth: 2,
+    borderRadius: 8,
+    borderColor: C.black,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    backgroundColor: '#F8F9FA',
+  },
+  docPickerAttached: {
+    backgroundColor: '#EFF6FF',
+    borderColor: C.primary,
+  },
+  docIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: C.white,
+    borderWidth: 1.5,
+    borderColor: C.black,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  docThumb: {
+    width: 36,
+    height: 36,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: C.black,
+  },
+  docPickerText: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: C.black,
+  },
+  docPickerPlaceholder: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: C.black,
+  },
+  docSubText: {
+    fontSize: 11,
+    color: C.textMuted,
+    marginTop: 2,
+  },
+  submitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: C.primary,
+    borderWidth: 2,
+    borderRadius: 8,
     borderRightWidth: 4,
     borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
-    borderRadius: 8,
-    borderColor: C.black,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  selChipActive: { backgroundColor: C.primary },
-  selChipText: { fontSize: 11, fontWeight: '400', color: C.black },
-  docPicker: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderColor: C.black,
-    borderStyle: 'dashed',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: '#F9FAFB',
-  },
-  docPickerText: { flex: 1, fontSize: 13, fontWeight: '400', color: C.primary },
-  docPickerPlaceholder: { fontSize: 13, fontWeight: '400', color: '#9CA3AF' },
-  hint: { fontSize: 11, color: '#9CA3AF', marginTop: 4 },
-  submitBtn: {
-    backgroundColor: C.primary,
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 8,
+    marginTop: 4,
   },
   submitBtnText: {
     color: C.white,
     fontWeight: '400',
     fontSize: 14,
-    textTransform: 'uppercase',
   },
+
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -1706,8 +1849,8 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -1725,12 +1868,10 @@ const styles = StyleSheet.create({
   approveModalLabel: {
     fontSize: 11,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.black,
     marginBottom: 8,
-    letterSpacing: 0.5,
   },
-  toggleRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  toggleRow: { flexDirection: 'row', gap: 12, marginBottom: 20 },
   toggleOpt: {
     flex: 1,
     borderWidth: 2,
@@ -1744,14 +1885,14 @@ const styles = StyleSheet.create({
   },
   toggleOptActive: {},
   toggleOptText: { fontSize: 13, fontWeight: '400', color: C.black },
-  toggleOptSub: { fontSize: 10, color: C.textMuted, marginTop: 2 },
-  approveModalActions: { flexDirection: 'row', gap: 10 },
+  toggleOptSub: { fontSize: 11, color: C.textMuted, marginTop: 2 },
+  approveModalActions: { flexDirection: 'row', gap: 12 },
   approveModalCancel: {
     flex: 1,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -1766,8 +1907,8 @@ const styles = StyleSheet.create({
     backgroundColor: C.success,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -1779,6 +1920,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '400',
     color: C.white,
-    textTransform: 'uppercase',
   },
 });

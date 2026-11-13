@@ -135,12 +135,21 @@ export default function LateApprovalsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={[styles.header, isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' }]}>
+      <View
+        style={[
+          styles.header,
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
+      >
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={{ padding: 4, marginRight: 4 }}
         >
-          <ChevronLeft size={22} color={C.black} />
+          <ChevronLeft size={24} color={C.black} />
         </TouchableOpacity>
         <AlertOctagon size={20} color={C.primary} />
         <Text style={[styles.headerTitle, { flex: 1 }]}>Late Approvals</Text>
@@ -188,8 +197,12 @@ export default function LateApprovalsScreen() {
           numColumns={isTablet ? 2 : 1}
           columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
           contentContainerStyle={[
-            { padding: 16, gap: 10, paddingBottom: 32 },
-            isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' },
+            { padding: 16, gap: 12, paddingBottom: 32 },
+            isTablet && {
+              maxWidth: maxContentWidth,
+              width: '100%',
+              alignSelf: 'center',
+            },
           ]}
           refreshControl={
             <RefreshControl
@@ -288,6 +301,7 @@ export default function LateApprovalsScreen() {
 
               <View style={tileGrid}>
                 <StatTile
+                  index={0}
                   label="Pending"
                   value={count(i => i.status === 'pending')}
                   icon={Hourglass}
@@ -295,6 +309,7 @@ export default function LateApprovalsScreen() {
                   width="31.5%"
                 />
                 <StatTile
+                  index={1}
                   label="Marked"
                   value={count(i => i.status !== 'pending')}
                   icon={BadgeCheck}
@@ -302,6 +317,7 @@ export default function LateApprovalsScreen() {
                   width="31.5%"
                 />
                 <StatTile
+                  index={2}
                   label="Present"
                   value={count(i => i.resolvedStatus === 'present')}
                   icon={CheckCircle2}
@@ -309,6 +325,7 @@ export default function LateApprovalsScreen() {
                   width="31.5%"
                 />
                 <StatTile
+                  index={3}
                   label="Late"
                   value={count(i => i.resolvedStatus === 'late')}
                   icon={Clock}
@@ -316,6 +333,7 @@ export default function LateApprovalsScreen() {
                   width="31.5%"
                 />
                 <StatTile
+                  index={4}
                   label="Half Day"
                   value={count(i => i.resolvedStatus === 'half_day')}
                   icon={Timer}
@@ -323,6 +341,7 @@ export default function LateApprovalsScreen() {
                   width="31.5%"
                 />
                 <StatTile
+                  index={5}
                   label="Absent"
                   value={count(i => i.resolvedStatus === 'absent')}
                   icon={XCircle}
@@ -368,10 +387,8 @@ export default function LateApprovalsScreen() {
                       ]}
                     >
                       {pending
-                        ? 'PENDING'
-                        : `MARKED · ${(
-                            LABEL[item.resolvedStatus] || ''
-                          ).toUpperCase()}`}
+                        ? 'Pending'
+                        : `Marked · ${LABEL[item.resolvedStatus] || ''}`}
                     </Text>
                   </View>
                 </View>
@@ -385,7 +402,7 @@ export default function LateApprovalsScreen() {
                       </Text>
                     </View>
                   )}
-                  <View style={{ flex: 1, marginLeft: 10 }}>
+                  <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={styles.empName}>
                       {emp
                         ? `${emp.firstName} ${emp.lastName}`
@@ -461,7 +478,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     backgroundColor: C.white,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
@@ -478,7 +495,7 @@ const styles = StyleSheet.create({
   navBtn: {
     borderWidth: 2,
     borderColor: C.black,
-    padding: 5,
+    padding: 4,
     backgroundColor: C.white,
   },
   monthText: { fontSize: 15, fontWeight: '400', color: C.black },
@@ -492,25 +509,24 @@ const styles = StyleSheet.create({
   },
   dayCellSel: { backgroundColor: C.primary },
   dayAbbr: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '400',
     color: C.textMuted,
-    textTransform: 'uppercase',
   },
   dayNum: { fontSize: 18, fontWeight: '400', color: C.black },
-  dayBadge: { fontSize: 10, fontWeight: '400', marginTop: 2 },
+  dayBadge: { fontSize: 11, fontWeight: '400', marginTop: 2 },
   colWrapper: { gap: 12 },
   cardTablet: { flex: 1 },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    padding: 14,
+    padding: 16,
   },
   topRow: {
     flexDirection: 'row',
@@ -529,7 +545,7 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
   },
   statusTag: { borderWidth: 2, paddingHorizontal: 6, paddingVertical: 2 },
-  statusTagText: { fontSize: 10, fontWeight: '400' },
+  statusTagText: { fontSize: 11, fontWeight: '400' },
   nameRow: { flexDirection: 'row', alignItems: 'center' },
   photo: {
     width: 38,
@@ -546,7 +562,7 @@ const styles = StyleSheet.create({
   photoText: { color: C.white, fontWeight: '400' },
   empName: { fontSize: 15, fontWeight: '400', color: C.black },
   empSub: { fontSize: 12, color: C.textMuted, marginTop: 1 },
-  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12 },
   metaChip: {
     fontSize: 11,
     fontWeight: '400',
@@ -568,7 +584,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 9,
+    paddingVertical: 8,
     borderWidth: 2,
     borderColor: C.black,
   },
@@ -576,6 +592,5 @@ const styles = StyleSheet.create({
     color: C.white,
     fontSize: 11,
     fontWeight: '400',
-    textTransform: 'uppercase',
   },
 });

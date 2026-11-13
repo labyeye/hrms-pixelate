@@ -1,3 +1,4 @@
+import { sentence } from '../utils/text';
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
@@ -527,7 +528,7 @@ async function generateReport(
           fmtCur(p.grossSalary),
           fmtCur(p.totalDeductions || 0),
           fmtCur(p.netSalary),
-          (p.status || '').toUpperCase(),
+          sentence(p.status),
         ]),
       };
     }
@@ -801,7 +802,7 @@ async function generateReport(
             : '—',
           rec.employee?.employeeId || '—',
           rec.employee?.department?.name || '—',
-          (rec.status || '').toUpperCase().replace('_', ' '),
+          sentence(rec.status),
           fmt(rec.checkIn),
           fmt(rec.checkOut),
           rec.workingHours ? `${rec.workingHours}h` : '—',
@@ -843,7 +844,7 @@ async function generateReport(
             fmt(rec.checkIn),
             rec.checkOut ? fmt(rec.checkOut) : 'MISSING',
             hours,
-            (rec.status || '').toUpperCase().replace('_', ' '),
+            sentence(rec.status),
           ];
         }),
       };
@@ -932,7 +933,7 @@ async function generateReport(
           fmtDate(l.endDate),
           String(l.days || 0),
           l.reason || '—',
-          (l.status || '').toUpperCase(),
+          sentence(l.status),
         ]),
       };
     }
@@ -993,8 +994,8 @@ async function generateReport(
             ? emp.department?.name || '—'
             : '—',
           emp.designation || '—',
-          (emp.employmentType || '').replace('_', ' ').toUpperCase(),
-          (emp.status || '').toUpperCase(),
+          sentence(emp.employmentType),
+          sentence(emp.status),
           fmtCur(emp.salary || 0),
           fmtDate(emp.joiningDate),
         ]),
@@ -1081,7 +1082,7 @@ async function generateReport(
           fmtCur(l.monthlyEmi || 0),
           fmtCur((l.amount || 0) - (l.remainingBalance || 0)),
           fmtCur(l.remainingBalance || 0),
-          l.status?.toUpperCase() || '—',
+          sentence(l.status) || '—',
           l.disbursedOn ? fmtDate(l.disbursedOn) : '—',
         ]),
       };
@@ -1285,7 +1286,7 @@ async function generateReport(
             ? `${log.employee.firstName} ${log.employee.lastName}`
             : '—',
           log.type === 'check_in' ? 'IN' : 'OUT',
-          log.method?.toUpperCase() || '—',
+          sentence(log.method) || '—',
           log.device?.name || '—',
           log.location?.name || '—',
         ]),
@@ -1312,9 +1313,9 @@ async function generateReport(
             `${fmtDate(log.createdAt)} ${fmt(log.createdAt)}`,
             d.employeeName || '—',
             log.action === 'attendance.create' ? 'Created' : 'Updated',
-            d.before?.status?.toUpperCase() || '—',
+            sentence(d.before?.status) || '—',
             io(d.before),
-            d.after?.status?.toUpperCase() || '—',
+            sentence(d.after?.status) || '—',
             io(d.after),
             log.user?.name || log.userName || '—',
           ];
@@ -1359,7 +1360,7 @@ async function generateEmployeeReport(
               : '—';
           return [
             fmtDate(rec.date),
-            (rec.status || '').toUpperCase().replace('_', ' '),
+            sentence(rec.status),
             fmt(rec.checkIn),
             fmt(rec.checkOut),
             hours,
@@ -1406,7 +1407,7 @@ async function generateEmployeeReport(
             ? l.leaveType.charAt(0).toUpperCase() + l.leaveType.slice(1)
             : '—',
           l.reason || '—',
-          (l.status || '').toUpperCase(),
+          sentence(l.status),
         ]),
       };
     }
@@ -1715,7 +1716,7 @@ function ReportModal({
             <ScrollView
               contentContainerStyle={{
                 padding: 16,
-                gap: 14,
+                gap: 16,
                 paddingBottom: 40,
               }}
               showsVerticalScrollIndicator={false}
@@ -1806,7 +1807,7 @@ function ReportModal({
 
                   {selectedEmp && (
                     <>
-                      <Text style={[ms.filterLabel, { marginTop: 14 }]}>
+                      <Text style={[ms.filterLabel, { marginTop: 16 }]}>
                         Step 2 — Report Type
                       </Text>
                       <View style={{ gap: 8 }}>
@@ -1932,7 +1933,7 @@ function ReportModal({
                   )}
                   {needsDept && departments.length > 0 && (
                     <>
-                      <Text style={[ms.filterLabel, { marginTop: 10 }]}>
+                      <Text style={[ms.filterLabel, { marginTop: 12 }]}>
                         Department
                       </Text>
                       <ScrollView
@@ -2001,7 +2002,7 @@ function ReportModal({
               {generated && rows.length > 0 && (
                 <>
                   {/* Export buttons */}
-                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <View style={{ flexDirection: 'row', gap: 12 }}>
                     <TouchableOpacity
                       style={[
                         ms.exportBtn,
@@ -2009,7 +2010,7 @@ function ReportModal({
                       ]}
                       onPress={handleShareCSV}
                     >
-                      <Download size={13} color={C.white} />
+                      <Download size={14} color={C.white} />
                       <Text style={ms.exportBtnText}>CSV ({rows.length})</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -2019,7 +2020,7 @@ function ReportModal({
                       ]}
                       onPress={handlePDF}
                     >
-                      <FileText size={13} color={C.white} />
+                      <FileText size={14} color={C.white} />
                       <Text style={ms.exportBtnText}>PDF / Print</Text>
                     </TouchableOpacity>
                   </View>
@@ -2106,7 +2107,7 @@ export default function ReportsScreen() {
           onPress={() => navigation.goBack()}
           style={{ padding: 4, marginRight: 4 }}
         >
-          <ChevronLeft size={22} color={C.black} />
+          <ChevronLeft size={24} color={C.black} />
         </TouchableOpacity>
         <BarChart2 size={20} color={C.primary} />
         <Text style={s.headerTitle}>Reports</Text>
@@ -2165,7 +2166,7 @@ export default function ReportsScreen() {
           contentContainerStyle={[
             {
               padding: 16,
-              gap: 10,
+              gap: 12,
               paddingBottom: 32,
               flexGrow: 1,
             },
@@ -2196,13 +2197,13 @@ export default function ReportsScreen() {
                       flexDirection: 'row',
                       alignItems: 'center',
                       gap: 6,
-                      marginBottom: 3,
+                      marginBottom: 4,
                     }}
                   >
                     <Text style={s.cardLabel}>{item.label}</Text>
                     <View style={[s.catTag, { backgroundColor: catColor }]}>
                       <Text style={s.catTagText}>
-                        {item.category.toUpperCase()}
+                        {sentence(item.category)}
                       </Text>
                     </View>
                   </View>
@@ -2233,7 +2234,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     backgroundColor: C.white,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
@@ -2242,7 +2243,7 @@ const s = StyleSheet.create({
   headerTitle: { fontSize: 20, fontWeight: '400', color: C.black, flex: 1 },
   countBadge: {
     backgroundColor: C.primary,
-    paddingHorizontal: 7,
+    paddingHorizontal: 8,
     paddingVertical: 2,
     borderWidth: 2,
     borderRightWidth: 4,
@@ -2261,7 +2262,7 @@ const s = StyleSheet.create({
     paddingVertical: 8,
   },
   catChip: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 4,
     borderWidth: 2,
     borderRightWidth: 4,
@@ -2278,7 +2279,7 @@ const s = StyleSheet.create({
   catChipText: {
     fontSize: 11,
     fontWeight: '400',
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
     color: C.black,
     textAlign: 'center',
   },
@@ -2286,12 +2287,12 @@ const s = StyleSheet.create({
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    padding: 14,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -2310,7 +2311,7 @@ const s = StyleSheet.create({
     lineHeight: 16,
   },
   catTag: { paddingHorizontal: 6, paddingVertical: 1 },
-  catTagText: { fontSize: 8, fontWeight: '400', color: C.white },
+  catTagText: { fontSize: 11, fontWeight: '400', color: C.white },
 });
 
 const CELL_W = 120;
@@ -2338,20 +2339,18 @@ const ms = StyleSheet.create({
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    padding: 14,
+    padding: 16,
   },
   filterLabel: {
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.textMuted,
     marginBottom: 8,
-    letterSpacing: 0.5,
   },
   chip: {
     paddingHorizontal: 12,
@@ -2368,12 +2367,12 @@ const ms = StyleSheet.create({
   chipActive: { backgroundColor: C.primary, borderColor: C.primary },
   chipText: { fontSize: 11, fontWeight: '400', color: C.black },
   genBtn: {
-    paddingVertical: 14,
+    paddingVertical: 16,
     alignItems: 'center',
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -2382,7 +2381,6 @@ const ms = StyleSheet.create({
     color: C.white,
     fontWeight: '400',
     fontSize: 14,
-    textTransform: 'uppercase',
   },
   exportBtn: {
     flexDirection: 'row',
@@ -2391,20 +2389,19 @@ const ms = StyleSheet.create({
     gap: 6,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingVertical: 11,
+    paddingVertical: 12,
   },
   exportBtnText: {
     color: C.white,
     fontWeight: '400',
     fontSize: 12,
-    textTransform: 'uppercase',
   },
-  empty: { alignItems: 'center', paddingVertical: 40, gap: 10 },
+  empty: { alignItems: 'center', paddingVertical: 40, gap: 12 },
   emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
   tableOuter: {
     borderWidth: 2,
@@ -2423,11 +2420,10 @@ const ms = StyleSheet.create({
   },
   tableHeaderCell: {
     width: CELL_W,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    fontSize: 9,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 11,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.black,
   },
   tableRow: {
@@ -2438,8 +2434,8 @@ const ms = StyleSheet.create({
   tableRowAlt: { backgroundColor: '#F8FAFF' },
   tableCell: {
     width: CELL_W,
-    paddingHorizontal: 10,
-    paddingVertical: 9,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     fontSize: 12,
     fontWeight: '400',
     color: C.black,
@@ -2449,15 +2445,15 @@ const ms = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 8,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   searchInput: {
     flex: 1,
@@ -2469,9 +2465,9 @@ const ms = StyleSheet.create({
   empRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
     paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     borderWidth: 2,
     borderColor: C.black + '22',
     marginBottom: 6,
@@ -2499,7 +2495,7 @@ const ms = StyleSheet.create({
     color: C.black,
   },
   empSub: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '400',
     color: C.textMuted,
     marginTop: 1,
@@ -2507,12 +2503,12 @@ const ms = StyleSheet.create({
   subTypeBtn: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    padding: 10,
+    padding: 12,
     backgroundColor: C.white,
   },
   subTypeBtnLabel: {
@@ -2521,7 +2517,7 @@ const ms = StyleSheet.create({
     color: C.black,
   },
   subTypeBtnDesc: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '400',
     color: C.textMuted,
     marginTop: 2,

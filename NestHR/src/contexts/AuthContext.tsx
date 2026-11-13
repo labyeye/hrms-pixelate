@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import { User } from '../types/hrms';
 import { authAPI, setToken, removeToken, getToken } from '../api/api';
+import { unregisterPush } from '../services/pushNotificationService';
 
 interface AuthContextType {
   user: User | null;
@@ -123,6 +124,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await authAPI.removeCurrentSession();
     } catch {}
+    await unregisterPush();
     await removeToken();
     setUser(null);
   }, []);

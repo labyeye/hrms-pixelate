@@ -70,9 +70,9 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
     paddingVertical: 12,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
   },
   rowBorder: { borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.12)' },
   rank: { width: 18, fontFamily: FONT.bold, fontSize: 13, color: C.black },

@@ -12,6 +12,7 @@ import { employeeAPI, payrollAPI, attendanceAPI } from '../../api/api';
 import { C } from '../../theme';
 import AnimatedBarChart from '../common/AnimatedBarChart';
 import FadeInUp from '../motion/FadeInUp';
+import AnimatedValue from '../motion/AnimatedValue';
 
 const TABS = [
   { id: 'headcount', label: 'Headcount' },
@@ -26,9 +27,7 @@ function Tile({ label, value, color = C.primary, i = 0 }: any) {
   return (
     <FadeInUp delay={i * 60} style={[st.tile, { borderColor: color }]}>
       <Text style={st.tileLabel}>{label}</Text>
-      <Text style={[st.tileValue, { color }]} numberOfLines={1}>
-        {value}
-      </Text>
+      <AnimatedValue style={[st.tileValue, { color }]} value={value} />
     </FadeInUp>
   );
 }
@@ -268,26 +267,26 @@ const st = StyleSheet.create({
     borderColor: '#000',
     backgroundColor: C.white,
   },
-  tab: { flex: 1, paddingVertical: 10, alignItems: 'center' },
+  tab: { flex: 1, paddingVertical: 12, alignItems: 'center' },
   tabOn: { backgroundColor: C.primary },
   tabText: { fontSize: 12, color: C.black },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   tile: {
     width: '47%',
     borderWidth: 2,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     backgroundColor: C.white,
     padding: 12,
     borderRadius: 8,
   },
-  tileLabel: { fontSize: 11, color: C.textMuted, textTransform: 'uppercase' },
+  tileLabel: { fontSize: 11, color: C.textMuted },
   tileValue: { fontSize: 20, marginTop: 4 },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
     borderColor: '#000',
-    padding: 14,
+    padding: 16,
   },
   cardTitle: { fontSize: 13, color: C.black, marginBottom: 8 },
   muted: { color: C.textMuted, fontSize: 12 },

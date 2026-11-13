@@ -1,3 +1,4 @@
+import { sentence } from '../utils/text';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -128,7 +129,7 @@ export default function BillingScreen() {
         onPress={() => navigation.goBack()}
         style={{ padding: 4, marginRight: 4 }}
       >
-        <ChevronLeft size={22} color={C.black} />
+        <ChevronLeft size={24} color={C.black} />
       </TouchableOpacity>
       <CreditCard size={20} color={C.primary} />
       <Text style={s.headerTitle}>Billing</Text>
@@ -188,12 +189,12 @@ export default function BillingScreen() {
             <Crown size={20} color={C.white} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={s.statusPlan}>{planName.toUpperCase()} PLAN</Text>
+            <Text style={s.statusPlan}>{sentence(planName)} plan</Text>
             <View style={s.statusRow}>
               {isActive && !isTrial ? (
-                <CheckCircle2 size={12} color={C.success} />
+                <CheckCircle2 size={14} color={C.success} />
               ) : (
-                <AlertCircle size={12} color={accent} />
+                <AlertCircle size={14} color={accent} />
               )}
               <Text style={[s.statusLabel, { color: accent }]}>
                 {isTrial
@@ -208,7 +209,7 @@ export default function BillingScreen() {
           </View>
           {!!expiry && (
             <View style={s.nextBill}>
-              <Calendar size={11} color={C.textMuted} />
+              <Calendar size={14} color={C.textMuted} />
               <Text style={s.nextBillText}>
                 {fmtDate(expiry, { day: 'numeric', month: 'short' })}
               </Text>
@@ -219,7 +220,7 @@ export default function BillingScreen() {
         <View style={s.invoiceCard}>
           <View style={[s.invoiceRow, { alignItems: 'center' }]}>
             <Users size={16} color={C.primary} />
-            <View style={{ flex: 1, marginLeft: 10 }}>
+            <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={s.invoicePlan}>
                 Employees: {empUsed} / {unlimited ? '∞' : empMax || '—'}
               </Text>
@@ -293,7 +294,7 @@ export default function BillingScreen() {
                   </View>
                   <View style={{ alignItems: 'flex-end', gap: 6 }}>
                     <View style={s.invoiceAmount}>
-                      <IndianRupee size={11} color={C.black} />
+                      <IndianRupee size={14} color={C.black} />
                       <Text style={s.invoiceAmountText}>
                         {Number(inv.amount || 0).toLocaleString('en-IN')}
                       </Text>
@@ -309,7 +310,7 @@ export default function BillingScreen() {
                         ]}
                       >
                         <Text style={s.invStatusText}>
-                          {String(inv.status || 'paid').toUpperCase()}
+                          {sentence(inv.status || 'paid')}
                         </Text>
                       </View>
                       <TouchableOpacity
@@ -320,7 +321,7 @@ export default function BillingScreen() {
                         {downloading === inv._id ? (
                           <ActivityIndicator size="small" color={C.white} />
                         ) : (
-                          <Download size={11} color={C.white} />
+                          <Download size={14} color={C.white} />
                         )}
                         <Text style={s.downloadBtnText}>PDF</Text>
                       </TouchableOpacity>
@@ -342,7 +343,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     backgroundColor: C.white,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
@@ -360,7 +361,7 @@ const s = StyleSheet.create({
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderRadius: 8,
-    padding: 14,
+    padding: 16,
     gap: 12,
   },
   statusIcon: {
@@ -420,33 +421,30 @@ const s = StyleSheet.create({
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
   },
-  cycleBtn: { flex: 1, paddingVertical: 10, alignItems: 'center' },
+  cycleBtn: { flex: 1, paddingVertical: 12, alignItems: 'center' },
   cycleBtnActive: { backgroundColor: C.primary },
   cycleBtnText: {
     fontSize: 12,
     fontWeight: '400',
     color: C.black,
-    textTransform: 'uppercase',
   },
   sectionTitle: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.black,
-    letterSpacing: 0.5,
     marginBottom: 8,
   },
   emptyPlans: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    gap: 12,
     padding: 20,
     backgroundColor: C.white,
     borderWidth: 2,
@@ -462,12 +460,12 @@ const s = StyleSheet.create({
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    padding: 14,
+    padding: 16,
   },
   currentBadge: {
     borderWidth: 2,
@@ -477,15 +475,14 @@ const s = StyleSheet.create({
     borderBottomWidth: 4,
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    marginBottom: 10,
+    paddingVertical: 4,
+    marginBottom: 12,
   },
   currentBadgeText: {
-    textTransform: 'uppercase',
-    fontSize: 9,
+    textTransform: 'capitalize',
+    fontSize: 11,
     fontWeight: '400',
     color: C.white,
-    letterSpacing: 1,
   },
   planTop: { flexDirection: 'row', alignItems: 'center' },
   planIcon: {
@@ -517,11 +514,11 @@ const s = StyleSheet.create({
     marginTop: 2,
   },
   featureList: {
-    marginTop: 10,
-    paddingTop: 10,
+    marginTop: 12,
+    paddingTop: 12,
     borderTopWidth: 2,
     borderTopColor: C.black,
-    gap: 5,
+    gap: 4,
   },
   featureRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   featureText: { fontSize: 12, fontWeight: '400', color: C.black },
@@ -531,8 +528,8 @@ const s = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -541,15 +538,13 @@ const s = StyleSheet.create({
     fontSize: 13,
     fontWeight: '400',
     color: C.white,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   invoiceCard: {
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -558,7 +553,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 12,
   },
   invoiceBorder: { borderTopWidth: 2, borderTopColor: C.black },
@@ -583,8 +578,8 @@ const s = StyleSheet.create({
     marginTop: 4,
   },
   invStatusText: {
-    textTransform: 'uppercase',
-    fontSize: 8,
+    textTransform: 'capitalize',
+    fontSize: 11,
     fontWeight: '400',
     color: C.white,
   },
@@ -598,11 +593,11 @@ const s = StyleSheet.create({
     paddingVertical: 4,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
   },
-  downloadBtnText: { fontSize: 8, fontWeight: '400', color: C.white },
+  downloadBtnText: { fontSize: 11, fontWeight: '400', color: C.white },
 });

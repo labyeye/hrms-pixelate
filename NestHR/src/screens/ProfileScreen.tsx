@@ -1,3 +1,4 @@
+import { sentence } from '../utils/text';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -110,7 +111,7 @@ function AccordionSection({
   };
 
   return (
-    <View style={{ marginTop: 10 }}>
+    <View style={{ marginTop: 12 }}>
       <TouchableOpacity
         activeOpacity={0.8}
         style={{
@@ -118,7 +119,7 @@ function AccordionSection({
           justifyContent: 'space-between',
           alignItems: 'center',
           paddingVertical: 12,
-          paddingHorizontal: 14,
+          paddingHorizontal: 16,
           backgroundColor: isOpen ? C.primary + '10' : C.white,
           ...BRUTAL,
         }}
@@ -142,7 +143,7 @@ function AccordionSection({
             ],
           }}
         >
-          <ChevronDown size={18} color={C.black} />
+          <ChevronDown size={20} color={C.black} />
         </Animated.View>
       </TouchableOpacity>
       {isOpen && (
@@ -150,7 +151,7 @@ function AccordionSection({
           style={{
             opacity: fade,
             marginTop: 8,
-            padding: 14,
+            padding: 16,
             backgroundColor: C.white,
             ...BRUTAL,
           }}
@@ -195,13 +196,13 @@ function BInput({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        paddingHorizontal: 10,
+        paddingHorizontal: 12,
         backgroundColor: flat.backgroundColor || C.white,
         ...(flat.flex ? { flex: flat.flex } : {}),
         ...BRUTAL,
       }}
     >
-      <Icon size={15} color={C.primary} />
+      <Icon size={16} color={C.primary} />
       <TextInput
         {...rest}
         placeholder={placeholder}
@@ -209,7 +210,7 @@ function BInput({
           flex: 1,
           fontSize: flat.fontSize || 13,
           color: C.black,
-          paddingVertical: 9,
+          paddingVertical: 8,
         }}
       />
     </View>
@@ -443,9 +444,9 @@ export default function ProfileScreen() {
     <View style={{ marginTop: 8 }}>
       <View style={[s.statusChip, needs ? s.chipWarn : s.chipOk]}>
         {needs ? (
-          <AlertCircle size={13} color="#92400e" />
+          <AlertCircle size={14} color="#92400e" />
         ) : (
-          <CheckCircle2 size={13} color="#166534" />
+          <CheckCircle2 size={14} color="#166534" />
         )}
         <Text
           style={[s.statusChipText, { color: needs ? '#92400e' : '#166534' }]}
@@ -467,9 +468,9 @@ export default function ProfileScreen() {
           ) : (
             <>
               {type === 'phone' ? (
-                <WhatsAppIcon size={18} />
+                <WhatsAppIcon size={20} />
               ) : (
-                <ShieldCheck size={15} color="#fff" />
+                <ShieldCheck size={16} color="#fff" />
               )}
               <Text style={s.verifyBtnText}>
                 {type === 'email'
@@ -529,7 +530,7 @@ export default function ProfileScreen() {
           onPress={() => navigation.goBack()}
           style={{ padding: 4, marginRight: 4 }}
         >
-          <ChevronLeft size={22} color={C.black} />
+          <ChevronLeft size={24} color={C.black} />
         </TouchableOpacity>
         <User size={20} color={C.primary} />
         <Text style={s.headerTitle}>My Profile</Text>
@@ -566,10 +567,10 @@ export default function ProfileScreen() {
                 </View>
               )}
               <View style={s.cameraBadge}>
-                <Camera size={13} color={C.white} />
+                <Camera size={14} color={C.white} />
               </View>
             </TouchableOpacity>
-            <View style={{ flex: 1, gap: 3 }}>
+            <View style={{ flex: 1, gap: 4 }}>
               <Text style={s.avatarName} numberOfLines={1}>
                 {user?.name || 'User'}
               </Text>
@@ -578,7 +579,7 @@ export default function ProfileScreen() {
               </Text>
               <View style={s.roleBadge}>
                 <Text style={s.roleText}>
-                  {(user?.role || 'employee').replace(/_/g, ' ').toUpperCase()}
+                  {sentence(user?.role || 'employee')}
                 </Text>
               </View>
             </View>
@@ -599,7 +600,7 @@ export default function ProfileScreen() {
               >
                 <TabIcon
                   size={14}
-                  color={activeTab === key ? '#fff' : '#64748b'}
+                  color={activeTab === key ? '#fff' : '#6B7280'}
                 />
                 <Text style={[s.tabText, activeTab === key && s.tabTextActive]}>
                   {label}
@@ -616,8 +617,8 @@ export default function ProfileScreen() {
                   <User size={14} color={C.primary} />
                   <Text style={s.sectionTitle}>Personal Information</Text>
                 </View>
-                <View style={[s.card, { padding: 14 }]}>
-                  <Text style={s.lbl}>FULL NAME</Text>
+                <View style={[s.card, { padding: 16 }]}>
+                  <Text style={s.lbl}>Full name</Text>
                   <TextInput
                     style={s.boxInput}
                     value={name}
@@ -626,7 +627,7 @@ export default function ProfileScreen() {
                     placeholderTextColor={C.textLight}
                   />
 
-                  <Text style={[s.lbl, { marginTop: 14 }]}>EMAIL</Text>
+                  <Text style={[s.lbl, { marginTop: 16 }]}>Email</Text>
                   <TextInput
                     style={s.boxInput}
                     value={email}
@@ -644,7 +645,7 @@ export default function ProfileScreen() {
                     emailVerified,
                   )}
 
-                  <Text style={[s.lbl, { marginTop: 14 }]}>
+                  <Text style={[s.lbl, { marginTop: 16 }]}>
                     PHONE (WHATSAPP)
                   </Text>
                   <TextInput
@@ -672,7 +673,7 @@ export default function ProfileScreen() {
                     <ActivityIndicator color={C.white} />
                   ) : (
                     <>
-                      <Save size={15} color={C.white} />
+                      <Save size={16} color={C.white} />
                       <Text style={s.saveBtnText}>Save Profile</Text>
                     </>
                   )}
@@ -690,7 +691,7 @@ export default function ProfileScreen() {
                   }
                   icon={CreditCard}
                 >
-                  <View style={{ gap: 10 }}>
+                  <View style={{ gap: 12 }}>
                     <Text style={s.fieldLabel}>PAN Number</Text>
                     <BInput
                       style={{
@@ -787,9 +788,9 @@ export default function ProfileScreen() {
                           borderBottomColor: '#0A0A0A',
                           borderRadius: 8,
                           borderColor: C.black,
-                          padding: 10,
+                          padding: 12,
                           gap: 8,
-                          backgroundColor: '#F9FAFB',
+                          backgroundColor: '#F8F9FA',
                         }}
                       >
                         <BInput
@@ -854,14 +855,14 @@ export default function ProfileScreen() {
                           style={{
                             alignSelf: 'flex-end',
                             backgroundColor: C.danger,
-                            paddingHorizontal: 10,
+                            paddingHorizontal: 12,
                             paddingVertical: 4,
                           }}
                         >
                           <Text
                             style={{
                               color: '#fff',
-                              fontSize: 10,
+                              fontSize: 11,
                               fontWeight: '400',
                             }}
                           >
@@ -920,9 +921,9 @@ export default function ProfileScreen() {
                           borderBottomColor: '#0A0A0A',
                           borderRadius: 8,
                           borderColor: C.black,
-                          padding: 10,
+                          padding: 12,
                           gap: 8,
-                          backgroundColor: '#F9FAFB',
+                          backgroundColor: '#F8F9FA',
                         }}
                       >
                         <BInput
@@ -988,14 +989,14 @@ export default function ProfileScreen() {
                           style={{
                             alignSelf: 'flex-end',
                             backgroundColor: C.danger,
-                            paddingHorizontal: 10,
+                            paddingHorizontal: 12,
                             paddingVertical: 4,
                           }}
                         >
                           <Text
                             style={{
                               color: '#fff',
-                              fontSize: 10,
+                              fontSize: 11,
                               fontWeight: '400',
                             }}
                           >
@@ -1056,9 +1057,9 @@ export default function ProfileScreen() {
                           borderBottomColor: '#0A0A0A',
                           borderRadius: 8,
                           borderColor: C.black,
-                          padding: 10,
+                          padding: 12,
                           gap: 8,
-                          backgroundColor: '#F9FAFB',
+                          backgroundColor: '#F8F9FA',
                         }}
                       >
                         <BInput
@@ -1125,14 +1126,14 @@ export default function ProfileScreen() {
                           style={{
                             alignSelf: 'flex-end',
                             backgroundColor: C.danger,
-                            paddingHorizontal: 10,
+                            paddingHorizontal: 12,
                             paddingVertical: 4,
                           }}
                         >
                           <Text
                             style={{
                               color: '#fff',
-                              fontSize: 10,
+                              fontSize: 11,
                               fontWeight: '400',
                             }}
                           >
@@ -1193,9 +1194,9 @@ export default function ProfileScreen() {
                           borderBottomColor: '#0A0A0A',
                           borderRadius: 8,
                           borderColor: C.black,
-                          padding: 10,
+                          padding: 12,
                           gap: 8,
-                          backgroundColor: '#F9FAFB',
+                          backgroundColor: '#F8F9FA',
                         }}
                       >
                         <BInput
@@ -1283,14 +1284,14 @@ export default function ProfileScreen() {
                           style={{
                             alignSelf: 'flex-end',
                             backgroundColor: C.danger,
-                            paddingHorizontal: 10,
+                            paddingHorizontal: 12,
                             paddingVertical: 4,
                           }}
                         >
                           <Text
                             style={{
                               color: '#fff',
-                              fontSize: 10,
+                              fontSize: 11,
                               fontWeight: '400',
                             }}
                           >
@@ -1337,7 +1338,7 @@ export default function ProfileScreen() {
                   }
                   icon={Award}
                 >
-                  <View style={{ gap: 10 }}>
+                  <View style={{ gap: 12 }}>
                     <View style={{ flexDirection: 'row', gap: 8 }}>
                       <BInput
                         style={{
@@ -1461,9 +1462,9 @@ export default function ProfileScreen() {
                           borderBottomColor: '#0A0A0A',
                           borderRadius: 8,
                           borderColor: C.black,
-                          padding: 10,
+                          padding: 12,
                           gap: 8,
-                          backgroundColor: '#F9FAFB',
+                          backgroundColor: '#F8F9FA',
                         }}
                       >
                         <BInput
@@ -1529,14 +1530,14 @@ export default function ProfileScreen() {
                           style={{
                             alignSelf: 'flex-end',
                             backgroundColor: C.danger,
-                            paddingHorizontal: 10,
+                            paddingHorizontal: 12,
                             paddingVertical: 4,
                           }}
                         >
                           <Text
                             style={{
                               color: '#fff',
-                              fontSize: 10,
+                              fontSize: 11,
                               fontWeight: '400',
                             }}
                           >
@@ -1649,7 +1650,7 @@ export default function ProfileScreen() {
                   <ActivityIndicator color={C.white} />
                 ) : (
                   <>
-                    <Shield size={15} color={C.white} />
+                    <Shield size={16} color={C.white} />
                     <Text style={s.saveBtnText}>Change Password</Text>
                   </>
                 )}
@@ -1708,7 +1709,7 @@ export default function ProfileScreen() {
               style={{
                 flexDirection: 'row',
                 justifyContent: 'space-between',
-                marginTop: 14,
+                marginTop: 16,
               }}
             >
               <TouchableOpacity
@@ -1718,7 +1719,7 @@ export default function ProfileScreen() {
                 <Text style={s.otpLink}>Resend code</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setOtpFor(null)}>
-                <Text style={[s.otpLink, { color: '#64748b' }]}>Cancel</Text>
+                <Text style={[s.otpLink, { color: '#6B7280' }]}>Cancel</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1732,8 +1733,8 @@ const s = StyleSheet.create({
   profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
-    padding: 14,
+    gap: 16,
+    padding: 16,
     backgroundColor: C.white,
     ...BRUTAL,
   },
@@ -1751,27 +1752,26 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   tabActive: { backgroundColor: C.primary },
   tabText: {
     fontSize: 12,
     fontWeight: '400',
-    color: '#64748b',
-    textTransform: 'uppercase',
+    color: '#6B7280',
   },
   tabTextActive: { color: '#fff' },
   lbl: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '400',
-    color: '#64748b',
+    color: '#6B7280',
     letterSpacing: 0.5,
     marginBottom: 6,
   },
   boxInput: {
     ...BRUTAL,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     fontSize: 14,
     color: C.black,
     backgroundColor: C.white,
@@ -1780,7 +1780,7 @@ const s = StyleSheet.create({
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderWidth: 2,
@@ -1790,7 +1790,7 @@ const s = StyleSheet.create({
   chipWarn: { backgroundColor: '#fef9c3', borderColor: '#fde047' },
   statusChipText: { fontSize: 11, fontWeight: '400' },
   verifyBtn: {
-    marginTop: 10,
+    marginTop: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1806,11 +1806,11 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     padding: 24,
   },
-  otpBox: { backgroundColor: '#fff', padding: 18, ...BRUTAL },
-  otpTitle: { fontSize: 17, fontWeight: '400', color: C.black },
+  otpBox: { backgroundColor: '#fff', padding: 20, ...BRUTAL },
+  otpTitle: { fontSize: 16, fontWeight: '400', color: C.black },
   otpSub: {
     fontSize: 13,
-    color: '#64748b',
+    color: '#6B7280',
     fontWeight: '400',
     marginVertical: 12,
   },
@@ -1829,7 +1829,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     backgroundColor: C.white,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
@@ -1853,17 +1853,17 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarImg: {
-    width: 88,
-    height: 88,
+    width: 77,
+    height: 77,
     borderWidth: 2,
     borderRightWidth: 4,
     borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
-    borderRadius: 8,
+    borderRadius: 50,
     borderColor: C.black,
   },
-  avatarText: { fontSize: 30, fontWeight: '400', color: C.white },
+  avatarText: { fontSize: 28, fontWeight: '400', color: C.white },
   cameraBadge: {
     position: 'absolute',
     bottom: 0,
@@ -1903,18 +1903,16 @@ const s = StyleSheet.create({
     marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.black,
-    letterSpacing: 0.5,
   },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -1922,18 +1920,16 @@ const s = StyleSheet.create({
   fieldRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 12,
   },
   fieldBorder: { borderTopWidth: 2, borderTopColor: C.black },
-  fieldIcon: { paddingTop: 4, marginRight: 10 },
+  fieldIcon: { paddingTop: 4, marginRight: 12 },
   fieldLabel: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.textMuted,
     marginBottom: 4,
-    letterSpacing: 0.5,
   },
   fieldInput: {
     fontSize: 14,
@@ -1951,19 +1947,17 @@ const s = StyleSheet.create({
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingVertical: 14,
-    marginTop: 10,
+    paddingVertical: 16,
+    marginTop: 12,
   },
   saveBtnText: {
     color: C.white,
     fontWeight: '400',
     fontSize: 13,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
 });

@@ -68,7 +68,7 @@ export default function SearchModal({
         <Pressable style={s.backdrop} onPress={onClose} />
         <View style={s.card}>
           <View style={s.inputRow}>
-            <Search size={18} color={C.textMuted} />
+            <Search size={20} color={C.textMuted} />
             <TextInput
               style={s.input}
               value={value}
@@ -127,7 +127,7 @@ const s = StyleSheet.create({
   backdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.45)' },
   card: {
     marginTop: 60,
-    marginHorizontal: 14,
+    marginHorizontal: 16,
     backgroundColor: '#fff',
     borderWidth: 2,
     borderColor: '#000',
@@ -137,9 +137,9 @@ const s = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 2,
     borderBottomColor: '#000',
   },
@@ -152,12 +152,12 @@ const s = StyleSheet.create({
   },
   done: { color: C.primary, fontWeight: '400', fontSize: 13 },
   row: {
-    paddingHorizontal: 14,
-    paddingVertical: 11,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
   },
   rowTitle: { fontSize: 14, fontWeight: '400', color: '#000' },
-  rowSub: { fontSize: 12, color: '#64748b', marginTop: 1 },
-  empty: { padding: 16, textAlign: 'center', color: '#64748b' },
+  rowSub: { fontSize: 12, color: '#6B7280', marginTop: 1 },
+  empty: { padding: 16, textAlign: 'center', color: '#6B7280' },
 });

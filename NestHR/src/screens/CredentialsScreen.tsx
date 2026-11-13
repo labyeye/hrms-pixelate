@@ -21,7 +21,6 @@ import {
   Eye,
   EyeOff,
   RefreshCw,
-  Plus,
   Users,
   ChevronLeft,
 } from 'lucide-react-native';
@@ -29,6 +28,7 @@ import { useNavigation } from '@react-navigation/native';
 import { employeeAPI } from '../api/api';
 import HeaderIconBtn from '../components/common/HeaderIconBtn';
 import SearchModal from '../components/common/SearchModal';
+import SlideInCard from '../components/motion/SlideInCard';
 import { C, useResponsive } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 
@@ -121,15 +121,25 @@ export default function CredentialsScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <View style={[s.header, isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' }]}>
+      <View
+        style={[
+          s.header,
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
+      >
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={{ padding: 4, marginRight: 4 }}
+          style={{ padding: 4, marginRight: 2 }}
+          hitSlop={8}
         >
           <ChevronLeft size={22} color={C.black} />
         </TouchableOpacity>
         <KeyRound size={20} color={C.primary} />
-        <Text style={s.title}>Employee Credentials</Text>
+        <Text style={s.title}>Credentials</Text>
         <View style={{ flex: 1 }} />
         <HeaderIconBtn
           label="Search"
@@ -165,7 +175,11 @@ export default function CredentialsScreen() {
           columnWrapperStyle={isTablet ? s.colWrapper : undefined}
           contentContainerStyle={[
             { padding: 16, gap: 10, paddingBottom: 32 },
-            isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' },
+            isTablet && {
+              maxWidth: maxContentWidth,
+              width: '100%',
+              alignSelf: 'center',
+            },
           ]}
           refreshControl={
             <RefreshControl
@@ -181,59 +195,56 @@ export default function CredentialsScreen() {
               <Text style={s.emptyText}>No employees found</Text>
             </View>
           }
-          renderItem={({ item }) => (
-            <View style={[s.card, isTablet && s.cardTablet]}>
-              <View style={{ flex: 1 }}>
-                <View style={s.topRow}>
-                  <View style={s.codeChip}>
-                    <Text style={s.codeText}>{item.employeeId || '—'}</Text>
+          renderItem={({ item, index }) => (
+            <SlideInCard
+              index={index}
+              style={isTablet ? s.cardTablet : undefined}
+            >
+              <View style={s.card}>
+                {item.avatar ? (
+                  <Image source={{ uri: item.avatar }} style={s.photoCircle} />
+                ) : (
+                  <View style={s.cardAvatar}>
+                    <Text style={s.cardAvatarText}>
+                      {item.firstName?.[0]}
+                      {item.lastName?.[0]}
+                    </Text>
                   </View>
-                  <Text style={s.updated}>
-                    Updated{' '}
+                )}
+
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <View style={s.nameRow}>
+                    {!!item.employeeId && (
+                      <Text style={s.codeChip}>{item.employeeId}</Text>
+                    )}
+                    <Text style={s.empName} numberOfLines={1}>
+                      {item.firstName} {item.lastName}
+                    </Text>
+                  </View>
+                  <Text style={s.empSub} numberOfLines={1}>
+                    {item.email}
+                  </Text>
+                  <Text style={s.empMeta} numberOfLines={1}>
+                    {item.designation || 'Staff'} · Updated{' '}
                     {new Date(
                       item.updatedAt || item.joinDate || Date.now(),
                     ).toLocaleDateString('en-IN', {
                       day: '2-digit',
                       month: 'short',
-                      year: 'numeric',
                     })}
                   </Text>
                 </View>
-                <View style={s.nameRow}>
-                  {item.avatar ? (
-                    <Image
-                      source={{ uri: item.avatar }}
-                      style={s.photoCircle}
-                    />
-                  ) : (
-                    <View style={s.cardAvatar}>
-                      <Text style={s.cardAvatarText}>
-                        {item.firstName?.[0]}
-                        {item.lastName?.[0]}
-                      </Text>
-                    </View>
-                  )}
-                  <View style={{ flex: 1, marginLeft: 10 }}>
-                    <Text style={s.empName} numberOfLines={1}>
-                      {item.firstName} {item.lastName}
-                    </Text>
-                    <Text style={s.empSub} numberOfLines={1}>
-                      {item.email}
-                    </Text>
-                    <Text style={s.empId} numberOfLines={1}>
-                      {item.designation || '—'}
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    style={s.resetBtn}
-                    onPress={() => openReset(item)}
-                  >
-                    <RefreshCw size={12} color={C.white} />
-                    <Text style={s.resetBtnText}>Reset</Text>
-                  </TouchableOpacity>
-                </View>
+
+                <TouchableOpacity
+                  style={s.resetBtn}
+                  onPress={() => openReset(item)}
+                  activeOpacity={0.8}
+                >
+                  <RefreshCw size={13} color={C.white} />
+                  <Text style={s.resetBtnText}>Reset</Text>
+                </TouchableOpacity>
               </View>
-            </View>
+            </SlideInCard>
           )}
         />
       )}
@@ -245,7 +256,7 @@ export default function CredentialsScreen() {
               <View style={s.modalHeader}>
                 <Text style={s.modalTitle}>Reset Password</Text>
                 <TouchableOpacity onPress={() => setModal(null)}>
-                  <X size={22} color={C.black} />
+                  <X size={24} color={C.black} />
                 </TouchableOpacity>
               </View>
               <ScrollView
@@ -293,9 +304,9 @@ export default function CredentialsScreen() {
                       onPress={() => setShowPw(p => !p)}
                     >
                       {showPw ? (
-                        <EyeOff size={18} color={C.textMuted} />
+                        <EyeOff size={20} color={C.textMuted} />
                       ) : (
-                        <Eye size={18} color={C.textMuted} />
+                        <Eye size={20} color={C.textMuted} />
                       )}
                     </TouchableOpacity>
                   </View>
@@ -308,7 +319,7 @@ export default function CredentialsScreen() {
                     setShowPw(true);
                   }}
                 >
-                  <RefreshCw size={13} color={C.primary} />
+                  <RefreshCw size={14} color={C.primary} />
                   <Text style={s.genBtnText}>Generate Strong Password</Text>
                 </TouchableOpacity>
 
@@ -333,23 +344,7 @@ export default function CredentialsScreen() {
 }
 
 const s = StyleSheet.create({
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  codeChip: {
-    backgroundColor: C.primary + '18',
-    borderWidth: 2,
-    borderColor: C.primary,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  codeText: { fontSize: 12, fontWeight: '400', color: C.primary },
-  updated: { fontSize: 10, color: C.textMuted, fontWeight: '400' },
-  nameRow: { flexDirection: 'row', alignItems: 'center' },
-  safe: { flex: 1, backgroundColor: '#F8F9FA' },
+  safe: { flex: 1, backgroundColor: C.bg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -361,21 +356,10 @@ const s = StyleSheet.create({
     borderBottomColor: C.black,
   },
   title: { fontSize: 20, fontWeight: '400', color: C.black },
-  searchWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: C.white,
-    borderBottomWidth: 2,
-    borderBottomColor: C.black,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  searchInput: { flex: 1, fontSize: 14, fontWeight: '400', color: C.black },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
-  colWrapper: { gap: 12 },
+  colWrapper: { gap: 10 },
   cardTablet: { flex: 1 },
   card: {
     flexDirection: 'row',
@@ -383,42 +367,53 @@ const s = StyleSheet.create({
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    padding: 14,
+    padding: 12,
   },
   cardAvatar: {
     width: 40,
     height: 40,
     backgroundColor: C.primary,
     borderWidth: 2,
-    borderRightWidth: 4,
-    borderBottomWidth: 4,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderRadius: 8,
+    borderRadius: 20,
     borderColor: C.black,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardAvatarText: { color: C.white, fontSize: 13, fontWeight: '400' },
   photoCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     borderWidth: 2,
     borderColor: C.black,
   },
-  empName: { fontSize: 14, fontWeight: '400', color: C.black },
-  empSub: { fontSize: 11, color: C.textMuted, fontWeight: '400' },
-  empId: {
-    fontSize: 12,
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  codeChip: {
+    fontSize: 10,
+    fontWeight: '400',
+    color: C.primary,
+    backgroundColor: C.primary + '18',
+    borderWidth: 1.5,
+    borderColor: C.primary,
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  empName: { flex: 1, fontSize: 14, fontWeight: '400', color: C.black },
+  empSub: { fontSize: 11, color: C.textMuted, fontWeight: '400', marginTop: 2 },
+  empMeta: {
+    fontSize: 10,
     color: C.textLight,
-    fontFamily: 'monospace',
-    marginTop: 1,
+    marginTop: 2,
   },
   resetBtn: {
     flexDirection: 'row',
@@ -426,20 +421,16 @@ const s = StyleSheet.create({
     gap: 4,
     backgroundColor: C.primary,
     borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
+    borderRadius: 6,
     borderColor: C.black,
     paddingHorizontal: 10,
     paddingVertical: 7,
+    marginLeft: 8,
   },
   resetBtnText: {
     color: C.white,
     fontSize: 11,
     fontWeight: '400',
-    textTransform: 'uppercase',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -462,26 +453,24 @@ const s = StyleSheet.create({
     borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.primary,
-    padding: 14,
+    padding: 16,
   },
   fieldLabel: {
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.black,
     marginBottom: 6,
-    letterSpacing: 0.5,
   },
   fieldInput: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingVertical: 12,
     fontSize: 14,
     fontWeight: '400',
     color: C.black,
@@ -491,12 +480,12 @@ const s = StyleSheet.create({
   eyeBtn: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    padding: 11,
+    padding: 12,
     backgroundColor: C.white,
   },
   genBtn: {
@@ -512,25 +501,24 @@ const s = StyleSheet.create({
     borderRadius: 8,
     borderColor: C.primary,
     backgroundColor: '#EFF6FF',
-    paddingVertical: 11,
+    paddingVertical: 12,
   },
   genBtnText: { color: C.primary, fontWeight: '400', fontSize: 13 },
   submitBtn: {
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingVertical: 14,
+    paddingVertical: 16,
     alignItems: 'center',
   },
   submitBtnText: {
     color: C.white,
     fontWeight: '400',
     fontSize: 14,
-    textTransform: 'uppercase',
   },
 });

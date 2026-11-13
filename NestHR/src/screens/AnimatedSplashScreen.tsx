@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   },
   iconWrap: {
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
   iconCircle: {
     width: 72,
@@ -149,8 +149,6 @@ const styles = StyleSheet.create({
     color: '#024bab',
     fontSize: 11,
     fontWeight: '400',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
   },
   logoWrap: {
     borderRadius: 100,
@@ -170,7 +168,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '400',
     color: '#000000',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
   },
 });

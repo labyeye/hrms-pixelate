@@ -1,5 +1,4 @@
-import React, { useEffect } from 'react';
-import { setupPushNotifications } from '../services/pushNotificationService';
+import React, { useEffect, useState } from 'react';
 import {
   createBottomTabNavigator,
   BottomTabBarProps,
@@ -12,6 +11,7 @@ import {
   TouchableOpacity,
   LayoutChangeEvent,
   AppState,
+  DeviceEventEmitter,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,7 +26,9 @@ import {
 } from 'lucide-react-native';
 import { C } from '../theme';
 import { useAuth } from '../contexts/AuthContext';
-import { syncAnnouncementNotifications } from '../api/api';
+import { useNavigation } from '@react-navigation/native';
+import { syncAnnouncementNotifications, leaveAPI } from '../api/api';
+import { setupPushNotifications } from '../services/pushNotificationService';
 import TabBounce from '../components/motion/TabBounce';
 import DashboardScreen from '../screens/DashboardScreen';
 import EmployeesScreen from '../screens/EmployeesScreen';
@@ -141,7 +143,12 @@ const NOTCH_DEPTH = 40;
 // Bottom bar with Attendance raised in the middle, sitting in a curved
 // notch — same shape/behavior as NestLeads' tab bar, re-themed to NestHR.
 // Home + Employees sit to the left, Leave + More to the right.
-function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+function CustomTabBar({
+  state,
+  descriptors,
+  navigation,
+  pendingLeaves,
+}: BottomTabBarProps & { pendingLeaves: number }) {
   const insets = useSafeAreaInsets();
   const [width, setWidth] = React.useState(0);
   const height = BAR_ROW + insets.bottom;
@@ -183,7 +190,7 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
           const { options } = descriptors[route.key];
           const focused = state.index === index;
           const raised = hasCenter && index === centerIndex;
-          const color = focused ? C.primary : '#9CA3AF';
+          const color = focused ? C.primary : '#6B7280';
           const Icon = TAB_ICONS[route.name] || Home;
           const label =
             typeof options.tabBarLabel === 'string'
@@ -225,6 +232,13 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                     style={[styles.iconWrap, focused && styles.iconWrapActive]}
                   >
                     <Icon size={20} color={color} />
+                    {route.name === 'Leave' && pendingLeaves > 0 && (
+                      <View style={styles.badge}>
+                        <Text style={styles.badgeText}>
+                          {pendingLeaves > 99 ? '99+' : pendingLeaves}
+                        </Text>
+                      </View>
+                    )}
                   </View>
                 </TabBounce>
               )}
@@ -251,11 +265,6 @@ export default function MainNavigator() {
   const { user } = useAuth();
   const isEmployee = user?.role === 'employee';
 
-  // Register this device for FCM push once logged in.
-  useEffect(() => {
-    if (user) setupPushNotifications().catch(() => {});
-  }, [user]);
-
   // New announcements become in-app notifications: checked on open, when the app returns to the foreground, and every minute.
   useEffect(() => {
     const run = () => syncAnnouncementNotifications().catch(() => {});
@@ -271,9 +280,55 @@ export default function MainNavigator() {
     };
   }, []);
 
+  // Pending leave requests shown as a count badge on the Leave tab (own requests for staff, the whole company's for admins).
+  const [pendingLeaves, setPendingLeaves] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    const run = () =>
+      leaveAPI
+        .getAll({ status: 'pending', limit: '1' })
+        .then((res: any) => {
+          if (alive) setPendingLeaves(res?.total ?? res?.data?.length ?? 0);
+        })
+        .catch(() => {});
+    run();
+    const timer = setInterval(run, 60_000);
+    const appSub = AppState.addEventListener(
+      'change',
+      st => st === 'active' && run(),
+    );
+    const leaveSub = DeviceEventEmitter.addListener('leaves:changed', run);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+      appSub.remove();
+      leaveSub.remove();
+    };
+  }, [user?.id]);
+
+  // Push: register this device once signed in; tapping a notification opens its screen.
+  const navigation = useNavigation<any>();
+  useEffect(() => {
+    let cleanup = () => {};
+    let cancelled = false;
+    setupPushNotifications(data => {
+      const screen = data?.screen;
+      if (screen === 'Leave' || screen === 'Attendance')
+        navigation.navigate(screen);
+      else if (screen) navigation.navigate('More', { screen });
+      else navigation.navigate('More', { screen: 'Notifications' });
+    }).then(fn => (cancelled ? fn() : (cleanup = fn)));
+    return () => {
+      cancelled = true;
+      cleanup();
+    };
+  }, [navigation]);
+
   return (
     <Tab.Navigator
-      tabBar={props => <CustomTabBar {...props} />}
+      tabBar={props => (
+        <CustomTabBar {...props} pendingLeaves={pendingLeaves} />
+      )}
       screenOptions={{ headerShown: false }}
     >
       <Tab.Screen
@@ -333,11 +388,9 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 11,
     fontWeight: '400',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
     maxWidth: '100%',
   },
-  tabLabelRaised: { marginTop: 5 },
+  tabLabelRaised: { marginTop: 4 },
   iconWrap: {
     width: 32,
     height: 28,
@@ -345,4 +398,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconWrapActive: {},
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -6,
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 4,
+    borderRadius: 8,
+    backgroundColor: C.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    color: C.white,
+    fontSize: 10,
+    fontWeight: '700',
+    lineHeight: 13,
+  },
 });

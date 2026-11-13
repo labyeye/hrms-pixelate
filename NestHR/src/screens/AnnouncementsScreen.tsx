@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   Image,
@@ -19,27 +20,29 @@ import { useNavigation } from '@react-navigation/native';
 import {
   CheckCircle2,
   ChevronLeft,
+  Download,
+  Ellipsis,
+  Megaphone,
   Pin,
   Plus,
-  Trash2,
-  X,
   Search,
   SlidersHorizontal,
+  Trash2,
+  X,
 } from 'lucide-react-native';
 import { announcementAPI, departmentAPI } from '../api/api';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { API_BASE_URL } from '../config/env';
-import ExportButton from '../components/common/ExportButton';
+import { chooseExport } from '../utils/exporters';
 import { useAuth } from '../contexts/AuthContext';
 import { DatePickerField } from '../components/common/DatePickerField';
 import HeaderIconBtn from '../components/common/HeaderIconBtn';
 import SearchModal from '../components/common/SearchModal';
 import FilterSortModal from '../components/common/FilterSortModal';
-import ScreenLayout, { HeaderBtn } from '../components/common/ScreenLayout';
+import SlideInCard from '../components/motion/SlideInCard';
 import { C, FONT, useResponsive } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 
-// The backend only lets these roles post or delete.
 const ADMIN_ROLES = ['super_admin', 'hr_manager'];
 const CATEGORIES = ['general', 'policy', 'urgent', 'event', 'holiday', 'hr'];
 const PRIORITIES = ['low', 'medium', 'high', 'critical'];
@@ -96,6 +99,7 @@ export default function AnnouncementsScreen() {
   const [search, setSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [category, setCategory] = useState('all');
   const [openId, setOpenId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -106,7 +110,7 @@ export default function AnnouncementsScreen() {
     type: string;
     name: string;
   } | null>(null);
-  // posters are served from the API server root (/uploads/...), not under /api
+
   const serverRoot = API_BASE_URL.replace(/\/api\/?$/, '');
 
   const pickPoster = async () => {
@@ -252,11 +256,44 @@ export default function AnnouncementsScreen() {
     }
   };
 
+  const exportCols = [
+    { header: 'Title', value: (a: any) => a.title },
+    { header: 'Category', value: (a: any) => a.category },
+    { header: 'Priority', value: (a: any) => a.priority },
+    { header: 'Posted By', value: (a: any) => a.postedBy?.name },
+    {
+      header: 'Date',
+      value: (a: any) => String(a.date || a.createdAt || '').slice(0, 10),
+    },
+    { header: 'Seen', value: (a: any) => a.readBy?.length || 0 },
+    { header: 'Content', value: (a: any) => a.content },
+  ];
+
   return (
-    <ScreenLayout
-      title="Announcements"
-      loading={loading}
-      right={
+    <SafeAreaView style={s.safe} edges={['top']}>
+      {/* Concise Header matching EmployeesScreen */}
+      <View
+        style={[
+          s.header,
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
+      >
+        <View style={s.headerLeft}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{ padding: 4, marginRight: 2 }}
+            hitSlop={8}
+          >
+            <ChevronLeft size={22} color={C.black} />
+          </TouchableOpacity>
+          <Megaphone size={20} color={C.primary} />
+          <Text style={s.headerTitle}>Announcements</Text>
+        </View>
+
         <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
           <HeaderIconBtn
             label="Search"
@@ -270,44 +307,51 @@ export default function AnnouncementsScreen() {
             dot={category !== 'all'}
             onPress={() => setFilterOpen(true)}
           />
-          <ExportButton
-            name="announcements"
-            label=""
-            rows={shown}
-            cols={[
-              { header: 'Title', value: (a: any) => a.title },
-              { header: 'Category', value: (a: any) => a.category },
-              { header: 'Priority', value: (a: any) => a.priority },
-              { header: 'Posted By', value: (a: any) => a.postedBy?.name },
-              {
-                header: 'Date',
-                value: (a: any) =>
-                  String(a.date || a.createdAt || '').slice(0, 10),
-              },
-              { header: 'Seen', value: (a: any) => a.readBy?.length || 0 },
-              { header: 'Content', value: (a: any) => a.content },
-            ]}
+          <HeaderIconBtn
+            label="More actions"
+            icon={<Ellipsis size={22} color={C.black} />}
+            onPress={() => setMenuOpen(true)}
           />
-          {isAdmin ? (
-            <HeaderBtn
-              label="Post"
-              icon={<Plus size={14} color="#fff" />}
+          {isAdmin && (
+            <TouchableOpacity
+              style={s.addBtn}
               onPress={() => setFormOpen(true)}
-            />
-          ) : null}
+              accessibilityLabel="Post Announcement"
+              hitSlop={8}
+            >
+              <Plus size={24} color={C.primary} />
+            </TouchableOpacity>
+          )}
         </View>
-      }
-    >
-      <View style={s.topBar}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          hitSlop={10}
-          style={s.back}
-        >
-          <ChevronLeft size={18} color={C.black} />
-          <Text style={s.backText}>Back</Text>
-        </TouchableOpacity>
       </View>
+
+      {/* Overflow Menu Modal */}
+      <Modal
+        visible={menuOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMenuOpen(false)}
+      >
+        <TouchableOpacity
+          style={s.menuOverlay}
+          activeOpacity={1}
+          onPress={() => setMenuOpen(false)}
+        >
+          <View style={s.menuSheet}>
+            <TouchableOpacity
+              style={s.menuItem}
+              onPress={() => {
+                setMenuOpen(false);
+                chooseExport('announcements', exportCols, shown);
+              }}
+            >
+              <Download size={18} color={C.black} />
+              <Text style={s.menuText}>Export announcements</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       <SearchModal
         visible={searchOpen}
         onClose={() => setSearchOpen(false)}
@@ -330,118 +374,142 @@ export default function AnnouncementsScreen() {
         onReset={() => setCategory('all')}
       />
 
-      <FlatList
-        key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
-        data={shown}
-        keyExtractor={a => a._id}
-        numColumns={isTablet ? 2 : 1}
-        columnWrapperStyle={isTablet ? s.colWrapper : undefined}
-        contentContainerStyle={[
-          { padding: 16, paddingBottom: 40, gap: 10 },
-          isTablet && {
-            maxWidth: maxContentWidth,
-            width: '100%',
-            alignSelf: 'center',
-          },
-        ]}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        ListEmptyComponent={<Text style={s.empty}>No announcements</Text>}
-        renderItem={({ item: a }) => {
-          const read = includesUser(a.readBy, user?.id);
-          const acked = includesUser(a.acknowledgedBy, user?.id);
-          const open = openId === a._id;
-          return (
-            <TouchableOpacity
-              style={[s.card, !read && s.cardUnread, isTablet && s.cardTablet]}
-              activeOpacity={0.9}
-              onPress={() => toggleOpen(a)}
-            >
-              <View style={s.row}>
-                {a.pinned ? <Pin size={14} color={C.secondary} /> : null}
-                <Text style={s.title} numberOfLines={open ? undefined : 2}>
-                  {a.title}
-                </Text>
-                {!read && <View style={s.dot} />}
-              </View>
-              <View style={[s.row, { marginTop: 6, flexWrap: 'wrap' }]}>
-                <Tag
-                  label={a.priority}
-                  color={PRIORITY_COLOR[a.priority] || C.primary}
-                />
-                <Tag label={a.category} color="#6B7280" />
-                {a.acknowledgementRequired && (
-                  <Tag
-                    label={acked ? 'Acknowledged' : 'Ack required'}
-                    color={acked ? C.success : C.danger}
-                  />
-                )}
-              </View>
-              <View style={[s.row, { marginTop: 8, flexWrap: 'wrap', gap: 6 }]}>
-                {!!a.postedBy?.name && (
-                  <MetaChip text={a.postedBy.name} bg={CHIP.blue} />
-                )}
-                <MetaChip text={fmt(a.date || a.createdAt)} bg={CHIP.blue} />
-                {!!a.expiryDate && (
-                  <MetaChip
-                    text={`Expires ${fmt(a.expiryDate)}`}
-                    bg={CHIP.blue}
-                  />
-                )}
-              </View>
-              {open && (
-                <>
-                  {!!a.posterUrl && (
-                    <Image
-                      source={{ uri: `${serverRoot}${a.posterUrl}` }}
-                      style={{
-                        width: '100%',
-                        height: 220,
-                        marginBottom: 8,
-                        borderWidth: 2,
-                        borderColor: C.black,
-                      }}
-                      resizeMode="contain"
-                    />
-                  )}
-                  <Text style={s.content}>{a.content}</Text>
-                  {isAdmin && a.acknowledgementRequired && (
-                    <Text style={s.meta}>
-                      Read {a.readBy?.length || 0}
-                      {a.audienceCount ? ` of ${a.audienceCount}` : ''} ·
-                      Acknowledged {a.acknowledgedBy?.length || 0}
+      {loading ? (
+        <View style={s.loader}>
+          <ActivityIndicator size="large" color={C.primary} />
+        </View>
+      ) : (
+        <FlatList
+          key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
+          data={shown}
+          keyExtractor={a => a._id}
+          numColumns={isTablet ? 2 : 1}
+          columnWrapperStyle={isTablet ? s.colWrapper : undefined}
+          contentContainerStyle={[
+            { padding: 16, paddingBottom: 40, gap: 10 },
+            isTablet && {
+              maxWidth: maxContentWidth,
+              width: '100%',
+              alignSelf: 'center',
+            },
+          ]}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={C.primary}
+            />
+          }
+          ListEmptyComponent={<Text style={s.empty}>No announcements</Text>}
+          renderItem={({ item: a, index }) => {
+            const read = includesUser(a.readBy, user?.id);
+            const acked = includesUser(a.acknowledgedBy, user?.id);
+            const open = openId === a._id;
+            return (
+              <SlideInCard
+                index={index}
+                style={isTablet ? s.cardTablet : undefined}
+              >
+                <TouchableOpacity
+                  style={[s.card, !read && s.cardUnread]}
+                  activeOpacity={0.9}
+                  onPress={() => toggleOpen(a)}
+                >
+                  <View style={s.row}>
+                    {a.pinned ? <Pin size={14} color={C.secondary} /> : null}
+                    <Text style={s.title} numberOfLines={open ? undefined : 2}>
+                      {a.title}
                     </Text>
-                  )}
-                  <View
-                    style={[
-                      s.row,
-                      { marginTop: 10, justifyContent: 'space-between' },
-                    ]}
-                  >
-                    {a.acknowledgementRequired && !acked ? (
-                      <TouchableOpacity
-                        style={s.ackBtn}
-                        onPress={() => acknowledge(a)}
-                      >
-                        <CheckCircle2 size={14} color="#fff" />
-                        <Text style={s.ackText}>Acknowledge</Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <View />
-                    )}
-                    {isAdmin && (
-                      <TouchableOpacity onPress={() => remove(a)} hitSlop={8}>
-                        <Trash2 size={18} color={C.danger} />
-                      </TouchableOpacity>
+                    {!read && <View style={s.dot} />}
+                  </View>
+                  <View style={[s.row, { marginTop: 6, flexWrap: 'wrap' }]}>
+                    <Tag
+                      label={a.priority}
+                      color={PRIORITY_COLOR[a.priority] || C.primary}
+                    />
+                    <Tag label={a.category} color="#6B7280" />
+                    {a.acknowledgementRequired && (
+                      <Tag
+                        label={acked ? 'Acknowledged' : 'Ack required'}
+                        color={acked ? C.success : C.danger}
+                      />
                     )}
                   </View>
-                </>
-              )}
-            </TouchableOpacity>
-          );
-        }}
-      />
+                  <View
+                    style={[s.row, { marginTop: 8, flexWrap: 'wrap', gap: 6 }]}
+                  >
+                    {!!a.postedBy?.name && (
+                      <MetaChip text={a.postedBy.name} bg={CHIP.blue} />
+                    )}
+                    <MetaChip
+                      text={fmt(a.date || a.createdAt)}
+                      bg={CHIP.blue}
+                    />
+                    {!!a.expiryDate && (
+                      <MetaChip
+                        text={`Expires ${fmt(a.expiryDate)}`}
+                        bg={CHIP.blue}
+                      />
+                    )}
+                  </View>
+                  {open && (
+                    <>
+                      {!!a.posterUrl && (
+                        <Image
+                          source={{ uri: `${serverRoot}${a.posterUrl}` }}
+                          style={{
+                            width: '100%',
+                            height: 220,
+                            marginTop: 10,
+                            marginBottom: 8,
+                            borderWidth: 2,
+                            borderColor: C.black,
+                          }}
+                          resizeMode="contain"
+                        />
+                      )}
+                      <Text style={s.content}>{a.content}</Text>
+                      {isAdmin && a.acknowledgementRequired && (
+                        <Text style={s.meta}>
+                          Read {a.readBy?.length || 0}
+                          {a.audienceCount ? ` of ${a.audienceCount}` : ''} ·
+                          Acknowledged {a.acknowledgedBy?.length || 0}
+                        </Text>
+                      )}
+                      <View
+                        style={[
+                          s.row,
+                          { marginTop: 12, justifyContent: 'space-between' },
+                        ]}
+                      >
+                        {a.acknowledgementRequired && !acked ? (
+                          <TouchableOpacity
+                            style={s.ackBtn}
+                            onPress={() => acknowledge(a)}
+                          >
+                            <CheckCircle2 size={14} color="#fff" />
+                            <Text style={s.ackText}>Acknowledge</Text>
+                          </TouchableOpacity>
+                        ) : (
+                          <View />
+                        )}
+                        {isAdmin && (
+                          <TouchableOpacity
+                            onPress={() => remove(a)}
+                            hitSlop={8}
+                          >
+                            <Trash2 size={20} color={C.danger} />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </SlideInCard>
+            );
+          }}
+        />
+      )}
 
       <Modal
         visible={formOpen}
@@ -458,7 +526,7 @@ export default function AnnouncementsScreen() {
                   onPress={() => setFormOpen(false)}
                   hitSlop={8}
                 >
-                  <X size={22} color={C.black} />
+                  <X size={24} color={C.black} />
                 </TouchableOpacity>
               </View>
               <ScrollView
@@ -583,7 +651,7 @@ export default function AnnouncementsScreen() {
           </View>
         </View>
       </Modal>
-    </ScreenLayout>
+    </SafeAreaView>
   );
 }
 
@@ -658,29 +726,46 @@ function Tag({ label, color }: { label: string; color: string }) {
 }
 
 const s = StyleSheet.create({
-  topBar: { paddingHorizontal: 16, paddingTop: 10 },
-  back: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start' },
-  backText: {
-    fontFamily: FONT.bold,
-    fontSize: 12,
-    color: C.black,
-    textTransform: 'uppercase',
+  safe: { flex: 1, backgroundColor: C.bg },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: C.white,
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
   },
-  filters: { paddingHorizontal: 16, paddingTop: 10, gap: 8 },
-  search: {
-    fontFamily: FONT.medium,
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerTitle: { fontSize: 20, fontWeight: '400', color: C.black },
+  addBtn: { padding: 4 },
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    alignItems: 'flex-end',
+    paddingTop: 96,
+    paddingHorizontal: 12,
+  },
+  menuSheet: {
+    minWidth: 230,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderColor: C.black,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 14,
-    color: C.black,
+    backgroundColor: C.white,
+    paddingVertical: 4,
   },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  menuText: { fontSize: 14, color: C.black },
+  loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   pill: {
     borderWidth: 2,
     borderRightWidth: 4,
@@ -697,37 +782,33 @@ const s = StyleSheet.create({
     fontFamily: FONT.bold,
     fontSize: 11,
     color: C.black,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
   },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
-  colWrapper: { gap: 12 },
+  colWrapper: { gap: 10 },
   cardTablet: { flex: 1 },
   card: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderColor: C.black,
-    padding: 12,
-    backgroundColor: '#fff',
-  },
-  cardUnread: { borderLeftWidth: 6, borderLeftColor: C.primary },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  title: { flex: 1, fontFamily: FONT.bold, fontSize: 15, color: C.black },
-  dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: C.primary },
-  tag: {
-    borderWidth: 2,
     borderRightWidth: 4,
     borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
-    borderRadius: 8,
-    paddingHorizontal: 8,
+    borderColor: C.black,
+    padding: 12,
+    backgroundColor: C.white,
+  },
+  cardUnread: { borderLeftWidth: 5, borderLeftColor: C.primary },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  title: { flex: 1, fontFamily: FONT.bold, fontSize: 14, color: C.black },
+  dot: { width: 9, height: 9, borderRadius: 5, backgroundColor: C.primary },
+  tag: {
+    borderWidth: 1.5,
+    borderRadius: 6,
+    paddingHorizontal: 7,
     paddingVertical: 1,
   },
-  tagText: { fontFamily: FONT.bold, fontSize: 10, textTransform: 'uppercase' },
+  tagText: { fontFamily: FONT.bold, fontSize: 10, textTransform: 'capitalize' },
   meta: {
     fontFamily: FONT.medium,
     fontSize: 12,
@@ -738,7 +819,7 @@ const s = StyleSheet.create({
     fontFamily: FONT.medium,
     fontSize: 14,
     color: C.black,
-    marginTop: 10,
+    marginTop: 12,
     lineHeight: 20,
   },
   ackBtn: {
@@ -748,10 +829,6 @@ const s = StyleSheet.create({
     backgroundColor: C.success,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -759,8 +836,7 @@ const s = StyleSheet.create({
   ackText: {
     fontFamily: FONT.bold,
     fontSize: 12,
-    color: '#fff',
-    textTransform: 'uppercase',
+    color: C.white,
   },
   empty: {
     textAlign: 'center',
@@ -768,22 +844,21 @@ const s = StyleSheet.create({
     color: '#6B7280',
     marginTop: 40,
   },
-  sheet: { flex: 1, backgroundColor: '#fff' },
+  sheet: { flex: 1, backgroundColor: C.white },
   sheetHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  sheetTitle: { fontFamily: FONT.bold, fontSize: 17, color: C.black },
+  sheetTitle: { fontFamily: FONT.bold, fontSize: 16, color: C.black },
   label: {
     fontFamily: FONT.bold,
     fontSize: 12,
     color: C.black,
-    textTransform: 'uppercase',
     marginTop: 12,
     marginBottom: 6,
   },
@@ -791,13 +866,13 @@ const s = StyleSheet.create({
     fontFamily: FONT.medium,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     fontSize: 14,
     color: C.black,
   },
@@ -805,15 +880,15 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 14,
+    marginTop: 16,
   },
   switchLabel: { fontFamily: FONT.bold, fontSize: 13, color: C.black },
   saveBtn: {
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -823,8 +898,7 @@ const s = StyleSheet.create({
   },
   saveText: {
     fontFamily: FONT.bold,
-    color: '#fff',
+    color: C.white,
     fontSize: 13,
-    textTransform: 'uppercase',
   },
 });

@@ -1,3 +1,4 @@
+import { sentence } from '../utils/text';
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
@@ -6,12 +7,13 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  TextInput,
   Alert,
-  Dimensions,
   StatusBar,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { localNotificationsAPI, employeeAPI } from '../api/api';
 import {
@@ -25,7 +27,6 @@ import {
   Settings,
   LogOut as LogOutIcon,
   Search,
-  X,
   KeyRound,
   Settings2,
   User,
@@ -37,190 +38,54 @@ import {
   LifeBuoy,
   FolderOpen,
   DoorOpen,
-  MapPin,
   ListChecks,
   Megaphone,
   Trash2,
   Receipt,
+  LayoutGrid,
+  Crown,
 } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { C, useResponsive } from '../theme';
+import HeaderIconBtn from '../components/common/HeaderIconBtn';
+import SearchModal from '../components/common/SearchModal';
+import SlideInCard from '../components/motion/SlideInCard';
 
 const MENU_ITEMS = [
-  {
-    key: 'Payroll',
-    label: 'Payroll',
-    icon: IndianRupee,
-    desc: 'Manage salaries & payslips',
-  },
-  {
-    key: 'Performance',
-    label: 'Performance',
-    icon: TrendingUp,
-    desc: 'Reviews & goals tracking',
-  },
-  {
-    key: 'Departments',
-    label: 'Departments',
-    icon: Building2,
-    desc: 'Manage teams & org structure',
-  },
-  {
-    key: 'Holidays',
-    label: 'Holidays',
-    icon: Sun,
-    desc: 'Company holidays calendar',
-  },
-  {
-    key: 'Loans',
-    label: 'Loans',
-    icon: CreditCard,
-    desc: 'Employee loan management',
-  },
-  {
-    key: 'Expenses',
-    label: 'Expenses',
-    icon: Receipt,
-    desc: 'Reimbursement claims & approvals',
-  },
-  {
-    key: 'Reports',
-    label: 'Reports',
-    icon: BarChart2,
-    desc: 'Analytics & export data',
-  },
-  {
-    key: 'Documents',
-    label: 'Document Vault',
-    icon: FolderOpen,
-    desc: 'Employee documents & files',
-  },
-  {
-    key: 'Credentials',
-    label: 'Credentials',
-    icon: KeyRound,
-    desc: 'Reset employee passwords',
-  },
-  {
-    key: 'Manage',
-    label: 'Manage',
-    icon: Settings2,
-    desc: 'Shifts, salary heads, designations',
-  },
-  {
-    key: 'BiometricDevices',
-    label: 'Biometric Devices',
-    icon: Cpu,
-    desc: 'Manage fingerprint & NFC machines',
-  },
-  {
-    key: 'NfcManager',
-    label: 'NFC Cards',
-    icon: CreditCard,
-    desc: 'Assign access cards to employees',
-  },
+  { key: 'Payroll', label: 'Payroll', icon: IndianRupee },
+  { key: 'Performance', label: 'Performance', icon: TrendingUp },
+  { key: 'Departments', label: 'Departments', icon: Building2 },
+  { key: 'Holidays', label: 'Holidays', icon: Sun },
+  { key: 'Loans', label: 'Loans', icon: CreditCard },
+  { key: 'Expenses', label: 'Expenses', icon: Receipt },
+  { key: 'Reports', label: 'Reports', icon: BarChart2 },
+  { key: 'Documents', label: 'Document Vault', icon: FolderOpen },
+  { key: 'Credentials', label: 'Credentials', icon: KeyRound },
+  { key: 'Manage', label: 'Manage', icon: Settings2 },
+  { key: 'BiometricDevices', label: 'Biometric Devices', icon: Cpu },
+  { key: 'NfcManager', label: 'NFC Cards', icon: CreditCard },
   {
     key: 'AttendanceSettings',
     label: 'Attendance Settings',
     icon: ShieldAlert,
-    desc: 'Shift, late & leave allowance rules',
   },
-  {
-    key: 'LateApprovals',
-    label: 'Late Approvals',
-    icon: AlertOctagon,
-    desc: 'Resolve late check-ins over allowance',
-  },
-  {
-    key: 'Notifications',
-    label: 'Notifications',
-    icon: Bell,
-    desc: 'View recent alerts & activity',
-  },
-  {
-    key: 'AuditLog',
-    label: 'Audit Log',
-    icon: Shield,
-    desc: 'Track who changed what & when',
-  },
-  {
-    key: 'AccountSecurity',
-    label: 'Account Security',
-    icon: Shield,
-    desc: 'Passkey, devices, backup codes & verification',
-  },
-  {
-    key: 'Settings',
-    label: 'Settings',
-    icon: Settings,
-    desc: 'Company & app configuration',
-  },
-  {
-    key: 'Billing',
-    label: 'Billing',
-    icon: CreditCard,
-    desc: 'Subscription & invoices',
-  },
-  {
-    key: 'Credits',
-    label: 'WhatsApp Credits',
-    icon: Coins,
-    desc: 'Balance & message usage',
-  },
-  {
-    key: 'Support',
-    label: 'Support',
-    icon: LifeBuoy,
-    desc: 'Report issues & track tickets',
-  },
-  {
-    key: 'ExitManagement',
-    label: 'Exit Management',
-    icon: DoorOpen,
-    desc: 'Offboarding, FnF & clearance',
-  },
-  {
-    key: 'Assets',
-    label: 'My Assets',
-    icon: Cpu,
-    desc: 'Track company hardware',
-  },
-  {
-    key: 'Tasks',
-    label: 'Tasks',
-    icon: ListChecks,
-    desc: 'Assign & track work',
-  },
-  {
-    key: 'Announcements',
-    label: 'Announcements',
-    icon: Megaphone,
-    desc: 'Company news & notices',
-  },
-  {
-    key: 'Trash',
-    label: 'Trash',
-    icon: Trash2,
-    desc: 'Restore deleted items',
-  },
+  { key: 'LateApprovals', label: 'Late Approvals', icon: AlertOctagon },
+  { key: 'Notifications', label: 'Notifications', icon: Bell },
+  { key: 'AuditLog', label: 'Audit Log', icon: Shield },
+  { key: 'AccountSecurity', label: 'Account Security', icon: Shield },
+  { key: 'Settings', label: 'Settings', icon: Settings },
+  { key: 'Billing', label: 'Billing', icon: CreditCard },
+  { key: 'Credits', label: 'WhatsApp Credits', icon: Coins },
+  { key: 'Support', label: 'Support', icon: LifeBuoy },
+  { key: 'ExitManagement', label: 'Exit Management', icon: DoorOpen },
+  { key: 'Assets', label: 'My Assets', icon: Cpu },
+  { key: 'Tasks', label: 'Tasks', icon: ListChecks },
+  { key: 'Announcements', label: 'Announcements', icon: Megaphone },
+  { key: 'Trash', label: 'Trash', icon: Trash2 },
 ];
 
 // Only these roles may open Trash (matches the backend).
 const TRASH_ROLES = ['super_admin', 'hr_manager'];
-
-const EMPLOYEE_MENU_KEYS = new Set([
-  'AccountSecurity',
-  'Payroll',
-  'Holidays',
-  'Loans',
-  'Expenses',
-  'Notifications',
-  'Support',
-  'Documents',
-  'Assets',
-  'Tasks',
-  'Announcements',
-]);
 
 const GROUPS: { title: string; color: string; keys: string[] }[] = [
   {
@@ -271,22 +136,16 @@ const GROUPS: { title: string; color: string; keys: string[] }[] = [
   { title: 'Admin', color: '#000000', keys: ['AuditLog', 'Trash'] },
 ];
 
-const TILE_W = (Dimensions.get('window').width - 32 - 12) / 2;
-
 export default function MoreScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
-  const { isTablet, width: screenWidth, maxContentWidth } = useResponsive();
-  const containerWidth = isTablet
-    ? Math.min(screenWidth, maxContentWidth || screenWidth)
-    : screenWidth;
-  const numColumns = isTablet ? (containerWidth > 900 ? 4 : 3) : 2;
-  const tileWidth = (containerWidth - 32 - (numColumns - 1) * 12) / numColumns;
+  const { isTablet, maxContentWidth } = useResponsive();
 
   const { user, logout } = useAuth();
   const isEmployee = user?.role === 'employee';
   const [unreadCount, setUnreadCount] = useState(0);
   const [empProfile, setEmpProfile] = useState<any>(null);
   const [query, setQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
     if (isEmployee) {
@@ -309,9 +168,7 @@ export default function MoreScreen({ navigation }: any) {
 
   const q = query.trim().toLowerCase();
   const visible = MENU_ITEMS.filter(
-    item =>
-      (!isEmployee || EMPLOYEE_MENU_KEYS.has(item.key)) &&
-      (item.key !== 'Trash' || TRASH_ROLES.includes(user?.role || '')),
+    item => item.key !== 'Trash' || TRASH_ROLES.includes(user?.role || ''),
   ).map(item => ({
     ...item,
     label:
@@ -320,12 +177,6 @@ export default function MoreScreen({ navigation }: any) {
         : isEmployee && item.key === 'Loans'
         ? 'My Loans'
         : item.label,
-    desc:
-      isEmployee && item.key === 'Payroll'
-        ? 'View your salary payslips'
-        : isEmployee && item.key === 'Loans'
-        ? 'Request a loan or salary advance'
-        : item.desc,
   }));
 
   const sections = GROUPS.map(g => ({
@@ -334,10 +185,7 @@ export default function MoreScreen({ navigation }: any) {
       .map(k => visible.find(i => i.key === k))
       .filter(
         (i): i is (typeof visible)[number] =>
-          !!i &&
-          (!q ||
-            i.label.toLowerCase().includes(q) ||
-            i.desc.toLowerCase().includes(q)),
+          !!i && (!q || i.label.toLowerCase().includes(q)),
       ),
   })).filter(g => g.items.length > 0);
 
@@ -347,9 +195,13 @@ export default function MoreScreen({ navigation }: any) {
       { text: 'Logout', style: 'destructive', onPress: () => logout() },
     ]);
 
+  let cardIdx = 1;
+
   return (
-    <View style={[styles.safe, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <StatusBar barStyle="dark-content" backgroundColor={C.white} />
+
+      {/* Header matching EmployeesScreen */}
       <View
         style={[
           styles.header,
@@ -360,21 +212,51 @@ export default function MoreScreen({ navigation }: any) {
           },
         ]}
       >
-        <Text style={styles.headerTitle}>More</Text>
-        <TouchableOpacity
-          style={styles.bellBtn}
-          onPress={() => navigation.navigate('Notifications')}
-        >
-          <Bell size={22} color={C.black} />
-          {unreadCount > 0 && (
-            <View style={styles.bellBadge}>
-              <Text style={styles.bellBadgeText}>
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
+        <View style={styles.headerLeft}>
+          <LayoutGrid size={20} color={C.primary} />
+          <Text style={styles.headerTitle}>More</Text>
+        </View>
+
+        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+          <HeaderIconBtn
+            label="Search"
+            icon={<Search size={22} color={C.black} />}
+            dot={!!query}
+            onPress={() => setSearchOpen(true)}
+          />
+
+          <TouchableOpacity
+            style={styles.bellBtn}
+            onPress={() => navigation.navigate('Notifications')}
+            accessibilityLabel="Notifications"
+            hitSlop={8}
+          >
+            <Bell size={22} color={C.black} />
+            {unreadCount > 0 && (
+              <View style={styles.bellBadge}>
+                <Text style={styles.bellBadgeText}>
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {/* SearchModal matching EmployeesScreen */}
+      <SearchModal
+        visible={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        value={query}
+        onChange={setQuery}
+        placeholder="Search features…"
+        items={visible.map(item => ({
+          key: item.key,
+          title: item.label,
+          subtitle:
+            GROUPS.find(g => g.keys.includes(item.key))?.title || undefined,
+        }))}
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -389,110 +271,97 @@ export default function MoreScreen({ navigation }: any) {
           },
         ]}
       >
-        {/* Profile hero */}
-        <View style={styles.hero}>
-          <View style={styles.heroTop}>
-            {avatarUri ? (
-              <Image source={{ uri: avatarUri }} style={styles.userAvatar} />
-            ) : (
-              <View style={styles.userAvatar}>
-                <Text style={styles.userAvatarText}>
-                  {(user?.name || 'U')[0].toUpperCase()}
-                </Text>
+        {/* Profile hero wrapped in SlideInCard with Premium badge */}
+        <SlideInCard index={0}>
+          <View style={styles.hero}>
+            <View style={styles.heroRow}>
+              <View style={styles.avatarWrap}>
+                {avatarUri ? (
+                  <Image
+                    source={{ uri: avatarUri }}
+                    style={styles.userAvatar}
+                  />
+                ) : (
+                  <View style={styles.userAvatar}>
+                    <Text style={styles.userAvatarText}>
+                      {(user?.name || 'U')[0].toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.premiumAvatarBadge}>
+                  <Crown size={12} color="#000" fill="#ffffff" />
+                </View>
               </View>
-            )}
-            <View style={{ flex: 1 }}>
-              <Text style={styles.profileName} numberOfLines={1}>
-                {user?.name || 'User'}
-              </Text>
-              {!!user?.email && (
-                <Text style={styles.profileEmail} numberOfLines={1}>
-                  {user.email}
+
+              <View style={{ flex: 1 }}>
+                <Text style={styles.profileName} numberOfLines={1}>
+                  {user?.name || 'User'}
                 </Text>
-              )}
-              <View style={styles.rolePill}>
-                <Text style={styles.roleText}>
-                  {(user?.role || 'employee').replace(/_/g, ' ').toUpperCase()}
-                </Text>
+                {!!user?.email && (
+                  <Text style={styles.profileEmail} numberOfLines={1}>
+                    {user.email}
+                  </Text>
+                )}
+                <View style={styles.premiumPill}>
+                  <Text style={styles.premiumPillText}>{user?.role}</Text>
+                </View>
+              </View>
+
+              {/* Right-side icon-only action buttons */}
+              <View style={styles.heroActions}>
+                <TouchableOpacity
+                  style={[styles.iconBtn, { backgroundColor: '#eff6ff' }]}
+                  onPress={() => navigation.navigate('Profile')}
+                  activeOpacity={0.8}
+                >
+                  <User size={18} color={C.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.iconBtn, { backgroundColor: '#fef2f2' }]}
+                  onPress={handleLogout}
+                  activeOpacity={0.8}
+                >
+                  <LogOutIcon size={18} color={C.danger} />
+                </TouchableOpacity>
               </View>
             </View>
           </View>
-          <View style={styles.heroBtns}>
-            <TouchableOpacity
-              style={[styles.heroBtn, { backgroundColor: '#eff6ff' }]}
-              onPress={() => navigation.navigate('Profile')}
-            >
-              <User size={15} color={C.primary} />
-              <Text style={[styles.heroBtnText, { color: C.primary }]}>
-                Profile
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.heroBtn, { backgroundColor: '#fef2f2' }]}
-              onPress={handleLogout}
-            >
-              <LogOutIcon size={15} color={C.danger} />
-              <Text style={[styles.heroBtnText, { color: C.danger }]}>
-                Logout
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        </SlideInCard>
 
-        {/* Search */}
-        <View style={styles.searchBox}>
-          <Search size={16} color="#000" />
-          <TextInput
-            style={styles.searchInput}
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Search features..."
-            placeholderTextColor="#64748b"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          {!!query && (
-            <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
-              <X size={16} color="#000" />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Grouped tiles */}
+        {/* Grouped 3-column tiles with staggered SlideInCard */}
         {sections.map(g => (
           <View key={g.title}>
-            <View style={styles.sectionHead}>
-              <Text style={styles.sectionTitle}>{g.title.toUpperCase()}</Text>
-              <View style={styles.sectionLine} />
-            </View>
             <View style={styles.grid}>
               {g.items.map(item => {
                 const Icon = item.icon;
+                const currentIdx = cardIdx++;
                 return (
-                  <TouchableOpacity
+                  <SlideInCard
                     key={item.key}
-                    style={[styles.tile, { width: tileWidth }]}
-                    activeOpacity={0.8}
-                    onPress={() => navigation.navigate(item.key)}
+                    index={currentIdx}
+                    style={styles.tileWrap}
                   >
-                    <View
-                      style={[
-                        styles.tileIcon,
-                        {
-                          backgroundColor: g.color + '1A',
-                          borderColor: g.color,
-                        },
-                      ]}
+                    <TouchableOpacity
+                      style={styles.tile}
+                      activeOpacity={0.8}
+                      onPress={() => navigation.navigate(item.key)}
                     >
-                      <Icon size={22} color={g.color} />
-                    </View>
-                    <Text style={styles.tileLabel} numberOfLines={1}>
-                      {item.label}
-                    </Text>
-                    <Text style={styles.tileSub} numberOfLines={2}>
-                      {item.desc}
-                    </Text>
-                  </TouchableOpacity>
+                      <View
+                        style={[
+                          styles.tileIcon,
+                          {
+                            backgroundColor: g.color + '1A',
+                            borderColor: g.color,
+                          },
+                        ]}
+                      >
+                        <Icon size={22} color={g.color} />
+                      </View>
+                      <Text style={styles.tileLabel} numberOfLines={1}>
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  </SlideInCard>
                 );
               })}
             </View>
@@ -508,37 +377,44 @@ export default function MoreScreen({ navigation }: any) {
 
         <Text style={styles.versionText}>NestHR v1.0.0</Text>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const box = {
   borderWidth: 2,
   borderRadius: 8,
-  borderRightWidth: 5,
-  borderBottomWidth: 5,
+  borderRightWidth: 4,
+  borderBottomWidth: 4,
   borderRightColor: '#0A0A0A',
   borderBottomColor: '#0A0A0A',
-  borderColor: '#000',
+  borderColor: C.black,
 } as const;
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#fff' },
+  safe: { flex: 1, backgroundColor: C.bg },
   header: {
-    height: 56,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: C.white,
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
   },
-  headerTitle: { fontSize: 24, fontWeight: '400', color: '#000' },
-  scroll: { padding: 16, gap: 18 },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerTitle: { fontSize: 20, fontWeight: '400', color: C.black },
+  scroll: { padding: 16, gap: 16 },
 
-  hero: { ...box, backgroundColor: '#fff', padding: 14, gap: 14 },
-  heroTop: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  hero: { ...box, backgroundColor: C.white, padding: 14 },
+  heroRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  avatarWrap: {
+    position: 'relative',
+  },
   userAvatar: {
-    width: 64,
-    height: 64,
+    width: 56,
+    height: 56,
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRightWidth: 4,
@@ -546,104 +422,94 @@ const styles = StyleSheet.create({
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderRadius: 8,
-    borderColor: '#000',
+    borderColor: C.black,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  userAvatarText: { color: '#fff', fontSize: 26, fontWeight: '400' },
-  profileName: { fontSize: 18, fontWeight: '400', color: '#000' },
+  userAvatarText: { color: C.white, fontSize: 22, fontWeight: '400' },
+  premiumAvatarBadge: {
+    position: 'absolute',
+    bottom: -4,
+    right: -4,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#FFDE00',
+    borderWidth: 2,
+    borderColor: C.black,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileName: { fontSize: 16, fontWeight: '400', color: C.black },
   profileEmail: {
     fontSize: 12,
-    color: '#64748b',
+    color: '#6B7280',
     fontWeight: '400',
     marginTop: 2,
   },
-  rolePill: {
+  premiumPill: {
     alignSelf: 'flex-start',
-    marginTop: 8,
-    backgroundColor: '#FFDE00',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+    backgroundColor: '#ffffff',
     borderWidth: 2,
-    borderColor: '#000',
+    borderColor: C.black,
     borderRadius: 4,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
-  roleText: { fontSize: 10, fontWeight: '400', color: '#000' },
-  heroBtns: { flexDirection: 'row', gap: 10 },
-  heroBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    borderWidth: 2,
-    borderColor: '#000',
-    borderRadius: 8,
+  premiumPillText: {
+    fontSize: 10,
+    fontWeight: '400',
+    color: C.black,
   },
-  heroBtnText: { fontSize: 13, fontWeight: '400' },
-
-  searchBox: {
-    ...box,
+  heroActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#fff',
   },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 11,
-    fontSize: 14,
-    color: '#000',
-    fontWeight: '400',
+  iconBtn: {
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: C.black,
+    borderRadius: 8,
   },
 
-  sectionHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 10,
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  tileWrap: {
+    width: '31.3%',
   },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: '400',
-    color: '#000',
-    letterSpacing: 1,
-  },
-  sectionLine: {
-    flex: 1,
-    height: 2,
-    backgroundColor: '#000',
-    marginLeft: 4,
-  },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   tile: {
     ...box,
-    backgroundColor: '#fff',
-    padding: 12,
+    backgroundColor: C.white,
+    width: '100%',
+    paddingVertical: 12,
+    paddingHorizontal: 6,
     gap: 6,
-    minHeight: 124,
+    alignItems: 'center',
   },
   tileIcon: {
-    width: 44,
-    height: 44,
+    width: 42,
+    height: 42,
     borderWidth: 2,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+    marginBottom: 2,
   },
-  tileLabel: { fontSize: 14, fontWeight: '400', color: '#000' },
-  tileSub: {
-    fontSize: 11,
-    color: '#64748b',
+  tileLabel: {
+    fontSize: 12,
     fontWeight: '400',
-    lineHeight: 15,
+    color: C.black,
+    textAlign: 'center',
   },
-
   empty: { alignItems: 'center', paddingVertical: 40, gap: 8 },
-  emptyText: { fontSize: 14, fontWeight: '400', color: '#64748b' },
+  emptyText: { fontSize: 14, fontWeight: '400', color: '#6B7280' },
   versionText: {
     textAlign: 'center',
     fontSize: 11,
@@ -661,7 +527,7 @@ const styles = StyleSheet.create({
     height: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 3,
+    paddingHorizontal: 4,
   },
-  bellBadgeText: { color: '#fff', fontSize: 9, fontWeight: '400' },
+  bellBadgeText: { color: C.white, fontSize: 11, fontWeight: '400' },
 });

@@ -10,7 +10,7 @@ const PROD_API_URL = 'https://hrms-backend.pixelatenest.com/api';
 // Mac's LAN IP (`ipconfig getifaddr en0`), e.g. '192.168.1.119'.
 const DEV_HOST: string | null = null;
 const DEV_API_URL = `http://${
-  DEV_HOST ?? (Platform.OS === 'android' ? '10.0.2.2' : '192.168.1.107')
+  DEV_HOST ?? (Platform.OS === 'android' ? '10.0.2.2' : 'localhost')
 }:5001/api`;
 
 export const API_BASE_URL = __DEV__ ? DEV_API_URL : PROD_API_URL;

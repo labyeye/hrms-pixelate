@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
-  content: { paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
+  content: { paddingHorizontal: 12, paddingVertical: 12, gap: 8 },
   pill: {
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -72,8 +72,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '400',
     color: C.black,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
   },
   textActive: { color: C.white },
 });

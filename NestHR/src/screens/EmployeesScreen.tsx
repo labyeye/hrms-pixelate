@@ -66,10 +66,11 @@ import {
   GraduationCap,
   ArrowLeft,
   UserPlus,
-  CalendarCheck,
   CheckSquare,
+  Download,
+  Upload,
+  Ellipsis,
   Square,
-  Clock,
   SlidersHorizontal,
 } from 'lucide-react-native';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
@@ -84,15 +85,15 @@ import {
   leaveAPI,
 } from '../api/api';
 import { Employee } from '../types/hrms';
-import { C, useResponsive, tabletContainerStyle } from '../theme';
+import { C, useResponsive } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import SlideInCard from '../components/motion/SlideInCard';
 import HeaderIconBtn from '../components/common/HeaderIconBtn';
 import SearchModal from '../components/common/SearchModal';
 import FilterSortModal from '../components/common/FilterSortModal';
-import ExportButton from '../components/common/ExportButton';
-import ImportButton from '../components/common/ImportButton';
-import StatTile, { tileGrid } from '../components/common/StatTile';
+import DashStatCard, { dashStatRow } from '../components/common/DashStatCard';
+import { chooseExport } from '../utils/exporters';
+import { pickSheet, shareTemplate } from '../utils/importSheet';
 import PhoneField from '../components/common/PhoneField';
 import PickerField from '../components/common/PickerField';
 import { lookupPincode, INDIA_STATES } from '../utils/pincode';
@@ -126,7 +127,7 @@ const IMPORT_COLS: [string, string, string][] = [
   ['ifscCode', 'IFSC Code', 'HDFC0001234'],
   ['bankName', 'Bank Name', 'HDFC Bank'],
   ['panNumber', 'PAN Number', 'ABCDE1234F'],
-  ['aadharNumber', 'Aadhar Number', '1234 5678 9012'],
+  ['aadharNumber', 'Aadhar Number', '[Aadhaar Redacted]'],
   ['uanNumber', 'UAN Number', '100123456789'],
   ['esicNumber', 'ESIC Number', '12345678901234'],
   ['pfNumber', 'PF Number', 'MH/12345/67890'],
@@ -226,6 +227,8 @@ export default function EmployeesScreen() {
   const [sortKey, setSortKey] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [departments, setDepartments] = useState<any[]>([]);
@@ -481,7 +484,6 @@ export default function EmployeesScreen() {
     }
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) {
-      // Navigate to tab with first error
       const tab1Fields = ['firstName', 'lastName', 'email'];
       const tab3Fields = ['monthlySalary'];
       const tab2Fields = ['geofenceLat', 'geofenceLng'];
@@ -494,7 +496,6 @@ export default function EmployeesScreen() {
     return true;
   };
 
-  // Fill the geofence centre from this phone's GPS (e.g. admin standing at the office).
   const useMyLocation = async () => {
     try {
       if (Platform.OS === 'android') {
@@ -560,7 +561,6 @@ export default function EmployeesScreen() {
         savedId = res.data?._id;
         setEmployees(prev => [res.data, ...prev]);
       }
-      // Upload avatar via multipart if a new photo was picked
       if (avatarAsset && savedId) {
         try {
           await employeeAPI.uploadAvatar(
@@ -684,8 +684,8 @@ export default function EmployeesScreen() {
         );
         await load();
       } else if (actionModal === 'salary') {
-        const month = parseInt(actionForm.month || '1');
-        const year = parseInt(actionForm.year || '2025');
+        const month = parseInt(actionForm.month || '1', 10);
+        const year = parseInt(actionForm.year || '2025', 10);
         const res = await payrollAPI.process({
           employees: [detailEmp._id],
           month,
@@ -832,7 +832,6 @@ export default function EmployeesScreen() {
     </View>
   );
 
-  // 6-digit pincode -> city + state (free India Post API); user can still edit/pick manually.
   const onPincode = async (v: string, prefix: '' | 'permanent') => {
     const pin = v.replace(/\D/g, '').slice(0, 6);
     const k = (f: string) =>
@@ -948,21 +947,6 @@ export default function EmployeesScreen() {
   }).length;
   const cnt = (st: string) =>
     employees.filter(e => (e.status as string) === st).length;
-  const attDen =
-    (attSummary.present || 0) +
-    (attSummary.late || 0) +
-    (attSummary.half_day || 0) +
-    (attSummary.absent || 0) +
-    (attSummary.on_leave || 0);
-  const attPct = attDen
-    ? Math.round(
-        (((attSummary.present || 0) +
-          (attSummary.late || 0) +
-          (attSummary.half_day || 0) * 0.5) /
-          attDen) *
-          100,
-      )
-    : 0;
 
   const { isTablet, maxContentWidth } = useResponsive();
 
@@ -972,6 +956,69 @@ export default function EmployeesScreen() {
       return departments.find(d => d._id === dept)?.name || 'N/A';
     return dept.name;
   };
+
+  const importRows = async (rows: Record<string, string>[]) => {
+    const byLabel: Record<string, string> = {};
+    IMPORT_COLS.forEach(c => (byLabel[c[1].toLowerCase()] = c[0]));
+    const mapped = rows.map(r => {
+      const o: Record<string, string> = {};
+      Object.keys(r).forEach(k => {
+        const key = byLabel[k.toLowerCase()];
+        if (key) o[key] = r[k];
+      });
+      return o;
+    });
+    const valid = mapped.filter(o => IMPORT_REQUIRED.every(k => o[k]));
+    const skipped = mapped.length - valid.length;
+    if (!valid.length)
+      return 'No valid rows. Required: First Name, Last Name, Email, Designation, Join Date.';
+    const res: any = await employeeAPI.bulkImport(valid);
+    load();
+    const fails = (res.results || [])
+      .filter((x: any) => x && x.success === false)
+      .slice(0, 3);
+    return `${res.imported ?? 0} imported, ${res.failed ?? 0} failed${
+      skipped ? `, ${skipped} skipped (missing required fields)` : ''
+    }${
+      fails.length
+        ? `\n\n${fails.map((x: any) => x.error || x.message || '').join('\n')}`
+        : ''
+    }`;
+  };
+
+  const runImport = async () => {
+    setMenuOpen(false);
+    setImporting(true);
+    try {
+      const rows = await pickSheet();
+      if (!rows) return;
+      if (!rows.length) return Alert.alert('Import', 'File is empty');
+      const msg = await importRows(rows);
+      if (msg) Alert.alert('Import', msg);
+    } catch (e: any) {
+      Alert.alert('Import failed', e?.message || 'Could not import file');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const exportCols = [
+    { header: 'Emp ID', value: (e: any) => e.employeeId },
+    {
+      header: 'Name',
+      value: (e: any) => `${e.firstName} ${e.lastName}`,
+    },
+    { header: 'Department', value: (e: any) => e.department?.name },
+    { header: 'Designation', value: (e: any) => e.designation },
+    { header: 'Phone', value: (e: any) => e.phone },
+    { header: 'Email', value: (e: any) => e.email },
+    {
+      header: 'Salary',
+      value: (e: any) => e.salary ?? e.monthlySalary ?? 0,
+    },
+    { header: 'Loan Balance', value: (e: any) => e.loanBalance ?? 0 },
+    { header: 'Status', value: (e: any) => e.status },
+  ];
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -1002,76 +1049,11 @@ export default function EmployeesScreen() {
             dot={!!statusFilter || !!sortKey}
             onPress={() => setFilterOpen(true)}
           />
-          <TouchableOpacity
-            style={[
-              styles.selectBtn,
-              selectMode && { backgroundColor: C.black },
-            ]}
-            onPress={() => {
-              setSelectMode(v => !v);
-              setSelected([]);
-            }}
-          >
-            <CheckSquare size={14} color={selectMode ? C.white : C.black} />
-          </TouchableOpacity>
-          <ImportButton
-            name="employees"
-            headers={IMPORT_COLS.map(c => c[1])}
-            example={IMPORT_COLS.map(c => c[2])}
-            onRows={async rows => {
-              const byLabel: Record<string, string> = {};
-              IMPORT_COLS.forEach(c => (byLabel[c[1].toLowerCase()] = c[0]));
-              const mapped = rows.map(r => {
-                const o: Record<string, string> = {};
-                Object.keys(r).forEach(k => {
-                  const key = byLabel[k.toLowerCase()];
-                  if (key) o[key] = r[k];
-                });
-                return o;
-              });
-              const valid = mapped.filter(o =>
-                IMPORT_REQUIRED.every(k => o[k]),
-              );
-              const skipped = mapped.length - valid.length;
-              if (!valid.length)
-                return 'No valid rows. Required: First Name, Last Name, Email, Designation, Join Date.';
-              const res: any = await employeeAPI.bulkImport(valid);
-              load();
-              const fails = (res.results || [])
-                .filter((x: any) => x && x.success === false)
-                .slice(0, 3);
-              return `${res.imported ?? 0} imported, ${res.failed ?? 0} failed${
-                skipped ? `, ${skipped} skipped (missing required fields)` : ''
-              }${
-                fails.length
-                  ? `\n\n${fails
-                      .map((x: any) => x.error || x.message || '')
-                      .join('\n')}`
-                  : ''
-              }`;
-            }}
-          />
-          <ExportButton
-            name="employees"
-            label=""
-            rows={filtered}
-            cols={[
-              { header: 'Emp ID', value: (e: any) => e.employeeId },
-              {
-                header: 'Name',
-                value: (e: any) => `${e.firstName} ${e.lastName}`,
-              },
-              { header: 'Department', value: (e: any) => e.department?.name },
-              { header: 'Designation', value: (e: any) => e.designation },
-              { header: 'Phone', value: (e: any) => e.phone },
-              { header: 'Email', value: (e: any) => e.email },
-              {
-                header: 'Salary',
-                value: (e: any) => e.salary ?? e.monthlySalary ?? 0,
-              },
-              { header: 'Loan Balance', value: (e: any) => e.loanBalance ?? 0 },
-              { header: 'Status', value: (e: any) => e.status },
-            ]}
+          <HeaderIconBtn
+            label="More actions"
+            icon={<Ellipsis size={22} color={C.black} />}
+            dot={selectMode}
+            onPress={() => setMenuOpen(true)}
           />
           <TouchableOpacity
             style={styles.addBtn}
@@ -1136,6 +1118,68 @@ export default function EmployeesScreen() {
         </View>
       )}
 
+      <Modal
+        visible={menuOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMenuOpen(false)}
+      >
+        <TouchableOpacity
+          style={styles.menuOverlay}
+          activeOpacity={1}
+          onPress={() => setMenuOpen(false)}
+        >
+          <View style={styles.menuSheet}>
+            {[
+              {
+                icon: CheckSquare,
+                label: selectMode ? 'Done selecting' : 'Select employees',
+                onPress: () => {
+                  setSelectMode(v => !v);
+                  setSelected([]);
+                  setMenuOpen(false);
+                },
+              },
+              {
+                icon: Upload,
+                label: 'Import from Excel / CSV',
+                onPress: runImport,
+              },
+              {
+                icon: FileText,
+                label: 'Download sample file',
+                onPress: () => {
+                  setMenuOpen(false);
+                  shareTemplate(
+                    'employees',
+                    IMPORT_COLS.map(c => c[1]),
+                    IMPORT_COLS.map(c => c[2]),
+                  );
+                },
+              },
+              {
+                icon: Download,
+                label: 'Export employees',
+                onPress: () => {
+                  setMenuOpen(false);
+                  chooseExport('employees', exportCols, filtered);
+                },
+              },
+            ].map(item => (
+              <TouchableOpacity
+                key={item.label}
+                style={styles.menuItem}
+                onPress={item.onPress}
+                disabled={importing}
+              >
+                <item.icon size={18} color={C.black} />
+                <Text style={styles.menuText}>{item.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       <SearchModal
         visible={searchOpen}
         onClose={() => setSearchOpen(false)}
@@ -1198,6 +1242,38 @@ export default function EmployeesScreen() {
             />
           }
           showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <View style={dashStatRow}>
+              <DashStatCard
+                index={0}
+                label="Total"
+                value={employees.length}
+                icon={Users}
+                color={C.primary}
+              />
+              <DashStatCard
+                index={1}
+                label="Active"
+                value={cnt('active')}
+                icon={UserCheck}
+                color={C.success}
+              />
+              <DashStatCard
+                index={2}
+                label="On Leave"
+                value={cnt('on_leave')}
+                icon={CalendarDays}
+                color={C.warning}
+              />
+              <DashStatCard
+                index={3}
+                label="New Hires"
+                value={newHires}
+                icon={UserPlus}
+                color="#A855F7"
+              />
+            </View>
+          }
           ListEmptyComponent={
             <View style={styles.empty}>
               <Users size={40} color="#D1D5DB" />
@@ -1326,7 +1402,7 @@ export default function EmployeesScreen() {
                         <View
                           style={[
                             styles.metaItem,
-                            { flexShrink: 0, backgroundColor: '#fbbb90ff' },
+                            { flexShrink: 0, backgroundColor: '#DCFCE7' },
                           ]}
                         >
                           <Briefcase size={12} color={C.black} />
@@ -1461,7 +1537,6 @@ export default function EmployeesScreen() {
                     contentContainerStyle={{ paddingBottom: 40 }}
                     showsVerticalScrollIndicator={false}
                   >
-                    {/* Photo */}
                     <View
                       style={{
                         borderBottomWidth: 2,
@@ -1499,7 +1574,6 @@ export default function EmployeesScreen() {
                     </View>
 
                     <View style={{ padding: 16, gap: 14 }}>
-                      {/* Name + Emp ID */}
                       <View>
                         <View
                           style={{
@@ -1806,7 +1880,9 @@ export default function EmployeesScreen() {
                         [
                           Fingerprint,
                           'Aadhar',
-                          (detailEmp as any).aadharNumber,
+                          (detailEmp as any).aadharNumber
+                            ? '[Aadhaar Redacted]'
+                            : '',
                         ],
                         [FileText, 'PF No.', (detailEmp as any).pfNumber],
                         [ShieldCheck, 'UAN', (detailEmp as any).uanNumber],
@@ -1891,7 +1967,6 @@ export default function EmployeesScreen() {
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                   >
-                    {/* Employee badge */}
                     <View
                       style={{
                         flexDirection: 'row',
@@ -2426,7 +2501,6 @@ export default function EmployeesScreen() {
                         </View>
                       ))}
 
-                    {/* Submit for form actions */}
                     {[
                       'allowance',
                       'penalty',
@@ -2543,11 +2617,13 @@ export default function EmployeesScreen() {
                         {F('Last Name *', 'lastName', { placeholder: 'Doe' })}
                       </View>
                     </View>
+
                     {F('Work Email *', 'email', {
                       placeholder: 'john@company.com',
                       keyboardType: 'email-address',
                       autoCapitalize: 'none',
                     })}
+
                     <View>
                       <Text style={styles.fieldLabel}>Mobile</Text>
                       <PhoneField
@@ -2559,80 +2635,98 @@ export default function EmployeesScreen() {
                         placeholder="Mobile number"
                       />
                     </View>
+
                     {F('Designation', 'designation', {
                       placeholder: 'e.g. Software Engineer',
                     })}
+
                     <DatePickerField
-                      label="Joining Date"
+                      label="JOINING DATE"
                       value={form.joiningDate}
-                      onChange={v => setForm(p => ({ ...p, joiningDate: v }))}
+                      onChange={v => {
+                        setForm(p => ({ ...p, joiningDate: v }));
+                        setFormDirty(true);
+                      }}
                     />
+
+                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.fieldLabel}>Gender</Text>
+                        <PickerField
+                          title="Select gender"
+                          value={form.gender}
+                          placeholder="Gender"
+                          options={GENDERS.map(g => ({
+                            value: g,
+                            label: g.charAt(0).toUpperCase() + g.slice(1),
+                          }))}
+                          onChange={v => {
+                            setForm(p => ({ ...p, gender: v }));
+                            setFormDirty(true);
+                          }}
+                        />
+                      </View>
+
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.fieldLabel}>Department</Text>
+                        <PickerField
+                          title="Select department"
+                          value={form.department}
+                          placeholder="Department"
+                          options={[
+                            { value: '', label: 'None' },
+                            ...departments.map(d => ({
+                              value: d._id,
+                              label: d.name,
+                            })),
+                          ]}
+                          onChange={v => {
+                            setForm(p => ({ ...p, department: v }));
+                            setFormDirty(true);
+                          }}
+                        />
+                      </View>
+                    </View>
+
                     <View>
-                      <Text style={styles.fieldLabel}>Gender</Text>
+                      <Text style={styles.fieldLabel}>Employment Type</Text>
                       <PickerField
-                        title="Select gender"
-                        value={form.gender}
-                        placeholder="Select gender"
-                        options={GENDERS.map(g => ({
-                          value: g,
-                          label: g.charAt(0).toUpperCase() + g.slice(1),
+                        title="Select employment type"
+                        value={form.employmentType}
+                        placeholder="Select employment type"
+                        options={EMP_TYPES.map(t => ({
+                          value: t,
+                          label: t
+                            .replace('_', ' ')
+                            .replace(/\b\w/g, c => c.toUpperCase()),
                         }))}
                         onChange={v => {
-                          setForm(p => ({ ...p, gender: v }));
+                          setForm(p => ({ ...p, employmentType: v }));
                           setFormDirty(true);
                         }}
                       />
                     </View>
-                    <View>
-                      <Text style={styles.fieldLabel}>Department</Text>
-                      <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={{ gap: 8, marginTop: 4 }}
-                      >
-                        {departments.map(d => (
-                          <TouchableOpacity
-                            key={d._id}
-                            style={[
-                              styles.selChip,
-                              form.department === d._id && styles.selChipActive,
-                            ]}
-                            onPress={() =>
-                              setForm(p => ({
-                                ...p,
-                                department: p.department === d._id ? '' : d._id,
-                              }))
-                            }
-                          >
-                            <Text
-                              style={[
-                                styles.selChipText,
-                                form.department === d._id && { color: C.white },
-                              ]}
-                            >
-                              {d.name}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    </View>
-                    {Select(
-                      'Employment Type',
-                      'employmentType',
-                      EMP_TYPES.map(t => ({
-                        value: t,
-                        label: t.replace('_', ' ').toUpperCase(),
-                      })),
+
+                    {editingEmp && (
+                      <View>
+                        <Text style={styles.fieldLabel}>Status</Text>
+                        <PickerField
+                          title="Select status"
+                          value={form.status}
+                          options={STATUSES.map(s => ({
+                            value: s,
+                            label: s
+                              .replace('_', ' ')
+                              .replace(/\b\w/g, c => c.toUpperCase()),
+                          }))}
+                          onChange={v => {
+                            setForm(p => ({ ...p, status: v }));
+                            setFormDirty(true);
+                          }}
+                        />
+                      </View>
                     )}
-                    {editingEmp &&
-                      Select(
-                        'Status',
-                        'status',
-                        STATUSES.map(s => ({
-                          value: s,
-                          label: s.replace('_', ' ').toUpperCase(),
-                        })),
-                      )}
+
                     {!editingEmp &&
                       F('Default Password', 'defaultPassword', {
                         placeholder: 'Leave blank to auto-generate',
@@ -2747,7 +2841,7 @@ export default function EmployeesScreen() {
                       </ScrollView>
                     </View>
 
-                    {/* Mobile geofenced attendance (same fields as the web employee form) */}
+                    {/* Mobile geofenced attendance */}
                     <Text
                       style={[
                         styles.fieldLabel,
@@ -2852,12 +2946,41 @@ export default function EmployeesScreen() {
                 )}
 
                 {/* ── Tab 3: Salary ── */}
+                {/* ── Tab 3: Salary ── */}
                 {activeTab === 2 && (
                   <>
-                    {F('Monthly Salary (₹) *', 'monthlySalary', {
-                      keyboardType: 'numeric',
-                      placeholder: '50000',
-                    })}
+                    {/* Row 1: Monthly Salary & PF Number */}
+                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                      <View style={{ flex: 1 }}>
+                        {F('Monthly Salary (₹) *', 'monthlySalary', {
+                          keyboardType: 'numeric',
+                          placeholder: '50000',
+                        })}
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        {F('PF Number', 'pfNumber', {
+                          placeholder: 'PF account no.',
+                          autoCapitalize: 'characters',
+                        })}
+                      </View>
+                    </View>
+
+                    {/* Row 2: UAN Number & ESIC Number */}
+                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                      <View style={{ flex: 1 }}>
+                        {F('UAN Number', 'uanNumber', {
+                          placeholder: 'UAN number',
+                          keyboardType: 'numeric',
+                        })}
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        {F('ESIC Number', 'esicNumber', {
+                          placeholder: 'ESIC number',
+                        })}
+                      </View>
+                    </View>
+
+                    {/* Salary History (when editing) */}
                     {editingEmp &&
                       ((editingEmp as any).salaryHistory?.length || 0) > 0 && (
                         <View style={{ marginTop: 4, marginBottom: 12 }}>
@@ -2917,17 +3040,6 @@ export default function EmployeesScreen() {
                           </View>
                         </View>
                       )}
-                    {F('PF Number', 'pfNumber', {
-                      placeholder: 'PF account number',
-                      autoCapitalize: 'characters',
-                    })}
-                    {F('UAN Number', 'uanNumber', {
-                      placeholder: 'Universal Account Number',
-                      keyboardType: 'numeric',
-                    })}
-                    {F('ESIC Number', 'esicNumber', {
-                      placeholder: 'ESIC account number',
-                    })}
                   </>
                 )}
 
@@ -2981,19 +3093,21 @@ export default function EmployeesScreen() {
                         {AddressBlock('permanent')}
                       </>
                     )}
-                    {F('PAN Number', 'panNumber', {
-                      placeholder: 'ABCDE1234F',
-                      autoCapitalize: 'characters',
-                    })}
-                    {F('Aadhar Number', 'aadharNumber', {
-                      placeholder: '12-digit Aadhar',
-                      keyboardType: 'numeric',
-                    })}
-
-                    <View style={styles.sectionDivider}>
-                      <Text style={styles.sectionDividerText}>
-                        Personal Details
-                      </Text>
+                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                      <View style={{ flex: 1 }}>
+                        {F('PAN Number', 'panNumber', {
+                          placeholder: 'ABCDE1234F',
+                          autoCapitalize: 'characters',
+                          maxLength: 10,
+                        })}
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        {F('Aadhar Number', 'aadharNumber', {
+                          placeholder: '12-digit Aadhar',
+                          keyboardType: 'numeric',
+                          maxLength: 12,
+                        })}
+                      </View>
                     </View>
                     <View style={{ flexDirection: 'row', gap: 12 }}>
                       <View style={{ flex: 1 }}>
@@ -3007,35 +3121,54 @@ export default function EmployeesScreen() {
                         })}
                       </View>
                     </View>
-                    {Select('Marital Status', 'maritalStatus', [
-                      { value: 'single', label: 'Single' },
-                      { value: 'married', label: 'Married' },
-                      { value: 'divorced', label: 'Divorced' },
-                      { value: 'widowed', label: 'Widowed' },
-                    ])}
+                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.fieldLabel}>Marital Status</Text>
+                        <PickerField
+                          title="Select marital status"
+                          value={form.maritalStatus}
+                          placeholder="Marital Status"
+                          options={[
+                            { value: 'single', label: 'Single' },
+                            { value: 'married', label: 'Married' },
+                            { value: 'divorced', label: 'Divorced' },
+                            { value: 'widowed', label: 'Widowed' },
+                          ]}
+                          onChange={v => {
+                            setForm(p => ({ ...p, maritalStatus: v }));
+                            setFormDirty(true);
+                          }}
+                        />
+                      </View>
+
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.fieldLabel}>Blood Group</Text>
+                        <PickerField
+                          title="Select blood group"
+                          value={form.bloodGroup}
+                          placeholder="Blood Group"
+                          options={[
+                            { value: 'A+', label: 'A+' },
+                            { value: 'A-', label: 'A-' },
+                            { value: 'B+', label: 'B+' },
+                            { value: 'B-', label: 'B-' },
+                            { value: 'O+', label: 'O+' },
+                            { value: 'O-', label: 'O-' },
+                            { value: 'AB+', label: 'AB+' },
+                            { value: 'AB-', label: 'AB-' },
+                          ]}
+                          onChange={v => {
+                            setForm(p => ({ ...p, bloodGroup: v }));
+                            setFormDirty(true);
+                          }}
+                        />
+                      </View>
+                    </View>
+
                     {form.maritalStatus === 'married' &&
                       F('Spouse Name', 'spouseName', {
                         placeholder: "Spouse's name",
                       })}
-                    {Select('Blood Group', 'bloodGroup', [
-                      { value: 'A+', label: 'A+' },
-                      { value: 'A-', label: 'A-' },
-                      { value: 'B+', label: 'B+' },
-                      { value: 'B-', label: 'B-' },
-                      { value: 'O+', label: 'O+' },
-                      { value: 'O-', label: 'O-' },
-                      { value: 'AB+', label: 'AB+' },
-                      { value: 'AB-', label: 'AB-' },
-                    ])}
-                    {F('Nationality', 'nationality', {
-                      placeholder: 'e.g. Indian',
-                    })}
-                    {F('Religion', 'religion', { placeholder: 'e.g. Hindu' })}
-                    {F('Personal Email', 'personalEmail', {
-                      placeholder: 'personal@email.com',
-                      keyboardType: 'email-address',
-                      autoCapitalize: 'none',
-                    })}
                     <View>
                       <Text style={styles.fieldLabel}>Alternate Phone</Text>
                       <PhoneField
@@ -3048,20 +3181,21 @@ export default function EmployeesScreen() {
                       />
                     </View>
 
-                    <View style={styles.sectionDivider}>
-                      <Text style={styles.sectionDividerText}>
-                        Professional Background
-                      </Text>
-                    </View>
                     {F('Qualification', 'qualification', {
                       placeholder: 'e.g. B.Tech, MBA',
                     })}
-                    {F('Total Experience', 'totalExperience', {
-                      placeholder: 'e.g. 3 years',
-                    })}
-                    {F('Previous Company', 'previousCompany', {
-                      placeholder: 'Last employer name',
-                    })}
+                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                      <View style={{ flex: 1 }}>
+                        {F('Total Experience', 'totalExperience', {
+                          placeholder: 'e.g. 3 years',
+                        })}
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        {F('Previous Company', 'previousCompany', {
+                          placeholder: 'Last employer name',
+                        })}
+                      </View>
+                    </View>
 
                     <View style={styles.sectionDivider}>
                       <Text style={styles.sectionDividerText}>
@@ -3132,7 +3266,6 @@ export default function EmployeesScreen() {
 
 type InfoRow = [React.ComponentType<any>, string, string | undefined];
 
-// Section title + one separate card per field (icon, label, value).
 function InfoSection({
   title,
   icon: HeaderIcon,
@@ -3181,66 +3314,7 @@ const styles = StyleSheet.create({
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerTitle: { fontSize: 20, fontWeight: '400', color: C.black },
-  countBadge: {
-    backgroundColor: C.primary,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderWidth: 2,
-    borderRadius: 8,
-    borderColor: C.black,
-  },
-  countText: { color: C.white, fontSize: 12, fontWeight: '400' },
   addBtn: { padding: 4 },
-  addBtnText: {
-    color: C.white,
-    fontSize: 12,
-    fontWeight: '400',
-    textTransform: 'uppercase',
-  },
-  searchWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: C.white,
-    borderBottomWidth: 2,
-    borderBottomColor: C.black,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  searchInput: { flex: 1, fontSize: 14, fontWeight: '400', color: C.black },
-  filterBar: {
-    flexShrink: 0,
-    backgroundColor: C.white,
-    borderBottomWidth: 2,
-    borderBottomColor: C.black,
-  },
-  filterContent: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
-  },
-  summaryPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderWidth: 2,
-    borderColor: C.black,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 76,
-  },
-  summaryCount: {
-    fontSize: 20,
-    fontWeight: '400',
-    lineHeight: Platform.OS === 'android' ? 28 : 24,
-    includeFontPadding: false,
-  } as any,
-  summaryStatus: {
-    fontSize: 9,
-    fontWeight: '400',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
@@ -3276,7 +3350,6 @@ const styles = StyleSheet.create({
   },
   avatarText: { color: C.white, fontWeight: '400', fontSize: 14 },
   empName: { fontSize: 15, fontWeight: '400', color: C.black },
-  empId: { fontSize: 11, color: C.textMuted, fontFamily: 'monospace' },
   empIdChip: {
     alignSelf: 'flex-start',
     fontSize: 11,
@@ -3289,18 +3362,31 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
     marginBottom: 3,
   },
-  selectBtn: {
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    alignItems: 'flex-end',
+    paddingTop: 96,
+    paddingHorizontal: 12,
+  },
+  menuSheet: {
+    minWidth: 230,
     borderWidth: 2,
     borderRadius: 8,
     borderRightWidth: 4,
     borderBottomWidth: 4,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     backgroundColor: C.white,
-    paddingHorizontal: 9,
-    paddingVertical: 8,
+    paddingVertical: 4,
   },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  menuText: { fontSize: 14, color: C.black },
   bulkBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -3321,56 +3407,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   bulkBtnText: { color: C.white, fontWeight: '400', fontSize: 11 },
-  statusCard: {
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderColor: C.black,
-    backgroundColor: C.white,
-    padding: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  statusCell: { alignItems: 'center', gap: 2 },
-  statusChip: {
-    width: 30,
-    height: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: C.black,
-    borderRadius: 6,
-  },
-  statusNum: { fontSize: 20, fontWeight: '400', color: C.black },
-  statusLbl: {
-    fontSize: 10,
-    fontWeight: '400',
-    color: C.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  attCard: {
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderColor: C.black,
-    backgroundColor: C.white,
-    padding: 12,
-    gap: 8,
-  },
-  progTrack: {
-    height: 12,
-    borderWidth: 2,
-    borderColor: C.black,
-    backgroundColor: '#F3F4F6',
-  },
-  progFill: { height: '100%' },
   empDesig: {
     fontSize: 12,
     color: C.textMuted,
@@ -3442,7 +3478,6 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   typePillText: { fontSize: 9, fontWeight: '400', color: C.primary },
-  joinDate: { fontSize: 11, color: C.textMuted, fontWeight: '400' },
   loanBadge: {
     backgroundColor: '#FEF2F2',
     borderWidth: 2,
@@ -3453,7 +3488,6 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   loanBadgeText: { fontSize: 12, fontWeight: '400', color: C.danger },
-  // Modal
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -3660,16 +3694,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textTransform: 'uppercase',
     letterSpacing: 0.3,
-  },
-  infoSection: {
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderColor: C.black,
-    backgroundColor: C.white,
   },
   infoSectionHeader: {
     flexDirection: 'row',

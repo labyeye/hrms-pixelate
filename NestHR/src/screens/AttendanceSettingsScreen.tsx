@@ -1,3 +1,4 @@
+import { sentence } from '../utils/text';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -235,7 +236,7 @@ export default function AttendanceSettingsScreen() {
             onPress={() => navigation.goBack()}
             style={{ padding: 4, marginRight: 4 }}
           >
-            <ChevronLeft size={22} color={C.black} />
+            <ChevronLeft size={24} color={C.black} />
           </TouchableOpacity>
           <ShieldAlert size={20} color={C.primary} />
           <Text style={styles.headerTitle}>Attendance Settings</Text>
@@ -381,7 +382,7 @@ export default function AttendanceSettingsScreen() {
                   onPress={() => set('lateDeductionType', 'fixed')}
                 >
                   <IndianRupee
-                    size={12}
+                    size={14}
                     color={
                       rules.lateDeductionType === 'fixed' ? C.white : C.black
                     }
@@ -405,7 +406,7 @@ export default function AttendanceSettingsScreen() {
                   onPress={() => set('lateDeductionType', 'percent')}
                 >
                   <Percent
-                    size={12}
+                    size={14}
                     color={
                       rules.lateDeductionType === 'percent' ? C.white : C.black
                     }
@@ -533,7 +534,7 @@ export default function AttendanceSettingsScreen() {
                   onChange={setLeaveType}
                   options={LEAVE_TYPES.map(t => ({
                     value: t,
-                    label: t.replace('_', ' ').toUpperCase(),
+                    label: sentence(t),
                   }))}
                 />
                 {(['bulk', 'custom'] as const).map(m => (
@@ -762,7 +763,7 @@ export default function AttendanceSettingsScreen() {
                                 <Text
                                   style={{
                                     color: C.white,
-                                    fontSize: 10,
+                                    fontSize: 11,
                                     fontWeight: '400',
                                   }}
                                 >
@@ -846,8 +847,8 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: C.black,
   },
-  tHead: { fontWeight: '400', textTransform: 'uppercase', fontSize: 10 },
-  tPhoto: { width: 22, height: 22, borderRadius: 11 },
+  tHead: { fontWeight: '400', fontSize: 11 },
+  tPhoto: { width: 22, height: 22, borderRadius: 12 },
   safe: { flex: 1, backgroundColor: '#F8F9FA' },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: {
@@ -855,7 +856,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     backgroundColor: C.white,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
@@ -865,23 +866,22 @@ const styles = StyleSheet.create({
   saveBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
     backgroundColor: C.success,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 8,
   },
   saveBtnText: {
     color: C.white,
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -890,22 +890,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.primary,
-    letterSpacing: 0.5,
   },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    padding: 14,
+    padding: 16,
   },
   field: { marginBottom: 12 },
   fieldBorder: {
@@ -917,25 +915,23 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: '#6B7280',
     marginBottom: 6,
-    letterSpacing: 0.3,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
   },
   fieldInput: {
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     fontSize: 14,
     fontWeight: '400',
     color: C.black,
@@ -943,26 +939,26 @@ const styles = StyleSheet.create({
   standaloneInput: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     fontSize: 14,
     fontWeight: '400',
     color: C.black,
   },
   suffix: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     borderLeftWidth: 2,
     borderLeftColor: C.black,
     backgroundColor: '#F8F9FA',
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   suffixText: { fontSize: 13, fontWeight: '400', color: '#6B7280' },
-  hint: { fontSize: 11, color: '#9CA3AF', marginTop: 4 },
+  hint: { fontSize: 11, color: '#6B7280', marginTop: 4 },
   timeRow: { flexDirection: 'row', gap: 16 },
   timeInputs: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   timeInput: { width: 56, textAlign: 'center' },
@@ -976,12 +972,12 @@ const styles = StyleSheet.create({
     gap: 4,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   typeBtnActive: { backgroundColor: C.primary },
   typeBtnText: { fontSize: 12, fontWeight: '400', color: C.black },
@@ -1018,8 +1014,8 @@ const styles = StyleSheet.create({
     width: 60,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -1034,12 +1030,12 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingVertical: 10,
+    paddingVertical: 12,
     alignItems: 'center',
     marginTop: 4,
   },
@@ -1047,10 +1043,9 @@ const styles = StyleSheet.create({
     color: C.white,
     fontWeight: '400',
     fontSize: 12,
-    textTransform: 'uppercase',
   },
   chip: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: 2,
     borderRightWidth: 4,
@@ -1061,6 +1056,6 @@ const styles = StyleSheet.create({
     borderColor: C.black,
   },
   chipActive: { backgroundColor: C.secondary },
-  chipText: { fontSize: 10, fontWeight: '400', color: C.black },
+  chipText: { fontSize: 11, fontWeight: '400', color: C.black },
   chipTextActive: { color: C.white },
 });

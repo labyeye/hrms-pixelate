@@ -127,12 +127,21 @@ export default function DesignationsScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <View style={[s.header, isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' }]}>
+      <View
+        style={[
+          s.header,
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
+      >
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={{ padding: 4, marginRight: 4 }}
         >
-          <ChevronLeft size={22} color={C.black} />
+          <ChevronLeft size={24} color={C.black} />
         </TouchableOpacity>
         <Briefcase size={20} color={C.primary} />
         <Text style={s.title}>Designations</Text>
@@ -155,8 +164,12 @@ export default function DesignationsScreen() {
           numColumns={isTablet ? 2 : 1}
           columnWrapperStyle={isTablet ? s.colWrapper : undefined}
           contentContainerStyle={[
-            { padding: 16, gap: 10, paddingBottom: 32 },
-            isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' },
+            { padding: 16, gap: 12, paddingBottom: 32 },
+            isTablet && {
+              maxWidth: maxContentWidth,
+              width: '100%',
+              alignSelf: 'center',
+            },
           ]}
           refreshControl={
             <RefreshControl
@@ -175,7 +188,7 @@ export default function DesignationsScreen() {
           renderItem={({ item }) => (
             <View style={[s.card, isTablet && s.cardTablet]}>
               <View style={s.cardIcon}>
-                <Briefcase size={18} color={C.primary} />
+                <Briefcase size={20} color={C.primary} />
               </View>
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={s.desigTitle}>{item.title}</Text>
@@ -198,13 +211,13 @@ export default function DesignationsScreen() {
                   style={s.iconBtn}
                   onPress={() => openEdit(item)}
                 >
-                  <Edit2 size={13} color={C.primary} />
+                  <Edit2 size={14} color={C.primary} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[s.iconBtn, { borderColor: C.danger }]}
                   onPress={() => handleDelete(item)}
                 >
-                  <Trash2 size={13} color={C.danger} />
+                  <Trash2 size={14} color={C.danger} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -221,7 +234,7 @@ export default function DesignationsScreen() {
                   {editing ? 'Edit Designation' : 'New Designation'}
                 </Text>
                 <TouchableOpacity onPress={() => setModal(false)}>
-                  <X size={22} color={C.black} />
+                  <X size={24} color={C.black} />
                 </TouchableOpacity>
               </View>
               <ScrollView
@@ -322,7 +335,7 @@ export default function DesignationsScreen() {
               <View style={s.modalHeader}>
                 <Text style={s.modalTitle}>Select Department</Text>
                 <TouchableOpacity onPress={() => setDeptPicker(false)}>
-                  <X size={22} color={C.black} />
+                  <X size={24} color={C.black} />
                 </TouchableOpacity>
               </View>
               <ScrollView contentContainerStyle={{ padding: 12, gap: 8 }}>
@@ -379,7 +392,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     backgroundColor: C.white,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
@@ -388,12 +401,12 @@ const s = StyleSheet.create({
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -404,7 +417,6 @@ const s = StyleSheet.create({
     color: C.white,
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
   },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
@@ -417,12 +429,12 @@ const s = StyleSheet.create({
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    padding: 14,
+    padding: 16,
   },
   cardIcon: {
     width: 40,
@@ -448,7 +460,7 @@ const s = StyleSheet.create({
     paddingVertical: 2,
     backgroundColor: '#F3F4F6',
   },
-  levelText: { fontSize: 9, fontWeight: '400', color: C.black },
+  levelText: { fontSize: 11, fontWeight: '400', color: C.black },
   iconBtn: {
     width: 30,
     height: 30,
@@ -475,21 +487,19 @@ const s = StyleSheet.create({
   fieldLabel: {
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.black,
     marginBottom: 6,
-    letterSpacing: 0.5,
   },
   fieldInput: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingVertical: 12,
     fontSize: 14,
     fontWeight: '400',
     color: C.black,
@@ -499,12 +509,12 @@ const s = StyleSheet.create({
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingVertical: 14,
+    paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -515,14 +525,13 @@ const s = StyleSheet.create({
     color: C.white,
     fontWeight: '400',
     fontSize: 14,
-    textTransform: 'uppercase',
   },
   pickerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderWidth: 2,
     borderRightWidth: 4,
     borderBottomWidth: 4,

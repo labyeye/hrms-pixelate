@@ -20,7 +20,7 @@ import {
 import { useFaceDetector } from 'react-native-vision-camera-face-detector';
 import { Worklets } from 'react-native-worklets-core';
 import { X, CheckCircle2, AlertCircle } from 'lucide-react-native';
-import { attendanceAPI, localNotificationsAPI } from '../api/api';
+import { attendanceAPI } from '../api/api';
 import { getCurrentPosition } from '../utils/location';
 import { C } from '../theme';
 
@@ -114,18 +114,7 @@ export default function FaceCheckInScreen({ navigation, route }: any) {
         }ms verify=${tDone - tLocation}ms total=${tDone - t0}ms`,
       );
 
-      const at = new Date().toLocaleTimeString('en-IN', {
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-      localNotificationsAPI
-        .add({
-          title: action === 'checkin' ? 'Checked in' : 'Checked out',
-          body: `Your attendance ${
-            action === 'checkin' ? 'check-in' : 'check-out'
-          } was recorded at ${at}.`,
-        })
-        .catch(() => {});
+      // The server now records the punch in the notification inbox (and pushes it).
       setStatus('success');
       setTimeout(() => navigation.goBack(), 900);
     } catch (e: any) {
@@ -228,7 +217,7 @@ export default function FaceCheckInScreen({ navigation, route }: any) {
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.closeBtn} onPress={cancel} hitSlop={12}>
-          <X size={22} color={C.white} />
+          <X size={24} color={C.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
           {action === 'checkin' ? 'Verify to Check In' : 'Verify to Check Out'}
@@ -272,7 +261,7 @@ export default function FaceCheckInScreen({ navigation, route }: any) {
           <View style={styles.centerMsg}>
             <CheckCircle2 size={48} color={C.success} />
             <Text style={styles.msgTitle}>
-              {action === 'checkin' ? 'Checked in!' : 'Checked out!'}
+              {action === 'checkin' ? 'Checked in' : 'Checked out'}
             </Text>
           </View>
         )}
@@ -348,7 +337,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(0,0,0,0.75)',
     paddingHorizontal: 32,
-    gap: 10,
+    gap: 12,
   },
   msgTitle: {
     color: C.white,
@@ -372,7 +361,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderColor: C.white,
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   settingsBtnText: { color: C.white, fontWeight: '400', fontSize: 13 },
   footer: {

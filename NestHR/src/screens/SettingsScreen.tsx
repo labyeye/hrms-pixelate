@@ -136,7 +136,7 @@ export default function SettingsScreen() {
             onPress={() => navigation.goBack()}
             style={{ padding: 4, marginRight: 4 }}
           >
-            <ChevronLeft size={22} color={C.black} />
+            <ChevronLeft size={24} color={C.black} />
           </TouchableOpacity>
           <Settings size={20} color={C.primary} />
           <Text style={styles.headerTitle}>Settings</Text>
@@ -816,7 +816,7 @@ export default function SettingsScreen() {
                     the end day of the payroll month will be used to calculate
                     salary.
                   </Text>
-                  <Text style={[styles.fieldLabel, { marginTop: 10 }]}>
+                  <Text style={[styles.fieldLabel, { marginTop: 12 }]}>
                     Period Start Day
                   </Text>
                   <TextInput
@@ -835,7 +835,7 @@ export default function SettingsScreen() {
                     keyboardType="numeric"
                     maxLength={2}
                   />
-                  <Text style={[styles.fieldLabel, { marginTop: 10 }]}>
+                  <Text style={[styles.fieldLabel, { marginTop: 12 }]}>
                     Period End Day
                   </Text>
                   <TextInput
@@ -938,7 +938,7 @@ export default function SettingsScreen() {
                   setShow2FADisable(true);
                 }}
               >
-                <ShieldOff size={15} color={C.danger} />
+                <ShieldOff size={16} color={C.danger} />
                 <Text style={[styles.twoFABtnText, { color: C.danger }]}>
                   Disable 2FA
                 </Text>
@@ -969,7 +969,7 @@ export default function SettingsScreen() {
                   <ActivityIndicator size="small" color={C.success} />
                 ) : (
                   <>
-                    <ShieldCheck size={15} color={C.success} />
+                    <ShieldCheck size={16} color={C.success} />
                     <Text style={[styles.twoFABtnText, { color: C.success }]}>
                       Enable 2FA
                     </Text>
@@ -989,7 +989,7 @@ export default function SettingsScreen() {
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Enable 2FA</Text>
                 <TouchableOpacity onPress={() => setShow2FASetup(false)}>
-                  <X size={22} color={C.black} />
+                  <X size={24} color={C.black} />
                 </TouchableOpacity>
               </View>
               <ScrollView
@@ -1105,7 +1105,7 @@ export default function SettingsScreen() {
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Disable 2FA</Text>
                 <TouchableOpacity onPress={() => setShow2FADisable(false)}>
-                  <X size={22} color={C.black} />
+                  <X size={24} color={C.black} />
                 </TouchableOpacity>
               </View>
               <ScrollView
@@ -1185,7 +1185,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     backgroundColor: C.white,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
@@ -1195,23 +1195,22 @@ const styles = StyleSheet.create({
   saveBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
     backgroundColor: C.success,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 8,
   },
   saveBtnText: {
     color: C.white,
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
   },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   sectionHeader: {
@@ -1232,18 +1231,16 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 12, color: '#000' },
   chipTextOn: { color: '#fff' },
   sectionTitle: {
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.primary,
-    letterSpacing: 0.5,
   },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -1251,7 +1248,7 @@ const styles = StyleSheet.create({
   fieldRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 12,
   },
   fieldBorder: { borderTopWidth: 2, borderTopColor: C.black },
@@ -1259,9 +1256,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.textMuted,
-    letterSpacing: 0.3,
   },
   fieldInput: {
     fontSize: 14,
@@ -1273,8 +1268,8 @@ const styles = StyleSheet.create({
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
   toggleLabel: { fontSize: 13, fontWeight: '400', color: C.black },
   toggleDesc: { fontSize: 11, color: C.textMuted, marginTop: 2 },
@@ -1295,8 +1290,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
   navRowLeft: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   navIconWrap: {
@@ -1317,13 +1312,12 @@ const styles = StyleSheet.create({
     borderRightWidth: 4,
     borderBottomWidth: 4,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
   },
   twoFABadgeText: {
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
     fontSize: 11,
     fontWeight: '400',
-    letterSpacing: 0.5,
   },
   twoFABtn: {
     flexDirection: 'row',
@@ -1332,15 +1326,15 @@ const styles = StyleSheet.create({
     gap: 6,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
-    paddingVertical: 10,
-    marginHorizontal: 14,
-    marginBottom: 14,
+    paddingVertical: 12,
+    marginHorizontal: 16,
+    marginBottom: 16,
   },
-  twoFABtnText: { fontSize: 13, fontWeight: '400', textTransform: 'uppercase' },
+  twoFABtnText: { fontSize: 13, fontWeight: '400' },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1354,7 +1348,7 @@ const styles = StyleSheet.create({
   twoFANote: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
+    gap: 12,
     borderWidth: 2,
     borderRightWidth: 4,
     borderBottomWidth: 4,
@@ -1363,7 +1357,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderColor: C.primary,
     backgroundColor: '#EFF6FF',
-    padding: 14,
+    padding: 16,
   },
   twoFANoteText: { flex: 1, fontSize: 13, fontWeight: '400', color: C.black },
   qrContainer: { alignItems: 'center', gap: 8 },
@@ -1371,18 +1365,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '400',
     color: '#6B7280',
-    textTransform: 'uppercase',
   },
   qrBox: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     padding: 16,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F8F9FA',
     maxWidth: '100%',
   },
   qrPlaceholder: {
@@ -1394,24 +1387,22 @@ const styles = StyleSheet.create({
   fieldLabel2FA: {
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.black,
     marginBottom: 6,
-    letterSpacing: 0.5,
   },
   secretRow: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: '#F9FAFB',
+    paddingVertical: 12,
+    backgroundColor: '#F8F9FA',
     gap: 8,
   },
   secretText: {
@@ -1424,13 +1415,13 @@ const styles = StyleSheet.create({
   codeInput: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
-    paddingVertical: 14,
+    paddingVertical: 16,
     fontSize: 24,
     fontWeight: '400',
     color: C.black,
@@ -1439,13 +1430,13 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
   },
   twoFASubmitBtn: {
-    paddingVertical: 14,
+    paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -1455,6 +1446,5 @@ const styles = StyleSheet.create({
     color: C.white,
     fontWeight: '400',
     fontSize: 14,
-    textTransform: 'uppercase',
   },
 });

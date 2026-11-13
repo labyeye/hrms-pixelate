@@ -150,8 +150,8 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    padding: 14,
+    padding: 16,
     backgroundColor: C.primary,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
@@ -189,7 +189,6 @@ const styles = StyleSheet.create({
   btnText: {
     color: C.white,
     fontWeight: '400',
-    textTransform: 'uppercase',
     fontSize: 13,
   },
   resend: {

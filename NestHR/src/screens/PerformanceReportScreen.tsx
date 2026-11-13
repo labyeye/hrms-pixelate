@@ -84,7 +84,7 @@ export default function PerformanceReportScreen() {
           onPress={() => navigation.goBack()}
           style={{ padding: 4 }}
         >
-          <ChevronLeft size={22} color={C.black} />
+          <ChevronLeft size={24} color={C.black} />
         </TouchableOpacity>
         <Text style={styles.title}>Performance Report</Text>
       </View>
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
@@ -163,13 +163,13 @@ const styles = StyleSheet.create({
   card: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     overflow: 'hidden',
     backgroundColor: C.white,
   },
-  empty: { fontFamily: FONT.medium, fontSize: 13, color: C.black, padding: 14 },
+  empty: { fontFamily: FONT.medium, fontSize: 13, color: C.black, padding: 16 },
 });

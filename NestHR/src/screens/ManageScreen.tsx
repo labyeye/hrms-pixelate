@@ -12,49 +12,64 @@ import {
   IndianRupee,
   Briefcase,
   FileText,
-  ChevronRight,
   Settings2,
   ChevronLeft,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
-import { C } from '../theme';
+import SlideInCard from '../components/motion/SlideInCard';
+import { C, useResponsive } from '../theme';
 
 const TILES = [
   {
     key: 'Shifts',
     icon: Clock,
+    color: C.primary,
     label: 'Shift Timings',
-    desc: 'Create and manage work shift schedules',
+    desc: 'Work shift schedules',
   },
   {
     key: 'SalaryHeads',
     icon: IndianRupee,
+    color: '#22c55e',
     label: 'Salary Components',
-    desc: 'Configure earnings, deductions & variables',
+    desc: 'Earnings & deductions',
   },
   {
     key: 'Designations',
     icon: Briefcase,
+    color: '#FF751F',
     label: 'Designations',
-    desc: 'Manage job titles and role hierarchy',
+    desc: 'Job titles & hierarchy',
   },
   {
     key: 'OfferLetters',
     icon: FileText,
+    color: '#7C3AED',
     label: 'Offer Letters',
-    desc: 'Generate and manage offer letter templates',
+    desc: 'Letter templates',
   },
 ];
 
 export default function ManageScreen() {
   const navigation = useNavigation<any>();
+  const { isTablet, maxContentWidth } = useResponsive();
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <View style={s.header}>
+      <View
+        style={[
+          s.header,
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
+      >
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={{ padding: 4, marginRight: 4 }}
+          style={{ padding: 4, marginRight: 2 }}
+          hitSlop={8}
         >
           <ChevronLeft size={22} color={C.black} />
         </TouchableOpacity>
@@ -63,33 +78,53 @@ export default function ManageScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={{ padding: 16, gap: 12 }}
+        contentContainerStyle={[
+          { padding: 16, gap: 12 },
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={s.sectionLabel}>Configuration</Text>
-        {TILES.map(({ key, icon: Icon, label, desc }) => (
-          <TouchableOpacity
-            key={key}
-            style={s.tile}
-            onPress={() => navigation.navigate(key)}
-          >
-            <View style={s.tileIcon}>
-              <Icon size={22} color={C.primary} />
-            </View>
-            <View style={{ flex: 1, marginLeft: 14 }}>
-              <Text style={s.tileLabel}>{label}</Text>
-              <Text style={s.tileDesc}>{desc}</Text>
-            </View>
-            <ChevronRight size={18} color={C.textMuted} />
-          </TouchableOpacity>
-        ))}
+        <View style={s.grid}>
+          {TILES.map(({ key, icon: Icon, color, label, desc }, idx) => (
+            <SlideInCard key={key} index={idx} style={s.tileWrap}>
+              <TouchableOpacity
+                style={s.tile}
+                onPress={() => navigation.navigate(key)}
+                activeOpacity={0.8}
+              >
+                <View
+                  style={[
+                    s.tileIcon,
+                    {
+                      backgroundColor: color + '1A',
+                      borderColor: color,
+                    },
+                  ]}
+                >
+                  <Icon size={22} color={color} />
+                </View>
+                <Text style={s.tileLabel} numberOfLines={1}>
+                  {label}
+                </Text>
+                <Text style={s.tileDesc} numberOfLines={1}>
+                  {desc}
+                </Text>
+              </TouchableOpacity>
+            </SlideInCard>
+          ))}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F8F9FA' },
+  safe: { flex: 1, backgroundColor: C.bg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -104,43 +139,51 @@ const s = StyleSheet.create({
   sectionLabel: {
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.textMuted,
-    letterSpacing: 1,
-    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  tileWrap: {
+    width: '48.3%',
   },
   tile: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderColor: C.black,
-    padding: 16,
-  },
-  tileIcon: {
-    width: 48,
-    height: 48,
-    backgroundColor: '#EFF6FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
     borderRightWidth: 4,
     borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
-    borderRadius: 8,
     borderColor: C.black,
+    paddingVertical: 16,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    gap: 6,
   },
-  tileLabel: { fontSize: 15, fontWeight: '400', color: C.black },
+  tileIcon: {
+    width: 44,
+    height: 44,
+    borderWidth: 2,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  tileLabel: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: C.black,
+    textAlign: 'center',
+  },
   tileDesc: {
     fontSize: 11,
     color: C.textMuted,
     fontWeight: '400',
-    marginTop: 2,
+    textAlign: 'center',
   },
 });

@@ -24,13 +24,11 @@ import {
   Send,
   ChevronLeft,
   Pencil,
-  CheckCircle2,
-  XCircle,
-  Clock,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
-import { offerLetterAPI, employeeAPI, companyAPI } from '../api/api';
+import { offerLetterAPI, companyAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
+import SlideInCard from '../components/motion/SlideInCard';
 import { C, useResponsive } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import RNPrint from 'react-native-print';
@@ -39,7 +37,7 @@ const STATUS_CONFIG: Record<
   string,
   { color: string; bg: string; label: string }
 > = {
-  draft: { color: '#6B7280', bg: '#F9FAFB', label: 'Draft' },
+  draft: { color: '#6B7280', bg: '#F8F9FA', label: 'Draft' },
   sent: { color: C.primary, bg: '#EFF6FF', label: 'Sent' },
   accepted: { color: C.success, bg: '#F0FDF4', label: 'Accepted' },
   rejected: { color: C.danger, bg: '#FEF2F2', label: 'Rejected' },
@@ -253,91 +251,103 @@ export default function OfferLettersScreen() {
     </View>
   );
 
-  const renderItem = ({ item }: { item: any }) => {
+  const renderItem = ({ item, index }: { item: any; index: number }) => {
     const cfg = STATUS_CONFIG[item.status] || STATUS_CONFIG.draft;
     return (
-      <View style={s.card}>
-        <View style={s.cardTop}>
-          <View style={s.cardIcon}>
-            <FileText size={18} color={C.primary} />
-          </View>
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={s.cardName}>{item.candidateName}</Text>
-            <Text style={s.cardSub}>
-              {item.designation}
-              {item.department ? ` · ${item.department}` : ''}
-            </Text>
-            {item.joiningDate && (
-              <Text style={s.cardDate}>
-                Joining:{' '}
-                {new Date(item.joiningDate).toLocaleDateString('en-IN')}
+      <SlideInCard index={index} style={isTablet ? s.cardTablet : undefined}>
+        <View style={s.card}>
+          <View style={s.cardTop}>
+            <View style={s.cardIcon}>
+              <FileText size={20} color={C.primary} />
+            </View>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={s.cardName}>{item.candidateName}</Text>
+              <Text style={s.cardSub}>
+                {item.designation}
+                {item.department ? ` · ${item.department}` : ''}
               </Text>
-            )}
-            {item.ctc > 0 && (
-              <Text style={s.cardDate}>
-                CTC: ₹{Number(item.ctc).toLocaleString('en-IN')}/mo
+              {item.joiningDate && (
+                <Text style={s.cardDate}>
+                  Joining:{' '}
+                  {new Date(item.joiningDate).toLocaleDateString('en-IN')}
+                </Text>
+              )}
+              {item.ctc > 0 && (
+                <Text style={s.cardDate}>
+                  CTC: ₹{Number(item.ctc).toLocaleString('en-IN')}/mo
+                </Text>
+              )}
+            </View>
+            <View
+              style={[
+                s.badge,
+                { backgroundColor: cfg.bg, borderColor: cfg.color },
+              ]}
+            >
+              <Text style={[s.badgeText, { color: cfg.color }]}>
+                {cfg.label}
               </Text>
-            )}
+            </View>
           </View>
-          <View
-            style={[
-              s.badge,
-              { backgroundColor: cfg.bg, borderColor: cfg.color },
-            ]}
-          >
-            <Text style={[s.badgeText, { color: cfg.color }]}>
-              {cfg.label.toUpperCase()}
-            </Text>
-          </View>
-        </View>
 
-        <View style={s.cardActions}>
-          <TouchableOpacity
-            style={s.actionBtn}
-            onPress={() => handlePrint(item)}
-            disabled={printing === item._id}
-          >
-            {printing === item._id ? (
-              <ActivityIndicator size="small" color={C.primary} />
-            ) : (
+          <View style={s.cardActions}>
+            <TouchableOpacity
+              style={s.actionBtn}
+              onPress={() => handlePrint(item)}
+              disabled={printing === item._id}
+            >
+              {printing === item._id ? (
+                <ActivityIndicator size="small" color={C.primary} />
+              ) : (
+                <>
+                  <Eye size={14} color={C.primary} />
+                  <Text style={s.actionBtnText}>Print</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            {isHR && (
               <>
-                <Eye size={12} color={C.primary} />
-                <Text style={s.actionBtnText}>Print</Text>
+                <TouchableOpacity
+                  style={s.actionBtn}
+                  onPress={() => openEdit(item)}
+                >
+                  <Pencil size={14} color={C.primary} />
+                  <Text style={s.actionBtnText}>Edit</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.actionBtn, { borderColor: C.danger }]}
+                  onPress={() => handleDelete(item._id, item.candidateName)}
+                >
+                  <Trash2 size={14} color={C.danger} />
+                  <Text style={[s.actionBtnText, { color: C.danger }]}>
+                    Delete
+                  </Text>
+                </TouchableOpacity>
               </>
             )}
-          </TouchableOpacity>
-
-          {isHR && (
-            <>
-              <TouchableOpacity
-                style={s.actionBtn}
-                onPress={() => openEdit(item)}
-              >
-                <Pencil size={12} color={C.primary} />
-                <Text style={s.actionBtnText}>Edit</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[s.actionBtn, { borderColor: C.danger }]}
-                onPress={() => handleDelete(item._id, item.candidateName)}
-              >
-                <Trash2 size={12} color={C.danger} />
-                <Text style={[s.actionBtnText, { color: C.danger }]}>
-                  Delete
-                </Text>
-              </TouchableOpacity>
-            </>
-          )}
+          </View>
         </View>
-      </View>
+      </SlideInCard>
     );
   };
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <View style={[s.header, isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' }]}>
+      <View
+        style={[
+          s.header,
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
+      >
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={{ padding: 4, marginRight: 4 }}
+          style={{ padding: 4, marginRight: 2 }}
+          hitSlop={8}
         >
           <ChevronLeft size={22} color={C.black} />
         </TouchableOpacity>
@@ -345,9 +355,13 @@ export default function OfferLettersScreen() {
         <Text style={s.title}>Offer Letters</Text>
         <View style={{ flex: 1 }} />
         {isHR && (
-          <TouchableOpacity style={s.addBtn} onPress={openCreate}>
-            <Plus size={14} color={C.white} />
-            <Text style={s.addBtnText}>New</Text>
+          <TouchableOpacity
+            style={s.addBtn}
+            onPress={openCreate}
+            accessibilityLabel="New Offer Letter"
+            hitSlop={8}
+          >
+            <Plus size={24} color={C.primary} />
           </TouchableOpacity>
         )}
       </View>
@@ -363,14 +377,14 @@ export default function OfferLettersScreen() {
           keyExtractor={i => i._id}
           numColumns={isTablet ? 2 : 1}
           columnWrapperStyle={isTablet ? s.colWrapper : undefined}
-          renderItem={({ item }) => (
-            <View style={isTablet ? s.cardTablet : undefined}>
-              {renderItem({ item })}
-            </View>
-          )}
+          renderItem={renderItem}
           contentContainerStyle={[
             { padding: 16, gap: 10, paddingBottom: 32 },
-            isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' },
+            isTablet && {
+              maxWidth: maxContentWidth,
+              width: '100%',
+              alignSelf: 'center',
+            },
           ]}
           refreshControl={
             <RefreshControl
@@ -386,7 +400,7 @@ export default function OfferLettersScreen() {
               <Text style={s.emptyText}>No offer letters yet</Text>
               {isHR && (
                 <Text style={s.emptyHint}>
-                  Tap "New" to create an offer letter
+                  Tap "+" to create an offer letter
                 </Text>
               )}
             </View>
@@ -404,7 +418,7 @@ export default function OfferLettersScreen() {
                   {editing ? 'Edit Offer Letter' : 'New Offer Letter'}
                 </Text>
                 <TouchableOpacity onPress={() => setShowForm(false)}>
-                  <X size={22} color={C.black} />
+                  <X size={24} color={C.black} />
                 </TouchableOpacity>
               </View>
               <ScrollView
@@ -524,7 +538,7 @@ export default function OfferLettersScreen() {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F8F9FA' },
+  safe: { flex: 1, backgroundColor: C.bg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -536,45 +550,25 @@ const s = StyleSheet.create({
     borderBottomColor: C.black,
   },
   title: { fontSize: 20, fontWeight: '400', color: C.black },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: C.primary,
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderColor: C.black,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  addBtnText: {
-    color: C.white,
-    fontSize: 12,
-    fontWeight: '400',
-    textTransform: 'uppercase',
-  },
+  addBtn: { padding: 4 },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
-  emptyText: { fontSize: 14, fontWeight: '400', color: '#9CA3AF' },
+  emptyText: { fontSize: 14, fontWeight: '400', color: '#6B7280' },
   emptyHint: { fontSize: 12, color: '#D1D5DB', fontWeight: '400' },
-  colWrapper: { gap: 12 },
+  colWrapper: { gap: 10 },
   cardTablet: { flex: 1 },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    padding: 14,
+    padding: 16,
   },
-  cardTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
+  cardTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
   cardIcon: {
     width: 40,
     height: 40,
@@ -599,15 +593,14 @@ const s = StyleSheet.create({
     borderRightWidth: 4,
     borderBottomWidth: 4,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
   },
   badgeText: {
-    textTransform: 'uppercase',
-    fontSize: 10,
+    textTransform: 'capitalize',
+    fontSize: 11,
     fontWeight: '400',
-    letterSpacing: 0.5,
   },
-  cardActions: { flexDirection: 'row', gap: 8, paddingTop: 10 },
+  cardActions: { flexDirection: 'row', gap: 8, paddingTop: 12 },
   actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -619,14 +612,13 @@ const s = StyleSheet.create({
     borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.primary,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
   },
   actionBtnText: {
     color: C.primary,
     fontSize: 11,
     fontWeight: '400',
-    textTransform: 'uppercase',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -641,21 +633,19 @@ const s = StyleSheet.create({
   fieldLabel: {
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.black,
     marginBottom: 6,
-    letterSpacing: 0.5,
   },
   fieldInput: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingVertical: 12,
     fontSize: 14,
     fontWeight: '400',
     color: C.black,
@@ -664,13 +654,13 @@ const s = StyleSheet.create({
   selectBtn: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingVertical: 12,
     backgroundColor: C.white,
   },
   selectBtnText: { fontSize: 14, fontWeight: '400', color: C.black },
@@ -678,12 +668,12 @@ const s = StyleSheet.create({
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingVertical: 14,
+    paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -694,7 +684,6 @@ const s = StyleSheet.create({
     color: C.white,
     fontWeight: '400',
     fontSize: 14,
-    textTransform: 'uppercase',
   },
   pickerOverlay: {
     flex: 1,
@@ -719,7 +708,7 @@ const s = StyleSheet.create({
   pickerSheetTitle: { fontSize: 16, fontWeight: '400', color: C.black },
   sheetOption: {
     paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },

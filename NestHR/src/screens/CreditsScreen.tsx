@@ -89,7 +89,7 @@ export default function CreditsScreen({ navigation }: any) {
           onPress={() => navigation.goBack()}
           style={{ padding: 4, marginRight: 4 }}
         >
-          <ChevronLeft size={22} color={C.black} />
+          <ChevronLeft size={24} color={C.black} />
         </TouchableOpacity>
         <Coins size={20} color={C.primary} />
         <Text style={s.headerTitle}>WhatsApp Credits</Text>
@@ -118,13 +118,13 @@ export default function CreditsScreen({ navigation }: any) {
             <View
               style={[s.card, credits?.zero && { backgroundColor: '#FEF2F2' }]}
             >
-              <Text style={s.label}>AVAILABLE CREDITS</Text>
+              <Text style={s.label}>Available credits</Text>
               <Text style={[s.big, credits?.zero && { color: C.danger }]}>
                 {fmtCredits(credits?.total)}
               </Text>
               {!!credits?.bonus && (
                 <View style={s.bonusRow}>
-                  <Gift size={13} color={C.success} />
+                  <Gift size={14} color={C.success} />
                   <Text style={s.bonusText}>
                     includes {fmtCredits(credits.bonus)} bonus
                     {credits.bonusExpiresAt
@@ -148,7 +148,7 @@ export default function CreditsScreen({ navigation }: any) {
                 </Text>
               ) : null}
               <Text style={s.muted}>
-                {credits?.ratePerMessage ?? 0.2} credit per message, including
+                {credits?.ratePerMessage ?? 0.4} credit per message, including
                 automatic ones and HR copies. OTPs are free.
               </Text>
               <TouchableOpacity
@@ -156,7 +156,7 @@ export default function CreditsScreen({ navigation }: any) {
                 activeOpacity={0.85}
                 onPress={() => Linking.openURL(WEB_CREDITS_URL)}
               >
-                <ExternalLink size={15} color={C.white} />
+                <ExternalLink size={16} color={C.white} />
                 <Text style={s.ctaText}>Add credits on web</Text>
               </TouchableOpacity>
             </View>
@@ -248,7 +248,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     backgroundColor: C.white,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
@@ -268,12 +268,12 @@ const s = StyleSheet.create({
   label: {
     fontSize: 11,
     fontWeight: '400',
-    color: '#64748b',
+    color: '#6B7280',
     letterSpacing: 1,
   },
   big: { fontSize: 44, fontWeight: '400', color: C.black },
   bold: { fontSize: 15, fontWeight: '400', color: C.black },
-  muted: { fontSize: 12, color: '#475569' },
+  muted: { fontSize: 12, color: '#374151' },
   warn: { fontSize: 13, fontWeight: '400' },
   bonusRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   bonusText: { fontSize: 12, fontWeight: '400', color: C.success },
@@ -304,16 +304,16 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    gap: 10,
+    gap: 12,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.1)',
   },
   rowTitle: { fontSize: 13, fontWeight: '400', color: C.black },
-  rowSub: { fontSize: 11, color: '#64748b', marginTop: 2 },
+  rowSub: { fontSize: 11, color: '#6B7280', marginTop: 2 },
   amount: { fontSize: 14, fontWeight: '400', color: C.black },
   more: {
     alignSelf: 'center',
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
     paddingVertical: 8,
     borderWidth: 2,
     borderColor: C.black,

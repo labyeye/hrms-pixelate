@@ -21,6 +21,7 @@ import {
   RefreshCw,
 } from 'lucide-react-native';
 import { assetAPI } from '../api/api';
+import SlideInCard from '../components/motion/SlideInCard';
 import { C, useResponsive } from '../theme';
 
 const STATUS_CONFIG: Record<
@@ -95,7 +96,7 @@ export default function AssetsScreen() {
     ]);
   };
 
-  const renderAsset = ({ item }: { item: any }) => {
+  const renderAsset = ({ item, index }: { item: any; index: number }) => {
     const statusMeta = STATUS_CONFIG[item.status] || {
       label: item.status,
       color: C.textMuted,
@@ -105,41 +106,61 @@ export default function AssetsScreen() {
     const StatusIcon = statusMeta.icon;
 
     return (
-      <View style={styles.card}>
-        <View style={styles.cardTop}>
-          <Text style={styles.assetName}>{item.name}</Text>
-          <View
-            style={[
-              styles.statusBadge,
-              { backgroundColor: statusMeta.bg, borderColor: statusMeta.color },
-            ]}
-          >
-            <StatusIcon size={10} color={statusMeta.color} />
-            <Text style={[styles.statusText, { color: statusMeta.color }]}>
-              {statusMeta.label}
-            </Text>
+      <SlideInCard index={index} style={isTablet ? styles.cardCol : undefined}>
+        <View style={styles.card}>
+          <View style={styles.cardTop}>
+            <View
+              style={[
+                styles.assetIconBox,
+                {
+                  backgroundColor: statusMeta.color + '1A',
+                  borderColor: statusMeta.color,
+                },
+              ]}
+            >
+              <Cpu size={18} color={statusMeta.color} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.assetName} numberOfLines={1}>
+                {item.name}
+              </Text>
+              <Text style={styles.assetCodeText}>
+                {item.assetCode || 'No Code'}
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.statusBadge,
+                {
+                  backgroundColor: statusMeta.bg,
+                  borderColor: statusMeta.color,
+                },
+              ]}
+            >
+              <StatusIcon size={12} color={statusMeta.color} />
+              <Text style={[styles.statusText, { color: statusMeta.color }]}>
+                {statusMeta.label}
+              </Text>
+            </View>
           </View>
-        </View>
 
-        <View style={styles.infoRow}>
-          <View style={styles.infoCol}>
-            <Text style={styles.infoLabel}>Asset Code</Text>
-            <Text style={styles.infoVal}>{item.assetCode || '—'}</Text>
-          </View>
-          <View style={styles.infoCol}>
-            <Text style={styles.infoLabel}>Serial Number</Text>
-            <Text style={styles.infoVal}>{item.serialNumber || '—'}</Text>
-          </View>
-        </View>
-
-        <View style={styles.cardBottom}>
-          <View>
-            <Text style={styles.infoLabel}>Date Assigned</Text>
-            <Text style={styles.date}>
-              {item.assignedDate
-                ? new Date(item.assignedDate).toLocaleDateString('en-IN')
-                : '—'}
-            </Text>
+          {/* Clean 2-column strip */}
+          <View style={styles.infoStrip}>
+            <View style={styles.infoCol}>
+              <Text style={styles.infoLabel}>SERIAL NO.</Text>
+              <Text style={styles.infoVal} numberOfLines={1}>
+                {item.serialNumber || '—'}
+              </Text>
+            </View>
+            <View style={styles.infoDivider} />
+            <View style={styles.infoCol}>
+              <Text style={styles.infoLabel}>ASSIGNED ON</Text>
+              <Text style={styles.infoVal}>
+                {item.assignedDate
+                  ? new Date(item.assignedDate).toLocaleDateString('en-IN')
+                  : '—'}
+              </Text>
+            </View>
           </View>
 
           {item.status === 'assigned' && (
@@ -147,25 +168,35 @@ export default function AssetsScreen() {
               style={styles.returnBtn}
               onPress={() => handleReturn(item._id, item.name)}
             >
-              <RefreshCw size={11} color="#fff" />
-              <Text style={styles.returnBtnText}>Return</Text>
+              <RefreshCw size={13} color={C.white} />
+              <Text style={styles.returnBtnText}>Request Return</Text>
             </TouchableOpacity>
           )}
         </View>
-      </View>
+      </SlideInCard>
     );
   };
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Header */}
-      <View style={[styles.header, isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' }]}>
+      <View
+        style={[
+          styles.header,
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
+      >
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backBtn}
+          hitSlop={8}
         >
           <ChevronLeft size={22} color={C.black} />
         </TouchableOpacity>
+        <Cpu size={20} color={C.primary} />
         <Text style={styles.headerTitle}>My Assets</Text>
       </View>
 
@@ -188,14 +219,14 @@ export default function AssetsScreen() {
           keyExtractor={item => item._id}
           numColumns={isTablet ? 2 : 1}
           columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
-          renderItem={({ item }) => (
-            <View style={isTablet ? styles.cardCol : undefined}>
-              {renderAsset({ item })}
-            </View>
-          )}
+          renderItem={renderAsset}
           contentContainerStyle={[
-            { padding: 16, gap: 10 },
-            isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' },
+            { padding: 16, gap: 10, paddingBottom: 32 },
+            isTablet && {
+              maxWidth: maxContentWidth,
+              width: '100%',
+              alignSelf: 'center',
+            },
           ]}
           refreshControl={
             <RefreshControl
@@ -213,7 +244,7 @@ export default function AssetsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F8F9FA' },
+  safe: { flex: 1, backgroundColor: C.bg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -224,7 +255,7 @@ const styles = StyleSheet.create({
     borderBottomColor: C.black,
     gap: 8,
   },
-  backBtn: { padding: 4 },
+  backBtn: { padding: 4, marginRight: 2 },
   headerTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   center: {
     flex: 1,
@@ -232,7 +263,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 40,
   },
-  colWrapper: { gap: 12 },
+  colWrapper: { gap: 10 },
   cardCol: { flex: 1 },
   emptyTitle: {
     fontSize: 15,
@@ -242,7 +273,7 @@ const styles = StyleSheet.create({
   },
   emptySubtitle: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: '#6B7280',
     fontWeight: '400',
     textAlign: 'center',
     marginTop: 6,
@@ -251,80 +282,84 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    padding: 14,
+    padding: 12,
+    gap: 10,
   },
   cardTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 10,
-    marginBottom: 12,
   },
-  assetName: { fontSize: 15, fontWeight: '400', color: C.black, flex: 1 },
-  statusBadge: {
+  assetIconBox: {
+    width: 38,
+    height: 38,
     borderWidth: 2,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  assetName: { fontSize: 14, fontWeight: '400', color: C.black },
+  assetCodeText: { fontSize: 11, color: C.textMuted, marginTop: 1 },
+  statusBadge: {
+    borderWidth: 1.5,
     borderRadius: 999,
-    borderColor: '#0A0A0A',
-    borderRightWidth: 4,
-    borderBottomWidth: 4,
     paddingHorizontal: 8,
     paddingVertical: 2,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  statusText: { fontSize: 9, fontWeight: '400', textTransform: 'uppercase' },
-  infoRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
+  statusText: { fontSize: 10, fontWeight: '400', textTransform: 'capitalize' },
+  infoStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    borderWidth: 1.5,
+    borderColor: C.black,
+    borderRadius: 6,
+    paddingVertical: 7,
+  },
   infoCol: {
     flex: 1,
-    padding: 8,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderRightWidth: 4,
-    borderBottomWidth: 4,
-    borderColor: '#000000',
-    borderRadius: 8,
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  infoDivider: {
+    width: 1.5,
+    height: 22,
+    backgroundColor: '#E5E7EB',
   },
   infoLabel: {
     fontSize: 9,
     fontWeight: '400',
-    textTransform: 'uppercase',
-    color: '#000000',
-    marginBottom: 2,
+    color: C.textMuted,
+    letterSpacing: 0.4,
   },
-  infoVal: { fontSize: 12, fontWeight: '400', color: C.black },
-  cardBottom: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    paddingTop: 10,
-    marginTop: 4,
+  infoVal: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: C.black,
+    marginTop: 2,
   },
-  date: { fontSize: 12, fontWeight: '400', color: C.black },
   returnBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
+    gap: 6,
     backgroundColor: C.secondary,
     borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
+    borderRadius: 6,
     borderColor: C.black,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 7,
   },
   returnBtnText: {
     color: C.white,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
   },
 });

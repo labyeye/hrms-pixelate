@@ -8,6 +8,8 @@ interface Props {
   duration?: number;
   style?: StyleProp<TextStyle>;
   prefix?: string;
+  /** Keep the number on one line and shrink it to the available width. */
+  fit?: boolean;
 }
 
 /** Counts up to `value`. JS-driven (text can't use the native driver). Ported from NestLeads. */
@@ -16,6 +18,7 @@ export default function AnimatedNumber({
   duration = 1400,
   style,
   prefix = '',
+  fit = false,
 }: Props) {
   const reduce = useReduceMotion();
   const replay = useFocusReplay();
@@ -39,7 +42,12 @@ export default function AnimatedNumber({
   }, [value, duration, reduce, replay, anim]);
 
   return (
-    <Text style={style}>
+    <Text
+      style={style}
+      numberOfLines={fit ? 1 : undefined}
+      adjustsFontSizeToFit={fit}
+      minimumFontScale={0.6}
+    >
       {Number.isFinite(value)
         ? prefix + display.toLocaleString('en-IN')
         : String(value)}

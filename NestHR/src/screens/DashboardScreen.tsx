@@ -46,6 +46,7 @@ import { PieChart } from 'react-native-gifted-charts';
 import AnimatedNumber from '../components/motion/AnimatedNumber';
 import FadeInUp from '../components/motion/FadeInUp';
 import AnimatedBarChart from '../components/common/AnimatedBarChart';
+import AnimatedLineChart from '../components/common/AnimatedLineChart';
 import PerformanceList from '../components/common/PerformanceList';
 import { C, S, FONT, useResponsive, tabletContainerStyle } from '../theme';
 
@@ -76,19 +77,6 @@ const ADMIN_STATS = [
     icon: Clock,
     color: C.danger,
   },
-  { label: 'New Hires', key: 'newHires', icon: TrendingUp, color: '#65A30D' },
-  {
-    label: 'Monthly Payroll',
-    key: 'monthlyPayroll',
-    icon: IndianRupee,
-    color: '#FA731C',
-  },
-  {
-    label: 'Departments',
-    key: 'departments',
-    icon: Building2,
-    color: '#024BAB',
-  },
 ];
 
 type RangeKey = 'this' | '3m' | '6m' | '1y';
@@ -99,6 +87,12 @@ const RANGE_PILLS: { key: RangeKey; label: string }[] = [
   { key: '3m', label: '3M' },
   { key: '6m', label: '6M' },
   { key: '1y', label: '1Y' },
+];
+
+const PAY_TREND_PILLS = [
+  { months: 3, label: '3M' },
+  { months: 6, label: '6M' },
+  { months: 12, label: '1Y' },
 ];
 
 const MONTH_LABELS = [
@@ -124,6 +118,7 @@ function AdminDashboard({ navigation }: any) {
   const [error, setError] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [range, setRange] = useState<RangeKey>('this');
+  const [payTrendMonths, setPayTrendMonths] = useState(6);
   const [summaries, setSummaries] = useState<Record<string, any>>({});
 
   const loadUnread = useCallback(async () => {
@@ -147,6 +142,7 @@ function AdminDashboard({ navigation }: any) {
         )}`,
         dailyStats: payload.dailyStats || [],
         payTrend: payload.payTrend || [],
+        payTrendYear: payload.payTrendYear,
       });
     } catch (e: any) {
       setError(e.message || 'Failed to load dashboard');
@@ -338,80 +334,6 @@ function AdminDashboard({ navigation }: any) {
               </FadeInUp>
             </>
           )}
-
-          {!!stats?.deptHeadcounts?.length && (
-            <>
-              <Text style={styles.sectionLabel}>Headcount by Dept</Text>
-              <FadeInUp
-                delay={ADMIN_STATS.length * 70 + 140}
-                style={styles.card}
-              >
-                <AnimatedBarChart
-                  legend
-                  series={[
-                    { key: 'count', label: 'Employees', color: C.primary },
-                  ]}
-                  data={stats.deptHeadcounts.map((d: any) => ({
-                    label: String(d.name || '').slice(0, 5),
-                    values: { count: d.count },
-                  }))}
-                />
-              </FadeInUp>
-            </>
-          )}
-
-          <Text style={styles.sectionLabel}>
-            Recent Hires
-            {stats?.newHires ? ` · ${stats.newHires} this month` : ''}
-          </Text>
-          <View style={styles.card}>
-            {stats?.recentHires?.length ? (
-              stats.recentHires.slice(0, 5).map((e: any) => (
-                <TouchableOpacity
-                  key={e._id}
-                  style={styles.listRow}
-                  onPress={() => navigation.navigate('Employees')}
-                >
-                  <Text style={styles.listTitle}>
-                    {e.firstName} {e.lastName}
-                  </Text>
-                  <Text style={styles.listSub}>
-                    {[e.designation, e.department?.name]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </Text>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <Text style={styles.listSub}>No new hires this month</Text>
-            )}
-          </View>
-
-          <Text style={styles.sectionLabel}>
-            Pending Leave Requests
-            {stats?.pendingLeaves ? ` · ${stats.pendingLeaves}` : ''}
-          </Text>
-          <View style={styles.card}>
-            {stats?.pendingLeaveList?.length ? (
-              stats.pendingLeaveList.slice(0, 5).map((l: any) => (
-                <TouchableOpacity
-                  key={l._id}
-                  style={styles.listRow}
-                  onPress={() => navigation.navigate('Leave')}
-                >
-                  <Text style={styles.listTitle}>
-                    {l.employee?.firstName} {l.employee?.lastName}
-                  </Text>
-                  <Text style={styles.listSub}>
-                    {l.leaveType} · {l.days} day{l.days > 1 ? 's' : ''}
-                  </Text>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <Text style={styles.listSub}>No pending requests</Text>
-            )}
-          </View>
-
           <View style={styles.rangeRow}>
             {RANGE_PILLS.map(r => (
               <TouchableOpacity
@@ -466,17 +388,48 @@ function AdminDashboard({ navigation }: any) {
 
           {!!stats?.payTrend?.length && (
             <>
-              <Text style={styles.sectionLabel}>Payroll Trend (₹k)</Text>
+              <View style={styles.perfHeader}>
+                <Text style={styles.sectionLabel}>Payroll Trend (₹k)</Text>
+                {!!stats.payTrendYear && (
+                  <View style={styles.trendPills}>
+                    {PAY_TREND_PILLS.map(r => (
+                      <TouchableOpacity
+                        key={r.months}
+                        onPress={() => setPayTrendMonths(r.months)}
+                        accessibilityRole="button"
+                        accessibilityState={{
+                          selected: payTrendMonths === r.months,
+                        }}
+                        style={[
+                          styles.pill,
+                          payTrendMonths === r.months && styles.pillActive,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.pillText,
+                            payTrendMonths === r.months && { color: C.white },
+                          ]}
+                        >
+                          {r.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
               <FadeInUp
                 delay={ADMIN_STATS.length * 70 + 140}
                 style={styles.card}
               >
-                <AnimatedBarChart
-                  series={[{ key: 'v', label: 'Payroll', color: C.primary }]}
-                  data={stats.payTrend.map((t: any) => ({
-                    label: MONTH_LABELS[t.month - 1],
-                    values: { v: Math.round(t.total / 1000) },
-                  }))}
+                <AnimatedLineChart
+                  color={C.primary}
+                  data={(stats.payTrendYear || stats.payTrend)
+                    .slice(-payTrendMonths)
+                    .map((t: any) => ({
+                      label: MONTH_LABELS[t.month - 1],
+                      value: Math.round(t.total / 1000),
+                    }))}
                   format={n => `${n}k`}
                 />
               </FadeInUp>
@@ -2089,6 +2042,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
   },
   pillActive: { backgroundColor: C.primary },
+  trendPills: { flexDirection: 'row', gap: 6 },
   pillText: { fontFamily: FONT.bold, fontSize: 12, color: C.black },
   payCard: {
     backgroundColor: C.white,

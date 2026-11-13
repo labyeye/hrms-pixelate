@@ -156,7 +156,7 @@ export default function FaceKioskScreen({ navigation }: any) {
           hitSlop={12}
           accessibilityLabel="Close kiosk"
         >
-          <X size={22} color={C.white} />
+          <X size={24} color={C.white} />
         </TouchableOpacity>
       </View>
 
@@ -266,7 +266,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(0,0,0,0.78)',
     paddingHorizontal: 32,
-    gap: 10,
+    gap: 12,
   },
   name: {
     color: C.white,
@@ -284,7 +284,7 @@ const s = StyleSheet.create({
     marginTop: 8,
     backgroundColor: C.primary,
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   btnText: { color: C.white, fontWeight: '400', fontSize: 13 },
   footer: { paddingHorizontal: 24, paddingVertical: 20, alignItems: 'center' },

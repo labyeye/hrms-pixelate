@@ -655,11 +655,7 @@ export const expenseAPI = {
   getAll: (params?: Record<string, string>) =>
     request(`/expenses${qs(params)}`),
   // Multipart create/edit (up to 5 bills). Pass id to edit a draft.
-  save: async (
-    body: Record<string, any>,
-    bills: BillFile[],
-    id?: string,
-  ) => {
+  save: async (body: Record<string, any>, bills: BillFile[], id?: string) => {
     const token = await getToken();
     const formData = new FormData();
     Object.entries(body).forEach(([k, v]) => {
@@ -1189,12 +1185,16 @@ export interface LocalNotification {
   read: boolean;
   /** Optional dedupe key (e.g. `announcement:<id>`): adding the same key twice keeps one entry. */
   key?: string;
+  /** Server inbox rows only: event type (leave_approved, check_in...) and where a tap should go. */
+  type?: string;
+  data?: { screen?: string; id?: string };
 }
 
 const NOTIF_KEY = 'hrms_notifications';
 const SEEN_ANNOUNCEMENTS_KEY = 'hrms_seen_announcements';
 
-export const localNotificationsAPI = {
+// Entries that only exist on this phone (announcements noticed while the app was open).
+const deviceNotifications = {
   getAll: async (): Promise<LocalNotification[]> => {
     const raw = await storage.getItem(NOTIF_KEY);
     if (!raw) return [];
@@ -1204,8 +1204,39 @@ export const localNotificationsAPI = {
       return [];
     }
   },
+  save: (all: LocalNotification[]) =>
+    storage.setItem(NOTIF_KEY, JSON.stringify(all)),
+};
+
+// Server inbox rows (leave decisions, punches, expenses...) carry this id prefix.
+const SERVER_PREFIX = 'srv:';
+
+/**
+ * The notification inbox: the server inbox (/notifications) merged with entries kept on this phone, newest first.
+ * If the server can't be reached the phone-only entries are still shown.
+ */
+export const localNotificationsAPI = {
+  getAll: async (): Promise<LocalNotification[]> => {
+    const device = await deviceNotifications.getAll();
+    let server: LocalNotification[] = [];
+    try {
+      const res: any = await request('/notifications?limit=50');
+      server = (Array.isArray(res?.data) ? res.data : []).map((n: any) => ({
+        id: `${SERVER_PREFIX}${n._id}`,
+        title: String(n.title || ''),
+        body: String(n.body || ''),
+        ts: new Date(n.createdAt).getTime(),
+        read: !!n.read,
+        type: n.type,
+        data: n.data || {},
+      }));
+    } catch {
+      // offline or signed out: show what the phone has
+    }
+    return [...server, ...device].sort((x, y) => y.ts - x.ts);
+  },
   add: async (n: Omit<LocalNotification, 'id' | 'ts' | 'read'>) => {
-    const all = await localNotificationsAPI.getAll();
+    const all = await deviceNotifications.getAll();
     if (n.key && all.some(x => x.key === n.key)) return null;
     const entry: LocalNotification = {
       ...n,
@@ -1213,24 +1244,31 @@ export const localNotificationsAPI = {
       ts: Date.now(),
       read: false,
     };
-    const updated = [entry, ...all].slice(0, 50);
-    await storage.setItem(NOTIF_KEY, JSON.stringify(updated));
+    await deviceNotifications.save([entry, ...all].slice(0, 50));
     return entry;
   },
   markRead: async (id: string) => {
-    const all = await localNotificationsAPI.getAll();
-    const updated = all.map(n => (n.id === id ? { ...n, read: true } : n));
-    await storage.setItem(NOTIF_KEY, JSON.stringify(updated));
-  },
-  markAllRead: async () => {
-    const all = await localNotificationsAPI.getAll();
-    await storage.setItem(
-      NOTIF_KEY,
-      JSON.stringify(all.map(n => ({ ...n, read: true }))),
+    if (id.startsWith(SERVER_PREFIX)) {
+      await request(`/notifications/${id.slice(SERVER_PREFIX.length)}/read`, {
+        method: 'PATCH',
+      }).catch(() => {});
+      return;
+    }
+    const all = await deviceNotifications.getAll();
+    await deviceNotifications.save(
+      all.map(n => (n.id === id ? { ...n, read: true } : n)),
     );
   },
+  markAllRead: async () => {
+    await request('/notifications/read-all', { method: 'POST' }).catch(
+      () => {},
+    );
+    const all = await deviceNotifications.getAll();
+    await deviceNotifications.save(all.map(n => ({ ...n, read: true })));
+  },
   clear: async () => {
-    await storage.setItem(NOTIF_KEY, '[]');
+    await request('/notifications', { method: 'DELETE' }).catch(() => {});
+    await deviceNotifications.save([]);
   },
 };
 

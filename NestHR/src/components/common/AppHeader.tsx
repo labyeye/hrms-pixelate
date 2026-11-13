@@ -54,7 +54,7 @@ export default function AppHeader({
       >
         <View style={s.row}>
           <TouchableOpacity onPress={onMenu} hitSlop={10}>
-            <Menu size={26} color={C.black} />
+            <Menu size={24} color={C.black} />
           </TouchableOpacity>
           <View style={s.right}>
             <TouchableOpacity onPress={onSearch} hitSlop={10}>
@@ -72,7 +72,7 @@ export default function AppHeader({
                 activeOpacity={0.8}
                 style={s.badge}
               >
-                <Crown size={12} color={C.primary} />
+                <Crown size={14} color={C.primary} />
                 <Text style={s.badgeText}>{badge}</Text>
               </TouchableOpacity>
             )}
@@ -87,7 +87,7 @@ export default function AppHeader({
                   credits.zero ? s.pillZero : credits.low ? s.pillLow : null,
                 ]}
               >
-                <Coins size={13} color={C.white} />
+                <Coins size={14} color={C.white} />
                 <Text style={s.pillText}>{fmtCredits(credits.total)}</Text>
               </TouchableOpacity>
             )}
@@ -106,7 +106,7 @@ export default function AppHeader({
         </View>
         <Text style={s.greet}>
           {greeting}, {first}{' '}
-          <Hand size={14} color="#475569" style={{ marginLeft: 4 }} />
+          <Hand size={14} color="#374151" style={{ marginLeft: 4 }} />
         </Text>
         <Text style={s.title}>{title}</Text>
       </View>
@@ -117,7 +117,7 @@ export default function AppHeader({
 const s = StyleSheet.create({
   wrap: {
     paddingHorizontal: 16,
-    paddingTop: 10,
+    paddingTop: 12,
     paddingBottom: 0,
     backgroundColor: C.white,
   },
@@ -129,14 +129,14 @@ const s = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  right: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  right: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   dot: {
     position: 'absolute',
     top: -1,
     right: -1,
     width: 9,
     height: 9,
-    borderRadius: 5,
+    borderRadius: 4,
     backgroundColor: '#2563eb',
     borderWidth: 1.5,
     borderColor: C.white,
@@ -154,9 +154,9 @@ const s = StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 4,
     paddingHorizontal: 6,
-    paddingVertical: 3,
+    paddingVertical: 4,
     backgroundColor: '#FFF4D6',
     borderWidth: 2,
     borderColor: C.black,
@@ -172,6 +172,6 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: { color: C.white, fontSize: 16, fontWeight: '400' },
-  greet: { marginTop: 14, fontSize: 13, color: '#475569', fontWeight: '400' },
+  greet: { marginTop: 16, fontSize: 13, color: '#374151', fontWeight: '400' },
   title: { fontSize: 28, fontWeight: '400', color: C.black, marginTop: 2 },
 });

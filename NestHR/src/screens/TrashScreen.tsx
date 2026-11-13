@@ -114,7 +114,7 @@ export default function TrashScreen() {
           hitSlop={10}
           style={s.back}
         >
-          <ChevronLeft size={18} color={C.black} />
+          <ChevronLeft size={20} color={C.black} />
           <Text style={s.backText}>Back</Text>
         </TouchableOpacity>
       </View>
@@ -129,7 +129,7 @@ export default function TrashScreen() {
           numColumns={isTablet ? 2 : 1}
           columnWrapperStyle={isTablet ? s.colWrapper : undefined}
           keyExtractor={i => i._id}
-          contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 10 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 12 }}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
@@ -173,13 +173,12 @@ export default function TrashScreen() {
 }
 
 const s = StyleSheet.create({
-  topBar: { paddingHorizontal: 16, paddingTop: 10 },
+  topBar: { paddingHorizontal: 16, paddingTop: 12 },
   back: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start' },
   backText: {
     fontFamily: FONT.bold,
     fontSize: 12,
     color: C.black,
-    textTransform: 'uppercase',
   },
   hint: {
     fontFamily: FONT.medium,
@@ -191,11 +190,11 @@ const s = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -223,9 +222,9 @@ const s = StyleSheet.create({
   },
   tagText: {
     fontFamily: FONT.bold,
-    fontSize: 10,
+    fontSize: 11,
     color: '#374151',
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
   },
   title: { fontFamily: FONT.bold, fontSize: 15, color: C.black },
   meta: {

@@ -32,6 +32,7 @@ import { useNavigation } from '@react-navigation/native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { documentAPI, employeeAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
+import SlideInCard from '../components/motion/SlideInCard';
 import { C, useResponsive, tabletContainerStyle } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import { useDocOtp } from '../hooks/useDocOtp';
@@ -60,7 +61,7 @@ function formatBytes(bytes: number) {
 export default function DocumentsScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
-  const { isTablet } = useResponsive();
+  const { isTablet, maxContentWidth } = useResponsive();
   const isEmployee = user?.role === 'employee';
 
   const [docs, setDocs] = useState<any[]>([]);
@@ -82,7 +83,6 @@ export default function DocumentsScreen() {
   const [previewDoc, setPreviewDoc] = useState<any>(null);
   const { withOtp, otpModal } = useDocOtp();
 
-  // Every file open goes through the WhatsApp OTP gate; the decrypted file only exists in memory.
   const openDoc = async (doc: any) => {
     try {
       const res = await withOtp(t => documentAPI.download(doc._id, t));
@@ -206,86 +206,99 @@ export default function DocumentsScreen() {
     }
   };
 
-  const renderItem = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      style={[styles.card, isTablet && styles.cardTablet]}
-      onPress={() => openDoc(item)}
-      activeOpacity={0.85}
-    >
-      <View style={styles.cardLeft}>
-        <View style={styles.iconBox}>
-          <FileText size={18} color={C.primary} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.docName} numberOfLines={1}>
-            {item.name}
-          </Text>
-          <Text style={styles.docMeta}>
-            {DOC_TYPES.find(t => t.value === item.docType)?.label ??
-              item.docType}
-            {item.sizeBytes ? ` · ${formatBytes(item.sizeBytes)}` : ''}
-          </Text>
-          {!isEmployee && item.employee && (
-            <Text style={styles.docEmp}>
-              {item.employee.firstName} {item.employee.lastName}
+  const renderItem = ({ item, index }: { item: any; index: number }) => (
+    <SlideInCard index={index} style={isTablet ? styles.cardTablet : undefined}>
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => openDoc(item)}
+        activeOpacity={0.85}
+      >
+        <View style={styles.cardLeft}>
+          <View style={styles.iconBox}>
+            <FileText size={20} color={C.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.docName} numberOfLines={1}>
+              {item.name}
             </Text>
-          )}
-          <Text style={styles.docDate}>
-            {new Date(item.createdAt).toLocaleDateString('en-IN')}
-          </Text>
-          {item.expiryDate && (
-            <Text
-              style={[
-                styles.docDate,
-                {
-                  color:
-                    new Date(item.expiryDate) < new Date()
-                      ? C.danger
-                      : C.textMuted,
-                },
-              ]}
-            >
-              Expires: {new Date(item.expiryDate).toLocaleDateString('en-IN')}
+            <Text style={styles.docMeta}>
+              {DOC_TYPES.find(t => t.value === item.docType)?.label ??
+                item.docType}
+              {item.sizeBytes ? ` · ${formatBytes(item.sizeBytes)}` : ''}
             </Text>
-          )}
+            {!isEmployee && item.employee && (
+              <Text style={styles.docEmp}>
+                {item.employee.firstName} {item.employee.lastName}
+              </Text>
+            )}
+            <Text style={styles.docDate}>
+              {new Date(item.createdAt).toLocaleDateString('en-IN')}
+            </Text>
+            {item.expiryDate && (
+              <Text
+                style={[
+                  styles.docDate,
+                  {
+                    color:
+                      new Date(item.expiryDate) < new Date()
+                        ? C.danger
+                        : C.textMuted,
+                  },
+                ]}
+              >
+                Expires: {new Date(item.expiryDate).toLocaleDateString('en-IN')}
+              </Text>
+            )}
+          </View>
         </View>
-      </View>
-      <View style={styles.cardActions}>
-        <TouchableOpacity
-          style={[styles.actionBtn, { borderColor: C.primary }]}
-          onPress={() => {
-            const url = item.url || item.fileUrl || item.filePath;
-            if (url) {
-              Share.share({ url, title: item.name, message: item.name });
-            } else {
-              Alert.alert(
-                'Share',
-                'No shareable link available for this document.',
-              );
-            }
-          }}
-        >
-          <Share2 size={14} color={C.primary} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.deleteBtn]}
-          onPress={() => handleDelete(item._id, item.name)}
-        >
-          <Trash2 size={14} color={C.danger} />
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
+        <View style={styles.cardActions}>
+          <TouchableOpacity
+            style={[styles.actionBtn, { borderColor: C.primary }]}
+            onPress={() => {
+              const url = item.url || item.fileUrl || item.filePath;
+              if (url) {
+                Share.share({ url, title: item.name, message: item.name });
+              } else {
+                Alert.alert(
+                  'Share',
+                  'No shareable link available for this document.',
+                );
+              }
+            }}
+          >
+            <Share2 size={14} color={C.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.deleteBtn]}
+            onPress={() => handleDelete(item._id, item.name)}
+          >
+            <Trash2 size={14} color={C.danger} />
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    </SlideInCard>
   );
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
+      >
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backBtn}
+          hitSlop={8}
         >
           <ChevronLeft size={22} color={C.black} />
         </TouchableOpacity>
+        <FolderOpen size={20} color={C.primary} />
         <Text style={styles.headerTitle}>Document Vault</Text>
         <View style={{ flex: 1 }} />
         {!isEmployee && (
@@ -327,18 +340,18 @@ export default function DocumentsScreen() {
             });
             setShowUpload(true);
           }}
+          hitSlop={8}
         >
           <Plus size={24} color={C.primary} />
         </TouchableOpacity>
       </View>
 
-      {/* Employee filter for HR */}
       {!isEmployee && employees.length > 0 && (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.filterBar}
-          contentContainerStyle={{ padding: 10, gap: 8 }}
+          contentContainerStyle={{ padding: 12, gap: 8 }}
         >
           <TouchableOpacity
             style={[styles.chip, !filterEmp && styles.chipActive]}
@@ -394,7 +407,7 @@ export default function DocumentsScreen() {
             columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
             keyExtractor={d => d._id}
             renderItem={renderItem}
-            contentContainerStyle={{ padding: 16 }}
+            contentContainerStyle={{ padding: 16, gap: 10 }}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -403,7 +416,6 @@ export default function DocumentsScreen() {
                 tintColor={C.primary}
               />
             }
-            ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
             showsVerticalScrollIndicator={false}
           />
         </View>
@@ -417,14 +429,13 @@ export default function DocumentsScreen() {
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Upload Document</Text>
                 <TouchableOpacity onPress={() => setShowUpload(false)}>
-                  <X size={22} color={C.black} />
+                  <X size={24} color={C.black} />
                 </TouchableOpacity>
               </View>
               <ScrollView
                 contentContainerStyle={{ padding: 20, gap: 16 }}
                 keyboardShouldPersistTaps="handled"
               >
-                {/* File picker */}
                 <TouchableOpacity style={styles.filePicker} onPress={pickImage}>
                   {pickedFile ? (
                     <>
@@ -438,7 +449,7 @@ export default function DocumentsScreen() {
                     </>
                   ) : (
                     <>
-                      <Upload size={24} color="#9CA3AF" />
+                      <Upload size={24} color="#6B7280" />
                       <Text style={styles.filePickerPlaceholder}>
                         Tap to pick an image
                       </Text>
@@ -635,7 +646,7 @@ export default function DocumentsScreen() {
               top: 50,
               right: 20,
               zIndex: 10,
-              padding: 10,
+              padding: 12,
             }}
             onPress={() => setPreviewDoc(null)}
           >
@@ -690,7 +701,7 @@ export default function DocumentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F8F9FA' },
+  safe: { flex: 1, backgroundColor: C.bg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -701,15 +712,9 @@ const styles = StyleSheet.create({
     borderBottomColor: C.black,
     gap: 8,
   },
-  backBtn: { padding: 4 },
+  backBtn: { padding: 4, marginRight: 2 },
   headerTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   addBtn: { padding: 4 },
-  addBtnText: {
-    color: C.white,
-    fontSize: 12,
-    fontWeight: '400',
-    textTransform: 'uppercase',
-  },
   filterBar: {
     backgroundColor: C.white,
     borderBottomWidth: 2,
@@ -733,7 +738,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '400',
     color: '#6B7280',
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
   },
   chipTextActive: { color: C.primary },
   center: {
@@ -750,7 +755,7 @@ const styles = StyleSheet.create({
   },
   emptySubtitle: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: '#6B7280',
     fontWeight: '400',
     textAlign: 'center',
     marginTop: 6,
@@ -759,28 +764,23 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-  },
-  cardTablet: {
-    flex: 1,
-    marginBottom: 8,
-  },
-  colWrapper: {
     gap: 12,
   },
+  cardTablet: { flex: 1 },
+  colWrapper: { gap: 10 },
   cardLeft: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
+    gap: 12,
   },
   iconBox: {
     width: 36,
@@ -799,7 +799,7 @@ const styles = StyleSheet.create({
   docName: { fontWeight: '400', fontSize: 13, color: C.black },
   docMeta: { fontSize: 11, color: '#6B7280', marginTop: 2 },
   docEmp: { fontSize: 11, color: C.primary, fontWeight: '400', marginTop: 1 },
-  docDate: { fontSize: 10, color: '#9CA3AF', marginTop: 1 },
+  docDate: { fontSize: 11, color: '#6B7280', marginTop: 1 },
   cardActions: { flexDirection: 'row', gap: 6 },
   actionBtn: {
     width: 32,
@@ -828,8 +828,8 @@ const styles = StyleSheet.create({
   filePicker: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -837,7 +837,7 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F8F9FA',
   },
   filePickerName: {
     fontSize: 14,
@@ -846,26 +846,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   filePickerSize: { fontSize: 12, color: '#6B7280' },
-  filePickerPlaceholder: { fontSize: 14, fontWeight: '400', color: '#9CA3AF' },
+  filePickerPlaceholder: { fontSize: 14, fontWeight: '400', color: '#6B7280' },
   filePickerHint: { fontSize: 12, color: '#D1D5DB' },
   fieldLabel: {
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.black,
     marginBottom: 6,
-    letterSpacing: 0.5,
   },
   fieldInput: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingVertical: 12,
     fontSize: 14,
     fontWeight: '400',
     color: C.black,
@@ -874,13 +872,13 @@ const styles = StyleSheet.create({
   selectBtn: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingVertical: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -891,12 +889,12 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingVertical: 14,
+    paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -907,7 +905,6 @@ const styles = StyleSheet.create({
     color: C.white,
     fontWeight: '400',
     fontSize: 14,
-    textTransform: 'uppercase',
   },
   overlay: {
     flex: 1,
@@ -933,7 +930,7 @@ const styles = StyleSheet.create({
   sheetTitle: { fontSize: 16, fontWeight: '400', color: C.black },
   sheetOption: {
     paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },

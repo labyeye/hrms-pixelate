@@ -12,6 +12,7 @@ import {
   RefreshControl,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -24,11 +25,27 @@ import {
   AlertCircle,
   CheckCircle2,
   XCircle,
-  ChevronRight,
+  Search,
+  Calendar,
+  IndianRupee,
+  Users,
+  TrendingUp,
+  Cpu,
+  CreditCard,
+  BarChart2,
+  Building2,
+  Wallet,
+  DoorOpen,
+  Settings,
+  HelpCircle,
 } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { supportAPI } from '../api/api';
 import { C, S, useResponsive, tabletContainerStyle } from '../theme';
+import SlideInCard from '../components/motion/SlideInCard';
+import HeaderIconBtn from '../components/common/HeaderIconBtn';
+import SearchModal from '../components/common/SearchModal';
+import DashStatCard, { dashStatRow } from '../components/common/DashStatCard';
 import { CENTER } from '../components/common/centerModal';
 
 const ISSUE_TYPES = [
@@ -48,6 +65,23 @@ const ISSUE_TYPES = [
   { value: 'other', label: 'Other' },
 ];
 
+const ISSUE_ICONS: Record<string, any> = {
+  attendance: Clock,
+  leave: Calendar,
+  payroll: IndianRupee,
+  employee_management: Users,
+  performance: TrendingUp,
+  biometric: Cpu,
+  billing: CreditCard,
+  reports: BarChart2,
+  departments: Building2,
+  loans: Wallet,
+  exit_management: DoorOpen,
+  settings: Settings,
+  general: HelpCircle,
+  other: LifeBuoy,
+};
+
 const PRIORITIES = [
   { value: 'low', label: 'Low' },
   { value: 'medium', label: 'Medium' },
@@ -57,12 +91,22 @@ const PRIORITIES = [
 
 const STATUS_META: Record<
   string,
-  { label: string; color: string; bg: string }
+  { label: string; color: string; bg: string; icon: any }
 > = {
-  open: { label: 'Open', color: '#6B7280', bg: '#F3F4F6' },
-  in_progress: { label: 'In Progress', color: C.primary, bg: '#EFF6FF' },
-  resolved: { label: 'Resolved', color: C.success, bg: '#DCFCE7' },
-  closed: { label: 'Closed', color: C.danger, bg: '#FEF2F2' },
+  open: { label: 'Open', color: '#FF751F', bg: '#FFF7ED', icon: AlertCircle },
+  in_progress: {
+    label: 'In Progress',
+    color: C.primary,
+    bg: '#EFF6FF',
+    icon: Clock,
+  },
+  resolved: {
+    label: 'Resolved',
+    color: '#22c55e',
+    bg: '#DCFCE7',
+    icon: CheckCircle2,
+  },
+  closed: { label: 'Closed', color: C.danger, bg: '#FEF2F2', icon: XCircle },
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -100,7 +144,7 @@ const formatDate = (iso: string) =>
 
 export default function SupportScreen({ navigation }: any) {
   const { user } = useAuth();
-  const { isTablet } = useResponsive();
+  const { isTablet, maxContentWidth } = useResponsive();
   const isAdmin = ['super_admin', 'hr_manager', 'hr_executive'].includes(
     user?.role || '',
   );
@@ -108,6 +152,8 @@ export default function SupportScreen({ navigation }: any) {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [query, setQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
 
   // Create form
   const [showForm, setShowForm] = useState(false);
@@ -209,124 +255,164 @@ export default function SupportScreen({ navigation }: any) {
     closed: tickets.filter(t => t.status === 'closed').length,
   };
 
-  const renderTicket = ({ item }: { item: Ticket }) => {
-    const sm = STATUS_META[item.status] || STATUS_META.open;
-    const pColor = PRIORITY_COLORS[item.priority] || C.black;
-    return (
-      <TouchableOpacity
-        style={[styles.ticketCard, isTablet && styles.ticketCardTablet]}
-        onPress={() => setSelectedTicket(item)}
-        activeOpacity={0.75}
-      >
-        <View style={styles.ticketTop}>
-          <Text style={styles.ticketNumber}>{item.ticketNumber}</Text>
-          <View
-            style={[
-              styles.statusBadge,
-              { backgroundColor: sm.bg, borderColor: sm.color },
-            ]}
-          >
-            <Text style={[styles.statusText, { color: sm.color }]}>
-              {sm.label}
-            </Text>
-          </View>
-        </View>
-        <Text style={styles.ticketSubject} numberOfLines={1}>
-          {item.subject}
-        </Text>
-        <Text style={styles.ticketDesc} numberOfLines={2}>
-          {item.description}
-        </Text>
-        <View style={styles.ticketMeta}>
-          <View style={[styles.priorityDot, { backgroundColor: pColor }]} />
-          <Text style={styles.ticketMetaText}>
-            {priorityLabel(item.priority)}
-          </Text>
-          <Text style={styles.ticketMetaDot}>·</Text>
-          <Text style={styles.ticketMetaText}>
-            {issueLabel(item.issueType)}
-          </Text>
-          <Text style={styles.ticketMetaDot}>·</Text>
-          <Text style={styles.ticketMetaText}>
-            {formatDate(item.createdAt)}
-          </Text>
-        </View>
-        {isAdmin && item.submittedBy && (
-          <Text style={styles.ticketBy}>
-            By {item.submittedBy.name || item.submittedBy.email}
-          </Text>
-        )}
-      </TouchableOpacity>
-    );
-  };
+  const q = query.trim().toLowerCase();
+  const filteredTickets = tickets.filter(
+    t =>
+      !q ||
+      t.subject.toLowerCase().includes(q) ||
+      t.ticketNumber.toLowerCase().includes(q) ||
+      issueLabel(t.issueType).toLowerCase().includes(q),
+  );
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Header */}
-      <View style={S.pageHeader}>
-        <View style={S.rowCenter}>
+      <StatusBar barStyle="dark-content" backgroundColor={C.white} />
+
+      {/* Header matching MoreScreen & EmployeesScreen */}
+      <View
+        style={[
+          styles.header,
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
+      >
+        <View style={styles.headerLeft}>
           <LifeBuoy size={20} color={C.primary} />
-          <Text style={[S.h2, { marginLeft: 8 }]}>Support</Text>
+          <Text style={styles.headerTitle}>Support</Text>
         </View>
-        <TouchableOpacity
-          style={styles.newBtn}
-          onPress={() => setShowForm(true)}
-        >
-          <Plus size={16} color={C.white} />
-          <Text style={styles.newBtnText}>New Ticket</Text>
-        </TouchableOpacity>
+
+        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+          <HeaderIconBtn
+            label="Search"
+            icon={<Search size={22} color={C.black} />}
+            dot={!!query}
+            onPress={() => setSearchOpen(true)}
+          />
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={() => setShowForm(true)}
+            accessibilityLabel="New Ticket"
+            hitSlop={8}
+          >
+            <Plus size={24} color={C.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
+
+      <SearchModal
+        visible={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        value={query}
+        onChange={setQuery}
+        placeholder="Search tickets…"
+        items={tickets.map(t => ({
+          key: t._id,
+          title: t.subject,
+          subtitle: `${t.ticketNumber} · ${issueLabel(t.issueType)}`,
+        }))}
+      />
 
       <ScrollView
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => load(true)}
+            tintColor={C.primary}
           />
         }
-        contentContainerStyle={[{ padding: 16, paddingBottom: 40 }, tabletContainerStyle(isTablet)]}
+        contentContainerStyle={[
+          { padding: 16, paddingBottom: 40, gap: 16 },
+          tabletContainerStyle(isTablet),
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Summary row */}
-        <View style={styles.summaryRow}>
-          {Object.entries(statusCounts).map(([status, count]) => {
-            const sm = STATUS_META[status];
-            return (
-              <View
-                key={status}
-                style={[styles.summaryCard, { borderColor: sm.color }]}
-              >
-                <Text style={[styles.summaryCount, { color: sm.color }]}>
-                  {count}
-                </Text>
-                <Text style={styles.summaryLabel}>{sm.label}</Text>
-              </View>
-            );
-          })}
+        {/* Summary row matching EmployeesScreen & AttendanceScreen */}
+        <View style={dashStatRow}>
+          <DashStatCard
+            index={0}
+            label="Open"
+            value={statusCounts.open}
+            icon={STATUS_META.open.icon}
+            color={STATUS_META.open.color}
+          />
+          <DashStatCard
+            index={1}
+            label="In Progress"
+            value={statusCounts.in_progress}
+            icon={STATUS_META.in_progress.icon}
+            color={STATUS_META.in_progress.color}
+          />
+          <DashStatCard
+            index={2}
+            label="Resolved"
+            value={statusCounts.resolved}
+            icon={STATUS_META.resolved.icon}
+            color={STATUS_META.resolved.color}
+          />
+          <DashStatCard
+            index={3}
+            label="Closed"
+            value={statusCounts.closed}
+            icon={STATUS_META.closed.icon}
+            color={STATUS_META.closed.color}
+          />
         </View>
 
         {loading ? (
           <View style={S.emptyState}>
             <Text style={S.emptyText}>Loading tickets...</Text>
           </View>
-        ) : tickets.length === 0 ? (
+        ) : filteredTickets.length === 0 ? (
           <View style={S.emptyState}>
             <LifeBuoy size={40} color="#D1D5DB" />
-            <Text style={S.emptyText}>No support tickets yet</Text>
-            <Text style={[S.small, { textAlign: 'center', marginTop: 4 }]}>
-              Tap "New Ticket" to report an issue
+            <Text style={S.emptyText}>
+              {q ? `No tickets match "${query}"` : 'No support tickets yet'}
             </Text>
+            {!q && (
+              <Text style={[S.small, { textAlign: 'center', marginTop: 4 }]}>
+                Tap "+" to report an issue
+              </Text>
+            )}
           </View>
         ) : (
-          <FlatList
-            key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
-            data={tickets}
-            numColumns={isTablet ? 2 : 1}
-            columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
-            keyExtractor={t => t._id}
-            renderItem={renderTicket}
-            scrollEnabled={false}
-          />
+          /* MoreScreen-style 3-column card grid */
+          <View style={styles.grid}>
+            {filteredTickets.map((item, idx) => {
+              const sm =
+                STATUS_META[item.status?.toLowerCase()] || STATUS_META.open;
+              const Icon = ISSUE_ICONS[item.issueType] || sm.icon;
+              return (
+                <SlideInCard key={item._id} index={idx} style={styles.tileWrap}>
+                  <TouchableOpacity
+                    style={styles.tile}
+                    onPress={() => setSelectedTicket(item)}
+                    activeOpacity={0.8}
+                  >
+                    <View
+                      style={[
+                        styles.tileIcon,
+                        {
+                          backgroundColor: sm.color + '1A',
+                          borderColor: sm.color,
+                        },
+                      ]}
+                    >
+                      <Icon size={22} color={sm.color} />
+                    </View>
+                    <Text style={styles.tileLabel} numberOfLines={1}>
+                      {item.subject}
+                    </Text>
+                    <Text style={styles.tileSub} numberOfLines={1}>
+                      {sm.label}
+                    </Text>
+                  </TouchableOpacity>
+                </SlideInCard>
+              );
+            })}
+          </View>
         )}
       </ScrollView>
 
@@ -343,7 +429,7 @@ export default function SupportScreen({ navigation }: any) {
                     resetForm();
                   }}
                 >
-                  <X size={22} color={C.black} />
+                  <X size={24} color={C.black} />
                 </TouchableOpacity>
               </View>
               <KeyboardAvoidingView
@@ -355,7 +441,6 @@ export default function SupportScreen({ navigation }: any) {
                   keyboardShouldPersistTaps="handled"
                   showsVerticalScrollIndicator={false}
                 >
-                  {/* Subject */}
                   <Text style={styles.fieldLabel}>Subject *</Text>
                   <TextInput
                     style={S.input}
@@ -366,7 +451,6 @@ export default function SupportScreen({ navigation }: any) {
                     maxLength={200}
                   />
 
-                  {/* Issue Type */}
                   <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
                     Issue Type *
                   </Text>
@@ -377,7 +461,7 @@ export default function SupportScreen({ navigation }: any) {
                     <Text
                       style={[
                         styles.selectText,
-                        !issueType && { color: '#9CA3AF' },
+                        !issueType && { color: '#6B7280' },
                       ]}
                     >
                       {issueType ? issueLabel(issueType) : 'Select issue type'}
@@ -385,7 +469,6 @@ export default function SupportScreen({ navigation }: any) {
                     <ChevronDown size={16} color={C.black} />
                   </TouchableOpacity>
 
-                  {/* Priority */}
                   <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
                     Priority
                   </Text>
@@ -399,7 +482,6 @@ export default function SupportScreen({ navigation }: any) {
                     <ChevronDown size={16} color={C.black} />
                   </TouchableOpacity>
 
-                  {/* Description */}
                   <Text style={[styles.fieldLabel, { marginTop: 16 }]}>
                     Description *
                   </Text>
@@ -556,7 +638,7 @@ export default function SupportScreen({ navigation }: any) {
                     </View>
                   </View>
                   <TouchableOpacity onPress={() => setSelectedTicket(null)}>
-                    <X size={22} color={C.black} />
+                    <X size={24} color={C.black} />
                   </TouchableOpacity>
                 </View>
                 <ScrollView
@@ -630,13 +712,12 @@ export default function SupportScreen({ navigation }: any) {
                         borderWidth: 2,
                         borderRadius: 8,
                         borderColor: C.black,
-                        padding: 10,
-                        gap: 10,
+                        padding: 12,
+                        gap: 12,
                         marginTop: 8,
-                        backgroundColor: '#F9FAFB',
+                        backgroundColor: '#F8F9FA',
                       }}
                     >
-                      {/* Replies list */}
                       {freshTicket?.replies?.map((rep: any, idx: number) => {
                         const isSelf =
                           rep.role === 'employee' ||
@@ -656,10 +737,9 @@ export default function SupportScreen({ navigation }: any) {
                           >
                             <Text
                               style={{
-                                fontSize: 9,
+                                fontSize: 11,
                                 fontWeight: '400',
                                 color: isSelf ? C.primary : C.secondary,
-                                textTransform: 'uppercase',
                               }}
                             >
                               {isSelf ? 'You' : 'Support / HR'}
@@ -668,7 +748,7 @@ export default function SupportScreen({ navigation }: any) {
                               style={{
                                 fontSize: 12,
                                 color: C.black,
-                                marginTop: 3,
+                                marginTop: 4,
                                 fontWeight: '400',
                               }}
                             >
@@ -676,7 +756,7 @@ export default function SupportScreen({ navigation }: any) {
                             </Text>
                             <Text
                               style={{
-                                fontSize: 8,
+                                fontSize: 11,
                                 color: C.textLight,
                                 marginTop: 4,
                                 fontFamily: 'monospace',
@@ -698,7 +778,7 @@ export default function SupportScreen({ navigation }: any) {
                             fontSize: 11,
                             color: C.textMuted,
                             textAlign: 'center',
-                            paddingVertical: 10,
+                            paddingVertical: 12,
                           }}
                         >
                           No replies in this conversation yet.
@@ -759,7 +839,6 @@ export default function SupportScreen({ navigation }: any) {
                               color: '#fff',
                               fontSize: 12,
                               fontWeight: '400',
-                              textTransform: 'uppercase',
                             }}
                           >
                             Send
@@ -805,7 +884,6 @@ export default function SupportScreen({ navigation }: any) {
                             color: '#fff',
                             fontSize: 12,
                             fontWeight: '400',
-                            textTransform: 'uppercase',
                           }}
                         >
                           Close Ticket
@@ -823,84 +901,72 @@ export default function SupportScreen({ navigation }: any) {
   );
 }
 
+const box = {
+  borderWidth: 2,
+  borderRadius: 8,
+  borderRightWidth: 4,
+  borderBottomWidth: 4,
+  borderRightColor: '#0A0A0A',
+  borderBottomColor: '#0A0A0A',
+  borderColor: C.black,
+} as const;
+
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
-  newBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: C.primary,
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderColor: C.black,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    gap: 5,
-  },
-  newBtnText: {
-    color: C.white,
-    fontWeight: '400',
-    fontSize: 12,
-    textTransform: 'uppercase',
-  },
-
-  // Summary
-  summaryRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  summaryCard: {
-    flex: 1,
-    backgroundColor: C.white,
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
-  summaryCount: { fontSize: 20, fontWeight: '400' },
-  summaryLabel: {
-    fontSize: 9,
-    fontWeight: '400',
-    textTransform: 'uppercase',
-    color: '#6B7280',
-    marginTop: 2,
-  },
-
-  // Ticket card
-  ticketCard: {
-    backgroundColor: C.white,
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderColor: C.black,
-    padding: 14,
-    marginBottom: 10,
-  },
-  ticketCardTablet: {
-    flex: 1,
-  },
-  colWrapper: {
-    gap: 12,
-  },
-  ticketTop: {
+  header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: C.white,
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
   },
-  ticketNumber: {
-    fontFamily: 'monospace',
-    fontSize: 11,
-    color: '#6B7280',
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerTitle: { fontSize: 20, fontWeight: '400', color: C.black },
+  addBtn: { padding: 4 },
+
+  // MoreScreen-style 3-column grid
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  tileWrap: {
+    width: '31.3%',
+  },
+  tile: {
+    ...box,
+    backgroundColor: C.white,
+    width: '100%',
+    paddingVertical: 12,
+    paddingHorizontal: 6,
+    gap: 5,
+    alignItems: 'center',
+  },
+  tileIcon: {
+    width: 42,
+    height: 42,
+    borderWidth: 2,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  tileLabel: {
+    fontSize: 12,
     fontWeight: '400',
+    color: C.black,
+    textAlign: 'center',
   },
+  tileSub: {
+    fontSize: 10,
+    fontWeight: '400',
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+
   statusBadge: {
     borderWidth: 2,
     borderRadius: 999,
@@ -910,30 +976,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
-  statusText: { fontSize: 10, fontWeight: '400', textTransform: 'uppercase' },
-  ticketSubject: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: C.black,
-    marginBottom: 4,
-  },
-  ticketDesc: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '400',
-    lineHeight: 18,
-    marginBottom: 8,
-  },
-  ticketMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    flexWrap: 'wrap',
-  },
+  statusText: { fontSize: 11, fontWeight: '400', textTransform: 'capitalize' },
   priorityDot: { width: 8, height: 8, borderRadius: 4 },
-  ticketMetaText: { fontSize: 11, color: '#6B7280', fontWeight: '400' },
-  ticketMetaDot: { fontSize: 11, color: '#D1D5DB' },
-  ticketBy: { fontSize: 11, color: C.primary, fontWeight: '400', marginTop: 6 },
 
   // Form modal
   modalSafe: { flex: 1, backgroundColor: C.white },
@@ -942,7 +986,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
@@ -950,31 +994,23 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
     color: C.black,
     marginBottom: 6,
   },
   selectBtn: {
-    borderWidth: 2,
-    borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderColor: C.black,
+    ...box,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: C.white,
   },
   selectText: { fontSize: 14, fontWeight: '400', color: C.black },
-  textArea: { height: 130, paddingTop: 10 },
+  textArea: { height: 130, paddingTop: 12 },
   charCount: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: '#6B7280',
     fontWeight: '400',
     textAlign: 'right',
     marginTop: 4,
@@ -1006,8 +1042,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 10,
+    paddingVertical: 16,
+    gap: 12,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
@@ -1030,33 +1066,22 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   detailCell: {
+    ...box,
     width: '47%',
     padding: 8,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderRightWidth: 4,
-    borderBottomWidth: 4,
-    borderColor: '#000000',
-    borderRadius: 8,
+    backgroundColor: C.white,
   },
   detailCellLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '400',
-    textTransform: 'uppercase',
-    color: '#000000',
-    letterSpacing: 0.5,
-    marginBottom: 3,
+    color: C.black,
+    marginBottom: 4,
   },
   detailCellValue: { fontSize: 14, fontWeight: '400', color: C.black },
   resolvedNote: {
+    ...box,
     flexDirection: 'row',
     backgroundColor: '#F0FDF4',
-    borderWidth: 2,
-    borderRightWidth: 4,
-    borderBottomWidth: 4,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderRadius: 8,
     borderColor: C.success,
     padding: 12,
     marginTop: 16,
@@ -1065,8 +1090,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '400',
     color: C.success,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   resolvedNoteText: {
     fontSize: 13,

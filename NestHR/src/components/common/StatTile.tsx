@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { C } from '../../theme';
+import FadeInUp from '../motion/FadeInUp';
+import AnimatedValue from '../motion/AnimatedValue';
 
 interface Props {
   label: string;
@@ -10,6 +12,8 @@ interface Props {
   sub?: string;
   /** Percentage of the row the tile should take, default two tiles per row. */
   width?: `${number}%`;
+  /** Position in its row/grid; each tile enters a little after the previous one. */
+  index?: number;
 }
 
 /** Summary card in the same look as the Dashboard stat cards (tinted icon chip + big number + caps label). */
@@ -20,9 +24,10 @@ export default function StatTile({
   icon: Icon,
   sub,
   width = '48.5%',
+  index = 0,
 }: Props) {
   return (
-    <View style={[styles.card, { width }]}>
+    <FadeInUp delay={Math.min(index, 8) * 70} style={[styles.card, { width }]}>
       {Icon ? (
         <View
           style={[
@@ -30,38 +35,36 @@ export default function StatTile({
             { backgroundColor: color + '1A', borderColor: color },
           ]}
         >
-          <Icon size={18} color={color} />
+          <Icon size={20} color={color} />
         </View>
       ) : null}
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={styles.label} numberOfLines={1}>
           {label}
         </Text>
-        <Text style={styles.value} numberOfLines={1}>
-          {value}
-        </Text>
+        <AnimatedValue style={styles.value} value={value} />
         {sub ? (
           <Text style={styles.sub} numberOfLines={1}>
             {sub}
           </Text>
         ) : null}
       </View>
-    </View>
+    </FadeInUp>
   );
 }
 
 export const tileGrid = {
   flexDirection: 'row',
   flexWrap: 'wrap',
-  gap: 10,
+  gap: 12,
 } as const;
 
 const styles = StyleSheet.create({
   card: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -69,7 +72,7 @@ const styles = StyleSheet.create({
     padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
   chip: {
     width: 38,
@@ -85,11 +88,9 @@ const styles = StyleSheet.create({
   },
   value: { fontSize: 22, fontWeight: '400', color: C.black },
   label: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '400',
     color: C.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
-  sub: { fontSize: 10, color: C.textMuted },
+  sub: { fontSize: 11, color: C.textMuted },
 });

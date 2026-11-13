@@ -57,6 +57,8 @@ export const tabletContainerStyleBase: ViewStyle = {
   alignSelf: 'center',
 };
 
-export function tabletContainerStyle(isTablet?: boolean): ViewStyle | undefined {
+export function tabletContainerStyle(
+  isTablet?: boolean,
+): ViewStyle | undefined {
   return isTablet ? tabletContainerStyleBase : undefined;
 }

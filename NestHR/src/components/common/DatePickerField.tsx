@@ -43,7 +43,7 @@ function SpinCol({
         style={s.arrow}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <ChevronUp size={22} color={C.primary} />
+        <ChevronUp size={24} color={C.primary} />
       </TouchableOpacity>
       <View style={s.valBox}>
         <Text style={s.valText}>
@@ -55,7 +55,7 @@ function SpinCol({
         style={s.arrow}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <ChevronDown size={22} color={C.primary} />
+        <ChevronDown size={24} color={C.primary} />
       </TouchableOpacity>
       <Text style={s.colLabel}>{label}</Text>
     </View>
@@ -264,20 +264,18 @@ const s = StyleSheet.create({
     fontSize: 12,
     fontWeight: '400',
     color: C.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
     marginBottom: 6,
   },
   input: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: '#000',
     paddingHorizontal: 12,
-    paddingVertical: 13,
+    paddingVertical: 12,
     backgroundColor: '#fff',
   },
   inputText: {
@@ -343,7 +341,7 @@ const s = StyleSheet.create({
     borderWidth: 2,
     borderColor: C.primary,
     borderRadius: 8,
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 16,
     backgroundColor: '#EFF6FF',
     minWidth: 72,
@@ -358,8 +356,6 @@ const s = StyleSheet.create({
     fontSize: 12,
     fontWeight: '400',
     color: C.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   sep: {
     width: 1,

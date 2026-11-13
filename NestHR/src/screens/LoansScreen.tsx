@@ -1,3 +1,4 @@
+import { sentence } from '../utils/text';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -25,26 +26,31 @@ import {
   ChevronLeft,
   Search,
   SlidersHorizontal,
+  Ellipsis,
+  Upload,
+  Download,
+  FileText,
+  IndianRupee,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { loanAPI, employeeAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
-import AnimatedNumber from '../components/motion/AnimatedNumber';
-import FadeInUp from '../components/motion/FadeInUp';
+import SlideInCard from '../components/motion/SlideInCard';
 import { C, useResponsive } from '../theme';
 import { CENTER } from '../components/common/centerModal';
-import ExportButton from '../components/common/ExportButton';
-import ImportButton from '../components/common/ImportButton';
+import { chooseExport } from '../utils/exporters';
+import { pickSheet, shareTemplate } from '../utils/importSheet';
 import HeaderIconBtn from '../components/common/HeaderIconBtn';
 import SearchModal from '../components/common/SearchModal';
 import FilterSortModal from '../components/common/FilterSortModal';
+import DashStatCard, { dashStatRow } from '../components/common/DashStatCard';
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> =
   {
     pending: { color: C.warning, bg: '#FFF7ED', icon: Clock },
     active: { color: C.primary, bg: '#EFF6FF', icon: CreditCard },
     rejected: { color: C.danger, bg: '#FEF2F2', icon: XCircle },
-    cleared: { color: C.textMuted, bg: '#F3F4F6', icon: CheckCircle2 },
+    cleared: { color: C.success, bg: '#F0FDF4', icon: CheckCircle2 },
     paused: { color: C.warning, bg: '#FFF7ED', icon: Clock },
   };
 
@@ -56,6 +62,24 @@ const EMPTY_FORM = {
   tenureMonths: '',
   reason: '',
 };
+
+const IMPORT_HEADERS = [
+  'Emp ID',
+  'Type (loan/advance)',
+  'Amount',
+  'Monthly EMI',
+  'Disbursed On (YYYY-MM-DD)',
+  'Reason',
+];
+
+const IMPORT_EXAMPLE = [
+  'EMP0001',
+  'loan',
+  50000,
+  5000,
+  new Date().toISOString().slice(0, 10),
+  'Medical',
+];
 
 export default function LoansScreen() {
   const navigation = useNavigation<any>();
@@ -70,6 +94,8 @@ export default function LoansScreen() {
   const [sortKey, setSortKey] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -134,7 +160,7 @@ export default function LoansScreen() {
       const payload = {
         type: form.type,
         amount: parseFloat(form.amount),
-        tenureMonths: form.tenureMonths ? parseInt(form.tenureMonths) : 0,
+        tenureMonths: form.tenureMonths ? parseInt(form.tenureMonths, 10) : 0,
         reason: form.reason.trim(),
       };
       if (isEmployee) {
@@ -182,17 +208,112 @@ export default function LoansScreen() {
     );
   };
 
+  const runImport = async () => {
+    setMenuOpen(false);
+    setImporting(true);
+    try {
+      const rows = await pickSheet();
+      if (!rows) return;
+      if (!rows.length) return Alert.alert('Import', 'File is empty');
+      let ok = 0;
+      const bad: string[] = [];
+      for (const r of rows) {
+        const code = String(r['Emp ID'] || '')
+          .trim()
+          .toLowerCase();
+        const emp = employees.find(
+          (e: any) => e.employeeId?.toLowerCase() === code,
+        );
+        const amount = parseFloat(String(r.Amount).replace(/,/g, ''));
+        if (!emp || !(amount > 0)) {
+          bad.push(String(r['Emp ID'] || '(blank)'));
+          continue;
+        }
+        const type =
+          String(r['Type (loan/advance)'] || 'loan').toLowerCase() === 'advance'
+            ? 'advance'
+            : 'loan';
+        try {
+          await loanAPI.create({
+            employee: emp._id,
+            type,
+            amount,
+            remainingBalance: amount,
+            monthlyEmi:
+              parseFloat(String(r['Monthly EMI']).replace(/,/g, '')) || 0,
+            disbursedOn:
+              String(r['Disbursed On (YYYY-MM-DD)'] || '').slice(0, 10) ||
+              new Date().toISOString().slice(0, 10),
+            reason: String(r.Reason || ''),
+            status: 'active',
+          });
+          ok++;
+        } catch {
+          bad.push(String(r['Emp ID']));
+        }
+      }
+      load();
+      Alert.alert(
+        'Import',
+        `${ok} of ${rows.length} imported${
+          bad.length ? `. Skipped: ${bad.slice(0, 5).join(', ')}` : ''
+        }`,
+      );
+    } catch (e: any) {
+      Alert.alert('Import failed', e?.message || 'Could not import file');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const exportCols = [
+    {
+      header: 'Emp Code',
+      value: (l: any) => l.employee?.employeeId,
+    },
+    {
+      header: 'Employee',
+      value: (l: any) =>
+        `${l.employee?.firstName || ''} ${l.employee?.lastName || ''}`.trim(),
+    },
+    { header: 'Type', value: (l: any) => l.type },
+    { header: 'Amount', value: (l: any) => l.amount },
+    { header: 'Monthly EMI', value: (l: any) => l.monthlyEmi },
+    {
+      header: 'Remaining',
+      value: (l: any) => l.remainingBalance,
+    },
+    {
+      header: 'Disbursed On',
+      value: (l: any) =>
+        l.disbursedOn ? String(l.disbursedOn).slice(0, 10) : '',
+    },
+    { header: 'Status', value: (l: any) => l.status },
+    { header: 'Reason', value: (l: any) => l.reason },
+  ];
+
   const totalActive = loans
     .filter(l => l.status === 'active')
     .reduce((s, l) => s + (l.amount || 0), 0);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={[styles.header, isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' }]}>
+      {/* Concise Header matching EmployeesScreen */}
+      <View
+        style={[
+          styles.header,
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
+      >
         <View style={styles.headerLeft}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
-            style={{ padding: 4, marginRight: 4 }}
+            style={{ padding: 4, marginRight: 2 }}
+            hitSlop={8}
           >
             <ChevronLeft size={22} color={C.black} />
           </TouchableOpacity>
@@ -201,6 +322,7 @@ export default function LoansScreen() {
             {isEmployee ? 'My Loans' : 'Loans'}
           </Text>
         </View>
+
         <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
           {!isEmployee && (
             <HeaderIconBtn
@@ -217,110 +339,11 @@ export default function LoansScreen() {
             onPress={() => setFilterOpen(true)}
           />
           {!isEmployee && (
-            <>
-              <ImportButton
-                name="loans"
-                headers={[
-                  'Emp ID',
-                  'Type (loan/advance)',
-                  'Amount',
-                  'Monthly EMI',
-                  'Disbursed On (YYYY-MM-DD)',
-                  'Reason',
-                ]}
-                example={[
-                  'EMP0001',
-                  'loan',
-                  50000,
-                  5000,
-                  new Date().toISOString().slice(0, 10),
-                  'Medical',
-                ]}
-                onRows={async rows => {
-                  let ok = 0;
-                  const bad: string[] = [];
-                  for (const r of rows) {
-                    const code = String(r['Emp ID'] || '')
-                      .trim()
-                      .toLowerCase();
-                    const emp = employees.find(
-                      (e: any) => e.employeeId?.toLowerCase() === code,
-                    );
-                    const amount = parseFloat(
-                      String(r['Amount']).replace(/,/g, ''),
-                    );
-                    if (!emp || !(amount > 0)) {
-                      bad.push(String(r['Emp ID'] || '(blank)'));
-                      continue;
-                    }
-                    const type =
-                      String(
-                        r['Type (loan/advance)'] || 'loan',
-                      ).toLowerCase() === 'advance'
-                        ? 'advance'
-                        : 'loan';
-                    try {
-                      await loanAPI.create({
-                        employee: emp._id,
-                        type,
-                        amount,
-                        remainingBalance: amount,
-                        monthlyEmi:
-                          parseFloat(
-                            String(r['Monthly EMI']).replace(/,/g, ''),
-                          ) || 0,
-                        disbursedOn:
-                          String(r['Disbursed On (YYYY-MM-DD)'] || '').slice(
-                            0,
-                            10,
-                          ) || new Date().toISOString().slice(0, 10),
-                        reason: String(r['Reason'] || ''),
-                        status: 'active',
-                      });
-                      ok++;
-                    } catch {
-                      bad.push(String(r['Emp ID']));
-                    }
-                  }
-                  load();
-                  return `${ok} of ${rows.length} imported${
-                    bad.length ? `. Skipped: ${bad.slice(0, 5).join(', ')}` : ''
-                  }`;
-                }}
-              />
-              <ExportButton
-                name="loans_advances"
-                label=""
-                rows={filtered}
-                cols={[
-                  {
-                    header: 'Emp Code',
-                    value: (l: any) => l.employee?.employeeId,
-                  },
-                  {
-                    header: 'Employee',
-                    value: (l: any) =>
-                      `${l.employee?.firstName || ''} ${
-                        l.employee?.lastName || ''
-                      }`.trim(),
-                  },
-                  { header: 'Type', value: (l: any) => l.type },
-                  { header: 'Amount', value: (l: any) => l.amount },
-                  { header: 'Monthly EMI', value: (l: any) => l.monthlyEmi },
-                  {
-                    header: 'Remaining',
-                    value: (l: any) => l.remainingBalance,
-                  },
-                  {
-                    header: 'Disbursed On',
-                    value: (l: any) =>
-                      l.disbursedOn ? String(l.disbursedOn).slice(0, 10) : '',
-                  },
-                  { header: 'Status', value: (l: any) => l.status },
-                  { header: 'Reason', value: (l: any) => l.reason },
-                ]}
-              />
-            </>
+            <HeaderIconBtn
+              label="More actions"
+              icon={<Ellipsis size={22} color={C.black} />}
+              onPress={() => setMenuOpen(true)}
+            />
           )}
           <TouchableOpacity
             style={styles.addBtn}
@@ -337,31 +360,61 @@ export default function LoansScreen() {
         </View>
       </View>
 
-      <FadeInUp>
-        <View style={styles.summaryRow}>
-          {[
-            { label: 'Total', val: loans.length, color: C.black },
-            {
-              label: 'Active',
-              val: loans.filter(l => l.status === 'active').length,
-              color: C.primary,
-            },
-            {
-              label: 'Pending',
-              val: loans.filter(l => l.status === 'pending').length,
-              color: C.warning,
-            },
-          ].map(s => (
-            <View key={s.label} style={styles.summaryCard}>
-              <AnimatedNumber
-                style={[styles.summaryVal, { color: s.color }]}
-                value={s.val}
-              />
-              <Text style={styles.summaryLabel}>{s.label}</Text>
+      {/* Overflow Menu Modal matching EmployeesScreen */}
+      {!isEmployee && (
+        <Modal
+          visible={menuOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setMenuOpen(false)}
+        >
+          <TouchableOpacity
+            style={styles.menuOverlay}
+            activeOpacity={1}
+            onPress={() => setMenuOpen(false)}
+          >
+            <View style={styles.menuSheet}>
+              {[
+                {
+                  icon: Upload,
+                  label: 'Import from Excel / CSV',
+                  onPress: runImport,
+                },
+                {
+                  icon: FileText,
+                  label: 'Download sample file',
+                  onPress: () => {
+                    setMenuOpen(false);
+                    shareTemplate(
+                      'loans',
+                      IMPORT_HEADERS,
+                      IMPORT_EXAMPLE.map(String),
+                    );
+                  },
+                },
+                {
+                  icon: Download,
+                  label: 'Export loans',
+                  onPress: () => {
+                    setMenuOpen(false);
+                    chooseExport('loans_advances', exportCols, filtered);
+                  },
+                },
+              ].map(item => (
+                <TouchableOpacity
+                  key={item.label}
+                  style={styles.menuItem}
+                  onPress={item.onPress}
+                  disabled={importing}
+                >
+                  <item.icon size={18} color={C.black} />
+                  <Text style={styles.menuText}>{item.label}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
-          ))}
-        </View>
-      </FadeInUp>
+          </TouchableOpacity>
+        </Modal>
+      )}
 
       {totalActive > 0 && (
         <View style={styles.activeBanner}>
@@ -419,8 +472,12 @@ export default function LoansScreen() {
           numColumns={isTablet ? 2 : 1}
           columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
           contentContainerStyle={[
-            { padding: 16, gap: 10, paddingBottom: 32 },
-            isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' },
+            { padding: 16, gap: 12, paddingBottom: 32 },
+            isTablet && {
+              maxWidth: maxContentWidth,
+              width: '100%',
+              alignSelf: 'center',
+            },
           ]}
           refreshControl={
             <RefreshControl
@@ -430,13 +487,45 @@ export default function LoansScreen() {
             />
           }
           showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <View style={dashStatRow}>
+              <DashStatCard
+                index={0}
+                label="Total"
+                value={loans.length}
+                icon={CreditCard}
+                color={C.black}
+              />
+              <DashStatCard
+                index={1}
+                label="Active"
+                value={loans.filter(l => l.status === 'active').length}
+                icon={CheckCircle2}
+                color={C.primary}
+              />
+              <DashStatCard
+                index={2}
+                label="Pending"
+                value={loans.filter(l => l.status === 'pending').length}
+                icon={Clock}
+                color={C.warning}
+              />
+              <DashStatCard
+                index={3}
+                label="Cleared"
+                value={loans.filter(l => l.status === 'cleared').length}
+                icon={IndianRupee}
+                color={C.success}
+              />
+            </View>
+          }
           ListEmptyComponent={
             <View style={styles.empty}>
               <CreditCard size={40} color="#D1D5DB" />
               <Text style={styles.emptyText}>No loan records</Text>
             </View>
           }
-          renderItem={({ item }) => {
+          renderItem={({ item, index }) => {
             const cfg = STATUS_CONFIG[item.status] || {
               color: C.textMuted,
               bg: '#F3F4F6',
@@ -445,98 +534,105 @@ export default function LoansScreen() {
             const emp = item.employee as any;
             const monthlyEmi = item.monthlyEmi || null;
             return (
-              <View style={[styles.card, isTablet && styles.cardTablet]}>
-                <View style={styles.cardTop}>
-                  {emp?.avatar ? (
-                    <Image
-                      source={{ uri: emp.avatar }}
-                      style={styles.empPhoto}
-                    />
-                  ) : (
-                    <View style={styles.empInitials}>
-                      <Text style={styles.empInitialsText}>
-                        {emp
-                          ? `${(emp.firstName || '')[0] || ''}${
-                              (emp.lastName || '')[0] || ''
-                            }`
-                          : '?'}
+              <SlideInCard
+                index={index}
+                style={isTablet ? styles.cardTablet : undefined}
+              >
+                <View style={styles.card}>
+                  <View style={styles.cardTop}>
+                    {emp?.avatar ? (
+                      <Image
+                        source={{ uri: emp.avatar }}
+                        style={styles.empPhoto}
+                      />
+                    ) : (
+                      <View style={styles.empInitials}>
+                        <Text style={styles.empInitialsText}>
+                          {emp
+                            ? `${(emp.firstName || '')[0] || ''}${
+                                (emp.lastName || '')[0] || ''
+                              }`
+                            : '?'}
+                        </Text>
+                      </View>
+                    )}
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={styles.loanType}>
+                        {item.type === 'advance' ? 'Salary advance' : 'Loan'}
                       </Text>
+                      {emp && !isEmployee && (
+                        <Text style={styles.empName}>
+                          {emp.firstName} {emp.lastName}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={styles.amount}>
+                        ₹{(item.amount || 0).toLocaleString()}
+                      </Text>
+                      <View
+                        style={[
+                          styles.statusTag,
+                          { backgroundColor: cfg.color, borderColor: C.black },
+                        ]}
+                      >
+                        <Text
+                          style={[styles.statusTagText, { color: C.white }]}
+                        >
+                          {sentence(item.status)}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                  <View style={styles.detailRow}>
+                    {item.tenureMonths ? (
+                      <Text style={styles.detail}>
+                        Tenure: {item.tenureMonths}mo
+                      </Text>
+                    ) : null}
+                    {monthlyEmi ? (
+                      <Text style={styles.detail}>EMI: ₹{monthlyEmi}</Text>
+                    ) : null}
+                    {item.remainingBalance != null &&
+                      item.status === 'active' && (
+                        <Text style={styles.detail}>
+                          Balance: ₹{item.remainingBalance.toLocaleString()}
+                        </Text>
+                      )}
+                  </View>
+                  {item.reason && (
+                    <Text style={styles.purpose} numberOfLines={1}>
+                      {item.reason}
+                    </Text>
+                  )}
+                  {item.status === 'rejected' && item.rejectionReason && (
+                    <Text
+                      style={[styles.purpose, { color: C.danger }]}
+                      numberOfLines={2}
+                    >
+                      Reason: {item.rejectionReason}
+                    </Text>
+                  )}
+                  {!isEmployee && item.status === 'pending' && (
+                    <View style={styles.actionRow}>
+                      <TouchableOpacity
+                        style={styles.approveBtn}
+                        onPress={() => handleAction(item, 'approved')}
+                      >
+                        <Check size={14} color={C.white} />
+                        <Text style={styles.actionBtnText}>Approve</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.rejectBtn}
+                        onPress={() => handleAction(item, 'rejected')}
+                      >
+                        <X size={14} color={C.white} />
+                        <Text style={styles.actionBtnText}>Reject</Text>
+                      </TouchableOpacity>
                     </View>
                   )}
-                  <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={styles.loanType}>
-                      {item.type === 'advance' ? 'SALARY ADVANCE' : 'LOAN'}
-                    </Text>
-                    {emp && !isEmployee && (
-                      <Text style={styles.empName}>
-                        {emp.firstName} {emp.lastName}
-                      </Text>
-                    )}
-                  </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={styles.amount}>
-                      ₹{(item.amount || 0).toLocaleString()}
-                    </Text>
-                    <View
-                      style={[
-                        styles.statusTag,
-                        { backgroundColor: cfg.color, borderColor: C.black },
-                      ]}
-                    >
-                      <Text style={[styles.statusTagText, { color: C.white }]}>
-                        {item.status?.toUpperCase()}
-                      </Text>
-                    </View>
-                  </View>
                 </View>
-                <View style={styles.detailRow}>
-                  {item.tenureMonths ? (
-                    <Text style={styles.detail}>
-                      Tenure: {item.tenureMonths}mo
-                    </Text>
-                  ) : null}
-                  {monthlyEmi ? (
-                    <Text style={styles.detail}>EMI: ₹{monthlyEmi}</Text>
-                  ) : null}
-                  {item.remainingBalance != null &&
-                    item.status === 'active' && (
-                      <Text style={styles.detail}>
-                        Balance: ₹{item.remainingBalance.toLocaleString()}
-                      </Text>
-                    )}
-                </View>
-                {item.reason && (
-                  <Text style={styles.purpose} numberOfLines={1}>
-                    {item.reason}
-                  </Text>
-                )}
-                {item.status === 'rejected' && item.rejectionReason && (
-                  <Text
-                    style={[styles.purpose, { color: C.danger }]}
-                    numberOfLines={2}
-                  >
-                    Reason: {item.rejectionReason}
-                  </Text>
-                )}
-                {!isEmployee && item.status === 'pending' && (
-                  <View style={styles.actionRow}>
-                    <TouchableOpacity
-                      style={styles.approveBtn}
-                      onPress={() => handleAction(item, 'approved')}
-                    >
-                      <Check size={13} color={C.white} />
-                      <Text style={styles.actionBtnText}>Approve</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.rejectBtn}
-                      onPress={() => handleAction(item, 'rejected')}
-                    >
-                      <X size={13} color={C.white} />
-                      <Text style={styles.actionBtnText}>Reject</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
+              </SlideInCard>
             );
           }}
         />
@@ -551,7 +647,7 @@ export default function LoansScreen() {
                   {isEmployee ? 'Request Loan / Advance' : 'Give Loan to Staff'}
                 </Text>
                 <TouchableOpacity onPress={() => setShowForm(false)}>
-                  <X size={22} color={C.black} />
+                  <X size={24} color={C.black} />
                 </TouchableOpacity>
               </View>
               <ScrollView
@@ -640,7 +736,7 @@ export default function LoansScreen() {
                             form.type === t && { color: C.white },
                           ]}
                         >
-                          {t === 'advance' ? 'SALARY ADVANCE' : 'LOAN'}
+                          {t === 'advance' ? 'Salary advance' : 'Loan'}
                         </Text>
                       </TouchableOpacity>
                     ))}
@@ -706,7 +802,7 @@ export default function LoansScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F8F9FA' },
+  safe: { flex: 1, backgroundColor: C.bg },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -720,40 +816,31 @@ const styles = StyleSheet.create({
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   addBtn: { padding: 4 },
-  addBtnText: {
-    color: C.white,
-    fontSize: 12,
-    fontWeight: '400',
-    textTransform: 'uppercase',
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    backgroundColor: C.white,
-    borderBottomWidth: 2,
-    borderBottomColor: C.black,
-    padding: 12,
-    gap: 10,
-  },
-  summaryCard: {
+  menuOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    alignItems: 'flex-end',
+    paddingTop: 96,
+    paddingHorizontal: 12,
+  },
+  menuSheet: {
+    minWidth: 230,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderColor: C.black,
-    padding: 10,
+    backgroundColor: C.white,
+    paddingVertical: 4,
+  },
+  menuItem: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
-  summaryVal: { fontSize: 22, fontWeight: '400', color: C.black },
-  summaryLabel: {
-    fontSize: 9,
-    fontWeight: '400',
-    textTransform: 'uppercase',
-    color: C.textMuted,
-    marginTop: 2,
-  },
+  menuText: { fontSize: 14, color: C.black },
   activeBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -765,27 +852,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   activeBannerText: { fontSize: 13, fontWeight: '400', color: C.primary },
-  filterBar: {
-    maxHeight: 48,
-    backgroundColor: C.white,
-    borderBottomWidth: 2,
-    borderBottomColor: C.black,
-    paddingVertical: 8,
-  },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderWidth: 2,
-    borderRightWidth: 4,
-    borderBottomWidth: 4,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderRadius: 8,
-    borderColor: C.black,
-    backgroundColor: C.white,
-  },
-  chipActive: { backgroundColor: C.primary },
-  chipText: { fontSize: 12, fontWeight: '400', color: C.black },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
@@ -795,12 +861,12 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    padding: 14,
+    padding: 16,
   },
   cardTop: { flexDirection: 'row', alignItems: 'center' },
   empPhoto: {
@@ -839,20 +905,24 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     marginTop: 4,
   },
-  statusTagText: { textTransform: 'uppercase', fontSize: 9, fontWeight: '400' },
-  detailRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  statusTagText: {
+    textTransform: 'capitalize',
+    fontSize: 11,
+    fontWeight: '400',
+  },
+  detailRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   detail: {
     fontSize: 11,
     fontWeight: '400',
-    color: '#000000',
+    color: C.black,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: C.white,
     overflow: 'hidden',
     borderWidth: 2,
     borderRightWidth: 4,
     borderBottomWidth: 4,
-    borderColor: '#000000',
+    borderColor: C.black,
     borderRadius: 8,
   },
   purpose: {
@@ -871,8 +941,8 @@ const styles = StyleSheet.create({
     backgroundColor: C.success,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -887,8 +957,8 @@ const styles = StyleSheet.create({
     backgroundColor: C.danger,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -898,7 +968,6 @@ const styles = StyleSheet.create({
     color: C.white,
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -913,21 +982,19 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.black,
-    marginBottom: 5,
-    letterSpacing: 0.5,
+    marginBottom: 4,
   },
   fieldInput: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingVertical: 12,
     fontSize: 14,
     fontWeight: '400',
     color: C.black,
@@ -950,12 +1017,12 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingVertical: 14,
+    paddingVertical: 16,
     alignItems: 'center',
     marginTop: 8,
   },
@@ -963,13 +1030,12 @@ const styles = StyleSheet.create({
     color: C.white,
     fontWeight: '400',
     fontSize: 14,
-    textTransform: 'uppercase',
   },
   empPicker: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -978,8 +1044,8 @@ const styles = StyleSheet.create({
   empPickerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    padding: 10,
+    gap: 12,
+    padding: 12,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },

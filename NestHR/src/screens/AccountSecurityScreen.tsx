@@ -132,7 +132,7 @@ export default function AccountSecurityScreen() {
         <Text style={styles.headerTitle}>Account Security</Text>
       </View>
       <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 14 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 16 }}
         keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.intro}>
@@ -166,9 +166,9 @@ export default function AccountSecurityScreen() {
                   </Text>
                 </View>
                 {isOpen ? (
-                  <ChevronUp size={18} color={C.black} />
+                  <ChevronUp size={20} color={C.black} />
                 ) : (
-                  <ChevronDown size={18} color={C.black} />
+                  <ChevronDown size={20} color={C.black} />
                 )}
               </TouchableOpacity>
               {isOpen && <View style={styles.sectionBody}>{sec.body}</View>}
@@ -283,7 +283,7 @@ function PasskeyBody() {
               </Text>
             </View>
             <TouchableOpacity onPress={() => remove(p._id)} hitSlop={8}>
-              <Trash2 size={18} color={C.danger} />
+              <Trash2 size={20} color={C.danger} />
             </TouchableOpacity>
           </View>
         ))
@@ -357,7 +357,7 @@ function DevicesBody() {
       )}
       {list.map(d => (
         <View key={d._id} style={styles.row}>
-          <Smartphone size={18} color="#0EA5E9" />
+          <Smartphone size={20} color="#0EA5E9" />
           <View style={{ flex: 1 }}>
             <Text style={styles.rowName}>
               {d.deviceName}
@@ -370,7 +370,7 @@ function DevicesBody() {
           </View>
           {!d.current && (
             <TouchableOpacity onPress={() => remove(d)} hitSlop={8}>
-              <Trash2 size={18} color={C.danger} />
+              <Trash2 size={20} color={C.danger} />
             </TouchableOpacity>
           )}
         </View>
@@ -671,8 +671,8 @@ function Primary({
 const shadow = {
   borderWidth: 2,
   borderRadius: 8,
-  borderRightWidth: 5,
-  borderBottomWidth: 5,
+  borderRightWidth: 4,
+  borderBottomWidth: 4,
   borderRightColor: '#0A0A0A',
   borderBottomColor: '#0A0A0A',
   borderColor: '#000',
@@ -683,7 +683,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 2,
@@ -699,7 +699,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: { fontSize: 18, fontWeight: '400', color: C.black },
-  intro: { fontSize: 12, color: '#64748b' },
+  intro: { fontSize: 12, color: '#6B7280' },
   section: { ...shadow, backgroundColor: '#fff', overflow: 'hidden' },
   sectionHead: {
     flexDirection: 'row',
@@ -717,24 +717,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sectionTitle: { fontSize: 14, fontWeight: '400', color: C.black },
-  sectionStatus: { fontSize: 11, color: '#64748b', marginTop: 2 },
-  sectionBody: { borderTopWidth: 2, borderTopColor: '#000', padding: 14 },
-  desc: { fontSize: 12, color: '#64748b', lineHeight: 18 },
+  sectionStatus: { fontSize: 11, color: '#6B7280', marginTop: 2 },
+  sectionBody: { borderTopWidth: 2, borderTopColor: '#000', padding: 16 },
+  desc: { fontSize: 12, color: '#6B7280', lineHeight: 18 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
     borderWidth: 2,
     borderColor: '#000',
     borderRadius: 8,
-    padding: 10,
+    padding: 12,
   },
   rowName: { fontSize: 13, fontWeight: '400', color: C.black },
-  rowMeta: { fontSize: 10, color: '#64748b', marginTop: 2 },
+  rowMeta: { fontSize: 11, color: '#6B7280', marginTop: 2 },
   input: {
     ...shadow,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     fontSize: 13,
     color: C.black,
   },
@@ -766,7 +766,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   dangerBtnText: { fontSize: 12, fontWeight: '400', color: C.danger },
-  okPill: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  okPill: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   okText: { fontSize: 11, fontWeight: '400', color: '#00A676' },
   codesBox: {
     flexDirection: 'row',
@@ -774,7 +774,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#000',
     borderRadius: 8,
-    padding: 10,
+    padding: 12,
     rowGap: 8,
     backgroundColor: '#FFF8E7',
   },

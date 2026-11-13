@@ -221,15 +221,15 @@ export default function NfcManagerScreen() {
             onPress={() => navigation.goBack()}
             style={{ padding: 4, marginRight: 4 }}
           >
-            <ChevronLeft size={22} color={C.black} />
+            <ChevronLeft size={24} color={C.black} />
           </TouchableOpacity>
           <CreditCard size={20} color={C.primary} />
           <Text style={styles.headerTitle}>NFC Cards</Text>
         </View>
-        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
           <HeaderIconBtn
             label="Search"
-            icon={<Search size={22} color={C.black} />}
+            icon={<Search size={24} color={C.black} />}
             dot={!!search}
             onPress={() => setSearchOpen(true)}
           />
@@ -305,7 +305,7 @@ export default function NfcManagerScreen() {
                       <View style={{ marginTop: 6, gap: 4 }}>
                         {cards.map(card => (
                           <View key={card.uid} style={styles.cardChip}>
-                            <CreditCard size={10} color={C.primary} />
+                            <CreditCard size={14} color={C.primary} />
                             <Text style={styles.cardChipText}>{card.uid}</Text>
                             {card.label ? (
                               <Text style={styles.cardChipLabel}>
@@ -330,7 +330,7 @@ export default function NfcManagerScreen() {
                               }}
                               style={{ marginLeft: 4 }}
                             >
-                              <X size={10} color={C.danger} />
+                              <X size={14} color={C.danger} />
                             </TouchableOpacity>
                           </View>
                         ))}
@@ -366,7 +366,7 @@ export default function NfcManagerScreen() {
                 <View style={styles.searchRow}>
                   <Search
                     size={14}
-                    color="#9CA3AF"
+                    color="#6B7280"
                     style={{ marginLeft: 12 }}
                   />
                   <TextInput
@@ -461,7 +461,7 @@ export default function NfcManagerScreen() {
                       }
                     >
                       {assignForm.deviceId === dev._id && (
-                        <Check size={12} color={C.primary} />
+                        <Check size={14} color={C.primary} />
                       )}
                       <View>
                         <Text
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     backgroundColor: C.white,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
@@ -523,7 +523,6 @@ const styles = StyleSheet.create({
     color: C.white,
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
   },
   searchRow: {
     flexDirection: 'row',
@@ -535,7 +534,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     paddingVertical: 12,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     fontSize: 14,
     fontWeight: '400',
     color: C.black,
@@ -544,8 +543,8 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -553,7 +552,7 @@ const styles = StyleSheet.create({
   empRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    padding: 14,
+    padding: 16,
     gap: 12,
   },
   rowBorder: { borderTopWidth: 2, borderTopColor: C.black },
@@ -581,7 +580,7 @@ const styles = StyleSheet.create({
   avatarText: { color: C.white, fontSize: 13, fontWeight: '400' },
   empName: { fontSize: 14, fontWeight: '400', color: C.black },
   empId: { fontSize: 11, color: '#6B7280', marginTop: 1 },
-  noCard: { fontSize: 11, color: '#9CA3AF', fontStyle: 'italic', marginTop: 4 },
+  noCard: { fontSize: 11, color: '#6B7280', fontStyle: 'italic', marginTop: 4 },
   cardChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -595,7 +594,7 @@ const styles = StyleSheet.create({
   },
   cardChipText: { fontSize: 11, fontWeight: '400', color: C.primary },
   cardChipLabel: { fontSize: 11, color: '#6B7280' },
-  cardChipDev: { fontSize: 12, color: '#9CA3AF' },
+  cardChipDev: { fontSize: 12, color: '#6B7280' },
   empty: { alignItems: 'center', paddingVertical: 60, gap: 8 },
   emptyText: { fontSize: 14, fontWeight: '400', color: '#6B7280' },
   overlay: {
@@ -624,7 +623,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: C.black,
     flex: 1,
-    marginRight: 10,
+    marginRight: 12,
   },
   backBtn: {
     flexDirection: 'row',
@@ -636,27 +635,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '400',
     color: C.primary,
-    textTransform: 'uppercase',
   },
-  field: { marginBottom: 14 },
+  field: { marginBottom: 16 },
   fieldLabel: {
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: '#6B7280',
     marginBottom: 6,
-    letterSpacing: 0.5,
   },
   fieldInput: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     fontSize: 14,
     fontWeight: '400',
     color: C.black,
@@ -669,25 +665,24 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingVertical: 14,
+    paddingVertical: 16,
     marginTop: 4,
   },
   saveBtnText: {
     color: C.white,
     fontSize: 13,
     fontWeight: '400',
-    textTransform: 'uppercase',
   },
   locOption: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    padding: 10,
+    padding: 12,
     borderWidth: 2,
     borderRightWidth: 4,
     borderBottomWidth: 4,
@@ -702,7 +697,7 @@ const styles = StyleSheet.create({
   empOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
     paddingVertical: 12,
     paddingHorizontal: 4,
   },

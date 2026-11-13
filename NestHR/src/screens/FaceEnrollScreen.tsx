@@ -308,7 +308,7 @@ export default function FaceEnrollScreen({ navigation }: any) {
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12}>
-          <X size={22} color={C.white} />
+          <X size={24} color={C.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Set up Face ID</Text>
         <View style={{ width: 22 }} />
@@ -393,7 +393,7 @@ export default function FaceEnrollScreen({ navigation }: any) {
           </Text>
         )}
         {phase === 'uploading' && (
-          <ActivityIndicator color={C.white} style={{ marginTop: 10 }} />
+          <ActivityIndicator color={C.white} style={{ marginTop: 12 }} />
         )}
       </View>
     </SafeAreaView>
@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(0,0,0,0.8)',
     paddingHorizontal: 32,
-    gap: 10,
+    gap: 12,
   },
   msgTitle: {
     color: C.white,
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary,
     borderRadius: 8,
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   btnText: { color: C.white, fontWeight: '400', fontSize: 13 },
   footer: {
@@ -482,5 +482,5 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     textAlign: 'center',
   },
-  footerSub: { color: '#9CA3AF', fontSize: 13, marginTop: 6 },
+  footerSub: { color: '#6B7280', fontSize: 13, marginTop: 6 },
 });

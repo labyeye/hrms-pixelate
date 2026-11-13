@@ -60,7 +60,7 @@ export default function UpdatePrompt() {
       <View style={s.backdrop}>
         <View style={s.box}>
           <View style={s.icon}>
-            <Download size={26} color={C.white} />
+            <Download size={24} color={C.white} />
           </View>
           <Text style={s.title}>
             {force ? 'Update required' : 'Update available'}
@@ -91,8 +91,8 @@ export default function UpdatePrompt() {
 const brutal = {
   borderWidth: 2,
   borderRadius: 8,
-  borderRightWidth: 5,
-  borderBottomWidth: 5,
+  borderRightWidth: 4,
+  borderBottomWidth: 4,
   borderRightColor: '#0A0A0A',
   borderBottomColor: '#0A0A0A',
   borderColor: C.black,
@@ -112,7 +112,7 @@ const s = StyleSheet.create({
     padding: 20,
     width: '100%',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
   icon: {
     width: 56,
@@ -132,7 +132,7 @@ const s = StyleSheet.create({
   primary: {
     ...brutal,
     backgroundColor: C.primary,
-    paddingVertical: 11,
+    paddingVertical: 12,
     alignSelf: 'stretch',
     alignItems: 'center',
     marginTop: 6,

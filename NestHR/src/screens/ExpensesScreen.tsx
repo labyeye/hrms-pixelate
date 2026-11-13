@@ -1,3 +1,4 @@
+import { sentence } from '../utils/text';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -22,6 +23,8 @@ import {
   ChevronLeft,
   Paperclip,
   AlertTriangle,
+  Search,
+  SlidersHorizontal,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -29,6 +32,9 @@ import DocumentPicker, { types } from 'react-native-document-picker';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { expenseAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
+import SlideInCard from '../components/motion/SlideInCard';
+import HeaderIconBtn from '../components/common/HeaderIconBtn';
+import SearchModal from '../components/common/SearchModal';
 import { C, useResponsive } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 
@@ -83,7 +89,6 @@ const EMPTY = {
   checkOut: '',
 };
 
-/** Tap-to-pick date field (stores YYYY-MM-DD). */
 function DateField({
   label,
   value,
@@ -125,7 +130,7 @@ function DateField({
           onPress={() => setOpen(false)}
           style={{ alignSelf: 'flex-end', padding: 6 }}
         >
-          <Text style={{ color: C.primary, fontWeight: '700' }}>Done</Text>
+          <Text style={{ color: C.primary, fontWeight: '400' }}>Done</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -162,25 +167,24 @@ export default function ExpensesScreen() {
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
   const [form, setForm] = useState<typeof EMPTY | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [bills, setBills] = useState<Picked[]>([]);
   const [saving, setSaving] = useState(false);
-  // approve / reject dialog
   const [act, setAct] = useState<{
     claim: any;
     action: 'approve' | 'reject';
   } | null>(null);
   const [actAmount, setActAmount] = useState('');
   const [actNote, setActNote] = useState('');
-  // mark paid dialog
   const [payFor, setPayFor] = useState<any>(null);
   const [pay, setPay] = useState({
     mode: 'bank_transfer',
     reference: '',
     paidOn: today(),
   });
-  // policy dialog
   const [polForm, setPolForm] = useState<any>(null);
 
   const load = useCallback(async () => {
@@ -198,6 +202,7 @@ export default function ExpensesScreen() {
       setRefreshing(false);
     }
   }, []);
+
   useEffect(() => {
     load();
   }, [load]);
@@ -247,6 +252,7 @@ export default function ExpensesScreen() {
           ],
     );
   };
+
   const pickPdf = async () => {
     try {
       const f = await DocumentPicker.pickSingle({
@@ -282,7 +288,8 @@ export default function ExpensesScreen() {
   };
 
   const pickBill = () => {
-    if (bills.length >= 5) return Alert.alert('Limit', 'Up to 5 bills per claim');
+    if (bills.length >= 5)
+      return Alert.alert('Limit', 'Up to 5 bills per claim');
     Alert.alert('Add bill', 'Choose a source', [
       {
         text: 'Camera',
@@ -306,7 +313,10 @@ export default function ExpensesScreen() {
   const submit = async (draft: boolean) => {
     if (!form) return;
     if (!form.title.trim() || !(Number(form.amount) > 0))
-      return Alert.alert('Missing details', 'Enter what it was for and an amount');
+      return Alert.alert(
+        'Missing details',
+        'Enter what it was for and an amount',
+      );
     setSaving(true);
     try {
       await expenseAPI.save(
@@ -367,7 +377,10 @@ export default function ExpensesScreen() {
         limits,
         billRequiredAbove: Number(polForm.billRequiredAbove) || 0,
       });
-      setPolicy({ limits, billRequiredAbove: Number(polForm.billRequiredAbove) || 0 });
+      setPolicy({
+        limits,
+        billRequiredAbove: Number(polForm.billRequiredAbove) || 0,
+      });
       setPolForm(null);
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -400,141 +413,181 @@ export default function ExpensesScreen() {
     }
   };
 
-  const renderItem = ({ item: c }: { item: any }) => {
+  const q = search.trim().toLowerCase();
+  const shown = claims.filter(c => {
+    if (!q) return true;
+    const empName = c.employee
+      ? `${c.employee.firstName || ''} ${
+          c.employee.lastName || ''
+        }`.toLowerCase()
+      : '';
+    return (
+      (c.title || '').toLowerCase().includes(q) ||
+      empName.includes(q) ||
+      (c.category || '').toLowerCase().includes(q)
+    );
+  });
+
+  const renderItem = ({ item: c, index }: { item: any; index: number }) => {
     const color = STATUS_COLOR[c.status] || C.black;
     const untouched =
       (c.status === 'draft' || c.status === 'pending') &&
       (c.steps || []).every((s: any) => s.status === 'pending');
     return (
-      <View style={styles.card}>
-        <View style={styles.rowBetween}>
-          <View style={{ flex: 1, paddingRight: 8 }}>
-            <Text style={styles.title}>{c.title}</Text>
-            <Text style={styles.sub}>
-              {c.employee
-                ? `${c.employee.firstName} ${c.employee.lastName} · `
-                : ''}
-              {CATEGORIES.find(x => x[0] === c.category)?.[1]} ·{' '}
-              {new Date(c.date).toLocaleDateString('en-IN')}
+      <SlideInCard
+        index={index}
+        style={isTablet ? styles.cardTablet : undefined}
+      >
+        <View style={styles.card}>
+          <View style={styles.rowBetween}>
+            <View style={{ flex: 1, paddingRight: 8 }}>
+              <Text style={styles.title}>{c.title}</Text>
+              <Text style={styles.sub}>
+                {c.employee
+                  ? `${c.employee.firstName} ${c.employee.lastName} · `
+                  : ''}
+                {CATEGORIES.find(x => x[0] === c.category)?.[1]} ·{' '}
+                {new Date(c.date).toLocaleDateString('en-IN')}
+              </Text>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={styles.amount}>
+                {fmt(c.approvedAmount ?? c.amount)}
+              </Text>
+              {c.approvedAmount != null && c.approvedAmount < c.amount && (
+                <Text
+                  style={[styles.sub, { textDecorationLine: 'line-through' }]}
+                >
+                  {fmt(c.amount)}
+                </Text>
+              )}
+              <View style={[styles.badge, { borderColor: color }]}>
+                <Text style={[styles.badgeText, { color }]}>
+                  {sentence(c.status)}
+                </Text>
+              </View>
+            </View>
+          </View>
+          {!!detailLine(c) && <Text style={styles.sub}>{detailLine(c)}</Text>}
+          {!!c.notes && <Text style={styles.sub}>{c.notes}</Text>}
+          {c.policyExceeded && (
+            <View style={styles.flagRow}>
+              <AlertTriangle size={14} color={C.warning} />
+              <Text style={styles.flag}>Above policy limit</Text>
+            </View>
+          )}
+          {c.status === 'paid' && c.payment?.paidOn && (
+            <Text style={[styles.sub, { color: C.success }]}>
+              Paid {new Date(c.payment.paidOn).toLocaleDateString('en-IN')} via{' '}
+              {c.payment.mode === 'payroll'
+                ? 'payroll'
+                : PAY_MODES.find(m => m[0] === c.payment.mode)?.[1]}
+              {c.payment.reference ? ` · ${c.payment.reference}` : ''}
             </Text>
-          </View>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text style={styles.amount}>{fmt(c.approvedAmount ?? c.amount)}</Text>
-            {c.approvedAmount != null && c.approvedAmount < c.amount && (
-              <Text style={[styles.sub, { textDecorationLine: 'line-through' }]}>
-                {fmt(c.amount)}
-              </Text>
-            )}
-            <View style={[styles.badge, { borderColor: color }]}>
-              <Text style={[styles.badgeText, { color }]}>
-                {c.status.toUpperCase()}
-              </Text>
-            </View>
-          </View>
-        </View>
-        {!!detailLine(c) && <Text style={styles.sub}>{detailLine(c)}</Text>}
-        {!!c.notes && <Text style={styles.sub}>{c.notes}</Text>}
-        {c.policyExceeded && (
-          <View style={styles.flagRow}>
-            <AlertTriangle size={12} color={C.warning} />
-            <Text style={styles.flag}>Above policy limit</Text>
-          </View>
-        )}
-        {c.status === 'paid' && c.payment?.paidOn && (
-          <Text style={[styles.sub, { color: C.success }]}>
-            Paid {new Date(c.payment.paidOn).toLocaleDateString('en-IN')} via{' '}
-            {c.payment.mode === 'payroll'
-              ? 'payroll'
-              : PAY_MODES.find(m => m[0] === c.payment.mode)?.[1]}
-            {c.payment.reference ? ` · ${c.payment.reference}` : ''}
-          </Text>
-        )}
-        <View style={styles.chips}>
-          {(c.steps || []).map((s: any, i: number) => (
-            <View
-              key={i}
-              style={[
-                styles.chip,
-                s.status === 'approved' && { borderColor: C.success },
-                s.status === 'rejected' && { borderColor: C.danger },
-              ]}
-            >
-              <Text style={styles.chipText}>{ROLE_LABEL[s.role] || s.role}</Text>
-            </View>
-          ))}
-          {Array.from({ length: c.billCount || 0 }, (_, i) => (
-            <TouchableOpacity
-              key={i}
-              style={styles.flagRow}
-              onPress={() => openBill(c._id, i)}
-            >
-              <Paperclip size={14} color={C.primary} />
-              <Text style={[styles.sub, { color: C.primary, fontWeight: '700' }]}>
-                Bill {i + 1}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-        <View style={styles.actions}>
-          {c.canAct && (
-            <>
-              <TouchableOpacity
-                style={[styles.btn, { backgroundColor: C.success }]}
-                onPress={() => {
-                  setAct({ claim: c, action: 'approve' });
-                  setActAmount(String(c.approvedAmount ?? c.amount));
-                  setActNote('');
-                }}
+          )}
+          <View style={styles.chips}>
+            {(c.steps || []).map((s: any, i: number) => (
+              <View
+                key={i}
+                style={[
+                  styles.chip,
+                  s.status === 'approved' && { borderColor: C.success },
+                  s.status === 'rejected' && { borderColor: C.danger },
+                ]}
               >
-                <Text style={styles.btnText}>Approve</Text>
+                <Text style={styles.chipText}>
+                  {ROLE_LABEL[s.role] || s.role}
+                </Text>
+              </View>
+            ))}
+            {Array.from({ length: c.billCount || 0 }, (_, i) => (
+              <TouchableOpacity
+                key={i}
+                style={styles.flagRow}
+                onPress={() => openBill(c._id, i)}
+              >
+                <Paperclip size={14} color={C.primary} />
+                <Text
+                  style={[styles.sub, { color: C.primary, fontWeight: '400' }]}
+                >
+                  Bill {i + 1}
+                </Text>
               </TouchableOpacity>
+            ))}
+          </View>
+          <View style={styles.actions}>
+            {c.canAct && (
+              <>
+                <TouchableOpacity
+                  style={[styles.btn, { backgroundColor: C.success }]}
+                  onPress={() => {
+                    setAct({ claim: c, action: 'approve' });
+                    setActAmount(String(c.approvedAmount ?? c.amount));
+                    setActNote('');
+                  }}
+                >
+                  <Text style={styles.btnText}>Approve</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.btn, { backgroundColor: C.white }]}
+                  onPress={() => {
+                    setAct({ claim: c, action: 'reject' });
+                    setActNote('');
+                  }}
+                >
+                  <Text style={[styles.btnText, { color: C.danger }]}>
+                    Reject
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+            {c.status === 'draft' && (
+              <TouchableOpacity
+                style={[styles.btn, { backgroundColor: C.white }]}
+                onPress={() => openEdit(c)}
+              >
+                <Text style={[styles.btnText, { color: C.black }]}>
+                  Edit / Submit
+                </Text>
+              </TouchableOpacity>
+            )}
+            {c.status === 'rejected' && !canApprove && !c.resubmissionOf && (
+              <TouchableOpacity
+                style={[styles.btn, { backgroundColor: C.white }]}
+                onPress={() => resubmit(c)}
+              >
+                <Text style={[styles.btnText, { color: C.black }]}>
+                  Resubmit
+                </Text>
+              </TouchableOpacity>
+            )}
+            {c.status === 'approved' && isHR && (
               <TouchableOpacity
                 style={[styles.btn, { backgroundColor: C.white }]}
                 onPress={() => {
-                  setAct({ claim: c, action: 'reject' });
-                  setActNote('');
+                  setPayFor(c);
+                  setPay({
+                    mode: 'bank_transfer',
+                    reference: '',
+                    paidOn: today(),
+                  });
                 }}
               >
-                <Text style={[styles.btnText, { color: C.danger }]}>Reject</Text>
+                <Text style={[styles.btnText, { color: C.black }]}>
+                  Mark paid
+                </Text>
               </TouchableOpacity>
-            </>
-          )}
-          {c.status === 'draft' && (
-            <TouchableOpacity
-              style={[styles.btn, { backgroundColor: C.white }]}
-              onPress={() => openEdit(c)}
-            >
-              <Text style={[styles.btnText, { color: C.black }]}>
-                Edit / Submit
-              </Text>
-            </TouchableOpacity>
-          )}
-          {c.status === 'rejected' && !canApprove && !c.resubmissionOf && (
-            <TouchableOpacity
-              style={[styles.btn, { backgroundColor: C.white }]}
-              onPress={() => resubmit(c)}
-            >
-              <Text style={[styles.btnText, { color: C.black }]}>Resubmit</Text>
-            </TouchableOpacity>
-          )}
-          {c.status === 'approved' && isHR && (
-            <TouchableOpacity
-              style={[styles.btn, { backgroundColor: C.white }]}
-              onPress={() => {
-                setPayFor(c);
-                setPay({ mode: 'bank_transfer', reference: '', paidOn: today() });
-              }}
-            >
-              <Text style={[styles.btnText, { color: C.black }]}>Mark paid</Text>
-            </TouchableOpacity>
-          )}
-          {!canApprove && untouched && (
-            <TouchableOpacity onPress={() => withdraw(c)}>
-              <Text style={[styles.btnText, { color: C.danger }]}>Withdraw</Text>
-            </TouchableOpacity>
-          )}
+            )}
+            {!canApprove && untouched && (
+              <TouchableOpacity onPress={() => withdraw(c)}>
+                <Text style={[styles.btnText, { color: C.danger }]}>
+                  Withdraw
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
-      </View>
+      </SlideInCard>
     );
   };
 
@@ -568,13 +621,18 @@ export default function ExpensesScreen() {
       <View
         style={[
           styles.header,
-          isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' },
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
         ]}
       >
         <View style={styles.rowCenter}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
-            style={{ padding: 4, marginRight: 4 }}
+            style={{ padding: 4, marginRight: 2 }}
+            hitSlop={8}
           >
             <ChevronLeft size={22} color={C.black} />
           </TouchableOpacity>
@@ -583,35 +641,65 @@ export default function ExpensesScreen() {
             {canApprove ? 'Expenses' : 'My Expenses'}
           </Text>
         </View>
-        <View style={styles.rowCenter}>
+        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+          <HeaderIconBtn
+            label="Search"
+            icon={<Search size={22} color={C.black} />}
+            dot={!!search}
+            onPress={() => setSearchOpen(true)}
+          />
           {isHR && (
-            <TouchableOpacity
-              style={[styles.btn, { backgroundColor: C.white, marginRight: 8 }]}
-              onPress={() => setPolForm({ ...policy, limits: { ...policy.limits } })}
-            >
-              <Text style={[styles.btnText, { color: C.black }]}>Policy</Text>
-            </TouchableOpacity>
+            <HeaderIconBtn
+              label="Policy"
+              icon={<SlidersHorizontal size={22} color={C.black} />}
+              onPress={() =>
+                setPolForm({ ...policy, limits: { ...policy.limits } })
+              }
+            />
           )}
           <TouchableOpacity
-            style={[styles.btn, { backgroundColor: C.primary }]}
+            style={styles.addBtn}
             onPress={openNew}
+            accessibilityLabel="New Claim"
+            hitSlop={8}
           >
-            <Plus size={14} color={C.white} />
-            <Text style={styles.btnText}> New</Text>
+            <Plus size={24} color={C.primary} />
           </TouchableOpacity>
         </View>
       </View>
+
+      <SearchModal
+        visible={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        value={search}
+        onChange={setSearch}
+        placeholder="Search claims…"
+        items={claims.map((c: any) => ({
+          key: c._id,
+          title: c.title,
+          subtitle: c.employee
+            ? `${c.employee.firstName} ${c.employee.lastName}`
+            : c.category,
+        }))}
+      />
 
       {loading ? (
         <ActivityIndicator style={{ marginTop: 40 }} color={C.primary} />
       ) : (
         <FlatList
-          data={claims}
+          key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
+          data={shown}
           keyExtractor={c => c._id}
+          numColumns={isTablet ? 2 : 1}
+          columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
           renderItem={renderItem}
           contentContainerStyle={[
-            { padding: 16, gap: 10 },
-            isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' },
+            { padding: 16, gap: 10, paddingBottom: 32 },
+            isTablet && {
+              maxWidth: maxContentWidth,
+              width: '100%',
+              alignSelf: 'center',
+            },
           ]}
           refreshControl={
             <RefreshControl
@@ -620,6 +708,7 @@ export default function ExpensesScreen() {
                 setRefreshing(true);
                 load();
               }}
+              tintColor={C.primary}
             />
           }
           ListEmptyComponent={
@@ -631,22 +720,37 @@ export default function ExpensesScreen() {
       )}
 
       {/* New / edit claim */}
-      <Modal visible={!!form} transparent animationType="fade" onRequestClose={() => setForm(null)}>
+      <Modal
+        visible={!!form}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setForm(null)}
+      >
         <View style={CENTER.overlay}>
           <View style={CENTER.card}>
-            <View style={[styles.rowBetween, { padding: 14 }]}>
+            <View
+              style={[
+                styles.rowBetween,
+                {
+                  padding: 16,
+                  borderBottomWidth: 2,
+                  borderBottomColor: C.black,
+                },
+              ]}
+            >
               <Text style={styles.headerTitle}>
                 {editId ? 'Edit draft' : 'New expense claim'}
               </Text>
               <TouchableOpacity onPress={() => setForm(null)}>
-                <X size={22} color={C.black} />
+                <X size={24} color={C.black} />
               </TouchableOpacity>
             </View>
             {form && (
-              <ScrollView contentContainerStyle={{ padding: 14, gap: 10 }}>
+              <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
                 <TextInput
                   style={styles.input}
                   placeholder="What was it for?"
+                  placeholderTextColor="#9CA3AF"
                   maxLength={120}
                   value={form.title}
                   onChangeText={v => set('title', v)}
@@ -660,6 +764,7 @@ export default function ExpensesScreen() {
                 <TextInput
                   style={styles.input}
                   placeholder="Amount (₹)"
+                  placeholderTextColor="#9CA3AF"
                   keyboardType="numeric"
                   value={form.amount}
                   onChangeText={v => set('amount', v)}
@@ -680,21 +785,63 @@ export default function ExpensesScreen() {
                 />
                 {form.category === 'travel' && (
                   <>
-                    <TextInput style={styles.input} placeholder="From" value={form.from} onChangeText={v => set('from', v)} />
-                    <TextInput style={styles.input} placeholder="To" value={form.to} onChangeText={v => set('to', v)} />
-                    <TextInput style={styles.input} placeholder="Distance (km)" keyboardType="numeric" value={form.distanceKm} onChangeText={v => set('distanceKm', v)} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="From"
+                      placeholderTextColor="#9CA3AF"
+                      value={form.from}
+                      onChangeText={v => set('from', v)}
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="To"
+                      placeholderTextColor="#9CA3AF"
+                      value={form.to}
+                      onChangeText={v => set('to', v)}
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Distance (km)"
+                      placeholderTextColor="#9CA3AF"
+                      keyboardType="numeric"
+                      value={form.distanceKm}
+                      onChangeText={v => set('distanceKm', v)}
+                    />
                   </>
                 )}
                 {form.category === 'fuel' && (
                   <>
-                    <TextInput style={styles.input} placeholder="Distance (km)" keyboardType="numeric" value={form.distanceKm} onChangeText={v => set('distanceKm', v)} />
-                    <TextInput style={styles.input} placeholder="Litres" keyboardType="numeric" value={form.fuelLitres} onChangeText={v => set('fuelLitres', v)} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Distance (km)"
+                      placeholderTextColor="#9CA3AF"
+                      keyboardType="numeric"
+                      value={form.distanceKm}
+                      onChangeText={v => set('distanceKm', v)}
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Litres"
+                      placeholderTextColor="#9CA3AF"
+                      keyboardType="numeric"
+                      value={form.fuelLitres}
+                      onChangeText={v => set('fuelLitres', v)}
+                    />
                   </>
                 )}
                 {form.category === 'lodging' && (
                   <>
-                    <DateField label="Check-in date" value={form.checkIn} onChange={v => set('checkIn', v)} />
-                    <DateField label="Check-out date" value={form.checkOut} min={form.checkIn || undefined} onChange={v => set('checkOut', v)} />
+                    <DateField
+                      label="Check-in date"
+                      value={form.checkIn}
+                      onChange={v => set('checkIn', v)}
+                    />
+                    <DateField
+                      label="Check-out date"
+                      value={form.checkOut}
+                      min={form.checkIn || undefined}
+                      onChange={v => set('checkOut', v)}
+                    />
                   </>
                 )}
                 {form.category !== 'travel' && (
@@ -707,6 +854,7 @@ export default function ExpensesScreen() {
                         ? 'Petrol pump'
                         : 'Vendor / shop (optional)'
                     }
+                    placeholderTextColor="#9CA3AF"
                     maxLength={100}
                     value={form.vendor}
                     onChangeText={v => set('vendor', v)}
@@ -715,6 +863,7 @@ export default function ExpensesScreen() {
                 <TextInput
                   style={[styles.input, { height: 70 }]}
                   placeholder="Notes (optional)"
+                  placeholderTextColor="#9CA3AF"
                   multiline
                   maxLength={500}
                   value={form.notes}
@@ -737,12 +886,14 @@ export default function ExpensesScreen() {
                     <Text style={styles.sub} numberOfLines={1}>
                       {b.name}
                     </Text>
-                    <TouchableOpacity onPress={() => setBills(bills.filter((_, j) => j !== i))}>
+                    <TouchableOpacity
+                      onPress={() => setBills(bills.filter((_, j) => j !== i))}
+                    >
                       <X size={16} color={C.danger} />
                     </TouchableOpacity>
                   </View>
                 ))}
-                <View style={{ flexDirection: 'row', gap: 10 }}>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
                   <TouchableOpacity
                     disabled={saving}
                     style={[styles.btnBig, { backgroundColor: C.white }]}
@@ -767,9 +918,16 @@ export default function ExpensesScreen() {
       </Modal>
 
       {/* Approve / reject */}
-      <Modal visible={!!act} transparent animationType="fade" onRequestClose={() => setAct(null)}>
+      <Modal
+        visible={!!act}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAct(null)}
+      >
         <View style={CENTER.overlay}>
-          <View style={[CENTER.card, { height: undefined, padding: 16, gap: 10 }]}>
+          <View
+            style={[CENTER.card, { height: undefined, padding: 16, gap: 12 }]}
+          >
             <Text style={styles.headerTitle}>
               {act?.action === 'approve' ? 'Approve claim' : 'Reject claim'}
             </Text>
@@ -790,17 +948,29 @@ export default function ExpensesScreen() {
             <TextInput
               style={styles.input}
               placeholder={
-                act?.action === 'approve' ? 'Note (required if reduced)' : 'Reason'
+                act?.action === 'approve'
+                  ? 'Note (required if reduced)'
+                  : 'Reason'
               }
+              placeholderTextColor="#9CA3AF"
               value={actNote}
               onChangeText={setActNote}
             />
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity style={[styles.btnBig, { backgroundColor: C.white }]} onPress={() => setAct(null)}>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <TouchableOpacity
+                style={[styles.btnBig, { backgroundColor: C.white }]}
+                onPress={() => setAct(null)}
+              >
                 <Text style={styles.btnTextDark}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.btnBig, { backgroundColor: act?.action === 'approve' ? C.success : C.danger }]}
+                style={[
+                  styles.btnBig,
+                  {
+                    backgroundColor:
+                      act?.action === 'approve' ? C.success : C.danger,
+                  },
+                ]}
                 onPress={confirmAct}
               >
                 <Text style={styles.btnText}>Confirm</Text>
@@ -811,19 +981,31 @@ export default function ExpensesScreen() {
       </Modal>
 
       {/* Mark paid */}
-      <Modal visible={!!payFor} transparent animationType="fade" onRequestClose={() => setPayFor(null)}>
+      <Modal
+        visible={!!payFor}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPayFor(null)}
+      >
         <View style={CENTER.overlay}>
-          <View style={[CENTER.card, { height: undefined, padding: 16, gap: 10 }]}>
+          <View
+            style={[CENTER.card, { height: undefined, padding: 16, gap: 12 }]}
+          >
             <Text style={styles.headerTitle}>
               Pay {payFor ? fmt(payFor.approvedAmount ?? payFor.amount) : ''}
             </Text>
             <Text style={styles.sub}>
               Settles the claim now instead of adding it to payroll.
             </Text>
-            <Chips options={PAY_MODES} value={pay.mode} onPick={v => setPay({ ...pay, mode: v })} />
+            <Chips
+              options={PAY_MODES}
+              value={pay.mode}
+              onPick={v => setPay({ ...pay, mode: v })}
+            />
             <TextInput
               style={styles.input}
               placeholder="Reference / UTR / cheque no."
+              placeholderTextColor="#9CA3AF"
               value={pay.reference}
               onChangeText={v => setPay({ ...pay, reference: v })}
             />
@@ -833,11 +1015,17 @@ export default function ExpensesScreen() {
               max={new Date()}
               onChange={v => setPay({ ...pay, paidOn: v })}
             />
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity style={[styles.btnBig, { backgroundColor: C.white }]} onPress={() => setPayFor(null)}>
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <TouchableOpacity
+                style={[styles.btnBig, { backgroundColor: C.white }]}
+                onPress={() => setPayFor(null)}
+              >
                 <Text style={styles.btnTextDark}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.btnBig, { backgroundColor: C.primary }]} onPress={doPay}>
+              <TouchableOpacity
+                style={[styles.btnBig, { backgroundColor: C.primary }]}
+                onPress={doPay}
+              >
                 <Text style={styles.btnText}>Confirm</Text>
               </TouchableOpacity>
             </View>
@@ -846,17 +1034,31 @@ export default function ExpensesScreen() {
       </Modal>
 
       {/* Policy limits */}
-      <Modal visible={!!polForm} transparent animationType="fade" onRequestClose={() => setPolForm(null)}>
+      <Modal
+        visible={!!polForm}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPolForm(null)}
+      >
         <View style={CENTER.overlay}>
           <View style={CENTER.card}>
-            <View style={[styles.rowBetween, { padding: 14 }]}>
+            <View
+              style={[
+                styles.rowBetween,
+                {
+                  padding: 16,
+                  borderBottomWidth: 2,
+                  borderBottomColor: C.black,
+                },
+              ]}
+            >
               <Text style={styles.headerTitle}>Policy limits</Text>
               <TouchableOpacity onPress={() => setPolForm(null)}>
-                <X size={22} color={C.black} />
+                <X size={24} color={C.black} />
               </TouchableOpacity>
             </View>
             {polForm && (
-              <ScrollView contentContainerStyle={{ padding: 14, gap: 10 }}>
+              <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
                 <Text style={styles.sub}>
                   Max amount per claim by type (blank = no limit). Claims above
                   a limit are flagged for approvers.
@@ -868,9 +1070,15 @@ export default function ExpensesScreen() {
                       style={[styles.input, { width: 130 }]}
                       keyboardType="numeric"
                       placeholder="₹ limit"
-                      value={polForm.limits?.[v] ? String(polForm.limits[v]) : ''}
+                      placeholderTextColor="#9CA3AF"
+                      value={
+                        polForm.limits?.[v] ? String(polForm.limits[v]) : ''
+                      }
                       onChangeText={t =>
-                        setPolForm({ ...polForm, limits: { ...polForm.limits, [v]: t } })
+                        setPolForm({
+                          ...polForm,
+                          limits: { ...polForm.limits, [v]: t },
+                        })
                       }
                     />
                   </View>
@@ -881,11 +1089,21 @@ export default function ExpensesScreen() {
                     style={[styles.input, { width: 130 }]}
                     keyboardType="numeric"
                     placeholder="₹ (0 = never)"
-                    value={polForm.billRequiredAbove ? String(polForm.billRequiredAbove) : ''}
-                    onChangeText={t => setPolForm({ ...polForm, billRequiredAbove: t })}
+                    placeholderTextColor="#9CA3AF"
+                    value={
+                      polForm.billRequiredAbove
+                        ? String(polForm.billRequiredAbove)
+                        : ''
+                    }
+                    onChangeText={t =>
+                      setPolForm({ ...polForm, billRequiredAbove: t })
+                    }
                   />
                 </View>
-                <TouchableOpacity style={[styles.btnBig, { backgroundColor: C.primary }]} onPress={savePolicy}>
+                <TouchableOpacity
+                  style={[styles.btnBig, { backgroundColor: C.primary }]}
+                  onPress={savePolicy}
+                >
                   <Text style={styles.btnText}>Save policy</Text>
                 </TouchableOpacity>
               </ScrollView>
@@ -897,6 +1115,16 @@ export default function ExpensesScreen() {
   );
 }
 
+const box = {
+  borderWidth: 2,
+  borderRadius: 8,
+  borderRightWidth: 4,
+  borderBottomWidth: 4,
+  borderRightColor: '#0A0A0A',
+  borderBottomColor: '#0A0A0A',
+  borderColor: C.black,
+} as const;
+
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.bg },
   header: {
@@ -904,71 +1132,107 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
+    backgroundColor: C.white,
     borderBottomWidth: 2,
-    borderColor: C.black,
+    borderBottomColor: C.black,
   },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: C.black, marginLeft: 6 },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '400',
+    color: C.black,
+    marginLeft: 8,
+  },
+  addBtn: { padding: 4 },
   rowCenter: { flexDirection: 'row', alignItems: 'center' },
   rowBetween: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  colWrapper: { gap: 10 },
+  cardTablet: { flex: 1 },
   card: {
-    backgroundColor: C.card,
-    borderWidth: 2,
-    borderColor: C.black,
-    borderRadius: 8,
+    ...box,
+    backgroundColor: C.white,
     padding: 12,
-    gap: 6,
+    gap: 8,
   },
-  title: { fontSize: 14, fontWeight: '700', color: C.black },
-  sub: { fontSize: 12, color: '#4B5563' },
-  amount: { fontSize: 15, fontWeight: '700', color: C.black },
-  label: { fontSize: 12, fontWeight: '700', color: C.black },
-  badge: { borderWidth: 2, paddingHorizontal: 6, paddingVertical: 1, marginTop: 4 },
-  badgeText: { fontSize: 10, fontWeight: '700' },
+  title: { fontSize: 14, fontWeight: '400', color: C.black },
+  sub: { fontSize: 12, color: C.textMuted, fontWeight: '400' },
+  amount: { fontSize: 16, fontWeight: '400', color: C.black },
+  label: { fontSize: 12, fontWeight: '400', color: C.black },
+  badge: {
+    borderWidth: 1.5,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginTop: 4,
+  },
+  badgeText: { fontSize: 10, fontWeight: '400' },
   flagRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  flag: { fontSize: 12, fontWeight: '700', color: C.warning },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' },
-  chip: { borderWidth: 2, borderColor: '#D1D5DB', paddingHorizontal: 6, paddingVertical: 1 },
-  chipText: { fontSize: 10, fontWeight: '700', color: '#4B5563' },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
+  flag: { fontSize: 12, fontWeight: '400', color: C.warning },
+  chips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    alignItems: 'center',
+  },
+  chip: {
+    borderWidth: 1.5,
+    borderRadius: 4,
+    borderColor: '#D1D5DB',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  chipText: { fontSize: 10, fontWeight: '400', color: C.textMuted },
+  actions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    alignItems: 'center',
+    marginTop: 2,
+  },
   btn: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 2,
+    borderRadius: 6,
     borderColor: C.black,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 5,
   },
-  btnText: { fontSize: 12, fontWeight: '700', color: C.white },
-  btnTextDark: { fontSize: 13, fontWeight: '700', color: C.black },
+  btnText: { fontSize: 12, fontWeight: '400', color: C.white },
+  btnTextDark: { fontSize: 13, fontWeight: '400', color: C.black },
   btnBig: {
+    ...box,
     flex: 1,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: C.black,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   attach: {
+    ...box,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: C.black,
-    paddingVertical: 10,
+    paddingVertical: 12,
+    backgroundColor: C.white,
   },
   input: {
-    borderWidth: 2,
-    borderColor: C.black,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    ...box,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     fontSize: 14,
     color: C.black,
+    backgroundColor: C.white,
   },
-  pick: { borderWidth: 2, borderColor: C.black, paddingHorizontal: 10, paddingVertical: 6 },
+  pick: {
+    borderWidth: 2,
+    borderRadius: 6,
+    borderColor: C.black,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
   pickOn: { backgroundColor: C.primary, borderColor: C.primary },
-  pickText: { fontSize: 12, fontWeight: '700', color: C.black },
+  pickText: { fontSize: 12, fontWeight: '400', color: C.black },
 });

@@ -103,7 +103,7 @@ export default function PerformanceOverview() {
       label: String(r.firstName || '').slice(0, 6),
       frontColor: scoreColor(r.score),
       topLabelComponent: () => (
-        <Text style={{ fontSize: 9, fontWeight: '400' }}>{r.score}</Text>
+        <Text style={{ fontSize: 11, fontWeight: '400' }}>{r.score}</Text>
       ),
     }));
   const pct = (v: number | null) => (v == null ? '—' : `${v}%`);
@@ -128,30 +128,35 @@ export default function PerformanceOverview() {
         <>
           <View style={tileGrid}>
             <StatTile
+              index={0}
               label="Employees"
               value={sorted.length}
               icon={Users}
               color={C.primary}
             />
             <StatTile
+              index={1}
               label="Avg Score"
               value={pct(avg(sorted.map(r => r.score)))}
               icon={Activity}
               color={C.success}
             />
             <StatTile
+              index={2}
               label="Avg Attendance"
               value={pct(avg(sorted.map(r => r.attendancePct)))}
               icon={CalendarCheck}
               color="#A855F7"
             />
             <StatTile
+              index={3}
               label="Task Completion"
               value={pct(avg(sorted.map(r => r.taskPct)))}
               icon={ListChecks}
               color={C.secondary}
             />
             <StatTile
+              index={4}
               label="With Loan"
               value={withLoan.length}
               sub={
@@ -165,6 +170,7 @@ export default function PerformanceOverview() {
               color={C.danger}
             />
             <StatTile
+              index={0}
               label="Top Performer"
               value={top ? top.firstName : '—'}
               sub={top ? `${top.score}%` : undefined}
@@ -184,8 +190,8 @@ export default function PerformanceOverview() {
                 maxValue={100}
                 yAxisThickness={0}
                 xAxisThickness={1}
-                xAxisLabelTextStyle={{ fontSize: 9, color: C.black }}
-                yAxisTextStyle={{ fontSize: 9 }}
+                xAxisLabelTextStyle={{ fontSize: 11, color: C.black }}
+                yAxisTextStyle={{ fontSize: 11 }}
                 width={250}
                 height={140}
                 isAnimated
@@ -199,7 +205,7 @@ export default function PerformanceOverview() {
             <Text style={styles.cardTitle}>Attendance split</Text>
             {split.length ? (
               <View
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}
               >
                 <PieChart
                   data={split.map(s => ({ value: s.value, color: s.color }))}
@@ -358,7 +364,7 @@ export default function PerformanceOverview() {
                           <Text
                             style={{
                               color: C.white,
-                              fontSize: 10,
+                              fontSize: 11,
                               fontWeight: '400',
                             }}
                           >
@@ -465,7 +471,7 @@ const styles = StyleSheet.create({
   navBtn: {
     borderWidth: 2,
     borderColor: C.black,
-    padding: 5,
+    padding: 4,
     backgroundColor: C.white,
   },
   monthText: {
@@ -479,8 +485,8 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -490,9 +496,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 11,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.black,
-    letterSpacing: 0.5,
   },
   muted: { fontSize: 12, color: C.textMuted },
   legend: { fontSize: 11, fontWeight: '400', color: C.black },
@@ -508,6 +512,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: C.black,
   },
-  tHead: { fontWeight: '400', textTransform: 'uppercase', fontSize: 10 },
-  photo: { width: 22, height: 22, borderRadius: 11 },
+  tHead: { fontWeight: '400', fontSize: 11 },
+  photo: { width: 22, height: 22, borderRadius: 12 },
 });

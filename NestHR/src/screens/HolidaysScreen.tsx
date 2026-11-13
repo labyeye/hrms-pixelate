@@ -1,3 +1,4 @@
+import { sentence } from '../utils/text';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -196,7 +197,7 @@ export default function HolidaysScreen() {
             onPress={() => navigation.goBack()}
             style={{ padding: 4, marginRight: 4 }}
           >
-            <ChevronLeft size={22} color={C.black} />
+            <ChevronLeft size={24} color={C.black} />
           </TouchableOpacity>
           <Sun size={20} color={C.primary} />
           <Text style={styles.headerTitle}>Holidays</Text>
@@ -284,7 +285,10 @@ export default function HolidaysScreen() {
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={[{ padding: 16, gap: 12, paddingBottom: 32 }, tabletContainerStyle(isTablet)]}
+          contentContainerStyle={[
+            { padding: 16, gap: 12, paddingBottom: 32 },
+            tabletContainerStyle(isTablet),
+          ]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -296,30 +300,35 @@ export default function HolidaysScreen() {
         >
           <View style={tileGrid}>
             <StatTile
+              index={0}
               label={`Total ${year}`}
               value={active.length}
               icon={CalendarDays}
               color={C.primary}
             />
             <StatTile
+              index={1}
               label="National"
               value={count('national')}
               icon={Flag}
               color={C.danger}
             />
             <StatTile
+              index={2}
               label="Optional"
               value={count('optional')}
               icon={Gift}
               color={C.secondary}
             />
             <StatTile
+              index={3}
               label="Restricted"
               value={count('restricted')}
               icon={Lock}
               color="#EAB308"
             />
             <StatTile
+              index={4}
               label="Next Holiday"
               value={nextHoliday ? nextHoliday.name : 'None'}
               sub={
@@ -342,7 +351,7 @@ export default function HolidaysScreen() {
                 onPress={() => shiftMonth(-1)}
                 style={styles.calNavBtn}
               >
-                <ChevronLeft size={18} color={C.black} />
+                <ChevronLeft size={20} color={C.black} />
               </TouchableOpacity>
               <Text style={styles.calTitle}>
                 {MONTHS[month]} {year}
@@ -351,7 +360,7 @@ export default function HolidaysScreen() {
                 onPress={() => shiftMonth(1)}
                 style={styles.calNavBtn}
               >
-                <ChevronRight size={18} color={C.black} />
+                <ChevronRight size={20} color={C.black} />
               </TouchableOpacity>
             </View>
             <View style={styles.calRow}>
@@ -416,7 +425,7 @@ export default function HolidaysScreen() {
                   <View
                     style={[styles.dot, { backgroundColor: TYPE_COLOR[t] }]}
                   />
-                  <Text style={styles.legendText}>{t.toUpperCase()}</Text>
+                  <Text style={styles.legendText}>{sentence(t)}</Text>
                 </View>
               ))}
             </View>
@@ -438,13 +447,15 @@ export default function HolidaysScreen() {
                     style={[styles.card, isTablet && styles.cardTablet]}
                     onPress={() => setDayModal(String(item.date).slice(0, 10))}
                   >
-                    <View style={[styles.dateBadge, { backgroundColor: color }]}>
+                    <View
+                      style={[styles.dateBadge, { backgroundColor: color }]}
+                    >
                       <Text style={styles.dateDay}>{d.getDate()}</Text>
                       <Text style={styles.dateMonth}>
-                        {d.toLocaleString('en', { month: 'short' }).toUpperCase()}
+                        {d.toLocaleString('en', { month: 'short' })}
                       </Text>
                     </View>
-                    <View style={{ flex: 1, marginLeft: 14 }}>
+                    <View style={{ flex: 1, marginLeft: 16 }}>
                       <Text style={styles.holidayName}>{item.name}</Text>
                       <View style={styles.metaRow}>
                         <View
@@ -453,8 +464,10 @@ export default function HolidaysScreen() {
                             { backgroundColor: color, borderColor: C.black },
                           ]}
                         >
-                          <Text style={[styles.typePillText, { color: C.white }]}>
-                            {item.type?.toUpperCase()}
+                          <Text
+                            style={[styles.typePillText, { color: C.white }]}
+                          >
+                            {sentence(item.type)}
                           </Text>
                         </View>
                         <Text style={styles.weekday}>
@@ -499,7 +512,7 @@ export default function HolidaysScreen() {
             </View>
             <ScrollView
               style={{ maxHeight: 320 }}
-              contentContainerStyle={{ padding: 14, gap: 10 }}
+              contentContainerStyle={{ padding: 16, gap: 12 }}
             >
               {dayHolidays.length === 0 ? (
                 <Text style={styles.emptyText}>No holiday on this date.</Text>
@@ -520,7 +533,7 @@ export default function HolidaysScreen() {
                           { color: TYPE_COLOR[h.type] || C.black },
                         ]}
                       >
-                        {String(h.type).toUpperCase()}
+                        {sentence(h.type)}
                       </Text>
                       {h.description ? (
                         <Text style={styles.desc}>{h.description}</Text>
@@ -533,13 +546,13 @@ export default function HolidaysScreen() {
                       }}
                       style={styles.editBtn}
                     >
-                      <Edit2 size={13} color={C.primary} />
+                      <Edit2 size={14} color={C.primary} />
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={() => handleDelete(h)}
                       style={styles.deleteBtn}
                     >
-                      <Trash2 size={13} color={C.danger} />
+                      <Trash2 size={14} color={C.danger} />
                     </TouchableOpacity>
                   </View>
                 ))
@@ -569,7 +582,7 @@ export default function HolidaysScreen() {
                   {editingHoliday ? 'Edit Holiday' : 'Add Holiday'}
                 </Text>
                 <TouchableOpacity onPress={closeForm}>
-                  <X size={22} color={C.black} />
+                  <X size={24} color={C.black} />
                 </TouchableOpacity>
               </View>
               <ScrollView
@@ -625,7 +638,7 @@ export default function HolidaysScreen() {
                             form.type === t && { color: C.white },
                           ]}
                         >
-                          {t.toUpperCase()}
+                          {sentence(t)}
                         </Text>
                       </TouchableOpacity>
                     ))}
@@ -671,12 +684,12 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    padding: 10,
+    padding: 12,
   },
   calNav: {
     flexDirection: 'row',
@@ -705,20 +718,18 @@ const styles = StyleSheet.create({
     borderRadius: 15,
   },
   calDayText: { fontSize: 13, fontWeight: '400', color: C.black },
-  dot: { width: 6, height: 6, borderRadius: 3 },
+  dot: { width: 6, height: 6, borderRadius: 4 },
   legend: {
     flexDirection: 'row',
-    gap: 14,
+    gap: 16,
     justifyContent: 'center',
     marginTop: 8,
   },
-  legendText: { fontSize: 10, fontWeight: '400', color: C.black },
+  legendText: { fontSize: 11, fontWeight: '400', color: C.black },
   listTitle: {
     fontSize: 12,
     fontWeight: '400',
     color: C.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   dayOverlay: {
     flex: 1,
@@ -730,8 +741,8 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -741,7 +752,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 14,
+    padding: 16,
     backgroundColor: C.primary,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
@@ -752,10 +763,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     borderWidth: 2,
-    padding: 10,
+    padding: 12,
   },
   dayAdd: {
-    margin: 14,
+    margin: 16,
     marginTop: 0,
     backgroundColor: C.primary,
     borderWidth: 2,
@@ -772,7 +783,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     backgroundColor: C.white,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
@@ -792,7 +803,6 @@ const styles = StyleSheet.create({
     color: C.white,
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
   },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
@@ -803,12 +813,12 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    padding: 14,
+    padding: 16,
   },
   cardTablet: {
     flex: 1,
@@ -833,7 +843,7 @@ const styles = StyleSheet.create({
     borderColor: C.black,
   },
   dateDay: { fontSize: 22, fontWeight: '400', color: C.white },
-  dateMonth: { fontSize: 9, fontWeight: '400', color: C.white, marginTop: -2 },
+  dateMonth: { fontSize: 11, fontWeight: '400', color: C.white, marginTop: -2 },
   holidayName: { fontSize: 15, fontWeight: '400', color: C.black },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
   typePill: {
@@ -844,7 +854,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  typePillText: { fontSize: 9, fontWeight: '400' },
+  typePillText: { fontSize: 11, fontWeight: '400' },
   weekday: {
     fontSize: 11,
     color: C.black,
@@ -889,21 +899,19 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.black,
-    marginBottom: 5,
-    letterSpacing: 0.5,
+    marginBottom: 4,
   },
   fieldInput: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingVertical: 12,
     fontSize: 14,
     fontWeight: '400',
     color: C.black,
@@ -925,12 +933,12 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingVertical: 14,
+    paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -941,6 +949,5 @@ const styles = StyleSheet.create({
     color: C.white,
     fontWeight: '400',
     fontSize: 14,
-    textTransform: 'uppercase',
   },
 });

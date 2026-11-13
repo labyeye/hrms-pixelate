@@ -200,9 +200,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 16,
+    flexWrap: 'wrap',
     marginTop: 8,
+    paddingBottom: 12,
   },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  swatch: { width: 10, height: 10, borderWidth: 1.5, borderColor: C.black },
+  swatch: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: C.black,
+  },
   legendText: { fontSize: 11, fontFamily: FONT.bold, color: C.black },
 });

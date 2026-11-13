@@ -36,7 +36,7 @@ function niceMax(max: number) {
   return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * pow;
 }
 
-/** Brutalist line chart: line draws itself in, area fades up, dots pop in. */
+/** Brutalist curved line chart: line draws itself in, area fades up, dots pop in. */
 export default function AnimatedLineChart({
   data,
   height = 170,
@@ -76,16 +76,69 @@ export default function AnimatedLineChart({
     x: padL + (data.length === 1 ? plotW / 2 : (plotW * i) / (data.length - 1)),
     y: padT + plotH - (d.value / max) * plotH,
   }));
-  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${p.x},${p.y}`).join(' ');
+  // Smooth curve through the points. Monotone tangents keep it from dipping
+  // below zero or overshooting a peak between two months.
+  const slope = pts
+    .slice(1)
+    .map((p, i) => (p.y - pts[i].y) / (p.x - pts[i].x || 1));
+  const tan = pts.map((_, i) =>
+    i === 0
+      ? slope[0] || 0
+      : i === pts.length - 1
+      ? slope[i - 1]
+      : slope[i - 1] * slope[i] <= 0
+      ? 0
+      : (slope[i - 1] + slope[i]) / 2,
+  );
+  slope.forEach((sl, i) => {
+    if (sl === 0) {
+      tan[i] = 0;
+      tan[i + 1] = 0;
+      return;
+    }
+    const a = tan[i] / sl;
+    const b = tan[i + 1] / sl;
+    const h = Math.hypot(a, b);
+    if (h > 3) {
+      tan[i] = (3 / h) * a * sl;
+      tan[i + 1] = (3 / h) * b * sl;
+    }
+  });
+  let line = pts.length ? `M${pts[0].x},${pts[0].y}` : '';
+  let len = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1];
+    const b = pts[i];
+    const dx = (b.x - a.x) / 3;
+    const c1 = { x: a.x + dx, y: a.y + tan[i - 1] * dx };
+    const c2 = { x: b.x - dx, y: b.y - tan[i] * dx };
+    line += ` C${c1.x},${c1.y} ${c2.x},${c2.y} ${b.x},${b.y}`;
+    // curve length, sampled, for the draw-in dash animation
+    let prev = a;
+    for (let k = 1; k <= 12; k++) {
+      const t = k / 12;
+      const u = 1 - t;
+      const q = {
+        x:
+          u * u * u * a.x +
+          3 * u * u * t * c1.x +
+          3 * u * t * t * c2.x +
+          t * t * t * b.x,
+        y:
+          u * u * u * a.y +
+          3 * u * u * t * c1.y +
+          3 * u * t * t * c2.y +
+          t * t * t * b.y,
+      };
+      len += Math.hypot(q.x - prev.x, q.y - prev.y);
+      prev = q;
+    }
+  }
   const area = pts.length
     ? `${line} L${pts[pts.length - 1].x},${padT + plotH} L${pts[0].x},${
         padT + plotH
       } Z`
     : '';
-  let len = 0;
-  for (let i = 1; i < pts.length; i++) {
-    len += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
-  }
   len = Math.ceil(len) + 2;
   const dashOffset = progress.interpolate({
     inputRange: [0, 1],

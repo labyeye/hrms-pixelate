@@ -134,12 +134,21 @@ export default function SalaryHeadsScreen() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <View style={[s.header, isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' }]}>
+      <View
+        style={[
+          s.header,
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
+      >
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={{ padding: 4, marginRight: 4 }}
         >
-          <ChevronLeft size={22} color={C.black} />
+          <ChevronLeft size={24} color={C.black} />
         </TouchableOpacity>
         <IndianRupee size={20} color={C.primary} />
         <Text style={s.title}>Salary Components</Text>
@@ -162,8 +171,12 @@ export default function SalaryHeadsScreen() {
           numColumns={isTablet ? 2 : 1}
           columnWrapperStyle={isTablet ? s.colWrapper : undefined}
           contentContainerStyle={[
-            { padding: 16, gap: 10, paddingBottom: 32 },
-            isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' },
+            { padding: 16, gap: 12, paddingBottom: 32 },
+            isTablet && {
+              maxWidth: maxContentWidth,
+              width: '100%',
+              alignSelf: 'center',
+            },
           ]}
           refreshControl={
             <RefreshControl
@@ -205,7 +218,7 @@ export default function SalaryHeadsScreen() {
                     </View>
                     {item.taxable && (
                       <View style={s.taxBadge}>
-                        <Text style={s.taxBadgeText}>TAXABLE</Text>
+                        <Text style={s.taxBadgeText}>Taxable</Text>
                       </View>
                     )}
                   </View>
@@ -223,13 +236,13 @@ export default function SalaryHeadsScreen() {
                     style={s.iconBtn}
                     onPress={() => openEdit(item)}
                   >
-                    <Edit2 size={13} color={C.primary} />
+                    <Edit2 size={14} color={C.primary} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[s.iconBtn, { borderColor: C.danger }]}
                     onPress={() => handleDelete(item)}
                   >
-                    <Trash2 size={13} color={C.danger} />
+                    <Trash2 size={14} color={C.danger} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -247,7 +260,7 @@ export default function SalaryHeadsScreen() {
                   {editing ? 'Edit Component' : 'New Component'}
                 </Text>
                 <TouchableOpacity onPress={() => setModal(false)}>
-                  <X size={22} color={C.black} />
+                  <X size={24} color={C.black} />
                 </TouchableOpacity>
               </View>
               <ScrollView
@@ -361,7 +374,7 @@ export default function SalaryHeadsScreen() {
                   }
                 >
                   <View style={[s.checkbox, form.taxable && s.checkboxActive]}>
-                    {form.taxable && <Check size={12} color={C.white} />}
+                    {form.taxable && <Check size={14} color={C.white} />}
                   </View>
                   <Text
                     style={[s.checkText, form.taxable && { color: C.primary }]}
@@ -399,7 +412,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     backgroundColor: C.white,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
@@ -408,12 +421,12 @@ const s = StyleSheet.create({
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -424,7 +437,6 @@ const s = StyleSheet.create({
     color: C.white,
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
   },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
@@ -437,12 +449,12 @@ const s = StyleSheet.create({
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    padding: 14,
+    padding: 16,
   },
   headName: { fontSize: 15, fontWeight: '400', color: C.black },
   headSub: { fontSize: 12, color: C.textMuted, fontWeight: '400' },
@@ -455,7 +467,11 @@ const s = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 1,
   },
-  typeBadgeText: { textTransform: 'uppercase', fontSize: 9, fontWeight: '400' },
+  typeBadgeText: {
+    textTransform: 'capitalize',
+    fontSize: 11,
+    fontWeight: '400',
+  },
   taxBadge: {
     borderWidth: 2,
     borderRadius: 999,
@@ -463,12 +479,12 @@ const s = StyleSheet.create({
     borderRightWidth: 4,
     borderBottomWidth: 4,
     backgroundColor: '#FEF9C3',
-    paddingHorizontal: 5,
+    paddingHorizontal: 4,
     paddingVertical: 1,
   },
   taxBadgeText: {
-    textTransform: 'uppercase',
-    fontSize: 8,
+    textTransform: 'capitalize',
+    fontSize: 11,
     fontWeight: '400',
     color: '#92400E',
   },
@@ -498,29 +514,27 @@ const s = StyleSheet.create({
   fieldLabel: {
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.black,
     marginBottom: 6,
-    letterSpacing: 0.5,
   },
   fieldInput: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingVertical: 12,
     fontSize: 14,
     fontWeight: '400',
     color: C.black,
     backgroundColor: C.white,
   },
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderWidth: 2,
     borderRightWidth: 4,
     borderBottomWidth: 4,
@@ -533,8 +547,8 @@ const s = StyleSheet.create({
   radioRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 10,
+    gap: 12,
+    paddingVertical: 12,
     paddingHorizontal: 12,
     borderWidth: 2,
     borderRightWidth: 4,
@@ -558,7 +572,7 @@ const s = StyleSheet.create({
   checkRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
     paddingVertical: 12,
     paddingHorizontal: 12,
     borderWidth: 2,
@@ -585,12 +599,12 @@ const s = StyleSheet.create({
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingVertical: 14,
+    paddingVertical: 16,
     alignItems: 'center',
     marginTop: 8,
   },
@@ -598,6 +612,5 @@ const s = StyleSheet.create({
     color: C.white,
     fontWeight: '400',
     fontSize: 14,
-    textTransform: 'uppercase',
   },
 });

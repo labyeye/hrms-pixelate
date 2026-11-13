@@ -19,14 +19,12 @@ import {
   LogOut,
   Plus,
   X,
-  Pencil,
   Trash2,
   ChevronLeft,
   User,
   Calendar,
   CheckCircle2,
   Clock,
-  Package,
   FileText,
   ChevronDown,
   Search,
@@ -35,6 +33,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { exitAPI, employeeAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
+import SlideInCard from '../components/motion/SlideInCard';
 import { C, useResponsive, tabletContainerStyle } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import HeaderIconBtn from '../components/common/HeaderIconBtn';
@@ -225,80 +224,86 @@ export default function ExitManagementScreen() {
     setEditLastDay(rec.lastWorkingDay ? rec.lastWorkingDay.split('T')[0] : '');
   };
 
-  const renderRecord = ({ item }: { item: any }) => {
+  const renderRecord = ({ item, index }: { item: any; index: number }) => {
     const cfg = statusCfg(item.status);
     const emp = item.employee;
     return (
-      <TouchableOpacity
-        style={[s.card, isTablet && s.cardTablet]}
-        onPress={() => openDetail(item)}
-        activeOpacity={0.8}
-      >
-        <View style={s.cardHeader}>
-          <View style={s.empIcon}>
-            <User size={16} color={C.primary} />
-          </View>
-          <View style={{ flex: 1, marginLeft: 10 }}>
-            <Text style={s.empName}>
-              {emp ? `${emp.firstName} ${emp.lastName}` : '—'}
-            </Text>
-            <Text style={s.empSub}>
-              {emp?.designation || ''}{' '}
-              {emp?.department?.name ? `· ${emp.department.name}` : ''}
-            </Text>
-          </View>
-          <View
-            style={[
-              s.badge,
-              { backgroundColor: cfg.bg, borderColor: cfg.color },
-            ]}
-          >
-            <Text style={[s.badgeText, { color: cfg.color }]}>
-              {cfg.label.toUpperCase()}
-            </Text>
-          </View>
-        </View>
-
-        <View style={s.cardBody}>
-          <View style={s.infoRow}>
-            <Calendar size={12} color="#6B7280" />
-            <Text style={s.infoText}>
-              Resignation: {fmt(item.resignationDate)}
-            </Text>
-          </View>
-          {item.lastWorkingDay && (
-            <View style={s.infoRow}>
-              <Clock size={12} color="#6B7280" />
-              <Text style={s.infoText}>
-                Last Day: {fmt(item.lastWorkingDay)}
+      <SlideInCard index={index} style={isTablet ? s.cardTablet : undefined}>
+        <TouchableOpacity
+          style={s.card}
+          onPress={() => openDetail(item)}
+          activeOpacity={0.8}
+        >
+          <View style={s.cardHeader}>
+            <View style={s.empIcon}>
+              <User size={16} color={C.primary} />
+            </View>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={s.empName}>
+                {emp ? `${emp.firstName} ${emp.lastName}` : '—'}
+              </Text>
+              <Text style={s.empSub}>
+                {emp?.designation || ''}{' '}
+                {emp?.department?.name ? `· ${emp.department.name}` : ''}
               </Text>
             </View>
-          )}
-          <View style={s.infoRow}>
-            <FileText size={12} color="#6B7280" />
-            <Text style={s.infoText}>
-              Reason:{' '}
-              {REASONS.find(r => r.value === item.reason)?.label || item.reason}
-            </Text>
-          </View>
-        </View>
-
-        <View style={s.cardFooter}>
-          <View style={s.checksRow}>
-            <CheckItem label="Interview" done={item.exitInterviewDone} />
-            <CheckItem label="Assets" done={item.assetsReturned} />
-            <CheckItem label="Exp Letter" done={item.experienceLetterIssued} />
-          </View>
-          {isHR && (
-            <TouchableOpacity
-              style={s.deleteBtn}
-              onPress={() => handleDelete(item._id)}
+            <View
+              style={[
+                s.badge,
+                { backgroundColor: cfg.bg, borderColor: cfg.color },
+              ]}
             >
-              <Trash2 size={14} color={C.danger} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </TouchableOpacity>
+              <Text style={[s.badgeText, { color: cfg.color }]}>
+                {cfg.label}
+              </Text>
+            </View>
+          </View>
+
+          <View style={s.cardBody}>
+            <View style={s.infoRow}>
+              <Calendar size={14} color="#6B7280" />
+              <Text style={s.infoText}>
+                Resignation: {fmt(item.resignationDate)}
+              </Text>
+            </View>
+            {item.lastWorkingDay && (
+              <View style={s.infoRow}>
+                <Clock size={14} color="#6B7280" />
+                <Text style={s.infoText}>
+                  Last Day: {fmt(item.lastWorkingDay)}
+                </Text>
+              </View>
+            )}
+            <View style={s.infoRow}>
+              <FileText size={14} color="#6B7280" />
+              <Text style={s.infoText}>
+                Reason:{' '}
+                {REASONS.find(r => r.value === item.reason)?.label ||
+                  item.reason}
+              </Text>
+            </View>
+          </View>
+
+          <View style={s.cardFooter}>
+            <View style={s.checksRow}>
+              <CheckItem label="Interview" done={item.exitInterviewDone} />
+              <CheckItem label="Assets" done={item.assetsReturned} />
+              <CheckItem
+                label="Exp Letter"
+                done={item.experienceLetterIssued}
+              />
+            </View>
+            {isHR && (
+              <TouchableOpacity
+                style={s.deleteBtn}
+                onPress={() => handleDelete(item._id)}
+              >
+                <Trash2 size={14} color={C.danger} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </TouchableOpacity>
+      </SlideInCard>
     );
   };
 
@@ -322,7 +327,8 @@ export default function ExitManagementScreen() {
       <View style={s.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={{ padding: 4, marginRight: 4 }}
+          style={{ padding: 4, marginRight: 2 }}
+          hitSlop={8}
         >
           <ChevronLeft size={22} color={C.black} />
         </TouchableOpacity>
@@ -407,7 +413,7 @@ export default function ExitManagementScreen() {
             columnWrapperStyle={isTablet ? s.colWrapper : undefined}
             keyExtractor={i => i._id}
             renderItem={renderRecord}
-            contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 40 }}
+            contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -434,7 +440,7 @@ export default function ExitManagementScreen() {
               <View style={s.modalHeader}>
                 <Text style={s.modalTitle}>Initiate Exit</Text>
                 <TouchableOpacity onPress={() => setShowCreate(false)}>
-                  <X size={22} color={C.black} />
+                  <X size={24} color={C.black} />
                 </TouchableOpacity>
               </View>
               <ScrollView
@@ -596,14 +602,13 @@ export default function ExitManagementScreen() {
                       : 'Exit Record'}
                   </Text>
                   <TouchableOpacity onPress={() => setSelected(null)}>
-                    <X size={22} color={C.black} />
+                    <X size={24} color={C.black} />
                   </TouchableOpacity>
                 </View>
                 <ScrollView
                   contentContainerStyle={{ padding: 20, gap: 16 }}
                   keyboardShouldPersistTaps="handled"
                 >
-                  {/* Status update */}
                   {isHR && (
                     <>
                       <View>
@@ -670,10 +675,9 @@ export default function ExitManagementScreen() {
                           onPress={() => setEditInterviewDone(p => !p)}
                           style={s.checkbox}
                         >
-                          {editInterviewDone && (
-                            <CheckCircle2 size={18} color={C.success} />
-                          )}
-                          {!editInterviewDone && (
+                          {editInterviewDone ? (
+                            <CheckCircle2 size={20} color={C.success} />
+                          ) : (
                             <View style={s.checkboxEmpty} />
                           )}
                         </TouchableOpacity>
@@ -685,10 +689,9 @@ export default function ExitManagementScreen() {
                           onPress={() => setEditAssetsReturned(p => !p)}
                           style={s.checkbox}
                         >
-                          {editAssetsReturned && (
-                            <CheckCircle2 size={18} color={C.success} />
-                          )}
-                          {!editAssetsReturned && (
+                          {editAssetsReturned ? (
+                            <CheckCircle2 size={20} color={C.success} />
+                          ) : (
                             <View style={s.checkboxEmpty} />
                           )}
                         </TouchableOpacity>
@@ -700,10 +703,11 @@ export default function ExitManagementScreen() {
                           onPress={() => setEditExpLetter(p => !p)}
                           style={s.checkbox}
                         >
-                          {editExpLetter && (
-                            <CheckCircle2 size={18} color={C.success} />
+                          {editExpLetter ? (
+                            <CheckCircle2 size={20} color={C.success} />
+                          ) : (
+                            <View style={s.checkboxEmpty} />
                           )}
-                          {!editExpLetter && <View style={s.checkboxEmpty} />}
                         </TouchableOpacity>
                         <Text style={s.checkLabel}>
                           Experience Letter Issued
@@ -741,7 +745,6 @@ export default function ExitManagementScreen() {
                     </>
                   )}
 
-                  {/* Read-only info for non-HR */}
                   {!isHR && (
                     <>
                       <InfoRow
@@ -828,10 +831,10 @@ export default function ExitManagementScreen() {
 function CheckItem({ label, done }: { label: string; done: boolean }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-      <CheckCircle2 size={12} color={done ? C.success : '#D1D5DB'} />
+      <CheckCircle2 size={14} color={done ? C.success : '#D1D5DB'} />
       <Text
         style={{
-          fontSize: 10,
+          fontSize: 11,
           color: done ? C.success : '#9CA3AF',
           fontWeight: '400',
         }}
@@ -849,9 +852,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
         style={{
           fontSize: 11,
           fontWeight: '400',
-          textTransform: 'uppercase',
           color: '#6B7280',
-          letterSpacing: 0.5,
         }}
       >
         {label}
@@ -871,7 +872,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F8F9FA' },
+  safe: { flex: 1, backgroundColor: C.bg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -884,62 +885,26 @@ const s = StyleSheet.create({
   },
   title: { fontSize: 20, fontWeight: '400', color: C.black },
   addBtn: { padding: 4 },
-  addBtnText: {
-    color: C.white,
-    fontSize: 12,
-    fontWeight: '400',
-    textTransform: 'uppercase',
-  },
-  filterBar: {
-    backgroundColor: C.white,
-    borderBottomWidth: 2,
-    borderBottomColor: C.black,
-    maxHeight: 56,
-  },
-  filterChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderWidth: 2,
-    borderRightWidth: 4,
-    borderBottomWidth: 4,
-    borderRightColor: '#0A0A0A',
-    borderBottomColor: '#0A0A0A',
-    borderRadius: 8,
-    borderColor: C.black,
-    backgroundColor: C.white,
-  },
-  filterChipActive: { borderColor: C.primary, backgroundColor: '#EFF6FF' },
-  filterChipText: {
-    fontSize: 12,
-    fontWeight: '400',
-    color: '#6B7280',
-    textTransform: 'uppercase',
-  },
-  filterChipTextActive: { color: C.primary },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
-  emptyText: { fontSize: 14, fontWeight: '400', color: '#9CA3AF' },
+  emptyText: { fontSize: 14, fontWeight: '400', color: '#6B7280' },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    padding: 14,
+    padding: 16,
   },
-  cardTablet: {
-    flex: 1,
-  },
-  colWrapper: {
-    gap: 12,
-  },
+  cardTablet: { flex: 1 },
+  colWrapper: { gap: 10 },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   empIcon: {
     width: 36,
@@ -964,22 +929,21 @@ const s = StyleSheet.create({
     borderRightWidth: 4,
     borderBottomWidth: 4,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
   },
   badgeText: {
-    textTransform: 'uppercase',
-    fontSize: 10,
+    textTransform: 'capitalize',
+    fontSize: 11,
     fontWeight: '400',
-    letterSpacing: 0.5,
   },
-  cardBody: { gap: 4, marginBottom: 10 },
+  cardBody: { gap: 4, marginBottom: 12 },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   infoText: { fontSize: 12, color: '#6B7280', fontWeight: '400' },
   cardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 10,
+    paddingTop: 12,
   },
   checksRow: { flexDirection: 'row', gap: 12 },
   deleteBtn: {
@@ -1008,21 +972,19 @@ const s = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.black,
     marginBottom: 6,
-    letterSpacing: 0.5,
   },
   input: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingVertical: 12,
     fontSize: 14,
     fontWeight: '400',
     color: C.black,
@@ -1031,17 +993,17 @@ const s = StyleSheet.create({
   picker: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     backgroundColor: C.white,
   },
-  pickerPlaceholder: { padding: 12, color: '#9CA3AF', fontSize: 14 },
+  pickerPlaceholder: { padding: 12, color: '#6B7280', fontSize: 14 },
   pickerOption: {
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
@@ -1050,13 +1012,13 @@ const s = StyleSheet.create({
   selectBtn: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingVertical: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -1067,12 +1029,12 @@ const s = StyleSheet.create({
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingVertical: 14,
+    paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
@@ -1081,7 +1043,6 @@ const s = StyleSheet.create({
     color: C.white,
     fontWeight: '400',
     fontSize: 14,
-    textTransform: 'uppercase',
   },
   pickerOverlay: {
     flex: 1,
@@ -1106,7 +1067,7 @@ const s = StyleSheet.create({
   pickerSheetTitle: { fontSize: 16, fontWeight: '400', color: C.black },
   sheetOption: {
     paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
   },
@@ -1115,7 +1076,7 @@ const s = StyleSheet.create({
   toggleRow: { flexDirection: 'row', gap: 8 },
   toggleBtn: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 12,
     alignItems: 'center',
     borderWidth: 2,
     borderRightWidth: 4,
@@ -1131,9 +1092,8 @@ const s = StyleSheet.create({
     fontSize: 12,
     fontWeight: '400',
     color: C.black,
-    textTransform: 'uppercase',
   },
-  checkRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  checkRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   checkbox: {
     width: 24,
     height: 24,

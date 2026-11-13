@@ -9,6 +9,7 @@ import {
 import { Upload, FileText } from 'lucide-react-native';
 import { C } from '../../theme';
 import { pickSheet, shareTemplate } from '../../utils/importSheet';
+import { MenuItem, useHeaderMenu } from './HeaderMenu';
 
 interface Props {
   name: string;
@@ -18,7 +19,7 @@ interface Props {
   onRows: (rows: Record<string, string>[]) => Promise<string | void>;
 }
 
-/** Import (pick Excel/CSV) + Sample (share template) pair, mirrors the web ImportButton. */
+/** Import (pick Excel/CSV) + Sample (share template) pair, mirrors the web ImportButton. Inside a HeaderMenu it is two menu rows. */
 export default function ImportButton({
   name,
   headers,
@@ -26,6 +27,7 @@ export default function ImportButton({
   onRows,
 }: Props) {
   const [busy, setBusy] = useState(false);
+  const inMenu = useHeaderMenu();
   const run = async () => {
     setBusy(true);
     try {
@@ -40,6 +42,17 @@ export default function ImportButton({
       setBusy(false);
     }
   };
+  if (inMenu)
+    return (
+      <>
+        <MenuItem icon={Upload} label="Import from Excel / CSV" onPress={run} />
+        <MenuItem
+          icon={FileText}
+          label="Download sample file"
+          onPress={() => shareTemplate(name, headers, example)}
+        />
+      </>
+    );
   return (
     <View style={styles.row}>
       <TouchableOpacity style={styles.btn} onPress={run} disabled={busy}>
@@ -53,7 +66,7 @@ export default function ImportButton({
         style={styles.btn}
         onPress={() => shareTemplate(name, headers, example)}
       >
-        <FileText size={18} color={C.black} />
+        <FileText size={20} color={C.black} />
       </TouchableOpacity>
     </View>
   );
@@ -61,5 +74,5 @@ export default function ImportButton({
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
-  btn: { paddingHorizontal: 8, paddingVertical: 7 },
+  btn: { paddingHorizontal: 8, paddingVertical: 8 },
 });

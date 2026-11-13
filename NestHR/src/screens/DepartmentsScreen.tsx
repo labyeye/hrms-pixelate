@@ -145,13 +145,22 @@ export default function DepartmentsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={[styles.header, isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' }]}>
+      <View
+        style={[
+          styles.header,
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
+      >
         <View style={styles.headerLeft}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={{ padding: 4, marginRight: 4 }}
           >
-            <ChevronLeft size={22} color={C.black} />
+            <ChevronLeft size={24} color={C.black} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Departments</Text>
         </View>
@@ -231,7 +240,11 @@ export default function DepartmentsScreen() {
           columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
           contentContainerStyle={[
             { padding: 16, gap: 12, paddingBottom: 32 },
-            isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' },
+            isTablet && {
+              maxWidth: maxContentWidth,
+              width: '100%',
+              alignSelf: 'center',
+            },
           ]}
           refreshControl={
             <RefreshControl
@@ -274,13 +287,13 @@ export default function DepartmentsScreen() {
                       style={styles.editBtn}
                       onPress={() => openEdit(item)}
                     >
-                      <Edit2 size={13} color={C.primary} />
+                      <Edit2 size={14} color={C.primary} />
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.deleteBtn}
                       onPress={() => handleDelete(item)}
                     >
-                      <Trash2 size={13} color={C.danger} />
+                      <Trash2 size={14} color={C.danger} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -292,7 +305,7 @@ export default function DepartmentsScreen() {
                     </Text>
                   ) : null}
                   <View style={styles.deptMeta}>
-                    <Users size={11} color={C.textMuted} />
+                    <Users size={14} color={C.textMuted} />
                     <Text style={styles.deptMetaText}>
                       {empCount} member{empCount !== 1 ? 's' : ''}
                     </Text>
@@ -320,7 +333,7 @@ export default function DepartmentsScreen() {
                   {editingDept ? 'Edit Department' : 'New Department'}
                 </Text>
                 <TouchableOpacity onPress={closeForm}>
-                  <X size={22} color={C.black} />
+                  <X size={24} color={C.black} />
                 </TouchableOpacity>
               </View>
               <ScrollView
@@ -420,7 +433,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     backgroundColor: C.white,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
@@ -429,7 +442,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 20, fontWeight: '400', color: C.black },
   countBadge: {
     backgroundColor: C.primary,
-    paddingHorizontal: 7,
+    paddingHorizontal: 8,
     paddingVertical: 2,
     borderWidth: 2,
     borderRightWidth: 4,
@@ -445,7 +458,6 @@ const styles = StyleSheet.create({
     color: C.white,
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
   },
   loader: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
@@ -456,12 +468,12 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    padding: 14,
+    padding: 16,
   },
   cardTopRow: { flexDirection: 'row', alignItems: 'flex-start' },
   deptIcon: {
@@ -516,9 +528,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 12,
     marginTop: 12,
-    paddingTop: 10,
+    paddingTop: 12,
   },
   deptMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   deptMetaText: { fontSize: 12, fontWeight: '400', color: C.textMuted },
@@ -537,21 +549,19 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.black,
-    marginBottom: 5,
-    letterSpacing: 0.5,
+    marginBottom: 4,
   },
   fieldInput: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingVertical: 12,
     fontSize: 14,
     fontWeight: '400',
     color: C.black,
@@ -561,12 +571,12 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingVertical: 14,
+    paddingVertical: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -577,6 +587,5 @@ const styles = StyleSheet.create({
     color: C.white,
     fontWeight: '400',
     fontSize: 14,
-    textTransform: 'uppercase',
   },
 });

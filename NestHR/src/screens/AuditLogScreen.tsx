@@ -207,7 +207,7 @@ function ActivityList() {
       <View style={styles.card}>
         <View style={styles.cardTop}>
           <View style={[styles.badge, { backgroundColor: k.bg }]}>
-            <k.Icon size={11} color={k.text} />
+            <k.Icon size={14} color={k.text} />
             <Text style={[styles.badgeText, { color: k.text }]}>{k.label}</Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
@@ -220,12 +220,12 @@ function ActivityList() {
         <View style={[styles.metaRow, { marginTop: 6 }]}>
           {isLogin ? (
             item.platform === 'web' ? (
-              <Monitor size={12} color={C.textMuted} />
+              <Monitor size={14} color={C.textMuted} />
             ) : (
-              <Smartphone size={12} color={C.textMuted} />
+              <Smartphone size={14} color={C.textMuted} />
             )
           ) : (
-            <Clock size={12} color={C.textMuted} />
+            <Clock size={14} color={C.textMuted} />
           )}
           <Text style={styles.metaEmail}>
             {isLogin ? item.device || 'Unknown device' : cap(item.via) || '—'}
@@ -402,7 +402,7 @@ export default function AuditLogScreen() {
 
         <View style={styles.cardMeta}>
           <View style={styles.metaRow}>
-            <User size={12} color={C.textMuted} />
+            <User size={14} color={C.textMuted} />
             <Text style={styles.metaText} numberOfLines={1}>
               {displayName}
             </Text>
@@ -443,10 +443,10 @@ export default function AuditLogScreen() {
           onPress={() => navigation.goBack()}
           style={styles.backBtn}
         >
-          <ChevronLeft size={22} color={C.black} />
+          <ChevronLeft size={24} color={C.black} />
         </TouchableOpacity>
         <View style={styles.headerTitle}>
-          <Shield size={18} color={C.primary} />
+          <Shield size={20} color={C.primary} />
           <Text style={styles.headerText}>Audit Log</Text>
         </View>
         <View style={{ width: 36 }} />
@@ -553,24 +553,23 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#fff',
   },
-  tab: { flex: 1, paddingVertical: 10, alignItems: 'center' },
+  tab: { flex: 1, paddingVertical: 12, alignItems: 'center' },
   tabActive: { backgroundColor: '#024BAB' },
   tabText: {
     fontSize: 11,
     fontWeight: '400',
-    color: '#64748b',
-    textTransform: 'uppercase',
+    color: '#6B7280',
   },
   tabTextActive: { color: '#fff' },
   pillRow: {
     flexDirection: 'row',
     gap: 8,
     paddingHorizontal: 12,
-    paddingTop: 10,
+    paddingTop: 12,
   },
   pill: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
     borderWidth: 2,
     borderColor: '#000',
     borderRadius: 999,
@@ -599,7 +598,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerText: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '400',
     color: '#000',
     letterSpacing: -0.3,
@@ -611,17 +610,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: '#000',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
   },
   searchIcon: { marginRight: 6 },
   searchInput: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 12,
     fontSize: 14,
     color: '#000',
     fontWeight: '400',
@@ -639,8 +638,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: '#000',
@@ -659,13 +658,12 @@ const styles = StyleSheet.create({
     borderRightWidth: 4,
     borderBottomWidth: 4,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
   },
   badgeText: {
     fontSize: 11,
     fontWeight: '400',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
+    textTransform: 'capitalize',
   },
   expandIcon: { padding: 2 },
   cardMeta: { gap: 4 },
@@ -682,14 +680,14 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     marginRight: 6,
   },
-  dateText: { fontSize: 11, color: '#9CA3AF', fontWeight: '400' },
+  dateText: { fontSize: 11, color: '#6B7280', fontWeight: '400' },
   detailBox: {
-    marginTop: 10,
+    marginTop: 12,
     backgroundColor: '#F0F6FF',
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -725,7 +723,7 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 16, fontWeight: '400', color: '#374151' },
   emptySubtext: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: '#6B7280',
     textAlign: 'center',
     lineHeight: 20,
   },

@@ -1,3 +1,4 @@
+import { sentence } from '../utils/text';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -31,6 +32,7 @@ import { performanceAPI } from '../api/api';
 import { PerformanceReview } from '../types/hrms';
 import AnimatedNumber from '../components/motion/AnimatedNumber';
 import FadeInUp from '../components/motion/FadeInUp';
+import AnimatedValue from '../components/motion/AnimatedValue';
 import { C, useResponsive } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import HeaderIconBtn from '../components/common/HeaderIconBtn';
@@ -136,27 +138,36 @@ export default function PerformanceScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={[styles.header, isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' }]}>
+      <View
+        style={[
+          styles.header,
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
+      >
         <View style={styles.headerLeft}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={{ padding: 4, marginRight: 4 }}
           >
-            <ChevronLeft size={22} color={C.black} />
+            <ChevronLeft size={24} color={C.black} />
           </TouchableOpacity>
           <TrendingUp size={20} color={C.primary} />
           <Text style={styles.headerTitle}>Performance</Text>
         </View>
-        <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
           <HeaderIconBtn
             label="Search"
-            icon={<Search size={22} color={C.black} />}
+            icon={<Search size={24} color={C.black} />}
             dot={!!search}
             onPress={() => setSearchOpen(true)}
           />
           <HeaderIconBtn
             label="Filter and sort"
-            icon={<SlidersHorizontal size={22} color={C.black} />}
+            icon={<SlidersHorizontal size={24} color={C.black} />}
             dot={!!statusFilter || !!sortKey}
             onPress={() => setFilterOpen(true)}
           />
@@ -181,9 +192,10 @@ export default function PerformanceScreen() {
           <View style={styles.summaryCard}>
             <View style={styles.ratingWrap}>
               <Star size={14} color="#F59E0B" />
-              <Text style={[styles.summaryVal, { color: '#F59E0B' }]}>
-                {avgRating}
-              </Text>
+              <AnimatedValue
+                style={[styles.summaryVal, { color: '#F59E0B' }]}
+                value={avgRating}
+              />
             </View>
             <Text style={styles.summaryLabel}>Avg Rating</Text>
           </View>
@@ -247,8 +259,12 @@ export default function PerformanceScreen() {
           numColumns={isTablet ? 2 : 1}
           columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
           contentContainerStyle={[
-            { padding: 16, gap: 10, paddingBottom: 32 },
-            isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' },
+            { padding: 16, gap: 12, paddingBottom: 32 },
+            isTablet && {
+              maxWidth: maxContentWidth,
+              width: '100%',
+              alignSelf: 'center',
+            },
           ]}
           refreshControl={
             <RefreshControl
@@ -299,7 +315,7 @@ export default function PerformanceScreen() {
                       <Text
                         style={[styles.statusBadgeText, { color: C.white }]}
                       >
-                        {item.status?.toUpperCase()}
+                        {sentence(item.status)}
                       </Text>
                     </View>
                   </View>
@@ -310,7 +326,7 @@ export default function PerformanceScreen() {
                   {[1, 2, 3, 4, 5].map(n => (
                     <Star
                       key={n}
-                      size={18}
+                      size={20}
                       color={
                         n <= Math.round(item.rating || 0)
                           ? '#F59E0B'
@@ -336,7 +352,7 @@ export default function PerformanceScreen() {
 
                 {(item as any).goals && (
                   <View style={styles.goalsRow}>
-                    <Target size={12} color={C.primary} />
+                    <Target size={14} color={C.primary} />
                     <Text style={styles.goalsText} numberOfLines={1}>
                       {(item as any).goals}
                     </Text>
@@ -356,7 +372,7 @@ export default function PerformanceScreen() {
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Add Review</Text>
                 <TouchableOpacity onPress={() => setShowForm(false)}>
-                  <X size={22} color={C.black} />
+                  <X size={24} color={C.black} />
                 </TouchableOpacity>
               </View>
               <ScrollView
@@ -454,7 +470,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     backgroundColor: C.white,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
@@ -466,7 +482,6 @@ const styles = StyleSheet.create({
     color: C.white,
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
   },
   summaryRow: {
     flexDirection: 'row',
@@ -474,25 +489,24 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: C.black,
     padding: 12,
-    gap: 10,
+    gap: 12,
   },
   summaryCard: {
     flex: 1,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    padding: 10,
+    padding: 12,
     alignItems: 'center',
   },
   summaryVal: { fontSize: 22, fontWeight: '400', color: C.black },
   summaryLabel: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.textMuted,
     marginTop: 2,
   },
@@ -527,12 +541,12 @@ const styles = StyleSheet.create({
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    padding: 14,
+    padding: 16,
   },
   cardTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   avatar: {
@@ -564,18 +578,18 @@ const styles = StyleSheet.create({
     borderRightWidth: 4,
     borderBottomWidth: 4,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
   },
   statusBadgeText: {
-    textTransform: 'uppercase',
-    fontSize: 9,
+    textTransform: 'capitalize',
+    fontSize: 11,
     fontWeight: '400',
   },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   ratingNum: { fontSize: 14, fontWeight: '400', marginLeft: 6 },
   feedbackText: { fontSize: 12, color: C.textMuted, lineHeight: 18 },
@@ -602,21 +616,19 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.black,
-    marginBottom: 5,
-    letterSpacing: 0.5,
+    marginBottom: 4,
   },
   fieldInput: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
-    paddingVertical: 11,
+    paddingVertical: 12,
     fontSize: 14,
     fontWeight: '400',
     color: C.black,
@@ -642,12 +654,12 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingVertical: 14,
+    paddingVertical: 16,
     alignItems: 'center',
     marginTop: 8,
   },
@@ -655,6 +667,5 @@ const styles = StyleSheet.create({
     color: C.white,
     fontWeight: '400',
     fontSize: 14,
-    textTransform: 'uppercase',
   },
 });

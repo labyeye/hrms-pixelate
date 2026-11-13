@@ -1,3 +1,4 @@
+import { sentence } from '../utils/text';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -479,7 +480,7 @@ export default function BiometricDeviceScreen() {
             onPress={() => navigation.goBack()}
             style={{ padding: 4, marginRight: 4 }}
           >
-            <ChevronLeft size={22} color={C.black} />
+            <ChevronLeft size={24} color={C.black} />
           </TouchableOpacity>
           <Cpu size={20} color={C.primary} />
           <Text style={styles.headerTitle}>Biometric Devices</Text>
@@ -591,7 +592,7 @@ export default function BiometricDeviceScreen() {
                             : { color: '#6B7280', borderColor: '#9CA3AF' },
                         ]}
                       >
-                        {loc.isActive ? 'ACTIVE' : 'INACTIVE'}
+                        {loc.isActive ? 'Active' : 'Inactive'}
                       </Text>
                     </View>
                     <View
@@ -670,13 +671,13 @@ export default function BiometricDeviceScreen() {
                             : { color: '#6B7280', borderColor: '#9CA3AF' },
                         ]}
                       >
-                        {dev.activated ? 'ACTIVE' : 'PENDING'}
+                        {dev.activated ? 'Active' : 'Pending'}
                       </Text>
                     </View>
                     {expandedDev === dev._id ? (
-                      <ChevronUp size={14} color="#9CA3AF" />
+                      <ChevronUp size={14} color="#6B7280" />
                     ) : (
-                      <ChevronDown size={14} color="#9CA3AF" />
+                      <ChevronDown size={14} color="#6B7280" />
                     )}
                   </TouchableOpacity>
 
@@ -684,7 +685,7 @@ export default function BiometricDeviceScreen() {
                     <View style={styles.devDetail}>
                       {dev.activationCode && !dev.activated && (
                         <View style={styles.codeBox}>
-                          <Text style={styles.codeLabel}>ACTIVATION CODE</Text>
+                          <Text style={styles.codeLabel}>Activation code</Text>
                           <Text style={styles.codeValue}>
                             {dev.activationCode}
                           </Text>
@@ -703,7 +704,7 @@ export default function BiometricDeviceScreen() {
                           style={styles.devActionBtn}
                           onPress={() => deleteDevice(dev)}
                         >
-                          <Trash2 size={13} color={C.danger} />
+                          <Trash2 size={14} color={C.danger} />
                           <Text
                             style={[styles.devActionText, { color: C.danger }]}
                           >
@@ -715,7 +716,7 @@ export default function BiometricDeviceScreen() {
                         style={styles.syncBtn}
                         onPress={() => handleSync(dev._id)}
                       >
-                        <RefreshCw size={13} color={C.white} />
+                        <RefreshCw size={14} color={C.white} />
                         <Text style={styles.syncBtnText}>
                           Sync All Employees
                         </Text>
@@ -732,7 +733,7 @@ export default function BiometricDeviceScreen() {
       {/* ── Activity Logs: everything the hardware device sent and how the server answered ── */}
       {tab === 'logs' && (
         <ScrollView
-          contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 10 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 12 }}
           refreshControl={
             <RefreshControl
               refreshing={devLogsLoading}
@@ -830,7 +831,7 @@ export default function BiometricDeviceScreen() {
                             { color: col, borderColor: col },
                           ]}
                         >
-                          {String(l.status).toUpperCase()}
+                          {sentence(l.status)}
                         </Text>
                       </View>
                     </TouchableOpacity>
@@ -905,7 +906,7 @@ export default function BiometricDeviceScreen() {
                     }}
                   >
                     <Cpu
-                      size={15}
+                      size={16}
                       color={admsDevice?._id === d._id ? C.primary : C.black}
                     />
                     <Text
@@ -948,7 +949,7 @@ export default function BiometricDeviceScreen() {
                     Menu → System Info → Device SN
                   </Text>
                 </Text>
-                <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
                   <TextInput
                     style={[
                       styles.fieldInput,
@@ -980,7 +981,7 @@ export default function BiometricDeviceScreen() {
                 </View>
                 {(admsDevice as any).serialNumber && (
                   <View style={admsS.serialRegistered}>
-                    <CheckCircle2 size={13} color={C.success} />
+                    <CheckCircle2 size={14} color={C.success} />
                     <Text style={admsS.serialRegisteredText}>
                       Currently registered: {(admsDevice as any).serialNumber}
                     </Text>
@@ -1020,7 +1021,7 @@ export default function BiometricDeviceScreen() {
                       <ActivityIndicator size="small" color={C.white} />
                     ) : (
                       <>
-                        <Upload size={13} color={C.white} />
+                        <Upload size={14} color={C.white} />
                         <Text style={admsS.syncAllBtnText}>Sync All</Text>
                       </>
                     )}
@@ -1068,7 +1069,7 @@ export default function BiometricDeviceScreen() {
                           <TouchableOpacity
                             onPress={() => setEditBioIdEmp(null)}
                           >
-                            <X size={14} color="#9CA3AF" />
+                            <X size={14} color="#6B7280" />
                           </TouchableOpacity>
                         </View>
                       ) : (
@@ -1085,7 +1086,7 @@ export default function BiometricDeviceScreen() {
                           }}
                         >
                           <Hash
-                            size={10}
+                            size={14}
                             color={emp.biometricUserId ? C.success : '#9CA3AF'}
                           />
                           <Text
@@ -1093,7 +1094,7 @@ export default function BiometricDeviceScreen() {
                               admsS.idChipText,
                               emp.biometricUserId
                                 ? { color: C.success }
-                                : { color: '#9CA3AF' },
+                                : { color: '#6B7280' },
                             ]}
                           >
                             {emp.biometricUserId || 'Set ID'}
@@ -1113,7 +1114,7 @@ export default function BiometricDeviceScreen() {
                         }}
                       >
                         <CreditCard
-                          size={10}
+                          size={14}
                           color={emp.rfidCard ? C.primary : '#9CA3AF'}
                         />
                         <Text
@@ -1121,7 +1122,7 @@ export default function BiometricDeviceScreen() {
                             admsS.idChipText,
                             emp.rfidCard
                               ? { color: C.primary }
-                              : { color: '#9CA3AF' },
+                              : { color: '#6B7280' },
                           ]}
                         >
                           {emp.rfidCard ? emp.rfidCard.slice(0, 8) : 'RFID'}
@@ -1144,7 +1145,7 @@ export default function BiometricDeviceScreen() {
                                 />
                               ) : (
                                 <>
-                                  <Fingerprint size={11} color={C.black} />
+                                  <Fingerprint size={14} color={C.black} />
                                   <Text style={admsS.actionBtnText}>FP</Text>
                                 </>
                               )}
@@ -1167,7 +1168,7 @@ export default function BiometricDeviceScreen() {
                                 />
                               ) : (
                                 <>
-                                  <Scan size={11} color="#16A34A" />
+                                  <Scan size={14} color="#16A34A" />
                                   <Text
                                     style={[
                                       admsS.actionBtnText,
@@ -1200,7 +1201,7 @@ export default function BiometricDeviceScreen() {
                                 />
                               ) : (
                                 <>
-                                  <UserCheck size={11} color={C.white} />
+                                  <UserCheck size={14} color={C.white} />
                                   <Text
                                     style={[
                                       admsS.actionBtnText,
@@ -1218,11 +1219,11 @@ export default function BiometricDeviceScreen() {
                             style={{
                               flexDirection: 'row',
                               alignItems: 'center',
-                              gap: 3,
+                              gap: 4,
                             }}
                           >
-                            <AlertTriangle size={11} color="#9CA3AF" />
-                            <Text style={{ fontSize: 12, color: '#9CA3AF' }}>
+                            <AlertTriangle size={14} color="#6B7280" />
+                            <Text style={{ fontSize: 12, color: '#6B7280' }}>
                               Set ID
                             </Text>
                           </View>
@@ -1252,7 +1253,7 @@ export default function BiometricDeviceScreen() {
                     style={admsS.refreshBtn}
                     onPress={() => fetchCommands(admsDevice._id)}
                   >
-                    <RefreshCw size={12} color={C.black} />
+                    <RefreshCw size={14} color={C.black} />
                     <Text style={admsS.refreshBtnText}>Refresh</Text>
                   </TouchableOpacity>
                 </View>
@@ -1444,7 +1445,7 @@ export default function BiometricDeviceScreen() {
                   onPress={() => setDevForm(p => ({ ...p, location: loc._id }))}
                 >
                   {devForm.location === loc._id && (
-                    <Check size={12} color={C.primary} />
+                    <Check size={14} color={C.primary} />
                   )}
                   <Text
                     style={[
@@ -1482,7 +1483,7 @@ const styles = StyleSheet.create({
   tblRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 6,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
@@ -1494,38 +1495,37 @@ const styles = StyleSheet.create({
     borderBottomColor: C.black,
   },
   tblH: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: C.black,
   },
   tblC: { fontSize: 12, fontWeight: '400', color: C.black },
   tblPill: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '400',
     borderWidth: 1.5,
-    paddingHorizontal: 5,
+    paddingHorizontal: 4,
     paddingVertical: 1,
   },
   logChip: {
     borderWidth: 2,
     borderColor: C.black,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     backgroundColor: C.white,
   },
   logChipText: { fontSize: 11, fontWeight: '400', color: C.black },
   logDetail: {
-    backgroundColor: '#F9FAFB',
-    padding: 10,
+    backgroundColor: '#F8F9FA',
+    padding: 12,
     gap: 4,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
   },
   logSummary: { fontSize: 12, fontWeight: '400', color: C.black },
-  logLabel: { fontSize: 9, fontWeight: '400', color: '#6B7280', marginTop: 4 },
+  logLabel: { fontSize: 11, fontWeight: '400', color: '#6B7280', marginTop: 4 },
   logCode: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: 'monospace',
     color: C.black,
     backgroundColor: C.white,
@@ -1540,7 +1540,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     backgroundColor: C.white,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
@@ -1552,7 +1552,6 @@ const styles = StyleSheet.create({
     color: C.white,
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
   },
   tabs: {
     flexDirection: 'row',
@@ -1571,16 +1570,15 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 12,
     fontWeight: '400',
-    color: '#9CA3AF',
-    textTransform: 'uppercase',
+    color: '#6B7280',
   },
   tabTextActive: { color: C.primary },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -1588,9 +1586,9 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 12,
   },
   rowBorder: { borderTopWidth: 2, borderTopColor: C.black },
   rowTitle: { fontSize: 14, fontWeight: '400', color: C.black },
@@ -1619,35 +1617,33 @@ const styles = StyleSheet.create({
     borderBottomWidth: 4,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 4,
     paddingHorizontal: 6,
-    paddingVertical: 3,
+    paddingVertical: 4,
   },
-  badgeText: { fontSize: 9, fontWeight: '400', textTransform: 'uppercase' },
+  badgeText: { fontSize: 11, fontWeight: '400', textTransform: 'capitalize' },
   devDetail: {
     backgroundColor: '#F8F9FA',
     borderTopWidth: 2,
     borderTopColor: C.black,
-    padding: 14,
+    padding: 16,
   },
   codeBox: {
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     padding: 12,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   codeLabel: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: '#6B7280',
-    letterSpacing: 0.5,
   },
   codeValue: {
     fontSize: 24,
@@ -1670,13 +1666,12 @@ const styles = StyleSheet.create({
     borderBottomColor: '#0A0A0A',
     borderRadius: 8,
     borderColor: C.danger,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
   },
   devActionText: {
     fontSize: 11,
     fontWeight: '400',
-    textTransform: 'uppercase',
   },
   syncBtn: {
     flexDirection: 'row',
@@ -1685,8 +1680,8 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -1698,11 +1693,10 @@ const styles = StyleSheet.create({
     color: C.white,
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
   },
   empty: { alignItems: 'center', paddingVertical: 60, gap: 8 },
   emptyText: { fontSize: 14, fontWeight: '400', color: '#6B7280' },
-  emptySub: { fontSize: 12, color: '#9CA3AF' },
+  emptySub: { fontSize: 12, color: '#6B7280' },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -1724,25 +1718,23 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalTitle: { fontSize: 18, fontWeight: '400', color: C.black },
-  field: { marginBottom: 14 },
+  field: { marginBottom: 16 },
   fieldLabel: {
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
     color: '#6B7280',
     marginBottom: 6,
-    letterSpacing: 0.5,
   },
   fieldInput: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     fontSize: 14,
     fontWeight: '400',
     color: C.black,
@@ -1755,25 +1747,24 @@ const styles = StyleSheet.create({
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingVertical: 14,
+    paddingVertical: 16,
     marginTop: 4,
   },
   saveBtnText: {
     color: C.white,
     fontSize: 13,
     fontWeight: '400',
-    textTransform: 'uppercase',
   },
   locOption: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    padding: 10,
+    padding: 12,
     borderWidth: 2,
     borderRightWidth: 4,
     borderBottomWidth: 4,
@@ -1792,8 +1783,8 @@ const admsS = StyleSheet.create({
     backgroundColor: C.white,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -1804,7 +1795,7 @@ const admsS = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   stepBadge: {
     width: 22,
@@ -1818,14 +1809,13 @@ const admsS = StyleSheet.create({
     fontSize: 13,
     fontWeight: '400',
     color: C.black,
-    textTransform: 'uppercase',
   },
   hint: { fontSize: 11, color: '#6B7280', lineHeight: 16 },
   deviceCard: {
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -1848,36 +1838,35 @@ const admsS = StyleSheet.create({
     paddingVertical: 2,
   },
   snBadgeText: {
-    textTransform: 'uppercase',
-    fontSize: 9,
+    textTransform: 'capitalize',
+    fontSize: 11,
     fontWeight: '400',
     color: C.success,
   },
   saveSerialBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   saveSerialBtnText: {
     color: C.white,
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
   },
   serialRegistered: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
     marginTop: 8,
   },
   serialRegisteredText: { fontSize: 11, color: C.success, fontWeight: '400' },
@@ -1893,12 +1882,12 @@ const admsS = StyleSheet.create({
   syncAllBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
     backgroundColor: C.primary,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
@@ -1909,14 +1898,13 @@ const admsS = StyleSheet.create({
     color: C.white,
     fontSize: 11,
     fontWeight: '400',
-    textTransform: 'uppercase',
   },
   empRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
     flexWrap: 'wrap',
   },
   empRowBorder: { borderTopWidth: 2, borderTopColor: C.black },
@@ -1953,7 +1941,7 @@ const admsS = StyleSheet.create({
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderRadius: 8,
-    paddingHorizontal: 7,
+    paddingHorizontal: 8,
     paddingVertical: 4,
   },
   idChipSet: { borderColor: C.success, backgroundColor: '#F0FDF4' },
@@ -1963,16 +1951,16 @@ const admsS = StyleSheet.create({
   actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 4,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingHorizontal: 7,
-    paddingVertical: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     backgroundColor: C.white,
   },
   actionBtnText: { fontSize: 12, fontWeight: '400', color: C.black },
@@ -1991,12 +1979,12 @@ const admsS = StyleSheet.create({
     gap: 4,
     borderWidth: 2,
     borderRadius: 8,
-    borderRightWidth: 5,
-    borderBottomWidth: 5,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
   },
   refreshBtnText: { fontSize: 11, fontWeight: '400', color: C.black },
@@ -2004,7 +1992,7 @@ const admsS = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderTopWidth: 2,
     borderTopColor: C.black,
   },
@@ -2012,24 +2000,28 @@ const admsS = StyleSheet.create({
     fontSize: 11,
     fontWeight: '400',
     color: C.black,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
   },
   cmdEmp: { fontSize: 11, color: '#6B7280', marginTop: 1 },
-  cmdTime: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
+  cmdTime: { fontSize: 12, color: '#6B7280', marginTop: 2 },
   cmdStatus: {
     borderWidth: 2,
     borderRadius: 999,
     borderColor: '#0A0A0A',
     borderRightWidth: 4,
     borderBottomWidth: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   cmdDone: { borderColor: C.success, backgroundColor: '#F0FDF4' },
   cmdPending: { borderColor: '#FA731C', backgroundColor: '#FFF7ED' },
   cmdSent: { borderColor: C.primary, backgroundColor: '#EFF6FF' },
   cmdFailed: { borderColor: C.danger, backgroundColor: '#FEF2F2' },
-  cmdStatusText: { fontSize: 9, fontWeight: '400', textTransform: 'uppercase' },
+  cmdStatusText: {
+    fontSize: 11,
+    fontWeight: '400',
+    textTransform: 'capitalize',
+  },
   rfidEmpBox: {
     backgroundColor: '#EFF6FF',
     borderWidth: 2,
@@ -2040,7 +2032,7 @@ const admsS = StyleSheet.create({
     borderRadius: 8,
     borderColor: '#BFDBFE',
     padding: 12,
-    marginBottom: 14,
+    marginBottom: 16,
   },
   rfidEmpName: { fontSize: 14, fontWeight: '400', color: C.black },
   rfidEmpId: { fontSize: 11, color: '#6B7280', marginTop: 2 },

@@ -121,6 +121,17 @@ export default function NotificationsScreen() {
     );
   };
 
+  // Tap: mark read, then open the screen the notification is about (when it names one).
+  const openNotification = (item: LocalNotification) => {
+    if (!item.read) markRead(item.id);
+    const screen = item.data?.screen;
+    if (!screen) return;
+    if (screen === 'Leave' || screen === 'Attendance')
+      navigation.navigate(screen);
+    else if (['Expenses', 'Loans', 'Payroll', 'Tasks'].includes(screen))
+      navigation.navigate('More', { screen });
+  };
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const renderItem = ({ item }: { item: LocalNotification }) => {
@@ -128,7 +139,7 @@ export default function NotificationsScreen() {
     return (
       <TouchableOpacity
         style={[styles.notifRow, !item.read && styles.notifUnread]}
-        onPress={() => markRead(item.id)}
+        onPress={() => openNotification(item)}
         activeOpacity={0.8}
       >
         <View style={[styles.iconWrap, !item.read && styles.iconWrapActive]}>
@@ -154,13 +165,22 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={[styles.header, isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' }]}>
+      <View
+        style={[
+          styles.header,
+          isTablet && {
+            maxWidth: maxContentWidth,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
+      >
         <View style={styles.headerLeft}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={{ padding: 4, marginRight: 4 }}
           >
-            <ChevronLeft size={22} color={C.black} />
+            <ChevronLeft size={24} color={C.black} />
           </TouchableOpacity>
           <Bell size={20} color={C.primary} />
           <Text style={styles.headerTitle}>Notifications</Text>
@@ -191,7 +211,7 @@ export default function NotificationsScreen() {
       ) : notifications.length === 0 ? (
         <View style={styles.empty}>
           <Bell size={40} color="#D1D5DB" />
-          <Text style={styles.emptyTitle}>All caught up!</Text>
+          <Text style={styles.emptyTitle}>All caught up</Text>
           <Text style={styles.emptySub}>
             New notifications will appear here
           </Text>
@@ -209,8 +229,12 @@ export default function NotificationsScreen() {
             </View>
           )}
           contentContainerStyle={[
-            { padding: 16, gap: 10, paddingBottom: 40 },
-            isTablet && { maxWidth: maxContentWidth, width: '100%', alignSelf: 'center' },
+            { padding: 16, gap: 12, paddingBottom: 40 },
+            isTablet && {
+              maxWidth: maxContentWidth,
+              width: '100%',
+              alignSelf: 'center',
+            },
           ]}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
@@ -244,7 +268,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     backgroundColor: C.white,
     borderBottomWidth: 2,
     borderBottomColor: C.black,
@@ -262,10 +286,10 @@ const styles = StyleSheet.create({
     height: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 5,
+    paddingHorizontal: 4,
   },
   badgeText: {
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
     color: C.white,
     fontSize: 12,
     fontWeight: '400',
@@ -284,7 +308,7 @@ const styles = StyleSheet.create({
   },
   infoBanner: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
     backgroundColor: '#FFFBEB',
     borderBottomWidth: 2,
     borderBottomColor: C.black,
@@ -292,7 +316,7 @@ const styles = StyleSheet.create({
   infoBannerText: { fontSize: 11, fontWeight: '400', color: '#92400E' },
   listHeader: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
     backgroundColor: '#EFF6FF',
     borderBottomWidth: 1,
     borderBottomColor: '#DBEAFE',
@@ -301,15 +325,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '400',
     color: C.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   notifRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     backgroundColor: C.white,
     borderWidth: 2,
     borderColor: C.black,
@@ -337,13 +359,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 3,
+    marginBottom: 4,
   },
   notifTitle: { fontSize: 13, fontWeight: '400', color: '#6B7280', flex: 1 },
   notifTitleUnread: { color: C.black, fontWeight: '400' },
   notifTime: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: '#6B7280',
     fontWeight: '400',
     marginLeft: 8,
   },
@@ -356,7 +378,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   separator: { height: 2, backgroundColor: '#000000' },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   emptyTitle: { fontSize: 16, fontWeight: '400', color: C.black },
-  emptySub: { fontSize: 13, color: '#9CA3AF' },
+  emptySub: { fontSize: 13, color: '#6B7280' },
 });

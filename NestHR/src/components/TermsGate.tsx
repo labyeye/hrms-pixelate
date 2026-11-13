@@ -52,7 +52,7 @@ export default function TermsGate() {
         zIndex: 999,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
+        gap: 12,
       }}
     >
       <Text style={{ flex: 1, color: '#000', fontSize: 12 }}>
