@@ -1,4 +1,5 @@
 import { writePrintDocument } from "@/lib/printWindow";
+import { AnimatedValue } from "@/components/ui/AnimatedValue";
 import { useState, useEffect } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -248,7 +249,7 @@ export default function BillingPage() {
               </div>
               <div>
                 <p className="font-display font-bold text-3xl text-black">
-                  {stat.value}
+                  <AnimatedValue value={stat.value} />
                   {stat.max !== "" && (
                     <span className="text-sm font-medium text-muted-foreground ml-1">
                       / {stat.max}

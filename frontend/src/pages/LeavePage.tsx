@@ -1,4 +1,5 @@
 import { StatCard } from "@/components/ui/StatCard";
+import { AnimatedValue } from "@/components/ui/AnimatedValue";
 import { ExportMenu } from "@/components/ui/ExportMenu";
 import { useState, useEffect, useCallback } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
@@ -11,6 +12,7 @@ import { cn, formatDate } from "@/lib/utils";
 import { EmployeeCombobox } from "@/components/employees/EmployeeCombobox";
 import {
   Plus,
+  IndianRupee,
   CalendarDays,
   CheckCircle,
   XCircle,
@@ -552,26 +554,80 @@ export default function LeavePage() {
 
   return (
     <AppLayout title="Leave Management">
-      {}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-        <div className="flex items-center gap-2">
-          {["", "pending", "approved", "rejected"].map((s) => (
-            <button
-              key={s}
-              onClick={() => setFilter(s)}
-              className={cn(
-                "px-3 py-1.5 text-xs font-bold border-2 transition-colors capitalize",
-                filter === s
-                  ? "bg-[#024BAB] text-white border-black border-2"
-                  : "bg-white text-black border-black hover:bg-[#024BAB]/10",
-              )}
+      {isEmployee && myLeaveBalance.length > 0 && (
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-3 mb-5">
+          {myLeaveBalance.map((l) => (
+            <div
+              key={l.leaveType}
+              className="border-2 border-black bg-white p-4"
             >
-              {s === "" ? "All" : s}{" "}
-              {s === "pending" && summary.pending > 0 && `(${summary.pending})`}
-            </button>
+              <p className="text-xs font-bold uppercase text-muted-foreground">
+                {TYPE_LABELS[l.leaveType] ?? l.leaveType} left
+              </p>
+              <p className="text-2xl font-bold mt-1 text-[#024BAB]">
+                <AnimatedValue value={Math.max(l.daysAllowed - l.daysUsed, 0)} />/{l.daysAllowed}
+              </p>
+            </div>
           ))}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+      )}
+
+      {}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-5">
+        {[
+          { label: "Pending", key: "pending", value: summary.pending, color: "#FA731C" },
+          { label: "Approved", key: "approved", value: summary.approved, color: "#00C48C" },
+          { label: "Rejected", key: "rejected", value: summary.rejected, color: "#EF4444" },
+        ].map(({ label, key, value, color }) => (
+          <StatCard
+            key={label}
+            label={label}
+            value={value}
+            icon={CalendarDays}
+            color={color}
+            active={filter === key}
+            onClick={() => setFilter(filter === key ? "" : key)}
+          />
+        ))}
+      </div>
+
+      {/* Search & Sort */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex items-center gap-2 border-2 border-black bg-white px-3 py-2 flex-1 min-w-48">
+          <Search className="w-4 h-4 shrink-0 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search by employee name..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="bg-transparent text-sm outline-none w-full font-medium"
+          />
+          {search && (
+            <button onClick={() => setSearch("")}>
+              <X className="w-3.5 h-3.5 text-muted-foreground" />
+            </button>
+          )}
+        </div>
+        <select
+          value={sortKey}
+          onChange={(e) => setSortKey(e.target.value as any)}
+          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none"
+        >
+          <option value="startDate">Sort: Date</option>
+          <option value="days">Sort: Days</option>
+          <option value="employee">Sort: Employee</option>
+        </select>
+        <button
+          onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+          className="border-2 border-black bg-white px-3 py-2 flex items-center gap-1 font-semibold text-sm"
+        >
+          {sortDir === "asc" ? (
+            <ArrowUp className="w-4 h-4" />
+          ) : (
+            <ArrowDown className="w-4 h-4" />
+          )}
+          {sortDir === "asc" ? "Asc" : "Desc"}
+        </button>
           <ExportMenu
             name="leave_requests"
             rows={displayedLeaves}
@@ -632,81 +688,6 @@ export default function LeavePage() {
           >
             <Plus className="w-4 h-4" /> Apply Leave
           </button>
-        </div>
-      </div>
-
-      {isEmployee && myLeaveBalance.length > 0 && (
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-3 mb-5">
-          {myLeaveBalance.map((l) => (
-            <div
-              key={l.leaveType}
-              className="border-2 border-black bg-white p-4"
-            >
-              <p className="text-xs font-bold uppercase text-muted-foreground">
-                {TYPE_LABELS[l.leaveType] ?? l.leaveType} left
-              </p>
-              <p className="text-2xl font-bold mt-1 text-[#024BAB]">
-                {Math.max(l.daysAllowed - l.daysUsed, 0)}/{l.daysAllowed}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-5">
-        {[
-          { label: "Pending", value: summary.pending, color: "#FA731C" },
-          { label: "Approved", value: summary.approved, color: "#00C48C" },
-          { label: "Rejected", value: summary.rejected, color: "#EF4444" },
-        ].map(({ label, value, color }) => (
-          <StatCard
-            key={label}
-            label={label}
-            value={value}
-            icon={CalendarDays}
-            color={color}
-          />
-        ))}
-      </div>
-
-      {/* Search & Sort */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <div className="flex items-center gap-2 border-2 border-black bg-white px-3 py-2 flex-1 min-w-48">
-          <Search className="w-4 h-4 shrink-0 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search by employee name..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="bg-transparent text-sm outline-none w-full font-medium"
-          />
-          {search && (
-            <button onClick={() => setSearch("")}>
-              <X className="w-3.5 h-3.5 text-muted-foreground" />
-            </button>
-          )}
-        </div>
-        <select
-          value={sortKey}
-          onChange={(e) => setSortKey(e.target.value as any)}
-          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none"
-        >
-          <option value="startDate">Sort: Date</option>
-          <option value="days">Sort: Days</option>
-          <option value="employee">Sort: Employee</option>
-        </select>
-        <button
-          onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
-          className="border-2 border-black bg-white px-3 py-2 flex items-center gap-1 font-semibold text-sm"
-        >
-          {sortDir === "asc" ? (
-            <ArrowUp className="w-4 h-4" />
-          ) : (
-            <ArrowDown className="w-4 h-4" />
-          )}
-          {sortDir === "asc" ? "Asc" : "Desc"}
-        </button>
       </div>
 
       {}
@@ -727,11 +708,10 @@ export default function LeavePage() {
                 {[
                   ["Emp Code", ""],
                   ["Employee", ""],
-                  ["Designation", ""],
-                  ...(isEmployee ? [] : [["Free Leave", ""]]),
                   ["Type", "w-24"],
                   ["Duration", ""],
                   ["Days", "w-14"],
+                  ["Pay", "w-24"],
                   ["Reason", "min-w-[240px] w-1/4"],
                   ["Status", ""],
                   ["Actions", ""],
@@ -781,33 +761,6 @@ export default function LeavePage() {
                       </p>
                     </div>
                   </td>
-                  <td className="px-3 py-3 text-xs text-black">
-                    {(leave.employee as any)?.designation || "—"}
-                  </td>
-                  {!isEmployee && (
-                    <td className="px-3 py-3 text-xs whitespace-nowrap">
-                      {(() => {
-                        const u = usageMap[(leave.employee as any)?._id];
-                        if (!u || !u.allowed)
-                          return (
-                            <span className="text-muted-foreground">—</span>
-                          );
-                        return (
-                          <span
-                            title={u.detail}
-                            className={cn(
-                              "font-bold border-2 px-1.5 py-0.5",
-                              u.used >= u.allowed
-                                ? "text-[#EF4444] border-[#EF4444] bg-[#EF4444]/10"
-                                : "text-[#024BAB] border-[#024BAB] bg-[#024BAB]/10",
-                            )}
-                          >
-                            {u.used}/{u.allowed} d
-                          </span>
-                        );
-                      })()}
-                    </td>
-                  )}
                   <td className="px-3 py-3 w-24">
                     <span
                       className={cn(
@@ -825,6 +778,25 @@ export default function LeavePage() {
                   <td className="px-3 py-3 w-14 text-xs font-bold text-black">
                     {leave.days}d
                   </td>
+                  <td className="px-3 py-3 w-24">
+                    {leave.status !== "approved" ? (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    ) : (leave as any).deductSalary ? (
+                      <span
+                        title="Unpaid leave — salary is deducted for these days"
+                        className="inline-flex items-center gap-1 border-2 border-[#EF4444] bg-[#EF4444]/10 text-[#EF4444] text-[11px] font-bold px-1.5 py-0.5 whitespace-nowrap"
+                      >
+                        <IndianRupee className="w-3 h-3" /> Unpaid
+                      </span>
+                    ) : (
+                      <span
+                        title="Paid leave — no salary deduction"
+                        className="inline-flex items-center gap-1 border-2 border-[#00C48C] bg-[#00C48C]/10 text-[#00A36C] text-[11px] font-bold px-1.5 py-0.5 whitespace-nowrap"
+                      >
+                        <IndianRupee className="w-3 h-3" /> Paid
+                      </span>
+                    )}
+                  </td>
                   <td className="px-3 py-3 text-xs text-black min-w-[240px] whitespace-normal break-words">
                     {leave.reason}
                   </td>
@@ -838,22 +810,10 @@ export default function LeavePage() {
                       >
                         {leave.status}
                       </span>
-                      {leave.status === "approved" && (
-                        <span
-                          className={cn(
-                            "border text-[9px] px-1.5 py-0.5 font-bold",
-                            (leave as any).deductSalary
-                              ? "bg-[#FA731C]/10 text-[#FA731C] border-[#FA731C]"
-                              : "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C]",
-                          )}
-                        >
-                          {(leave as any).deductSalary ? "Unpaid" : "Paid"}
-                        </span>
-                      )}
                     </div>
                   </td>
                   <td className="px-3 py-3">
-                    <div className="flex gap-1 flex-wrap">
+                    <div className="flex flex-nowrap items-center gap-1 whitespace-nowrap">
                       {/* Approve / Reject — admin only, pending leaves */}
                       {isAdmin && leave.status === "pending" && (
                         <>

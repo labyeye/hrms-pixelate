@@ -17,7 +17,23 @@ import {
   employeeAPI,
   payrollPreviewAPI,
   settingsAPI,
+  dashboardAPI,
 } from "@/services/api";
+import { ViewTabs, useViewTab } from "@/components/ui/ViewTabs";
+import { ChartCard, NbTooltip } from "@/components/ui/ChartCard";
+import { AnimatedNumber } from "@/components/motion/AnimatedNumber";
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  LabelList,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { Payroll } from "@/types/hrms";
 import { cn, formatCurrency } from "@/lib/utils";
 import {
@@ -31,6 +47,8 @@ import {
   ArrowDown,
   Eye,
   Banknote,
+  MailCheck,
+  MailX,
 } from "lucide-react";
 import { ActionModal } from "@/components/ui/ActionModal";
 import tallyLogo from "../../assets/tally.png";
@@ -286,6 +304,24 @@ export default function PayrollPage() {
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
   const [payrolls, setPayrolls] = useState<Payroll[]>([]);
+  // Payroll is action-heavy (run, pay, print), so admins land on Details; Insights is one tap away.
+  const [view, setView] = useViewTab("payroll", "details");
+  const [payTrend, setPayTrend] = useState<{ month: number; total: number }[]>(
+    [],
+  );
+  useEffect(() => {
+    if (view !== "graphs") return;
+    let cancelled = false;
+    dashboardAPI
+      .getStats()
+      .then((r: any) => {
+        if (!cancelled && r?.success) setPayTrend(r.data.payTrend || []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [view]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [processModal, setProcessModal] = useState(false);
@@ -302,6 +338,7 @@ export default function PayrollPage() {
   }>({ show: false, type: "success", title: "", message: "" });
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  const [deptFilter, setDeptFilter] = useState("");
   const [sortKey, setSortKey] = useState<
     "employee" | "net" | "gross" | "deductions"
   >("employee");
@@ -326,8 +363,6 @@ export default function PayrollPage() {
     chequeLogoY: 20,
     chequeLogoSize: 60,
   });
-  const [logoSettingsOpen, setLogoSettingsOpen] = useState(false);
-  const [logoSettingsSaving, setLogoSettingsSaving] = useState(false);
   const [paidModal, setPaidModal] = useState<{
     show: boolean;
     payrollId: string | null;
@@ -510,6 +545,55 @@ export default function PayrollPage() {
   const totalNet = payrolls.reduce((s, p) => s + p.netSalary, 0);
   const totalDed = payrolls.reduce((s, p) => s + p.totalDeductions, 0);
   const paidCount = payrolls.filter((p) => p.status === "paid").length;
+  const paidPct = payrolls.length
+    ? Math.round((paidCount / payrolls.length) * 100)
+    : 0;
+
+  // Insights-tab data
+  const sumOf = (f: (p: any) => number) =>
+    payrolls.reduce((s, p) => s + (f(p) || 0), 0);
+  const deductionParts = [
+    { name: "Absent", value: sumOf((p) => p.absentDeduction) },
+    { name: "Late", value: sumOf((p) => p.lateDeductionAmount) },
+    { name: "Half day", value: sumOf((p) => p.halfDayDeduction) },
+    { name: "Early out", value: sumOf((p) => p.earlyCheckoutDeduction) },
+    { name: "Penalty", value: sumOf((p) => p.penaltyAmount) },
+    { name: "Loan/advance", value: sumOf((p) => p.loanDeduction) },
+  ]
+    .filter((d) => d.value > 0)
+    .sort((a, b) => b.value - a.value);
+  const deptCost = Object.entries(
+    payrolls.reduce<Record<string, number>>((acc, p) => {
+      const name = (p.employee as any)?.department?.name || "Unassigned";
+      acc[name] = (acc[name] || 0) + (p.netSalary || 0);
+      return acc;
+    }, {}),
+  )
+    .map(([name, total]) => ({ name, total: Math.round(total / 1000) }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 8);
+  // Department-wise totals for this month (all records, ignoring the list filters).
+  const deptStats = Object.values(
+    payrolls.reduce<
+      Record<
+        string,
+        { name: string; people: number; paid: number; gross: number; ded: number; net: number }
+      >
+    >((acc, p) => {
+      const name = (p.employee as any)?.department?.name || "No department";
+      const d = (acc[name] ||= { name, people: 0, paid: 0, gross: 0, ded: 0, net: 0 });
+      d.people += 1;
+      if (p.status === "paid") d.paid += 1;
+      d.gross += p.grossSalary || 0;
+      d.ded += p.totalDeductions || 0;
+      d.net += p.netSalary || 0;
+      return acc;
+    }, {}),
+  ).sort((a, b) => b.net - a.net);
+  const trendChart = payTrend.map((t) => ({
+    label: MONTHS[t.month - 1]?.slice(0, 3),
+    total: Math.round(t.total / 1000),
+  }));
 
   const displayedPayrolls = [...payrolls]
     .filter((p) => {
@@ -517,6 +601,11 @@ export default function PayrollPage() {
         `${(p.employee as any)?.firstName ?? ""} ${(p.employee as any)?.lastName ?? ""}`.toLowerCase();
       if (search && !name.includes(search.toLowerCase())) return false;
       if (filterStatus && p.status !== filterStatus) return false;
+      if (
+        deptFilter &&
+        ((p.employee as any)?.department?.name || "No department") !== deptFilter
+      )
+        return false;
       return true;
     })
     .sort((a, b) => {
@@ -605,11 +694,18 @@ export default function PayrollPage() {
       cell: (p) => money(p.penaltyAmount, "-", "text-red-500"),
     },
     {
-      key: "bonus",
-      label: "Bonus / Allow",
+      key: "allowance",
+      label: "Allowance",
       cls: "text-[#00C48C]",
       val: (p) => p.otherAllowances ?? 0,
       cell: (p) => money(p.otherAllowances, "+", "text-[#00C48C]"),
+    },
+    {
+      key: "bonus",
+      label: "Bonus",
+      cls: "text-[#A855F7]",
+      val: (p) => p.bonusAmount ?? 0,
+      cell: (p) => money(p.bonusAmount, "+", "text-[#A855F7]"),
     },
     {
       key: "loan",
@@ -622,6 +718,26 @@ export default function PayrollPage() {
   const optionalCols = allOptionalCols.filter((c) =>
     displayedPayrolls.some((p) => c.val(p) > 0),
   );
+
+  const printBulkSlips = () => {
+      if (payrolls.length === 0) {
+        alert("No payroll records to print.");
+        return;
+      }
+      const win = window.open("", "_blank");
+      if (!win) return;
+      const rows = payrolls
+        .map(
+          (p) =>
+            `<tr><td>${esc((p.employee as any)?.firstName)} ${esc((p.employee as any)?.lastName)}</td><td>${esc((p.employee as any)?.designation)}</td><td>₹${p.basicSalary.toLocaleString()}</td><td>₹${p.grossSalary.toLocaleString()}</td><td>-₹${p.totalDeductions.toLocaleString()}</td><td>₹${p.netSalary.toLocaleString()}</td><td>${p.status}</td></tr>`,
+        )
+        .join("");
+      writePrintDocument(
+        win,
+        `<html><head><title>Salary Slips ${MONTHS[month - 1]} ${year}</title><style>@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');body{font-family:"DM Sans",sans-serif;font-size:12px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:6px 10px}th{background:#f0f6ff}</style></head><body><h2>Payroll — ${MONTHS[month - 1]} ${year}</h2><table><thead><tr><th>Employee</th><th>Designation</th><th>Basic</th><th>Gross</th><th>Deductions</th><th>Net Pay</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></body></html>`,
+      );
+      win.print();
+  };
 
   return (
     <AppLayout title="Payroll">
@@ -710,9 +826,10 @@ export default function PayrollPage() {
               },
               { header: "Penalty", value: (p: any) => p.penaltyAmount || 0 },
               {
-                header: "Bonus/Allow",
+                header: "Allowance",
                 value: (p: any) => p.otherAllowances || 0,
               },
+              { header: "Bonus", value: (p: any) => p.bonusAmount || 0 },
               {
                 header: "Loan/Advance",
                 value: (p: any) => p.loanDeduction || 0,
@@ -721,56 +838,34 @@ export default function PayrollPage() {
               { header: "Net Salary", value: (p: any) => p.netSalary },
               { header: "Status", value: (p: any) => p.status },
             ]}
+            extra={[
+              {
+                label: "Bulk Slips (print)",
+                icon: <Printer className="w-4 h-4" />,
+                onClick: printBulkSlips,
+                disabled: payrolls.length === 0,
+              },
+              {
+                label: "Tally XML",
+                icon: <img src={tallyLogo} alt="Tally" className="w-6 h-3.5" />,
+                onClick: () => payrollAPI.exportTally(month, year),
+                disabled: payrolls.length === 0,
+              },
+              {
+                label: "Zoho CSV",
+                icon: <img src={zohoBooksLogo} alt="Zoho" className="w-4 h-4" />,
+                onClick: () => payrollAPI.exportZoho(month, year),
+                disabled: payrolls.length === 0,
+              },
+              {
+                label: "Bank CSV",
+                icon: <Banknote className="w-4 h-4" />,
+                onClick: () =>
+                  payrollAPI.exportBank(month, year).catch((e) => alert(e.message)),
+                disabled: payrolls.length === 0,
+              },
+            ]}
           />
-          <button
-            onClick={() => {
-              if (payrolls.length === 0) {
-                alert("No payroll records to print.");
-                return;
-              }
-              const win = window.open("", "_blank");
-              if (!win) return;
-              const rows = payrolls
-                .map(
-                  (p) =>
-                    `<tr><td>${esc((p.employee as any)?.firstName)} ${esc((p.employee as any)?.lastName)}</td><td>${esc((p.employee as any)?.designation)}</td><td>₹${p.basicSalary.toLocaleString()}</td><td>₹${p.grossSalary.toLocaleString()}</td><td>-₹${p.totalDeductions.toLocaleString()}</td><td>₹${p.netSalary.toLocaleString()}</td><td>${p.status}</td></tr>`,
-                )
-                .join("");
-              writePrintDocument(
-                win,
-                `<html><head><title>Salary Slips ${MONTHS[month - 1]} ${year}</title><style>@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');body{font-family:"DM Sans",sans-serif;font-size:12px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:6px 10px}th{background:#f0f6ff}</style></head><body><h2>Payroll — ${MONTHS[month - 1]} ${year}</h2><table><thead><tr><th>Employee</th><th>Designation</th><th>Basic</th><th>Gross</th><th>Deductions</th><th>Net Pay</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></body></html>`,
-              );
-              win.print();
-            }}
-            className="bg-white text-black px-4 py-2 text-sm flex items-center gap-1.5 border-2 border-black"
-          >
-            <Printer className="w-4 h-4" /> Bulk Slips
-          </button>
-          <button
-            onClick={() => payrollAPI.exportTally(month, year)}
-            disabled={payrolls.length === 0}
-            className="bg-white text-black px-4 py-2 text-sm flex items-center gap-1.5 border-2 border-black disabled:opacity-40"
-          >
-            <img src={tallyLogo} alt="Tally" className="w-7 h-4" /> Tally XML
-          </button>
-          <button
-            onClick={() => payrollAPI.exportZoho(month, year)}
-            disabled={payrolls.length === 0}
-            className="bg-white text-black px-4 py-2 text-sm flex items-center gap-1.5 border-2 border-black disabled:opacity-40"
-          >
-            <img src={zohoBooksLogo} alt="Zoho" className="w-4 h-4" /> Zoho CSV
-          </button>
-          <button
-            onClick={() =>
-              payrollAPI
-                .exportBank(month, year)
-                .catch((e) => alert(e.message))
-            }
-            disabled={payrolls.length === 0}
-            className="bg-white text-black px-4 py-2 text-sm flex items-center gap-1.5 border-2 border-black disabled:opacity-40"
-          >
-            <Banknote className="w-4 h-4" /> Bank CSV
-          </button>
           <button
             onClick={() => {
               setProcessModal(true);
@@ -788,111 +883,267 @@ export default function PayrollPage() {
         </div>
       </div>
 
-      {}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-3 mb-5">
-        {[
-          {
-            label: "Gross Salary",
-            value: formatCurrency(totalGross),
-            color: "#024BAB",
-          },
-          {
-            label: "Total Deductions",
-            value: formatCurrency(totalDed),
-            color: "#FA731C",
-          },
-          {
-            label: "Net Payable",
-            value: formatCurrency(totalNet),
-            color: "#00C48C",
-          },
-          {
-            label: "Paid",
-            value: `${paidCount}/${payrolls.length}`,
-            color: "#024BAB",
-          },
-        ].map(({ label, value, color }) => (
-          <StatCard
-            key={label}
-            label={label}
-            value={value}
-            icon={IndianRupee}
-            color={color}
-          />
-        ))}
-      </div>
+      <ViewTabs value={view} onChange={setView} className="mb-4" />
 
-      {/* Cheque logo position settings */}
-      {company.logo && (
-        <div className="border-2 border-black bg-white mb-5">
-          <button
-            className="w-full flex items-center justify-between px-4 py-2 text-xs font-bold uppercase tracking-wider"
-            onClick={() => setLogoSettingsOpen((v) => !v)}
-          >
-            <span>Cheque Logo Position</span>
-            <span className="text-muted-foreground">
-              {logoSettingsOpen ? "▲" : "▼"}
-            </span>
-          </button>
-          {logoSettingsOpen && (
-            <div className="px-4 pb-4 border-t-2 border-black">
-              <div className="flex items-start gap-4 mt-3">
-                <img
-                  src={company.logo}
-                  alt="logo"
-                  className="w-16 h-16 object-contain border border-gray-300 bg-white p-1 shrink-0"
+      {view === "graphs" && (
+        <>
+          {/* Hero: how this month's payroll stands */}
+          <div className="nb-rise border-2 border-black bg-white p-5 mb-3 flex flex-col sm:flex-row items-center gap-6">
+            <div className="relative w-32 h-32 shrink-0">
+              <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                <circle cx="18" cy="18" r="15.5" fill="none" stroke="#E5E7EB" strokeWidth="5" />
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="15.5"
+                  fill="none"
+                  stroke="#00C48C"
+                  strokeWidth="5"
+                  strokeDasharray={`${(paidPct / 100) * 97.4} 97.4`}
+                  style={{ transition: "stroke-dasharray 1s ease-out" }}
                 />
-                <div className="flex gap-3 flex-wrap items-end flex-1">
-                  {[
-                    { label: "X (pts)", key: "chequeLogoX" },
-                    { label: "Y (pts)", key: "chequeLogoY" },
-                    { label: "Size (width pts)", key: "chequeLogoSize" },
-                  ].map(({ label, key }) => (
-                    <div key={key} className="space-y-1">
-                      <label className="block text-xs font-bold text-black uppercase tracking-wider">
-                        {label}
-                      </label>
-                      <input
-                        type="number"
-                        value={(company as any)[key]}
-                        onChange={(e) =>
-                          setCompany((prev) => ({
-                            ...prev,
-                            [key]: Number(e.target.value),
-                          }))
-                        }
-                        className="w-24 px-2 py-1 border-2 border-black text-xs font-mono focus:outline-none focus:border-[#024BAB]"
-                      />
-                    </div>
-                  ))}
-                  <button
-                    disabled={logoSettingsSaving}
-                    onClick={async () => {
-                      setLogoSettingsSaving(true);
-                      try {
-                        await settingsAPI.update({
-                          chequeLogoX: company.chequeLogoX,
-                          chequeLogoY: company.chequeLogoY,
-                          chequeLogoW: company.chequeLogoSize,
-                        });
-                      } finally {
-                        setLogoSettingsSaving(false);
-                      }
-                    }}
-                    className="px-3 py-1 bg-[#024BAB] text-white text-xs font-bold border-2 border-black disabled:opacity-50"
-                  >
-                    {logoSettingsSaving ? "Saving…" : "Save"}
-                  </button>
-                </div>
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <AnimatedNumber
+                  value={paidPct}
+                  suffix="%"
+                  className="text-2xl font-bold tabular-nums leading-none"
+                />
+                <span className="text-[10px] font-bold mt-1">paid</span>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Height is auto-calculated from the logo's aspect ratio. Print a
-                test payslip to fine-tune.
+            </div>
+            <div className="flex-1 w-full">
+              <p className="text-sm font-bold text-black mb-4">
+                {MONTHS[month - 1]} {year}
+                <span className="text-muted-foreground font-medium">
+                  {" "}
+                  · {paidCount} of {payrolls.length} paid
+                </span>
               </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[
+                  { label: "Net payable", n: totalNet, color: "#00C48C" },
+                  { label: "Gross salary", n: totalGross, color: "#024BAB" },
+                  { label: "Deductions", n: totalDed, color: "#FA731C" },
+                ].map((k) => (
+                  <div
+                    key={k.label}
+                    className="border-l-4 pl-3"
+                    style={{ borderColor: k.color }}
+                  >
+                    <AnimatedNumber
+                      value={Math.round(k.n)}
+                      prefix="₹"
+                      className="block text-2xl sm:text-3xl font-bold tabular-nums leading-none"
+                    />
+                    <span className="block text-xs font-bold text-black mt-1.5">
+                      {k.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-5">
+            <ChartCard
+              title="Payout trend"
+              subtitle="Net payout (₹K) — last 6 months"
+              empty={trendChart.length ? undefined : "No trend data yet"}
+            >
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart
+                  data={trendChart}
+                  margin={{ top: 16, right: 12, left: 0, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fontWeight: 700 }} tickLine={false} axisLine={false} />
+                  <YAxis
+                    tick={{ fontSize: 11, fontWeight: 700, fill: "#0A0A0A" }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={38}
+                    allowDecimals={false}
+                    domain={[0, (max: number) => Math.max(10, Math.ceil(max * 1.15))]}
+                  />
+                  <Tooltip content={<NbTooltip />} />
+                  <Line
+                    type="monotone"
+                    dataKey="total"
+                    name="₹K"
+                    stroke="#024BAB"
+                    strokeWidth={3}
+                    dot={{ r: 4, fill: "#024BAB", stroke: "#0A0A0A", strokeWidth: 1.5 }}
+                    activeDot={{ r: 6, stroke: "#0A0A0A", strokeWidth: 1.5 }}
+                    animationDuration={1100}
+                  >
+                    <LabelList dataKey="total" position="top" offset={8} style={{ fontSize: 10, fontWeight: 700, fill: "#0A0A0A" }} />
+                  </Line>
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard
+              title="Where deductions go"
+              subtitle={`${MONTHS[month - 1]} — total ${formatCurrency(totalDed)}`}
+              empty={deductionParts.length ? undefined : "No deductions this month"}
+            >
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart
+                  data={deductionParts}
+                  layout="vertical"
+                  margin={{ top: 4, right: 40, left: 0, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" horizontal={false} />
+                  <XAxis type="number" hide />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    tick={{ fontSize: 11, fontWeight: 700, fill: "#0A0A0A" }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={78}
+                  />
+                  <Tooltip content={<NbTooltip />} cursor={{ fill: "#FA731C11" }} />
+                  <Bar
+                    dataKey="value"
+                    name="₹"
+                    fill="#FA731C"
+                    stroke="#0A0A0A"
+                    strokeWidth={1.5}
+                    radius={[0, 6, 6, 0]}
+                    animationDuration={1000}
+                  >
+                    <LabelList
+                      dataKey="value"
+                      position="right"
+                      formatter={(v: number) => `₹${Math.round(v).toLocaleString("en-IN")}`}
+                      style={{ fontSize: 10, fontWeight: 700, fill: "#0A0A0A" }}
+                    />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard
+              title="Cost by department"
+              subtitle="Net pay this month (₹K)"
+              empty={deptCost.length ? undefined : "No payroll yet"}
+            >
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart
+                  data={deptCost}
+                  margin={{ top: 16, right: 12, left: 0, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700 }} tickLine={false} axisLine={false} interval={0} />
+                  <YAxis
+                    tick={{ fontSize: 11, fontWeight: 700, fill: "#0A0A0A" }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={38}
+                    allowDecimals={false}
+                  />
+                  <Tooltip content={<NbTooltip />} cursor={{ fill: "#00C48C11" }} />
+                  <Bar
+                    dataKey="total"
+                    name="₹K"
+                    fill="#00C48C"
+                    stroke="#0A0A0A"
+                    strokeWidth={1.5}
+                    radius={[6, 6, 0, 0]}
+                    animationDuration={1000}
+                  >
+                    <LabelList dataKey="total" position="top" style={{ fontSize: 10, fontWeight: 700, fill: "#0A0A0A" }} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          </div>
+
+          {/* Department-wise */}
+          {deptStats.length > 0 && (
+            <div className="nb-rise border-2 border-black bg-white mb-5 overflow-auto">
+              <div className="px-4 py-2.5 bg-[#024BAB]/5 border-b-2 border-black">
+                <p className="text-xs font-bold uppercase tracking-wider text-black">
+                  By department
+                </p>
+              </div>
+              <table className="w-full text-sm min-w-[620px]">
+                <thead>
+                  <tr className="border-b border-black/20">
+                    {["Department", "People", "Paid", "Gross", "Deductions", "Net"].map(
+                      (h, i) => (
+                        <th
+                          key={h}
+                          className={cn(
+                            "px-4 py-2 text-[11px] font-bold text-muted-foreground uppercase tracking-wider",
+                            i === 0 || i === 2 ? "text-left" : "text-right",
+                          )}
+                        >
+                          {h}
+                        </th>
+                      ),
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {deptStats.map((d) => {
+                    const share = d.people ? Math.round((d.paid / d.people) * 100) : 0;
+                    return (
+                      <tr
+                        key={d.name}
+                        onClick={() => {
+                          setDeptFilter(d.name);
+                          setView("details");
+                        }}
+                        title="Open this department's payroll"
+                        className="border-b border-black/10 cursor-pointer hover:bg-[#024BAB]/5"
+                      >
+                        <td className="px-4 py-2 text-xs font-bold">{d.name}</td>
+                        <td className="px-4 py-2 text-xs text-right tabular-nums">
+                          {d.people}
+                        </td>
+                        <td className="px-4 py-2 text-xs">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2.5 w-20 border border-black bg-gray-100">
+                              <div
+                                className="h-full bg-[#00C48C] transition-all duration-700"
+                                style={{ width: `${share}%` }}
+                              />
+                            </div>
+                            <span className="tabular-nums font-bold">
+                              {d.paid}/{d.people}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-2 text-xs text-right tabular-nums">
+                          {formatCurrency(d.gross)}
+                        </td>
+                        <td className="px-4 py-2 text-xs text-right tabular-nums text-[#FA731C]">
+                          {d.ded > 0 ? `-${formatCurrency(d.ded)}` : "—"}
+                        </td>
+                        <td className="px-4 py-2 text-xs text-right font-bold tabular-nums">
+                          {formatCurrency(d.net)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
-        </div>
+        </>
       )}
+
+      {view === "details" && (
+        <>
+
+      <p className="text-xs font-bold text-muted-foreground mb-3">
+        Net {formatCurrency(totalNet)} &middot; Gross {formatCurrency(totalGross)}{" "}
+        &middot; Deductions {formatCurrency(totalDed)} &middot; {paidCount}/
+        {payrolls.length} paid
+      </p>
 
       {/* Search, Filter & Sort */}
       <div className="flex flex-wrap gap-2 mb-5">
@@ -920,6 +1171,18 @@ export default function PayrollPage() {
           <option value="draft">Draft</option>
           <option value="processed">Processed</option>
           <option value="paid">Paid</option>
+        </select>
+        <select
+          value={deptFilter}
+          onChange={(e) => setDeptFilter(e.target.value)}
+          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold outline-none"
+        >
+          <option value="">All Departments</option>
+          {deptStats.map((d) => (
+            <option key={d.name} value={d.name}>
+              {d.name}
+            </option>
+          ))}
         </select>
         <select
           value={sortKey}
@@ -979,7 +1242,6 @@ export default function PayrollPage() {
                 {[
                   { label: "Emp Code", cls: "" },
                   { label: "Employee", cls: "" },
-                  { label: "Designation", cls: "" },
                   { label: "Cost / Hr", cls: "text-right" },
                   { label: "Salary", cls: "text-right" },
                   ...optionalCols.map((c) => ({
@@ -1035,9 +1297,6 @@ export default function PayrollPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-xs text-black">
-                    {(p.employee as any)?.designation || "—"}
-                  </td>
                   <td className="px-4 py-3 text-right text-xs font-bold text-black">
                     {p.hourlyRate ? `₹${Number(p.hourlyRate).toFixed(2)}` : "—"}
                   </td>
@@ -1088,58 +1347,63 @@ export default function PayrollPage() {
 
                   {}
                   <td className="px-4 py-3">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {p.status === "processed" && (
-                          <button
-                            onClick={() => handleMarkPaid(p._id)}
-                            className="flex items-center gap-1 text-xs font-bold border-2 border-black px-2 py-1 hover:bg-[#024BAB] hover:text-white transition-colors whitespace-nowrap"
-                          >
-                            <CheckCircle className="w-3 h-3" /> Mark Paid
-                          </button>
-                        )}
-                        {p.status === "paid" && (
-                          <span className="text-xs text-[#00C48C] font-bold flex items-center gap-1">
-                            <CheckCircle className="w-3.5 h-3.5" /> Paid
-                          </span>
-                        )}
+                    <div className="flex items-center gap-1.5 whitespace-nowrap">
+                      {p.status === "processed" && (
                         <button
-                          onClick={() => printPayslip(p, company)}
-                          className="flex items-center gap-1 text-xs font-bold border-2 border-black px-2 py-1 hover:bg-black hover:text-white transition-colors whitespace-nowrap"
+                          onClick={() => handleMarkPaid(p._id)}
+                          title="Mark as paid"
+                          aria-label="Mark as paid"
+                          className="p-1.5 border-2 border-black hover:bg-[#00C48C] hover:text-white transition-colors"
                         >
-                          <Printer className="w-3 h-3" /> Payslip
+                          <IndianRupee className="w-4 h-4" />
                         </button>
-                      </div>
-                      {/* Slip receipt confirmation */}
+                      )}
+                      <button
+                        onClick={() => printPayslip(p, company)}
+                        title="Print payslip"
+                        aria-label="Print payslip"
+                        className="p-1.5 border-2 border-black hover:bg-black hover:text-white transition-colors"
+                      >
+                        <Printer className="w-4 h-4" />
+                      </button>
+                      {/* Did the employee get the payslip? one icon once answered, two icons until then */}
                       {p.slipReceived === "received" ? (
-                        <span className="flex items-center gap-1 text-[10px] font-bold text-[#00C48C] border-2 border-[#00C48C] px-2 py-0.5">
-                          <CheckCircle className="w-3 h-3" /> RECEIVED
+                        <span
+                          title="Employee received the payslip"
+                          className="p-1.5 border-2 border-[#00C48C] text-[#00C48C]"
+                        >
+                          <MailCheck className="w-4 h-4" />
                         </span>
                       ) : p.slipReceived === "not_received" ? (
-                        <span className="flex items-center gap-1 text-[10px] font-bold text-red-500 border-2 border-red-400 px-2 py-0.5">
-                          <X className="w-3 h-3" /> NOT RECEIVED
+                        <span
+                          title="Employee has not received the payslip"
+                          className="p-1.5 border-2 border-[#EF4444] text-[#EF4444]"
+                        >
+                          <MailX className="w-4 h-4" />
                         </span>
                       ) : (
-                        <div className="flex gap-1">
+                        <>
                           <button
                             onClick={() =>
                               handleMarkSlipReceived(p._id, "received")
                             }
-                            className="flex items-center gap-0.5 text-[10px] font-bold border-2 border-[#00C48C] text-[#00C48C] px-1.5 py-0.5 hover:bg-[#00C48C] hover:text-white transition-colors whitespace-nowrap"
-                            title="Employee received the payslip"
+                            title="Payslip received by employee"
+                            aria-label="Payslip received"
+                            className="p-1.5 border-2 border-black/30 text-black/40 hover:border-[#00C48C] hover:bg-[#00C48C] hover:text-white transition-colors"
                           >
-                            <CheckCircle className="w-2.5 h-2.5" /> Received
+                            <MailCheck className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() =>
                               handleMarkSlipReceived(p._id, "not_received")
                             }
-                            className="flex items-center gap-0.5 text-[10px] font-bold border-2 border-red-400 text-red-500 px-1.5 py-0.5 hover:bg-red-500 hover:text-white transition-colors whitespace-nowrap"
-                            title="Employee has not received the payslip"
+                            title="Payslip NOT received by employee"
+                            aria-label="Payslip not received"
+                            className="p-1.5 border-2 border-black/30 text-black/40 hover:border-[#EF4444] hover:bg-[#EF4444] hover:text-white transition-colors"
                           >
-                            <X className="w-2.5 h-2.5" /> Not Rcvd
+                            <MailX className="w-4 h-4" />
                           </button>
-                        </div>
+                        </>
                       )}
                     </div>
                   </td>
@@ -1148,6 +1412,8 @@ export default function PayrollPage() {
             </tbody>
           </table>
         </div>
+      )}
+        </>
       )}
 
       {}

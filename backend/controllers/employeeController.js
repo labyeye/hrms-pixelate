@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const asyncHandler = require("express-async-handler");
 const Employee = require("../models/Employee");
+const SalaryRevision = require("../models/SalaryRevision");
 const Subscription = require("../models/Subscription");
 
 // Plan seat limit (Subscription.maxEmployees). 0/missing = no limit.
@@ -515,6 +516,27 @@ const updateEmployee = [
         effectiveFrom: new Date(),
         changedBy: req.user._id,
         changedByName: req.user.name,
+      });
+      // Keep the readable history/report complete when salary is edited from the employee form too.
+      const delta = Number(employee.salary) - (Number(previousSalary) || 0);
+      await SalaryRevision.create({
+        company: employee.company,
+        employee: employee._id,
+        effectiveDate: new Date(),
+        previousSalary: Number(previousSalary) || 0,
+        newSalary: Number(employee.salary),
+        changeAmount: delta,
+        changePct:
+          previousSalary > 0
+            ? Math.round((delta / previousSalary) * 1000) / 10
+            : 0,
+        kind: delta >= 0 ? "increment" : "decrease",
+        reason:
+          String(req.body.salaryChangeReason || "").trim() ||
+          "Updated from employee profile",
+        previousDesignation: employee.designation,
+        createdBy: req.user._id,
+        createdByName: req.user.name,
       });
     }
 

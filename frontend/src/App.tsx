@@ -25,6 +25,7 @@ const PerformanceReportPage = lazy(
 );
 const DepartmentsPage = lazy(() => import("./pages/DepartmentsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const PromotionsPage = lazy(() => import("./pages/PromotionsPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -231,6 +232,14 @@ function AppRoutes() {
             element={
               <ProtectedRoute>
                 <LeavePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/promotions"
+            element={
+              <ProtectedRoute>
+                <PromotionsPage />
               </ProtectedRoute>
             }
           />

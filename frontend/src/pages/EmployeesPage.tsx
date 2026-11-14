@@ -34,6 +34,7 @@ import {
   FileText,
   IndianRupee,
   TrendingUp,
+  Gift,
   UserCheck,
   Printer,
   Building2,
@@ -291,7 +292,7 @@ export default function EmployeesPage() {
   });
   const [savingLoan, setSavingLoan] = useState(false);
   const [txModal, setTxModal] = useState<
-    "allowance" | "penalty" | "overtime" | null
+    "allowance" | "bonus" | "penalty" | "overtime" | null
   >(null);
   const [txForm, setTxForm] = useState({
     employee: "",
@@ -1059,114 +1060,13 @@ export default function EmployeesPage() {
         </div>
       </div>
 
-      {}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
-        <StatCard
-          label="Total Employees"
-          value={allEmps.length}
-          icon={Users}
-          color="#024BAB"
-        />
-        <StatCard
-          label="New Hires This Month"
-          value={newHires}
-          icon={UserPlus}
-          color="#A855F7"
-          sub={new Date().toLocaleString("en-IN", {
-            month: "long",
-            year: "numeric",
-          })}
-        />
-        <StatCard
-          label="Total Est. Balance"
-          value={formatCurrency(totalEstBalance)}
-          icon={IndianRupee}
-          color={totalEstBalance < 0 ? "#EF4444" : "#00C48C"}
-        />
-        <StatCard
-          label="Total Loan Balance"
-          value={formatCurrency(totalLoan)}
-          icon={Banknote}
-          color="#EF4444"
-        />
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-5">
-        <div className="nb-rise border-2 border-black bg-white p-4">
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">
-            Workforce Status
-          </p>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              {
-                label: "Active",
-                n: statusCount.active,
-                color: "#00C48C",
-                icon: UserCheck,
-              },
-              {
-                label: "Inactive",
-                n: statusCount.inactive,
-                color: "#6B7280",
-                icon: Clock,
-              },
-              {
-                label: "Exited",
-                n: statusCount.exited,
-                color: "#A855F7",
-                icon: ArrowRight,
-              },
-            ].map((x) => (
-              <div key={x.label} className="flex items-center gap-2">
-                <div
-                  className="w-10 h-10 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: x.color }}
-                >
-                  <x.icon className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold leading-tight tabular-nums">
-                    {x.n}
-                  </p>
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    {x.label}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="nb-rise border-2 border-black bg-white p-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-              <CalendarCheck className="w-4 h-4" /> Attendance &middot;{" "}
-              {new Date().toLocaleString("en-IN", { month: "long" })}
-            </p>
-            <p className="text-2xl font-bold tabular-nums">{attPct}%</p>
-          </div>
-          <div className="h-4 border-2 border-black bg-gray-100">
-            <div
-              className="h-full transition-all duration-700"
-              style={{
-                width: `${attPct}%`,
-                backgroundColor:
-                  attPct >= 85
-                    ? "#00C48C"
-                    : attPct >= 70
-                      ? "#FA731C"
-                      : "#EF4444",
-              }}
-            />
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-2">
-            Present {attSummary.present || 0} &middot; Late{" "}
-            {attSummary.late || 0} &middot; Half day {attSummary.half_day || 0}{" "}
-            &middot; Leave {attSummary.on_leave || 0} &middot; Absent{" "}
-            {attSummary.absent || 0}
-          </p>
-        </div>
-      </div>
-
-      {}
+      <p className="text-xs font-bold text-muted-foreground mb-3">
+        {allEmps.length} employees &middot; {statusCount.active} active
+        {statusCount.inactive ? ` · ${statusCount.inactive} inactive` : ""}
+        {statusCount.exited ? ` · ${statusCount.exited} exited` : ""}
+        {" · "}
+        {newHires} new this month
+      </p>
       <div className="flex flex-wrap gap-2 mb-4">
         <div className="flex items-center gap-2 border-2 border-black bg-white px-3 py-2 flex-1 min-w-48">
           <Search className="w-4 h-4 shrink-0" />
@@ -3714,7 +3614,7 @@ export default function EmployeesPage() {
                 },
                 {
                   icon: TrendingUp,
-                  label: "Allowance / Bonus",
+                  label: "Allowance",
                   color: "text-[#024BAB]",
                   action: () => {
                     setTxForm({
@@ -3725,6 +3625,21 @@ export default function EmployeesPage() {
                       remark: "",
                     });
                     setTxModal("allowance");
+                  },
+                },
+                {
+                  icon: Gift,
+                  label: "Bonus",
+                  color: "text-[#A855F7]",
+                  action: () => {
+                    setTxForm({
+                      employee: viewEmp._id,
+                      amount: "",
+                      hours: "",
+                      date: new Date().toISOString().split("T")[0],
+                      remark: "",
+                    });
+                    setTxModal("bonus");
                   },
                 },
                 {
@@ -4167,7 +4082,10 @@ export default function EmployeesPage() {
                 {txModal === "allowance" ? (
                   <>
                     <TrendingUp className="w-5 h-5 text-[#024BAB]" /> Allowance
-                    / Bonus
+                  </>
+                ) : txModal === "bonus" ? (
+                  <>
+                    <Gift className="w-5 h-5 text-[#A855F7]" /> Bonus
                   </>
                 ) : txModal === "overtime" ? (
                   <>
@@ -4218,14 +4136,16 @@ export default function EmployeesPage() {
                   } else {
                     payload.amount = parseFloat(txForm.amount);
                   }
-                  await transactionAPI.create(payload);
+                  const res: any = await transactionAPI.create(payload);
                   setTxModal(null);
                   const label =
                     txModal === "allowance"
-                      ? "Allowance/Bonus"
-                      : txModal === "overtime"
-                        ? "Overtime"
-                        : "Penalty";
+                      ? "Allowance"
+                      : txModal === "bonus"
+                        ? "Bonus"
+                        : txModal === "overtime"
+                          ? "Overtime"
+                          : "Penalty";
                   const detail =
                     txModal === "overtime"
                       ? `${txForm.hours} hrs`
@@ -4234,7 +4154,13 @@ export default function EmployeesPage() {
                     show: true,
                     type: "success",
                     title: `${label} Added`,
-                    message: `${label} of ${detail} saved successfully.`,
+                    message: `${label} of ${detail} saved successfully.${
+                      res?.payrollUpdated
+                        ? " This month's payroll was updated automatically."
+                        : res?.payrollLocked
+                          ? " This month's payroll is already paid, so it will not change."
+                          : ""
+                    }`,
                   });
                 } catch (err: any) {
                   setActionModal({
@@ -4310,7 +4236,9 @@ export default function EmployeesPage() {
                 <label className="block text-xs font-bold uppercase tracking-wider text-black mb-1">
                   {txModal === "allowance"
                     ? "Remark (TA, DA, Incentive, etc.)"
-                    : txModal === "overtime"
+                    : txModal === "bonus"
+                      ? "Remark (Diwali, Performance, etc.)"
+                      : txModal === "overtime"
                       ? "Remark"
                       : "Reason"}
                 </label>
@@ -4324,8 +4252,10 @@ export default function EmployeesPage() {
                   className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white outline-none"
                   placeholder={
                     txModal === "allowance"
-                      ? "e.g. Travel allowance, Diwali bonus"
-                      : txModal === "overtime"
+                      ? "e.g. Travel allowance, Phone allowance"
+                      : txModal === "bonus"
+                        ? "e.g. Diwali bonus, Performance bonus"
+                        : txModal === "overtime"
                         ? "e.g. Project deadline"
                         : "e.g. Late coming, misconduct"
                   }
@@ -4338,7 +4268,9 @@ export default function EmployeesPage() {
                   className={`flex-1 text-white border-2 border-black py-2.5 text-sm font-bold disabled:opacity-50 ${
                     txModal === "allowance"
                       ? "bg-[#024BAB]"
-                      : txModal === "overtime"
+                      : txModal === "bonus"
+                        ? "bg-[#A855F7]"
+                        : txModal === "overtime"
                         ? "bg-[#F59E0B]"
                         : "bg-[#EF4444]"
                   }`}
@@ -4347,8 +4279,10 @@ export default function EmployeesPage() {
                     ? "Saving..."
                     : txModal === "allowance"
                       ? "Add Allowance"
-                      : txModal === "overtime"
-                        ? "Add Overtime"
+                      : txModal === "bonus"
+                        ? "Add Bonus"
+                        : txModal === "overtime"
+                          ? "Add Overtime"
                         : "Add Penalty"}
                 </button>
                 <button

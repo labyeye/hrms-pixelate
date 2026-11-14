@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { AnimatedValue } from "@/components/ui/AnimatedValue";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { announcementAPI, departmentAPI } from "@/services/api";
 import { ExportMenu } from "@/components/ui/ExportMenu";
@@ -304,7 +305,7 @@ export default function AnnouncementsPage() {
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               Unread
             </p>
-            <p className="text-2xl font-bold text-black">{unreadCount}</p>
+            <p className="text-2xl font-bold text-black"><AnimatedValue value={unreadCount} /></p>
           </div>
         </div>
         <div className="border-2 border-black bg-white p-4 flex items-center gap-3">
@@ -315,7 +316,7 @@ export default function AnnouncementsPage() {
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               Pinned
             </p>
-            <p className="text-2xl font-bold text-black">{pinnedCount}</p>
+            <p className="text-2xl font-bold text-black"><AnimatedValue value={pinnedCount} /></p>
           </div>
         </div>
         <div className="border-2 border-black bg-white p-4 flex items-center gap-3">
@@ -326,7 +327,7 @@ export default function AnnouncementsPage() {
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               Acknowledgement Pending
             </p>
-            <p className="text-2xl font-bold text-black">{ackPendingCount}</p>
+            <p className="text-2xl font-bold text-black"><AnimatedValue value={ackPendingCount} /></p>
           </div>
         </div>
       </div>

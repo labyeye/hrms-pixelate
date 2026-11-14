@@ -201,9 +201,11 @@ const getStats = asyncHandler(async (req, res) => {
       };
     });
 
-    const payMonths = monthStarts
-      .slice(0, 6)
-      .map((d) => ({ month: d.getMonth() + 1, year: d.getFullYear() }));
+    // 12 months so the dashboard's 3M / 6M / 1Y pills switch without another request
+    const payMonths = Array.from({ length: 12 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - 11 + i, 1);
+      return { month: d.getMonth() + 1, year: d.getFullYear() };
+    });
     const payRows = await Payroll.aggregate([
       { $match: { company: req.user.company, $or: payMonths } },
       {
@@ -213,16 +215,20 @@ const getStats = asyncHandler(async (req, res) => {
         },
       },
     ]).catch(() => []);
-    const payTrend = payMonths.map((m) => ({
+    const payTrendYear = payMonths.map((m) => ({
       ...m,
       total:
         payRows.find((r) => r._id.month === m.month && r._id.year === m.year)
           ?.total || 0,
     }));
+    const payTrend = payTrendYear.slice(-6); // older app builds read this
 
     const todayLate = todayBy.late || 0;
     const todayAbsent = todayBy.absent || 0;
     const todayOnLeave = todayBy.on_leave || 0;
+    const todayHalfDay = todayBy.half_day || 0;
+    // Everyone who showed up today: on time + late + half day.
+    const todayAttended = todayPresent + todayLate + todayHalfDay;
 
     const body = {
       success: true,
@@ -236,6 +242,8 @@ const getStats = asyncHandler(async (req, res) => {
           todayLate,
           todayAbsent,
           todayOnLeave,
+          todayHalfDay,
+          todayAttended,
           attendanceRate,
           departments,
           monthlyPayroll: monthlyPayroll[0]?.total || 0,
@@ -246,6 +254,7 @@ const getStats = asyncHandler(async (req, res) => {
         attTrend,
         dailyStats,
         payTrend,
+        payTrendYear,
       },
     };
     statsCache.set(String(req.user.company), { at: Date.now(), body });

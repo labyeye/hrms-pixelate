@@ -13,7 +13,15 @@ const {
   sendCheckInHR,
   sendCheckOutHR,
 } = require("../services/whatsappService");
-const { sendPushToEmployee } = require("../services/pushNotificationService");
+const { notifyEmployee } = require("../services/inAppNotificationService");
+// Punch confirmation: inbox row + push. Accepts the Employee document or its id.
+const sendPushToEmployee = (employee, p) =>
+  notifyEmployee(employee, {
+    type: p.tag === "attendance-checkin" ? "check_in" : "check_out",
+    title: p.title,
+    body: p.body,
+    data: { screen: "Attendance" },
+  });
 const { getEffectiveCheckOut } = require("../utils/shiftUtils");
 
 function buildSetUserCmd(employee) {

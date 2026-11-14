@@ -36,7 +36,8 @@ export function buildPayslipHTML(payroll: any, companyName?: string): string {
   const earnings = [
     { label: 'Basic Salary', value: payroll.basicSalary || 0 },
     { label: 'Earned Basic', value: payroll.earnedBasic || 0 },
-    { label: 'Allowances / Bonus', value: payroll.otherAllowances || 0 },
+    { label: 'Allowances', value: payroll.otherAllowances || 0 },
+    { label: 'Bonus', value: payroll.bonusAmount || 0 },
     { label: 'Overtime Pay', value: payroll.otPay || 0 },
   ];
 

@@ -88,18 +88,20 @@ function StatCard({
   iconColor?: string;
 }) {
   return (
-    <div className="border-2 p-4 flex flex-col gap-3 bg-white">
+    <div className="border-2 px-3 py-2.5 flex items-center gap-2.5 bg-white min-w-0">
       <div
         className={cn(
-          "w-10 h-10 border-2 border-black flex items-center justify-center shrink-0",
+          "w-8 h-8 border-2 border-black flex items-center justify-center shrink-0",
           bg,
         )}
       >
-        <Icon className={cn("w-5 h-5", iconColor)} />
+        <Icon className={cn("w-4 h-4", iconColor)} />
       </div>
-      <div>
-        <p className="font-display font-bold text-3xl text-black">{value}</p>
-        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mt-0.5 truncate">
+      <div className="min-w-0">
+        <p className="font-display font-bold text-xl leading-none text-black">
+          {value}
+        </p>
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-1 truncate">
           {title}
         </p>
       </div>

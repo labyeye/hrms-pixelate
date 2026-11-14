@@ -1,8 +1,8 @@
 // WhatsApp credits. 1 credit ~ Rs 1. Rates/packs/bonus are PLACEHOLDERS - edit here, no other code changes.
-// Balances are stored as integers of 1/UNIT credit so 0.2-credit messages never drift (0.1 + 0.2 != 0.3).
+// Balances are stored as integers of 1/UNIT credit so 0.4-credit messages never drift (0.1 + 0.2 != 0.3).
 module.exports = {
   UNIT: 100,
-  DEFAULT_RATE: 0.2, // credits per message; every HRMS template is UTILITY today
+  DEFAULT_RATE: 0.4, // credits per message; every HRMS template is UTILITY today
   RATES: {}, // per-template override, e.g. { neshr_salary_paid: 0.3 }
   GST_PCT: 18,
   // price = what the tenant pays before GST, credits = what they get

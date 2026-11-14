@@ -1256,10 +1256,45 @@ export default function SettingsPage() {
                         </div>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Logo position &amp; size on the cheque can be configured
-                      in the Payroll page.
-                    </p>
+                    {settings?.logoUrl && (
+                      <div className="mt-4">
+                        <p className="text-xs font-bold text-black uppercase tracking-wider mb-2">
+                          Logo position on cheque
+                        </p>
+                        <div className="flex gap-3 flex-wrap">
+                          {[
+                            { label: "X (pts)", key: "chequeLogoX", def: 10 },
+                            { label: "Y (pts)", key: "chequeLogoY", def: 20 },
+                            {
+                              label: "Width (pts)",
+                              key: "chequeLogoW",
+                              def: 60,
+                            },
+                          ].map(({ label, key, def }) => (
+                            <div key={key} className="space-y-1">
+                              <label className="block text-xs font-bold text-black">
+                                {label}
+                              </label>
+                              <input
+                                type="number"
+                                value={settings?.[key] ?? def}
+                                onChange={(e) =>
+                                  setSettings((prev: any) => ({
+                                    ...prev,
+                                    [key]: Number(e.target.value),
+                                  }))
+                                }
+                                className="w-24 px-2 py-1 border-2 border-black text-xs font-mono focus:outline-none focus:border-[#024BAB]"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Height follows the logo&apos;s shape. Save, then print
+                          a test payslip from Payroll to fine-tune.
+                        </p>
+                      </div>
+                    )}
                   </div>
                   {/* Crop modal */}
                   {cropFile && (

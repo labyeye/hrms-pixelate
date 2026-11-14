@@ -1,6 +1,13 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import { Download, FileSpreadsheet, FileText } from "lucide-react";
 import { exportExcel, exportPdf, type ExportCol } from "@/lib/exporters";
+
+export interface ExportExtra {
+  label: string;
+  icon: ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+}
 
 interface Props<T> {
   name: string;
@@ -8,9 +15,17 @@ interface Props<T> {
   rows: T[];
   /** Pass false to offer Excel only. */
   pdf?: boolean;
+  /** Extra entries listed under Excel / PDF (e.g. accounting exports), separated by a rule. */
+  extra?: ExportExtra[];
 }
 
-export function ExportMenu<T>({ name, cols, rows, pdf = true }: Props<T>) {
+export function ExportMenu<T>({
+  name,
+  cols,
+  rows,
+  pdf = true,
+  extra,
+}: Props<T>) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -31,7 +46,9 @@ export function ExportMenu<T>({ name, cols, rows, pdf = true }: Props<T>) {
         <Download className="w-4 h-4" /> Export
       </button>
       {open && (
-        <div className="absolute right-0 mt-1 w-40 bg-white border-2 border-black z-30">
+        <div
+          className={`absolute right-0 mt-1 bg-white border-2 border-black z-30 ${extra?.length ? "w-52" : "w-40"}`}
+        >
           <button
             className={item}
             onClick={() => {
@@ -51,6 +68,23 @@ export function ExportMenu<T>({ name, cols, rows, pdf = true }: Props<T>) {
             >
               <FileText className="w-4 h-4 text-[#EF4444]" /> PDF
             </button>
+          )}
+          {extra && extra.length > 0 && (
+            <div className="border-t-2 border-black/10">
+              {extra.map((x) => (
+                <button
+                  key={x.label}
+                  disabled={x.disabled}
+                  className={`${item} disabled:opacity-40 disabled:cursor-not-allowed`}
+                  onClick={() => {
+                    x.onClick();
+                    setOpen(false);
+                  }}
+                >
+                  {x.icon} {x.label}
+                </button>
+              ))}
+            </div>
           )}
         </div>
       )}

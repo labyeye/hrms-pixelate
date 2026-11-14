@@ -3134,7 +3134,7 @@ function TallyExportGen({
       emp.department?.name || "",
       p.basicSalary || 0,
       p.earnedBasic ?? p.basicSalary ?? 0,
-      p.otherAllowances || 0,
+      (p.otherAllowances || 0) + (p.bonusAmount || 0),
       p.otPay || 0,
       p.grossSalary || 0,
       p.absentDeduction || 0,

@@ -146,6 +146,7 @@ export interface Payroll {
   basicSalary: number;
   earnedBasic?: number;
   otherAllowances?: number;
+  bonusAmount?: number;
   otPay?: number;
   totalWorkHours?: number;
   hourlyRate?: number;

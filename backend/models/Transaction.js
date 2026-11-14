@@ -14,7 +14,7 @@ const transactionSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["allowance", "penalty", "overtime"],
+      enum: ["allowance", "bonus", "penalty", "overtime"],
       required: true,
     },
     amount: { type: Number, required: true, min: 0 },

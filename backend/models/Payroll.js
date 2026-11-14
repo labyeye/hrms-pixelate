@@ -22,6 +22,7 @@ const payrollSchema = new mongoose.Schema(
     ta: { type: Number, default: 0 },
     medicalAllowance: { type: Number, default: 0 },
     otherAllowances: { type: Number, default: 0 },
+    bonusAmount: { type: Number, default: 0 }, // one-off bonus paid in this month (separate from allowances)
     grossSalary: { type: Number, required: true },
     pf: { type: Number, default: 0 },
     esi: { type: Number, default: 0 },

@@ -357,6 +357,10 @@ export const attendanceAPI = {
     request(
       `/attendance/daily-summary?${new URLSearchParams(params).toString()}`,
     ),
+  getTimingInsights: (params: Record<string, string>) =>
+    request(
+      `/attendance/timing-insights?${new URLSearchParams(params).toString()}`,
+    ),
 };
 
 export const leaveAPI = {
@@ -959,6 +963,18 @@ export const transactionAPI = {
   create: (body: object) =>
     request("/transactions", { method: "POST", body: JSON.stringify(body) }),
   delete: (id: string) => request(`/transactions/${id}`, { method: "DELETE" }),
+};
+
+export const promotionAPI = {
+  create: (body: object) =>
+    request("/promotions", { method: "POST", body: JSON.stringify(body) }),
+  getAll: (params?: Record<string, string>) => {
+    const q = params ? "?" + new URLSearchParams(params).toString() : "";
+    return request(`/promotions${q}`);
+  },
+  getMy: () => request("/promotions/my"),
+  getReport: (params: Record<string, string>) =>
+    request(`/promotions/report?${new URLSearchParams(params).toString()}`),
 };
 
 export const exitAPI = {

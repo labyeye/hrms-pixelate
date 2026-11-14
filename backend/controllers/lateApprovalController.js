@@ -1,3 +1,4 @@
+const { notifyEmployee } = require("../services/inAppNotificationService");
 const asyncHandler = require("express-async-handler");
 const LateApproval = require("../models/LateApproval");
 const Attendance = require("../models/Attendance");
@@ -66,6 +67,14 @@ const resolveLateApproval = asyncHandler(async (req, res) => {
     { employee: approval.employee, date: approval.date },
     { status: resolvedStatus, approvalPending: false },
   );
+
+  notifyEmployee(approval.employee, {
+    company: req.user.company,
+    type: "late_approval",
+    title: "Late arrival reviewed",
+    body: `Your attendance for ${new Date(approval.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} was marked ${resolvedStatus.replace("_", " ")}`,
+    data: { screen: "Attendance" },
+  });
 
   res.json({ success: true, data: approval });
 });

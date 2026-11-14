@@ -1,3 +1,4 @@
+const { notifyEmployee, notifyApprovers } = require("../services/inAppNotificationService");
 const asyncHandler = require("express-async-handler");
 const fs = require("fs");
 const path = require("path");
@@ -403,6 +404,17 @@ const createLeave = asyncHandler(async (req, res) => {
     console.error("[notify] failed:", err.message);
   }
 
+  notifyApprovers(
+    req.user.company,
+    {
+      type: "leave_request",
+      title: "New leave request",
+      body: `${emp.firstName} ${emp.lastName} requested ${leave.days} day${leave.days === 1 ? "" : "s"} of ${leave.leaveType} leave`,
+      data: { screen: "Leave", id: String(leave._id) },
+    },
+    req.user._id,
+  );
+
   res.status(201).json({ success: true, data: leave, noBalanceLeft });
 });
 
@@ -504,6 +516,19 @@ const updateLeaveStatus = asyncHandler(async (req, res) => {
     }
   } catch (err) {
     console.error("[notify] failed:", err.message);
+  }
+
+  if (status === "approved" || status === "rejected") {
+    notifyEmployee(leave.employee, {
+      company: req.user.company,
+      type: `leave_${status}`,
+      title: status === "approved" ? "Leave approved" : "Leave rejected",
+      body:
+        status === "approved"
+          ? `Your ${leave.leaveType} leave (${leave.days} day${leave.days === 1 ? "" : "s"}) was approved`
+          : `Your ${leave.leaveType} leave was rejected${leave.rejectionReason ? `: ${leave.rejectionReason}` : ""}`,
+      data: { screen: "Leave", id: String(leave._id) },
+    });
   }
 
   await logAudit(req, `leave_${status}`, "Leave", leave._id, {

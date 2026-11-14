@@ -2,7 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Link } from "react-router-dom";
-import { dashboardAPI } from "@/services/api";
+import { dashboardAPI, loanAPI } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency } from "@/lib/utils";
 import {
@@ -15,6 +15,9 @@ import {
   ResponsiveContainer,
   Cell,
   Legend,
+  LineChart,
+  Line,
+  LabelList,
 } from "recharts";
 import {
   Users,
@@ -112,6 +115,13 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [loans, setLoans] = useState<any[]>([]);
+  useEffect(() => {
+    loanAPI
+      .getAll()
+      .then((r: any) => setLoans(r.data || []))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     dashboardAPI
@@ -258,14 +268,14 @@ export default function DashboardPage() {
       )}
 
       {/* KPI cards */}
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] gap-3 mb-5">
+      <div className="grid grid-cols-[repeat(5,1fr)] gap-3 mb-5">
         {[
           {
             title: "Total Employees",
             numericValue: stats.totalEmployees,
             sub: `${stats.activeEmployees} active`,
             icon: Users,
-            bg: "bg-[#024BAB]",
+            bg: "bg-[#044bab]",
             to: "/employees",
           },
           {
@@ -290,7 +300,7 @@ export default function DashboardPage() {
             numericValue: stats.newHires,
             sub: "This month",
             icon: TrendingUp,
-            bg: "bg-[#A3E635]",
+            bg: "bg-[#FA731C]",
             iconColor: "text-black",
             to: "/employees",
             trend: "up" as const,
@@ -300,7 +310,7 @@ export default function DashboardPage() {
             value: formatCurrency(stats.monthlyPayroll),
             sub: "Paid this month",
             icon: IndianRupee,
-            bg: "bg-[#FA731C]",
+            bg: "bg-[#044bab]",
             to: "/payroll",
           },
           {
@@ -308,7 +318,7 @@ export default function DashboardPage() {
             numericValue: stats.departments,
             sub: "Active teams",
             icon: Building2,
-            bg: "bg-[#00C48C]",
+            bg: "bg-[#FA731C]",
             to: "/departments",
           },
           {
@@ -317,7 +327,7 @@ export default function DashboardPage() {
             suffix: "%",
             sub: "Team health",
             icon: CheckCircle2,
-            bg: "bg-[#024BAB]",
+            bg: "bg-[#044bab]",
             to: "/attendance",
           },
         ].map((card, i) => (
@@ -430,10 +440,10 @@ export default function DashboardPage() {
             Present, late &amp; absent — last 7 days
           </p>
           {dailyChartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={140}>
-              <BarChart
+            <ResponsiveContainer width="100%" height={190}>
+              <LineChart
                 data={dailyChartData}
-                margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
+                margin={{ top: 16, right: 12, left: 0, bottom: 0 }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -447,49 +457,43 @@ export default function DashboardPage() {
                   axisLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 11, fontWeight: 700, fill: "#0A0A0A" }}
                   tickLine={false}
                   axisLine={false}
-                  width={24}
+                  width={32}
                   allowDecimals={false}
+                  domain={[0, (max: number) => Math.max(4, Math.ceil(max * 1.15))]}
                 />
-                <Tooltip
-                  content={<NbTooltip />}
-                  cursor={{ fill: "#0000000d" }}
-                />
+                <Tooltip content={<NbTooltip />} />
                 <Legend
                   iconSize={8}
                   wrapperStyle={{ fontSize: 11, fontWeight: 700 }}
                 />
-                <Bar
-                  radius={[0, 0, 6, 6]}
-                  stackId="day"
-                  dataKey="Absent"
-                  fill="#EF4444"
-                  stroke="#0A0A0A"
-                  strokeWidth={1.5}
-                  animationDuration={900}
-                  animationBegin={300}
-                />
-                <Bar
-                  stackId="day"
-                  dataKey="Late"
-                  fill="#FACC15"
-                  stroke="#0A0A0A"
-                  strokeWidth={1.5}
-                  animationDuration={900}
-                  animationBegin={150}
-                />
-                <Bar
-                  radius={[6, 6, 0, 0]}
-                  stackId="day"
-                  dataKey="Present"
-                  fill="#00C48C"
-                  stroke="#0A0A0A"
-                  strokeWidth={1.5}
-                  animationDuration={900}
-                />
-              </BarChart>
+                {[
+                  { key: "Absent", color: "#EF4444", begin: 300 },
+                  { key: "Late", color: "#FACC15", begin: 150 },
+                  { key: "Present", color: "#00C48C", begin: 0 },
+                ].map(({ key, color, begin }) => (
+                  <Line
+                    key={key}
+                    type="monotone"
+                    dataKey={key}
+                    stroke={color}
+                    strokeWidth={3}
+                    dot={{ r: 4, fill: color, stroke: "#0A0A0A", strokeWidth: 1.5 }}
+                    activeDot={{ r: 6, stroke: "#0A0A0A", strokeWidth: 1.5 }}
+                    animationDuration={900}
+                    animationBegin={begin}
+                  >
+                    <LabelList
+                      dataKey={key}
+                      position="top"
+                      offset={8}
+                      style={{ fontSize: 10, fontWeight: 700, fill: "#0A0A0A" }}
+                    />
+                  </Line>
+                ))}
+              </LineChart>
             </ResponsiveContainer>
           ) : (
             <div className="flex items-center justify-center h-28 text-muted-foreground text-xs font-bold">
@@ -507,10 +511,10 @@ export default function DashboardPage() {
             Net payout (₹K) — last 6 months
           </p>
           {payChartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={120}>
-              <BarChart
+            <ResponsiveContainer width="100%" height={190}>
+              <LineChart
                 data={payChartData}
-                margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
+                margin={{ top: 16, right: 12, left: 0, bottom: 0 }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -524,25 +528,32 @@ export default function DashboardPage() {
                   axisLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 11, fontWeight: 700, fill: "#0A0A0A" }}
                   tickLine={false}
                   axisLine={false}
-                  width={24}
+                  width={40}
+                  allowDecimals={false}
+                  domain={[0, (max: number) => Math.max(10, Math.ceil(max * 1.15))]}
                 />
-                <Tooltip
-                  content={<NbTooltip />}
-                  cursor={{ fill: "#024BAB11" }}
-                />
-                <Bar
-                  radius={[6, 6, 0, 0]}
+                <Tooltip content={<NbTooltip />} />
+                <Line
+                  type="monotone"
                   dataKey="total"
                   name="₹K"
-                  fill="#024BAB"
-                  stroke="#0A0A0A"
-                  strokeWidth={1.5}
+                  stroke="#024BAB"
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: "#024BAB", stroke: "#0A0A0A", strokeWidth: 1.5 }}
+                  activeDot={{ r: 6, stroke: "#0A0A0A", strokeWidth: 1.5 }}
                   animationDuration={900}
-                />
-              </BarChart>
+                >
+                  <LabelList
+                    dataKey="total"
+                    position="top"
+                    offset={8}
+                    style={{ fontSize: 10, fontWeight: 700, fill: "#0A0A0A" }}
+                  />
+                </Line>
+              </LineChart>
             </ResponsiveContainer>
           ) : (
             <div className="flex items-center justify-center h-28 text-muted-foreground text-xs font-bold">
@@ -554,77 +565,55 @@ export default function DashboardPage() {
 
       {/* Dept chart + Notifications row */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-4">
-        {/* Department headcount */}
+        {/* Recent loans & advances */}
         <div className="lg:col-span-3 border-2 bg-white p-5">
-          <h3 className="font-display font-bold text-base text-black mb-1">
-            Headcount by Dept
-          </h3>
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="font-display font-bold text-base text-black">
+              Recent Loans & Advances
+            </h3>
+            <Link to="/loans" className="text-xs font-bold text-[#024BAB]">
+              View all
+            </Link>
+          </div>
           <p className="text-xs text-muted-foreground mb-4">
-            Active employees per department
+            Latest given, with balance still to recover
           </p>
-          {deptHeadcounts?.length > 0 ? (
-            <>
-              <ResponsiveContainer width="100%" height={160}>
-                <BarChart data={deptHeadcounts} barCategoryGap="35%">
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="#E5E7EB"
-                    vertical={false}
-                  />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fontSize: 12, fontWeight: 700 }}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 12 }}
-                    tickLine={false}
-                    axisLine={false}
-                    width={24}
-                  />
-                  <Tooltip
-                    content={<NbTooltip />}
-                    cursor={{ fill: "#024BAB11" }}
-                  />
-                  <Bar
-                    radius={[0, 6, 6, 0]}
-                    dataKey="count"
-                    name="Employees"
-                    stroke="#0A0A0A"
-                    strokeWidth={2}
-                  >
-                    {deptHeadcounts.map((_: any, i: number) => (
-                      <Cell
-                        key={i}
-                        fill={DEPT_COLORS[i % DEPT_COLORS.length]}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-              <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
-                {deptHeadcounts.map((d: any, i: number) => (
-                  <span
-                    key={d.name}
-                    className="flex items-center gap-1 text-[11px] font-bold text-black"
-                  >
-                    <span
-                      className="w-2.5 h-2.5 border border-black shrink-0"
-                      style={{
-                        background: DEPT_COLORS[i % DEPT_COLORS.length],
-                      }}
-                    />
-                    {d.name} ({d.count})
-                  </span>
+          {(() => {
+            const rows = loans
+              .filter((l) => l.status === "active" || l.status === "cleared" || l.status === "paused")
+              .sort((a, b) => new Date(b.disbursedOn ?? 0).getTime() - new Date(a.disbursedOn ?? 0).getTime())
+              .slice(0, 6);
+            if (!rows.length)
+              return (
+                <div className="flex items-center justify-center h-40 text-muted-foreground text-sm font-bold">
+                  No loans given yet
+                </div>
+              );
+            return (
+              <div className="divide-y divide-black/10">
+                {rows.map((l) => (
+                  <div key={l._id} className="flex items-center justify-between py-2.5 text-xs">
+                    <div>
+                      <p className="font-bold text-black">
+                        {l.employee?.firstName} {l.employee?.lastName}{" "}
+                        <span className="font-normal text-gray-500">· {l.type}</span>
+                      </p>
+                      <p className="text-gray-500">
+                        {l.disbursedOn ? new Date(l.disbursedOn).toLocaleDateString("en-IN") : "—"}
+                        {l.monthlyEmi > 0 ? ` · EMI ${formatCurrency(l.monthlyEmi)}` : ""}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-black">{formatCurrency(l.amount)}</p>
+                      <p className={l.remainingBalance > 0 ? "font-bold text-red-600" : "font-bold text-green-600"}>
+                        {l.remainingBalance > 0 ? `${formatCurrency(l.remainingBalance)} left` : "Cleared"}
+                      </p>
+                    </div>
+                  </div>
                 ))}
               </div>
-            </>
-          ) : (
-            <div className="flex items-center justify-center h-40 text-muted-foreground text-sm font-bold">
-              No data yet
-            </div>
-          )}
+            );
+          })()}
         </div>
 
         {/* Notifications panel */}

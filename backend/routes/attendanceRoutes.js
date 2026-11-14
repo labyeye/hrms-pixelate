@@ -8,6 +8,7 @@ const {
   bulkMarkAttendance,
   getMonthSummary,
   getDailySummary,
+  getTimingInsights,
 } = require("../controllers/attendanceController");
 const { runAutoMark } = require("../jobs/attendanceAutoMark");
 const { protect, authorize } = require("../middleware/auth");
@@ -20,6 +21,12 @@ const router = express.Router();
 router.get("/", protect, getAttendance);
 router.get("/summary", protect, getMonthSummary);
 router.get("/daily-summary", protect, getDailySummary);
+router.get(
+  "/timing-insights",
+  protect,
+  authorize("super_admin", "hr_manager"),
+  getTimingInsights,
+);
 router.post(
   "/kiosk-face",
   protect,

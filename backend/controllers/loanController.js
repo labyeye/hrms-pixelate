@@ -1,3 +1,4 @@
+const { notifyEmployee } = require("../services/inAppNotificationService");
 const asyncHandler = require("express-async-handler");
 const mongoose = require("mongoose");
 const Loan = require("../models/Loan");
@@ -197,6 +198,16 @@ const updateLoanStatus = asyncHandler(async (req, res) => {
   }
   await loan.save();
   await syncLoanBalance(loan.employee._id);
+  notifyEmployee(loan.employee._id, {
+    company: req.user.company,
+    type: `loan_${status}`,
+    title: status === "approved" ? "Loan approved" : "Loan rejected",
+    body:
+      status === "approved"
+        ? `Your loan request of ₹${loan.amount} was approved`
+        : `Your loan request was rejected${loan.rejectionReason ? `: ${loan.rejectionReason}` : ""}`,
+    data: { screen: "Loans", id: String(loan._id) },
+  });
 
   try {
     if (loan.employee?.phone) {

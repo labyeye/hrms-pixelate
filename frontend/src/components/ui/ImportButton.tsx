@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { FileSpreadsheet, Loader2 } from "lucide-react";
-import { readSheet, downloadTemplate } from "@/lib/exporters";
+import { readSheet } from "@/lib/exporters";
 
 interface Props {
   name: string;
@@ -10,8 +10,8 @@ interface Props {
   onRows: (rows: Record<string, any>[]) => Promise<string | void>;
 }
 
-/** Import button: pick an Excel file -> onRows. A small "Sample" button downloads the template. */
-export function ImportButton({ name, headers, example, onRows }: Props) {
+/** Import button: pick an Excel file -> onRows.  */
+export function ImportButton({ name, onRows }: Props) {
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const pick = async (f?: File) => {
@@ -43,14 +43,6 @@ export function ImportButton({ name, headers, example, onRows }: Props) {
           <FileSpreadsheet className="w-4 h-4 text-[#00A36C]" />
         )}{" "}
         Import
-      </button>
-      <button
-        type="button"
-        title="Download sample Excel"
-        onClick={() => downloadTemplate(name, headers, example)}
-        className="px-2 border-2 border-l-0 border-black bg-white text-[10px] font-bold uppercase hover:bg-gray-50"
-      >
-        Sample
       </button>
       <input
         ref={input}

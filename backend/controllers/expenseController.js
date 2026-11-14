@@ -1,3 +1,4 @@
+const { notifyEmployee } = require("../services/inAppNotificationService");
 const path = require("path");
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
@@ -327,6 +328,18 @@ const actOnExpense = asyncHandler(async (req, res) => {
     expense.transaction = tx._id;
   }
   await expense.save();
+  if (expense.status === "approved" || expense.status === "rejected") {
+    notifyEmployee(expense.employee, {
+      company: req.user.company,
+      type: `expense_${expense.status}`,
+      title: expense.status === "approved" ? "Expense approved" : "Expense rejected",
+      body:
+        expense.status === "approved"
+          ? `Your claim "${expense.title}" was approved for ₹${expense.approvedAmount}`
+          : `Your claim "${expense.title}" was rejected${step.note ? `: ${step.note}` : ""}`,
+      data: { screen: "Expenses", id: String(expense._id) },
+    });
+  }
   res.json({ success: true, data: expense });
 });
 

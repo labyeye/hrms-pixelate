@@ -22,6 +22,18 @@ import { Employee } from "@/types/hrms";
 import { EmployeeCombobox } from "@/components/employees/EmployeeCombobox";
 import { ExportMenu } from "@/components/ui/ExportMenu";
 import { ImportButton } from "@/components/ui/ImportButton";
+import { ViewTabs, useViewTab } from "@/components/ui/ViewTabs";
+import { ChartCard, NbTooltip } from "@/components/ui/ChartCard";
+import {
+  BarChart,
+  Bar,
+  LabelList,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 interface Loan {
   _id: string;
@@ -68,6 +80,7 @@ const STATUS_COLORS: Record<string, string> = {
 export default function LoansPage() {
   const { toast } = useToast();
   const confirm = useConfirm();
+  const [view, setView] = useViewTab("loans", "graphs");
   const [loans, setLoans] = useState<Loan[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -261,6 +274,36 @@ export default function LoansPage() {
     (l) => l.status === "cleared",
   ).length;
 
+  const live = displayedLoans.filter((l) => l.status !== "rejected" && l.status !== "pending");
+  const totalRepaid = live.reduce((s, l) => s + (l.amount - l.remainingBalance), 0);
+  const monthMap = new Map<string, { label: string; given: number; sort: number }>();
+  live.forEach((l) => {
+    if (!l.disbursedOn) return;
+    const d = new Date(l.disbursedOn);
+    const k = `${d.getFullYear()}-${d.getMonth()}`;
+    const m = monthMap.get(k) || { label: d.toLocaleString("en-IN", { month: "short", year: "2-digit" }), given: 0, sort: d.getFullYear() * 12 + d.getMonth() };
+    m.given += l.amount;
+    monthMap.set(k, m);
+  });
+  const byMonth = [...monthMap.values()].sort((a, b) => a.sort - b.sort).slice(-12);
+  const empMap = new Map<string, { name: string; code: string; given: number; repaid: number; left: number; emi: number }>();
+  live.forEach((l) => {
+    const e = empMap.get(l.employee._id) || { name: `${l.employee.firstName} ${l.employee.lastName}`.trim(), code: l.employee.employeeId, given: 0, repaid: 0, left: 0, emi: 0 };
+    e.given += l.amount;
+    e.repaid += l.amount - l.remainingBalance;
+    e.left += l.remainingBalance;
+    if (l.status === "active") e.emi += l.monthlyEmi || 0;
+    empMap.set(l.employee._id, e);
+  });
+  const byEmp = [...empMap.values()].sort((a, b) => b.left - a.left);
+  const topPending = byEmp.filter((e) => e.left > 0).slice(0, 8).map((e) => ({ ...e, short: e.name.split(" ")[0], left: Math.round(e.left) }));
+  const recentGiven = [...live].sort((a, b) => new Date(b.disbursedOn ?? 0).getTime() - new Date(a.disbursedOn ?? 0).getTime()).slice(0, 6);
+  const recentCleared = displayedLoans
+    .filter((l) => l.status === "cleared" || (l.status !== "pending" && l.status !== "rejected" && l.remainingBalance <= 0))
+    .sort((a, b) => new Date(b.clearedOn ?? b.disbursedOn ?? 0).getTime() - new Date(a.clearedOn ?? a.disbursedOn ?? 0).getTime())
+    .slice(0, 6);
+  const dt = (d?: string) => (d ? new Date(d).toLocaleDateString("en-IN") : "—");
+
   const fmt = (n: number) =>
     new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -272,45 +315,29 @@ export default function LoansPage() {
     <AppLayout title="Loans & Advances">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-        <div className="flex flex-wrap gap-2">
-          {(["all", "loan", "advance"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setFilterType(t)}
-              className={cn(
-                "px-3 py-1.5 text-xs font-bold border-2 capitalize",
-                filterType === t
-                  ? "bg-[#024BAB] text-white border-[#024BAB]"
-                  : "bg-white border-black text-black",
-              )}
-            >
-              {t === "all" ? "All" : t === "loan" ? "Loans" : "Advances"}
-            </button>
-          ))}
-          <span className="border-l-2 border-black/20 mx-1" />
-          {(
-            [
-              "all",
-              "pending",
-              "active",
-              "rejected",
-              "cleared",
-              "paused",
-            ] as const
-          ).map((s) => (
-            <button
-              key={s}
-              onClick={() => setFilterStatus(s)}
-              className={cn(
-                "px-3 py-1.5 text-xs font-bold border-2 capitalize",
-                filterStatus === s
-                  ? "bg-black text-white border-black"
-                  : "bg-white border-black text-black",
-              )}
-            >
-              {s}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <ViewTabs value={view} onChange={setView} />
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value as any)}
+            className="border-2 border-black bg-white px-3 py-2 text-sm font-bold"
+          >
+            <option value="all">All types</option>
+            <option value="loan">Loans</option>
+            <option value="advance">Advances</option>
+          </select>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value as any)}
+            className="border-2 border-black bg-white px-3 py-2 text-sm font-bold"
+          >
+            <option value="all">All status</option>
+            {["pending", "active", "rejected", "cleared", "paused"].map((x) => (
+              <option key={x} value={x}>
+                {x[0].toUpperCase() + x.slice(1)}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <ImportButton
@@ -455,6 +482,95 @@ export default function LoansPage() {
         ))}
       </div>
 
+      {view === "graphs" && !loading ? (
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <ChartCard title="Given month by month" subtitle="Total disbursed (₹) — last 12 months" empty={byMonth.length ? undefined : "No loans yet"}>
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={byMonth} margin={{ top: 16, right: 12, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 11, fontWeight: 700 }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 11, fontWeight: 700 }} tickLine={false} axisLine={false} width={48} />
+                  <Tooltip content={<NbTooltip />} />
+                  <Bar dataKey="given" name="Given ₹" fill="#024BAB" stroke="#0A0A0A" strokeWidth={1.5}>
+                    <LabelList dataKey="given" position="top" style={{ fontSize: 10, fontWeight: 700 }} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+            <ChartCard title="Balance still to recover" subtitle="Top employees by pending amount (₹)" empty={topPending.length ? undefined : "Nothing pending"}>
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={topPending} layout="vertical" margin={{ top: 4, right: 40, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" horizontal={false} />
+                  <XAxis type="number" hide />
+                  <YAxis type="category" dataKey="short" tick={{ fontSize: 11, fontWeight: 700 }} tickLine={false} axisLine={false} width={70} />
+                  <Tooltip content={<NbTooltip />} />
+                  <Bar dataKey="left" name="Pending ₹" fill="#EF4444" stroke="#0A0A0A" strokeWidth={1.5}>
+                    <LabelList dataKey="left" position="right" style={{ fontSize: 10, fontWeight: 700 }} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <ChartCard title="Recently given" subtitle="Latest loans & advances — how much, when, EMI" empty={recentGiven.length ? undefined : "No entries"}>
+              <div className="divide-y divide-black/10">
+                {recentGiven.map((l) => (
+                  <div key={l._id} className="flex items-center justify-between py-2 text-xs">
+                    <div>
+                      <p className="font-bold text-black">{l.employee.firstName} {l.employee.lastName} <span className="font-normal text-gray-500">· {l.type}</span></p>
+                      <p className="text-gray-500">{dt(l.disbursedOn)}{l.monthlyEmi > 0 ? ` · EMI ${fmt(l.monthlyEmi)}` : ""}</p>
+                    </div>
+                    <p className="font-bold">{fmt(l.amount)}</p>
+                  </div>
+                ))}
+              </div>
+            </ChartCard>
+            <ChartCard title="Recently fully repaid" subtitle="Who cleared their loan/advance" empty={recentCleared.length ? undefined : "No one has cleared yet"}>
+              <div className="divide-y divide-black/10">
+                {recentCleared.map((l) => (
+                  <div key={l._id} className="flex items-center justify-between py-2 text-xs">
+                    <div>
+                      <p className="font-bold text-black">{l.employee.firstName} {l.employee.lastName} <span className="font-normal text-gray-500">· {l.type}</span></p>
+                      <p className="text-gray-500">Cleared {dt(l.clearedOn)} · given {dt(l.disbursedOn)}</p>
+                    </div>
+                    <p className="font-bold text-green-700">{fmt(l.amount)}</p>
+                  </div>
+                ))}
+              </div>
+            </ChartCard>
+          </div>
+
+          <ChartCard title="Who owes what" subtitle={`Employee-wise — repaid so far ${fmt(totalRepaid)}`} empty={byEmp.length ? undefined : "No data"}>
+            <div className="overflow-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b-2 border-black text-left uppercase tracking-wider">
+                    {["Employee", "Given", "Repaid", "Balance left", "EMI/month", "Months left"].map((h) => (
+                      <th key={h} className="py-2 pr-4 whitespace-nowrap">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {byEmp.map((e) => (
+                    <tr key={e.code} className="border-b border-black/10">
+                      <td className="py-2 pr-4 font-bold">{e.name} <span className="font-normal text-gray-500">{e.code}</span></td>
+                      <td className="py-2 pr-4">{fmt(e.given)}</td>
+                      <td className="py-2 pr-4 text-green-700 font-bold">{fmt(e.repaid)}</td>
+                      <td className={cn("py-2 pr-4 font-bold", e.left > 0 ? "text-red-600" : "text-green-700")}>{e.left > 0 ? fmt(e.left) : "Cleared"}</td>
+                      <td className="py-2 pr-4">{e.emi > 0 ? fmt(e.emi) : "—"}</td>
+                      <td className="py-2 pr-4">{e.emi > 0 && e.left > 0 ? Math.ceil(e.left / e.emi) : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </ChartCard>
+        </div>
+      ) : null}
+
+      {view === "details" && (<>
       {/* Table */}
       {loading ? (
         <div className="flex items-center justify-center h-48">
@@ -612,6 +728,8 @@ export default function LoansPage() {
           </table>
         </div>
       )}
+
+      </>)}
 
       {/* Add / Edit Modal */}
       {modal && (

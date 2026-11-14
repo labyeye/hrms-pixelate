@@ -370,12 +370,14 @@ const processPayroll = asyncHandler(async (req, res) => {
     const pendingTx = txByEmp.get(String(emp._id)) || [];
 
     let totalAllowances = 0;
+    let totalBonus = 0;
     let totalPenalties = 0;
     let totalOT = 0;
     let totalOTHours = 0;
     const txIds = [];
     for (const tx of pendingTx) {
       if (tx.type === "allowance") totalAllowances += tx.amount;
+      else if (tx.type === "bonus") totalBonus += tx.amount;
       else if (tx.type === "penalty") totalPenalties += tx.amount;
       else if (tx.type === "overtime") {
         totalOT += tx.amount;
@@ -395,7 +397,7 @@ const processPayroll = asyncHandler(async (req, res) => {
       (attendanceOTHours * otHourlyRate).toFixed(2),
     );
     const grossSalary =
-      earnedSalary + totalAllowances + totalOT + attendanceOTPay;
+      earnedSalary + totalAllowances + totalBonus + totalOT + attendanceOTPay;
     const preDeductions =
       lateDeduction +
       halfDayDeduction +
@@ -440,6 +442,7 @@ const processPayroll = asyncHandler(async (req, res) => {
       totalWorkHours: parseFloat(totalWorkHours.toFixed(2)),
       hourlyRate: parseFloat(hourlyRate.toFixed(4)),
       otherAllowances: totalAllowances,
+      bonusAmount: totalBonus,
       otPay: attendanceOTPay + totalOT,
       grossSalary,
       lateDeductionAmount: lateDeduction,
@@ -590,7 +593,7 @@ const markPaid = asyncHandler(async (req, res) => {
             firstName: payroll.employee.firstName,
             period,
             basicSalary: payroll.basicSalary,
-            allowances: payroll.otherAllowances || 0,
+            allowances: (payroll.otherAllowances || 0) + (payroll.bonusAmount || 0),
             otPay: payroll.otPay || 0,
             grossSalary: payroll.grossSalary,
             totalDeductions: payroll.totalDeductions,
@@ -691,7 +694,7 @@ const bulkMarkPaid = asyncHandler(async (req, res) => {
               firstName: payroll.employee.firstName,
               period,
               basicSalary: payroll.basicSalary,
-              allowances: payroll.otherAllowances || 0,
+              allowances: (payroll.otherAllowances || 0) + (payroll.bonusAmount || 0),
               otPay: payroll.otPay || 0,
               grossSalary: payroll.grossSalary,
               totalDeductions: payroll.totalDeductions,
@@ -943,11 +946,13 @@ async function buildPayrollPreviews(companyId, m, y, employeeIds) {
 
     const pendingTx = txByEmp.get(String(emp._id)) || [];
     let totalAllowances = 0,
+      totalBonus = 0,
       totalPenalties = 0,
       totalOT = 0,
       totalOTHours = 0;
     for (const tx of pendingTx) {
       if (tx.type === "allowance") totalAllowances += tx.amount;
+      else if (tx.type === "bonus") totalBonus += tx.amount;
       else if (tx.type === "penalty") totalPenalties += tx.amount;
       else if (tx.type === "overtime") {
         totalOT += tx.amount;
@@ -963,7 +968,7 @@ async function buildPayrollPreviews(companyId, m, y, employeeIds) {
       (attendanceOTHours * otHourlyRate).toFixed(2),
     );
     const grossSalary =
-      earnedSalary + totalAllowances + totalOT + attendanceOTPay;
+      earnedSalary + totalAllowances + totalBonus + totalOT + attendanceOTPay;
     const preDeductions =
       lateDeduction + halfDayDeduction + absentDeduction + totalPenalties;
     let salaryAfterDeductions = Math.max(0, grossSalary - preDeductions);
@@ -1006,6 +1011,7 @@ async function buildPayrollPreviews(companyId, m, y, employeeIds) {
       totalWorkHours: parseFloat(totalWorkHours.toFixed(2)),
       hourlyRate: parseFloat(hourlyRate.toFixed(4)),
       otherAllowances: totalAllowances,
+      bonusAmount: totalBonus,
       otPay: attendanceOTPay + totalOT,
       grossSalary,
       halfDayCount,

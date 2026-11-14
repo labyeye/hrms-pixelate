@@ -33,6 +33,9 @@ stub("services/notificationService.js", {
   sendLowCreditsEmail: async (m) => mails.push(m),
 });
 
+// the numbers below assume 0.2 per message; pin it so a price change in config does not break the checks
+require("../config/credits").DEFAULT_RATE = 0.2;
+
 const credits = require("../services/creditsService");
 const CreditWallet = require("../models/CreditWallet");
 const CreditLedger = require("../models/CreditLedger");

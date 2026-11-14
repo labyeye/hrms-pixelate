@@ -7,6 +7,7 @@ import {
   IndianRupee,
   Briefcase,
   TrendingUp,
+  Award,
   Building2,
   Settings,
   LucideIcon,
@@ -184,6 +185,12 @@ const allGroups: NavGroup[] = [
         title: "Payroll",
         href: "/payroll",
         icon: IndianRupee,
+        roles: ["super_admin", "hr_manager"],
+      },
+      {
+        title: "Promotions",
+        href: "/promotions",
+        icon: Award,
         roles: ["super_admin", "hr_manager"],
       },
       {

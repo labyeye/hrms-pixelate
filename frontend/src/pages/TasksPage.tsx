@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { AnimatedValue } from "@/components/ui/AnimatedValue";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { taskAPI, employeeAPI } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
@@ -446,7 +447,7 @@ export default function TasksPage() {
                 {c.label}
               </p>
               <p className="text-2xl font-bold text-black">
-                {statusCounts[c.key as keyof typeof statusCounts]}
+                <AnimatedValue value={statusCounts[c.key as keyof typeof statusCounts]} />
               </p>
             </div>
           </div>
@@ -459,7 +460,7 @@ export default function TasksPage() {
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               Late
             </p>
-            <p className="text-2xl font-bold text-[#EF4444]">{lateCount}</p>
+            <p className="text-2xl font-bold text-[#EF4444]"><AnimatedValue value={lateCount} /></p>
           </div>
         </div>
       </div>

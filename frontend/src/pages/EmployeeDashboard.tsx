@@ -3,6 +3,7 @@ import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DocumentsTabPane } from "@/components/ess/DocumentsTabPane";
 import { AssetsTabPane } from "@/components/ess/AssetsTabPane";
+import { GrowthPane } from "@/components/employees/GrowthPane";
 import { ProfileDetailsTabPane } from "@/components/ess/ProfileDetailsTabPane";
 import { AttendanceCorrectionPane } from "@/components/ess/AttendanceCorrectionPane";
 import { useAuth } from "@/contexts/AuthContext";
@@ -88,6 +89,7 @@ type Tab =
   | "attendance"
   | "leaves"
   | "payroll"
+  | "growth"
   | "documents"
   | "assets"
   | "settings";
@@ -97,6 +99,7 @@ const TABS: { id: Tab; label: string; icon: any }[] = [
   { id: "attendance", label: "Attendance", icon: Clock },
   { id: "leaves", label: "Leaves", icon: Calendar },
   { id: "payroll", label: "Payroll", icon: IndianRupee },
+  { id: "growth", label: "Growth", icon: TrendingUp },
   { id: "documents", label: "Documents", icon: FolderOpen },
   { id: "assets", label: "Assets", icon: Cpu },
   { id: "settings", label: "Settings", icon: Lock },
@@ -1621,6 +1624,8 @@ export default function EmployeeDashboard() {
           )}
         </div>
       )}
+
+      {tab === "growth" && <GrowthPane />}
 
       {tab === "documents" && (
         <DocumentsTabPane employee={employee} toast={toast} />

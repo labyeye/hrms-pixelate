@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { AnimatedValue } from "@/components/ui/AnimatedValue";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { supportAPI } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
@@ -356,7 +357,7 @@ export default function SupportPage() {
                       {cfg.label}
                     </span>
                   </div>
-                  <p className="text-2xl font-bold mt-1">{count}</p>
+                  <p className="text-2xl font-bold mt-1"><AnimatedValue value={count} /></p>
                 </CardContent>
               </Card>
             );
