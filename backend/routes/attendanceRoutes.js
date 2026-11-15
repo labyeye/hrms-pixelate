@@ -6,6 +6,7 @@ const {
   kioskFaceMark,
   updateAttendance,
   bulkMarkAttendance,
+  bulkUpdateAttendance,
   getMonthSummary,
   getDailySummary,
   getTimingInsights,
@@ -46,6 +47,12 @@ router.put(
   protect,
   authorize("super_admin", "hr_manager"),
   updateAttendance,
+);
+router.post(
+  "/bulk-update",
+  protect,
+  authorize("super_admin", "hr_manager"),
+  bulkUpdateAttendance,
 );
 router.post(
   "/bulk",

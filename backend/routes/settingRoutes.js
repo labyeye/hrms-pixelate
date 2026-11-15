@@ -4,9 +4,13 @@ const {
   getSettings,
   updateSettings,
   uploadCompanyLogo,
+  uploadIdCardImage,
 } = require("../controllers/settingController");
 const { protect, authorize } = require("../middleware/auth");
-const { uploadCompanyLogo: logoMulter } = require("../middleware/upload");
+const {
+  uploadCompanyLogo: logoMulter,
+  uploadIdCardImage: idCardImageMulter,
+} = require("../middleware/upload");
 
 router.use(protect);
 
@@ -28,6 +32,21 @@ router.post(
     });
   },
   uploadCompanyLogo,
+);
+
+router.post(
+  "/id-card-image",
+  authorize("super_admin", "hr_manager"),
+  (req, res, next) => {
+    idCardImageMulter(req, res, (err) => {
+      if (err) {
+        res.status(400);
+        return next(err);
+      }
+      next();
+    });
+  },
+  uploadIdCardImage,
 );
 
 module.exports = router;

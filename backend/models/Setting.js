@@ -36,6 +36,8 @@ const settingSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    // ID-card design (sizes, front/back elements). Validated by utils/idCardTemplate.js before it is saved.
+    idCardTemplate: { type: mongoose.Schema.Types.Mixed, default: null },
     chequeLogoX: { type: Number, default: 10 },
     chequeLogoY: { type: Number, default: 20 },
     chequeLogoW: { type: Number, default: 60 },

@@ -14,6 +14,7 @@ import {
   TextInput,
   Image,
   DeviceEventEmitter,
+  LayoutAnimation,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -35,6 +36,8 @@ import {
   Search,
   SlidersHorizontal,
   FileText,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { leaveAPI, attendanceSettingsAPI } from '../api/api';
@@ -75,6 +78,14 @@ export default function LeaveScreen() {
   const { user } = useAuth();
   const isEmployee = user?.role === 'employee';
   const { isTablet, maxContentWidth } = useResponsive();
+  // Phone: rows stay short; the arrow opens dates, reason and actions
+  const [expandedLeave, setExpandedLeave] = useState<string[]>([]);
+  const toggleExpandLeave = (id: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedLeave(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
+    );
+  };
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -705,6 +716,7 @@ export default function LeaveScreen() {
                   emp.lastName?.[0] || ''
                 }`.toUpperCase()
               : '?';
+            const full = isTablet || expandedLeave.includes(item._id);
             return (
               <SlideInCard
                 index={index}
@@ -716,7 +728,13 @@ export default function LeaveScreen() {
                       {emp?.avatar ? (
                         <Image
                           source={{ uri: emp.avatar }}
-                          style={styles.empPhoto}
+                          style={[
+                            styles.empPhoto,
+                            !isTablet && {
+                              borderWidth: 2,
+                              borderColor: cfg.color,
+                            },
+                          ]}
                         />
                       ) : (
                         <View
@@ -724,6 +742,10 @@ export default function LeaveScreen() {
                             styles.empPhoto,
                             styles.empPhotoFallback,
                             { backgroundColor: cfg.bg },
+                            !isTablet && {
+                              borderWidth: 2,
+                              borderColor: cfg.color,
+                            },
                           ]}
                         >
                           <Text
@@ -746,194 +768,238 @@ export default function LeaveScreen() {
                       </View>
                     </View>
                     <View style={{ flex: 1, marginLeft: 12, minWidth: 90 }}>
-                      <Text style={styles.codeChip}>
-                        {emp?.employeeId || '—'}
-                      </Text>
+                      {full && (
+                        <Text style={styles.codeChip}>
+                          {emp?.employeeId || '—'}
+                        </Text>
+                      )}
                       <Text style={styles.empName} numberOfLines={1}>
                         {emp ? `${emp.firstName} ${emp.lastName}` : 'Unknown'}
                       </Text>
                       <Text style={styles.empSub} numberOfLines={1}>
-                        {emp?.designation || '—'}
+                        {full
+                          ? emp?.designation || '—'
+                          : `${sentence(item.leaveType)}${
+                              days ? ` · ${days}d` : ''
+                            }`}
                       </Text>
-                      {!isEmployee && usageMap[emp?._id]?.allowed > 0 && (
-                        <Text style={styles.freeLeave}>
-                          Free leave: {usageMap[emp._id].used}/
-                          {usageMap[emp._id].allowed} d
-                        </Text>
-                      )}
-                    </View>
-                    <View
-                      style={{ alignItems: 'flex-end', gap: 4, flexShrink: 1 }}
-                    >
-                      <View style={styles.statusLine}>
-                        <View
-                          style={[
-                            styles.statusTag,
-                            { backgroundColor: cfg.bg, borderColor: cfg.color },
-                          ]}
-                        >
-                          <Text
-                            style={[styles.statusTagText, { color: cfg.color }]}
-                          >
-                            {sentence(item.status)}
+                      {full &&
+                        !isEmployee &&
+                        usageMap[emp?._id]?.allowed > 0 && (
+                          <Text style={styles.freeLeave}>
+                            Free leave: {usageMap[emp._id].used}/
+                            {usageMap[emp._id].allowed} d
                           </Text>
-                        </View>
-                        {item.status === 'approved' && (
+                        )}
+                    </View>
+                    {full && (
+                      <View
+                        style={{
+                          alignItems: 'flex-end',
+                          gap: 4,
+                          flexShrink: 1,
+                        }}
+                      >
+                        <View style={styles.statusLine}>
                           <View
                             style={[
                               styles.statusTag,
-                              (item as any).deductSalary
-                                ? {
-                                    backgroundColor: '#FFF1E6',
-                                    borderColor: C.secondary,
-                                  }
-                                : {
-                                    backgroundColor: '#E7F9F1',
-                                    borderColor: C.success,
-                                  },
+                              {
+                                backgroundColor: cfg.bg,
+                                borderColor: cfg.color,
+                              },
                             ]}
                           >
                             <Text
                               style={[
                                 styles.statusTagText,
-                                {
-                                  color: (item as any).deductSalary
-                                    ? C.secondary
-                                    : C.success,
-                                },
+                                { color: cfg.color },
                               ]}
                             >
-                              {(item as any).deductSalary ? 'Unpaid' : 'Paid'}
+                              {sentence(item.status)}
                             </Text>
                           </View>
+                          {item.status === 'approved' && (
+                            <View
+                              style={[
+                                styles.statusTag,
+                                (item as any).deductSalary
+                                  ? {
+                                      backgroundColor: '#FFF1E6',
+                                      borderColor: C.secondary,
+                                    }
+                                  : {
+                                      backgroundColor: '#E7F9F1',
+                                      borderColor: C.success,
+                                    },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.statusTagText,
+                                  {
+                                    color: (item as any).deductSalary
+                                      ? C.secondary
+                                      : C.success,
+                                  },
+                                ]}
+                              >
+                                {(item as any).deductSalary ? 'Unpaid' : 'Paid'}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                        <View style={styles.typeDays}>
+                          <Text style={styles.typeText}>
+                            {sentence(item.leaveType)}
+                          </Text>
+                          <Text style={styles.typeText}>
+                            {days ? `${days}d` : ''}
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+                    {!isTablet && (
+                      <TouchableOpacity
+                        onPress={() => toggleExpandLeave(item._id)}
+                        hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+                        accessibilityLabel={
+                          full ? 'Hide details' : 'Show details'
+                        }
+                        style={{
+                          width: 28,
+                          alignItems: 'center',
+                          marginLeft: 4,
+                        }}
+                      >
+                        {full ? (
+                          <ChevronUp size={18} color={C.primary} />
+                        ) : (
+                          <ChevronDown size={18} color={C.primary} />
                         )}
-                      </View>
-                      <View style={styles.typeDays}>
-                        <Text style={styles.typeText}>
-                          {sentence(item.leaveType)}
-                        </Text>
-                        <Text style={styles.typeText}>
-                          {days ? `${days}d` : ''}
-                        </Text>
-                      </View>
-                    </View>
+                      </TouchableOpacity>
+                    )}
                   </View>
 
-                  <View style={styles.cardDivider} />
-                  <View style={styles.statsRow}>
-                    <View style={styles.statCol}>
-                      <View style={styles.statLabelRow}>
-                        <View
-                          style={[
-                            styles.statIconWrap,
-                            { backgroundColor: '#E8F0FB' },
-                          ]}
-                        >
-                          <Calendar size={14} color={C.primary} />
-                        </View>
-                        <Text style={styles.statLabel}>From</Text>
-                      </View>
-                      <Text
-                        style={styles.statValue}
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                      >
-                        {formatDate(item.startDate)}
-                      </Text>
-                    </View>
-                    <View style={styles.statDivider} />
-                    <View style={styles.statCol}>
-                      <View style={styles.statLabelRow}>
-                        <View
-                          style={[
-                            styles.statIconWrap,
-                            { backgroundColor: '#E8F0FB' },
-                          ]}
-                        >
-                          <Calendar size={14} color={C.primary} />
-                        </View>
-                        <Text style={styles.statLabel}>To</Text>
-                      </View>
-                      <Text
-                        style={styles.statValue}
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                      >
-                        {formatDate(item.endDate)}
-                      </Text>
-                    </View>
-                    {days && (
-                      <>
-                        <View style={styles.statDivider} />
+                  {full && (
+                    <>
+                      <View style={styles.cardDivider} />
+                      <View style={styles.statsRow}>
                         <View style={styles.statCol}>
                           <View style={styles.statLabelRow}>
                             <View
                               style={[
                                 styles.statIconWrap,
-                                { backgroundColor: '#F0EBFC' },
+                                { backgroundColor: '#E8F0FB' },
                               ]}
                             >
-                              <Clock size={14} color="#7C3AED" />
+                              <Calendar size={14} color={C.primary} />
                             </View>
-                            <Text style={styles.statLabel}>Duration</Text>
+                            <Text style={styles.statLabel}>From</Text>
                           </View>
                           <Text
                             style={styles.statValue}
                             numberOfLines={1}
                             adjustsFontSizeToFit
                           >
-                            {days}d
+                            {formatDate(item.startDate)}
                           </Text>
                         </View>
-                      </>
-                    )}
-                  </View>
+                        <View style={styles.statDivider} />
+                        <View style={styles.statCol}>
+                          <View style={styles.statLabelRow}>
+                            <View
+                              style={[
+                                styles.statIconWrap,
+                                { backgroundColor: '#E8F0FB' },
+                              ]}
+                            >
+                              <Calendar size={14} color={C.primary} />
+                            </View>
+                            <Text style={styles.statLabel}>To</Text>
+                          </View>
+                          <Text
+                            style={styles.statValue}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                          >
+                            {formatDate(item.endDate)}
+                          </Text>
+                        </View>
+                        {days && (
+                          <>
+                            <View style={styles.statDivider} />
+                            <View style={styles.statCol}>
+                              <View style={styles.statLabelRow}>
+                                <View
+                                  style={[
+                                    styles.statIconWrap,
+                                    { backgroundColor: '#F0EBFC' },
+                                  ]}
+                                >
+                                  <Clock size={14} color="#7C3AED" />
+                                </View>
+                                <Text style={styles.statLabel}>Duration</Text>
+                              </View>
+                              <Text
+                                style={styles.statValue}
+                                numberOfLines={1}
+                                adjustsFontSizeToFit
+                              >
+                                {days}d
+                              </Text>
+                            </View>
+                          </>
+                        )}
+                      </View>
 
-                  {item.reason && (
-                    <Text style={styles.reason}>{item.reason}</Text>
-                  )}
+                      {item.reason && (
+                        <Text style={styles.reason}>{item.reason}</Text>
+                      )}
 
-                  {(item as any).comment && (
-                    <Text style={styles.commentText}>
-                      "{(item as any).comment}"
-                    </Text>
-                  )}
+                      {(item as any).comment && (
+                        <Text style={styles.commentText}>
+                          "{(item as any).comment}"
+                        </Text>
+                      )}
 
-                  {item.status === 'pending' && !isEmployee && (
-                    <View style={styles.actionRow}>
-                      <TouchableOpacity
-                        style={styles.approveBtn}
-                        onPress={() => handleAction(item, 'approved')}
-                      >
-                        <Check size={14} color={C.white} />
-                        <Text style={styles.actionBtnText}>Approve</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.rejectBtn}
-                        onPress={() => handleAction(item, 'rejected')}
-                      >
-                        <X size={14} color={C.white} />
-                        <Text style={styles.actionBtnText}>Reject</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                  {item.status === 'pending' && isEmployee && (
-                    <View style={styles.actionRow}>
-                      <TouchableOpacity
-                        style={styles.approveBtn}
-                        onPress={() => openEdit(item)}
-                      >
-                        <Pencil size={14} color={C.white} />
-                        <Text style={styles.actionBtnText}>Edit</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.rejectBtn}
-                        onPress={() => handleDelete(item)}
-                      >
-                        <Trash2 size={14} color={C.white} />
-                        <Text style={styles.actionBtnText}>Cancel</Text>
-                      </TouchableOpacity>
-                    </View>
+                      {item.status === 'pending' && !isEmployee && (
+                        <View style={styles.actionRow}>
+                          <TouchableOpacity
+                            style={styles.approveBtn}
+                            onPress={() => handleAction(item, 'approved')}
+                          >
+                            <Check size={14} color={C.white} />
+                            <Text style={styles.actionBtnText}>Approve</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.rejectBtn}
+                            onPress={() => handleAction(item, 'rejected')}
+                          >
+                            <X size={14} color={C.white} />
+                            <Text style={styles.actionBtnText}>Reject</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                      {item.status === 'pending' && isEmployee && (
+                        <View style={styles.actionRow}>
+                          <TouchableOpacity
+                            style={styles.approveBtn}
+                            onPress={() => openEdit(item)}
+                          >
+                            <Pencil size={14} color={C.white} />
+                            <Text style={styles.actionBtnText}>Edit</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.rejectBtn}
+                            onPress={() => handleDelete(item)}
+                          >
+                            <Trash2 size={14} color={C.white} />
+                            <Text style={styles.actionBtnText}>Cancel</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </>
                   )}
                 </View>
               </SlideInCard>

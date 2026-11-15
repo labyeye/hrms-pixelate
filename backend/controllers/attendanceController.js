@@ -1114,6 +1114,146 @@ const bulkMarkAttendance = asyncHandler(async (req, res) => {
   });
 });
 
+// Bulk edit for one day (admin/HR): set status and/or check-in/out times for many employees at once.
+// Times are "HH:MM" (IST) and are always placed on the chosen date, so a check-in/out can never land on another day.
+// A check-out earlier than the check-in is read as the next morning (night shift). Same status/hours/OT/late logic as
+// single marking; WhatsApp notices are not sent in bulk.
+const bulkUpdateAttendance = asyncHandler(async (req, res) => {
+  const { date, employees, status, checkIn, checkOut, notes } = req.body;
+  const STATUSES = ["present", "absent", "late", "half_day", "on_leave"];
+  const hhmm = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date || ""))) {
+    res.status(400);
+    throw new Error("A valid date (YYYY-MM-DD) is required");
+  }
+  if (!Array.isArray(employees) || employees.length === 0) {
+    res.status(400);
+    throw new Error("Select at least one employee");
+  }
+  if (employees.length > 500) {
+    res.status(400);
+    throw new Error("Cannot update more than 500 records at once");
+  }
+  if (status !== undefined && status !== "" && !STATUSES.includes(status)) {
+    res.status(400);
+    throw new Error("Invalid status");
+  }
+  if ((checkIn && !hhmm.test(checkIn)) || (checkOut && !hhmm.test(checkOut))) {
+    res.status(400);
+    throw new Error("Times must be in HH:MM format");
+  }
+  if (!status && !checkIn && !checkOut) {
+    res.status(400);
+    throw new Error("Choose a status and/or a check-in / check-out time");
+  }
+
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const holiday = await isHolidayDate(req.user.company, d);
+  if (holiday) {
+    res.status(400);
+    throw new Error(`${date} is a holiday (${holiday.name}); attendance can't be edited`);
+  }
+
+  const at = (hhmmStr, addDays = 0) =>
+    new Date(new Date(`${date}T${hhmmStr}:00+05:30`).getTime() + addDays * 86400000);
+
+  const emps = await Employee.find({
+    _id: { $in: employees },
+    company: req.user.company,
+  });
+  const empMap = new Map(emps.map((e) => [String(e._id), e]));
+  const existingRows = await Attendance.find({
+    employee: { $in: emps.map((e) => e._id) },
+    date: d,
+  });
+  const existingMap = new Map(existingRows.map((r) => [String(r.employee), r]));
+
+  let updated = 0;
+  const skipped = [];
+  for (const id of employees) {
+    const emp = empMap.get(String(id));
+    if (!emp) {
+      skipped.push({ employee: id, reason: "Employee not found" });
+      continue;
+    }
+    const boundsError = employmentBoundsError(emp, d);
+    if (boundsError) {
+      skipped.push({ employee: id, reason: boundsError });
+      continue;
+    }
+    const existing = existingMap.get(String(emp._id)) || null;
+
+    // Effective status: explicit choice, else keep the current one (an absent person given a check-in becomes present).
+    const noTimes = status === "absent" || status === "on_leave";
+    let wanted = status || existing?.status;
+    if (!status) {
+      if (!existing || existing.status === "absent") wanted = checkIn || checkOut ? "present" : wanted || "absent";
+      if (["holiday", "weekend"].includes(wanted)) wanted = "present";
+    }
+
+    let newIn = noTimes ? undefined : existing?.checkIn;
+    let newOut = noTimes ? undefined : existing?.checkOut;
+    if (!noTimes && checkIn) newIn = at(checkIn);
+    if (!noTimes && checkOut) {
+      newOut = at(checkOut);
+      const base = newIn ? new Date(newIn) : null;
+      if (base && newOut <= base) newOut = at(checkOut, 1);
+    }
+
+    const finalStatus = await resolveStatus(emp._id, newIn, wanted, req.user.company);
+    let approvalPending = existing?.approvalPending || false;
+    if (finalStatus === "late" && existing?.status !== "late" && newIn) {
+      approvalPending = await handleLateAllowance(emp._id, req.user.company, d, newIn);
+    }
+    if (finalStatus !== "late") approvalPending = false;
+
+    let workHours = 0,
+      autoOT = 0,
+      earlyLeaving = false;
+    if (newIn && newOut) {
+      workHours = (newOut - newIn) / 3600000;
+      autoOT = await calcOTHours(emp, newOut);
+      earlyLeaving = await calcEarlyLeaving(emp, newOut);
+    }
+
+    await Attendance.findOneAndUpdate(
+      { employee: emp._id, date: d },
+      {
+        employee: emp._id,
+        date: d,
+        status: finalStatus,
+        checkIn: newIn,
+        checkOut: newOut,
+        workHours,
+        overtime: autoOT,
+        earlyLeaving,
+        approvalPending,
+        verifyMode: existing?.verifyMode || "manual",
+        ...(notes ? { notes } : {}),
+        markedBy: req.user._id,
+      },
+      { upsert: true },
+    );
+    updated++;
+  }
+
+  await logAudit(req, "attendance.bulk_update", "Attendance", undefined, {
+    date: d,
+    count: updated,
+    status: status || undefined,
+    checkIn: checkIn || undefined,
+    checkOut: checkOut || undefined,
+  });
+  res.json({
+    success: true,
+    message: `Updated ${updated} record${updated === 1 ? "" : "s"}`,
+    updated,
+    skipped,
+  });
+});
+
 const getMonthSummary = asyncHandler(async (req, res) => {
   const { month, year } = req.query;
   const m = parseInt(month),
@@ -1151,6 +1291,7 @@ module.exports = {
   kioskFaceMark,
   updateAttendance,
   bulkMarkAttendance,
+  bulkUpdateAttendance,
   getMonthSummary,
   getDailySummary,
   getTimingInsights,

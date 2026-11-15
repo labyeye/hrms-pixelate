@@ -174,6 +174,7 @@ app.use(apiRateLimit);
 app.use("/api/dashboard", require("./routes/dashboardRoutes"));
 app.use("/api/employees", require("./routes/employeeRoutes"));
 app.use("/api/promotions", require("./routes/salaryRevisionRoutes"));
+app.use("/api/preferences", require("./routes/preferenceRoutes"));
 app.use("/api/attendance", require("./routes/attendanceRoutes"));
 app.use("/api/leaves", require("./routes/leaveRoutes"));
 app.use("/api/payroll", require("./routes/payrollRoutes"));

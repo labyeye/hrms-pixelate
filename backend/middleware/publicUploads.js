@@ -8,6 +8,7 @@ const PUBLIC_UPLOAD_DIRS = new Set([
   "avatars",
   "attendance-selfies",
   "announcement-posters",
+  "id-card-images",
 ]);
 
 const guard = (req, res, next) => {

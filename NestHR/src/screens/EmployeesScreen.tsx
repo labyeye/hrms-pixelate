@@ -16,6 +16,7 @@ import {
   Image,
   Platform,
   Linking,
+  LayoutAnimation,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DatePickerField } from '../components/common/DatePickerField';
@@ -24,6 +25,9 @@ import {
   Search,
   Plus,
   Trash2,
+  EllipsisVertical,
+  ChevronDown,
+  ChevronUp,
   Mail,
   Phone,
   Briefcase,
@@ -91,6 +95,7 @@ import SlideInCard from '../components/motion/SlideInCard';
 import HeaderIconBtn from '../components/common/HeaderIconBtn';
 import SearchModal from '../components/common/SearchModal';
 import FilterSortModal from '../components/common/FilterSortModal';
+import PrintIdCardModal from '../idcard/PrintIdCardModal';
 import DashStatCard, { dashStatRow } from '../components/common/DashStatCard';
 import { chooseExport } from '../utils/exporters';
 import { pickSheet, shareTemplate } from '../utils/importSheet';
@@ -148,6 +153,16 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
   exited: { color: '#A855F7', bg: '#FAF5FF' },
 };
 const EMP_TYPES = ['full_time', 'part_time', 'contract', 'intern'];
+// Table column weights (flex). Tablet shows every column; phone folds them into four.
+const T_COLS_TABLET = { emp: 2.4, desig: 1.4, phone: 1.4, salary: 1.2, type: 1, status: 1, act: 0.9 };
+const T_PHONE_W = { contact: 96, status: 66, act: 54 };
+// Soft tint per employment type (background + text/border) — colours only
+const TYPE_TINT: Record<string, { bg: string; fg: string }> = {
+  full_time: { bg: '#EFF6FF', fg: C.primary },
+  part_time: { bg: '#FFF7ED', fg: '#C2410C' },
+  contract: { bg: '#FAF5FF', fg: '#7E22CE' },
+  intern: { bg: '#F0FDFA', fg: '#0F766E' },
+};
 const GENDERS = ['male', 'female', 'other'];
 const WORK_DAYS = [5, 6, 7];
 const STATUSES = ['active', 'inactive', 'on_leave', 'terminated', 'exited'];
@@ -228,6 +243,17 @@ export default function EmployeesScreen() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  // Three-dot menu on a table row: holds the employee it was opened for
+  const [rowMenu, setRowMenu] = useState<any>(null);
+  const [idPrint, setIdPrint] = useState<any[] | null>(null);
+  // Phone table: employees whose row is expanded to show every detail
+  const [expanded, setExpanded] = useState<string[]>([]);
+  const toggleExpand = (id: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpanded(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
+    );
+  };
   const [importing, setImporting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -1085,6 +1111,14 @@ export default function EmployeesScreen() {
           {selected.length > 0 && !bulkBusy && (
             <>
               <TouchableOpacity
+                style={[styles.bulkBtn, { backgroundColor: C.primary }]}
+                onPress={() =>
+                  setIdPrint(employees.filter(e => selected.includes(e._id)))
+                }
+              >
+                <Text style={styles.bulkBtnText}>ID cards</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={[styles.bulkBtn, { backgroundColor: C.success }]}
                 onPress={() =>
                   bulkRun('Activate', id =>
@@ -1117,6 +1151,60 @@ export default function EmployeesScreen() {
           {bulkBusy && <ActivityIndicator color={C.primary} />}
         </View>
       )}
+
+      <Modal
+        visible={!!rowMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setRowMenu(null)}
+      >
+        <TouchableOpacity
+          style={styles.rowMenuOverlay}
+          activeOpacity={1}
+          onPress={() => setRowMenu(null)}
+        >
+          <View style={styles.menuSheet}>
+            {rowMenu && (
+              <Text style={styles.rowMenuTitle} numberOfLines={1}>
+                {rowMenu.firstName} {rowMenu.lastName}
+              </Text>
+            )}
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                const emp = rowMenu;
+                setRowMenu(null);
+                if (emp) openEdit(emp);
+              }}
+            >
+              <Edit2 size={18} color={C.primary} />
+              <Text style={styles.menuText}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                const emp = rowMenu;
+                setRowMenu(null);
+                if (emp) setIdPrint([emp]);
+              }}
+            >
+              <IdCard size={18} color={C.primary} />
+              <Text style={styles.menuText}>Print ID card</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                const emp = rowMenu;
+                setRowMenu(null);
+                if (emp) handleDelete(emp);
+              }}
+            >
+              <Trash2 size={18} color={C.danger} />
+              <Text style={[styles.menuText, { color: C.danger }]}>Delete</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       <Modal
         visible={menuOpen}
@@ -1180,6 +1268,8 @@ export default function EmployeesScreen() {
         </TouchableOpacity>
       </Modal>
 
+      <PrintIdCardModal employees={idPrint} onClose={() => setIdPrint(null)} />
+
       <SearchModal
         visible={searchOpen}
         onClose={() => setSearchOpen(false)}
@@ -1221,13 +1311,11 @@ export default function EmployeesScreen() {
         </View>
       ) : (
         <FlatList
-          key={isTablet ? 'tablet-grid-3' : 'mobile-list'}
+          key={isTablet ? 'tablet-table' : 'mobile-table'}
           data={filtered}
           keyExtractor={item => item._id}
-          numColumns={isTablet ? 3 : 1}
-          columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
           contentContainerStyle={[
-            { padding: 16, gap: 10, paddingBottom: 32 },
+            { padding: 16, paddingBottom: 32 },
             isTablet && {
               maxWidth: maxContentWidth,
               width: '100%',
@@ -1243,6 +1331,7 @@ export default function EmployeesScreen() {
           }
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
+            <>
             <View style={dashStatRow}>
               <DashStatCard
                 index={0}
@@ -1273,6 +1362,46 @@ export default function EmployeesScreen() {
                 color="#A855F7"
               />
             </View>
+            {(() => {
+              const H = (
+                size: number | { width: number },
+                label: string,
+                right?: boolean,
+              ) => (
+                <Text
+                  key={label || 'act'}
+                  numberOfLines={1}
+                  style={[
+                    styles.tHeadText,
+                    typeof size === 'number' ? { flex: size } : size,
+                    right && { textAlign: 'right' },
+                  ]}
+                >
+                  {label}
+                </Text>
+              );
+              return (
+                <View style={styles.tHead}>
+                  {selectMode && <View style={{ width: 20 }} />}
+                  {H(isTablet ? T_COLS_TABLET.emp : 1, 'Employee')}
+                  {isTablet ? (
+                    <>
+                      {H(T_COLS_TABLET.desig, 'Designation')}
+                      {H(T_COLS_TABLET.phone, 'Phone')}
+                      {H(T_COLS_TABLET.salary, 'Salary')}
+                      {H(T_COLS_TABLET.type, 'Type')}
+                      {H(T_COLS_TABLET.status, 'Status')}
+                    </>
+                  ) : (
+                    <>
+                      {H({ width: T_PHONE_W.status }, 'Status')}
+                    </>
+                  )}
+                  {H(isTablet ? T_COLS_TABLET.act : { width: T_PHONE_W.act }, '', true)}
+                </View>
+              );
+            })()}
+            </>
           }
           ListEmptyComponent={
             <View style={styles.empty}>
@@ -1280,179 +1409,266 @@ export default function EmployeesScreen() {
               <Text style={styles.emptyText}>No employees found</Text>
             </View>
           }
-          renderItem={({ item, index }) => (
-            <SlideInCard
-              index={index}
-              style={isTablet ? styles.cardCol : undefined}
-            >
-              {(() => {
-                const statusColor = STATUS_COLOR[item.status] || '#9CA3AF';
-                return (
-                  <TouchableOpacity
-                    style={[
-                      styles.card,
-                      isTablet && { flex: 1, minHeight: 180 },
-                    ]}
-                    onPress={() =>
-                      selectMode ? toggleSel(item._id) : setDetailEmp(item)
-                    }
-                    activeOpacity={0.85}
-                  >
-                    <View style={styles.cardTop}>
-                      {selectMode &&
-                        (selected.includes(item._id) ? (
-                          <CheckSquare
-                            size={20}
-                            color={C.primary}
-                            style={{ marginRight: 8, marginTop: 12 }}
-                          />
-                        ) : (
-                          <Square
-                            size={20}
-                            color={C.black}
-                            style={{ marginRight: 8, marginTop: 12 }}
-                          />
-                        ))}
-                      {(item as any).avatar ? (
-                        <Image
-                          source={{ uri: (item as any).avatar }}
-                          style={[
-                            styles.avatarImg,
-                            { borderColor: statusColor },
-                          ]}
-                        />
-                      ) : (
-                        <View
-                          style={[
-                            styles.avatar,
-                            {
-                              backgroundColor: C.primary,
-                              borderColor: statusColor,
-                            },
-                          ]}
-                        >
-                          <Text style={styles.avatarText}>
-                            {item.firstName[0]}
-                            {item.lastName[0]}
-                          </Text>
-                        </View>
-                      )}
-                      <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={styles.empIdChip}>{item.employeeId}</Text>
-                        <Text style={styles.empName}>
-                          {item.firstName} {item.lastName}
-                        </Text>
-                        <Text style={styles.empDesig} numberOfLines={1}>
-                          {item.designation || getDeptName(item.department)}
-                        </Text>
-                        {(item as any).loanBalance > 0 && (
-                          <View style={styles.loanBadge}>
-                            <Text style={styles.loanBadgeText}>
-                              Loan: ₹
-                              {((item as any).loanBalance / 1000).toFixed(1)}K
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                      <View
+          ListFooterComponent={
+            filtered.length ? <View style={styles.tFoot} /> : null
+          }
+          renderItem={({ item }) => {
+            const statusColor = STATUS_COLOR[item.status] || '#9CA3AF';
+            const T = TYPE_TINT[item.employmentType] || TYPE_TINT.full_time;
+            const salary =
+              (item as any).monthlySalary || item.salary || 0;
+            const phone = (item as any).phone;
+            const desig = item.designation || getDeptName(item.department);
+
+            const statusBadge = (
+              <View
+                style={[
+                  styles.statusBadge,
+                  {
+                    backgroundColor: statusColor + '1A',
+                    borderColor: statusColor,
+                    alignSelf: 'flex-start',
+                    flexShrink: 0,
+                  },
+                ]}
+              >
+                <Text
+                  style={[styles.statusText, { color: statusColor }]}
+                  numberOfLines={1}
+                >
+                  {item.status.replace('_', ' ').toUpperCase()}
+                </Text>
+              </View>
+            );
+            const typePill = (
+              <View
+                style={[
+                  styles.typePill,
+                  {
+                    backgroundColor: T.bg,
+                    borderColor: T.fg,
+                    alignSelf: 'flex-start',
+                    flexShrink: 0,
+                    paddingHorizontal: isTablet ? 8 : 5,
+                  },
+                ]}
+              >
+                <Text
+                  style={[styles.typePillText, { color: T.fg }]}
+                  numberOfLines={1}
+                >
+                  {item.employmentType.replace('_', ' ').toUpperCase()}
+                </Text>
+              </View>
+            );
+            const phoneEl = phone ? (
+              <View style={styles.tIconText}>
+                <Phone size={12} color="#475569" />
+                <Text style={styles.tText} numberOfLines={1}>
+                  {phone}
+                </Text>
+              </View>
+            ) : null;
+            const salaryEl = salary ? (
+              <View style={styles.tIconText}>
+                <IndianRupee size={12} color="#475569" />
+                <Text style={styles.tText} numberOfLines={1}>
+                  {Number(salary).toLocaleString()}/mo
+                </Text>
+              </View>
+            ) : null;
+            const actions = (
+              <TouchableOpacity
+                onPress={e => {
+                  e.stopPropagation?.();
+                  setRowMenu(item);
+                }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={styles.tMoreBtn}
+                accessibilityLabel="More actions"
+              >
+                <EllipsisVertical size={18} color="#475569" />
+              </TouchableOpacity>
+            );
+
+            // Phone only: the arrow opens everything the tablet / desktop table shows in its columns.
+            const isOpen = !isTablet && expanded.includes(item._id);
+            const detail = (label: string, node: React.ReactNode) => (
+              <View style={styles.tDetailItem}>
+                <Text style={styles.tDetailLabel}>{label}</Text>
+                {node}
+              </View>
+            );
+            const panel = isOpen ? (
+              <View style={styles.tDetail}>
+                {detail(
+                  'Employee ID',
+                  <Text style={styles.tText}>{item.employeeId}</Text>,
+                )}
+                {!!desig &&
+                  detail('Designation', <Text style={styles.tText}>{desig}</Text>)}
+                {!!phone && detail('Phone', phoneEl)}
+                {!!salary && detail('Salary', salaryEl)}
+                {detail('Type', typePill)}
+                {detail('Status', statusBadge)}
+                {(item as any).loanBalance > 0 &&
+                  detail(
+                    'Loan balance',
+                    <View style={[styles.loanBadge, { marginTop: 0 }]}>
+                      <Text style={styles.loanBadgeText}>
+                        ₹{Number((item as any).loanBalance).toLocaleString()}
+                      </Text>
+                    </View>,
+                  )}
+              </View>
+            ) : null;
+
+            return (
+              <View>
+              <TouchableOpacity
+                style={styles.tRow}
+                onPress={() =>
+                  selectMode ? toggleSel(item._id) : setDetailEmp(item)
+                }
+                activeOpacity={0.85}
+              >
+                {selectMode &&
+                  (selected.includes(item._id) ? (
+                    <CheckSquare size={20} color={C.primary} />
+                  ) : (
+                    <Square size={20} color={C.black} />
+                  ))}
+
+                {/* Employee */}
+                <View
+                  style={[
+                    styles.tEmpCell,
+                    isTablet ? { flex: T_COLS_TABLET.emp } : { flex: 1 },
+                  ]}
+                >
+                  {(item as any).avatar ? (
+                    <Image
+                      source={{ uri: (item as any).avatar }}
+                      style={[
+                        styles.avatarImg,
+                        styles.tAvatar,
+                        !isTablet && styles.tAvatarSm,
+                        { borderColor: statusColor },
+                      ]}
+                    />
+                  ) : (
+                    <View
+                      style={[
+                        styles.avatar,
+                        styles.tAvatar,
+                        !isTablet && styles.tAvatarSm,
+                        {
+                          backgroundColor: C.primary,
+                          borderColor: statusColor,
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.avatarText, { fontSize: 12 }]}>
+                        {item.firstName[0]}
+                        {item.lastName[0]}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text
+                      style={[styles.empName, { fontSize: isTablet ? 14 : 13 }]}
+                      numberOfLines={2}
+                    >
+                      {item.firstName} {item.lastName}
+                    </Text>
+                    {isTablet && (
+                      <Text
                         style={[
-                          styles.statusBadge,
-                          {
-                            backgroundColor: statusColor,
-                            borderColor: C.black,
-                          },
+                          styles.empIdChip,
+                          { marginTop: 2, marginBottom: 0 },
                         ]}
                       >
-                        <Text style={[styles.statusText, { color: C.white }]}>
-                          {item.status.replace('_', ' ').toUpperCase()}
+                        {item.employeeId}
+                      </Text>
+                    )}
+                    {(item as any).loanBalance > 0 && (
+                      <View style={styles.loanBadge}>
+                        <Text style={styles.loanBadgeText}>
+                          Loan: ₹{((item as any).loanBalance / 1000).toFixed(1)}K
                         </Text>
                       </View>
+                    )}
+                  </View>
+                </View>
+
+                {isTablet ? (
+                  <>
+                    <View style={{ flex: T_COLS_TABLET.desig }}>
+                      <Text style={styles.tText} numberOfLines={2}>
+                        {desig}
+                      </Text>
                     </View>
-                    <View style={styles.cardMeta}>
-                      {item.designation && (
-                        <View
-                          style={[
-                            styles.metaItem,
-                            { backgroundColor: '#FBFBFB', flex: 1 },
-                          ]}
-                        >
-                          <User size={12} color={C.black} />
-                          <Text style={styles.metaText} numberOfLines={1}>
-                            {item.designation}
-                          </Text>
-                        </View>
-                      )}
-                      {(item as any).phone && (
-                        <View
-                          style={[
-                            styles.metaItem,
-                            { flexShrink: 0, backgroundColor: '#FBFBFB' },
-                          ]}
-                        >
-                          <Phone size={12} color={C.black} />
-                          <Text
-                            style={[styles.metaText, { flex: 0 }]}
-                            numberOfLines={1}
-                          >
-                            {(item as any).phone}
-                          </Text>
-                        </View>
-                      )}
-                      {(item.salary || (item as any).monthlySalary) && (
-                        <View
-                          style={[
-                            styles.metaItem,
-                            { flexShrink: 0, backgroundColor: '#DCFCE7' },
-                          ]}
-                        >
-                          <Briefcase size={12} color={C.black} />
-                          <Text
-                            style={[styles.metaText, { flex: 0 }]}
-                            numberOfLines={1}
-                          >
-                            ₹
-                            {(
-                              (item as any).monthlySalary ||
-                              item.salary ||
-                              0
-                            ).toLocaleString()}
-                            /mo
-                          </Text>
-                        </View>
-                      )}
+                    <View style={{ flex: T_COLS_TABLET.phone }}>{phoneEl}</View>
+                    <View style={{ flex: T_COLS_TABLET.salary }}>{salaryEl}</View>
+                    <View style={{ flex: T_COLS_TABLET.type, alignItems: 'flex-start' }}>
+                      {typePill}
                     </View>
-                    <View style={styles.cardBottom}>
-                      <View style={styles.typePill}>
-                        <Text style={styles.typePillText}>
-                          {item.employmentType.replace('_', ' ').toUpperCase()}
-                        </Text>
-                      </View>
-                      <View style={{ flexDirection: 'row', gap: 6 }}>
-                        <TouchableOpacity
-                          onPress={e => {
-                            e.stopPropagation?.();
-                            openEdit(item);
-                          }}
-                          style={styles.editBtn}
-                        >
-                          <Edit2 size={13} color={C.primary} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={e => {
-                            e.stopPropagation?.();
-                            handleDelete(item);
-                          }}
-                          style={styles.deleteBtn}
-                        >
-                          <Trash2 size={13} color={C.danger} />
-                        </TouchableOpacity>
-                      </View>
+                    <View style={{ flex: T_COLS_TABLET.status, alignItems: 'flex-start' }}>
+                      {statusBadge}
                     </View>
-                  </TouchableOpacity>
-                );
-              })()}
-            </SlideInCard>
-          )}
+                  </>
+                ) : (
+                  <>
+                    <View
+                      style={{
+                        width: T_PHONE_W.status,
+                        gap: 6,
+                        alignItems: 'flex-start',
+                      }}
+                    >
+                      {statusBadge}
+                    </View>
+                  </>
+                )}
+
+                {isTablet ? (
+                  <View
+                    style={{ flex: T_COLS_TABLET.act, alignItems: 'flex-end' }}
+                  >
+                    {actions}
+                  </View>
+                ) : (
+                  <View
+                    style={{
+                      width: T_PHONE_W.act,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'flex-end',
+                      gap: 8,
+                    }}
+                  >
+                    {actions}
+                    <TouchableOpacity
+                      onPress={e => {
+                        e.stopPropagation?.();
+                        toggleExpand(item._id);
+                      }}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      accessibilityLabel={isOpen ? 'Hide details' : 'Show details'}
+                    >
+                      {isOpen ? (
+                        <ChevronUp size={18} color={C.primary} />
+                      ) : (
+                        <ChevronDown size={18} color={C.primary} />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </TouchableOpacity>
+              {panel}
+              </View>
+            );
+          }}
         />
       )}
 
@@ -3320,6 +3536,91 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
   colWrapper: { gap: 12 },
   cardCol: { flex: 1 },
+  // Employees table
+  tHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginTop: 8,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 2,
+    borderColor: C.black,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+  },
+  tHeadText: {
+    fontSize: 10,
+    color: C.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    fontWeight: '400',
+  },
+  tRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    backgroundColor: C.white,
+    borderLeftWidth: 2,
+    borderRightWidth: 2,
+    borderColor: C.black,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  tFoot: {
+    height: 8,
+    backgroundColor: C.white,
+    borderWidth: 2,
+    borderTopWidth: 0,
+    borderColor: C.black,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+  },
+  tDetail: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    padding: 12,
+    backgroundColor: '#F8FAFC',
+    borderLeftWidth: 2,
+    borderRightWidth: 2,
+    borderColor: C.black,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  tDetailItem: { width: '47%', gap: 4, alignItems: 'flex-start' },
+  tDetailLabel: {
+    fontSize: 9,
+    color: C.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  tEmpCell: { flexDirection: 'row', alignItems: 'center', gap: 6, minWidth: 0 },
+  tAvatar: { width: 36, height: 36, borderRadius: 18 },
+  tAvatarSm: { width: 32, height: 32, borderRadius: 16 },
+  tText: { fontSize: 12, color: C.black, fontWeight: '400' },
+  tIconText: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  tActionBtn: { width: 28, height: 28, borderRadius: 14 },
+  tMoreBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  rowMenuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  rowMenuTitle: {
+    fontSize: 12,
+    color: C.textMuted,
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    paddingBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   card: {
     backgroundColor: C.white,
     borderWidth: 2,
@@ -3354,10 +3655,10 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     fontSize: 11,
     fontWeight: '400',
-    color: C.primary,
-    backgroundColor: C.primary + '18',
+    color: '#475569',
+    backgroundColor: '#F1F5F9',
     borderWidth: 1.5,
-    borderColor: C.primary,
+    borderColor: '#CBD5E1',
     paddingHorizontal: 6,
     paddingVertical: 1,
     marginBottom: 3,
@@ -3416,9 +3717,6 @@ const styles = StyleSheet.create({
   statusBadge: {
     borderWidth: 2,
     borderRadius: 999,
-    borderColor: '#0A0A0A',
-    borderRightWidth: 4,
-    borderBottomWidth: 4,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
@@ -3429,6 +3727,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     borderWidth: 2,
     borderColor: C.primary,
+    backgroundColor: C.primary + '14',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -3438,6 +3737,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     borderWidth: 2,
     borderColor: C.danger,
+    backgroundColor: '#FEF2F2',
     alignItems: 'center',
     justifyContent: 'center',
   },

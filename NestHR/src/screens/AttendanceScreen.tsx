@@ -15,6 +15,7 @@ import {
   Platform,
   Image,
   Linking,
+  LayoutAnimation,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -41,11 +42,26 @@ import {
   SlidersHorizontal,
   Ellipsis,
   Download,
+  AlarmClock,
+  Contrast,
+  TreePalm,
+  CircleDashed,
+  Moon,
+  PartyPopper,
+  Activity,
+  Users,
+  Timer,
+  StickyNote,
+  EllipsisVertical,
+  ChevronDown,
+  ChevronUp,
+  Hourglass,
 } from 'lucide-react-native';
 import {
   attendanceAPI,
   employeeAPI,
   attendanceCorrectionAPI,
+  preferencesAPI,
 } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
 import { AttendanceRecord, Employee } from '../types/hrms';
@@ -58,6 +74,10 @@ import SearchModal from '../components/common/SearchModal';
 import FilterSortModal from '../components/common/FilterSortModal';
 import DashStatCard, { dashStatRow } from '../components/common/DashStatCard';
 import { TimePickerField } from '../components/common/DatePickerField';
+
+// Icon-only attendance table: fixed widths for the narrow columns, the employee column takes the rest.
+const T_ATT_PHONE = { status: 34, time: 62, hrs: 0, ot: 0, method: 0, loc: 0, act: 54 };
+const T_ATT_TABLET = { status: 44, time: 82, hrs: 54, ot: 46, method: 82, loc: 40, act: 32 };
 
 function openLocationInMaps(loc: { lat: number; lng: number }) {
   Linking.openURL(
@@ -87,12 +107,12 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string; icon: any }> =
   {
     present: { color: C.success, bg: '#E7F9F1', icon: CheckCircle2 },
     absent: { color: C.danger, bg: '#FDEBEB', icon: XCircle },
-    late: { color: C.warning, bg: '#FEF3E2', icon: AlertCircle },
-    half_day: { color: C.secondary, bg: '#FEEEE3', icon: AlertCircle },
-    on_leave: { color: C.primary, bg: '#E8F0FB', icon: Calendar },
-    not_checked_in: { color: '#6B7280', bg: '#F3F4F6', icon: Clock },
-    weekend: { color: '#6B7280', bg: '#F3F4F6', icon: Calendar },
-    holiday: { color: '#A855F7', bg: '#F4EBFC', icon: Calendar },
+    late: { color: C.warning, bg: '#FEF3E2', icon: AlarmClock },
+    half_day: { color: C.secondary, bg: '#FEEEE3', icon: Contrast },
+    on_leave: { color: C.primary, bg: '#E8F0FB', icon: TreePalm },
+    not_checked_in: { color: '#6B7280', bg: '#F3F4F6', icon: CircleDashed },
+    weekend: { color: '#6B7280', bg: '#F3F4F6', icon: Moon },
+    holiday: { color: '#A855F7', bg: '#F4EBFC', icon: PartyPopper },
   };
 
 const VERIFY_MODE_LABELS: Record<string, string> = {
@@ -158,10 +178,47 @@ export default function AttendanceScreen({ navigation }: any) {
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState(toDateStr(new Date()));
   const [statusFilter, setStatusFilter] = useState('');
-  const [sortKey, setSortKey] = useState('');
+  // Default view: whoever checked in first is on top; people with no check-in yet sink to the bottom.
+  const [sortKey, setSortKey] = useState('checkin');
   const [searchOpen, setSearchOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [rowMenu, setRowMenu] = useState<any>(null);
+  // This admin's saved filter + sort (kept in the database, so it follows them to any device)
+  useEffect(() => {
+    if (isEmployee) return;
+    preferencesAPI
+      .get('attendance.view')
+      .then((r: any) => {
+        const v = r?.data;
+        if (v && typeof v === 'object') {
+          setStatusFilter(typeof v.status === 'string' ? v.status : '');
+          setSortKey(typeof v.sort === 'string' ? v.sort : 'checkin');
+        }
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEmployee]);
+  const saveMyView = async () => {
+    try {
+      await preferencesAPI.set(
+        'attendance.view',
+        { status: statusFilter, sort: sortKey },
+        true,
+      );
+      Alert.alert('Saved', 'This filter and sort will open by default for you.');
+    } catch (e: any) {
+      Alert.alert('Could not save', e?.message || 'Please try again');
+    }
+  };
+  // Phone table: rows opened with the arrow to show times, hours, method and location
+  const [expandedAtt, setExpandedAtt] = useState<string[]>([]);
+  const toggleExpandAtt = (id: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedAtt(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
+    );
+  };
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedEmpId, setSelectedEmpId] = useState('');
@@ -593,7 +650,7 @@ export default function AttendanceScreen({ navigation }: any) {
             <HeaderIconBtn
               label="Filter and sort"
               icon={<SlidersHorizontal size={22} color={C.black} />}
-              dot={!!statusFilter || !!sortKey}
+              dot={!!statusFilter || sortKey !== 'checkin'}
               onPress={() => setFilterOpen(true)}
             />
             <HeaderIconBtn
@@ -849,17 +906,18 @@ export default function AttendanceScreen({ navigation }: any) {
             filterValue={statusFilter}
             onFilter={setStatusFilter}
             sortOptions={[
-              { key: '', label: 'Default' },
+              { key: 'checkin', label: 'Checked in first' },
               { key: 'name', label: 'Name A–Z' },
               { key: 'name_desc', label: 'Name Z–A' },
-              { key: 'checkin', label: 'Check-in time' },
+              { key: '', label: 'Employee order' },
             ]}
             sortValue={sortKey}
             onSort={setSortKey}
             onReset={() => {
               setStatusFilter('');
-              setSortKey('');
+              setSortKey('checkin');
             }}
+            onSave={isEmployee ? undefined : saveMyView}
           />
         </>
       )}
@@ -870,14 +928,12 @@ export default function AttendanceScreen({ navigation }: any) {
         </View>
       ) : (
         <FlatList
-          key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
+          key={isTablet ? 'tablet-table' : 'mobile-table'}
           data={filtered}
           keyExtractor={item => item._id}
           style={{ flex: 1 }}
-          numColumns={isTablet ? 2 : 1}
-          columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
           contentContainerStyle={[
-            { padding: 16, gap: 12, paddingBottom: 32 },
+            { padding: 16, paddingBottom: 32 },
             isTablet && {
               maxWidth: maxContentWidth,
               width: '100%',
@@ -893,7 +949,8 @@ export default function AttendanceScreen({ navigation }: any) {
           }
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
-            !isEmployee ? (
+            <>
+            {!isEmployee ? (
               <View style={dashStatRow}>
                 <DashStatCard
                   index={0}
@@ -924,7 +981,39 @@ export default function AttendanceScreen({ navigation }: any) {
                   color={STATUS_CONFIG.half_day.color}
                 />
               </View>
-            ) : null
+            ) : null}
+            {(() => {
+              const W = isTablet ? T_ATT_TABLET : T_ATT_PHONE;
+              const hc = (width: number, icon: React.ReactNode) => (
+                <View style={{ width, alignItems: 'center' }}>{icon}</View>
+              );
+              return (
+                <View style={styles.tHead}>
+                  <View style={{ flex: 2.4, minWidth: 140 }}>
+                    <Users size={15} color={C.textMuted} />
+                  </View>
+                  {isTablet && hc(W.status, <Activity size={15} color={C.textMuted} />)}
+                  {hc(W.time, <LogIn size={15} color={C.success} />)}
+                  {hc(W.time, <LogOut size={15} color={C.danger} />)}
+                  {isTablet && (
+                    <>
+                      {hc(W.hrs, <Timer size={15} color={C.textMuted} />)}
+                      {hc(W.ot, <Hourglass size={15} color={C.warning} />)}
+                      {hc(W.method, <Fingerprint size={15} color="#7C3AED" />)}
+                      {hc(W.loc, <MapPin size={15} color={C.primary} />)}
+                      <View style={{ flex: 1, minWidth: 40 }}>
+                        <StickyNote size={15} color={C.textMuted} />
+                      </View>
+                    </>
+                  )}
+                  <View style={{ width: W.act }} />
+                </View>
+              );
+            })()}
+            </>
+          }
+          ListFooterComponent={
+            filtered.length ? <View style={styles.tFoot} /> : null
           }
           ListEmptyComponent={
             <View style={styles.empty}>
@@ -932,322 +1021,362 @@ export default function AttendanceScreen({ navigation }: any) {
               <Text style={styles.emptyText}>No records for this date</Text>
             </View>
           }
-          renderItem={({ item, index }) => (
-            <SlideInCard
-              index={index}
-              style={isTablet ? styles.cardCol : undefined}
-            >
-              {(() => {
-                const emp = item.employee as any;
-                const cfg = STATUS_CONFIG[item.status] || {
-                  color: C.textMuted,
-                  bg: '#F3F4F6',
-                  icon: AlertCircle,
-                };
-                const Icon = cfg.icon;
-                const ciTime = item.checkIn
-                  ? new Date(item.checkIn).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })
-                  : null;
-                const coTime = item.checkOut
-                  ? new Date(item.checkOut).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })
-                  : null;
-                const workHours = (item as any).workingHours;
-                const overtime = (item as any).overtime;
-                const initials = emp
-                  ? `${emp.firstName?.[0] || ''}${
-                      emp.lastName?.[0] || ''
-                    }`.toUpperCase()
-                  : '?';
-                const ciDate = item.checkIn
-                  ? new Date(item.checkIn).toLocaleDateString('en-IN', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                    })
-                  : null;
-                const coDate = item.checkOut
-                  ? new Date(item.checkOut).toLocaleDateString('en-IN', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                    })
-                  : null;
-                const verifyMode = (item as any).verifyMode;
-                const VerifyIcon =
-                  (verifyMode && VERIFY_MODE_ICONS[verifyMode]) || Clock;
-                const deptName =
-                  typeof emp?.department === 'object'
-                    ? emp?.department?.name
-                    : emp?.department;
-                const statusLabel =
-                  item.status === 'weekend'
-                    ? new Date(dateFilter + 'T00:00:00')
-                        .toLocaleDateString('en-IN', { weekday: 'long' })
-                        .toUpperCase()
-                    : sentence(item.status);
-                return (
-                  <View style={[styles.card, { borderLeftColor: cfg.color }]}>
-                    <View style={styles.cardRow}>
-                      <View style={styles.photoWrap}>
-                        {emp?.avatar ? (
-                          <Image
-                            source={{ uri: emp.avatar }}
-                            style={styles.empPhoto}
-                          />
-                        ) : (
-                          <View
-                            style={[
-                              styles.empPhoto,
-                              styles.empPhotoFallback,
-                              { backgroundColor: cfg.bg },
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.empPhotoInitials,
-                                { color: cfg.color },
-                              ]}
-                            >
-                              {initials}
-                            </Text>
-                          </View>
-                        )}
-                        <View
-                          style={[
-                            styles.statusBadgeOverlay,
-                            {
-                              backgroundColor: C.white,
-                              borderColor: cfg.color,
-                            },
-                          ]}
-                        >
-                          <Icon size={14} color={cfg.color} />
-                        </View>
-                      </View>
-                      <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={styles.empName} numberOfLines={1}>
-                          {emp ? `${emp.firstName} ${emp.lastName}` : 'Unknown'}
+          renderItem={({ item }) => {
+            const W = isTablet ? T_ATT_TABLET : T_ATT_PHONE;
+            const emp = item.employee as any;
+            const cfg = STATUS_CONFIG[item.status] || {
+              color: C.textMuted,
+              bg: '#F3F4F6',
+              icon: AlertCircle,
+            };
+            const StatusIcon = cfg.icon;
+            const fmtTime = (d?: string) =>
+              d
+                ? new Date(d).toLocaleTimeString([], {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  })
+                : null;
+            const ciTime = fmtTime(item.checkIn as any);
+            const coTime = fmtTime(item.checkOut as any);
+            const workHours = (item as any).workingHours;
+            const overtime = (item as any).overtime;
+            const earlyLeaving = (item as any).earlyLeaving;
+            const verifyMode = (item as any).verifyMode;
+            const VerifyIcon = verifyMode ? VERIFY_MODE_ICONS[verifyMode] : null;
+            const hasLoc = !!(item.checkInLocation || item.checkOutLocation);
+            const isVirtual = item._id.startsWith('v_');
+            const canMenu =
+              !isEmployee && !(isVirtual && item.status === 'weekend');
+            const initials = emp
+              ? `${emp.firstName?.[0] || ''}${emp.lastName?.[0] || ''}`.toUpperCase()
+              : '?';
+            const sub = isEmployee
+              ? new Date(item.date).toLocaleDateString('en-IN', {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+                })
+              : emp?.designation || '';
+            const fmtDay = (d?: string) =>
+              d
+                ? new Date(d).toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                  })
+                : '';
+            const timeCell = (t: string | null, day?: string) => (
+              <View style={{ width: W.time, alignItems: 'center' }}>
+                <Text
+                  style={t ? styles.tTime : styles.tTimeEmpty}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  {t || '–'}
+                </Text>
+                {isTablet && !!t && !!day && (
+                  <Text style={styles.tSub}>{day}</Text>
+                )}
+              </View>
+            );
+            // Phone only: the arrow opens the columns the tablet table shows, plus method and location.
+            const isOpen = !isTablet && expandedAtt.includes(item._id);
+            const panel = isOpen ? (
+              <View style={styles.tDetail}>
+                <View style={[styles.tDetailItem, { width: '100%' }]}>
+                  <View
+                    style={[
+                      styles.tStatusIcon,
+                      { backgroundColor: cfg.bg, borderColor: cfg.color },
+                    ]}
+                  >
+                    <StatusIcon size={14} color={cfg.color} />
+                  </View>
+                  <Text style={[styles.tTime, { color: cfg.color }]}>
+                    {sentence(item.status)}
+                  </Text>
+                </View>
+                <View style={styles.tDetailItem}>
+                  <LogIn size={15} color={C.success} />
+                  <Text style={styles.tTime}>{ciTime || '–'}</Text>
+                  {!!item.checkIn && (
+                    <Text style={styles.tSub}>{fmtDay(item.checkIn as any)}</Text>
+                  )}
+                </View>
+                <View style={styles.tDetailItem}>
+                  <LogOut size={15} color={C.danger} />
+                  <Text style={styles.tTime}>{coTime || '–'}</Text>
+                  {!!item.checkOut && (
+                    <Text style={styles.tSub}>{fmtDay(item.checkOut as any)}</Text>
+                  )}
+                </View>
+                {(!!workHours || overtime > 0 || earlyLeaving) && (
+                  <View style={styles.tDetailItem}>
+                    <Timer size={15} color={C.textMuted} />
+                    {!!workHours && <Text style={styles.tTime}>{workHours}h</Text>}
+                    {overtime > 0 && (
+                      <Text style={[styles.tOt, { color: C.warning }]}>
+                        +{overtime}
+                      </Text>
+                    )}
+                    {earlyLeaving && <LogOut size={12} color={C.primary} />}
+                  </View>
+                )}
+                {!!verifyMode && VerifyIcon && (
+                  <View style={styles.tDetailItem}>
+                    <VerifyIcon size={15} color="#7C3AED" />
+                    <Text style={styles.tTime}>
+                      {VERIFY_MODE_LABELS[verifyMode] || sentence(verifyMode)}
+                    </Text>
+                  </View>
+                )}
+                {hasLoc && (
+                  <TouchableOpacity
+                    style={[styles.tDetailItem, { width: '100%' }]}
+                    onPress={() => showLocationOptions(item)}
+                  >
+                    <MapPin size={15} color={C.primary} />
+                    <Text style={[styles.tTime, { color: C.primary }]}>
+                      Open location
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                {!!item.notes && (
+                  <View style={[styles.tDetailItem, { width: '100%' }]}>
+                    <StickyNote size={15} color="#6B7280" />
+                    <Text style={[styles.tSub, { flex: 1 }]}>{item.notes}</Text>
+                  </View>
+                )}
+              </View>
+            ) : null;
+            return (
+              <View>
+              <View style={styles.tRow}>
+                {/* Employee: avatar, name, then a line of small icons (method, location, note) */}
+                <View style={styles.tEmpCell}>
+                  {emp?.avatar ? (
+                    <Image
+                      source={{ uri: emp.avatar }}
+                      style={[
+                        styles.tAvatar,
+                        { borderColor: isTablet ? C.primary : cfg.color },
+                      ]}
+                    />
+                  ) : (
+                    <View
+                      style={[
+                        styles.tAvatar,
+                        styles.empPhotoFallback,
+                        {
+                          backgroundColor: C.primary + '1A',
+                          borderColor: isTablet ? C.primary : cfg.color,
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.empPhotoInitials, { color: C.primary, fontSize: 11 }]}>
+                        {initials}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.tName} numberOfLines={2}>
+                      {emp ? `${emp.firstName} ${emp.lastName}` : 'Unknown'}
+                    </Text>
+                    <View style={styles.tSubRow}>
+                      {!!sub && (
+                        <Text style={styles.tSub} numberOfLines={1}>
+                          {sub}
                         </Text>
-                        <Text style={styles.empSub}>
-                          {emp?.employeeId || ''}
-                          {emp?.designation ? ` · ${emp.designation}` : ''}
+                      )}
+                    </View>
+                  </View>
+                </View>
+
+                {/* Status: icon only (tablet). On the phone the avatar border shows it. */}
+                {isTablet && (
+                  <View style={{ width: W.status, alignItems: 'center' }}>
+                    <View
+                      accessibilityLabel={sentence(item.status)}
+                      style={[
+                        styles.tStatusIcon,
+                        { backgroundColor: cfg.bg, borderColor: cfg.color },
+                      ]}
+                    >
+                      <StatusIcon size={14} color={cfg.color} />
+                    </View>
+                  </View>
+                )}
+
+                {timeCell(ciTime, fmtDay(item.checkIn as any))}
+                {timeCell(coTime, fmtDay(item.checkOut as any))}
+
+                {isTablet && (
+                  <>
+                    {/* Hours (+ a small icon when they left early) */}
+                    <View style={{ width: W.hrs, alignItems: 'center' }}>
+                      {workHours ? (
+                        <Text style={styles.tTime} numberOfLines={1} adjustsFontSizeToFit>
+                          {workHours}h
                         </Text>
-                        {!!deptName && (
-                          <View style={styles.empDeptRow}>
-                            <Building2 size={14} color="#6B7280" />
-                            <Text style={styles.empDeptText}>{deptName}</Text>
-                          </View>
-                        )}
-                      </View>
-                      <View style={styles.cardActions}>
-                        <View
-                          style={[
-                            styles.statusTag,
-                            { backgroundColor: cfg.bg, borderColor: cfg.color },
-                          ]}
-                        >
-                          <Text
-                            style={[styles.statusTagText, { color: cfg.color }]}
-                          >
-                            {statusLabel}
-                          </Text>
-                        </View>
-                        {!isEmployee &&
-                          (item._id.startsWith('v_') ? (
-                            item.status === 'weekend' ? null : (
-                              <View style={{ flexDirection: 'row', gap: 6 }}>
-                                <TouchableOpacity
-                                  style={styles.absentBtn}
-                                  onPress={() =>
-                                    markAbsent((item.employee as any)?._id)
-                                  }
-                                  hitSlop={{
-                                    top: 8,
-                                    bottom: 8,
-                                    left: 8,
-                                    right: 8,
-                                  }}
-                                >
-                                  <XCircle size={14} color={C.white} />
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                  style={styles.markBtn}
-                                  onPress={() =>
-                                    openMarkForEmp((item.employee as any)?._id)
-                                  }
-                                  hitSlop={{
-                                    top: 8,
-                                    bottom: 8,
-                                    left: 8,
-                                    right: 8,
-                                  }}
-                                >
-                                  <CheckCircle2 size={14} color={C.white} />
-                                </TouchableOpacity>
-                              </View>
-                            )
-                          ) : (
-                            <TouchableOpacity
-                              style={styles.editBtn}
-                              onPress={() => openEdit(item)}
-                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                            >
-                              <Pencil size={14} color={C.primary} />
-                            </TouchableOpacity>
-                          ))}
-                      </View>
+                      ) : (
+                        <Text style={styles.tTimeEmpty}>–</Text>
+                      )}
+                      {earlyLeaving && (
+                        <LogOut size={11} color={C.primary} style={{ marginTop: 2 }} />
+                      )}
                     </View>
 
-                    {(ciTime || coTime || verifyMode) && (
-                      <>
-                        <View style={styles.cardDivider} />
-                        <View style={styles.statsRow}>
-                          <View style={styles.statCol}>
-                            <View style={styles.statLabelRow}>
-                              <View
-                                style={[
-                                  styles.statIconWrap,
-                                  { backgroundColor: '#E7F9F1' },
-                                ]}
-                              >
-                                <LogIn size={14} color={C.success} />
-                              </View>
-                              <Text style={styles.statLabel}>Check In</Text>
-                            </View>
-                            <Text
-                              style={styles.statValue}
-                              numberOfLines={1}
-                              adjustsFontSizeToFit
-                            >
-                              {ciTime || '--:--'}
-                            </Text>
-                            {ciDate && (
-                              <Text style={styles.statSub}>{ciDate}</Text>
-                            )}
-                          </View>
-                          <View style={styles.statDivider} />
-                          <View style={styles.statCol}>
-                            <View style={styles.statLabelRow}>
-                              <View
-                                style={[
-                                  styles.statIconWrap,
-                                  { backgroundColor: '#FDEBEB' },
-                                ]}
-                              >
-                                <LogOut size={14} color={C.danger} />
-                              </View>
-                              <Text style={styles.statLabel}>Check Out</Text>
-                            </View>
-                            <Text
-                              style={styles.statValue}
-                              numberOfLines={1}
-                              adjustsFontSizeToFit
-                            >
-                              {coTime || '--:--'}
-                            </Text>
-                            {coDate && (
-                              <Text style={styles.statSub}>{coDate}</Text>
-                            )}
-                          </View>
-                          {verifyMode && (
-                            <>
-                              <View style={styles.statDivider} />
-                              <View style={styles.statCol}>
-                                <View style={styles.statLabelRow}>
-                                  <View
-                                    style={[
-                                      styles.statIconWrap,
-                                      { backgroundColor: '#F0EBFC' },
-                                    ]}
-                                  >
-                                    <VerifyIcon size={14} color="#7C3AED" />
-                                  </View>
-                                  <Text style={styles.statLabel}>Method</Text>
-                                </View>
-                                <Text
-                                  style={styles.statValue}
-                                  numberOfLines={1}
-                                  adjustsFontSizeToFit
-                                >
-                                  {VERIFY_MODE_LABELS[verifyMode] ||
-                                    sentence(verifyMode)}
-                                </Text>
-                              </View>
-                            </>
-                          )}
-                        </View>
-                      </>
-                    )}
+                    {/* Overtime */}
+                    <View style={{ width: W.ot, alignItems: 'center' }}>
+                      {overtime > 0 ? (
+                        <Text style={[styles.tTime, { color: C.warning }]}>{overtime}h</Text>
+                      ) : (
+                        <Text style={styles.tTimeEmpty}>–</Text>
+                      )}
+                    </View>
 
-                    {(workHours ||
-                      overtime > 0 ||
-                      (item as any).earlyLeaving ||
-                      item.checkInLocation ||
-                      item.checkOutLocation) && (
-                      <View style={styles.timeRow}>
-                        {workHours && (
-                          <View style={styles.timePill}>
-                            <Clock size={14} color={C.primary} />
-                            <Text style={styles.timeText}>{workHours}h</Text>
-                          </View>
-                        )}
-                        {overtime > 0 && (
-                          <View
-                            style={[
-                              styles.timePill,
-                              { borderColor: C.warning },
-                            ]}
-                          >
-                            <Clock size={14} color={C.warning} />
-                            <Text
-                              style={[styles.timeText, { color: C.warning }]}
-                            >
-                              OT: {overtime}h
-                            </Text>
-                          </View>
-                        )}
-                        {(item as any).earlyLeaving && (
-                          <View
-                            style={[
-                              styles.timePill,
-                              { borderColor: C.primary },
-                            ]}
-                          >
-                            <LogOut size={14} color={C.primary} />
-                            <Text
-                              style={[styles.timeText, { color: C.primary }]}
-                            >
-                              Early Leave
-                            </Text>
-                          </View>
-                        )}
-                        {(item.checkInLocation || item.checkOutLocation) && (
-                          <TouchableOpacity
-                            style={styles.timePill}
-                            onPress={() => showLocationOptions(item)}
-                          >
-                            <MapPin size={14} color={C.primary} />
-                            <Text style={styles.timeText}>Location</Text>
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    )}
-                    {item.notes && (
-                      <Text style={styles.noteText}>{item.notes}</Text>
-                    )}
-                  </View>
-                );
-              })()}
-            </SlideInCard>
-          )}
+                    {/* Method */}
+                    <View style={{ width: W.method, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                      {VerifyIcon ? (
+                        <>
+                          <VerifyIcon size={13} color="#7C3AED" />
+                          <Text style={styles.tSub} numberOfLines={1}>
+                            {VERIFY_MODE_LABELS[verifyMode] || sentence(verifyMode)}
+                          </Text>
+                        </>
+                      ) : (
+                        <Text style={styles.tTimeEmpty}>–</Text>
+                      )}
+                    </View>
+
+                    {/* Location */}
+                    <View style={{ width: W.loc, alignItems: 'center' }}>
+                      {hasLoc ? (
+                        <TouchableOpacity
+                          onPress={() => showLocationOptions(item)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <MapPin size={16} color={C.primary} />
+                        </TouchableOpacity>
+                      ) : (
+                        <Text style={styles.tTimeEmpty}>–</Text>
+                      )}
+                    </View>
+
+                    {/* Note (takes the leftover width) */}
+                    <View style={{ flex: 1, minWidth: 40 }}>
+                      {item.notes ? (
+                        <Text style={styles.tSub} numberOfLines={2}>
+                          {item.notes}
+                        </Text>
+                      ) : (
+                        <Text style={styles.tTimeEmpty}>–</Text>
+                      )}
+                    </View>
+                  </>
+                )}
+
+                {/* ⋮ menu: edit a record, or mark present / absent for someone with no record */}
+                <View
+                  style={{
+                    width: W.act,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: isTablet ? 'center' : 'flex-end',
+                    gap: 8,
+                  }}
+                >
+                  {canMenu && (
+                    <TouchableOpacity
+                      onPress={() => setRowMenu(item)}
+                      hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+                      accessibilityLabel="More actions"
+                    >
+                      <EllipsisVertical size={18} color="#475569" />
+                    </TouchableOpacity>
+                  )}
+                  {!isTablet && (
+                    <TouchableOpacity
+                      onPress={() => toggleExpandAtt(item._id)}
+                      hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+                      accessibilityLabel={isOpen ? 'Hide details' : 'Show details'}
+                    >
+                      {isOpen ? (
+                        <ChevronUp size={18} color={C.primary} />
+                      ) : (
+                        <ChevronDown size={18} color={C.primary} />
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+              {panel}
+              </View>
+            );
+          }}
         />
       )}
+
+      {/* Row ⋮ menu */}
+      <Modal
+        visible={!!rowMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setRowMenu(null)}
+      >
+        <TouchableOpacity
+          style={styles.rowMenuOverlay}
+          activeOpacity={1}
+          onPress={() => setRowMenu(null)}
+        >
+          <View style={styles.rowMenuSheet}>
+            {rowMenu && (
+              <Text style={styles.rowMenuTitle} numberOfLines={1}>
+                {(rowMenu.employee as any)?.firstName}{' '}
+                {(rowMenu.employee as any)?.lastName}
+              </Text>
+            )}
+            {rowMenu && rowMenu._id.startsWith('v_') ? (
+              <>
+                <TouchableOpacity
+                  style={styles.rowMenuItem}
+                  onPress={() => {
+                    const id = (rowMenu.employee as any)?._id;
+                    setRowMenu(null);
+                    openMarkForEmp(id);
+                  }}
+                >
+                  <CheckCircle2 size={18} color={C.success} />
+                  <Text style={styles.rowMenuText}>Mark present</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.rowMenuItem}
+                  onPress={() => {
+                    const id = (rowMenu.employee as any)?._id;
+                    setRowMenu(null);
+                    markAbsent(id);
+                  }}
+                >
+                  <XCircle size={18} color={C.danger} />
+                  <Text style={styles.rowMenuText}>Mark absent</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity
+                style={styles.rowMenuItem}
+                onPress={() => {
+                  const rec = rowMenu;
+                  setRowMenu(null);
+                  if (rec) openEdit(rec);
+                }}
+              >
+                <Pencil size={18} color={C.primary} />
+                <Text style={styles.rowMenuText}>Edit</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Calendar picker modal */}
       <Modal
@@ -1916,6 +2045,110 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 14, fontWeight: '400', color: C.textMuted },
   colWrapper: { gap: 12 },
+  // Attendance table
+  tHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    marginTop: 8,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 2,
+    borderColor: C.black,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+  },
+  tRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    backgroundColor: C.white,
+    borderLeftWidth: 2,
+    borderRightWidth: 2,
+    borderColor: C.black,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  tFoot: {
+    height: 8,
+    backgroundColor: C.white,
+    borderWidth: 2,
+    borderTopWidth: 0,
+    borderColor: C.black,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+  },
+  tDetail: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    padding: 12,
+    backgroundColor: '#F8FAFC',
+    borderLeftWidth: 2,
+    borderRightWidth: 2,
+    borderColor: C.black,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  tDetailItem: {
+    width: '47%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  tEmpCell: { flex: 2.4, minWidth: 140, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  tAvatar: { width: 32, height: 32, borderRadius: 16, borderWidth: 2 },
+  tName: { fontSize: 13, color: C.black, fontWeight: '400' },
+  tSubRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
+  tSub: { fontSize: 10, color: '#6B7280', flexShrink: 1 },
+  tStatusIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tTime: { fontSize: 12, color: C.black, fontWeight: '400' },
+  tTimeEmpty: { fontSize: 12, color: '#D1D5DB' },
+  tOt: { fontSize: 10, fontWeight: '400' },
+  rowMenuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  rowMenuSheet: {
+    minWidth: 230,
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderColor: C.black,
+    backgroundColor: C.white,
+    paddingVertical: 4,
+  },
+  rowMenuTitle: {
+    fontSize: 12,
+    color: C.textMuted,
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    paddingBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  rowMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  rowMenuText: { fontSize: 14, color: C.black },
   cardCol: { flex: 1 },
   card: {
     backgroundColor: C.white,

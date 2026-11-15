@@ -171,7 +171,7 @@ const getStats = asyncHandler(async (req, res) => {
             $gte: new Date(`${dayKeys[0]}T00:00:00Z`.replace("Z", "+05:30")),
             $lt: new Date(Date.now() + 36 * 3600000),
           },
-          status: { $in: ["present", "late", "absent"] },
+          status: { $in: ["present", "late", "absent", "half_day", "on_leave"] },
         },
       },
       {
@@ -198,6 +198,8 @@ const getStats = asyncHandler(async (req, res) => {
         present: n("present"),
         late: n("late"),
         absent: n("absent"),
+        halfDay: n("half_day"),
+        onLeave: n("on_leave"),
       };
     });
 

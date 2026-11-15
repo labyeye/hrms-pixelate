@@ -15,7 +15,9 @@ import {
 import { Employee, Department } from "@/types/hrms";
 import { cn, formatDate } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { PrintIdCardDialog } from "@/components/idcard/PrintIdCardDialog";
 import {
+  IdCard,
   Plus,
   Search,
   X,
@@ -281,6 +283,8 @@ export default function EmployeesPage() {
   const [allEmps, setAllEmps] = useState<Employee[]>([]);
   const [attSummary, setAttSummary] = useState<Record<string, number>>({});
   const [viewEmp, setViewEmp] = useState<Employee | null>(null);
+  // Employees to print ID cards for (one from the action list, or the ticked ones in select mode)
+  const [idPrint, setIdPrint] = useState<Employee[] | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [loanModal, setLoanModal] = useState(false);
   const [loanForm, setLoanForm] = useState({
@@ -1188,6 +1192,15 @@ export default function EmployeesPage() {
               >
                 Terminate
               </button>
+              <button
+                disabled={bulkBusy}
+                className="text-xs font-bold border-2 border-black px-2 py-1 bg-white flex items-center gap-1"
+                onClick={() =>
+                  setIdPrint(displayedEmployees.filter((e) => selected.has(e._id)))
+                }
+              >
+                <IdCard className="w-3.5 h-3.5" /> Print ID cards
+              </button>
               <span className="ml-auto">
                 <ExportMenu
                   name="employees_selected"
@@ -1357,6 +1370,13 @@ export default function EmployeesPage() {
                       <Edit className="w-3.5 h-3.5" /> Edit
                     </button>
                     <button
+                      onClick={() => setIdPrint([emp])}
+                      className="p-2 border-2 border-black bg-white hover:bg-[#024BAB]/5"
+                      title="View ID Card"
+                    >
+                      <IdCard className="w-3.5 h-3.5 text-[#024BAB]" />
+                    </button>
+                    <button
                       onClick={() => handleDelete(emp._id)}
                       className="p-2 border-2 border-black bg-white hover:bg-red-50"
                       title="Terminate"
@@ -1514,6 +1534,13 @@ export default function EmployeesPage() {
                           title="Edit"
                         >
                           <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setIdPrint([emp])}
+                          className="p-1.5 border-2 border-transparent hover:border-black hover:bg-[#024BAB]/10 transition-colors"
+                          title="View ID Card"
+                        >
+                          <IdCard className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => handleDelete(emp._id)}
@@ -3703,6 +3730,16 @@ export default function EmployeesPage() {
                   action: () => navigate("/attendance"),
                 },
                 {
+                  icon: IdCard,
+                  label: "Print ID Card",
+                  color: "text-[#024BAB]",
+                  action: () => {
+                    const e = viewEmp;
+                    setViewEmp(null);
+                    setIdPrint([e]);
+                  },
+                },
+                {
                   icon: Edit,
                   label: "Edit Profile",
                   color: "text-black",
@@ -4074,6 +4111,10 @@ export default function EmployeesPage() {
         onClose={() => setActionModal({ ...actionModal, show: false })}
       />
       {}
+      {idPrint && idPrint.length > 0 && (
+        <PrintIdCardDialog employees={idPrint} onClose={() => setIdPrint(null)} />
+      )}
+
       {txModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="border-2 border-black bg-white w-full max-w-md">

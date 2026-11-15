@@ -777,6 +777,16 @@ export const payrollConfigAPI = {
     }),
 };
 
+// Per-user saved view settings (filter + sort), stored in the database so they follow the admin to any device.
+export const preferencesAPI = {
+  get: (key: string) => request(`/preferences/${key}`),
+  set: (key: string, value: object | null, merge = false) =>
+    request(`/preferences/${key}`, {
+      method: 'PUT',
+      body: JSON.stringify({ value, merge }),
+    }),
+};
+
 export const attendanceSettingsAPI = {
   get: () => request('/attendance-settings'),
   update: (body: object) =>

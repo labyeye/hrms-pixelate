@@ -14,6 +14,7 @@ import {
   Share,
   Image,
   TextInput,
+  LayoutAnimation,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -34,9 +35,14 @@ import {
   Plus,
   Wallet,
   Clock,
+  ChevronDown,
+  ChevronUp,
+  Users,
+  MailCheck,
+  MailX,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
-import { payrollAPI, payrollPreviewAPI } from '../api/api';
+import { payrollAPI, payrollPreviewAPI, preferencesAPI } from '../api/api';
 import RNPrint from 'react-native-print';
 import { buildPayslipHTML } from '../utils/buildPayslipHTML';
 import { useAuth } from '../contexts/AuthContext';
@@ -94,6 +100,66 @@ export default function PayrollScreen() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [selected, setSelected] = useState<Payroll | null>(null);
+  // Admin view: one month at a time. Default = this month; "Last month" or a custom month/year via Filter & Sort.
+  const [period, setPeriod] = useState<'this' | 'last' | 'custom'>('this');
+  const [customMonth, setCustomMonth] = useState(String(new Date().getMonth() + 1));
+  const [customYear, setCustomYear] = useState(String(new Date().getFullYear()));
+  const periodMY = (() => {
+    const now = new Date();
+    if (period === 'last') {
+      const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      return { month: d.getMonth() + 1, year: d.getFullYear() };
+    }
+    if (period === 'custom')
+      return { month: parseInt(customMonth, 10), year: parseInt(customYear, 10) };
+    return { month: now.getMonth() + 1, year: now.getFullYear() };
+  })();
+  const periodLabel = `${GEN_MONTHS[periodMY.month - 1]?.label ?? ''} ${periodMY.year}`;
+  // This admin's saved view (status, sort, this/last month) lives in the database and follows them to any device.
+  useEffect(() => {
+    if (isEmployee) return;
+    preferencesAPI
+      .get('payroll.view')
+      .then((r: any) => {
+        const v = r?.data;
+        if (!v || typeof v !== 'object') return;
+        if (typeof v.status === 'string') setStatusFilter(v.status);
+        if (typeof v.sort === 'string') setSortKey(v.sort);
+        if (v.period === 'this' || v.period === 'last') setPeriod(v.period);
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEmployee]);
+  const saveMyView = async () => {
+    try {
+      await preferencesAPI.set(
+        'payroll.view',
+        {
+          status: statusFilter,
+          sort: sortKey,
+          // a one-off custom month isn't a sensible default, so it saves as "this month"
+          period: period === 'custom' ? 'this' : period,
+        },
+        true,
+      );
+      Alert.alert(
+        'Saved',
+        period === 'custom'
+          ? 'Filter and sort saved. A custom month is not saved; it opens on this month.'
+          : 'This filter and sort will open by default for you.',
+      );
+    } catch (e: any) {
+      Alert.alert('Could not save', e?.message || 'Please try again');
+    }
+  };
+  // Phone table: rows opened with the arrow to show the full breakdown
+  const [expandedPay, setExpandedPay] = useState<string[]>([]);
+  const toggleExpandPay = (id: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedPay(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
+    );
+  };
   const [showGenModal, setShowGenModal] = useState(false);
   const [showTaxModal, setShowTaxModal] = useState(false);
   const [declarations, setDeclarations] = useState({
@@ -112,14 +178,19 @@ export default function PayrollScreen() {
     try {
       const res = isEmployee
         ? await payrollAPI.getMy()
-        : await payrollAPI.getAll();
+        : await payrollAPI.getAll({
+            month: String(periodMY.month),
+            year: String(periodMY.year),
+            limit: '5000',
+          });
       setPayrolls(res.data || []);
     } catch (e: any) {
       Alert.alert('Error', e.message);
     } finally {
       setLoading(false);
     }
-  }, [isEmployee]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEmployee, periodMY.month, periodMY.year]);
 
   useEffect(() => {
     load();
@@ -157,6 +228,15 @@ export default function PayrollScreen() {
   const totalNet = payrolls.reduce((sum, p) => sum + (p.netSalary || 0), 0);
   const totalGross = payrolls.reduce((sum, p) => sum + (p.grossSalary || 0), 0);
   const paidCount = payrolls.filter(p => p.status === 'paid').length;
+  // Salary pipeline: processed (waiting to be paid) → paid → did the staff get the slip?
+  const processedCount = payrolls.filter(p => p.status === 'processed').length;
+  const receivedCount = payrolls.filter(
+    p =>
+      p.status === 'paid' &&
+      ((p as any).slipReceived === 'received' ||
+        ((p as any).slipReceivedAt && (p as any).slipReceived !== 'not_received')),
+  ).length;
+  const notReceivedCount = paidCount - receivedCount;
 
   const handleProcess = async (payroll: Payroll) => {
     Alert.alert('Process Payroll', 'Process payroll for this employee?', [
@@ -447,7 +527,7 @@ export default function PayrollScreen() {
           <HeaderIconBtn
             label="Filter and sort"
             icon={<SlidersHorizontal size={22} color={C.black} />}
-            dot={!!statusFilter || !!sortKey}
+            dot={!!statusFilter || !!sortKey || period !== 'this'}
             onPress={() => setFilterOpen(true)}
           />
           {!isEmployee && (
@@ -605,6 +685,36 @@ export default function PayrollScreen() {
         ]}
         filterValue={statusFilter}
         onFilter={setStatusFilter}
+        filter2Title="Month"
+        filter2Options={
+          isEmployee
+            ? undefined
+            : [
+                { key: 'this', label: 'This month' },
+                { key: 'last', label: 'Last month' },
+                { key: 'custom', label: 'Custom' },
+              ]
+        }
+        filter2Value={period}
+        onFilter2={k => setPeriod(k as 'this' | 'last' | 'custom')}
+        extra={
+          !isEmployee && period === 'custom' ? (
+            <View style={{ gap: 10 }}>
+              <PickerField
+                title="Select month"
+                value={customMonth}
+                onChange={setCustomMonth}
+                options={GEN_MONTHS}
+              />
+              <PickerField
+                title="Select year"
+                value={customYear}
+                onChange={setCustomYear}
+                options={genYearOptions}
+              />
+            </View>
+          ) : null
+        }
         sortOptions={[
           { key: '', label: 'Default' },
           { key: 'name', label: 'Employee A–Z' },
@@ -615,7 +725,9 @@ export default function PayrollScreen() {
         onReset={() => {
           setStatusFilter('');
           setSortKey('');
+          setPeriod('this');
         }}
+        onSave={isEmployee ? undefined : saveMyView}
       />
 
       {loading ? (
@@ -624,13 +736,13 @@ export default function PayrollScreen() {
         </View>
       ) : (
         <FlatList
-          key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
+          key={isTablet ? 'tablet-grid-2' : 'mobile-table'}
           data={filtered}
           keyExtractor={item => item._id}
           numColumns={isTablet ? 2 : 1}
           columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
           contentContainerStyle={[
-            { padding: 16, gap: 10, paddingBottom: 32 },
+            { padding: 16, gap: isTablet ? 10 : 0, paddingBottom: 32 },
             isTablet && {
               maxWidth: maxContentWidth,
               width: '100%',
@@ -646,36 +758,55 @@ export default function PayrollScreen() {
           }
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
+            <>
+            {!isEmployee && (
+              <Text style={styles.periodLabel}>{periodLabel}</Text>
+            )}
             <View style={dashStatRow}>
               <DashStatCard
                 index={0}
-                label="Gross"
-                value={`₹${(totalGross / 1000).toFixed(0)}K`}
-                icon={Wallet}
+                label="Processed"
+                value={processedCount}
+                icon={Clock}
                 color={C.primary}
               />
               <DashStatCard
                 index={1}
-                label="Net Pay"
-                value={`₹${(totalNet / 1000).toFixed(0)}K`}
-                icon={IndianRupee}
+                label="Paid"
+                value={paidCount}
+                icon={CheckCircle2}
                 color={C.success}
               />
               <DashStatCard
                 index={2}
-                label="Paid"
-                value={paidCount}
-                icon={CheckCircle2}
-                color="#A855F7"
+                label="Received"
+                value={receivedCount}
+                icon={MailCheck}
+                color="#0F766E"
               />
               <DashStatCard
                 index={3}
-                label="Records"
-                value={payrolls.length}
-                icon={Clock}
-                color={C.warning}
+                label="Not received"
+                value={notReceivedCount}
+                icon={MailX}
+                color={C.danger}
               />
             </View>
+            {!isTablet && (
+              <View style={styles.tHead}>
+                <View style={{ flex: 1 }}>
+                  <Users size={15} color={C.textMuted} />
+                </View>
+                <View style={{ width: 92, alignItems: 'flex-end' }}>
+                  <IndianRupee size={15} color={C.success} />
+                </View>
+                <View style={{ width: 28 }} />
+              </View>
+            )}
+            </>
+          }
+          ListFooterComponent={
+            !isTablet && filtered.length ? <View style={styles.tFoot} /> : null
           }
           ListEmptyComponent={
             <View style={styles.empty}>
@@ -713,6 +844,175 @@ export default function PayrollScreen() {
               { l: 'Bonus', v: p.bonusAmount, sign: '+', c: '#A855F7' },
               { l: 'Loan', v: p.loanDeduction, sign: '-', c: C.secondary },
             ].filter(x => (x.v || 0) > 0);
+
+            if (!isTablet) {
+              const isOpen = expandedPay.includes(item._id);
+              const name = isEmployee
+                ? period
+                : emp
+                ? `${emp.firstName} ${emp.lastName}`
+                : 'Employee';
+              const initials = emp
+                ? `${emp.firstName?.[0] || ''}${emp.lastName?.[0] || ''}`.toUpperCase()
+                : 'E';
+              const money = (v: any) => `₹${Number(v || 0).toLocaleString()}`;
+              const line = (label: string, value: string, color?: string, bold?: boolean) => (
+                <View key={label} style={styles.tLine}>
+                  <Text style={styles.tLineLabel}>{label}</Text>
+                  <Text style={[styles.tLineVal, color ? { color } : null, bold && { fontWeight: '700' }]}>
+                    {value}
+                  </Text>
+                </View>
+              );
+              const earnings: [string, any][] = [
+                ['Basic salary', p.basicSalary],
+                ['Earned basic', p.earnedBasic ?? p.basicSalary],
+                ['Overtime', p.otPay],
+                ['Allowance', p.otherAllowances],
+                ['Bonus', p.bonusAmount],
+              ];
+              const deductions: [string, any][] = [
+                [`Absent${p.absentDays ? ` (${p.absentDays}d)` : ''}`, p.absentDeduction],
+                ['Late', p.lateDeductionAmount],
+                ['Half day', p.halfDayDeduction],
+                ['Early out', p.earlyCheckoutDeduction],
+                ['Penalty', p.penaltyAmount],
+                ['Loan / advance', p.loanDeduction],
+              ];
+              return (
+                <View>
+                  <TouchableOpacity
+                    style={styles.tRow}
+                    onPress={() => setSelected(item)}
+                    activeOpacity={0.85}
+                  >
+                    {emp?.avatar ? (
+                      <Image
+                        source={{ uri: emp.avatar }}
+                        style={[styles.tAvatar, { borderColor: cfg.color }]}
+                      />
+                    ) : (
+                      <View
+                        style={[
+                          styles.tAvatar,
+                          {
+                            backgroundColor: C.primary + '1A',
+                            borderColor: cfg.color,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          },
+                        ]}
+                      >
+                        <Text style={{ color: C.primary, fontSize: 11 }}>{initials}</Text>
+                      </View>
+                    )}
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={styles.tName} numberOfLines={2}>
+                        {name}
+                      </Text>
+                      {!isEmployee && !!emp?.designation && (
+                        <Text style={styles.tSub} numberOfLines={1}>
+                          {emp.designation}
+                        </Text>
+                      )}
+                    </View>
+                    <View style={{ width: 92, alignItems: 'flex-end' }}>
+                      <Text style={styles.tAmt} numberOfLines={1} adjustsFontSizeToFit>
+                        {money(item.netSalary)}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => toggleExpandPay(item._id)}
+                      hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+                      accessibilityLabel={isOpen ? 'Hide breakdown' : 'Show breakdown'}
+                      style={{ width: 28, alignItems: 'center' }}
+                    >
+                      {isOpen ? (
+                        <ChevronUp size={18} color={C.primary} />
+                      ) : (
+                        <ChevronDown size={18} color={C.primary} />
+                      )}
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+
+                  {isOpen && (
+                    <View style={styles.tDetail}>
+                      <View style={styles.tLine}>
+                        <Text style={styles.tLineLabel}>{period}</Text>
+                        <View
+                          style={[
+                            styles.statusBadge,
+                            { backgroundColor: cfg.color, borderColor: C.black },
+                          ]}
+                        >
+                          <Text style={[styles.statusBadgeText, { color: C.white }]}>
+                            {sentence(item.status)}
+                          </Text>
+                        </View>
+                      </View>
+                      {!!p.presentDays && line('Present days', `${p.presentDays}${p.workingDays ? ` / ${p.workingDays}` : ''}`)}
+                      {!!p.hourlyRate && line('Cost per hour', money(Number(p.hourlyRate).toFixed(0)))}
+
+                      <Text style={styles.tSection}>Earnings</Text>
+                      {earnings
+                        .filter(([l, v], i) => i < 2 || (v || 0) > 0)
+                        .map(([l, v], i) => line(l, `${i >= 2 ? '+' : ''}${money(v)}`, i >= 2 ? C.success : undefined))}
+                      {line('Gross', money(item.grossSalary), undefined, true)}
+
+                      {deductions.some(([, v]) => (v || 0) > 0) && (
+                        <>
+                          <Text style={styles.tSection}>Deductions</Text>
+                          {deductions
+                            .filter(([, v]) => (v || 0) > 0)
+                            .map(([l, v]) => line(l, `-${money(v)}`, C.danger))}
+                          {line('Total deductions', `-${money(item.totalDeductions)}`, C.danger, true)}
+                        </>
+                      )}
+
+                      <View style={[styles.tLine, styles.tNet]}>
+                        <Text style={[styles.tLineLabel, { color: C.black }]}>Net pay</Text>
+                        <Text style={[styles.tLineVal, { color: C.success, fontSize: 16 }]}>
+                          {money(item.netSalary)}
+                        </Text>
+                      </View>
+
+                      <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                        <TouchableOpacity
+                          style={styles.tBtnGhost}
+                          onPress={() => setSelected(item)}
+                        >
+                          <FileText size={14} color={C.primary} />
+                          <Text style={styles.tBtnGhostText}>Payslip</Text>
+                        </TouchableOpacity>
+                        {!isEmployee &&
+                          (item.status === 'draft' || item.status === 'processed') && (
+                            <TouchableOpacity
+                              style={[
+                                item.status === 'draft' ? styles.processBtn : styles.paidBtn,
+                                { flex: 1, marginTop: 0 },
+                              ]}
+                              onPress={() =>
+                                item.status === 'draft'
+                                  ? handleProcess(item)
+                                  : handleMarkPaid(item)
+                              }
+                            >
+                              {item.status === 'draft' ? (
+                                <Zap size={13} color={C.white} />
+                              ) : (
+                                <BadgeCheck size={13} color={C.white} />
+                              )}
+                              <Text style={styles.processBtnText}>
+                                {item.status === 'draft' ? 'Process Payroll' : 'Mark as Paid'}
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                      </View>
+                    </View>
+                  )}
+                </View>
+              );
+            }
 
             return (
               <SlideInCard
@@ -1481,6 +1781,96 @@ const styles = StyleSheet.create({
 
   // Compact Staff Card
   colWrapper: { gap: 10 },
+  periodLabel: {
+    fontSize: 12,
+    color: C.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 8,
+  },
+  // Phone payroll table
+  tHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    marginTop: 8,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 2,
+    borderColor: C.black,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+  },
+  tRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    backgroundColor: C.white,
+    borderLeftWidth: 2,
+    borderRightWidth: 2,
+    borderColor: C.black,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  tFoot: {
+    height: 8,
+    backgroundColor: C.white,
+    borderWidth: 2,
+    borderTopWidth: 0,
+    borderColor: C.black,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+  },
+  tAvatar: { width: 32, height: 32, borderRadius: 16, borderWidth: 2 },
+  tName: { fontSize: 13, color: C.black, fontWeight: '400' },
+  tSub: { fontSize: 10, color: '#6B7280', marginTop: 2 },
+  tAmt: { fontSize: 13, color: C.black, fontWeight: '400' },
+  tDetail: {
+    padding: 12,
+    gap: 6,
+    backgroundColor: '#F8FAFC',
+    borderLeftWidth: 2,
+    borderRightWidth: 2,
+    borderColor: C.black,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  tSection: {
+    fontSize: 10,
+    color: C.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginTop: 8,
+  },
+  tLine: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+  },
+  tLineLabel: { fontSize: 12, color: '#475569' },
+  tLineVal: { fontSize: 12, color: C.black, fontWeight: '400' },
+  tNet: {
+    marginTop: 6,
+    paddingTop: 8,
+    borderTopWidth: 1.5,
+    borderTopColor: '#CBD5E1',
+  },
+  tBtnGhost: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 2,
+    borderColor: C.primary,
+    borderRadius: 6,
+    backgroundColor: C.white,
+  },
+  tBtnGhostText: { fontSize: 12, color: C.primary, fontWeight: '400' },
   cardTablet: { flex: 1 },
   card: {
     backgroundColor: C.white,

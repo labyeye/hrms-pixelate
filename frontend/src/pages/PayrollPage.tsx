@@ -18,6 +18,7 @@ import {
   payrollPreviewAPI,
   settingsAPI,
   dashboardAPI,
+  preferencesAPI,
 } from "@/services/api";
 import { ViewTabs, useViewTab } from "@/components/ui/ViewTabs";
 import { ChartCard, NbTooltip } from "@/components/ui/ChartCard";
@@ -343,6 +344,35 @@ export default function PayrollPage() {
     "employee" | "net" | "gross" | "deductions"
   >("employee");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  // This admin's saved view (status, department, sort), stored in the database so it follows them to any device.
+  useEffect(() => {
+    preferencesAPI
+      .get("payroll.view")
+      .then((r: any) => {
+        const v = r?.data;
+        if (!v || typeof v !== "object") return;
+        if (typeof v.status === "string") setFilterStatus(v.status);
+        if (typeof v.dept === "string") setDeptFilter(v.dept);
+        if (["employee", "net", "gross", "deductions"].includes(v.sortKey))
+          setSortKey(v.sortKey);
+        if (v.sortDir === "asc" || v.sortDir === "desc") setSortDir(v.sortDir);
+      })
+      .catch(() => {});
+  }, []);
+  const [viewSaved, setViewSaved] = useState(false);
+  const saveMyView = async () => {
+    try {
+      await preferencesAPI.set(
+        "payroll.view",
+        { status: filterStatus, dept: deptFilter, sortKey, sortDir },
+        true,
+      );
+      setViewSaved(true);
+      setTimeout(() => setViewSaved(false), 2000);
+    } catch (e: any) {
+      alert(e.message || "Could not save the view");
+    }
+  };
   const [previewing, setPreviewing] = useState(false);
   const [previewData, setPreviewData] = useState<any[]>([]);
   const [previewStep, setPreviewStep] = useState<"form" | "preview">("form");
@@ -1004,11 +1034,11 @@ export default function PayrollPage() {
                     axisLine={false}
                     width={78}
                   />
-                  <Tooltip content={<NbTooltip />} cursor={{ fill: "#FA731C11" }} />
+                  <Tooltip content={<NbTooltip />} cursor={{ fill: "#044BAB11" }} />
                   <Bar
                     dataKey="value"
                     name="₹"
-                    fill="#FA731C"
+                    fill="#044BAB"
                     stroke="#0A0A0A"
                     strokeWidth={1.5}
                     radius={[0, 6, 6, 0]}
@@ -1044,11 +1074,11 @@ export default function PayrollPage() {
                     width={38}
                     allowDecimals={false}
                   />
-                  <Tooltip content={<NbTooltip />} cursor={{ fill: "#00C48C11" }} />
+                  <Tooltip content={<NbTooltip />} cursor={{ fill: "#044BAB11" }} />
                   <Bar
                     dataKey="total"
                     name="₹K"
-                    fill="#00C48C"
+                    fill="#044BAB"
                     stroke="#0A0A0A"
                     strokeWidth={1.5}
                     radius={[6, 6, 0, 0]}
@@ -1204,6 +1234,13 @@ export default function PayrollPage() {
             <ArrowDown className="w-4 h-4" />
           )}
           {sortDir === "asc" ? "Asc" : "Desc"}
+        </button>
+        <button
+          onClick={saveMyView}
+          title="Open Payroll with this filter and sort every time"
+          className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold hover:bg-[#024BAB]/5"
+        >
+          {viewSaved ? "Saved ✓" : "Save view"}
         </button>
       </div>
 

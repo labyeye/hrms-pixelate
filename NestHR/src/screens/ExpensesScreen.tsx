@@ -14,6 +14,7 @@ import {
   TextInput,
   Linking,
   Platform,
+  LayoutAnimation,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -25,6 +26,8 @@ import {
   AlertTriangle,
   Search,
   SlidersHorizontal,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -158,6 +161,14 @@ export default function ExpensesScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
   const { isTablet, maxContentWidth } = useResponsive();
+  // Phone: short rows; the arrow opens category, approval steps and receipts
+  const [expandedClaims, setExpandedClaims] = useState<string[]>([]);
+  const toggleExpandClaim = (id: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedClaims(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
+    );
+  };
   const isHR = user?.role === 'super_admin' || user?.role === 'hr_manager';
   const canApprove = isHR || user?.role === 'department_head';
   const [claims, setClaims] = useState<any[]>([]);
@@ -433,6 +444,7 @@ export default function ExpensesScreen() {
     const untouched =
       (c.status === 'draft' || c.status === 'pending') &&
       (c.steps || []).every((s: any) => s.status === 'pending');
+    const full = isTablet || expandedClaims.includes(c._id);
     return (
       <SlideInCard
         index={index}
@@ -444,148 +456,184 @@ export default function ExpensesScreen() {
               <Text style={styles.title}>{c.title}</Text>
               <Text style={styles.sub}>
                 {c.employee
-                  ? `${c.employee.firstName} ${c.employee.lastName} · `
+                  ? `${c.employee.firstName} ${c.employee.lastName}${
+                      full ? ' · ' : ''
+                    }`
                   : ''}
-                {CATEGORIES.find(x => x[0] === c.category)?.[1]} ·{' '}
-                {new Date(c.date).toLocaleDateString('en-IN')}
+                {full && (
+                  <>
+                    {CATEGORIES.find(x => x[0] === c.category)?.[1]} ·{' '}
+                    {new Date(c.date).toLocaleDateString('en-IN')}
+                  </>
+                )}
               </Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={styles.amount}>
                 {fmt(c.approvedAmount ?? c.amount)}
               </Text>
-              {c.approvedAmount != null && c.approvedAmount < c.amount && (
-                <Text
-                  style={[styles.sub, { textDecorationLine: 'line-through' }]}
-                >
-                  {fmt(c.amount)}
+              {full &&
+                c.approvedAmount != null &&
+                c.approvedAmount < c.amount && (
+                  <Text
+                    style={[styles.sub, { textDecorationLine: 'line-through' }]}
+                  >
+                    {fmt(c.amount)}
+                  </Text>
+                )}
+              {full && (
+                <View style={[styles.badge, { borderColor: color }]}>
+                  <Text style={[styles.badgeText, { color }]}>
+                    {sentence(c.status)}
+                  </Text>
+                </View>
+              )}
+            </View>
+            {!isTablet && (
+              <TouchableOpacity
+                onPress={() => toggleExpandClaim(c._id)}
+                hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+                accessibilityLabel={full ? 'Hide details' : 'Show details'}
+                style={{ width: 28, alignItems: 'center', marginLeft: 4 }}
+              >
+                {full ? (
+                  <ChevronUp size={18} color={C.primary} />
+                ) : (
+                  <ChevronDown size={18} color={C.primary} />
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+          {full && (
+            <>
+              {!!detailLine(c) && (
+                <Text style={styles.sub}>{detailLine(c)}</Text>
+              )}
+              {!!c.notes && <Text style={styles.sub}>{c.notes}</Text>}
+              {c.policyExceeded && (
+                <View style={styles.flagRow}>
+                  <AlertTriangle size={14} color={C.warning} />
+                  <Text style={styles.flag}>Above policy limit</Text>
+                </View>
+              )}
+              {c.status === 'paid' && c.payment?.paidOn && (
+                <Text style={[styles.sub, { color: C.success }]}>
+                  Paid {new Date(c.payment.paidOn).toLocaleDateString('en-IN')}{' '}
+                  via{' '}
+                  {c.payment.mode === 'payroll'
+                    ? 'payroll'
+                    : PAY_MODES.find(m => m[0] === c.payment.mode)?.[1]}
+                  {c.payment.reference ? ` · ${c.payment.reference}` : ''}
                 </Text>
               )}
-              <View style={[styles.badge, { borderColor: color }]}>
-                <Text style={[styles.badgeText, { color }]}>
-                  {sentence(c.status)}
-                </Text>
+              <View style={styles.chips}>
+                {(c.steps || []).map((s: any, i: number) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.chip,
+                      s.status === 'approved' && { borderColor: C.success },
+                      s.status === 'rejected' && { borderColor: C.danger },
+                    ]}
+                  >
+                    <Text style={styles.chipText}>
+                      {ROLE_LABEL[s.role] || s.role}
+                    </Text>
+                  </View>
+                ))}
+                {Array.from({ length: c.billCount || 0 }, (_, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    style={styles.flagRow}
+                    onPress={() => openBill(c._id, i)}
+                  >
+                    <Paperclip size={14} color={C.primary} />
+                    <Text
+                      style={[
+                        styles.sub,
+                        { color: C.primary, fontWeight: '400' },
+                      ]}
+                    >
+                      Bill {i + 1}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
-            </View>
-          </View>
-          {!!detailLine(c) && <Text style={styles.sub}>{detailLine(c)}</Text>}
-          {!!c.notes && <Text style={styles.sub}>{c.notes}</Text>}
-          {c.policyExceeded && (
-            <View style={styles.flagRow}>
-              <AlertTriangle size={14} color={C.warning} />
-              <Text style={styles.flag}>Above policy limit</Text>
-            </View>
-          )}
-          {c.status === 'paid' && c.payment?.paidOn && (
-            <Text style={[styles.sub, { color: C.success }]}>
-              Paid {new Date(c.payment.paidOn).toLocaleDateString('en-IN')} via{' '}
-              {c.payment.mode === 'payroll'
-                ? 'payroll'
-                : PAY_MODES.find(m => m[0] === c.payment.mode)?.[1]}
-              {c.payment.reference ? ` · ${c.payment.reference}` : ''}
-            </Text>
-          )}
-          <View style={styles.chips}>
-            {(c.steps || []).map((s: any, i: number) => (
-              <View
-                key={i}
-                style={[
-                  styles.chip,
-                  s.status === 'approved' && { borderColor: C.success },
-                  s.status === 'rejected' && { borderColor: C.danger },
-                ]}
-              >
-                <Text style={styles.chipText}>
-                  {ROLE_LABEL[s.role] || s.role}
-                </Text>
+              <View style={styles.actions}>
+                {c.canAct && (
+                  <>
+                    <TouchableOpacity
+                      style={[styles.btn, { backgroundColor: C.success }]}
+                      onPress={() => {
+                        setAct({ claim: c, action: 'approve' });
+                        setActAmount(String(c.approvedAmount ?? c.amount));
+                        setActNote('');
+                      }}
+                    >
+                      <Text style={styles.btnText}>Approve</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.btn, { backgroundColor: C.white }]}
+                      onPress={() => {
+                        setAct({ claim: c, action: 'reject' });
+                        setActNote('');
+                      }}
+                    >
+                      <Text style={[styles.btnText, { color: C.danger }]}>
+                        Reject
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+                {c.status === 'draft' && (
+                  <TouchableOpacity
+                    style={[styles.btn, { backgroundColor: C.white }]}
+                    onPress={() => openEdit(c)}
+                  >
+                    <Text style={[styles.btnText, { color: C.black }]}>
+                      Edit / Submit
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                {c.status === 'rejected' &&
+                  !canApprove &&
+                  !c.resubmissionOf && (
+                    <TouchableOpacity
+                      style={[styles.btn, { backgroundColor: C.white }]}
+                      onPress={() => resubmit(c)}
+                    >
+                      <Text style={[styles.btnText, { color: C.black }]}>
+                        Resubmit
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                {c.status === 'approved' && isHR && (
+                  <TouchableOpacity
+                    style={[styles.btn, { backgroundColor: C.white }]}
+                    onPress={() => {
+                      setPayFor(c);
+                      setPay({
+                        mode: 'bank_transfer',
+                        reference: '',
+                        paidOn: today(),
+                      });
+                    }}
+                  >
+                    <Text style={[styles.btnText, { color: C.black }]}>
+                      Mark paid
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                {!canApprove && untouched && (
+                  <TouchableOpacity onPress={() => withdraw(c)}>
+                    <Text style={[styles.btnText, { color: C.danger }]}>
+                      Withdraw
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
-            ))}
-            {Array.from({ length: c.billCount || 0 }, (_, i) => (
-              <TouchableOpacity
-                key={i}
-                style={styles.flagRow}
-                onPress={() => openBill(c._id, i)}
-              >
-                <Paperclip size={14} color={C.primary} />
-                <Text
-                  style={[styles.sub, { color: C.primary, fontWeight: '400' }]}
-                >
-                  Bill {i + 1}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <View style={styles.actions}>
-            {c.canAct && (
-              <>
-                <TouchableOpacity
-                  style={[styles.btn, { backgroundColor: C.success }]}
-                  onPress={() => {
-                    setAct({ claim: c, action: 'approve' });
-                    setActAmount(String(c.approvedAmount ?? c.amount));
-                    setActNote('');
-                  }}
-                >
-                  <Text style={styles.btnText}>Approve</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.btn, { backgroundColor: C.white }]}
-                  onPress={() => {
-                    setAct({ claim: c, action: 'reject' });
-                    setActNote('');
-                  }}
-                >
-                  <Text style={[styles.btnText, { color: C.danger }]}>
-                    Reject
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
-            {c.status === 'draft' && (
-              <TouchableOpacity
-                style={[styles.btn, { backgroundColor: C.white }]}
-                onPress={() => openEdit(c)}
-              >
-                <Text style={[styles.btnText, { color: C.black }]}>
-                  Edit / Submit
-                </Text>
-              </TouchableOpacity>
-            )}
-            {c.status === 'rejected' && !canApprove && !c.resubmissionOf && (
-              <TouchableOpacity
-                style={[styles.btn, { backgroundColor: C.white }]}
-                onPress={() => resubmit(c)}
-              >
-                <Text style={[styles.btnText, { color: C.black }]}>
-                  Resubmit
-                </Text>
-              </TouchableOpacity>
-            )}
-            {c.status === 'approved' && isHR && (
-              <TouchableOpacity
-                style={[styles.btn, { backgroundColor: C.white }]}
-                onPress={() => {
-                  setPayFor(c);
-                  setPay({
-                    mode: 'bank_transfer',
-                    reference: '',
-                    paidOn: today(),
-                  });
-                }}
-              >
-                <Text style={[styles.btnText, { color: C.black }]}>
-                  Mark paid
-                </Text>
-              </TouchableOpacity>
-            )}
-            {!canApprove && untouched && (
-              <TouchableOpacity onPress={() => withdraw(c)}>
-                <Text style={[styles.btnText, { color: C.danger }]}>
-                  Withdraw
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
+            </>
+          )}
         </View>
       </SlideInCard>
     );

@@ -13,6 +13,7 @@ import { useConfirm } from "@/hooks/use-confirm";
 import { StatCard } from "@/components/ui/StatCard";
 import { ViewTabs, useViewTab } from "@/components/ui/ViewTabs";
 import { ChartCard, NbTooltip } from "@/components/ui/ChartCard";
+import { preferencesAPI } from "@/services/api";
 import { AnimatedNumber } from "@/components/motion/AnimatedNumber";
 import {
   BarChart,
@@ -217,10 +218,52 @@ export default function AttendancePage() {
   };
   // Details-tab toolbar: search + department filter + sort
   const [search, setSearch] = useState("");
+  // This admin's saved view (filter + sort), stored in the database so it follows them to any device.
+  useEffect(() => {
+    if (isEmployee) return;
+    preferencesAPI
+      .get("attendance.view")
+      .then((r: any) => {
+        const v = r?.data;
+        if (!v || typeof v !== "object") return;
+        if (typeof v.status === "string") setActiveFilter(v.status || null);
+        if (typeof v.dept === "string") setDeptFilter(v.dept);
+        if (["name", "checkIn", "checkOut", "workHours", "status"].includes(v.sortKey))
+          setSortKey(v.sortKey);
+        if (v.sortDir === "asc" || v.sortDir === "desc") setSortDir(v.sortDir);
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEmployee]);
+  const saveMyView = async () => {
+    try {
+      await preferencesAPI.set(
+        "attendance.view",
+        {
+          status: activeFilter || "",
+          dept: deptFilter,
+          sortKey,
+          sortDir,
+        },
+        true,
+      );
+      toast({
+        title: "View saved",
+        description: "This filter and sort will open by default for you.",
+      });
+    } catch (e: any) {
+      toast({ title: "Could not save", description: e.message, variant: "destructive" });
+    }
+  };
+  // Bulk edit: employees ticked in the table + what to apply to them (all optional, at least one needed)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulk, setBulk] = useState({ status: "", checkIn: "", checkOut: "" });
+  const [bulkSaving, setBulkSaving] = useState(false);
   const [deptFilter, setDeptFilter] = useState("");
+  // Default view: whoever checked in first is on top; people with no check-in yet go to the bottom.
   const [sortKey, setSortKey] = useState<
     "name" | "checkIn" | "checkOut" | "workHours" | "status"
-  >("name");
+  >("checkIn");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -288,6 +331,9 @@ export default function AttendancePage() {
   useEffect(() => {
     load();
   }, [load]);
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [selectedDate]);
 
   // Timing insights (month-wide) for the Graphs tab: admin/HR only.
   type Insights = {
@@ -344,24 +390,22 @@ export default function AttendancePage() {
   const earlyBirds = timingEmps.slice(0, 5);
   const lateComers = timingEmps.length > 5 ? timingEmps.slice(-5).reverse() : [];
 
+  // Check-in/out are edited as time-of-day only ("HH:MM"); the date always comes from the record's own date.
   const toLocalInput = (iso: string | undefined) => {
     if (!iso) return "";
     const d = new Date(iso);
     const pad = (n: number) => String(n).padStart(2, "0");
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
   };
 
-  // Returns datetime-local string pre-filled with the given date.
-  // Uses current time if the date is today, otherwise the employee's shift start.
+  // Default check-in time ("HH:MM"): the current time if the date is today, otherwise the employee's shift start.
   const defaultCheckIn = (dateStr: string, empId?: string): string => {
     const today = new Date().toISOString().split("T")[0];
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
-    const time =
-      dateStr === today
-        ? `${pad(now.getHours())}:${pad(now.getMinutes())}`
-        : shiftTimesFor(empId).start;
-    return `${dateStr}T${time}`;
+    return dateStr === today
+      ? `${pad(now.getHours())}:${pad(now.getMinutes())}`
+      : shiftTimesFor(empId).start;
   };
 
   // Employee's shift start/end ("HH:MM"), falling back to 09:00-18:00 if unset.
@@ -373,8 +417,8 @@ export default function AttendancePage() {
     return { start, end };
   };
 
-  const defaultCheckOut = (dateStr: string, empId?: string): string =>
-    `${dateStr}T${shiftTimesFor(empId).end}`;
+  const defaultCheckOut = (_dateStr: string, empId?: string): string =>
+    shiftTimesFor(empId).end;
 
   const markAbsentSingle = async (empId: string) => {
     try {
@@ -426,10 +470,13 @@ export default function AttendancePage() {
     setMarkModal(true);
   };
 
-  // "2024-06-10T09:00" from datetime-local has no timezone.
-  // new Date() in the browser parses it as local (IST), so .toISOString() gives
-  // the correct UTC equivalent before it's sent to the server.
-  const localToISO = (s: string) => (s ? new Date(s).toISOString() : undefined);
+  // Put a time ("HH:MM") on the record's date. A check-out earlier than the check-in is the next morning (night shift).
+  const timeOnDate = (date: string, time: string, notBefore?: string) => {
+    if (!time) return undefined;
+    let t = new Date(`${date}T${time}`);
+    if (notBefore && t <= new Date(notBefore)) t = new Date(t.getTime() + 86400000);
+    return t.toISOString();
+  };
 
   const handleMark = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -442,10 +489,11 @@ export default function AttendancePage() {
     if (!ok) return;
     setSaving(true);
     try {
+      const inISO = timeOnDate(markForm.date, markForm.checkIn);
       const payload: Record<string, any> = {
         ...markForm,
-        checkIn: localToISO(markForm.checkIn),
-        checkOut: localToISO(markForm.checkOut),
+        checkIn: inISO,
+        checkOut: timeOnDate(markForm.date, markForm.checkOut, inISO),
       };
       // Only send overtime when user explicitly entered a value; omitting it lets
       // the backend auto-calculate OT from checkout time vs shift end.
@@ -524,9 +572,12 @@ export default function AttendancePage() {
     return {
       label: String(day),
       Present: (dc.present || 0) + (dc.late || 0) + (dc.half_day || 0),
+      Late: dc.late || 0,
+      "Half day": dc.half_day || 0,
+      "On leave": dc.on_leave || 0,
       Absent: dc.absent || 0,
     };
-  }).filter((d) => d.Present || d.Absent);
+  }).filter((d) => d.Present || d.Absent || d["On leave"]);
   const attendancePct = summary.total
     ? Math.round(
         ((summary.present + summary.late + summary.halfDay * 0.5) /
@@ -699,6 +750,74 @@ export default function AttendancePage() {
     });
   }
   const filtersActive = !!(activeFilter || q || deptFilter);
+
+  // ── Bulk edit (admin/HR): applies to the day shown in the table ──
+  const bulkDate = selectedDate || todayStr;
+  const rowEmpId = (r: any) => (r.employee as any)?._id as string | undefined;
+  const visibleEmpIds = displayedRecords.map(rowEmpId).filter(Boolean) as string[];
+  const allVisibleSelected =
+    visibleEmpIds.length > 0 && visibleEmpIds.every((id) => selectedIds.has(id));
+  const toggleOne = (id: string) =>
+    setSelectedIds((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  const toggleAllVisible = () =>
+    setSelectedIds(allVisibleSelected ? new Set() : new Set(visibleEmpIds));
+  const applyBulk = async () => {
+    if (!bulk.status && !bulk.checkIn && !bulk.checkOut) {
+      toast({
+        title: "Nothing to apply",
+        description: "Pick a status and/or a check-in / check-out time.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const ids = [...selectedIds];
+    const dateLabel = new Date(`${bulkDate}T00:00:00`).toLocaleDateString("en-IN", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    });
+    const ok = await confirm({
+      title: `Update ${ids.length} attendance record${ids.length === 1 ? "" : "s"}?`,
+      description: `For ${dateLabel}: ${[
+        bulk.status ? `status → ${bulk.status.replace("_", " ")}` : "",
+        bulk.checkIn ? `check-in ${bulk.checkIn}` : "",
+        bulk.checkOut ? `check-out ${bulk.checkOut}` : "",
+      ]
+        .filter(Boolean)
+        .join(", ")}. Existing values for these employees will be overwritten.`,
+    });
+    if (!ok) return;
+    setBulkSaving(true);
+    try {
+      let updated = 0;
+      let skipped = 0;
+      for (let i = 0; i < ids.length; i += 500) {
+        const res: any = await attendanceAPI.bulkUpdate({
+          date: bulkDate,
+          employees: ids.slice(i, i + 500),
+          status: bulk.status || undefined,
+          checkIn: bulk.checkIn || undefined,
+          checkOut: bulk.checkOut || undefined,
+        });
+        updated += res?.updated ?? 0;
+        skipped += res?.skipped?.length ?? 0;
+      }
+      toast({
+        title: "Attendance updated",
+        description: `${updated} updated${skipped ? `, ${skipped} skipped` : ""}.`,
+      });
+      setSelectedIds(new Set());
+      setBulk({ status: "", checkIn: "", checkOut: "" });
+      load();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+    setBulkSaving(false);
+  };
 
   return (
     <AppLayout title="Attendance">
@@ -880,10 +999,11 @@ export default function AttendancePage() {
               · {summary.total} marked
             </span>
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
             {[
               { label: "Present", n: summary.present, color: "#00C48C", key: "present" },
               { label: "Late", n: summary.late, color: "#CA8A04", key: "late" },
+              { label: "Half day", n: summary.halfDay, color: "#F59E0B", key: "half_day" },
               { label: "Absent", n: summary.absent, color: "#EF4444", key: "absent" },
               { label: "On leave", n: summary.leave, color: "#3B82F6", key: "on_leave" },
             ].map((k) => (
@@ -939,6 +1059,9 @@ export default function AttendancePage() {
             <Legend iconSize={8} wrapperStyle={{ fontSize: 11, fontWeight: 700 }} />
             {[
               { key: "Present", color: "#00C48C", begin: 0 },
+              { key: "Late", color: "#CA8A04", begin: 125 },
+              { key: "Half day", color: "#F59E0B", begin: 190 },
+              { key: "On leave", color: "#3B82F6", begin: 220 },
               { key: "Absent", color: "#EF4444", begin: 250 },
             ].map(({ key, color, begin }) => (
               <Line
@@ -1196,6 +1319,15 @@ export default function AttendancePage() {
           )}
           {sortDir === "asc" ? "Asc" : "Desc"}
         </button>
+        {!isEmployee && (
+          <button
+            onClick={saveMyView}
+            title="Open Attendance with this filter and sort every time"
+            className="border-2 border-black bg-white px-3 py-2 text-sm font-semibold hover:bg-[#024BAB]/5"
+          >
+            Save view
+          </button>
+        )}
         {filtersActive && (
           <button
             onClick={() => {
@@ -1375,6 +1507,72 @@ export default function AttendancePage() {
           );
         })()}
 
+      {!isEmployee && selectedIds.size > 0 && (
+        <div className="border-2 border-black bg-[#024BAB]/5 px-3 py-3 mb-3 flex flex-wrap items-end gap-3">
+          <div className="mr-1">
+            <p className="text-sm font-bold">{selectedIds.size} selected</p>
+            <p className="text-[11px] text-muted-foreground">
+              Edits apply to{" "}
+              {new Date(`${bulkDate}T00:00:00`).toLocaleDateString("en-IN", {
+                weekday: "short",
+                day: "numeric",
+                month: "short",
+              })}
+            </p>
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold mb-1">Status</label>
+            <select
+              value={bulk.status}
+              onChange={(e) => setBulk({ ...bulk, status: e.target.value })}
+              className="border-2 border-black bg-white px-2 py-1.5 text-sm font-semibold outline-none"
+            >
+              <option value="">No change</option>
+              <option value="present">Present</option>
+              <option value="late">Late</option>
+              <option value="half_day">Half day</option>
+              <option value="absent">Absent</option>
+              <option value="on_leave">On leave</option>
+            </select>
+          </div>
+          {bulk.status !== "absent" && bulk.status !== "on_leave" && (
+            <>
+              <div>
+                <label className="block text-[11px] font-bold mb-1">Check in</label>
+                <input
+                  type="time"
+                  value={bulk.checkIn}
+                  onChange={(e) => setBulk({ ...bulk, checkIn: e.target.value })}
+                  className="border-2 border-black bg-white px-2 py-1.5 text-sm outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold mb-1">Check out</label>
+                <input
+                  type="time"
+                  value={bulk.checkOut}
+                  onChange={(e) => setBulk({ ...bulk, checkOut: e.target.value })}
+                  className="border-2 border-black bg-white px-2 py-1.5 text-sm outline-none"
+                />
+              </div>
+            </>
+          )}
+          <button
+            onClick={applyBulk}
+            disabled={bulkSaving}
+            className="border-2 border-black bg-[#024BAB] text-white px-4 py-1.5 text-sm font-bold disabled:opacity-60"
+          >
+            {bulkSaving ? "Saving..." : "Apply to selected"}
+          </button>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="border-2 border-black bg-white px-3 py-1.5 text-sm font-bold"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
       {}
       {loading ? (
         <div className="flex items-center justify-center h-48">
@@ -1393,6 +1591,17 @@ export default function AttendancePage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b-2 border-black bg-[#024BAB]/5">
+                {!isEmployee && (
+                  <th className="pl-4 pr-1 py-3 w-8">
+                    <input
+                      type="checkbox"
+                      checked={allVisibleSelected}
+                      onChange={toggleAllVisible}
+                      title="Select all shown"
+                      className="w-4 h-4 accent-[#024BAB]"
+                    />
+                  </th>
+                )}
                 {[
                   "Employee",
                   "Date",
@@ -1425,6 +1634,16 @@ export default function AttendancePage() {
                       i % 2 === 0 ? "" : "bg-[#F8FAFF]",
                     )}
                   >
+                    {!isEmployee && (
+                      <td className="pl-4 pr-1 py-3 w-8">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(rowEmpId(rec) || "")}
+                          onChange={() => rowEmpId(rec) && toggleOne(rowEmpId(rec)!)}
+                          className="w-4 h-4 accent-[#024BAB]"
+                        />
+                      </td>
+                    )}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         {(rec.employee as any)?.avatar ? (
@@ -1634,13 +1853,15 @@ export default function AttendancePage() {
                     setMarkForm((f) => ({
                       ...f,
                       date: d,
-                      checkIn: f.checkIn ? defaultCheckIn(d, f.employee) : "",
-                      checkOut: f.checkOut
-                        ? defaultCheckOut(d, f.employee)
-                        : "",
+                      // keep the typed times, but a today→past switch should not carry "now" as the check-in
+                      checkIn: f.checkIn
+                        ? defaultCheckIn(d, f.employee)
+                        : f.checkIn,
                     }));
                   }}
-                  className="border-2 w-full px-3 py-2 text-sm"
+                  disabled={!!editingId}
+                  title={editingId ? "The date of an existing record can't be changed" : undefined}
+                  className="border-2 w-full px-3 py-2 text-sm disabled:opacity-60 disabled:bg-gray-50"
                   required
                 />
               </div>
@@ -1669,7 +1890,7 @@ export default function AttendancePage() {
                     Check In
                   </label>
                   <input
-                    type="datetime-local"
+                    type="time"
                     value={markForm.checkIn}
                     onChange={(e) =>
                       setMarkForm({ ...markForm, checkIn: e.target.value })
@@ -1682,7 +1903,7 @@ export default function AttendancePage() {
                     Check Out
                   </label>
                   <input
-                    type="datetime-local"
+                    type="time"
                     value={markForm.checkOut}
                     onChange={(e) =>
                       setMarkForm({ ...markForm, checkOut: e.target.value })
@@ -1691,6 +1912,22 @@ export default function AttendancePage() {
                   />
                 </div>
               </div>
+              <p className="text-[11px] text-muted-foreground -mt-2">
+                Times are saved on{" "}
+                <b>
+                  {markForm.date
+                    ? new Date(`${markForm.date}T00:00:00`).toLocaleDateString(
+                        "en-IN",
+                        { weekday: "short", day: "numeric", month: "short" },
+                      )
+                    : "the selected date"}
+                </b>
+                {markForm.checkIn &&
+                markForm.checkOut &&
+                markForm.checkOut <= markForm.checkIn
+                  ? ". Check-out is earlier than check-in, so it counts as the next morning."
+                  : "."}
+              </p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-black mb-1">

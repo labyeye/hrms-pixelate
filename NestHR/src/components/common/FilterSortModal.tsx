@@ -28,10 +28,14 @@ interface Props {
   filter2Options?: Option[];
   filter2Value?: string;
   onFilter2?: (key: string) => void;
+  /** Anything page-specific shown right after the second filter group (e.g. custom date pickers). */
+  extra?: React.ReactNode;
   sortOptions?: Option[];
   sortValue?: string;
   onSort?: (key: string) => void;
   onReset: () => void;
+  /** When given, shows "Save as my default" which stores the current filter + sort for this admin. */
+  onSave?: () => void;
 }
 
 const Chips = ({
@@ -74,10 +78,12 @@ export default function FilterSortModal({
   filter2Options,
   filter2Value,
   onFilter2,
+  extra,
   sortOptions,
   sortValue,
   onSort,
   onReset,
+  onSave,
 }: Props) {
   return (
     <Modal
@@ -118,6 +124,7 @@ export default function FilterSortModal({
               />
             </View>
           )}
+          {extra}
           {!!sortOptions?.length && (
             <View>
               <Text style={s.group}>Sort by</Text>
@@ -125,6 +132,15 @@ export default function FilterSortModal({
             </View>
           )}
         </ScrollView>
+        {!!onSave && (
+          <TouchableOpacity
+            style={s.saveBtn}
+            onPress={onSave}
+            activeOpacity={0.85}
+          >
+            <Text style={s.saveText}>Save as my default</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={s.apply}
           onPress={onClose}
@@ -180,6 +196,16 @@ const s = StyleSheet.create({
     textTransform: 'capitalize',
   },
   chipTextOn: { color: '#fff' },
+  saveBtn: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingVertical: 11,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#000',
+    backgroundColor: '#fff',
+  },
+  saveText: { color: '#000', fontWeight: '400', fontSize: 14 },
   apply: {
     marginHorizontal: 16,
     backgroundColor: C.primary,

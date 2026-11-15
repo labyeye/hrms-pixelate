@@ -53,6 +53,7 @@ import ShiftsScreen from '../screens/ShiftsScreen';
 import SalaryHeadsScreen from '../screens/SalaryHeadsScreen';
 import DesignationsScreen from '../screens/DesignationsScreen';
 import OfferLettersScreen from '../screens/OfferLettersScreen';
+import IdCardDesignerScreen from '../screens/IdCardDesignerScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import BiometricDeviceScreen from '../screens/BiometricDeviceScreen';
 import NfcManagerScreen from '../screens/NfcManagerScreen';
@@ -99,6 +100,7 @@ function MoreNavigator() {
       <MoreStack.Screen name="SalaryHeads" component={SalaryHeadsScreen} />
       <MoreStack.Screen name="Designations" component={DesignationsScreen} />
       <MoreStack.Screen name="OfferLetters" component={OfferLettersScreen} />
+      <MoreStack.Screen name="IdCardDesigner" component={IdCardDesignerScreen} />
       <MoreStack.Screen name="Profile" component={ProfileScreen} />
       <MoreStack.Screen
         name="BiometricDevices"

@@ -53,7 +53,8 @@ function niceMax(max: number) {
   if (max <= 0) return 1;
   const pow = Math.pow(10, Math.floor(Math.log10(max)));
   const n = max / pow;
-  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * pow;
+  const step = [1, 2, 3, 4, 6, 8, 10].find(x => n <= x) ?? 10;
+  return step * pow;
 }
 
 type Pt = { x: number; y: number };

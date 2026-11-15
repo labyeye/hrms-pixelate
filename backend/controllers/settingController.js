@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const Setting = require("../models/Setting");
 const Company = require("../models/Company");
 const bodyFor = require("../utils/bodyFor");
+const { sanitizeIdCardTemplate } = require("../utils/idCardTemplate");
 const { validateMagicBytes } = require("../middleware/upload");
 
 const getSettings = asyncHandler(async (req, res) => {
@@ -17,9 +18,18 @@ const getSettings = asyncHandler(async (req, res) => {
 
 const updateSettings = asyncHandler(async (req, res) => {
   const company = req.user.company;
+  const update = bodyFor(Setting, req.body);
+  if ("idCardTemplate" in update) {
+    try {
+      update.idCardTemplate = sanitizeIdCardTemplate(update.idCardTemplate);
+    } catch (e) {
+      res.status(400);
+      throw e;
+    }
+  }
   const setting = await Setting.findOneAndUpdate(
     { company },
-    { $set: { ...bodyFor(Setting, req.body), company } },
+    { $set: { ...update, company } },
     { new: true, upsert: true, runValidators: true },
   );
 
@@ -32,6 +42,22 @@ const updateSettings = asyncHandler(async (req, res) => {
   }
 
   res.json({ success: true, data: setting });
+});
+
+// An image for an ID-card design (background, logo, badge…). Returns its public URL; the design itself is saved
+// through the normal settings update, which only accepts URLs from this folder.
+const uploadIdCardImage = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    res.status(400);
+    throw new Error("No file uploaded");
+  }
+  try {
+    await validateMagicBytes(req.file.path); // deletes the file and throws when it isn't a real image
+  } catch (err) {
+    res.status(400);
+    throw err;
+  }
+  res.json({ success: true, url: `/uploads/id-card-images/${req.file.filename}` });
 });
 
 const uploadCompanyLogo = asyncHandler(async (req, res) => {
@@ -54,4 +80,9 @@ const uploadCompanyLogo = asyncHandler(async (req, res) => {
   res.json({ success: true, logoUrl, data: setting });
 });
 
-module.exports = { getSettings, updateSettings, uploadCompanyLogo };
+module.exports = {
+  getSettings,
+  updateSettings,
+  uploadCompanyLogo,
+  uploadIdCardImage,
+};

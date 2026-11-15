@@ -329,6 +329,11 @@ export const attendanceAPI = {
     request("/attendance", { method: "POST", body: JSON.stringify(body) }),
   update: (id: string, body: object) =>
     request(`/attendance/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  bulkUpdate: (body: object) =>
+    request("/attendance/bulk-update", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
   bulkMark: (body: object) =>
     request("/attendance/bulk", { method: "POST", body: JSON.stringify(body) }),
   // Admin-only spare-device kiosk: a face photo is matched against all enrolled employees and their day is toggled.
@@ -488,6 +493,20 @@ export const settingsAPI = {
       method: "PUT",
       body: JSON.stringify(settings),
     }),
+  uploadIdCardImage: (file: File) => {
+    const token = getToken();
+    const form = new FormData();
+    form.append("image", file);
+    return fetch(`${BASE_URL}/settings/id-card-image`, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    }).then(async (res) => {
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Upload failed");
+      return data as { success: boolean; url: string };
+    });
+  },
   uploadLogo: (file: File) => {
     const token = getToken();
     const form = new FormData();
@@ -963,6 +982,16 @@ export const transactionAPI = {
   create: (body: object) =>
     request("/transactions", { method: "POST", body: JSON.stringify(body) }),
   delete: (id: string) => request(`/transactions/${id}`, { method: "DELETE" }),
+};
+
+// Per-user saved view settings (filter + sort), kept in the database so they follow the admin to any device.
+export const preferencesAPI = {
+  get: (key: string) => request(`/preferences/${key}`),
+  set: (key: string, value: object | null, merge = false) =>
+    request(`/preferences/${key}`, {
+      method: "PUT",
+      body: JSON.stringify({ value, merge }),
+    }),
 };
 
 export const promotionAPI = {

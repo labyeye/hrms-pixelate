@@ -18,6 +18,8 @@ import {
   CheckCircle2,
   CalendarOff,
   Clock,
+  AlarmClock,
+  UserX,
   TrendingUp,
   RefreshCw,
   Bell,
@@ -79,6 +81,45 @@ const ADMIN_STATS = [
   },
 ];
 
+// One "today" card: the tabs switch which number it shows (all from the same dashboard stats call).
+const TODAY_TABS = [
+  {
+    key: 'todayPresent',
+    label: 'Present',
+    title: 'Present today',
+    icon: CheckCircle2,
+    color: C.success,
+  },
+  {
+    key: 'todayLate',
+    label: 'Late',
+    title: 'Late today',
+    icon: AlarmClock,
+    color: C.secondary,
+  },
+  {
+    key: 'todayAbsent',
+    label: 'Absent',
+    title: 'Absent today',
+    icon: UserX,
+    color: C.danger,
+  },
+  {
+    key: 'todayOnLeave',
+    label: 'On leave',
+    title: 'On leave today',
+    icon: CalendarOff,
+    color: C.warning,
+  },
+  {
+    key: 'pendingLeaves',
+    label: 'Leave requests',
+    title: 'Pending leave requests',
+    icon: Clock,
+    color: C.primary,
+  },
+];
+
 type RangeKey = 'this' | '3m' | '6m' | '1y';
 // 'this' (this month, till today) is the default view and isn't a pill —
 // the pills just offer wider trend windows to switch to.
@@ -118,6 +159,7 @@ function AdminDashboard({ navigation }: any) {
   const [error, setError] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [range, setRange] = useState<RangeKey>('this');
+  const [todayTab, setTodayTab] = useState('todayPresent');
   const [payTrendMonths, setPayTrendMonths] = useState(6);
   const [summaries, setSummaries] = useState<Record<string, any>>({});
   const { width: winW } = useWindowDimensions();
@@ -191,7 +233,12 @@ function AdminDashboard({ navigation }: any) {
 
   const handleCardPress = (key: string) => {
     if (key === 'totalEmployees') navigation.navigate('Employees');
-    else if (key === 'todayPresent') navigation.navigate('Attendance');
+    else if (
+      key === 'todayPresent' ||
+      key === 'todayLate' ||
+      key === 'todayAbsent'
+    )
+      navigation.navigate('Attendance');
     else if (key === 'todayOnLeave' || key === 'pendingLeaves')
       navigation.navigate('Leave');
     else if (key === 'departments')
@@ -238,10 +285,6 @@ function AdminDashboard({ navigation }: any) {
               </TouchableOpacity>
             </View>
           )}
-
-          <Text style={styles.greetHead}>
-            {greet()}, {user?.name?.split(' ')[0]}
-          </Text>
           {stats?.pendingLeaves > 0 && (
             <TouchableOpacity
               style={styles.alertStrip}
@@ -256,57 +299,170 @@ function AdminDashboard({ navigation }: any) {
             </TouchableOpacity>
           )}
           <Text style={styles.sectionLabel}>Overview</Text>
-          {[ADMIN_STATS.slice(0, 4), ADMIN_STATS.slice(4)].map((row, ri) => (
-            <View key={ri} style={styles.grid}>
-              {row.map((s, j) => {
-                const i = ri * 4 + j;
-                const Icon = s.icon;
-                const raw = stats?.[s.key];
-                const numeric = typeof raw === 'number' ? raw : null;
+          <FadeInUp delay={0} style={styles.todayTabsCard}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.todayTabs}
+            >
+              {TODAY_TABS.map(t => {
+                const active = todayTab === t.key;
                 return (
-                  <FadeInUp
-                    key={s.key}
-                    delay={i * 70}
-                    style={styles.statCardWrap}
+                  <TouchableOpacity
+                    key={t.key}
+                    activeOpacity={0.8}
+                    onPress={() => setTodayTab(t.key)}
+                    style={[
+                      styles.todayTab,
+                      active && {
+                        backgroundColor: t.color,
+                        borderColor: C.black,
+                      },
+                    ]}
                   >
-                    <TouchableOpacity
-                      style={styles.statCard}
-                      activeOpacity={0.8}
-                      onPress={() => handleCardPress(s.key)}
+                    <Text
+                      style={[
+                        styles.todayTabText,
+                        active && { color: C.white },
+                      ]}
                     >
-                      <View
-                        style={[
-                          styles.statIconWrap,
-                          {
-                            backgroundColor: s.color + '1A',
-                            borderColor: s.color,
-                          },
-                        ]}
-                      >
-                        <Icon size={14} color={s.color} />
-                      </View>
-                      <View style={styles.statBody}>
-                        <Text style={styles.statLabel} numberOfLines={1}>
-                          {s.label}
-                        </Text>
-                        {numeric !== null ? (
-                          <AnimatedNumber
-                            style={styles.statValue}
-                            value={numeric}
-                          />
-                        ) : (
-                          <Text style={styles.statValue} numberOfLines={1}>
-                            {raw ?? '—'}
-                          </Text>
-                        )}
-                      </View>
-                    </TouchableOpacity>
-                  </FadeInUp>
+                      {t.label}
+                    </Text>
+                  </TouchableOpacity>
                 );
               })}
-            </View>
-          ))}
+            </ScrollView>
+            {(() => {
+              const t = TODAY_TABS.find(x => x.key === todayTab) || TODAY_TABS[0];
+              const Icon = t.icon;
+              const value = Number(stats?.[t.key]) || 0;
+              const total = Number(stats?.totalEmployees) || 0;
+              const isAttendance = t.key !== 'pendingLeaves';
+              return (
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => handleCardPress(t.key)}
+                  style={styles.todayBody}
+                >
+                  <View
+                    style={[
+                      styles.statIconWrap,
+                      styles.todayIcon,
+                      { backgroundColor: t.color + '1A', borderColor: t.color },
+                    ]}
+                  >
+                    <Icon size={20} color={t.color} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.todayLabel}>{t.title}</Text>
+                    <View style={styles.todayNumRow}>
+                      <AnimatedNumber
+                        key={t.key}
+                        style={[styles.todayNum, { color: t.color }]}
+                        value={value}
+                      />
+                      <Text style={styles.todayOf}>
+                        {isAttendance
+                          ? `of ${total} employees`
+                          : 'waiting for approval'}
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })()}
+          </FadeInUp>
 
+          
+
+          
+
+          <View style={[styles.chartsRow, wide && styles.chartsRowWide]}>
+            {!!stats?.dailyStats?.length && (
+              <View style={[styles.chartCol, wide && styles.chartColWide]}>
+                <View style={styles.chartHead}>
+                  <Text style={styles.sectionLabel}>Daily Attendance</Text>
+                </View>
+                <FadeInUp
+                  delay={ADMIN_STATS.length * 70 + 70}
+                  style={styles.card}
+                >
+                  <AnimatedLineChart
+                    legend
+                    series={[
+                      { key: 'present', label: 'Present', color: '#00C48C' },
+                      { key: 'late', label: 'Late', color: '#CA8A04' },
+                      { key: 'halfDay', label: 'Half day', color: '#F59E0B' },
+                      { key: 'onLeave', label: 'On leave', color: '#3B82F6' },
+                      { key: 'absent', label: 'Absent', color: '#EF4444' },
+                    ]}
+                    data={stats.dailyStats.map((d: any) => ({
+                      label: ['S', 'M', 'T', 'W', 'T', 'F', 'S'][
+                        new Date(d.date).getDay()
+                      ],
+                      values: {
+                        present: d.present,
+                        late: d.late,
+                        halfDay: d.halfDay || 0,
+                        onLeave: d.onLeave || 0,
+                        absent: d.absent,
+                      },
+                    }))}
+                  />
+                </FadeInUp>
+              </View>
+            )}
+            {!!stats?.payTrend?.length && (
+              <View style={[styles.chartCol, wide && styles.chartColWide]}>
+                <View style={styles.chartHead}>
+                  <Text style={styles.sectionLabel}>Payroll Trend (₹k)</Text>
+                  {!!stats.payTrendYear && (
+                    <View style={styles.trendPills}>
+                      {PAY_TREND_PILLS.map(r => (
+                        <TouchableOpacity
+                          key={r.months}
+                          onPress={() => setPayTrendMonths(r.months)}
+                          accessibilityRole="button"
+                          accessibilityState={{
+                            selected: payTrendMonths === r.months,
+                          }}
+                          style={[
+                            styles.pill,
+                            payTrendMonths === r.months && styles.pillActive,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.pillText,
+                              payTrendMonths === r.months && { color: C.white },
+                            ]}
+                          >
+                            {r.label}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
+                <FadeInUp
+                  delay={ADMIN_STATS.length * 70 + 140}
+                  style={[styles.card, wide && styles.chartCardFill]}
+                >
+                  <AnimatedLineChart
+                    height={wide ? 202 : 170}
+                    color={C.primary}
+                    data={(stats.payTrendYear || stats.payTrend)
+                      .slice(-payTrendMonths)
+                      .map((t: any) => ({
+                        label: MONTH_LABELS[t.month - 1],
+                        value: Math.round(t.total / 1000),
+                      }))}
+                    format={n => `${n}k`}
+                  />
+                </FadeInUp>
+              </View>
+            )}
+          </View>
           <View style={styles.rangeRow}>
             {RANGE_PILLS.map(r => (
               <TouchableOpacity
@@ -325,7 +481,6 @@ function AdminDashboard({ navigation }: any) {
               </TouchableOpacity>
             ))}
           </View>
-
           <View style={styles.payRow}>
             <FadeInUp
               delay={ADMIN_STATS.length * 70}
@@ -360,85 +515,6 @@ function AdminDashboard({ navigation }: any) {
             </FadeInUp>
           </View>
 
-          <View style={[styles.chartsRow, wide && styles.chartsRowWide]}>
-            {!!stats?.dailyStats?.length && (
-              <View style={styles.chartCol}>
-                <Text style={styles.sectionLabel}>Daily Attendance</Text>
-                <FadeInUp
-                  delay={ADMIN_STATS.length * 70 + 70}
-                  style={styles.card}
-                >
-                  <AnimatedLineChart
-                    legend
-                    series={[
-                      { key: 'present', label: 'Present', color: '#00C48C' },
-                      { key: 'late', label: 'Late', color: '#FACC15' },
-                      { key: 'absent', label: 'Absent', color: '#EF4444' },
-                    ]}
-                    data={stats.dailyStats.map((d: any) => ({
-                      label: ['S', 'M', 'T', 'W', 'T', 'F', 'S'][
-                        new Date(d.date).getDay()
-                      ],
-                      values: {
-                        present: d.present,
-                        late: d.late,
-                        absent: d.absent,
-                      },
-                    }))}
-                  />
-                </FadeInUp>
-              </View>
-            )}
-            {!!stats?.payTrend?.length && (
-              <View style={styles.chartCol}>
-                <View style={styles.perfHeader}>
-                  <Text style={styles.sectionLabel}>Payroll Trend (₹k)</Text>
-                  {!!stats.payTrendYear && (
-                    <View style={styles.trendPills}>
-                      {PAY_TREND_PILLS.map(r => (
-                        <TouchableOpacity
-                          key={r.months}
-                          onPress={() => setPayTrendMonths(r.months)}
-                          accessibilityRole="button"
-                          accessibilityState={{
-                            selected: payTrendMonths === r.months,
-                          }}
-                          style={[
-                            styles.pill,
-                            payTrendMonths === r.months && styles.pillActive,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.pillText,
-                              payTrendMonths === r.months && { color: C.white },
-                            ]}
-                          >
-                            {r.label}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
-                </View>
-                <FadeInUp
-                  delay={ADMIN_STATS.length * 70 + 140}
-                  style={styles.card}
-                >
-                  <AnimatedLineChart
-                    color={C.primary}
-                    data={(stats.payTrendYear || stats.payTrend)
-                      .slice(-payTrendMonths)
-                      .map((t: any) => ({
-                        label: MONTH_LABELS[t.month - 1],
-                        value: Math.round(t.total / 1000),
-                      }))}
-                    format={n => `${n}k`}
-                  />
-                </FadeInUp>
-              </View>
-            )}
-          </View>
           <View style={styles.perfHeader}>
             <Text style={styles.sectionLabel}>Performance</Text>
             <TouchableOpacity
@@ -582,13 +658,6 @@ function EmployeeDashboard({ navigation }: any) {
     setRefreshing(true);
     await load();
     setRefreshing(false);
-  };
-
-  const greet = () => {
-    const h = new Date().getHours();
-    if (h < 12) return 'Good Morning';
-    if (h < 17) return 'Good Afternoon';
-    return 'Good Evening';
   };
 
   const avatarUri = empProfile?.avatar || user?.avatar;
@@ -1603,6 +1672,43 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   statBody: { flex: 1, minWidth: 0, alignItems: 'center' },
+
+  // Single "today" card with tabs
+  todayTabsCard: {
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 5,
+    borderBottomWidth: 5,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+    borderColor: C.black,
+    backgroundColor: C.white,
+    padding: 12,
+    gap: 14,
+    marginBottom: 8,
+  },
+  todayTabs: { gap: 6 },
+  todayTab: {
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: C.white,
+  },
+  todayTabText: { fontFamily: FONT.bold, fontSize: 12, color: C.black },
+  todayBody: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  todayIcon: { width: 44, height: 44 },
+  todayLabel: {
+    fontSize: 10,
+    color: C.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  todayNumRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+  todayNum: { fontSize: 34, fontWeight: '400', lineHeight: 40 },
+  todayOf: { fontSize: 12, color: C.textMuted },
+
   statIconWrap: {
     width: 28,
     height: 28,
@@ -2048,11 +2154,19 @@ const styles = StyleSheet.create({
   pillActive: { backgroundColor: C.primary },
   trendPills: { flexDirection: 'row', gap: 6 },
   pillText: { fontFamily: FONT.bold, fontSize: 12, color: C.black },
-  payRow: { flexDirection: 'row', gap: 10 },
-  payCardFlex: { flex: 1, minWidth: 0 },
+  payRow: { flexDirection: 'row', alignItems: 'stretch', gap: 10 },
+  payCardFlex: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 },
   chartsRow: { flexDirection: 'column' },
-  chartsRowWide: { flexDirection: 'row', gap: 14, alignItems: 'flex-start' },
-  chartCol: { flex: 1, minWidth: 0, width: '100%' },
+  chartsRowWide: { flexDirection: 'row', gap: 14, alignItems: 'stretch' },
+  chartCol: { minWidth: 0, width: '100%' },
+  chartColWide: { flex: 1, width: undefined },
+  chartHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 40,
+  },
+  chartCardFill: { flex: 1 },
   payCard: {
     backgroundColor: C.white,
     borderWidth: 2,

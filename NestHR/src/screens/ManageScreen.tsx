@@ -13,6 +13,7 @@ import {
   Briefcase,
   FileText,
   Settings2,
+  IdCard,
   ChevronLeft,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -47,6 +48,13 @@ const TILES = [
     color: '#7C3AED',
     label: 'Offer Letters',
     desc: 'Letter templates',
+  },
+  {
+    key: 'IdCardDesigner',
+    icon: IdCard,
+    color: '#0E7490',
+    label: 'ID Card Designer',
+    desc: 'Design & print ID cards',
   },
 ];
 

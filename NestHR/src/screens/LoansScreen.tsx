@@ -13,6 +13,7 @@ import {
   ScrollView,
   TextInput,
   Image,
+  LayoutAnimation,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -31,6 +32,8 @@ import {
   Download,
   FileText,
   IndianRupee,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { loanAPI, employeeAPI } from '../api/api';
@@ -85,6 +88,14 @@ export default function LoansScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuth();
   const { isTablet, maxContentWidth } = useResponsive();
+  // Phone: short rows; the arrow opens EMI, reason, status and actions
+  const [expandedLoans, setExpandedLoans] = useState<string[]>([]);
+  const toggleExpandLoan = (id: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedLoans(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
+    );
+  };
   const isEmployee = user?.role === 'employee';
   const [loans, setLoans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -533,6 +544,10 @@ export default function LoansScreen() {
             };
             const emp = item.employee as any;
             const monthlyEmi = item.monthlyEmi || null;
+            const full = isTablet || expandedLoans.includes(item._id);
+            const avatarBorder = !isTablet
+              ? { borderWidth: 2, borderColor: cfg.color }
+              : null;
             return (
               <SlideInCard
                 index={index}
@@ -543,10 +558,10 @@ export default function LoansScreen() {
                     {emp?.avatar ? (
                       <Image
                         source={{ uri: emp.avatar }}
-                        style={styles.empPhoto}
+                        style={[styles.empPhoto, avatarBorder]}
                       />
                     ) : (
-                      <View style={styles.empInitials}>
+                      <View style={[styles.empInitials, avatarBorder]}>
                         <Text style={styles.empInitialsText}>
                           {emp
                             ? `${(emp.firstName || '')[0] || ''}${
@@ -557,79 +572,116 @@ export default function LoansScreen() {
                       </View>
                     )}
                     <View style={{ flex: 1, marginLeft: 12 }}>
-                      <Text style={styles.loanType}>
-                        {item.type === 'advance' ? 'Salary advance' : 'Loan'}
-                      </Text>
+                      {(full || isEmployee) && (
+                        <Text style={styles.loanType}>
+                          {item.type === 'advance' ? 'Salary advance' : 'Loan'}
+                        </Text>
+                      )}
                       {emp && !isEmployee && (
-                        <Text style={styles.empName}>
+                        <Text style={styles.empName} numberOfLines={1}>
                           {emp.firstName} {emp.lastName}
                         </Text>
                       )}
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
                       <Text style={styles.amount}>
-                        ₹{(item.amount || 0).toLocaleString()}
+                        ₹
+                        {(!full &&
+                        item.status === 'active' &&
+                        item.remainingBalance != null
+                          ? item.remainingBalance
+                          : item.amount || 0
+                        ).toLocaleString()}
                       </Text>
-                      <View
-                        style={[
-                          styles.statusTag,
-                          { backgroundColor: cfg.color, borderColor: C.black },
-                        ]}
-                      >
-                        <Text
-                          style={[styles.statusTagText, { color: C.white }]}
+                      {full && (
+                        <View
+                          style={[
+                            styles.statusTag,
+                            {
+                              backgroundColor: cfg.color,
+                              borderColor: C.black,
+                            },
+                          ]}
                         >
-                          {sentence(item.status)}
-                        </Text>
-                      </View>
+                          <Text
+                            style={[styles.statusTagText, { color: C.white }]}
+                          >
+                            {sentence(item.status)}
+                          </Text>
+                        </View>
+                      )}
                     </View>
+                    {!isTablet && (
+                      <TouchableOpacity
+                        onPress={() => toggleExpandLoan(item._id)}
+                        hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+                        accessibilityLabel={
+                          full ? 'Hide details' : 'Show details'
+                        }
+                        style={{
+                          width: 28,
+                          alignItems: 'center',
+                          marginLeft: 4,
+                        }}
+                      >
+                        {full ? (
+                          <ChevronUp size={18} color={C.primary} />
+                        ) : (
+                          <ChevronDown size={18} color={C.primary} />
+                        )}
+                      </TouchableOpacity>
+                    )}
                   </View>
-                  <View style={styles.detailRow}>
-                    {item.tenureMonths ? (
-                      <Text style={styles.detail}>
-                        Tenure: {item.tenureMonths}mo
-                      </Text>
-                    ) : null}
-                    {monthlyEmi ? (
-                      <Text style={styles.detail}>EMI: ₹{monthlyEmi}</Text>
-                    ) : null}
-                    {item.remainingBalance != null &&
-                      item.status === 'active' && (
-                        <Text style={styles.detail}>
-                          Balance: ₹{item.remainingBalance.toLocaleString()}
+                  {full && (
+                    <>
+                      <View style={styles.detailRow}>
+                        {item.tenureMonths ? (
+                          <Text style={styles.detail}>
+                            Tenure: {item.tenureMonths}mo
+                          </Text>
+                        ) : null}
+                        {monthlyEmi ? (
+                          <Text style={styles.detail}>EMI: ₹{monthlyEmi}</Text>
+                        ) : null}
+                        {item.remainingBalance != null &&
+                          item.status === 'active' && (
+                            <Text style={styles.detail}>
+                              Balance: ₹{item.remainingBalance.toLocaleString()}
+                            </Text>
+                          )}
+                      </View>
+                      {item.reason && (
+                        <Text style={styles.purpose} numberOfLines={1}>
+                          {item.reason}
                         </Text>
                       )}
-                  </View>
-                  {item.reason && (
-                    <Text style={styles.purpose} numberOfLines={1}>
-                      {item.reason}
-                    </Text>
-                  )}
-                  {item.status === 'rejected' && item.rejectionReason && (
-                    <Text
-                      style={[styles.purpose, { color: C.danger }]}
-                      numberOfLines={2}
-                    >
-                      Reason: {item.rejectionReason}
-                    </Text>
-                  )}
-                  {!isEmployee && item.status === 'pending' && (
-                    <View style={styles.actionRow}>
-                      <TouchableOpacity
-                        style={styles.approveBtn}
-                        onPress={() => handleAction(item, 'approved')}
-                      >
-                        <Check size={14} color={C.white} />
-                        <Text style={styles.actionBtnText}>Approve</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.rejectBtn}
-                        onPress={() => handleAction(item, 'rejected')}
-                      >
-                        <X size={14} color={C.white} />
-                        <Text style={styles.actionBtnText}>Reject</Text>
-                      </TouchableOpacity>
-                    </View>
+                      {item.status === 'rejected' && item.rejectionReason && (
+                        <Text
+                          style={[styles.purpose, { color: C.danger }]}
+                          numberOfLines={2}
+                        >
+                          Reason: {item.rejectionReason}
+                        </Text>
+                      )}
+                      {!isEmployee && item.status === 'pending' && (
+                        <View style={styles.actionRow}>
+                          <TouchableOpacity
+                            style={styles.approveBtn}
+                            onPress={() => handleAction(item, 'approved')}
+                          >
+                            <Check size={14} color={C.white} />
+                            <Text style={styles.actionBtnText}>Approve</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.rejectBtn}
+                            onPress={() => handleAction(item, 'rejected')}
+                          >
+                            <X size={14} color={C.white} />
+                            <Text style={styles.actionBtnText}>Reject</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </>
                   )}
                 </View>
               </SlideInCard>

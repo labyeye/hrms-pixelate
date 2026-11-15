@@ -111,6 +111,27 @@ const uploadCompanyLogo = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
 }).single("logo");
 
+// Images used on ID-card designs (backgrounds, logos, badges). Public like company logos, so printed cards and the
+// designer can load them; images only, magic-byte checked in the controller.
+const idCardImageStorage = multer.diskStorage({
+  destination(_req, _file, cb) {
+    const dir = path.join(UPLOAD_BASE, "id-card-images");
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename(req, file, cb) {
+    cb(
+      null,
+      `idc_${safeId(req.user.company)}_${crypto.randomUUID()}${IMAGE_EXT[file.mimetype] || ".png"}`,
+    );
+  },
+});
+const uploadIdCardImage = multer({
+  storage: idCardImageStorage,
+  fileFilter: imageFilter,
+  limits: { fileSize: 5 * 1024 * 1024 },
+}).single("image");
+
 // Employee avatar upload
 const avatarStorage = multer.diskStorage({
   destination(_req, _file, cb) {
@@ -236,6 +257,7 @@ const uploadFaceEnrollPhoto = multer({
 }).single("photo");
 
 module.exports = {
+  uploadIdCardImage,
   uploadEmployeeDocs,
   uploadCompanyLogo,
   uploadDocumentVault,

@@ -174,6 +174,8 @@ export default function DashboardPage() {
     }),
     Present: d.present,
     Late: d.late,
+    "Half day": d.halfDay || 0,
+    "On leave": d.onLeave || 0,
     Absent: d.absent,
   }));
 
@@ -437,7 +439,7 @@ export default function DashboardPage() {
             Daily Attendance
           </h3>
           <p className="text-xs text-muted-foreground mb-3">
-            Present, late &amp; absent — last 7 days
+            Present, late, half day, leave &amp; absent — last 7 days
           </p>
           {dailyChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={190}>
@@ -471,7 +473,9 @@ export default function DashboardPage() {
                 />
                 {[
                   { key: "Absent", color: "#EF4444", begin: 300 },
-                  { key: "Late", color: "#FACC15", begin: 150 },
+                  { key: "Late", color: "#CA8A04", begin: 150 },
+                  { key: "Half day", color: "#F59E0B", begin: 200 },
+                  { key: "On leave", color: "#3B82F6", begin: 250 },
                   { key: "Present", color: "#00C48C", begin: 0 },
                 ].map(({ key, color, begin }) => (
                   <Line

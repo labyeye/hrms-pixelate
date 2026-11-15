@@ -22,11 +22,13 @@ import {
   Copy,
   Lock,
   Upload,
+  IdCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ActionModal } from "@/components/ui/ActionModal";
 import { useConfirm } from "@/hooks/use-confirm";
 import { AccountSecurityPanel } from "@/components/security/AccountSecurityPanel";
+import { IdCardDesigner } from "@/components/idcard/IdCardDesigner";
 import PasswordChecklist from "@/components/PasswordChecklist";
 
 type CrudOp = "create" | "read" | "update" | "delete";
@@ -1042,6 +1044,7 @@ export default function SettingsPage() {
       items: [
         { id: "general", label: "General Info", icon: Building2 },
         { id: "bank", label: "Bank Details", icon: Landmark },
+        { id: "id_card", label: "ID Card Designer", icon: IdCard },
       ],
     },
     {
@@ -1092,15 +1095,15 @@ export default function SettingsPage() {
         </div>
 
         {}
-        <div className="flex gap-0 border-2 border-black bg-white">
+        <div className="flex flex-col md:flex-row gap-0 border-2 border-black bg-white">
           {}
-          <aside className="w-56 shrink-0 border-r-2 border-black bg-white flex flex-col">
+          <aside className="w-full md:w-56 shrink-0 border-b-2 md:border-b-0 md:border-r-2 border-black bg-white flex flex-row md:flex-col overflow-x-auto md:overflow-visible">
             {SETTING_TABS.map((group) => (
               <div
                 key={group.group}
-                className="border-b-2 border-black last:border-b-0"
+                className="flex md:block shrink-0 border-r-2 md:border-r-0 md:border-b-2 border-black last:border-r-0 md:last:border-b-0"
               >
-                <p className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-gray-50 border-b border-black/10">
+                <p className="hidden md:block px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground bg-gray-50 border-b border-black/10">
                   {group.group}
                 </p>
                 {group.items.map((tab) => {
@@ -1111,7 +1114,7 @@ export default function SettingsPage() {
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
                       className={cn(
-                        "w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-left transition-all border-b border-black/10 last:border-b-0",
+                        "md:w-full shrink-0 whitespace-nowrap flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2.5 text-sm font-bold text-left transition-all md:border-b border-black/10 last:border-b-0",
                         active
                           ? "bg-[#024BAB] text-white"
                           : "text-black hover:bg-[#F0F6FF]",
@@ -1128,7 +1131,7 @@ export default function SettingsPage() {
 
           {}
           <div className="flex-1 min-w-0 flex flex-col">
-            <div className="p-6 flex-1">
+            <div className="p-3 sm:p-6 flex-1 min-w-0">
               {}
               {activeTab === "general" && (
                 <div className="space-y-4">
@@ -2350,6 +2353,7 @@ export default function SettingsPage() {
               "two_factor",
               "phone_verify",
               "account_security",
+              "id_card", // the designer has its own Save button
             ].includes(activeTab) && (
               <div className="border-t-2 border-black p-4 flex justify-end bg-gray-50/50">
                 <button
@@ -2377,6 +2381,11 @@ export default function SettingsPage() {
               </div>
             )}
 
+            {activeTab === "id_card" && (
+              <div className="p-4">
+                <IdCardDesigner />
+              </div>
+            )}
             {activeTab === "account_security" && <AccountSecurityPanel />}
             {activeTab === "two_factor" && <TwoFactorPanel />}
             {activeTab === "phone_verify" && <PhoneVerifyPanel />}
