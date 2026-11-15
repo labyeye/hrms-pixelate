@@ -14,6 +14,7 @@ const {
   sendCheckInHR,
   sendCheckOut,
   sendCheckOutHR,
+  getHrRecipients,
 } = require("../services/whatsappService");
 
 const DeviceActivityLog = require("../models/DeviceActivityLog");
@@ -98,10 +99,7 @@ async function notifyCheckIn(employee, locationName, time, companyId) {
   );
   try {
     const empFullName = `${employee.firstName} ${employee.lastName}`;
-    const hrUsers = await User.find({
-      company: companyId,
-      role: { $in: ["super_admin", "hr_manager"] },
-    }).select("phone name");
+    const hrUsers = await getHrRecipients(companyId);
     console.log(
       `[WA-DEBUG] HR users found: ${hrUsers.length} — phones: ${hrUsers.map((h) => h.phone || "MISSING").join(", ")}`,
     );
@@ -156,10 +154,7 @@ async function notifyCheckOut(
   );
   try {
     const empFullName = `${employee.firstName} ${employee.lastName}`;
-    const hrUsers = await User.find({
-      company: companyId,
-      role: { $in: ["super_admin", "hr_manager"] },
-    }).select("phone name");
+    const hrUsers = await getHrRecipients(companyId);
     console.log(
       `[WA-DEBUG] HR users found: ${hrUsers.length} — phones: ${hrUsers.map((h) => h.phone || "MISSING").join(", ")}`,
     );

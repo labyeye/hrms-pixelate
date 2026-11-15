@@ -118,6 +118,8 @@ module.exports = (secretEnv, adapter) => {
       h((req) => adapter.grantCredits(req.params.id, req.body || {})),
     );
   }
+  if (adapter.setCredits)
+    router.put("/:id/credits", h((req) => adapter.setCredits(req.params.id, req.body || {})));
   router.post(
     "/:id/users",
     h(created((req) => adapter.createUser(req.params.id, req.body || {}))),

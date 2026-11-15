@@ -4,6 +4,8 @@ const Attendance = require("../models/Attendance");
 const Company = require("../models/Company");
 const Subscription = require("../models/Subscription");
 const safeEqual = require("../utils/safeEqual");
+const CreditTopup = require("../models/CreditTopup");
+const { creditBillHtml } = require("../utils/creditBillHtml");
 
 const crmAuth = (req, res) => {
   const apiKey = req.headers["x-api-key"];
@@ -259,4 +261,25 @@ exports.deleteCrmOffer = async (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
+};
+
+// GET /api/crm/credit-bills — paid WhatsApp-credit top-ups, newest first
+exports.getCrmCreditBills = async (req, res) => {
+  if (!crmAuth(req, res)) return;
+  const bills = await CreditTopup.find({ status: "paid" })
+    .populate("company", "name email phone gstNumber")
+    .sort({ paidAt: -1 })
+    .limit(500)
+    .lean();
+  res.json({ success: true, bills });
+};
+
+// GET /api/crm/credit-bills/:id/html — printable GST invoice
+exports.getCrmCreditBillHtml = async (req, res) => {
+  if (!crmAuth(req, res)) return;
+  const t = await CreditTopup.findOne({ _id: req.params.id, status: "paid" })
+    .populate("company")
+    .lean();
+  if (!t) return res.status(404).json({ success: false, message: "Not found" });
+  res.json({ success: true, html: creditBillHtml(t, t.company || {}) });
 };

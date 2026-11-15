@@ -9,6 +9,7 @@ const terms = require("./terms");
 const credits = require("../services/creditsService");
 const cfg = require("../config/credits");
 const CreditLedger = require("../models/CreditLedger");
+const CreditWallet = require("../models/CreditWallet");
 
 const ROLES = User.schema.path("role").enumValues;
 
@@ -222,6 +223,12 @@ exports.create = async (b) => {
     if (sub.tier !== "web_mobile") {
       try {
         await credits.enable(company._id);
+        await credits.grantBonus(company._id, {
+          credits: 1000,
+          days: 365,
+          refId: `welcome:${company._id}`,
+          note: "Welcome credits",
+        });
       } catch (e) {
         console.error("CRM create: credits grant failed", e.message);
       }
@@ -333,6 +340,28 @@ exports.grantCredits = async (id, b) => {
     credits: n,
     refId: `gift:${id}:${Date.now()}`,
     note: String(b.note || "Granted from CRM").slice(0, 120),
+  });
+  return exports.getCredits(id);
+};
+
+/** Set the owner's TOTAL credits to an exact number (CRM edit). Bonus is kept; paid balance absorbs the difference. */
+exports.setCredits = async (id, b) => {
+  const target = Number(b.credits);
+  if (!Number.isFinite(target) || target < 0 || target > 1000000)
+    throw H.fail("Credits must be between 0 and 1000000");
+  if (!(await Company.exists({ _id: id })))
+    throw H.fail("Company not found", 404);
+  await credits.enable(id);
+  const w = await CreditWallet.findOne({ company: id }).lean();
+  const bonus = w.bonusExpiresAt && w.bonusExpiresAt > new Date() ? w.bonusBalance || 0 : 0;
+  const newMain = Math.max(0, credits.toUnits(target) - bonus);
+  await CreditWallet.updateOne({ company: id }, { $set: { balance: newMain, alerted: null } });
+  await CreditLedger.create({
+    company: id,
+    type: "adjust",
+    units: newMain - w.balance,
+    bucket: "main",
+    note: String(b.note || `Set to ${target} from CRM`).slice(0, 120),
   });
   return exports.getCredits(id);
 };

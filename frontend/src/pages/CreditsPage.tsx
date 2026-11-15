@@ -3,6 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { fmtCredits, useCredits } from "@/contexts/CreditsContext";
 import { creditsAPI } from "@/services/api";
+import { writePrintDocument } from "@/lib/printWindow";
 import { useToast } from "@/hooks/use-toast";
 import { Coins, Gift, MessageCircle, Plus, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";

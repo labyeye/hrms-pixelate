@@ -1017,7 +1017,53 @@ async function sendCelebration(kind, phone, params, companyId) {
   return true;
 }
 
+/** Web/mobile/kiosk punch -> WhatsApp copy to every admin/HR (super_admin falls back to the company phone). */
+async function notifyHrPunch(emp, companyId, kind, time, workHours) {
+  try {
+    const User = require("../models/User");
+    const Company = require("../models/Company");
+    const [company, users] = await Promise.all([
+      Company.findById(companyId).select("phone").lean(),
+      User.find({ company: companyId, role: { $in: ["super_admin", "hr_manager"] } })
+        .select("phone role")
+        .lean(),
+    ]);
+    const send = kind === "check_in" ? sendCheckInHR : sendCheckOutHR;
+    const info = {
+      empName: `${emp.firstName} ${emp.lastName || ""}`.trim(),
+      empId: emp.employeeId,
+      locationName: "App",
+      time,
+      workHours,
+    };
+    for (const u of users) {
+      const phone = u.phone || (u.role === "super_admin" ? company?.phone : null);
+      if (phone) await send(phone, info, companyId);
+    }
+  } catch (err) {
+    console.error("[WhatsApp] notifyHrPunch:", err.message);
+  }
+}
+
+/** Admin/HR users of a company with a usable phone (super_admin falls back to the company phone). */
+async function getHrRecipients(companyId) {
+  const User = require("../models/User");
+  const Company = require("../models/Company");
+  const [company, users] = await Promise.all([
+    Company.findById(companyId).select("phone").lean(),
+    User.find({ company: companyId, role: { $in: ["super_admin", "hr_manager"] } })
+      .select("phone role")
+      .lean(),
+  ]);
+  return users.map((u) => ({
+    _id: u._id,
+    phone: u.phone || (u.role === "super_admin" ? company?.phone : null),
+  }));
+}
+
 module.exports = {
+  getHrRecipients,
+  notifyHrPunch,
   sendPhoneOtp,
   sendCelebration,
   sendCheckIn,

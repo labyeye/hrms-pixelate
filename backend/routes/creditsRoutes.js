@@ -10,6 +10,7 @@ router.get("/packs", c.getPacks);
 router.get("/ledger", c.getLedger);
 router.get("/estimate", c.getEstimate);
 router.get("/topups", c.getTopups);
+router.get("/topups/:id/bill", c.getTopupBill);
 router.post("/topup", c.createTopup);
 router.post("/topup/verify", c.verifyTopup);
 

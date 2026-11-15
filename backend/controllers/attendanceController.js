@@ -8,7 +8,7 @@ const AttendanceBalance = require("../models/AttendanceBalance");
 const LateApproval = require("../models/LateApproval");
 const { isHolidayDate } = require("./holidayController");
 const { safePagination } = require("../middleware/validate");
-const { sendAttendanceStatus } = require("../services/whatsappService");
+const { sendAttendanceStatus, notifyHrPunch } = require("../services/whatsappService");
 const { validateMagicBytes } = require("../middleware/upload");
 const { verifyFace, enrollFace } = require("../services/faceService");
 const { logAudit } = require("../utils/auditLogger");
@@ -786,6 +786,7 @@ const selfMarkAttendance = asyncHandler(async (req, res) => {
   }
 
   notifyPunch(emp, req.user.company, action === "checkin" ? "check_in" : "check_out");
+  notifyHrPunch(emp, req.user.company, action === "checkin" ? "check_in" : "check_out", now, record.workHours);
 
   res.json({ success: true, data: record, pendingApproval });
 });
@@ -902,6 +903,7 @@ const kioskFaceMark = asyncHandler(async (req, res) => {
     );
     await notifyAttendanceStatus(emp, d, saved.status, req.user.company);
     notifyPunch(emp, req.user.company, "check_in", now);
+    notifyHrPunch(emp, req.user.company, "check_in", now);
     return res.json({
       success: true,
       data: {
@@ -946,6 +948,7 @@ const kioskFaceMark = asyncHandler(async (req, res) => {
     { $set: { checkOut: now, workHours, overtime, earlyLeaving } },
   );
   notifyPunch(emp, req.user.company, "check_out", now);
+  notifyHrPunch(emp, req.user.company, "check_out", now, workHours);
   res.json({
     success: true,
     data: {

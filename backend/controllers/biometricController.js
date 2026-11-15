@@ -12,6 +12,7 @@ const {
   sendCheckOut,
   sendCheckInHR,
   sendCheckOutHR,
+  getHrRecipients,
 } = require("../services/whatsappService");
 const { notifyEmployee } = require("../services/inAppNotificationService");
 // Punch confirmation: inbox row + push. Accepts the Employee document or its id.
@@ -463,10 +464,7 @@ const recordBiometric = asyncHandler(async (req, res) => {
 
   try {
     const empFullName = `${employee.firstName} ${employee.lastName}`;
-    const hrUsers = await User.find({
-      company: device.company,
-      role: { $in: ["super_admin", "hr_manager"] },
-    }).select("phone");
+    const hrUsers = await getHrRecipients(device.company);
 
     if (logType === "check_in") {
       if (employee.phone)
@@ -1054,10 +1052,7 @@ const faceAttendance = asyncHandler(async (req, res) => {
       minute: "2-digit",
     });
     const empFullName = `${bestMatch.firstName} ${bestMatch.lastName}`;
-    const hrUsers = await User.find({
-      company: bestMatch.company,
-      role: { $in: ["super_admin", "hr_manager"] },
-    }).select("phone");
+    const hrUsers = await getHrRecipients(bestMatch.company);
 
     if (logType === "check_in") {
       await sendPushToEmployee(bestMatch._id, {
