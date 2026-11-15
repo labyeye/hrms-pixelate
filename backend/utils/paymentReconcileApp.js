@@ -19,6 +19,6 @@ module.exports = {
   provision: async (ev) => {
     if (await CreditTopup.exists({ orderId: ev.orderId }))
       return require("../services/creditsService").completeTopup(ev);
-    return require("../controllers/billingController").provisionRazorpay(ev);
+    return require("../controllers/billingController").provisionCashfree(ev);
   },
 };

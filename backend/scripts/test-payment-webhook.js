@@ -1,6 +1,6 @@
 // node scripts/test-payment-webhook.js  (in-memory MongoDB: a paid-but-unverified NEW signup is created from the webhook, or undone + refunded)
 // needs mongodb-memory-server (NODE_PATH can point at another backend's node_modules)
-process.env.RAZORPAY_WEBHOOK_SECRET = "whsec_test";
+process.env.CASHFREE_SECRET_KEY = "whsec_test";
 process.env.JWT_SECRET = process.env.JWT_SECRET || "x";
 const assert = require("assert");
 const crypto = require("crypto");
@@ -21,10 +21,7 @@ const { MongoMemoryServer } = require("mongodb-memory-server");
   const { webhook, reconcile } = require("../utils/paymentReconcile");
   const refunds = [];
   saga._setClient({
-    payments: {
-      fetch: async () => ({}),
-      refund: async (id, b) => (refunds.push([id, b.amount]), { id: "rfnd_1" }),
-    },
+    refund: async (b) => (refunds.push([b.orderId, b.amount]), { cf_refund_id: "rfnd_1" }),
   });
 
   const order = async (n) => {
@@ -36,7 +33,7 @@ const { MongoMemoryServer } = require("mongodb-memory-server");
     });
     await PendingOrder.create({
       orderId: "order_" + n,
-      gateway: "razorpay",
+      gateway: "cashfree",
       user: user._id,
       companyName: "Co " + n,
       companyEmail: `co${n}@x.test`,
@@ -53,13 +50,14 @@ const { MongoMemoryServer } = require("mongodb-memory-server");
   };
   const send = (payload) => {
     const raw = Buffer.from(JSON.stringify(payload));
+    const ts = String(Date.now());
     const sig = crypto
       .createHmac("sha256", "whsec_test")
-      .update(raw)
-      .digest("hex");
+      .update(ts + raw.toString("utf8"))
+      .digest("base64");
     return new Promise((resolve) =>
       webhook(
-        { body: raw, get: () => sig },
+        { body: raw, get: (h) => (h === "x-webhook-signature" ? sig : ts) },
         {
           status() {
             return this;
@@ -70,8 +68,11 @@ const { MongoMemoryServer } = require("mongodb-memory-server");
     );
   };
   const ev = (pid, oid) => ({
-    event: "payment.captured",
-    payload: { payment: { entity: { id: pid, order_id: oid, amount: 50000 } } },
+    type: "PAYMENT_SUCCESS_WEBHOOK",
+    data: {
+      order: { order_id: oid },
+      payment: { cf_payment_id: pid, payment_amount: 500 },
+    },
   });
 
   await order(1);
@@ -120,7 +121,7 @@ const { MongoMemoryServer } = require("mongodb-memory-server");
     await Subscription.countDocuments({ razorpayPaymentId: "pay_2" }),
     0,
   );
-  assert.deepStrictEqual(refunds, [["pay_2", 50000]]);
+  assert.deepStrictEqual(refunds, [["order_2", 500]]);
   assert.strictEqual(
     (await PaymentIncident.findOne({ paymentId: "pay_2" })).status,
     "refund_initiated",

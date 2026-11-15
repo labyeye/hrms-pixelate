@@ -18,11 +18,6 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-declare global {
-  interface Window {
-    Razorpay: any;
-  }
-}
 
 export default function BillingPage() {
   const { user } = useAuth();

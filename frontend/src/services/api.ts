@@ -528,6 +528,10 @@ export const creditsAPI = {
   packs: () => request<{ success: boolean; data: any }>("/credits/packs"),
   estimate: () => request<{ success: boolean; data: any }>("/credits/estimate"),
   topups: () => request<{ success: boolean; data: any[] }>("/credits/topups"),
+  topupBill: (id: string) =>
+    request<{ success: boolean; data: { html: string } }>(
+      `/credits/topups/${id}/bill`,
+    ),
   ledger: (page = 1, type = "") =>
     request<{ success: boolean; data: any[]; total: number; page: number }>(
       `/credits/ledger?page=${page}${type ? `&type=${type}` : ""}`,
@@ -537,11 +541,7 @@ export const creditsAPI = {
       method: "POST",
       body: JSON.stringify({ packId }),
     }),
-  verifyTopup: (body: {
-    razorpayOrderId: string;
-    razorpayPaymentId: string;
-    razorpaySignature: string;
-  }) =>
+  verifyTopup: (body: { orderId: string }) =>
     request<{ success: boolean; data: any }>("/credits/topup/verify", {
       method: "POST",
       body: JSON.stringify(body),
@@ -563,7 +563,7 @@ export const billingAPI = {
     employeeCount: number,
     tier: "web_mobile" | "web_mobile_whatsapp",
     billingCycle: "monthly" | "yearly",
-    gateway: "razorpay" = "razorpay",
+    gateway: "cashfree" = "cashfree",
     company?: {
       name: string;
       email: string;
@@ -584,13 +584,9 @@ export const billingAPI = {
         company,
       }),
     }),
-  verifyRazorpay: (payload: {
-    razorpayOrderId: string;
-    razorpayPaymentId: string;
-    razorpaySignature: string;
-  }) =>
+  verifyCashfree: (payload: { orderId: string }) =>
     request<{ success: boolean; message: string; data: any }>(
-      "/billing/verify-razorpay",
+      "/billing/verify-cashfree",
       {
         method: "POST",
         body: JSON.stringify(payload),
@@ -599,9 +595,6 @@ export const billingAPI = {
   verifyPayment: (payload: {
     orderId?: string;
     trackingId?: string | null;
-    razorpayOrderId?: string;
-    razorpayPaymentId?: string;
-    razorpaySignature?: string;
   }) =>
     request<{ success: boolean; message: string; data: any }>(
       "/billing/verify-payment",

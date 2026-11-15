@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 // so the customer's own browser/app gets the first chance to verify and activate the plan.
 const paymentEventSchema = new mongoose.Schema(
   {
-    gateway: { type: String, default: "razorpay" },
+    gateway: { type: String, default: "cashfree" },
     paymentId: { type: String, required: true },
     orderId: { type: String, required: true },
     amount: { type: Number }, // rupees

@@ -162,7 +162,7 @@ async function seedDemoData() {
       status: "active",
       autoRenew: true,
       paymentStatus: "completed",
-      paymentMethod: "razorpay",
+      paymentMethod: "cashfree",
       amountPaid: 3499,
       notes: "Demo subscription for client showcase",
     });

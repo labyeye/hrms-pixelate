@@ -99,7 +99,7 @@ export function buildInvoiceHTML(inv: any): string {
     .trim()
     .toLowerCase();
   const isInterState = clientState && !clientState.includes("bihar");
-  // Amount stored is GST-inclusive (what Razorpay charged); reverse-calculate base
+  // Amount stored is GST-inclusive (what Cashfree charged); reverse-calculate base
   const base = total / 1.18;
   const cgst = isInterState ? 0 : base * 0.09;
   const sgst = isInterState ? 0 : base * 0.09;

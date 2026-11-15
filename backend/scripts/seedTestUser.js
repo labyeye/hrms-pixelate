@@ -56,7 +56,7 @@ async function seedTestUser() {
       status: "active",
       autoRenew: true,
       paymentStatus: "completed",
-      paymentMethod: "razorpay",
+      paymentMethod: "cashfree",
       amountPaid: 200,
       notes: "Test subscription for Enterprise plan",
     });

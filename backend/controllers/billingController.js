@@ -9,7 +9,7 @@ const User = require("../models/User");
 const OfferCode = require("../models/OfferCode");
 const PendingOrder = require("../models/PendingOrder");
 const Counter = require("../models/Counter");
-const razorpayService = require("../services/razorpayService");
+const cashfreeService = require("../services/cashfreeService");
 const { sendPaymentConfirmations } = require("../services/notificationService");
 const {
   PLAN_SLABS,
@@ -137,7 +137,7 @@ const validateOfferCode = asyncHandler(async (req, res) => {
 const createOrder = asyncHandler(async (req, res) => {
   const {
     employeeCount,
-    gateway = "razorpay",
+    gateway = "cashfree",
     offerCode,
     company: companyDetails,
   } = req.body;
@@ -148,9 +148,9 @@ const createOrder = asyncHandler(async (req, res) => {
     throw new Error("Please provide a valid number of employees");
   }
   const billingCycle = "yearly"; // yearly billing only
-  if (gateway !== "razorpay") {
+  if (gateway !== "cashfree") {
     res.status(400);
-    throw new Error("Invalid gateway. Only razorpay is supported");
+    throw new Error("Invalid gateway. Only cashfree is supported");
   }
 
   let pricing;
@@ -242,10 +242,17 @@ const createOrder = asyncHandler(async (req, res) => {
 
   let orderData;
 
-  if (gateway === "razorpay") {
-    const result = await razorpayService.createOrder({
+  if (gateway === "cashfree") {
+    const result = await cashfreeService.createOrder({
       amount: amountRupees,
-      receipt: `rcpt_${Date.now()}`,
+      customer: {
+        id: req.user._id,
+        name: req.user.name,
+        email: req.user.email,
+        phone:
+          req.user.phone ||
+          (existingCompany ? existingCompany.phone : companyDetails?.phone),
+      },
       notes: {
         employeeCount: empCount,
         billingCycle,
@@ -271,7 +278,7 @@ const createOrder = asyncHandler(async (req, res) => {
           renewalDate: new Date(),
           status: "inactive",
           paymentStatus: "pending",
-          paymentMethod: "razorpay",
+          paymentMethod: "cashfree",
           amountPaid: 0,
           pendingChargeAmount: amountRupees,
           razorpayOrderId: result.orderId,
@@ -283,7 +290,7 @@ const createOrder = asyncHandler(async (req, res) => {
     } else {
       await PendingOrder.create({
         orderId: result.orderId,
-        gateway: "razorpay",
+        gateway: "cashfree",
         user: req.user._id,
         companyName: newCompanyDetails.name,
         companyEmail: newCompanyDetails.email,
@@ -305,9 +312,11 @@ const createOrder = asyncHandler(async (req, res) => {
     }
 
     orderData = {
-      gateway: "razorpay",
+      gateway: "cashfree",
       orderId: result.orderId,
-      keyId: result.keyId,
+      paymentSessionId: result.paymentSessionId,
+      checkoutUrl: result.checkoutUrl,
+      mode: result.mode,
       amount: amountRupees,
       currency: "INR",
       employeeCount: empCount,
@@ -331,34 +340,32 @@ const createOrder = asyncHandler(async (req, res) => {
   res.json({ success: true, data: orderData });
 });
 
-const verifyRazorpayPayment = asyncHandler(async (req, res) => {
-  const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+const verifyCashfreePayment = asyncHandler(async (req, res) => {
+  const { orderId } = req.body;
 
-  if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+  if (!orderId) {
     res.status(400);
-    throw new Error(
-      "razorpayOrderId, razorpayPaymentId and razorpaySignature are required",
-    );
+    throw new Error("orderId is required");
   }
 
-  const isValid = razorpayService.verifySignature({
-    razorpayOrderId,
-    razorpayPaymentId,
-    razorpaySignature,
-  });
-  if (!isValid) {
-    res.status(400);
-    throw new Error("Payment verification failed. Invalid signature.");
+  // Cashfree is asked directly, so the client cannot fake a payment.
+  const pay = await cashfreeService.verifyOrder(orderId);
+  if (!pay.paid) {
+    res.status(402);
+    throw new Error("Payment not completed yet");
   }
+  // Legacy DB field names (razorpay*) hold the Cashfree ids.
+  const razorpayOrderId = orderId;
+  const razorpayPaymentId = pay.paymentId;
 
-  const pendingOrder = await PendingOrder.findOne({ orderId: razorpayOrderId });
+  const pendingOrder = await PendingOrder.findOne({ orderId });
   if (pendingOrder) {
     await _createCompanyAndActivate({
       pendingOrder,
       req,
       update: {
         razorpayPaymentId,
-        paymentMethod: "razorpay",
+        paymentMethod: "cashfree",
         paymentStatus: "completed",
       },
       invoiceExtra: { razorpayOrderId, razorpayPaymentId },
@@ -372,7 +379,7 @@ const verifyRazorpayPayment = asyncHandler(async (req, res) => {
     lookup: { razorpayOrderId },
     update: {
       razorpayPaymentId,
-      paymentMethod: "razorpay",
+      paymentMethod: "cashfree",
       paymentStatus: "completed",
     },
     invoiceExtra: { razorpayOrderId, razorpayPaymentId },
@@ -727,7 +734,7 @@ async function _withRefundSaga(args, steps) {
     const undone = await saga.rollback();
     await refundAfterFailure(
       {
-        gateway: "razorpay",
+        gateway: "cashfree",
         paymentId: update.razorpayPaymentId,
         orderId: invoiceExtra?.razorpayOrderId,
         amount: saga.amount,
@@ -744,9 +751,9 @@ const _createCompanyAndActivate = (args) =>
 const _activateSubscription = (args) =>
   _withRefundSaga(args, _activateSubscriptionSteps);
 
-// Activates a paid Razorpay order without a signed-in browser (used when only the webhook told us about the payment).
+// Activates a paid Cashfree order without a signed-in browser (used when only the webhook told us about the payment).
 // Same code path as the browser's verify call, so the saga/refund protection is identical.
-async function provisionRazorpay({ orderId, paymentId }) {
+async function provisionCashfree({ orderId, paymentId }) {
   const res = {
     statusCode: 200,
     headersSent: false,
@@ -761,7 +768,7 @@ async function provisionRazorpay({ orderId, paymentId }) {
   };
   const update = {
     razorpayPaymentId: paymentId,
-    paymentMethod: "razorpay",
+    paymentMethod: "cashfree",
     paymentStatus: "completed",
   };
   const invoiceExtra = {
@@ -791,11 +798,11 @@ async function provisionRazorpay({ orderId, paymentId }) {
 }
 
 const verifyPayment = asyncHandler(async (req, res) => {
-  if (!req.body.razorpayOrderId) {
+  if (!req.body.orderId) {
     res.status(400);
-    throw new Error("razorpayOrderId is required");
+    throw new Error("orderId is required");
   }
-  return verifyRazorpayPayment(req, res);
+  return verifyCashfreePayment(req, res);
 });
 
 module.exports = {
@@ -806,6 +813,6 @@ module.exports = {
   createOrder,
   validateOfferCode,
   verifyPayment,
-  verifyRazorpayPayment,
-  provisionRazorpay,
+  verifyCashfreePayment,
+  provisionCashfree,
 };

@@ -94,15 +94,15 @@ app.use(
     verify: (req, _res, buf) => {
       if (
         req.originalUrl.includes("whatsapp-webhook") ||
-        req.originalUrl.includes("razorpay-billing")
+        req.originalUrl.includes("cashfree-billing")
       )
         req.rawBody = buf;
     },
   }),
 );
-// Razorpay "payment captured" notices (see utils/paymentReconcile.js); signed with RAZORPAY_WEBHOOK_SECRET
+// Cashfree "payment success" notices (see utils/paymentReconcile.js); signed with CASHFREE_SECRET_KEY
 app.post(
-  "/api/webhooks/razorpay-billing",
+  "/api/webhooks/cashfree-billing",
   require("./utils/paymentReconcile").webhook,
 );
 app.use(sanitizeRequest); // strips $operators / dotted keys (NoSQL injection)

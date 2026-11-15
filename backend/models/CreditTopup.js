@@ -13,7 +13,7 @@ const schema = new mongoose.Schema(
     credits: { type: Number, required: true },
     price: { type: Number, required: true }, // before GST
     gst: { type: Number, required: true },
-    total: { type: Number, required: true }, // what Razorpay charged
+    total: { type: Number, required: true }, // what Cashfree charged
     orderId: { type: String, required: true, unique: true },
     paymentId: { type: String },
     status: { type: String, enum: ["created", "paid"], default: "created" },

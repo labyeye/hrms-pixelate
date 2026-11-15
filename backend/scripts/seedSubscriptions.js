@@ -32,7 +32,7 @@ const seedSubscriptions = async () => {
         status: "active",
         autoRenew: true,
         paymentStatus: "completed",
-        paymentMethod: "razorpay",
+        paymentMethod: "cashfree",
         amountPaid: 100,
         notes: `Subscription created for ${company.name}`,
       });

@@ -4,7 +4,7 @@ const CreditLedger = require("../models/CreditLedger");
 const CreditTopup = require("../models/CreditTopup");
 const Counter = require("../models/Counter");
 const Company = require("../models/Company");
-const razorpay = require("./razorpayService");
+const cashfree = require("./cashfreeService");
 
 const U = cfg.UNIT;
 const toUnits = (c) => Math.round(c * U);
@@ -229,7 +229,7 @@ async function onSubscriptionPaid(companyId, subscription) {
   });
 }
 
-// ---- top-up (Razorpay) ------------------------------------------------------
+// ---- top-up (Cashfree) ------------------------------------------------------
 
 async function createTopup(user, packId) {
   const pack = cfg.PACKS.find((p) => p.id === packId);
@@ -241,10 +241,11 @@ async function createTopup(user, packId) {
     });
   const gst = round2((pack.price * cfg.GST_PCT) / 100);
   const total = round2(pack.price + gst);
-  const order = await razorpay.createOrder({
+  const order = await cashfree.createOrder({
     amount: total,
-    receipt: `cr_${Date.now()}`,
+    receipt: `cr_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
     notes: { kind: "credits", company: String(user.company) },
+    customer: { id: user._id, name: user.name, email: user.email, phone: user.phone },
   });
   await CreditTopup.create({
     company: user.company,
@@ -260,9 +261,9 @@ async function createTopup(user, packId) {
 }
 
 /**
- * Credit the wallet for a paid order. Called by the browser verify call AND the Razorpay webhook; whichever
+ * Credit the wallet for a paid order. Called by the app verify call AND the Cashfree webhook; whichever
  * arrives first wins the atomic created->paid flip, the other one is a no-op.
- * ponytail: a process crash between the flip and the wallet update loses that top-up; reconcile by hand from Razorpay.
+ * ponytail: a process crash between the flip and the wallet update loses that top-up; reconcile by hand from Cashfree.
  */
 async function completeTopup({ orderId, paymentId }) {
   const t = await CreditTopup.findOneAndUpdate(

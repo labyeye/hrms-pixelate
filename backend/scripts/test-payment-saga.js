@@ -34,16 +34,14 @@ const fakeModel = (name, log) => ({
   // 2. refund succeeds -> customer is told it is on the way
   const refunds = [];
   saga._setClient({
-    payments: {
-      fetch: async () => ({ amount: 600000 }),
-      refund: async (id, b) => (refunds.push([id, b.amount]), { id: "rfnd_1" }),
-    },
+    refund: async (b) => (refunds.push([b.orderId, b.amount]), { cf_refund_id: "rfnd_1" }),
   });
   await assert.rejects(
     saga.refundAfterFailure(
       {
-        gateway: "razorpay",
+        gateway: "cashfree",
         paymentId: "pay_1",
+        orderId: "order_1",
         amount: 6000,
         product: "NestHR",
       },
@@ -55,23 +53,21 @@ const fakeModel = (name, log) => ({
       /automatic refund of ₹6,000/.test(e.message) &&
       e.status === 409,
   );
-  assert.deepStrictEqual(refunds, [["pay_1", 600000]]);
+  assert.deepStrictEqual(refunds, [["order_1", 6000]]);
   assert.strictEqual(saved.at(-1).status, "refund_initiated");
 
   // 3. refund API down -> queued, message says we will process it
   saga._setClient({
-    payments: {
-      fetch: async () => ({}),
-      refund: async () => {
-        throw new Error("gateway timeout");
-      },
+    refund: async () => {
+      throw new Error("gateway timeout");
     },
   });
   await assert.rejects(
     saga.refundAfterFailure(
       {
-        gateway: "razorpay",
+        gateway: "cashfree",
         paymentId: "pay_2",
+        orderId: "order_2",
         amount: 6000,
         product: "NestHR",
       },

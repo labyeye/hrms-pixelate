@@ -21,11 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-declare global {
-  interface Window {
-    Razorpay: any;
-  }
-}
+import { payWithCashfree } from "@/lib/cashfree";
 
 type Step = "company" | "employees" | "plan" | "payment";
 
@@ -166,16 +162,6 @@ export default function OnboardingPage() {
     setStep("plan");
   };
 
-  const loadRazorpayScript = (): Promise<boolean> =>
-    new Promise((resolve) => {
-      if (window.Razorpay) return resolve(true);
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-
   const handlePay = async () => {
     const count = Number(employeeCount);
     if (!user?.company && !companyForm) {
@@ -192,63 +178,36 @@ export default function OnboardingPage() {
         count,
         PLAN.tier,
         "yearly",
-        "razorpay",
+        "cashfree",
         user?.company ? undefined : companyForm!,
       );
       if (!res.success) throw new Error("Failed to create order");
       const order = res.data;
 
-      const loaded = await loadRazorpayScript();
-      if (!loaded)
-        throw new Error(
-          "Failed to load payment checkout. Check your connection.",
-        );
+      if ((await payWithCashfree(order)) !== "done")
+        throw new Error("Payment cancelled");
 
-      await new Promise<void>((resolve, reject) => {
-        const rzp = new window.Razorpay({
-          key: order.keyId,
-          order_id: order.orderId,
-          amount: order.amount * 100,
-          currency: order.currency || "INR",
-          name: "NestHR",
-          description: `NestHR — ${PLAN.name} — ${count} employees`,
-          theme: { color: "#024BAB" },
-          handler: async (response: any) => {
-            try {
-              const verifyRes = await billingAPI.verifyRazorpay({
-                razorpayOrderId: response.razorpay_order_id,
-                razorpayPaymentId: response.razorpay_payment_id,
-                razorpaySignature: response.razorpay_signature,
-              });
-              toast({
-                title: "Payment Successful!",
-                description: "Subscription activated. Welcome to NestHR!",
-                variant: "success",
-              });
-              const createdCompany = verifyRes.data?.company;
-              updateUser({
-                company: createdCompany
-                  ? {
-                      id: createdCompany._id,
-                      name: createdCompany.name,
-                      email: createdCompany.email,
-                      status: createdCompany.status,
-                    }
-                  : { ...user?.company!, status: "active" },
-                subscription: { status: "active" },
-              });
-              setTimeout(() => navigate("/welcome", { replace: true }), 1500);
-              resolve();
-            } catch (err: any) {
-              reject(err);
-            }
-          },
-          modal: {
-            ondismiss: () => reject(new Error("Payment cancelled")),
-          },
-        });
-        rzp.open();
+      const verifyRes = await billingAPI.verifyCashfree({
+        orderId: order.orderId,
       });
+      toast({
+        title: "Payment Successful!",
+        description: "Subscription activated. Welcome to NestHR!",
+        variant: "success",
+      });
+      const createdCompany = verifyRes.data?.company;
+      updateUser({
+        company: createdCompany
+          ? {
+              id: createdCompany._id,
+              name: createdCompany.name,
+              email: createdCompany.email,
+              status: createdCompany.status,
+            }
+          : { ...user?.company!, status: "active" },
+        subscription: { status: "active" },
+      });
+      setTimeout(() => navigate("/welcome", { replace: true }), 1500);
     } catch (err: any) {
       const msg = err.message || "Please try again.";
       if (msg.includes("User already has a company")) {
@@ -471,7 +430,7 @@ export default function OnboardingPage() {
                 Confirm & Pay
               </h1>
               <p className="text-gray-500 font-medium text-sm">
-                A secure Razorpay checkout will open to complete your payment
+                A secure Cashfree checkout will open to complete your payment
               </p>
             </div>
 
@@ -529,7 +488,7 @@ export default function OnboardingPage() {
                     <span className="w-5 h-5 bg-[#024BAB] text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
                       1
                     </span>
-                    A Razorpay checkout window will open (secure page)
+                    A Cashfree checkout window will open (secure page)
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="w-5 h-5 bg-[#024BAB] text-white flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
@@ -565,14 +524,14 @@ export default function OnboardingPage() {
                 ) : (
                   <>
                     <ExternalLink className="w-5 h-5" />
-                    Pay ₹{yearlyPrice.toLocaleString("en-IN")} via Razorpay
+                    Pay ₹{yearlyPrice.toLocaleString("en-IN")} via Cashfree
                   </>
                 )}
               </button>
 
               <div className="flex items-center justify-center gap-2 text-xs text-gray-400 font-medium">
                 <AlertCircle className="w-3.5 h-3.5" />
-                Secured by Razorpay · PCI-DSS compliant
+                Secured by Cashfree · PCI-DSS compliant
               </div>
 
               <button

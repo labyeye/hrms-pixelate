@@ -601,17 +601,13 @@ export const billingAPI = {
   getPlans: () => request('/billing/plans'),
   getSubscription: () => request('/billing/subscription'),
   getInvoices: () => request('/billing/invoices'),
-  createOrder: (planId: string, billingCycle: string, gateway = 'razorpay') =>
+  createOrder: (planId: string, billingCycle: string, gateway = 'cashfree') =>
     request('/billing/create-order', {
       method: 'POST',
       body: JSON.stringify({ plan: planId, billingCycle, gateway }),
     }),
-  verifyRazorpay: (payload: {
-    razorpayOrderId: string;
-    razorpayPaymentId: string;
-    razorpaySignature: string;
-  }) =>
-    request('/billing/verify-razorpay', {
+  verifyCashfree: (payload: { orderId: string }) =>
+    request('/billing/verify-cashfree', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),

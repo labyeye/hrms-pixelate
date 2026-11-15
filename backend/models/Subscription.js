@@ -47,6 +47,7 @@ const subscriptionSchema = new mongoose.Schema(
     notes: { type: String },
     isTrial: { type: Boolean, default: false },
     trialEndDate: { type: Date },
+    // legacy field names (kept so existing records still match); they now hold the Cashfree order / payment id
     razorpayOrderId: { type: String, index: true },
     razorpayPaymentId: { type: String },
     offerCode: { type: String, default: null },

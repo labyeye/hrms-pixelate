@@ -156,7 +156,7 @@ async function seed() {
     status: "active",
     autoRenew: true,
     paymentStatus: "completed",
-    paymentMethod: "razorpay",
+    paymentMethod: "cashfree",
     amountPaid: amountPaid,
     notes: `Enterprise plan @ ₹${enterprisePlan.monthlyPrice}/employee × ${employeeCount} employees = ₹${amountPaid}/month`,
   });

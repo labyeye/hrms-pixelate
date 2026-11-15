@@ -1,11 +1,13 @@
 const asyncHandler = require("express-async-handler");
 const cfg = require("../config/credits");
 const credits = require("../services/creditsService");
-const razorpay = require("../services/razorpayService");
+const cashfree = require("../services/cashfreeService");
 const CreditLedger = require("../models/CreditLedger");
 const CreditTopup = require("../models/CreditTopup");
 const Employee = require("../models/Employee");
 const User = require("../models/User");
+const Company = require("../models/Company");
+const { creditBillHtml } = require("../utils/creditBillHtml");
 const Setting = require("../models/Setting");
 
 const getBalance = asyncHandler(async (req, res) => {
@@ -111,32 +113,27 @@ const createTopup = asyncHandler(async (req, res) => {
 });
 
 const verifyTopup = asyncHandler(async (req, res) => {
-  const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
-  if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+  const { orderId } = req.body;
+  if (!orderId) {
     res.status(400);
     throw new Error("Missing payment details");
   }
-  if (
-    !razorpay.verifySignature({
-      razorpayOrderId,
-      razorpayPaymentId,
-      razorpaySignature,
-    })
-  ) {
-    res.status(400);
-    throw new Error("Payment verification failed. Invalid signature.");
-  }
-  const order = await CreditTopup.findOne({ orderId: razorpayOrderId }).select(
-    "company",
-  );
+  const order = await CreditTopup.findOne({ orderId }).select("company total");
   if (!order || String(order.company) !== String(req.user.company)) {
     res.status(404);
     throw new Error("Order not found");
   }
-  await credits.completeTopup({
-    orderId: razorpayOrderId,
-    paymentId: razorpayPaymentId,
-  }); // null = webhook already did it
+  // Cashfree is asked directly, so the app cannot fake a payment.
+  const pay = await cashfree.verifyOrder(orderId);
+  if (!pay.paid) {
+    res.status(402);
+    throw new Error("Payment not completed yet");
+  }
+  if (Math.abs(pay.amount - order.total) > 0.01) {
+    res.status(400);
+    throw new Error("Payment amount mismatch");
+  }
+  await credits.completeTopup({ orderId, paymentId: pay.paymentId }); // null = webhook already did it
   res.json({ success: true, data: await credits.getBalance(req.user.company) });
 });
 
@@ -162,6 +159,21 @@ const getTopups = asyncHandler(async (req, res) => {
   });
 });
 
+// Printable GST invoice for one paid top-up (own company only).
+const getTopupBill = asyncHandler(async (req, res) => {
+  const t = await CreditTopup.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+    status: "paid",
+  }).lean();
+  if (!t) {
+    res.status(404);
+    throw new Error("Invoice not found");
+  }
+  const company = await Company.findById(t.company).lean();
+  res.json({ success: true, data: { html: creditBillHtml(t, company) } });
+});
+
 module.exports = {
   getBalance,
   getPacks,
@@ -170,4 +182,5 @@ module.exports = {
   createTopup,
   verifyTopup,
   getTopups,
+  getTopupBill,
 };
