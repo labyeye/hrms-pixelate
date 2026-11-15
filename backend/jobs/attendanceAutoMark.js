@@ -3,6 +3,7 @@ const Attendance = require("../models/Attendance");
 const Employee = require("../models/Employee");
 const Shift = require("../models/Shift");
 const Leave = require("../models/Leave");
+const DeductionRule = require("../models/DeductionRule");
 const { isHolidayDate } = require("../controllers/holidayController");
 
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
@@ -79,6 +80,12 @@ async function processDate(targetDate, istMinutesNow, onlyCompany) {
   for (const [companyId, companyEmps] of Object.entries(byCompany)) {
     const isHoliday = await isHolidayDate(companyId, targetDate);
     if (isHoliday) continue;
+
+    // Company rule for "checked in but never checked out" (default: half day, as before).
+    const rule = await DeductionRule.findOne({ company: companyId })
+      .select("missingCheckoutAction")
+      .lean();
+    const missingCheckoutAction = rule?.missingCheckoutAction ?? "half_day";
 
     // Two queries for the whole company instead of one or two per employee.
     const ids = companyEmps.map((e) => e._id);
@@ -200,15 +207,23 @@ async function processDate(targetDate, istMinutesNow, onlyCompany) {
           continue;
         }
 
+        // Optional company rule: "none" = leave the record exactly as it is.
+        if (missingCheckoutAction === "none") continue;
+
         if (
           !["on_leave", "holiday", "weekend", "absent"].includes(
             existing.status,
-          )
+          ) &&
+          existing.status !== missingCheckoutAction
         ) {
-          existing.status = "half_day";
+          existing.status = missingCheckoutAction;
+          if (missingCheckoutAction === "absent") existing.workHours = 0;
+          const note = `No check-out - auto-marked ${missingCheckoutAction.replace("_", " ")}`;
+          if (!(existing.notes || "").includes("No check-out"))
+            existing.notes = existing.notes ? `${existing.notes} · ${note}` : note;
           await existing.save();
           console.log(
-            `[AutoMark] Marked half_day (no checkout): ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`,
+            `[AutoMark] Marked ${missingCheckoutAction} (no checkout): ${emp._id} for ${targetDate.toISOString().slice(0, 10)}`,
           );
         }
         continue;

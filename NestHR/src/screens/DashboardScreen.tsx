@@ -10,6 +10,7 @@ import {
   Image,
   Modal,
   Alert,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -45,7 +46,6 @@ import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { PieChart } from 'react-native-gifted-charts';
 import AnimatedNumber from '../components/motion/AnimatedNumber';
 import FadeInUp from '../components/motion/FadeInUp';
-import AnimatedBarChart from '../components/common/AnimatedBarChart';
 import AnimatedLineChart from '../components/common/AnimatedLineChart';
 import PerformanceList from '../components/common/PerformanceList';
 import { C, S, FONT, useResponsive, tabletContainerStyle } from '../theme';
@@ -120,6 +120,8 @@ function AdminDashboard({ navigation }: any) {
   const [range, setRange] = useState<RangeKey>('this');
   const [payTrendMonths, setPayTrendMonths] = useState(6);
   const [summaries, setSummaries] = useState<Record<string, any>>({});
+  const { width: winW } = useWindowDimensions();
+  const wide = winW >= 720; // tablet / landscape / web-sized screens
 
   const loadUnread = useCallback(async () => {
     const all = await localNotificationsAPI.getAll();
@@ -305,35 +307,6 @@ function AdminDashboard({ navigation }: any) {
             </View>
           ))}
 
-          {!!stats?.dailyStats?.length && (
-            <>
-              <Text style={styles.sectionLabel}>Daily Attendance</Text>
-              <FadeInUp
-                delay={ADMIN_STATS.length * 70 + 70}
-                style={styles.card}
-              >
-                <AnimatedBarChart
-                  legend
-                  stacked
-                  series={[
-                    { key: 'present', label: 'Present', color: '#00C48C' },
-                    { key: 'late', label: 'Late', color: '#FACC15' },
-                    { key: 'absent', label: 'Absent', color: '#EF4444' },
-                  ]}
-                  data={stats.dailyStats.map((d: any) => ({
-                    label: ['S', 'M', 'T', 'W', 'T', 'F', 'S'][
-                      new Date(d.date).getDay()
-                    ],
-                    values: {
-                      present: d.present,
-                      late: d.late,
-                      absent: d.absent,
-                    },
-                  }))}
-                />
-              </FadeInUp>
-            </>
-          )}
           <View style={styles.rangeRow}>
             {RANGE_PILLS.map(r => (
               <TouchableOpacity
@@ -353,10 +326,11 @@ function AdminDashboard({ navigation }: any) {
             ))}
           </View>
 
-          <View
-            style={{ flexDirection: 'row', justifyContent: 'space-between' }}
-          >
-            <FadeInUp delay={ADMIN_STATS.length * 70} style={styles.payCard}>
+          <View style={styles.payRow}>
+            <FadeInUp
+              delay={ADMIN_STATS.length * 70}
+              style={[styles.payCard, styles.payCardFlex]}
+            >
               <Text style={styles.payLabel}>Payable till today</Text>
               {paySummary ? (
                 <AnimatedNumber
@@ -371,7 +345,7 @@ function AdminDashboard({ navigation }: any) {
 
             <FadeInUp
               delay={ADMIN_STATS.length * 70 + 70}
-              style={styles.payCard}
+              style={[styles.payCard, styles.payCardFlex]}
             >
               <Text style={styles.payLabel}>Actual till today</Text>
               {paySummary ? (
@@ -386,55 +360,85 @@ function AdminDashboard({ navigation }: any) {
             </FadeInUp>
           </View>
 
-          {!!stats?.payTrend?.length && (
-            <>
-              <View style={styles.perfHeader}>
-                <Text style={styles.sectionLabel}>Payroll Trend (₹k)</Text>
-                {!!stats.payTrendYear && (
-                  <View style={styles.trendPills}>
-                    {PAY_TREND_PILLS.map(r => (
-                      <TouchableOpacity
-                        key={r.months}
-                        onPress={() => setPayTrendMonths(r.months)}
-                        accessibilityRole="button"
-                        accessibilityState={{
-                          selected: payTrendMonths === r.months,
-                        }}
-                        style={[
-                          styles.pill,
-                          payTrendMonths === r.months && styles.pillActive,
-                        ]}
-                      >
-                        <Text
+          <View style={[styles.chartsRow, wide && styles.chartsRowWide]}>
+            {!!stats?.dailyStats?.length && (
+              <View style={styles.chartCol}>
+                <Text style={styles.sectionLabel}>Daily Attendance</Text>
+                <FadeInUp
+                  delay={ADMIN_STATS.length * 70 + 70}
+                  style={styles.card}
+                >
+                  <AnimatedLineChart
+                    legend
+                    series={[
+                      { key: 'present', label: 'Present', color: '#00C48C' },
+                      { key: 'late', label: 'Late', color: '#FACC15' },
+                      { key: 'absent', label: 'Absent', color: '#EF4444' },
+                    ]}
+                    data={stats.dailyStats.map((d: any) => ({
+                      label: ['S', 'M', 'T', 'W', 'T', 'F', 'S'][
+                        new Date(d.date).getDay()
+                      ],
+                      values: {
+                        present: d.present,
+                        late: d.late,
+                        absent: d.absent,
+                      },
+                    }))}
+                  />
+                </FadeInUp>
+              </View>
+            )}
+            {!!stats?.payTrend?.length && (
+              <View style={styles.chartCol}>
+                <View style={styles.perfHeader}>
+                  <Text style={styles.sectionLabel}>Payroll Trend (₹k)</Text>
+                  {!!stats.payTrendYear && (
+                    <View style={styles.trendPills}>
+                      {PAY_TREND_PILLS.map(r => (
+                        <TouchableOpacity
+                          key={r.months}
+                          onPress={() => setPayTrendMonths(r.months)}
+                          accessibilityRole="button"
+                          accessibilityState={{
+                            selected: payTrendMonths === r.months,
+                          }}
                           style={[
-                            styles.pillText,
-                            payTrendMonths === r.months && { color: C.white },
+                            styles.pill,
+                            payTrendMonths === r.months && styles.pillActive,
                           ]}
                         >
-                          {r.label}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
+                          <Text
+                            style={[
+                              styles.pillText,
+                              payTrendMonths === r.months && { color: C.white },
+                            ]}
+                          >
+                            {r.label}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
+                <FadeInUp
+                  delay={ADMIN_STATS.length * 70 + 140}
+                  style={styles.card}
+                >
+                  <AnimatedLineChart
+                    color={C.primary}
+                    data={(stats.payTrendYear || stats.payTrend)
+                      .slice(-payTrendMonths)
+                      .map((t: any) => ({
+                        label: MONTH_LABELS[t.month - 1],
+                        value: Math.round(t.total / 1000),
+                      }))}
+                    format={n => `${n}k`}
+                  />
+                </FadeInUp>
               </View>
-              <FadeInUp
-                delay={ADMIN_STATS.length * 70 + 140}
-                style={styles.card}
-              >
-                <AnimatedLineChart
-                  color={C.primary}
-                  data={(stats.payTrendYear || stats.payTrend)
-                    .slice(-payTrendMonths)
-                    .map((t: any) => ({
-                      label: MONTH_LABELS[t.month - 1],
-                      value: Math.round(t.total / 1000),
-                    }))}
-                  format={n => `${n}k`}
-                />
-              </FadeInUp>
-            </>
-          )}
+            )}
+          </View>
           <View style={styles.perfHeader}>
             <Text style={styles.sectionLabel}>Performance</Text>
             <TouchableOpacity
@@ -2044,6 +2048,11 @@ const styles = StyleSheet.create({
   pillActive: { backgroundColor: C.primary },
   trendPills: { flexDirection: 'row', gap: 6 },
   pillText: { fontFamily: FONT.bold, fontSize: 12, color: C.black },
+  payRow: { flexDirection: 'row', gap: 10 },
+  payCardFlex: { flex: 1, minWidth: 0 },
+  chartsRow: { flexDirection: 'column' },
+  chartsRowWide: { flexDirection: 'row', gap: 14, alignItems: 'flex-start' },
+  chartCol: { flex: 1, minWidth: 0, width: '100%' },
   payCard: {
     backgroundColor: C.white,
     borderWidth: 2,

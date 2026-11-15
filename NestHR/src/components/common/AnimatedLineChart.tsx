@@ -1,6 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useFocusReplay } from '../motion/useFocusReplay';
-import { Animated, Easing, LayoutChangeEvent, View } from 'react-native';
+import {
+  Animated,
+  Easing,
+  LayoutChangeEvent,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import Svg, {
   Circle,
   Defs,
@@ -18,13 +25,26 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 export interface LinePoint {
   label: string;
-  value: number;
+  value?: number;
+  /** Multi-series mode: value per series key. */
+  values?: Record<string, number>;
+}
+
+export interface LineSeries {
+  key: string;
+  label: string;
+  color: string;
 }
 
 interface Props {
   data: LinePoint[];
   height?: number;
   color?: string;
+  /** Several lines on one chart (e.g. present / late / absent). Omit for a single line. */
+  series?: LineSeries[];
+  legend?: boolean;
+  /** Show the value above each dot. Defaults on for one series, off for many. */
+  valueLabels?: boolean;
   format?: (n: number) => string;
 }
 
@@ -36,48 +56,11 @@ function niceMax(max: number) {
   return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * pow;
 }
 
-/** Brutalist curved line chart: line draws itself in, area fades up, dots pop in. */
-export default function AnimatedLineChart({
-  data,
-  height = 170,
-  color = C.primary,
-  format = n => String(n),
-}: Props) {
-  const [w, setW] = useState(280);
-  const reduce = useReduceMotion();
-  const replay = useFocusReplay();
-  const progress = useRef(new Animated.Value(0)).current;
-  const key = data.map(d => d.value).join(',');
+type Pt = { x: number; y: number };
 
-  useEffect(() => {
-    progress.setValue(reduce ? 1 : 0);
-    if (reduce) return;
-    Animated.timing(progress, {
-      toValue: 1,
-      duration: 1100,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [key, reduce, replay, progress]);
-
-  const onLayout = (e: LayoutChangeEvent) => {
-    const next = Math.floor(e.nativeEvent.layout.width);
-    if (next > 0 && next !== w) setW(next);
-  };
-
-  const padL = 34;
-  const padR = 14;
-  const padT = 16;
-  const padB = 24;
-  const max = niceMax(Math.max(0, ...data.map(d => d.value)));
-  const plotW = w - padL - padR;
-  const plotH = height - padT - padB;
-  const pts = data.map((d, i) => ({
-    x: padL + (data.length === 1 ? plotW / 2 : (plotW * i) / (data.length - 1)),
-    y: padT + plotH - (d.value / max) * plotH,
-  }));
-  // Smooth curve through the points. Monotone tangents keep it from dipping
-  // below zero or overshooting a peak between two months.
+// Smooth curve through the points. Monotone tangents keep it from dipping
+// below zero or overshooting a peak between two months.
+function buildCurve(pts: Pt[]) {
   const slope = pts
     .slice(1)
     .map((p, i) => (p.y - pts[i].y) / (p.x - pts[i].x || 1));
@@ -134,34 +117,106 @@ export default function AnimatedLineChart({
       prev = q;
     }
   }
-  const area = pts.length
-    ? `${line} L${pts[pts.length - 1].x},${padT + plotH} L${pts[0].x},${
-        padT + plotH
-      } Z`
-    : '';
-  len = Math.ceil(len) + 2;
-  const dashOffset = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [len, 0],
+  return { line, len: Math.ceil(len) + 2 };
+}
+
+/** Brutalist curved line chart: lines draw themselves in, area fades up, dots pop in. */
+export default function AnimatedLineChart({
+  data,
+  height = 170,
+  color = C.primary,
+  series,
+  legend = false,
+  valueLabels,
+  format = n => String(n),
+}: Props) {
+  const [w, setW] = useState(280);
+  const reduce = useReduceMotion();
+  const replay = useFocusReplay();
+  const progress = useRef(new Animated.Value(0)).current;
+
+  const lines: LineSeries[] = series?.length
+    ? series
+    : [{ key: '__v', label: '', color }];
+  const multi = lines.length > 1;
+  const showLabels = valueLabels ?? !multi;
+  const valueOf = (d: LinePoint, k: string) =>
+    k === '__v' ? d.value ?? 0 : d.values?.[k] ?? 0;
+  const key = data
+    .map(d => lines.map(l => valueOf(d, l.key)).join(':'))
+    .join(',');
+
+  useEffect(() => {
+    progress.setValue(reduce ? 1 : 0);
+    if (reduce) return;
+    Animated.timing(progress, {
+      toValue: 1,
+      duration: 1100,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [key, reduce, replay, progress]);
+
+  const onLayout = (e: LayoutChangeEvent) => {
+    const next = Math.floor(e.nativeEvent.layout.width);
+    if (next > 0 && next !== w) setW(next);
+  };
+
+  // Narrow cards get fewer x labels so they never collide.
+  const labelEvery = Math.max(
+    1,
+    Math.ceil(data.length / Math.max(2, Math.floor(w / 46))),
+  );
+  const padL = 34;
+  const padR = 14;
+  const padT = 16;
+  const padB = 24;
+  const max = niceMax(
+    Math.max(0, ...data.flatMap(d => lines.map(l => valueOf(d, l.key)))),
+  );
+  const plotW = w - padL - padR;
+  const plotH = height - padT - padB;
+  const xAt = (i: number) =>
+    padL + (data.length === 1 ? plotW / 2 : (plotW * i) / (data.length - 1));
+  const built = lines.map(l => {
+    const pts = data.map((d, i) => ({
+      x: xAt(i),
+      y: padT + plotH - (valueOf(d, l.key) / max) * plotH,
+    }));
+    const { line, len } = buildCurve(pts);
+    const area = pts.length
+      ? `${line} L${pts[pts.length - 1].x},${padT + plotH} L${pts[0].x},${
+          padT + plotH
+        } Z`
+      : '';
+    return { l, pts, line, len, area };
   });
   const dotR = progress.interpolate({
     inputRange: [0, 0.7, 1],
-    outputRange: [0, 0, 5],
+    outputRange: [0, 0, multi ? 4 : 5],
   });
   const areaOpacity = progress.interpolate({
     inputRange: [0, 0.5, 1],
     outputRange: [0, 0, 1],
   });
-  const gid = 'lg' + color.replace('#', '');
 
   return (
     <View onLayout={onLayout}>
       <Svg width={w} height={height}>
         <Defs>
-          <LinearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={color} stopOpacity={0.3} />
-            <Stop offset="1" stopColor={color} stopOpacity={0.02} />
-          </LinearGradient>
+          {built.map(({ l }) => (
+            <LinearGradient
+              key={l.key}
+              id={'lg' + l.color.replace('#', '')}
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="1"
+            >
+              <Stop offset="0" stopColor={l.color} stopOpacity={0.3} />
+              <Stop offset="1" stopColor={l.color} stopOpacity={0.02} />
+            </LinearGradient>
+          ))}
         </Defs>
         {[0, 0.5, 1].map(t => {
           const y = padT + plotH * (1 - t);
@@ -189,44 +244,107 @@ export default function AnimatedLineChart({
             </React.Fragment>
           );
         })}
-        {area ? (
-          <AnimatedPath d={area} fill={`url(#${gid})`} opacity={areaOpacity} />
-        ) : null}
-        {line ? (
-          <AnimatedPath
-            d={line}
-            stroke={color}
-            strokeWidth={3}
-            fill="none"
-            strokeLinejoin="round"
-            strokeLinecap="round"
-            strokeDasharray={[len, len]}
-            strokeDashoffset={dashOffset}
-          />
-        ) : null}
-        {pts.map((p, i) => (
-          <React.Fragment key={i}>
-            <AnimatedCircle
-              cx={p.x}
-              cy={p.y}
-              r={dotR}
-              fill={C.white}
-              stroke={C.black}
-              strokeWidth={2}
-            />
+        {built.map(({ l, line, len, area }) => {
+          const dashOffset = progress.interpolate({
+            inputRange: [0, 1],
+            outputRange: [len, 0],
+          });
+          return (
+            <React.Fragment key={l.key}>
+              {!multi && area ? (
+                <AnimatedPath
+                  d={area}
+                  fill={`url(#lg${l.color.replace('#', '')})`}
+                  opacity={areaOpacity}
+                />
+              ) : null}
+              {line ? (
+                <AnimatedPath
+                  d={line}
+                  stroke={l.color}
+                  strokeWidth={3}
+                  fill="none"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                  strokeDasharray={[len, len]}
+                  strokeDashoffset={dashOffset}
+                />
+              ) : null}
+            </React.Fragment>
+          );
+        })}
+        {built.map(({ l, pts }) =>
+          pts.map((p, i) => (
+            <React.Fragment key={`${l.key}-${i}`}>
+              <AnimatedCircle
+                cx={p.x}
+                cy={p.y}
+                r={dotR}
+                fill={multi ? l.color : C.white}
+                stroke={C.black}
+                strokeWidth={2}
+              />
+              {showLabels && (
+                <SvgText
+                  x={p.x}
+                  y={p.y - 9}
+                  fontSize={9}
+                  fontFamily={FONT.bold}
+                  fill={C.black}
+                  textAnchor="middle"
+                >
+                  {format(valueOf(data[i], l.key))}
+                </SvgText>
+              )}
+            </React.Fragment>
+          )),
+        )}
+        {data.map((d, i) =>
+          i % labelEvery === 0 || i === data.length - 1 ? (
             <SvgText
-              x={p.x}
+              key={i}
+              x={xAt(i)}
               y={height - 8}
               fontSize={10}
               fontFamily={FONT.bold}
               fill={C.black}
               textAnchor="middle"
             >
-              {data[i].label}
+              {d.label}
             </SvgText>
-          </React.Fragment>
-        ))}
+          ) : null,
+        )}
       </Svg>
+      {legend && multi && (
+        <View style={styles.legend}>
+          {lines.map(l => (
+            <View key={l.key} style={styles.legendItem}>
+              <View style={[styles.swatch, { backgroundColor: l.color }]} />
+              <Text style={styles.legendText}>{l.label}</Text>
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  legend: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 16,
+    flexWrap: 'wrap',
+    marginTop: 4,
+    paddingBottom: 12,
+  },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  swatch: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: C.black,
+  },
+  legendText: { fontSize: 11, fontFamily: FONT.bold, color: C.black },
+});

@@ -629,10 +629,10 @@ export default function LeaveScreen() {
         </View>
       ) : (
         <FlatList
-          key={isTablet ? 'tablet-grid-3' : 'mobile-list'}
+          key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
           data={filtered}
           keyExtractor={item => item._id}
-          numColumns={isTablet ? 3 : 1}
+          numColumns={isTablet ? 2 : 1}
           columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
           contentContainerStyle={[
             { padding: 16, gap: 10, paddingBottom: 32 },
@@ -745,7 +745,7 @@ export default function LeaveScreen() {
                         <Icon size={14} color={cfg.color} />
                       </View>
                     </View>
-                    <View style={{ flex: 1, marginLeft: 12 }}>
+                    <View style={{ flex: 1, marginLeft: 12, minWidth: 90 }}>
                       <Text style={styles.codeChip}>
                         {emp?.employeeId || '—'}
                       </Text>
@@ -762,7 +762,9 @@ export default function LeaveScreen() {
                         </Text>
                       )}
                     </View>
-                    <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                    <View
+                      style={{ alignItems: 'flex-end', gap: 4, flexShrink: 1 }}
+                    >
                       <View style={styles.statusLine}>
                         <View
                           style={[
@@ -1494,7 +1496,13 @@ const styles = StyleSheet.create({
     color: C.primary,
     marginTop: 2,
   },
-  statusLine: { flexDirection: 'row', gap: 4, alignItems: 'center' },
+  statusLine: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    gap: 4,
+    alignItems: 'center',
+  },
   typeDays: { flexDirection: 'row', gap: 6 },
   typeText: { fontSize: 11, fontWeight: '400', color: C.textMuted },
   safe: { flex: 1, backgroundColor: C.bg },

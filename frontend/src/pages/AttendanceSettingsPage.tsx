@@ -28,6 +28,7 @@ interface AttendanceSettings {
   halfDayThresholdMinutes: number;
   earlyCheckoutThresholdMinutes: number;
   earlyCheckoutDeductionEnabled: boolean;
+  missingCheckoutAction: "none" | "late" | "half_day" | "absent";
 }
 
 const DEFAULT_SETTINGS: AttendanceSettings = {
@@ -41,6 +42,7 @@ const DEFAULT_SETTINGS: AttendanceSettings = {
   halfDayThresholdMinutes: 120,
   earlyCheckoutThresholdMinutes: 15,
   earlyCheckoutDeductionEnabled: false,
+  missingCheckoutAction: "half_day",
 };
 
 const LEAVE_TYPES = [
@@ -597,6 +599,52 @@ export default function AttendanceSettingsPage() {
                       />
                     </div>
                   )}
+                </div>
+
+                <div className="border-t pt-5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <LogOut className="w-4 h-4 text-[#EF4444]" />
+                    <p className="text-xs font-bold uppercase">
+                      Missed Check-out
+                    </p>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-3">
+                    If staff checks in but never checks out, mark that day as:
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {(
+                      [
+                        ["none", "Leave as is"],
+                        ["late", "Late"],
+                        ["half_day", "Half day"],
+                        ["absent", "Absent"],
+                      ] as const
+                    ).map(([val, text]) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => set({ missingCheckoutAction: val })}
+                        className={`py-2 text-sm font-bold border-2 border-black transition-colors ${
+                          settings.missingCheckoutAction === val
+                            ? "bg-[#024BAB] text-white"
+                            : "bg-white text-black hover:bg-[#024BAB]/5"
+                        }`}
+                      >
+                        {text}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-gray-500 mt-2">
+                    {settings.missingCheckoutAction === "none"
+                      ? "Nothing changes: the day stays Present (or Late) even without a check-out."
+                      : settings.missingCheckoutAction === "absent"
+                        ? "The day counts as Absent for payroll, even though there is a check-in."
+                        : settings.missingCheckoutAction === "half_day"
+                          ? "The day counts as a Half day (50% pay)."
+                          : "The day is marked Late."}{" "}
+                    Applied automatically about an hour after shift end.
+                    Employees with overtime enabled are skipped.
+                  </p>
                 </div>
               </div>
             </div>

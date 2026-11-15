@@ -41,7 +41,15 @@ const upsertAttendanceSettings = asyncHandler(async (req, res) => {
     halfDayThresholdMinutes,
     earlyCheckoutThresholdMinutes,
     earlyCheckoutDeductionEnabled,
+    missingCheckoutAction,
   } = req.body;
+  if (
+    missingCheckoutAction !== undefined &&
+    !["none", "late", "half_day", "absent"].includes(missingCheckoutAction)
+  ) {
+    res.status(400);
+    throw new Error("Invalid missing check-out action");
+  }
 
   const rule = await DeductionRule.findOneAndUpdate(
     { company: req.user.company },
@@ -59,6 +67,8 @@ const upsertAttendanceSettings = asyncHandler(async (req, res) => {
         earlyCheckoutThresholdMinutes:
           Number(earlyCheckoutThresholdMinutes) ?? 15,
         earlyCheckoutDeductionEnabled: Boolean(earlyCheckoutDeductionEnabled),
+        // only touched when the client sends it, so older clients don't reset it
+        ...(missingCheckoutAction !== undefined ? { missingCheckoutAction } : {}),
       },
     },
     { upsert: true, new: true },

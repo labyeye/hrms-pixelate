@@ -28,6 +28,14 @@ const deductionRuleSchema = new mongoose.Schema(
     earlyCheckoutThresholdMinutes: { type: Number, default: 15 },
     earlyCheckoutDeductionEnabled: { type: Boolean, default: false },
 
+    // Staff checked in but never checked out: what the daily auto-mark job sets once the day is over.
+    // "none" leaves the record as it is. Default keeps the long-standing behaviour (half day).
+    missingCheckoutAction: {
+      type: String,
+      enum: ["none", "late", "half_day", "absent"],
+      default: "half_day",
+    },
+
     lateAllowance: {
       mode: { type: String, enum: ["bulk", "custom"], default: "bulk" },
       bulkCount: { type: Number, default: 0 },
