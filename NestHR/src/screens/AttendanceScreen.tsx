@@ -76,7 +76,7 @@ import DashStatCard, { dashStatRow } from '../components/common/DashStatCard';
 import { TimePickerField } from '../components/common/DatePickerField';
 
 // Icon-only attendance table: fixed widths for the narrow columns, the employee column takes the rest.
-const T_ATT_PHONE = { status: 34, time: 62, hrs: 0, ot: 0, method: 0, loc: 0, act: 54 };
+const T_ATT_PHONE = { status: 34, time: 56, hrs: 0, ot: 0, method: 0, loc: 0, act: 56 };
 const T_ATT_TABLET = { status: 44, time: 82, hrs: 54, ot: 46, method: 82, loc: 40, act: 32 };
 
 function openLocationInMaps(loc: { lat: number; lng: number }) {
@@ -989,7 +989,7 @@ export default function AttendanceScreen({ navigation }: any) {
               );
               return (
                 <View style={styles.tHead}>
-                  <View style={{ flex: 2.4, minWidth: 140 }}>
+                  <View style={{ flex: 2.4, minWidth: 0 }}>
                     <Users size={15} color={C.textMuted} />
                   </View>
                   {isTablet && hc(W.status, <Activity size={15} color={C.textMuted} />)}
@@ -2099,7 +2099,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
-  tEmpCell: { flex: 2.4, minWidth: 140, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  tEmpCell: { flex: 2.4, minWidth: 0,flexDirection: 'row', alignItems: 'center', gap: 6 },
   tAvatar: { width: 32, height: 32, borderRadius: 16, borderWidth: 2 },
   tName: { fontSize: 13, color: C.black, fontWeight: '400' },
   tSubRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },

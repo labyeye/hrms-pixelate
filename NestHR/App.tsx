@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StatusBar, Text, TextInput } from 'react-native';
+import { StatusBar, Text, TextInput, UIManager, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from './src/contexts/AuthContext';
@@ -20,6 +20,11 @@ import { FONT } from './src/theme';
   { fontFamily: FONT.regular },
   (TextInput as any).defaultProps.style,
 ];
+
+// Android needs this once or every LayoutAnimation (row expand arrows) snaps instantly.
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function App() {
   const [splashDone, setSplashDone] = useState(false);

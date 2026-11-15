@@ -490,6 +490,7 @@ function AdminDashboard({ navigation }: any) {
               {paySummary ? (
                 <AnimatedNumber
                   style={[styles.payValue, { color: C.primary }]}
+                  fit
                   value={paySummary.payable}
                   prefix="₹"
                 />
@@ -506,6 +507,7 @@ function AdminDashboard({ navigation }: any) {
               {paySummary ? (
                 <AnimatedNumber
                   style={[styles.payValue, { color: C.secondary }]}
+                  fit
                   value={paySummary.actual}
                   prefix="₹"
                 />
@@ -2190,7 +2192,7 @@ const styles = StyleSheet.create({
   },
   payValue: {
     fontFamily: FONT.bold,
-    fontSize: 30,
+    fontSize: 22,
     fontWeight: '400',
     color: C.black,
     marginVertical: 4,

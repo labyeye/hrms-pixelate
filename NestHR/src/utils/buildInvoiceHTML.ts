@@ -130,12 +130,12 @@ export function buildInvoiceHTML(inv: any): string {
   const clientPhone = company.phone || '';
 
   const taxRows = isInterState
-    ? `<tr><td>998314</td><td style="text-align:right">${fmt(
+    ? `<tr><td>998413</td><td style="text-align:right">${fmt(
         base,
       )}</td><td style="text-align:right">18%</td><td style="text-align:right">${fmt(
         igst,
       )}</td><td style="text-align:right">${fmt(igst)}</td></tr>`
-    : `<tr><td>998314</td><td style="text-align:right">${fmt(
+    : `<tr><td>998413</td><td style="text-align:right">${fmt(
         base,
       )}</td><td style="text-align:right">9%</td><td style="text-align:right">${fmt(
         cgst,
@@ -293,7 +293,7 @@ td { padding: 7px 4px; font-size: 8pt; color: #111; border-bottom: 0.5pt solid #
         <tr>
           <td class="col-sno">1</td>
           <td>${description}</td>
-          <td class="col-hsn">998314</td>
+          <td class="col-hsn">998413</td>
           <td class="col-qty">1</td>
           <td class="col-unit">Nos</td>
           <td class="col-rate">${fmt(base)}</td>
