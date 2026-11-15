@@ -36,6 +36,7 @@ import AttendanceScreen from '../screens/AttendanceScreen';
 import LeaveScreen from '../screens/LeaveScreen';
 import MoreScreen from '../screens/MoreScreen';
 import PayrollScreen from '../screens/PayrollScreen';
+import PromotionsScreen from '../screens/PromotionsScreen';
 import PerformanceScreen from '../screens/PerformanceScreen';
 import PerformanceReportScreen from '../screens/PerformanceReportScreen';
 import DepartmentsScreen from '../screens/DepartmentsScreen';
@@ -78,6 +79,7 @@ function MoreNavigator() {
       <MoreStack.Screen name="MoreHome" component={MoreScreen} />
       <MoreStack.Screen name="Payroll" component={PayrollScreen} />
       <MoreStack.Screen name="Performance" component={PerformanceScreen} />
+      <MoreStack.Screen name="Promotions" component={PromotionsScreen} />
       <MoreStack.Screen
         name="PerformanceReport"
         component={PerformanceReportScreen}
@@ -100,7 +102,10 @@ function MoreNavigator() {
       <MoreStack.Screen name="SalaryHeads" component={SalaryHeadsScreen} />
       <MoreStack.Screen name="Designations" component={DesignationsScreen} />
       <MoreStack.Screen name="OfferLetters" component={OfferLettersScreen} />
-      <MoreStack.Screen name="IdCardDesigner" component={IdCardDesignerScreen} />
+      <MoreStack.Screen
+        name="IdCardDesigner"
+        component={IdCardDesignerScreen}
+      />
       <MoreStack.Screen name="Profile" component={ProfileScreen} />
       <MoreStack.Screen
         name="BiometricDevices"

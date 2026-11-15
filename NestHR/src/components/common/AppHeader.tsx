@@ -64,18 +64,6 @@ export default function AppHeader({
               <Bell size={24} color={C.black} />
               {unread > 0 && <View style={s.dot} />}
             </TouchableOpacity>
-            {badge && (
-              <TouchableOpacity
-                onPress={() =>
-                  navigation.navigate('More', { screen: 'Billing' })
-                }
-                activeOpacity={0.8}
-                style={s.badge}
-              >
-                <Crown size={14} color={C.primary} />
-                <Text style={s.badgeText}>{badge}</Text>
-              </TouchableOpacity>
-            )}
             {credits?.metered && (
               <TouchableOpacity
                 onPress={() =>
@@ -92,6 +80,22 @@ export default function AppHeader({
               </TouchableOpacity>
             )}
             <TouchableOpacity onPress={onAvatar} activeOpacity={0.8}>
+              {badge && (
+                <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate('More', { screen: 'Billing' })
+                  }
+                  activeOpacity={0.8}
+                  hitSlop={6}
+                  accessibilityLabel={`${badge} plan`}
+                  style={[s.crown, badge === 'Trial' && s.crownTrial]}
+                >
+                  <Crown
+                    size={10}
+                    color={badge === 'Trial' ? C.black : '#B45309'}
+                  />
+                </TouchableOpacity>
+              )}
               {avatar ? (
                 <Image source={{ uri: avatar }} style={s.avatar} />
               ) : (
@@ -151,17 +155,21 @@ const s = StyleSheet.create({
     borderWidth: 2,
     borderColor: C.black,
   },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    backgroundColor: '#FFF4D6',
-    borderWidth: 2,
+  crown: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    zIndex: 2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#FDE68A',
+    borderWidth: 1.5,
     borderColor: C.black,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  badgeText: { color: C.black, fontSize: 11, fontWeight: '400' },
+  crownTrial: { backgroundColor: '#E5E7EB' },
   pillLow: { backgroundColor: C.secondary },
   pillZero: { backgroundColor: C.danger },
   pillText: { color: C.white, fontSize: 12, fontWeight: '400' },

@@ -44,6 +44,7 @@ import {
   Receipt,
   LayoutGrid,
   Crown,
+  Award,
 } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { C, useResponsive } from '../theme';
@@ -54,6 +55,7 @@ import SlideInCard from '../components/motion/SlideInCard';
 const MENU_ITEMS = [
   { key: 'Payroll', label: 'Payroll', icon: IndianRupee },
   { key: 'Performance', label: 'Performance', icon: TrendingUp },
+  { key: 'Promotions', label: 'Promotions', icon: Award },
   { key: 'Departments', label: 'Departments', icon: Building2 },
   { key: 'Holidays', label: 'Holidays', icon: Sun },
   { key: 'Loans', label: 'Loans', icon: CreditCard },
@@ -103,7 +105,14 @@ const GROUPS: { title: string; color: string; keys: string[] }[] = [
   {
     title: 'Payroll & Growth',
     color: '#22c55e',
-    keys: ['Payroll', 'Loans', 'Expenses', 'Performance', 'Reports'],
+    keys: [
+      'Payroll',
+      'Loans',
+      'Expenses',
+      'Performance',
+      'Promotions',
+      'Reports',
+    ],
   },
   {
     title: 'Attendance',
@@ -174,6 +183,8 @@ export default function MoreScreen({ navigation }: any) {
     label:
       isEmployee && item.key === 'Payroll'
         ? 'My Payslips'
+        : isEmployee && item.key === 'Promotions'
+        ? 'My Growth'
         : isEmployee && item.key === 'Loans'
         ? 'My Loans'
         : item.label,

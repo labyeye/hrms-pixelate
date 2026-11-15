@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { titleCase } from '../utils/text';
 import {
   View,
   Text,
@@ -76,6 +77,7 @@ import {
   Ellipsis,
   Square,
   SlidersHorizontal,
+  Gift,
 } from 'lucide-react-native';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import {
@@ -154,7 +156,15 @@ const STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
 };
 const EMP_TYPES = ['full_time', 'part_time', 'contract', 'intern'];
 // Table column weights (flex). Tablet shows every column; phone folds them into four.
-const T_COLS_TABLET = { emp: 2.4, desig: 1.4, phone: 1.4, salary: 1.2, type: 1, status: 1, act: 0.9 };
+const T_COLS_TABLET = {
+  emp: 2.4,
+  desig: 1.4,
+  phone: 1.4,
+  salary: 1.2,
+  type: 1,
+  status: 1,
+  act: 0.9,
+};
 const T_PHONE_W = { contact: 96, status: 66, act: 54 };
 // Soft tint per employment type (background + text/border) — colours only
 const TYPE_TINT: Record<string, { bg: string; fg: string }> = {
@@ -231,6 +241,48 @@ const EMPTY_FORM = {
 };
 
 const TABS = ['Basic Info', 'Attendance', 'Salary', 'Other Info'];
+
+type TxType = 'allowance' | 'bonus' | 'penalty' | 'overtime';
+const TX_CONFIG: Record<
+  TxType,
+  {
+    title: string;
+    color: string;
+    remarkLabel: string;
+    placeholder: string;
+    button: string;
+  }
+> = {
+  allowance: {
+    title: 'Allowance',
+    color: C.primary,
+    remarkLabel: 'Remark (TA, DA, Incentive, etc.) *',
+    placeholder: 'e.g. Travel allowance, Phone allowance',
+    button: 'Add Allowance',
+  },
+  bonus: {
+    title: 'Bonus',
+    color: '#A855F7',
+    remarkLabel: 'Remark (Diwali, Performance, etc.) *',
+    placeholder: 'e.g. Diwali bonus, Performance bonus',
+    button: 'Add Bonus',
+  },
+  penalty: {
+    title: 'Penalty',
+    color: C.danger,
+    remarkLabel: 'Reason *',
+    placeholder: 'e.g. Late coming, misconduct',
+    button: 'Add Penalty',
+  },
+  overtime: {
+    title: 'Overtime',
+    color: '#F59E0B',
+    remarkLabel: 'Remark *',
+    placeholder: 'e.g. Project deadline',
+    button: 'Add Overtime',
+  },
+};
+const isTxType = (k: string | null): k is TxType => !!k && k in TX_CONFIG;
 
 export default function EmployeesScreen() {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -670,31 +722,53 @@ export default function EmployeesScreen() {
     if (!detailEmp) return;
     setActionLoading(true);
     try {
-      if (
-        actionModal === 'allowance' ||
-        actionModal === 'penalty' ||
-        actionModal === 'overtime'
-      ) {
+      if (isTxType(actionModal)) {
+        const cfg = TX_CONFIG[actionModal];
+        const hours = parseFloat(actionForm.hours || '0');
+        const amount = parseFloat(actionForm.amount || '0');
+        if (actionModal === 'overtime' ? !(hours >= 0.5) : !(amount >= 1)) {
+          Alert.alert(
+            'Required field missing',
+            actionModal === 'overtime'
+              ? 'Please enter overtime hours (minimum 0.5).'
+              : 'Please enter an amount.',
+          );
+          setActionLoading(false);
+          return;
+        }
+        if (!(actionForm.remark || '').trim()) {
+          Alert.alert(
+            'Required field missing',
+            `Please fill in: ${cfg.remarkLabel.replace(' *', '')}`,
+          );
+          setActionLoading(false);
+          return;
+        }
         const payload: any = {
           employee: detailEmp._id,
           type: actionModal,
           date: actionForm.date,
-          remark: actionForm.remark || '',
+          remark: actionForm.remark.trim(),
         };
         if (actionModal === 'overtime') {
-          payload.hours = parseFloat(actionForm.hours || '0');
+          payload.hours = hours;
           payload.amount = 0;
         } else {
-          payload.amount = parseFloat(actionForm.amount || '0');
+          payload.amount = amount;
         }
-        await transactionAPI.create(payload);
-        const label =
-          actionModal === 'allowance'
-            ? 'Allowance/Bonus'
-            : actionModal === 'overtime'
-            ? 'Overtime'
-            : 'Penalty';
-        Alert.alert('Success', `${label} added successfully`);
+        const res: any = await transactionAPI.create(payload);
+        const detail =
+          actionModal === 'overtime' ? `${hours} hrs` : `₹${amount}`;
+        Alert.alert(
+          `${cfg.title} added`,
+          `${cfg.title} of ${detail} saved successfully.${
+            res?.payrollUpdated
+              ? " This month's payroll was updated automatically."
+              : res?.payrollLocked
+              ? " This month's payroll is already paid, so it will not change."
+              : ''
+          }`,
+        );
       } else if (actionModal === 'loan' || actionModal === 'advance') {
         await loanAPI.create({
           employee: detailEmp._id,
@@ -754,12 +828,23 @@ export default function EmployeesScreen() {
     { key: 'advance', label: 'Add Advance', icon: Wallet, color: '#0891B2' },
     {
       key: 'allowance',
-      label: 'Allowance / Bonus',
+      label: 'Allowance',
       icon: TrendingUp,
-      color: C.success,
+      color: TX_CONFIG.allowance.color,
     },
-    { key: 'penalty', label: 'Penalty', icon: AlertTriangle, color: C.danger },
-    { key: 'overtime', label: 'Overtime', icon: Timer, color: '#EA580C' },
+    { key: 'bonus', label: 'Bonus', icon: Gift, color: TX_CONFIG.bonus.color },
+    {
+      key: 'penalty',
+      label: 'Penalty',
+      icon: AlertTriangle,
+      color: TX_CONFIG.penalty.color,
+    },
+    {
+      key: 'overtime',
+      label: 'Overtime',
+      icon: Timer,
+      color: TX_CONFIG.overtime.color,
+    },
     { key: 'salary', label: 'Pay Salary', icon: IndianRupee, color: '#059669' },
     {
       key: 'leaves',
@@ -1332,75 +1417,77 @@ export default function EmployeesScreen() {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <>
-            <View style={dashStatRow}>
-              <DashStatCard
-                index={0}
-                label="Total"
-                value={employees.length}
-                icon={Users}
-                color={C.primary}
-              />
-              <DashStatCard
-                index={1}
-                label="Active"
-                value={cnt('active')}
-                icon={UserCheck}
-                color={C.success}
-              />
-              <DashStatCard
-                index={2}
-                label="On Leave"
-                value={cnt('on_leave')}
-                icon={CalendarDays}
-                color={C.warning}
-              />
-              <DashStatCard
-                index={3}
-                label="New Hires"
-                value={newHires}
-                icon={UserPlus}
-                color="#A855F7"
-              />
-            </View>
-            {(() => {
-              const H = (
-                size: number | { width: number },
-                label: string,
-                right?: boolean,
-              ) => (
-                <Text
-                  key={label || 'act'}
-                  numberOfLines={1}
-                  style={[
-                    styles.tHeadText,
-                    typeof size === 'number' ? { flex: size } : size,
-                    right && { textAlign: 'right' },
-                  ]}
-                >
-                  {label}
-                </Text>
-              );
-              return (
-                <View style={styles.tHead}>
-                  {selectMode && <View style={{ width: 20 }} />}
-                  {H(isTablet ? T_COLS_TABLET.emp : 1, 'Employee')}
-                  {isTablet ? (
-                    <>
-                      {H(T_COLS_TABLET.desig, 'Designation')}
-                      {H(T_COLS_TABLET.phone, 'Phone')}
-                      {H(T_COLS_TABLET.salary, 'Salary')}
-                      {H(T_COLS_TABLET.type, 'Type')}
-                      {H(T_COLS_TABLET.status, 'Status')}
-                    </>
-                  ) : (
-                    <>
-                      {H({ width: T_PHONE_W.status }, 'Status')}
-                    </>
-                  )}
-                  {H(isTablet ? T_COLS_TABLET.act : { width: T_PHONE_W.act }, '', true)}
-                </View>
-              );
-            })()}
+              <View style={dashStatRow}>
+                <DashStatCard
+                  index={0}
+                  label="Total"
+                  value={employees.length}
+                  icon={Users}
+                  color={C.primary}
+                />
+                <DashStatCard
+                  index={1}
+                  label="Active"
+                  value={cnt('active')}
+                  icon={UserCheck}
+                  color={C.success}
+                />
+                <DashStatCard
+                  index={2}
+                  label="On Leave"
+                  value={cnt('on_leave')}
+                  icon={CalendarDays}
+                  color={C.warning}
+                />
+                <DashStatCard
+                  index={3}
+                  label="New Hires"
+                  value={newHires}
+                  icon={UserPlus}
+                  color="#A855F7"
+                />
+              </View>
+              {(() => {
+                const H = (
+                  size: number | { width: number },
+                  label: string,
+                  right?: boolean,
+                ) => (
+                  <Text
+                    key={label || 'act'}
+                    numberOfLines={1}
+                    style={[
+                      styles.tHeadText,
+                      typeof size === 'number' ? { flex: size } : size,
+                      right && { textAlign: 'right' },
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                );
+                return (
+                  <View style={styles.tHead}>
+                    {selectMode && <View style={{ width: 20 }} />}
+                    {H(isTablet ? T_COLS_TABLET.emp : 1, 'Employee')}
+                    {isTablet ? (
+                      <>
+                        {H(T_COLS_TABLET.desig, 'Designation')}
+                        {H(T_COLS_TABLET.phone, 'Phone')}
+                        {H(T_COLS_TABLET.salary, 'Salary')}
+                        {H(T_COLS_TABLET.type, 'Type')}
+                        {H(T_COLS_TABLET.status, 'Status')}
+                      </>
+                    ) : (
+                      <>{H({ width: T_PHONE_W.status }, 'Status')}</>
+                    )}
+                    {H(
+                      isTablet ? T_COLS_TABLET.act : { width: T_PHONE_W.act },
+                      '',
+                      true,
+                    )}
+                  </View>
+                );
+              })()}
             </>
           }
           ListEmptyComponent={
@@ -1415,8 +1502,7 @@ export default function EmployeesScreen() {
           renderItem={({ item }) => {
             const statusColor = STATUS_COLOR[item.status] || '#9CA3AF';
             const T = TYPE_TINT[item.employmentType] || TYPE_TINT.full_time;
-            const salary =
-              (item as any).monthlySalary || item.salary || 0;
+            const salary = (item as any).monthlySalary || item.salary || 0;
             const phone = (item as any).phone;
             const desig = item.designation || getDeptName(item.department);
 
@@ -1436,7 +1522,7 @@ export default function EmployeesScreen() {
                   style={[styles.statusText, { color: statusColor }]}
                   numberOfLines={1}
                 >
-                  {item.status.replace('_', ' ').toUpperCase()}
+                  {titleCase(item.status)}
                 </Text>
               </View>
             );
@@ -1457,7 +1543,7 @@ export default function EmployeesScreen() {
                   style={[styles.typePillText, { color: T.fg }]}
                   numberOfLines={1}
                 >
-                  {item.employmentType.replace('_', ' ').toUpperCase()}
+                  {titleCase(item.employmentType)}
                 </Text>
               </View>
             );
@@ -1506,7 +1592,10 @@ export default function EmployeesScreen() {
                   <Text style={styles.tText}>{item.employeeId}</Text>,
                 )}
                 {!!desig &&
-                  detail('Designation', <Text style={styles.tText}>{desig}</Text>)}
+                  detail(
+                    'Designation',
+                    <Text style={styles.tText}>{desig}</Text>,
+                  )}
                 {!!phone && detail('Phone', phoneEl)}
                 {!!salary && detail('Salary', salaryEl)}
                 {detail('Type', typePill)}
@@ -1525,147 +1614,165 @@ export default function EmployeesScreen() {
 
             return (
               <View>
-              <TouchableOpacity
-                style={styles.tRow}
-                onPress={() =>
-                  selectMode ? toggleSel(item._id) : setDetailEmp(item)
-                }
-                activeOpacity={0.85}
-              >
-                {selectMode &&
-                  (selected.includes(item._id) ? (
-                    <CheckSquare size={20} color={C.primary} />
-                  ) : (
-                    <Square size={20} color={C.black} />
-                  ))}
-
-                {/* Employee */}
-                <View
-                  style={[
-                    styles.tEmpCell,
-                    isTablet ? { flex: T_COLS_TABLET.emp } : { flex: 1 },
-                  ]}
+                <TouchableOpacity
+                  style={styles.tRow}
+                  onPress={() =>
+                    selectMode ? toggleSel(item._id) : setDetailEmp(item)
+                  }
+                  activeOpacity={0.85}
                 >
-                  {(item as any).avatar ? (
-                    <Image
-                      source={{ uri: (item as any).avatar }}
-                      style={[
-                        styles.avatarImg,
-                        styles.tAvatar,
-                        !isTablet && styles.tAvatarSm,
-                        { borderColor: statusColor },
-                      ]}
-                    />
-                  ) : (
-                    <View
-                      style={[
-                        styles.avatar,
-                        styles.tAvatar,
-                        !isTablet && styles.tAvatarSm,
-                        {
-                          backgroundColor: C.primary,
-                          borderColor: statusColor,
-                        },
-                      ]}
-                    >
-                      <Text style={[styles.avatarText, { fontSize: 12 }]}>
-                        {item.firstName[0]}
-                        {item.lastName[0]}
-                      </Text>
-                    </View>
-                  )}
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text
-                      style={[styles.empName, { fontSize: isTablet ? 14 : 13 }]}
-                      numberOfLines={2}
-                    >
-                      {item.firstName} {item.lastName}
-                    </Text>
-                    {isTablet && (
-                      <Text
+                  {selectMode &&
+                    (selected.includes(item._id) ? (
+                      <CheckSquare size={20} color={C.primary} />
+                    ) : (
+                      <Square size={20} color={C.black} />
+                    ))}
+
+                  {/* Employee */}
+                  <View
+                    style={[
+                      styles.tEmpCell,
+                      isTablet ? { flex: T_COLS_TABLET.emp } : { flex: 1 },
+                    ]}
+                  >
+                    {(item as any).avatar ? (
+                      <Image
+                        source={{ uri: (item as any).avatar }}
                         style={[
-                          styles.empIdChip,
-                          { marginTop: 2, marginBottom: 0 },
+                          styles.avatarImg,
+                          styles.tAvatar,
+                          !isTablet && styles.tAvatarSm,
+                          { borderColor: statusColor },
+                        ]}
+                      />
+                    ) : (
+                      <View
+                        style={[
+                          styles.avatar,
+                          styles.tAvatar,
+                          !isTablet && styles.tAvatarSm,
+                          {
+                            backgroundColor: C.primary,
+                            borderColor: statusColor,
+                          },
                         ]}
                       >
-                        {item.employeeId}
-                      </Text>
-                    )}
-                    {(item as any).loanBalance > 0 && (
-                      <View style={styles.loanBadge}>
-                        <Text style={styles.loanBadgeText}>
-                          Loan: ₹{((item as any).loanBalance / 1000).toFixed(1)}K
+                        <Text style={[styles.avatarText, { fontSize: 12 }]}>
+                          {item.firstName[0]}
+                          {item.lastName[0]}
                         </Text>
                       </View>
                     )}
-                  </View>
-                </View>
-
-                {isTablet ? (
-                  <>
-                    <View style={{ flex: T_COLS_TABLET.desig }}>
-                      <Text style={styles.tText} numberOfLines={2}>
-                        {desig}
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        style={[
+                          styles.empName,
+                          { fontSize: isTablet ? 14 : 13 },
+                        ]}
+                        numberOfLines={2}
+                      >
+                        {item.firstName} {item.lastName}
                       </Text>
+                      {!!item.employeeId && (
+                        <Text style={styles.empCode} numberOfLines={1}>
+                          {item.employeeId}
+                        </Text>
+                      )}
+                      {(item as any).loanBalance > 0 && (
+                        <View style={styles.loanBadge}>
+                          <Text style={styles.loanBadgeText}>
+                            Loan: ₹
+                            {((item as any).loanBalance / 1000).toFixed(1)}K
+                          </Text>
+                        </View>
+                      )}
                     </View>
-                    <View style={{ flex: T_COLS_TABLET.phone }}>{phoneEl}</View>
-                    <View style={{ flex: T_COLS_TABLET.salary }}>{salaryEl}</View>
-                    <View style={{ flex: T_COLS_TABLET.type, alignItems: 'flex-start' }}>
-                      {typePill}
-                    </View>
-                    <View style={{ flex: T_COLS_TABLET.status, alignItems: 'flex-start' }}>
-                      {statusBadge}
-                    </View>
-                  </>
-                ) : (
-                  <>
+                  </View>
+
+                  {isTablet ? (
+                    <>
+                      <View style={{ flex: T_COLS_TABLET.desig }}>
+                        <Text style={styles.tText} numberOfLines={2}>
+                          {desig}
+                        </Text>
+                      </View>
+                      <View style={{ flex: T_COLS_TABLET.phone }}>
+                        {phoneEl}
+                      </View>
+                      <View style={{ flex: T_COLS_TABLET.salary }}>
+                        {salaryEl}
+                      </View>
+                      <View
+                        style={{
+                          flex: T_COLS_TABLET.type,
+                          alignItems: 'flex-start',
+                        }}
+                      >
+                        {typePill}
+                      </View>
+                      <View
+                        style={{
+                          flex: T_COLS_TABLET.status,
+                          alignItems: 'flex-start',
+                        }}
+                      >
+                        {statusBadge}
+                      </View>
+                    </>
+                  ) : (
+                    <>
+                      <View
+                        style={{
+                          width: T_PHONE_W.status,
+                          gap: 6,
+                          alignItems: 'flex-start',
+                        }}
+                      >
+                        {statusBadge}
+                      </View>
+                    </>
+                  )}
+
+                  {isTablet ? (
                     <View
                       style={{
-                        width: T_PHONE_W.status,
-                        gap: 6,
-                        alignItems: 'flex-start',
+                        flex: T_COLS_TABLET.act,
+                        alignItems: 'flex-end',
                       }}
                     >
-                      {statusBadge}
+                      {actions}
                     </View>
-                  </>
-                )}
-
-                {isTablet ? (
-                  <View
-                    style={{ flex: T_COLS_TABLET.act, alignItems: 'flex-end' }}
-                  >
-                    {actions}
-                  </View>
-                ) : (
-                  <View
-                    style={{
-                      width: T_PHONE_W.act,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'flex-end',
-                      gap: 8,
-                    }}
-                  >
-                    {actions}
-                    <TouchableOpacity
-                      onPress={e => {
-                        e.stopPropagation?.();
-                        toggleExpand(item._id);
+                  ) : (
+                    <View
+                      style={{
+                        width: T_PHONE_W.act,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'flex-end',
+                        gap: 8,
                       }}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      accessibilityLabel={isOpen ? 'Hide details' : 'Show details'}
                     >
-                      {isOpen ? (
-                        <ChevronUp size={18} color={C.primary} />
-                      ) : (
-                        <ChevronDown size={18} color={C.primary} />
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </TouchableOpacity>
-              {panel}
+                      {actions}
+                      <TouchableOpacity
+                        onPress={e => {
+                          e.stopPropagation?.();
+                          toggleExpand(item._id);
+                        }}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        accessibilityLabel={
+                          isOpen ? 'Hide details' : 'Show details'
+                        }
+                      >
+                        {isOpen ? (
+                          <ChevronUp size={18} color={C.primary} />
+                        ) : (
+                          <ChevronDown size={18} color={C.primary} />
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </TouchableOpacity>
+                {panel}
               </View>
             );
           }}
@@ -1971,9 +2078,7 @@ export default function EmployeesScreen() {
                         [
                           Timer,
                           'Employment Type',
-                          detailEmp.employmentType
-                            ?.replace('_', ' ')
-                            .toUpperCase(),
+                          titleCase(detailEmp.employmentType),
                         ],
                         [
                           CalendarDays,
@@ -2189,10 +2294,14 @@ export default function EmployeesScreen() {
                         alignItems: 'center',
                         gap: 10,
                         padding: 12,
-                        backgroundColor: C.primary + '12',
+                        backgroundColor:
+                          (ACTION_ITEMS.find(a => a.key === actionModal)
+                            ?.color || C.primary) + '12',
                         borderWidth: 2,
                         borderRadius: 8,
-                        borderColor: C.primary,
+                        borderColor:
+                          ACTION_ITEMS.find(a => a.key === actionModal)
+                            ?.color || C.primary,
                       }}
                     >
                       <View
@@ -2200,7 +2309,9 @@ export default function EmployeesScreen() {
                           width: 36,
                           height: 36,
                           borderRadius: 18,
-                          backgroundColor: C.primary,
+                          backgroundColor:
+                            ACTION_ITEMS.find(a => a.key === actionModal)
+                              ?.color || C.primary,
                           alignItems: 'center',
                           justifyContent: 'center',
                         }}
@@ -2233,9 +2344,7 @@ export default function EmployeesScreen() {
                     </View>
 
                     {/* ALLOWANCE / PENALTY / OVERTIME */}
-                    {(actionModal === 'allowance' ||
-                      actionModal === 'penalty' ||
-                      actionModal === 'overtime') && (
+                    {isTxType(actionModal) && (
                       <>
                         {actionModal === 'overtime' ? (
                           <View>
@@ -2274,11 +2383,13 @@ export default function EmployeesScreen() {
                           }
                         />
                         <View>
-                          <Text style={styles.fieldLabel}>Remark</Text>
+                          <Text style={styles.fieldLabel}>
+                            {TX_CONFIG[actionModal].remarkLabel}
+                          </Text>
                           <TextInput
                             style={[styles.fieldInput, { minHeight: 70 }]}
                             multiline
-                            placeholder="Optional note…"
+                            placeholder={TX_CONFIG[actionModal].placeholder}
                             placeholderTextColor={C.textLight}
                             value={actionForm.remark || ''}
                             onChangeText={v =>
@@ -2286,6 +2397,24 @@ export default function EmployeesScreen() {
                             }
                           />
                         </View>
+                        {actionModal === 'overtime' &&
+                        parseFloat(actionForm.hours || '0') > 0 ? (
+                          <View
+                            style={{
+                              backgroundColor: '#FFFBEB',
+                              borderWidth: 2,
+                              borderColor: '#FBBF24',
+                              borderRadius: 8,
+                              padding: 10,
+                            }}
+                          >
+                            <Text style={{ fontSize: 12, color: '#92400E' }}>
+                              OT amount is auto-calculated on payroll run: daily
+                              rate ÷ shift hours ×{' '}
+                              {parseFloat(actionForm.hours)}h
+                            </Text>
+                          </View>
+                        ) : null}
                       </>
                     )}
 
@@ -2685,7 +2814,7 @@ export default function EmployeesScreen() {
                                       fontSize: 13,
                                       fontWeight: '400',
                                       color: colors[status],
-                                      textTransform: 'uppercase',
+                                      textTransform: 'capitalize',
                                     }}
                                   >
                                     {status}
@@ -2719,6 +2848,7 @@ export default function EmployeesScreen() {
 
                     {[
                       'allowance',
+                      'bonus',
                       'penalty',
                       'overtime',
                       'loan',
@@ -2727,14 +2857,23 @@ export default function EmployeesScreen() {
                       'credentials',
                     ].includes(actionModal) && (
                       <TouchableOpacity
-                        style={styles.submitBtn}
+                        style={[
+                          styles.submitBtn,
+                          isTxType(actionModal) && {
+                            backgroundColor: TX_CONFIG[actionModal].color,
+                          },
+                        ]}
                         onPress={submitAction}
                         disabled={actionLoading}
                       >
                         {actionLoading ? (
                           <ActivityIndicator color={C.white} />
                         ) : (
-                          <Text style={styles.submitBtnText}>Confirm</Text>
+                          <Text style={styles.submitBtnText}>
+                            {isTxType(actionModal)
+                              ? TX_CONFIG[actionModal].button
+                              : 'Confirm'}
+                          </Text>
                         )}
                       </TouchableOpacity>
                     )}
@@ -3553,7 +3692,7 @@ const styles = StyleSheet.create({
   tHeadText: {
     fontSize: 10,
     color: C.textMuted,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
     letterSpacing: 0.6,
     fontWeight: '400',
   },
@@ -3595,7 +3734,7 @@ const styles = StyleSheet.create({
   tDetailLabel: {
     fontSize: 9,
     color: C.textMuted,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
     letterSpacing: 0.6,
   },
   tEmpCell: { flexDirection: 'row', alignItems: 'center', gap: 6, minWidth: 0 },
@@ -3604,7 +3743,12 @@ const styles = StyleSheet.create({
   tText: { fontSize: 12, color: C.black, fontWeight: '400' },
   tIconText: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   tActionBtn: { width: 28, height: 28, borderRadius: 14 },
-  tMoreBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  tMoreBtn: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   rowMenuOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.25)',
@@ -3618,7 +3762,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingTop: 10,
     paddingBottom: 4,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
     letterSpacing: 0.5,
   },
   card: {
@@ -3651,6 +3795,7 @@ const styles = StyleSheet.create({
   },
   avatarText: { color: C.white, fontWeight: '400', fontSize: 14 },
   empName: { fontSize: 15, fontWeight: '400', color: C.black },
+  empCode: { fontSize: 11, color: '#94A3B8', marginTop: 1 },
   empIdChip: {
     alignSelf: 'flex-start',
     fontSize: 11,
@@ -3818,7 +3963,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '400',
     color: C.textMuted,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
     textAlign: 'center',
   },
   tabTextActive: { color: C.primary, fontWeight: '400' },
@@ -3858,7 +4003,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 12,
     fontWeight: '400',
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
     color: C.black,
     marginBottom: 5,
     letterSpacing: 0.5,
@@ -3920,7 +4065,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '400',
     color: C.black,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
     letterSpacing: 1,
   },
   navBtn: {
@@ -3957,7 +4102,7 @@ const styles = StyleSheet.create({
     color: C.white,
     fontWeight: '400',
     fontSize: 14,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
   },
   actionGrid: {
     flexDirection: 'row',
@@ -3992,7 +4137,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: C.black,
     textAlign: 'center',
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
     letterSpacing: 0.3,
   },
   infoSectionHeader: {
@@ -4037,7 +4182,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '400',
     color: C.textMuted,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
     letterSpacing: 0.4,
   },
   infoRowValue: {
@@ -4050,7 +4195,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '400',
     color: C.black,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
     letterSpacing: 0.5,
   },
 });

@@ -102,8 +102,12 @@ export default function PayrollScreen() {
   const [selected, setSelected] = useState<Payroll | null>(null);
   // Admin view: one month at a time. Default = this month; "Last month" or a custom month/year via Filter & Sort.
   const [period, setPeriod] = useState<'this' | 'last' | 'custom'>('this');
-  const [customMonth, setCustomMonth] = useState(String(new Date().getMonth() + 1));
-  const [customYear, setCustomYear] = useState(String(new Date().getFullYear()));
+  const [customMonth, setCustomMonth] = useState(
+    String(new Date().getMonth() + 1),
+  );
+  const [customYear, setCustomYear] = useState(
+    String(new Date().getFullYear()),
+  );
   const periodMY = (() => {
     const now = new Date();
     if (period === 'last') {
@@ -111,10 +115,15 @@ export default function PayrollScreen() {
       return { month: d.getMonth() + 1, year: d.getFullYear() };
     }
     if (period === 'custom')
-      return { month: parseInt(customMonth, 10), year: parseInt(customYear, 10) };
+      return {
+        month: parseInt(customMonth, 10),
+        year: parseInt(customYear, 10),
+      };
     return { month: now.getMonth() + 1, year: now.getFullYear() };
   })();
-  const periodLabel = `${GEN_MONTHS[periodMY.month - 1]?.label ?? ''} ${periodMY.year}`;
+  const periodLabel = `${GEN_MONTHS[periodMY.month - 1]?.label ?? ''} ${
+    periodMY.year
+  }`;
   // This admin's saved view (status, sort, this/last month) lives in the database and follows them to any device.
   useEffect(() => {
     if (isEmployee) return;
@@ -234,7 +243,8 @@ export default function PayrollScreen() {
     p =>
       p.status === 'paid' &&
       ((p as any).slipReceived === 'received' ||
-        ((p as any).slipReceivedAt && (p as any).slipReceived !== 'not_received')),
+        ((p as any).slipReceivedAt &&
+          (p as any).slipReceived !== 'not_received')),
   ).length;
   const notReceivedCount = paidCount - receivedCount;
 
@@ -327,7 +337,9 @@ export default function PayrollScreen() {
       `Basic Salary   : ₹${(payroll.basicSalary || 0).toLocaleString()}`,
       `Earned Basic   : ₹${(payroll.earnedBasic || 0).toLocaleString()}`,
       `Allowances     : ₹${(payroll.otherAllowances || 0).toLocaleString()}`,
-      `Bonus          : ₹${((payroll as any).bonusAmount || 0).toLocaleString()}`,
+      `Bonus          : ₹${(
+        (payroll as any).bonusAmount || 0
+      ).toLocaleString()}`,
       `Overtime       : ₹${(payroll.otPay || 0).toLocaleString()}`,
       `Gross Salary   : ₹${(payroll.grossSalary || 0).toLocaleString()}`,
       ``,
@@ -759,50 +771,50 @@ export default function PayrollScreen() {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <>
-            {!isEmployee && (
-              <Text style={styles.periodLabel}>{periodLabel}</Text>
-            )}
-            <View style={dashStatRow}>
-              <DashStatCard
-                index={0}
-                label="Processed"
-                value={processedCount}
-                icon={Clock}
-                color={C.primary}
-              />
-              <DashStatCard
-                index={1}
-                label="Paid"
-                value={paidCount}
-                icon={CheckCircle2}
-                color={C.success}
-              />
-              <DashStatCard
-                index={2}
-                label="Received"
-                value={receivedCount}
-                icon={MailCheck}
-                color="#0F766E"
-              />
-              <DashStatCard
-                index={3}
-                label="Not received"
-                value={notReceivedCount}
-                icon={MailX}
-                color={C.danger}
-              />
-            </View>
-            {!isTablet && (
-              <View style={styles.tHead}>
-                <View style={{ flex: 1 }}>
-                  <Users size={15} color={C.textMuted} />
-                </View>
-                <View style={{ width: 92, alignItems: 'flex-end' }}>
-                  <IndianRupee size={15} color={C.success} />
-                </View>
-                <View style={{ width: 28 }} />
+              {!isEmployee && (
+                <Text style={styles.periodLabel}>{periodLabel}</Text>
+              )}
+              <View style={dashStatRow}>
+                <DashStatCard
+                  index={0}
+                  label="Processed"
+                  value={processedCount}
+                  icon={Clock}
+                  color={C.primary}
+                />
+                <DashStatCard
+                  index={1}
+                  label="Paid"
+                  value={paidCount}
+                  icon={CheckCircle2}
+                  color={C.success}
+                />
+                <DashStatCard
+                  index={2}
+                  label="Received"
+                  value={receivedCount}
+                  icon={MailCheck}
+                  color="#0F766E"
+                />
+                <DashStatCard
+                  index={3}
+                  label="Not received"
+                  value={notReceivedCount}
+                  icon={MailX}
+                  color={C.danger}
+                />
               </View>
-            )}
+              {!isTablet && (
+                <View style={styles.tHead}>
+                  <View style={{ flex: 1 }}>
+                    <Users size={15} color={C.textMuted} />
+                  </View>
+                  <View style={{ width: 92, alignItems: 'flex-end' }}>
+                    <IndianRupee size={15} color={C.success} />
+                  </View>
+                  <View style={{ width: 28 }} />
+                </View>
+              )}
             </>
           }
           ListFooterComponent={
@@ -853,13 +865,26 @@ export default function PayrollScreen() {
                 ? `${emp.firstName} ${emp.lastName}`
                 : 'Employee';
               const initials = emp
-                ? `${emp.firstName?.[0] || ''}${emp.lastName?.[0] || ''}`.toUpperCase()
+                ? `${emp.firstName?.[0] || ''}${
+                    emp.lastName?.[0] || ''
+                  }`.toUpperCase()
                 : 'E';
               const money = (v: any) => `₹${Number(v || 0).toLocaleString()}`;
-              const line = (label: string, value: string, color?: string, bold?: boolean) => (
+              const line = (
+                label: string,
+                value: string,
+                color?: string,
+                bold?: boolean,
+              ) => (
                 <View key={label} style={styles.tLine}>
                   <Text style={styles.tLineLabel}>{label}</Text>
-                  <Text style={[styles.tLineVal, color ? { color } : null, bold && { fontWeight: '700' }]}>
+                  <Text
+                    style={[
+                      styles.tLineVal,
+                      color ? { color } : null,
+                      bold && { fontWeight: '700' },
+                    ]}
+                  >
                     {value}
                   </Text>
                 </View>
@@ -872,7 +897,10 @@ export default function PayrollScreen() {
                 ['Bonus', p.bonusAmount],
               ];
               const deductions: [string, any][] = [
-                [`Absent${p.absentDays ? ` (${p.absentDays}d)` : ''}`, p.absentDeduction],
+                [
+                  `Absent${p.absentDays ? ` (${p.absentDays}d)` : ''}`,
+                  p.absentDeduction,
+                ],
                 ['Late', p.lateDeductionAmount],
                 ['Half day', p.halfDayDeduction],
                 ['Early out', p.earlyCheckoutDeduction],
@@ -903,7 +931,9 @@ export default function PayrollScreen() {
                           },
                         ]}
                       >
-                        <Text style={{ color: C.primary, fontSize: 11 }}>{initials}</Text>
+                        <Text style={{ color: C.primary, fontSize: 11 }}>
+                          {initials}
+                        </Text>
                       </View>
                     )}
                     <View style={{ flex: 1, minWidth: 0 }}>
@@ -917,14 +947,20 @@ export default function PayrollScreen() {
                       )}
                     </View>
                     <View style={{ width: 92, alignItems: 'flex-end' }}>
-                      <Text style={styles.tAmt} numberOfLines={1} adjustsFontSizeToFit>
+                      <Text
+                        style={styles.tAmt}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                      >
                         {money(item.netSalary)}
                       </Text>
                     </View>
                     <TouchableOpacity
                       onPress={() => toggleExpandPay(item._id)}
                       hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
-                      accessibilityLabel={isOpen ? 'Hide breakdown' : 'Show breakdown'}
+                      accessibilityLabel={
+                        isOpen ? 'Hide breakdown' : 'Show breakdown'
+                      }
                       style={{ width: 28, alignItems: 'center' }}
                     >
                       {isOpen ? (
@@ -942,21 +978,42 @@ export default function PayrollScreen() {
                         <View
                           style={[
                             styles.statusBadge,
-                            { backgroundColor: cfg.color, borderColor: C.black },
+                            {
+                              backgroundColor: cfg.color,
+                              borderColor: C.black,
+                            },
                           ]}
                         >
-                          <Text style={[styles.statusBadgeText, { color: C.white }]}>
+                          <Text
+                            style={[styles.statusBadgeText, { color: C.white }]}
+                          >
                             {sentence(item.status)}
                           </Text>
                         </View>
                       </View>
-                      {!!p.presentDays && line('Present days', `${p.presentDays}${p.workingDays ? ` / ${p.workingDays}` : ''}`)}
-                      {!!p.hourlyRate && line('Cost per hour', money(Number(p.hourlyRate).toFixed(0)))}
+                      {!!p.presentDays &&
+                        line(
+                          'Present days',
+                          `${p.presentDays}${
+                            p.workingDays ? ` / ${p.workingDays}` : ''
+                          }`,
+                        )}
+                      {!!p.hourlyRate &&
+                        line(
+                          'Cost per hour',
+                          money(Number(p.hourlyRate).toFixed(0)),
+                        )}
 
                       <Text style={styles.tSection}>Earnings</Text>
                       {earnings
                         .filter(([l, v], i) => i < 2 || (v || 0) > 0)
-                        .map(([l, v], i) => line(l, `${i >= 2 ? '+' : ''}${money(v)}`, i >= 2 ? C.success : undefined))}
+                        .map(([l, v], i) =>
+                          line(
+                            l,
+                            `${i >= 2 ? '+' : ''}${money(v)}`,
+                            i >= 2 ? C.success : undefined,
+                          ),
+                        )}
                       {line('Gross', money(item.grossSalary), undefined, true)}
 
                       {deductions.some(([, v]) => (v || 0) > 0) && (
@@ -965,18 +1022,32 @@ export default function PayrollScreen() {
                           {deductions
                             .filter(([, v]) => (v || 0) > 0)
                             .map(([l, v]) => line(l, `-${money(v)}`, C.danger))}
-                          {line('Total deductions', `-${money(item.totalDeductions)}`, C.danger, true)}
+                          {line(
+                            'Total deductions',
+                            `-${money(item.totalDeductions)}`,
+                            C.danger,
+                            true,
+                          )}
                         </>
                       )}
 
                       <View style={[styles.tLine, styles.tNet]}>
-                        <Text style={[styles.tLineLabel, { color: C.black }]}>Net pay</Text>
-                        <Text style={[styles.tLineVal, { color: C.success, fontSize: 16 }]}>
+                        <Text style={[styles.tLineLabel, { color: C.black }]}>
+                          Net pay
+                        </Text>
+                        <Text
+                          style={[
+                            styles.tLineVal,
+                            { color: C.success, fontSize: 16 },
+                          ]}
+                        >
                           {money(item.netSalary)}
                         </Text>
                       </View>
 
-                      <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                      <View
+                        style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}
+                      >
                         <TouchableOpacity
                           style={styles.tBtnGhost}
                           onPress={() => setSelected(item)}
@@ -985,10 +1056,13 @@ export default function PayrollScreen() {
                           <Text style={styles.tBtnGhostText}>Payslip</Text>
                         </TouchableOpacity>
                         {!isEmployee &&
-                          (item.status === 'draft' || item.status === 'processed') && (
+                          (item.status === 'draft' ||
+                            item.status === 'processed') && (
                             <TouchableOpacity
                               style={[
-                                item.status === 'draft' ? styles.processBtn : styles.paidBtn,
+                                item.status === 'draft'
+                                  ? styles.processBtn
+                                  : styles.paidBtn,
                                 { flex: 1, marginTop: 0 },
                               ]}
                               onPress={() =>
@@ -1003,7 +1077,9 @@ export default function PayrollScreen() {
                                 <BadgeCheck size={13} color={C.white} />
                               )}
                               <Text style={styles.processBtnText}>
-                                {item.status === 'draft' ? 'Process Payroll' : 'Mark as Paid'}
+                                {item.status === 'draft'
+                                  ? 'Process Payroll'
+                                  : 'Mark as Paid'}
                               </Text>
                             </TouchableOpacity>
                           )}
@@ -1099,14 +1175,14 @@ export default function PayrollScreen() {
                   {/* Clean Structured 3-Column Salary Strip */}
                   <View style={styles.salaryStrip}>
                     <View style={styles.salaryCol}>
-                      <Text style={styles.salaryLabel}>GROSS</Text>
+                      <Text style={styles.salaryLabel}>Gross</Text>
                       <Text style={styles.salaryVal} numberOfLines={1}>
                         ₹{(item.grossSalary || 0).toLocaleString()}
                       </Text>
                     </View>
                     <View style={styles.salaryDivider} />
                     <View style={styles.salaryCol}>
-                      <Text style={styles.salaryLabel}>DEDUCTIONS</Text>
+                      <Text style={styles.salaryLabel}>Deductions</Text>
                       <Text
                         style={[styles.salaryVal, { color: C.danger }]}
                         numberOfLines={1}
@@ -1116,7 +1192,7 @@ export default function PayrollScreen() {
                     </View>
                     <View style={styles.salaryDivider} />
                     <View style={styles.salaryCol}>
-                      <Text style={styles.salaryLabel}>NET PAY</Text>
+                      <Text style={styles.salaryLabel}>Net Pay</Text>
                       <Text
                         style={[styles.salaryVal, { color: C.success }]}
                         numberOfLines={1}
@@ -1784,7 +1860,7 @@ const styles = StyleSheet.create({
   periodLabel: {
     fontSize: 12,
     color: C.textMuted,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
     letterSpacing: 0.8,
     marginBottom: 8,
   },
@@ -1841,7 +1917,7 @@ const styles = StyleSheet.create({
   tSection: {
     fontSize: 10,
     color: C.textMuted,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
     letterSpacing: 0.6,
     marginTop: 8,
   },

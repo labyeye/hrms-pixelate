@@ -15,6 +15,7 @@ import FaceCheckInScreen from '../screens/FaceCheckInScreen';
 import FaceKioskScreen from '../screens/FaceKioskScreen';
 import FaceEnrollScreen from '../screens/FaceEnrollScreen';
 import TermsGate from '../components/TermsGate';
+import UpdatePrompt from '../components/common/UpdatePrompt';
 import { C } from '../theme';
 
 initUsageTracker(TRACK_BASE);
@@ -76,6 +77,7 @@ export default function RootNavigator() {
         )}
       </NavigationContainer>
       {isAuthenticated && <TermsGate />}
+      <UpdatePrompt />
     </>
   );
 }

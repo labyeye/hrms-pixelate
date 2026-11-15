@@ -1,5 +1,11 @@
 import React from 'react';
-import { Image, Platform, Text, TouchableWithoutFeedback, View } from 'react-native';
+import {
+  Image,
+  Platform,
+  Text,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { assetUrl } from './data';
@@ -36,24 +42,41 @@ const ANDROID_FONT: Record<FontKey, string> = {
   palatino: 'serif',
   narrow: 'sans-serif-condensed',
 };
-const fontOf = (k: FontKey) => (Platform.OS === 'ios' ? IOS_FONT : ANDROID_FONT)[k];
+const fontOf = (k: FontKey) =>
+  (Platform.OS === 'ios' ? IOS_FONT : ANDROID_FONT)[k];
 
 /** CSS-style gradient angle (0° = to top, 90° = to right) as start/end points for LinearGradient. */
 export function gradientPoints(angle: number) {
   const r = ((angle - 90) * Math.PI) / 180;
   const dx = Math.cos(r) / 2;
   const dy = Math.sin(r) / 2;
-  return { start: { x: 0.5 - dx, y: 0.5 - dy }, end: { x: 0.5 + dx, y: 0.5 + dy } };
+  return {
+    start: { x: 0.5 - dx, y: 0.5 - dy },
+    end: { x: 0.5 + dx, y: 0.5 + dy },
+  };
 }
 
 const PT_MM = 25.4 / 72;
 const initials = (emp: any) =>
-  `${emp?.firstName?.[0] || ''}${emp?.lastName?.[0] || ''}`.toUpperCase() || 'ID';
+  `${emp?.firstName?.[0] || ''}${emp?.lastName?.[0] || ''}`.toUpperCase() ||
+  'ID';
 
-function Fill({ a, b, angle, style }: { a: string; b?: string; angle: number; style?: any }) {
+function Fill({
+  a,
+  b,
+  angle,
+  style,
+}: {
+  a: string;
+  b?: string;
+  angle: number;
+  style?: any;
+}) {
   if (!b) return <View style={[{ backgroundColor: a }, style]} />;
   const { start, end } = gradientPoints(angle);
-  return <LinearGradient colors={[a, b]} start={start} end={end} style={style} />;
+  return (
+    <LinearGradient colors={[a, b]} start={start} end={end} style={style} />
+  );
 }
 
 function Body({
@@ -73,11 +96,15 @@ function Body({
       : el.shape === 'rounded'
       ? (Math.min(w, h) * el.radius) / 100
       : 0;
-  const border = el.borderWidth > 0 ? { borderWidth: el.borderWidth * pxMm, borderColor: el.borderColor } : null;
+  const border =
+    el.borderWidth > 0
+      ? { borderWidth: el.borderWidth * pxMm, borderColor: el.borderColor }
+      : null;
   const fill = { width: '100%' as const, height: '100%' as const };
 
   if (el.kind === 'text' || el.kind === 'field') {
-    const raw = el.kind === 'text' ? el.text : fieldValue(el.field, emp, company);
+    const raw =
+      el.kind === 'text' ? el.text : fieldValue(el.field, emp, company);
     const v = el.kind === 'field' ? (raw ? `${el.prefix}${raw}` : '') : raw;
     return (
       <View
@@ -96,7 +123,9 @@ function Body({
             fontWeight: el.bold ? '700' : '400',
             fontStyle: el.italic ? 'italic' : 'normal',
             textAlign: el.align,
-            letterSpacing: el.spacing ? el.spacing * el.size * PT_MM * pxMm : undefined,
+            letterSpacing: el.spacing
+              ? el.spacing * el.size * PT_MM * pxMm
+              : undefined,
           }}
         >
           {el.upper ? v.toUpperCase() : v}
@@ -108,7 +137,12 @@ function Body({
   // sized containers need their pixel box for rounding, so measure via onLayout-free percentages: use big radius cap
   if (el.kind === 'photo') {
     const src = assetUrl(emp?.avatar);
-    const r = el.shape === 'circle' ? 9999 : el.shape === 'rounded' ? 24 * (el.radius / 12) : 0;
+    const r =
+      el.shape === 'circle'
+        ? 9999
+        : el.shape === 'rounded'
+        ? 24 * (el.radius / 12)
+        : 0;
     return src ? (
       <Image
         source={{ uri: src }}
@@ -126,7 +160,13 @@ function Body({
           ...(border || {}),
         }}
       >
-        <Text style={{ color: '#64748b', fontWeight: '700', fontSize: 14 * PT_MM * pxMm }}>
+        <Text
+          style={{
+            color: '#64748b',
+            fontWeight: '700',
+            fontSize: 14 * PT_MM * pxMm,
+          }}
+        >
           {initials(emp)}
         </Text>
       </View>
@@ -135,7 +175,11 @@ function Body({
 
   if (el.kind === 'logo') {
     return company.logoUrl ? (
-      <Image source={{ uri: company.logoUrl }} resizeMode="contain" style={fill} />
+      <Image
+        source={{ uri: company.logoUrl }}
+        resizeMode="contain"
+        style={fill}
+      />
     ) : null;
   }
 
@@ -161,13 +205,23 @@ function Body({
   }
 
   // shape
-  const r = el.shape === 'circle' ? 9999 : el.shape === 'rounded' ? 20 * (el.radius / 12) : 0;
+  const r =
+    el.shape === 'circle'
+      ? 9999
+      : el.shape === 'rounded'
+      ? 20 * (el.radius / 12)
+      : 0;
   return (
     <Fill
       a={el.fill}
       b={el.fill2}
       angle={el.angle}
-      style={{ ...fill, borderRadius: r, overflow: 'hidden', ...(border || {}) }}
+      style={{
+        ...fill,
+        borderRadius: r,
+        overflow: 'hidden',
+        ...(border || {}),
+      }}
     />
   );
 }
@@ -206,7 +260,12 @@ export default function IdCardView({
           overflow: 'hidden',
         }}
       >
-        <Fill a={s.bg} b={s.bg2} angle={s.bgAngle ?? 135} style={{ position: 'absolute', width, height }} />
+        <Fill
+          a={s.bg}
+          b={s.bg2}
+          angle={s.bgAngle ?? 135}
+          style={{ position: 'absolute', width, height }}
+        />
         {!!bgImg && (
           <Image
             source={{ uri: bgImg }}
@@ -217,7 +276,11 @@ export default function IdCardView({
         {s.elements
           .filter(el => el.visible)
           .map(el => (
-            <TouchableWithoutFeedback key={el.id} onPress={() => onSelect?.(el.id)} disabled={!onSelect}>
+            <TouchableWithoutFeedback
+              key={el.id}
+              onPress={() => onSelect?.(el.id)}
+              disabled={!onSelect}
+            >
               <View
                 style={{
                   position: 'absolute',
@@ -226,7 +289,9 @@ export default function IdCardView({
                   width: `${el.w}%`,
                   height: `${el.h}%`,
                   opacity: el.opacity,
-                  transform: el.rotate ? [{ rotate: `${el.rotate}deg` }] : undefined,
+                  transform: el.rotate
+                    ? [{ rotate: `${el.rotate}deg` }]
+                    : undefined,
                   borderWidth: selectedId === el.id ? 1 : 0,
                   borderColor: '#044bab',
                   borderStyle: 'dashed',

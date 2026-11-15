@@ -966,7 +966,7 @@ const s = StyleSheet.create({
   priorityText: {
     fontFamily: FONT.bold,
     fontSize: 10,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
   },
   metaRow: {
     flexDirection: 'row',

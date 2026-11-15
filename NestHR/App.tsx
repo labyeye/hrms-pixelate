@@ -22,7 +22,10 @@ import { FONT } from './src/theme';
 ];
 
 // Android needs this once or every LayoutAnimation (row expand arrows) snaps instantly.
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 

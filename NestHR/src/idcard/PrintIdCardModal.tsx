@@ -53,7 +53,8 @@ export default function PrintIdCardModal({
       await printIdCards(employees, setup.template, setup.company, sides);
       onClose();
     } catch (e: any) {
-      if (e?.message && !/cancel/i.test(e.message)) Alert.alert('Print failed', e.message);
+      if (e?.message && !/cancel/i.test(e.message))
+        Alert.alert('Print failed', e.message);
     }
     setBusy(false);
   };
@@ -66,12 +67,19 @@ export default function PrintIdCardModal({
       disabled={disabled}
     >
       <Text style={[s.choiceText, on && { color: '#fff' }]}>{label}</Text>
-      {!!sub && <Text style={[s.choiceSub, on && { color: '#fff' }]}>{sub}</Text>}
+      {!!sub && (
+        <Text style={[s.choiceSub, on && { color: '#fff' }]}>{sub}</Text>
+      )}
     </TouchableOpacity>
   );
 
   return (
-    <Modal visible={open} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={open}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
       <View style={s.overlay}>
         <View style={s.sheet}>
           <View style={s.head}>
@@ -84,12 +92,15 @@ export default function PrintIdCardModal({
             </TouchableOpacity>
           </View>
           <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }}>
-            {!setup && !error && <ActivityIndicator color={C.primary} style={{ margin: 30 }} />}
+            {!setup && !error && (
+              <ActivityIndicator color={C.primary} style={{ margin: 30 }} />
+            )}
             {!!error && <Text style={s.err}>{error}</Text>}
             {setup && first && (
               <>
                 <Text style={s.body}>
-                  <Text style={{ fontWeight: '700' }}>{employees!.length}</Text> employee
+                  <Text style={{ fontWeight: '700' }}>{employees!.length}</Text>{' '}
+                  employee
                   {employees!.length > 1 ? 's' : ''}:{' '}
                   {employees!
                     .slice(0, 3)
@@ -99,8 +110,8 @@ export default function PrintIdCardModal({
                 </Text>
                 {!setup.saved && (
                   <Text style={s.note}>
-                    No design saved yet, so the default one is used. Customise it in Manage → ID Card
-                    Designer.
+                    No design saved yet, so the default one is used. Customise
+                    it in Manage → ID Card Designer.
                   </Text>
                 )}
                 <View style={s.preview}>
@@ -114,7 +125,11 @@ export default function PrintIdCardModal({
                 </View>
                 <Text style={s.label}>Sides</Text>
                 <View style={s.row}>
-                  <Choice on={sides === 'front'} label="Front only" onPress={() => setSides('front')} />
+                  <Choice
+                    on={sides === 'front'}
+                    label="Front only"
+                    onPress={() => setSides('front')}
+                  />
                   <Choice
                     on={sides === 'both'}
                     label="Front & back"
@@ -123,21 +138,32 @@ export default function PrintIdCardModal({
                   />
                 </View>
                 <Text style={s.note}>
-                  Prints on A4 sheets with cut lines. Choose “Save as PDF” in the print dialog to
-                  export instead.
+                  Prints on A4 sheets with cut lines. Choose “Save as PDF” in
+                  the print dialog to export instead.
                 </Text>
               </>
             )}
           </ScrollView>
           <View style={[s.row, { padding: 16, paddingTop: 0 }]}>
             <TouchableOpacity
-              style={[s.btn, { backgroundColor: C.primary }, (!setup || busy) && { opacity: 0.5 }]}
+              style={[
+                s.btn,
+                { backgroundColor: C.primary },
+                (!setup || busy) && { opacity: 0.5 },
+              ]}
               onPress={print}
               disabled={!setup || busy}
             >
-              {busy ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>Print</Text>}
+              {busy ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={s.btnText}>Print</Text>
+              )}
             </TouchableOpacity>
-            <TouchableOpacity style={[s.btn, { backgroundColor: '#fff' }]} onPress={onClose}>
+            <TouchableOpacity
+              style={[s.btn, { backgroundColor: '#fff' }]}
+              onPress={onClose}
+            >
               <Text style={[s.btnText, { color: C.black }]}>Cancel</Text>
             </TouchableOpacity>
           </View>
@@ -148,8 +174,18 @@ export default function PrintIdCardModal({
 }
 
 const s = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 16 },
-  sheet: { backgroundColor: '#fff', borderWidth: 2, borderColor: '#000', maxHeight: '90%' },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  sheet: {
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#000',
+    maxHeight: '90%',
+  },
   head: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -162,7 +198,12 @@ const s = StyleSheet.create({
   body: { fontSize: 14, color: C.black },
   note: { fontSize: 12, color: C.textLight },
   err: { color: C.danger, fontWeight: '700', fontSize: 13 },
-  label: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', color: C.black },
+  label: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    color: C.black,
+  },
   preview: {
     alignItems: 'center',
     backgroundColor: '#F1F5F9',
@@ -171,7 +212,13 @@ const s = StyleSheet.create({
     borderColor: '#0001',
   },
   row: { flexDirection: 'row', gap: 10 },
-  choice: { flex: 1, borderWidth: 2, borderColor: '#000', padding: 10, backgroundColor: '#fff' },
+  choice: {
+    flex: 1,
+    borderWidth: 2,
+    borderColor: '#000',
+    padding: 10,
+    backgroundColor: '#fff',
+  },
   choiceOn: { backgroundColor: C.primary },
   choiceText: { fontWeight: '700', fontSize: 13, color: C.black },
   choiceSub: { fontSize: 11, color: C.black },

@@ -5,6 +5,7 @@ const asyncHandler = require("express-async-handler");
 const EmployeeDocument = require("../models/EmployeeDocument");
 const Employee = require("../models/Employee");
 const { validateMagicBytes } = require("../middleware/upload");
+const jwt = require("jsonwebtoken");
 const { moveToTrash } = require("./trashController");
 const { encryptFile, readDecrypted } = require("../utils/docVault");
 
@@ -264,6 +265,78 @@ const downloadDocument = asyncHandler(async (req, res) => {
   });
 });
 
+const FILE_EXT = {
+  "application/pdf": ".pdf",
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+};
+
+// Short-lived signed link so the phone's own browser/download manager can save the file (the OTP gate has already
+// been passed by requireDocAccess before this runs). Same pattern as expense bill links.
+const getDownloadLink = asyncHandler(async (req, res) => {
+  const doc = await EmployeeDocument.findOne({
+    _id: req.params.id,
+    company: req.user.company,
+  }).populate("employee", "user");
+  if (!doc) {
+    res.status(404);
+    throw new Error("Document not found");
+  }
+  if (
+    req.user.role === "employee" &&
+    String(doc.employee?.user) !== String(req.user._id)
+  ) {
+    res.status(403);
+    throw new Error("Access denied");
+  }
+  const token = jwt.sign(
+    { purpose: "doc-download", id: String(doc._id), company: String(doc.company) },
+    process.env.JWT_SECRET,
+    { algorithm: "HS256", expiresIn: "2m" },
+  );
+  res.json({ success: true, data: { path: `/documents/file/${token}` } });
+});
+
+// Public: the token is the credential (it carries a purpose, so it can never act as a login session).
+const serveDocumentByToken = asyncHandler(async (req, res) => {
+  let decoded;
+  try {
+    decoded = jwt.verify(req.params.token, process.env.JWT_SECRET, {
+      algorithms: ["HS256"],
+    });
+  } catch (_) {
+    res.status(401);
+    throw new Error("Link expired");
+  }
+  if (decoded.purpose !== "doc-download") {
+    res.status(401);
+    throw new Error("Invalid link");
+  }
+  const doc = await EmployeeDocument.findOne({
+    _id: decoded.id,
+    company: decoded.company,
+  });
+  if (!doc) {
+    res.status(404);
+    throw new Error("Document not found");
+  }
+  const abs = path.resolve(__dirname, "../", doc.filePath);
+  if (!abs.startsWith(UPLOADS_ROOT + path.sep) || !fs.existsSync(abs)) {
+    res.status(404);
+    throw new Error("File missing on server");
+  }
+  const ext = FILE_EXT[doc.mimeType] || "";
+  const base = String(doc.name || "document")
+    .replace(/[^\w\- ]+/g, "")
+    .trim()
+    .slice(0, 80) || "document";
+  res.setHeader("Content-Type", doc.mimeType || "application/octet-stream");
+  res.setHeader("Content-Disposition", `attachment; filename="${base}${ext}"`);
+  res.setHeader("Cache-Control", "no-store");
+  res.send(readDecrypted(abs));
+});
+
 const deleteDocument = asyncHandler(async (req, res) => {
   const doc = await EmployeeDocument.findOne({
     _id: req.params.id,
@@ -349,6 +422,8 @@ module.exports = {
   uploadDocument,
   getDocuments,
   downloadDocument,
+  getDownloadLink,
+  serveDocumentByToken,
   updateDocument,
   deleteDocument,
   generateLetter,

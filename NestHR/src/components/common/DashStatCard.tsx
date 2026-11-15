@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     fontWeight: '400',
     color: C.textMuted,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
     letterSpacing: 0.6,
     textAlign: 'center',
   },

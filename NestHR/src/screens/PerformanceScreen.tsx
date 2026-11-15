@@ -1,4 +1,4 @@
-import { sentence } from '../utils/text';
+import { sentence, titleCase } from '../utils/text';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -28,7 +28,8 @@ import {
   SlidersHorizontal,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
-import { performanceAPI } from '../api/api';
+import { employeeAPI, performanceAPI } from '../api/api';
+import PickerField from '../components/common/PickerField';
 import { PerformanceReview } from '../types/hrms';
 import AnimatedNumber from '../components/motion/AnimatedNumber';
 import FadeInUp from '../components/motion/FadeInUp';
@@ -50,8 +51,7 @@ const RATING_COLORS: Record<number, string> = {
 
 const STATUS_CONFIG: Record<string, { color: string; bg: string }> = {
   draft: { color: C.textMuted, bg: '#F3F4F6' },
-  submitted: { color: C.warning, bg: '#FFF7ED' },
-  reviewed: { color: C.primary, bg: '#EFF6FF' },
+  in_review: { color: C.warning, bg: '#FFF7ED' },
   completed: { color: C.success, bg: '#F0FDF4' },
 };
 
@@ -68,12 +68,18 @@ export default function PerformanceScreen() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    reviewType: '',
+  const EMPTY_FORM = {
+    employee: '',
+    reviewPeriod: '',
+    reviewType: 'quarterly',
+    year: String(new Date().getFullYear()),
     rating: '3',
-    feedback: '',
-    goals: '',
-  });
+    strengths: '',
+    areasOfImprovement: '',
+    reviewerComments: '',
+  };
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [employees, setEmployees] = useState<any[]>([]);
 
   const load = useCallback(async () => {
     try {
@@ -89,6 +95,12 @@ export default function PerformanceScreen() {
   useEffect(() => {
     load();
   }, [load]);
+  useEffect(() => {
+    employeeAPI
+      .getAll({ status: 'active' })
+      .then((r: any) => setEmployees(r?.data || []))
+      .catch(() => {});
+  }, []);
   const onRefresh = async () => {
     setRefreshing(true);
     await load();
@@ -107,20 +119,32 @@ export default function PerformanceScreen() {
       sortKey === 'name'
         ? revName(a).localeCompare(revName(b))
         : sortKey === 'rating'
-        ? ((b as any).rating || 0) - ((a as any).rating || 0)
+        ? ((b as any).overallRating || 0) - ((a as any).overallRating || 0)
         : 0,
     );
 
   const handleCreate = async () => {
-    if (!form.reviewType.trim()) {
-      Alert.alert('Validation', 'Review period is required');
+    if (!form.employee || !form.reviewPeriod.trim() || !form.year) {
+      Alert.alert(
+        'Validation',
+        'Employee, review period and year are required',
+      );
       return;
     }
     setSaving(true);
     try {
-      await performanceAPI.create({ ...form, rating: parseFloat(form.rating) });
+      await performanceAPI.create({
+        employee: form.employee,
+        reviewPeriod: form.reviewPeriod.trim(),
+        reviewType: form.reviewType,
+        year: Number(form.year),
+        overallRating: parseFloat(form.rating),
+        strengths: form.strengths.trim() || undefined,
+        areasOfImprovement: form.areasOfImprovement.trim() || undefined,
+        reviewerComments: form.reviewerComments.trim() || undefined,
+      });
       setShowForm(false);
-      setForm({ reviewType: '', rating: '3', feedback: '', goals: '' });
+      setForm(EMPTY_FORM);
       await load();
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -132,7 +156,8 @@ export default function PerformanceScreen() {
   const avgRating =
     reviews.length > 0
       ? (
-          reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length
+          reviews.reduce((s, r) => s + ((r as any).overallRating || 0), 0) /
+          (reviews.filter(r => (r as any).overallRating).length || 1)
         ).toFixed(1)
       : '—';
 
@@ -182,33 +207,6 @@ export default function PerformanceScreen() {
         </View>
       </View>
 
-      {/* Summary */}
-      <FadeInUp>
-        <View style={styles.summaryRow}>
-          <View style={styles.summaryCard}>
-            <AnimatedNumber style={styles.summaryVal} value={reviews.length} />
-            <Text style={styles.summaryLabel}>Total Reviews</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <View style={styles.ratingWrap}>
-              <Star size={14} color="#F59E0B" />
-              <AnimatedValue
-                style={[styles.summaryVal, { color: '#F59E0B' }]}
-                value={avgRating}
-              />
-            </View>
-            <Text style={styles.summaryLabel}>Avg Rating</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <AnimatedNumber
-              style={[styles.summaryVal, { color: C.warning }]}
-              value={reviews.filter(r => r.status === 'in_review').length}
-            />
-            <Text style={styles.summaryLabel}>Pending</Text>
-          </View>
-        </View>
-      </FadeInUp>
-
       <SearchModal
         visible={searchOpen}
         onClose={() => setSearchOpen(false)}
@@ -228,8 +226,7 @@ export default function PerformanceScreen() {
         filterOptions={[
           { key: '', label: 'All' },
           { key: 'draft', label: 'Draft' },
-          { key: 'submitted', label: 'Submitted' },
-          { key: 'reviewed', label: 'Reviewed' },
+          { key: 'in_review', label: 'In review' },
           { key: 'completed', label: 'Completed' },
         ]}
         filterValue={statusFilter}
@@ -274,7 +271,42 @@ export default function PerformanceScreen() {
             />
           }
           showsVerticalScrollIndicator={false}
-          ListHeaderComponent={<PerformanceOverview />}
+          ListHeaderComponent={
+            <View style={{ gap: 12, marginBottom: 4 }}>
+              <FadeInUp>
+                <View style={styles.summaryRow}>
+                  <View style={styles.summaryCard}>
+                    <AnimatedNumber
+                      style={styles.summaryVal}
+                      value={reviews.length}
+                    />
+                    <Text style={styles.summaryLabel}>Total Reviews</Text>
+                  </View>
+                  <View style={styles.summaryCard}>
+                    <View style={styles.ratingWrap}>
+                      <Star size={14} color="#F59E0B" />
+                      <AnimatedValue
+                        style={[styles.summaryVal, { color: '#F59E0B' }]}
+                        value={avgRating}
+                      />
+                    </View>
+                    <Text style={styles.summaryLabel}>Avg Rating</Text>
+                  </View>
+                  <View style={styles.summaryCard}>
+                    <AnimatedNumber
+                      style={[styles.summaryVal, { color: C.warning }]}
+                      value={
+                        reviews.filter(r => r.status === 'in_review').length
+                      }
+                    />
+                    <Text style={styles.summaryLabel}>Pending</Text>
+                  </View>
+                </View>
+              </FadeInUp>
+
+              <PerformanceOverview />
+            </View>
+          }
           ListEmptyComponent={
             <View style={styles.empty}>
               <TrendingUp size={40} color="#D1D5DB" />
@@ -287,8 +319,9 @@ export default function PerformanceScreen() {
               bg: '#F3F4F6',
             };
             const emp = item.employee as any;
+            const rating: number = (item as any).overallRating || 0;
             const ratingColor =
-              RATING_COLORS[Math.round(item.rating || 3)] || C.textMuted;
+              RATING_COLORS[Math.round(rating || 3)] || C.textMuted;
             return (
               <View style={[styles.card, isTablet && styles.cardTablet]}>
                 <View style={styles.cardTop}>
@@ -302,7 +335,12 @@ export default function PerformanceScreen() {
                       {emp ? `${emp.firstName} ${emp.lastName}` : 'Employee'}
                     </Text>
                     <Text style={styles.reviewType}>
-                      {(item as any).reviewType || item.reviewDate || '—'}
+                      {[
+                        (item as any).reviewPeriod,
+                        titleCase((item as any).reviewType),
+                      ]
+                        .filter(Boolean)
+                        .join(' · ') || '—'}
                     </Text>
                   </View>
                   <View style={{ alignItems: 'flex-end', gap: 6 }}>
@@ -327,37 +365,33 @@ export default function PerformanceScreen() {
                     <Star
                       key={n}
                       size={20}
-                      color={
-                        n <= Math.round(item.rating || 0)
-                          ? '#F59E0B'
-                          : '#E5E7EB'
-                      }
-                      fill={
-                        n <= Math.round(item.rating || 0)
-                          ? '#F59E0B'
-                          : 'transparent'
-                      }
+                      color={n <= Math.round(rating) ? '#F59E0B' : '#E5E7EB'}
+                      fill={n <= Math.round(rating) ? '#F59E0B' : 'transparent'}
                     />
                   ))}
                   <Text style={[styles.ratingNum, { color: ratingColor }]}>
-                    {item.rating?.toFixed(1) || '—'}/5
+                    {rating ? rating.toFixed(1) : '—'}/5
                   </Text>
                 </View>
 
-                {(item.comments || (item as any).feedback) && (
+                {!!(
+                  (item as any).reviewerComments || (item as any).strengths
+                ) && (
                   <Text style={styles.feedbackText} numberOfLines={2}>
-                    {item.comments || (item as any).feedback}
+                    {(item as any).reviewerComments || (item as any).strengths}
                   </Text>
                 )}
 
-                {(item as any).goals && (
-                  <View style={styles.goalsRow}>
-                    <Target size={14} color={C.primary} />
-                    <Text style={styles.goalsText} numberOfLines={1}>
-                      {(item as any).goals}
-                    </Text>
-                  </View>
-                )}
+                {Array.isArray((item as any).goals) &&
+                  (item as any).goals.length > 0 && (
+                    <View style={styles.goalsRow}>
+                      <Target size={14} color={C.primary} />
+                      <Text style={styles.goalsText} numberOfLines={1}>
+                        {(item as any).goals.length} goal
+                        {(item as any).goals.length > 1 ? 's' : ''}
+                      </Text>
+                    </View>
+                  )}
               </View>
             );
           }}
@@ -381,14 +415,57 @@ export default function PerformanceScreen() {
                 showsVerticalScrollIndicator={false}
               >
                 <View>
-                  <Text style={styles.fieldLabel}>Review Period *</Text>
-                  <TextInput
-                    style={styles.fieldInput}
-                    value={form.reviewType}
-                    onChangeText={v => setForm(p => ({ ...p, reviewType: v }))}
-                    placeholder="Q4 2024 / Jan-Mar 2025"
-                    placeholderTextColor={C.textLight}
+                  <Text style={styles.fieldLabel}>Employee *</Text>
+                  <PickerField
+                    title="Employee"
+                    placeholder="Select employee"
+                    value={form.employee}
+                    onChange={v => setForm(p => ({ ...p, employee: v }))}
+                    options={employees.map(e => ({
+                      value: e._id,
+                      label: `${e.firstName} ${e.lastName} · ${e.employeeId}`,
+                    }))}
                   />
+                </View>
+                <View>
+                  <Text style={styles.fieldLabel}>Review type</Text>
+                  <PickerField
+                    value={form.reviewType}
+                    onChange={v => setForm(p => ({ ...p, reviewType: v }))}
+                    options={[
+                      { value: 'quarterly', label: 'Quarterly' },
+                      { value: 'half_yearly', label: 'Half yearly' },
+                      { value: 'annual', label: 'Annual' },
+                      { value: 'probation', label: 'Probation' },
+                    ]}
+                  />
+                </View>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <View style={{ flex: 2 }}>
+                    <Text style={styles.fieldLabel}>Review period *</Text>
+                    <TextInput
+                      style={styles.fieldInput}
+                      value={form.reviewPeriod}
+                      onChangeText={v =>
+                        setForm(p => ({ ...p, reviewPeriod: v }))
+                      }
+                      placeholder="Q4 / Jan–Mar"
+                      placeholderTextColor={C.textLight}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.fieldLabel}>Year *</Text>
+                    <TextInput
+                      style={styles.fieldInput}
+                      value={form.year}
+                      keyboardType="number-pad"
+                      maxLength={4}
+                      onChangeText={v =>
+                        setForm(p => ({ ...p, year: v.replace(/\D/g, '') }))
+                      }
+                      placeholderTextColor={C.textLight}
+                    />
+                  </View>
                 </View>
                 <View>
                   <Text style={styles.fieldLabel}>Rating (1–5)</Text>
@@ -422,23 +499,38 @@ export default function PerformanceScreen() {
                   </View>
                 </View>
                 <View>
-                  <Text style={styles.fieldLabel}>Feedback</Text>
+                  <Text style={styles.fieldLabel}>Strengths</Text>
                   <TextInput
-                    style={[styles.fieldInput, { minHeight: 90 }]}
-                    value={form.feedback}
-                    onChangeText={v => setForm(p => ({ ...p, feedback: v }))}
-                    placeholder="Performance feedback…"
+                    style={[styles.fieldInput, { minHeight: 70 }]}
+                    value={form.strengths}
+                    onChangeText={v => setForm(p => ({ ...p, strengths: v }))}
+                    placeholder="What went well…"
                     placeholderTextColor={C.textLight}
                     multiline
                   />
                 </View>
                 <View>
-                  <Text style={styles.fieldLabel}>Goals</Text>
+                  <Text style={styles.fieldLabel}>Areas to improve</Text>
                   <TextInput
                     style={[styles.fieldInput, { minHeight: 70 }]}
-                    value={form.goals}
-                    onChangeText={v => setForm(p => ({ ...p, goals: v }))}
-                    placeholder="Goals for next period…"
+                    value={form.areasOfImprovement}
+                    onChangeText={v =>
+                      setForm(p => ({ ...p, areasOfImprovement: v }))
+                    }
+                    placeholder="Where to improve…"
+                    placeholderTextColor={C.textLight}
+                    multiline
+                  />
+                </View>
+                <View>
+                  <Text style={styles.fieldLabel}>Reviewer comments</Text>
+                  <TextInput
+                    style={[styles.fieldInput, { minHeight: 90 }]}
+                    value={form.reviewerComments}
+                    onChangeText={v =>
+                      setForm(p => ({ ...p, reviewerComments: v }))
+                    }
+                    placeholder="Overall feedback…"
                     placeholderTextColor={C.textLight}
                     multiline
                   />
@@ -485,10 +577,6 @@ const styles = StyleSheet.create({
   },
   summaryRow: {
     flexDirection: 'row',
-    backgroundColor: C.white,
-    borderBottomWidth: 2,
-    borderBottomColor: C.black,
-    padding: 12,
     gap: 12,
   },
   summaryCard: {
@@ -500,6 +588,7 @@ const styles = StyleSheet.create({
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
+    backgroundColor: C.white,
     padding: 12,
     alignItems: 'center',
   },

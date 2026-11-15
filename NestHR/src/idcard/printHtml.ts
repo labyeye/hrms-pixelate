@@ -12,40 +12,80 @@ import {
 } from './idCard';
 
 const esc = (v: unknown) =>
-  String(v ?? '').replace(/[&<>"']/g, c =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string),
+  String(v ?? '').replace(
+    /[&<>"']/g,
+    c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[
+        c
+      ] as string),
   );
 
-const grad = (a: string, b: string, angle: number) => `linear-gradient(${angle}deg, ${a}, ${b})`;
+const grad = (a: string, b: string, angle: number) =>
+  `linear-gradient(${angle}deg, ${a}, ${b})`;
 const radiusOf = (el: IdEl) =>
-  el.shape === 'circle' ? '50%' : el.shape === 'rounded' ? `${el.radius}%` : '0';
+  el.shape === 'circle'
+    ? '50%'
+    : el.shape === 'rounded'
+    ? `${el.radius}%`
+    : '0';
 const borderOf = (el: IdEl) =>
-  el.borderWidth > 0 ? `border:${el.borderWidth}mm solid ${el.borderColor};box-sizing:border-box;` : '';
+  el.borderWidth > 0
+    ? `border:${el.borderWidth}mm solid ${el.borderColor};box-sizing:border-box;`
+    : '';
 const initials = (emp: any) =>
-  `${emp?.firstName?.[0] || ''}${emp?.lastName?.[0] || ''}`.toUpperCase() || 'ID';
+  `${emp?.firstName?.[0] || ''}${emp?.lastName?.[0] || ''}`.toUpperCase() ||
+  'ID';
 
 function elementHtml(el: IdEl, emp: any, company: IdCompany): string {
   const full = 'width:100%;height:100%;';
   if (el.kind === 'text' || el.kind === 'field') {
-    const raw = el.kind === 'text' ? el.text : fieldValue(el.field, emp, company);
+    const raw =
+      el.kind === 'text' ? el.text : fieldValue(el.field, emp, company);
     const v = el.kind === 'field' ? (raw ? `${el.prefix}${raw}` : '') : raw;
-    const jc = el.align === 'center' ? 'center' : el.align === 'right' ? 'flex-end' : 'flex-start';
-    return `<div style="${full}display:flex;align-items:center;justify-content:${jc};text-align:${el.align};overflow:hidden;font-family:${FONT_STACKS[el.font]};font-size:${el.size}pt;line-height:1.15;color:${el.color};font-weight:${el.bold ? 700 : 400};font-style:${el.italic ? 'italic' : 'normal'};text-transform:${el.upper ? 'uppercase' : 'none'};${el.spacing ? `letter-spacing:${el.spacing}em;` : ''}white-space:pre-wrap;word-break:break-word">${esc(v)}</div>`;
+    const jc =
+      el.align === 'center'
+        ? 'center'
+        : el.align === 'right'
+        ? 'flex-end'
+        : 'flex-start';
+    return `<div style="${full}display:flex;align-items:center;justify-content:${jc};text-align:${
+      el.align
+    };overflow:hidden;font-family:${FONT_STACKS[el.font]};font-size:${
+      el.size
+    }pt;line-height:1.15;color:${el.color};font-weight:${
+      el.bold ? 700 : 400
+    };font-style:${el.italic ? 'italic' : 'normal'};text-transform:${
+      el.upper ? 'uppercase' : 'none'
+    };${
+      el.spacing ? `letter-spacing:${el.spacing}em;` : ''
+    }white-space:pre-wrap;word-break:break-word">${esc(v)}</div>`;
   }
   if (el.kind === 'photo') {
     const src = assetUrl(emp?.avatar);
     return src
-      ? `<img src="${esc(src)}" style="${full}object-fit:cover;display:block;border-radius:${radiusOf(el)};${borderOf(el)}"/>`
-      : `<div style="${full}border-radius:${radiusOf(el)};${borderOf(el)}background:#e2e8f0;color:#64748b;display:flex;align-items:center;justify-content:center;font:700 14pt Helvetica,Arial,sans-serif">${esc(initials(emp))}</div>`;
+      ? `<img src="${esc(
+          src,
+        )}" style="${full}object-fit:cover;display:block;border-radius:${radiusOf(
+          el,
+        )};${borderOf(el)}"/>`
+      : `<div style="${full}border-radius:${radiusOf(el)};${borderOf(
+          el,
+        )}background:#e2e8f0;color:#64748b;display:flex;align-items:center;justify-content:center;font:700 14pt Helvetica,Arial,sans-serif">${esc(
+          initials(emp),
+        )}</div>`;
   }
   if (el.kind === 'logo')
     return company.logoUrl
-      ? `<img src="${esc(company.logoUrl)}" style="${full}object-fit:contain;display:block"/>`
+      ? `<img src="${esc(
+          company.logoUrl,
+        )}" style="${full}object-fit:contain;display:block"/>`
       : '';
   if (el.kind === 'image') {
     const src = assetUrl(el.src);
     return src
-      ? `<img src="${esc(src)}" style="${full}object-fit:${el.fit};display:block;border-radius:${radiusOf(el)};${borderOf(el)}"/>`
+      ? `<img src="${esc(src)}" style="${full}object-fit:${
+          el.fit
+        };display:block;border-radius:${radiusOf(el)};${borderOf(el)}"/>`
       : '';
   }
   if (el.kind === 'qr') {
@@ -54,7 +94,9 @@ function elementHtml(el: IdEl, emp: any, company: IdCompany): string {
       ? `<svg viewBox="0 0 ${q.size} ${q.size}" style="${full}display:block" shape-rendering="crispEdges" preserveAspectRatio="xMidYMid meet"><path d="${q.d}" fill="#000"/></svg>`
       : '';
   }
-  return `<div style="${full}background:${el.fill2 ? grad(el.fill, el.fill2, el.angle) : el.fill};border-radius:${radiusOf(el)};${borderOf(el)}"></div>`;
+  return `<div style="${full}background:${
+    el.fill2 ? grad(el.fill, el.fill2, el.angle) : el.fill
+  };border-radius:${radiusOf(el)};${borderOf(el)}"></div>`;
 }
 
 export function cardHtml(
@@ -66,16 +108,25 @@ export function cardHtml(
   const { w, h } = cardDims(t);
   const s = side === 'front' ? t.front : t.back;
   const layers: string[] = [];
-  if (s.bgImage) layers.push(`url("${assetUrl(s.bgImage)}") center / cover no-repeat`);
+  if (s.bgImage)
+    layers.push(`url("${assetUrl(s.bgImage)}") center / cover no-repeat`);
   layers.push(s.bg2 ? grad(s.bg, s.bg2, s.bgAngle ?? 135) : s.bg);
   const els = s.elements
     .filter(e => e.visible)
     .map(
       e =>
-        `<div style="position:absolute;left:${e.x}%;top:${e.y}%;width:${e.w}%;height:${e.h}%;opacity:${e.opacity};${e.rotate ? `transform:rotate(${e.rotate}deg);` : ''}">${elementHtml(e, emp, company)}</div>`,
+        `<div style="position:absolute;left:${e.x}%;top:${e.y}%;width:${
+          e.w
+        }%;height:${e.h}%;opacity:${e.opacity};${
+          e.rotate ? `transform:rotate(${e.rotate}deg);` : ''
+        }">${elementHtml(e, emp, company)}</div>`,
     )
     .join('');
-  return `<div style="position:relative;width:${w}mm;height:${h}mm;background:${layers.join(',')};border-radius:${t.cornerRadius}mm;overflow:hidden;box-sizing:border-box">${els}</div>`;
+  return `<div style="position:relative;width:${w}mm;height:${h}mm;background:${layers.join(
+    ',',
+  )};border-radius:${
+    t.cornerRadius
+  }mm;overflow:hidden;box-sizing:border-box">${els}</div>`;
 }
 
 /** A4 sheets of cards with cut lines; backs are mirrored per row so they line up when printed double-sided. */
@@ -93,7 +144,9 @@ export function buildSheetsHtml(
   const rows = Math.max(1, Math.floor((297 - 2 * M + G) / (h + G)));
   const per = cols * rows;
   const sheet = (cells: string[]) =>
-    `<div class="sheet">${cells.map(c => `<div class="cell">${c}</div>`).join('')}</div>`;
+    `<div class="sheet">${cells
+      .map(c => `<div class="cell">${c}</div>`)
+      .join('')}</div>`;
   let body = '';
   for (let i = 0; i < employees.length; i += per) {
     const chunk = employees.slice(i, i + per);

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,44 +12,59 @@ import {
   ScrollView,
   ActivityIndicator,
   Image,
-  Share,
+  Pressable,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   FolderOpen,
   Upload,
-  Trash2,
   X,
   FileText,
   ChevronLeft,
-  Plus,
   ChevronDown,
+  ChevronUp,
+  Plus,
   Image as ImageIcon,
-  Share2,
+  EllipsisVertical,
+  CheckCircle2,
+  XCircle,
+  Search,
+  Pencil,
+  Trash2,
+  Eye,
+  Download,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { launchImageLibrary } from 'react-native-image-picker';
+import DocumentPicker, { types } from 'react-native-document-picker';
 import { documentAPI, employeeAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
-import SlideInCard from '../components/motion/SlideInCard';
 import { C, useResponsive, tabletContainerStyle } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import { useDocOtp } from '../hooks/useDocOtp';
 import ExportButton from '../components/common/ExportButton';
 import { DatePickerField } from '../components/common/DatePickerField';
 
+// Same list (and same stored values) as the web Document Vault and the backend enum.
 const DOC_TYPES = [
-  { value: 'pan', label: 'PAN Card' },
-  { value: 'aadhaar', label: 'Aadhaar Card' },
-  { value: 'resume', label: 'Resume' },
-  { value: 'offer_letter', label: 'Offer Letter' },
-  { value: 'appointment_letter', label: 'Appointment Letter' },
-  { value: 'salary_slip', label: 'Salary Slip' },
-  { value: 'relieving_letter', label: 'Relieving Letter' },
-  { value: 'certificate', label: 'Certificate' },
-  { value: 'other', label: 'Other Document' },
+  { value: 'aadhar', label: 'Aadhar', color: '#024BAB' },
+  { value: 'pan', label: 'PAN', color: '#0891B2' },
+  { value: 'driving_license', label: 'Driving License', color: '#059669' },
+  { value: 'id_proof', label: 'ID Proof', color: '#A855F7' },
+  { value: 'certificate', label: 'Certificate', color: '#EAB308' },
+  { value: 'contract', label: 'Contract', color: '#EF4444' },
+  { value: 'resume', label: 'Resume', color: '#2563EB' },
+  { value: 'offer_letter', label: 'Offer Letter', color: '#FA731C' },
+  { value: 'other', label: 'Other', color: '#111827' },
 ];
+const TYPE_LABEL: Record<string, string> = {
+  ...Object.fromEntries(DOC_TYPES.map(t => [t.value, t.label])),
+  salary_certificate: 'Salary Certificate',
+  experience_letter: 'Experience Letter',
+  address_proof_letter: 'Address Proof Letter',
+};
 
 function formatBytes(bytes: number) {
   if (!bytes) return '—';
@@ -57,6 +72,7 @@ function formatBytes(bytes: number) {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
+const dt = (d?: string) => (d ? new Date(d).toLocaleDateString('en-IN') : '');
 
 export default function DocumentsScreen() {
   const navigation = useNavigation<any>();
@@ -68,30 +84,36 @@ export default function DocumentsScreen() {
   const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch] = useState('');
+  const [expanded, setExpanded] = useState<string[]>([]);
+  const [menu, setMenu] = useState<
+    { kind: 'emp'; emp: any } | { kind: 'doc'; doc: any } | null
+  >(null);
+
   const [showUpload, setShowUpload] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [pickedFile, setPickedFile] = useState<any>(null);
-  const [uploadForm, setUploadForm] = useState({
+  const EMPTY_UPLOAD = {
     name: '',
     docType: 'other',
     employeeId: '',
     expiryDate: '',
-  });
+  };
+  const [uploadForm, setUploadForm] = useState(EMPTY_UPLOAD);
   const [showDocTypePicker, setShowDocTypePicker] = useState(false);
   const [showEmpPicker, setShowEmpPicker] = useState(false);
-  const [filterEmp, setFilterEmp] = useState('');
-  const [previewDoc, setPreviewDoc] = useState<any>(null);
+
+  const [editDoc, setEditDoc] = useState<any>(null);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editTypePicker, setEditTypePicker] = useState(false);
+
   const { withOtp, otpModal } = useDocOtp();
 
-  const openDoc = async (doc: any) => {
+  // OTP first (sent to the logged-in user's phone on WhatsApp), then the phone saves the file.
+  const downloadDoc = async (doc: any) => {
     try {
-      const res = await withOtp(t => documentAPI.download(doc._id, t));
-      if (!res?.success) throw new Error('Could not open the document');
-      setPreviewDoc({
-        ...doc,
-        mimeType: res.data.mimeType,
-        dataUri: `data:${res.data.mimeType};base64,${res.data.fileData}`,
-      });
+      const url = await withOtp(t => documentAPI.downloadUrl(doc._id, t));
+      await Linking.openURL(url);
     } catch (e: any) {
       if (!/cancelled/i.test(e?.message || '')) Alert.alert('Error', e.message);
     }
@@ -99,11 +121,11 @@ export default function DocumentsScreen() {
 
   const load = useCallback(async () => {
     try {
-      const params: Record<string, string> = {};
-      if (filterEmp) params.employee = filterEmp;
       const [docRes, empRes] = await Promise.all([
-        documentAPI.getAll(params),
-        !isEmployee ? employeeAPI.getAll() : Promise.resolve({ data: [] }),
+        documentAPI.getAll(),
+        !isEmployee
+          ? employeeAPI.getAll({ status: 'active' })
+          : Promise.resolve({ data: [] }),
       ]);
       setDocs(docRes.data || []);
       setEmployees(empRes.data || []);
@@ -112,7 +134,7 @@ export default function DocumentsScreen() {
     } finally {
       setLoading(false);
     }
-  }, [isEmployee, filterEmp]);
+  }, [isEmployee]);
 
   useFocusEffect(
     useCallback(() => {
@@ -126,22 +148,65 @@ export default function DocumentsScreen() {
     setRefreshing(false);
   };
 
-  const handleDelete = (id: string, name: string) => {
-    Alert.alert('Delete Document', `Delete "${name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await documentAPI.delete(id);
-            setDocs(prev => prev.filter(d => d._id !== id));
-          } catch (e: any) {
-            Alert.alert('Error', e.message);
-          }
+  // ── Grouping ──
+  const docsByEmp = useMemo(() => {
+    const m: Record<string, any[]> = {};
+    docs.forEach(d => {
+      const id = d.employee?._id;
+      if (id) (m[id] ||= []).push(d);
+    });
+    return m;
+  }, [docs]);
+
+  // Employees see themselves only; admins/HR see every active employee.
+  const people = useMemo(() => {
+    if (isEmployee) {
+      const e = docs[0]?.employee;
+      return [
+        {
+          _id: e?._id || 'me',
+          firstName: e?.firstName || user?.name || 'Me',
+          lastName: e?.lastName || '',
+          employeeId: e?.employeeId || '',
+          avatar: (user as any)?.avatar,
         },
-      },
-    ]);
+      ];
+    }
+    const q = search.trim().toLowerCase();
+    return employees.filter(
+      e =>
+        !q ||
+        `${e.firstName} ${e.lastName}`.toLowerCase().includes(q) ||
+        String(e.employeeId || '')
+          .toLowerCase()
+          .includes(q),
+    );
+  }, [isEmployee, docs, employees, search, user]);
+
+  const withDocs = employees.filter(
+    e => (docsByEmp[e._id] || []).length,
+  ).length;
+  const perType = DOC_TYPES.map(t => ({
+    ...t,
+    count: new Set(
+      docs.filter(d => d.docType === t.value).map(d => d.employee?._id),
+    ).size,
+  }));
+
+  const toggle = (id: string) =>
+    setExpanded(p => (p.includes(id) ? p.filter(x => x !== id) : [...p, id]));
+
+  // ── Actions ──
+  const startUpload = (employeeId = '', docType = 'other') => {
+    setPickedFile(null);
+    setUploadForm({
+      ...EMPTY_UPLOAD,
+      employeeId,
+      docType,
+      name:
+        TYPE_LABEL[docType] && docType !== 'other' ? TYPE_LABEL[docType] : '',
+    });
+    setShowUpload(true);
   };
 
   const pickImage = async () => {
@@ -162,42 +227,68 @@ export default function DocumentsScreen() {
     }
   };
 
+  const pickPdf = async () => {
+    try {
+      const f = await DocumentPicker.pickSingle({
+        type: [types.pdf],
+        copyTo: 'cachesDirectory',
+        mode: 'import',
+      });
+      if ((f.size || 0) > 5 * 1024 * 1024) {
+        Alert.alert('Too large', 'Documents must be 5 MB or smaller.');
+        return;
+      }
+      setPickedFile({
+        uri: f.fileCopyUri || f.uri,
+        type: 'application/pdf',
+        fileName: f.name || `document_${Date.now()}.pdf`,
+        fileSize: f.size || 0,
+      });
+      if (!uploadForm.name && f.name) {
+        setUploadForm(p => ({ ...p, name: f.name!.replace(/\.[^.]+$/, '') }));
+      }
+    } catch (e: any) {
+      if (!DocumentPicker.isCancel(e)) Alert.alert('Error', e.message);
+    }
+  };
+
   const handleUpload = async () => {
     if (!pickedFile) {
-      Alert.alert('Validation', 'Please pick an image first');
+      Alert.alert('Validation', 'Please pick an image or a PDF first');
       return;
     }
     if (!uploadForm.name.trim()) {
       Alert.alert('Validation', 'Document name is required');
       return;
     }
-
+    if (!isEmployee && !uploadForm.employeeId) {
+      Alert.alert('Validation', 'Please select an employee');
+      return;
+    }
     setUploading(true);
     try {
       const formData = new FormData();
       formData.append('file', {
         uri: pickedFile.uri,
         type: pickedFile.type || 'image/jpeg',
-        name: pickedFile.fileName || 'document.jpg',
+        name:
+          pickedFile.fileName ||
+          (pickedFile.type === 'application/pdf'
+            ? 'document.pdf'
+            : 'document.jpg'),
       } as any);
       formData.append('name', uploadForm.name.trim());
       formData.append('docType', uploadForm.docType);
       if (!isEmployee && uploadForm.employeeId) {
-        formData.append('employee', uploadForm.employeeId);
+        formData.append('employeeId', uploadForm.employeeId);
       }
       if (uploadForm.expiryDate) {
         formData.append('expiryDate', uploadForm.expiryDate);
       }
-
       await documentAPI.upload(formData);
       setShowUpload(false);
       setPickedFile(null);
-      setUploadForm({
-        name: '',
-        docType: 'other',
-        employeeId: '',
-        expiryDate: '',
-      });
+      setUploadForm(EMPTY_UPLOAD);
       load();
     } catch (e: any) {
       Alert.alert('Upload Failed', e.message);
@@ -206,77 +297,297 @@ export default function DocumentsScreen() {
     }
   };
 
-  const renderItem = ({ item, index }: { item: any; index: number }) => (
-    <SlideInCard index={index} style={isTablet ? styles.cardTablet : undefined}>
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => openDoc(item)}
-        activeOpacity={0.85}
-      >
-        <View style={styles.cardLeft}>
-          <View style={styles.iconBox}>
-            <FileText size={20} color={C.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.docName} numberOfLines={1}>
-              {item.name}
+  const saveEdit = async () => {
+    if (!editDoc?.name?.trim()) {
+      Alert.alert('Validation', 'Document name is required');
+      return;
+    }
+    setEditSaving(true);
+    try {
+      await documentAPI.update(editDoc._id, {
+        name: editDoc.name.trim(),
+        docType: editDoc.docType,
+        expiryDate: editDoc.expiryDate || '',
+      });
+      setEditDoc(null);
+      load();
+    } catch (e: any) {
+      Alert.alert('Update failed', e.message);
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const deleteOne = (doc: any) => {
+    Alert.alert(
+      'Delete document',
+      `Delete "${doc.name}"? It moves to Trash and can be restored.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await documentAPI.delete(doc._id);
+              setDocs(prev => prev.filter(d => d._id !== doc._id));
+            } catch (e: any) {
+              Alert.alert('Error', e.message);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const deleteAll = (emp: any) => {
+    const list = docsByEmp[emp._id] || [];
+    if (!list.length) {
+      Alert.alert('Nothing to delete', 'This employee has no documents.');
+      return;
+    }
+    Alert.alert(
+      'Delete all documents',
+      `Delete all ${list.length} document${list.length > 1 ? 's' : ''} of ${
+        emp.firstName
+      } ${emp.lastName}? They move to Trash.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete all',
+          style: 'destructive',
+          onPress: async () => {
+            const results = await Promise.allSettled(
+              list.map(d => documentAPI.delete(d._id)),
+            );
+            const failed = results.filter(r => r.status === 'rejected').length;
+            if (failed)
+              Alert.alert('Some failed', `${failed} document(s) not deleted.`);
+            load();
+          },
+        },
+      ],
+    );
+  };
+
+  // ── Rows ──
+  const renderDocRow = (d: any) => {
+    const expired = d.expiryDate && new Date(d.expiryDate) < new Date();
+    return (
+      <View key={d._id} style={styles.docRow}>
+        <CheckCircle2 size={16} color={C.success} />
+        <TouchableOpacity
+          style={{ flex: 1, minWidth: 0 }}
+          onPress={() => downloadDoc(d)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.docName} numberOfLines={2}>
+            {d.name}
+          </Text>
+          <Text style={styles.docMeta}>
+            {TYPE_LABEL[d.docType] ?? d.docType}
+            {d.sizeBytes ? ` · ${formatBytes(d.sizeBytes)}` : ''}
+            {d.createdAt ? ` · ${dt(d.createdAt)}` : ''}
+          </Text>
+          {!!d.expiryDate && (
+            <Text
+              style={[
+                styles.docMeta,
+                { color: expired ? C.danger : C.textMuted },
+              ]}
+            >
+              {expired ? 'Expired' : 'Expires'} {dt(d.expiryDate)}
             </Text>
-            <Text style={styles.docMeta}>
-              {DOC_TYPES.find(t => t.value === item.docType)?.label ??
-                item.docType}
-              {item.sizeBytes ? ` · ${formatBytes(item.sizeBytes)}` : ''}
-            </Text>
-            {!isEmployee && item.employee && (
-              <Text style={styles.docEmp}>
-                {item.employee.firstName} {item.employee.lastName}
-              </Text>
-            )}
-            <Text style={styles.docDate}>
-              {new Date(item.createdAt).toLocaleDateString('en-IN')}
-            </Text>
-            {item.expiryDate && (
-              <Text
-                style={[
-                  styles.docDate,
-                  {
-                    color:
-                      new Date(item.expiryDate) < new Date()
-                        ? C.danger
-                        : C.textMuted,
-                  },
-                ]}
-              >
-                Expires: {new Date(item.expiryDate).toLocaleDateString('en-IN')}
-              </Text>
-            )}
-          </View>
-        </View>
-        <View style={styles.cardActions}>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          hitSlop={8}
+          onPress={() => downloadDoc(d)}
+          style={styles.dlBtn}
+          accessibilityLabel={`Download ${d.name}`}
+        >
+          <Download size={16} color={C.primary} />
+        </TouchableOpacity>
+        {!isEmployee && (
           <TouchableOpacity
-            style={[styles.actionBtn, { borderColor: C.primary }]}
-            onPress={() => {
-              const url = item.url || item.fileUrl || item.filePath;
-              if (url) {
-                Share.share({ url, title: item.name, message: item.name });
-              } else {
-                Alert.alert(
-                  'Share',
-                  'No shareable link available for this document.',
-                );
-              }
-            }}
+            hitSlop={8}
+            onPress={() => setMenu({ kind: 'doc', doc: d })}
+            style={styles.iconBtn}
+            accessibilityLabel="Document actions"
           >
-            <Share2 size={14} color={C.primary} />
+            <EllipsisVertical size={18} color={C.black} />
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionBtn, styles.deleteBtn]}
-            onPress={() => handleDelete(item._id, item.name)}
-          >
-            <Trash2 size={14} color={C.danger} />
-          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
+  const renderDetails = (emp: any) => {
+    const list = docsByEmp[emp._id] || [];
+    const knownTypes = DOC_TYPES.map(t => t.value);
+    const extra = list.filter(d => !knownTypes.includes(d.docType));
+    return (
+      <View style={styles.details}>
+        {DOC_TYPES.map(t => {
+          const mine = list.filter(d => d.docType === t.value);
+          return (
+            <View key={t.value} style={styles.typeBlock}>
+              <View style={styles.typeHead}>
+                <View style={[styles.typeDot, { backgroundColor: t.color }]} />
+                <Text style={styles.typeLabel}>{t.label}</Text>
+                <View style={{ flex: 1 }} />
+                {mine.length === 0 ? (
+                  <TouchableOpacity
+                    onPress={() =>
+                      startUpload(isEmployee ? '' : emp._id, t.value)
+                    }
+                    style={styles.addMini}
+                  >
+                    <Plus size={12} color={C.primary} />
+                    <Text style={styles.addMiniText}>Add</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <Text style={styles.okText}>{mine.length} added</Text>
+                )}
+              </View>
+              {mine.length === 0 ? (
+                <View style={styles.missingRow}>
+                  <XCircle size={16} color={C.danger} />
+                  <Text style={styles.missingText}>Missing</Text>
+                </View>
+              ) : (
+                mine.map(renderDocRow)
+              )}
+            </View>
+          );
+        })}
+        {extra.length > 0 && (
+          <View style={styles.typeBlock}>
+            <View style={styles.typeHead}>
+              <View style={[styles.typeDot, { backgroundColor: '#6B7280' }]} />
+              <Text style={styles.typeLabel}>Other letters</Text>
+            </View>
+            {extra.map(renderDocRow)}
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  const renderPerson = ({ item: e }: { item: any }) => {
+    const list = docsByEmp[e._id] || [];
+    const open = isEmployee || expanded.includes(e._id);
+    return (
+      <View style={styles.card}>
+        <View style={styles.personRow}>
+          {e.avatar ? (
+            <Image source={{ uri: e.avatar }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, styles.avatarFb]}>
+              <Text style={styles.avatarText}>
+                {(e.firstName?.[0] || '') + (e.lastName?.[0] || '')}
+              </Text>
+            </View>
+          )}
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.personName}>
+              {e.firstName} {e.lastName}
+            </Text>
+            {!!e.employeeId && (
+              <Text style={styles.personCode}>{e.employeeId}</Text>
+            )}
+            <Text style={styles.personCount}>
+              {list.length} doc{list.length === 1 ? '' : 's'} added
+            </Text>
+          </View>
+          {!isEmployee && (
+            <TouchableOpacity
+              hitSlop={8}
+              onPress={() => setMenu({ kind: 'emp', emp: e })}
+              style={styles.iconBtn}
+              accessibilityLabel="Employee actions"
+            >
+              <EllipsisVertical size={20} color={C.black} />
+            </TouchableOpacity>
+          )}
         </View>
-      </TouchableOpacity>
-    </SlideInCard>
+        {!isEmployee && (
+          <TouchableOpacity
+            style={styles.viewBtn}
+            onPress={() => toggle(e._id)}
+            activeOpacity={0.8}
+          >
+            <Eye size={14} color={C.primary} />
+            <Text style={styles.viewBtnText}>
+              {open ? 'Hide details' : 'View details'}
+            </Text>
+            {open ? (
+              <ChevronUp size={14} color={C.primary} />
+            ) : (
+              <ChevronDown size={14} color={C.primary} />
+            )}
+          </TouchableOpacity>
+        )}
+        {open && renderDetails(e)}
+      </View>
+    );
+  };
+
+  const tile = (
+    key: string,
+    label: string,
+    value: number,
+    color: string,
+    Icon: any,
+  ) => (
+    <View key={key} style={[styles.tile, isTablet && styles.tileWide]}>
+      <View style={[styles.tileIcon, { backgroundColor: color }]}>
+        <Icon size={16} color={C.white} />
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={styles.tileVal}>{value}</Text>
+        <Text style={styles.tileLabel} numberOfLines={2}>
+          {label}
+        </Text>
+      </View>
+    </View>
+  );
+
+  const header = (
+    <View>
+      {!isEmployee && (
+        <>
+          <View style={styles.tiles}>
+            {tile('up', 'Docs uploaded', withDocs, C.success, CheckCircle2)}
+            {tile(
+              'miss',
+              'Missing docs',
+              Math.max(employees.length - withDocs, 0),
+              C.danger,
+              XCircle,
+            )}
+            {perType.map(t =>
+              tile(t.value, t.label, t.count, t.color, FileText),
+            )}
+          </View>
+          <View style={styles.searchBox}>
+            <Search size={16} color="#6B7280" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by name or employee code"
+              placeholderTextColor="#9CA3AF"
+              value={search}
+              onChangeText={setSearch}
+            />
+            {!!search && (
+              <TouchableOpacity onPress={() => setSearch('')} hitSlop={8}>
+                <X size={16} color="#6B7280" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </>
+      )}
+    </View>
   );
 
   return (
@@ -330,84 +641,32 @@ export default function DocumentsScreen() {
         )}
         <TouchableOpacity
           style={styles.addBtn}
-          onPress={() => {
-            setPickedFile(null);
-            setUploadForm({
-              name: '',
-              docType: 'other',
-              employeeId: '',
-              expiryDate: '',
-            });
-            setShowUpload(true);
-          }}
+          onPress={() => startUpload()}
           hitSlop={8}
+          accessibilityLabel="Upload document"
         >
           <Plus size={24} color={C.primary} />
         </TouchableOpacity>
       </View>
 
-      {!isEmployee && employees.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterBar}
-          contentContainerStyle={{ padding: 12, gap: 8 }}
-        >
-          <TouchableOpacity
-            style={[styles.chip, !filterEmp && styles.chipActive]}
-            onPress={() => setFilterEmp('')}
-          >
-            <Text
-              style={[styles.chipText, !filterEmp && styles.chipTextActive]}
-            >
-              All
-            </Text>
-          </TouchableOpacity>
-          {employees.slice(0, 15).map(e => (
-            <TouchableOpacity
-              key={e._id}
-              style={[styles.chip, filterEmp === e._id && styles.chipActive]}
-              onPress={() =>
-                setFilterEmp(prev => (prev === e._id ? '' : e._id))
-              }
-            >
-              <Text
-                style={[
-                  styles.chipText,
-                  filterEmp === e._id && styles.chipTextActive,
-                ]}
-              >
-                {e.firstName} {e.lastName}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
-
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={C.primary} />
         </View>
-      ) : docs.length === 0 ? (
-        <View style={styles.center}>
-          <FolderOpen size={48} color="#D1D5DB" />
-          <Text style={styles.emptyTitle}>No documents</Text>
-          <Text style={styles.emptySubtitle}>
-            {isEmployee
-              ? 'No documents have been uploaded for you yet'
-              : 'Upload a document to get started'}
-          </Text>
-        </View>
       ) : (
         <View style={[{ flex: 1 }, tabletContainerStyle(isTablet)]}>
           <FlatList
-            key={isTablet ? 'tablet-grid-2' : 'mobile-list'}
-            data={docs}
-            numColumns={isTablet ? 2 : 1}
-            columnWrapperStyle={isTablet ? styles.colWrapper : undefined}
-            keyExtractor={d => d._id}
-            renderItem={renderItem}
-            contentContainerStyle={{ padding: 16, gap: 10 }}
+            data={people}
+            keyExtractor={e => e._id}
+            renderItem={renderPerson}
+            ListHeaderComponent={header}
+            ListEmptyComponent={
+              <View style={styles.center}>
+                <FolderOpen size={48} color="#D1D5DB" />
+                <Text style={styles.emptyTitle}>No employees found</Text>
+              </View>
+            }
+            contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 40 }}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -420,6 +679,210 @@ export default function DocumentsScreen() {
           />
         </View>
       )}
+
+      {/* ⋮ action sheet (employee or document) */}
+      <Modal
+        visible={!!menu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMenu(null)}
+      >
+        <Pressable style={styles.overlay} onPress={() => setMenu(null)}>
+          <Pressable style={styles.sheet} onPress={() => {}}>
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle} numberOfLines={1}>
+                {menu?.kind === 'emp'
+                  ? `${menu.emp.firstName} ${menu.emp.lastName}`
+                  : menu?.kind === 'doc'
+                  ? menu.doc.name
+                  : ''}
+              </Text>
+              <TouchableOpacity onPress={() => setMenu(null)}>
+                <X size={20} color={C.black} />
+              </TouchableOpacity>
+            </View>
+            {menu?.kind === 'emp' && (
+              <>
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    const e = menu.emp;
+                    setMenu(null);
+                    startUpload(e._id);
+                  }}
+                >
+                  <Plus size={18} color={C.primary} />
+                  <Text style={styles.menuText}>Add document</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    const e = menu.emp;
+                    setMenu(null);
+                    if (!expanded.includes(e._id)) toggle(e._id);
+                  }}
+                >
+                  <Pencil size={18} color={C.black} />
+                  <Text style={styles.menuText}>Edit documents</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.menuItem, { borderBottomWidth: 0 }]}
+                  onPress={() => {
+                    const e = menu.emp;
+                    setMenu(null);
+                    deleteAll(e);
+                  }}
+                >
+                  <Trash2 size={18} color={C.danger} />
+                  <Text style={[styles.menuText, { color: C.danger }]}>
+                    Delete all documents
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+            {menu?.kind === 'doc' && (
+              <>
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    const d = menu.doc;
+                    setMenu(null);
+                    downloadDoc(d);
+                  }}
+                >
+                  <Download size={18} color={C.primary} />
+                  <Text style={styles.menuText}>Download</Text>
+                </TouchableOpacity>
+                {!isEmployee && (
+                  <>
+                    <TouchableOpacity
+                      style={styles.menuItem}
+                      onPress={() => {
+                        const d = menu.doc;
+                        setMenu(null);
+                        setEditDoc({
+                          _id: d._id,
+                          name: d.name,
+                          docType: d.docType,
+                          expiryDate: d.expiryDate
+                            ? String(d.expiryDate).slice(0, 10)
+                            : '',
+                        });
+                      }}
+                    >
+                      <Pencil size={18} color={C.black} />
+                      <Text style={styles.menuText}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.menuItem, { borderBottomWidth: 0 }]}
+                      onPress={() => {
+                        const d = menu.doc;
+                        setMenu(null);
+                        deleteOne(d);
+                      }}
+                    >
+                      <Trash2 size={18} color={C.danger} />
+                      <Text style={[styles.menuText, { color: C.danger }]}>
+                        Delete this document
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Edit document */}
+      <Modal
+        visible={!!editDoc}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditDoc(null)}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.sheet}>
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Edit document</Text>
+              <TouchableOpacity onPress={() => setEditDoc(null)}>
+                <X size={20} color={C.black} />
+              </TouchableOpacity>
+            </View>
+            {editDoc && (
+              <View style={{ padding: 16, gap: 14 }}>
+                <View>
+                  <Text style={styles.fieldLabel}>Document name *</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={editDoc.name}
+                    onChangeText={v =>
+                      setEditDoc((p: any) => ({ ...p, name: v }))
+                    }
+                  />
+                </View>
+                <View>
+                  <Text style={styles.fieldLabel}>Document type</Text>
+                  <TouchableOpacity
+                    style={styles.selectBtn}
+                    onPress={() => setEditTypePicker(true)}
+                  >
+                    <Text style={styles.selectBtnText}>
+                      {TYPE_LABEL[editDoc.docType] || editDoc.docType}
+                    </Text>
+                    <ChevronDown size={16} color={C.black} />
+                  </TouchableOpacity>
+                </View>
+                <DatePickerField
+                  label="Expiry date (optional)"
+                  value={editDoc.expiryDate}
+                  onChange={v =>
+                    setEditDoc((p: any) => ({ ...p, expiryDate: v }))
+                  }
+                />
+                <TouchableOpacity
+                  style={styles.submitBtn}
+                  onPress={saveEdit}
+                  disabled={editSaving}
+                >
+                  {editSaving ? (
+                    <ActivityIndicator color={C.white} />
+                  ) : (
+                    <Text style={styles.submitBtnText}>Save changes</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
+      <Modal visible={editTypePicker} animationType="fade" transparent>
+        <View style={styles.overlay}>
+          <View style={styles.sheet}>
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Document type</Text>
+              <TouchableOpacity onPress={() => setEditTypePicker(false)}>
+                <X size={20} color={C.black} />
+              </TouchableOpacity>
+            </View>
+            {DOC_TYPES.map(t => (
+              <TouchableOpacity
+                key={t.value}
+                style={[
+                  styles.sheetOption,
+                  editDoc?.docType === t.value && styles.sheetOptionActive,
+                ]}
+                onPress={() => {
+                  setEditDoc((p: any) => ({ ...p, docType: t.value }));
+                  setEditTypePicker(false);
+                }}
+              >
+                <Text style={styles.sheetOptionText}>{t.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </Modal>
 
       {/* Upload Modal */}
       <Modal visible={showUpload} transparent animationType="fade">
@@ -436,12 +899,16 @@ export default function DocumentsScreen() {
                 contentContainerStyle={{ padding: 20, gap: 16 }}
                 keyboardShouldPersistTaps="handled"
               >
-                <TouchableOpacity style={styles.filePicker} onPress={pickImage}>
+                <View style={styles.filePicker}>
                   {pickedFile ? (
                     <>
-                      <ImageIcon size={24} color={C.primary} />
+                      {pickedFile.type === 'application/pdf' ? (
+                        <FileText size={24} color={C.primary} />
+                      ) : (
+                        <ImageIcon size={24} color={C.primary} />
+                      )}
                       <Text style={styles.filePickerName} numberOfLines={1}>
-                        {pickedFile.fileName || 'Image selected'}
+                        {pickedFile.fileName || 'File selected'}
                       </Text>
                       <Text style={styles.filePickerSize}>
                         {formatBytes(pickedFile.fileSize || 0)}
@@ -451,14 +918,27 @@ export default function DocumentsScreen() {
                     <>
                       <Upload size={24} color="#6B7280" />
                       <Text style={styles.filePickerPlaceholder}>
-                        Tap to pick an image
+                        Pick an image or a PDF
                       </Text>
                       <Text style={styles.filePickerHint}>
-                        JPG, PNG supported
+                        JPG, PNG or PDF · up to 5 MB
                       </Text>
                     </>
                   )}
-                </TouchableOpacity>
+                  <View style={styles.pickRow}>
+                    <TouchableOpacity
+                      style={styles.pickBtn}
+                      onPress={pickImage}
+                    >
+                      <ImageIcon size={16} color={C.primary} />
+                      <Text style={styles.pickBtnText}>Image</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.pickBtn} onPress={pickPdf}>
+                      <FileText size={16} color={C.primary} />
+                      <Text style={styles.pickBtnText}>PDF</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
 
                 <View>
                   <Text style={styles.fieldLabel}>Document Name *</Text>
@@ -493,7 +973,7 @@ export default function DocumentsScreen() {
 
                 {!isEmployee && employees.length > 0 && (
                   <View>
-                    <Text style={styles.fieldLabel}>Employee (optional)</Text>
+                    <Text style={styles.fieldLabel}>Employee *</Text>
                     <TouchableOpacity
                       style={styles.selectBtn}
                       onPress={() => setShowEmpPicker(true)}
@@ -600,7 +1080,7 @@ export default function DocumentsScreen() {
                     !uploadForm.employeeId && { color: C.primary },
                   ]}
                 >
-                  No specific employee
+                  Select employee
                 </Text>
               </TouchableOpacity>
               {employees.map(e => (
@@ -622,6 +1102,7 @@ export default function DocumentsScreen() {
                     ]}
                   >
                     {e.firstName} {e.lastName}
+                    {e.employeeId ? `  ·  ${e.employeeId}` : ''}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -629,78 +1110,146 @@ export default function DocumentsScreen() {
           </View>
         </View>
       </Modal>
-
-      {/* Image Preview Modal */}
-      <Modal visible={!!previewDoc} animationType="fade" statusBarTranslucent>
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: '#000',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <TouchableOpacity
-            style={{
-              position: 'absolute',
-              top: 50,
-              right: 20,
-              zIndex: 10,
-              padding: 12,
-            }}
-            onPress={() => setPreviewDoc(null)}
-          >
-            <X size={28} color="#fff" />
-          </TouchableOpacity>
-          {previewDoc && (
-            <>
-              <Text
-                style={{
-                  color: '#fff',
-                  fontSize: 14,
-                  fontWeight: '400',
-                  position: 'absolute',
-                  top: 52,
-                  left: 20,
-                  right: 60,
-                }}
-                numberOfLines={1}
-              >
-                {previewDoc.name}
-              </Text>
-              {previewDoc.dataUri &&
-              /^image\//.test(previewDoc.mimeType || '') ? (
-                <Image
-                  source={{ uri: previewDoc.dataUri }}
-                  style={{ width: '90%', height: '70%' }}
-                  resizeMode="contain"
-                />
-              ) : (
-                <View
-                  style={{
-                    alignItems: 'center',
-                    gap: 12,
-                    paddingHorizontal: 30,
-                  }}
-                >
-                  <FileText size={60} color="#fff" />
-                  <Text
-                    style={{ color: '#aaa', fontSize: 13, textAlign: 'center' }}
-                  >
-                    PDF files can be opened from the NestHR web app. Images
-                    preview here.
-                  </Text>
-                </View>
-              )}
-            </>
-          )}
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 },
+  tile: {
+    width: '48%',
+    flexGrow: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: C.white,
+    padding: 10,
+    borderWidth: 2,
+    borderRadius: 8,
+    borderRightWidth: 4,
+    borderBottomWidth: 4,
+    borderColor: C.black,
+    borderRightColor: '#0A0A0A',
+    borderBottomColor: '#0A0A0A',
+  },
+  tileWide: { width: '23%' },
+  tileIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: C.black,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tileVal: { fontSize: 18, color: C.black },
+  tileLabel: { fontSize: 10, color: C.textMuted, textTransform: 'uppercase' },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: C.white,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderRadius: 8,
+    borderColor: C.black,
+  },
+  searchInput: { flex: 1, fontSize: 14, color: C.black, padding: 0 },
+  personRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  avatar: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 2,
+    borderColor: C.black,
+  },
+  avatarFb: {
+    backgroundColor: C.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: { color: C.white, fontSize: 15 },
+  personName: { fontSize: 15, color: C.black },
+  personCode: { fontSize: 12, color: '#94A3B8', marginTop: 1 },
+  personCount: { fontSize: 11, color: C.textMuted, marginTop: 2 },
+  iconBtn: { padding: 6 },
+  dlBtn: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderRadius: 8,
+    borderColor: C.primary,
+  },
+  viewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingVertical: 8,
+    borderTopWidth: 1.5,
+    borderTopColor: 'rgba(0,0,0,0.12)',
+  },
+  viewBtnText: { fontSize: 13, color: C.primary },
+  details: { marginTop: 4, gap: 10 },
+  typeBlock: {
+    borderWidth: 1.5,
+    borderColor: 'rgba(0,0,0,0.15)',
+    borderRadius: 8,
+    padding: 10,
+    gap: 6,
+  },
+  typeHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  typeDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: C.black,
+  },
+  typeLabel: { fontSize: 13, color: C.black },
+  okText: { fontSize: 11, color: C.success },
+  addMini: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 1.5,
+    borderColor: C.primary,
+    borderRadius: 6,
+  },
+  addMiniText: { fontSize: 11, color: C.primary },
+  missingRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  missingText: { fontSize: 12, color: C.danger },
+  docRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 2,
+    borderBottomColor: C.black,
+  },
+  pickRow: { flexDirection: 'row', gap: 10, marginTop: 6 },
+  pickBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    backgroundColor: C.white,
+    borderWidth: 2,
+    borderRadius: 8,
+    borderColor: C.black,
+  },
+  pickBtnText: { fontSize: 13, color: C.primary },
+  menuText: { fontSize: 15, color: C.black },
   safe: { flex: 1, backgroundColor: C.bg },
   header: {
     flexDirection: 'row',
@@ -769,10 +1318,7 @@ const styles = StyleSheet.create({
     borderRightColor: '#0A0A0A',
     borderBottomColor: '#0A0A0A',
     borderColor: C.black,
-    padding: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    padding: 14,
   },
   cardTablet: { flex: 1 },
   colWrapper: { gap: 10 },

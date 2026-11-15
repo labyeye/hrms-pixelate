@@ -3,6 +3,8 @@ const {
   uploadDocument,
   getDocuments,
   downloadDocument,
+  getDownloadLink,
+  serveDocumentByToken,
   updateDocument,
   deleteDocument,
   generateLetter,
@@ -18,6 +20,8 @@ const { uploadDocumentVault } = require("../middleware/upload");
 const router = express.Router();
 
 router.get("/", protect, getDocuments);
+// Public, token-signed (2 min) file link used by the mobile app to save a document to the phone.
+router.get("/file/:token", serveDocumentByToken);
 // OTP gate: every owner/staff must verify a WhatsApp OTP before a file can be opened.
 router.post(
   "/otp/request",
@@ -46,6 +50,13 @@ router.post(
 );
 // Edit/delete are HR-controlled; download stays open to employees since
 // downloadDocument itself scopes them to their own documents.
+router.get(
+  "/:id/download-link",
+  protect,
+  authorize("super_admin", "hr_manager", "employee"),
+  requireDocAccess,
+  getDownloadLink,
+);
 router.get(
   "/:id/download",
   protect,

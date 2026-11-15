@@ -576,6 +576,16 @@ export const departmentAPI = {
   delete: (id: string) => request(`/departments/${id}`, { method: 'DELETE' }),
 };
 
+export const promotionAPI = {
+  create: (body: object) =>
+    request('/promotions', { method: 'POST', body: JSON.stringify(body) }),
+  getAll: (params?: Record<string, string>) =>
+    request(`/promotions${qs(params)}`),
+  getMy: () => request('/promotions/my'),
+  getReport: (params: Record<string, string>) =>
+    request(`/promotions/report${qs(params)}`),
+};
+
 export const performanceAPI = {
   getAll: (params?: Record<string, string>) =>
     request(`/performance${qs(params)}`),
@@ -1045,6 +1055,15 @@ export const documentAPI = {
     request(`/documents/${id}/download`, {
       headers: { 'X-Doc-Token': docToken },
     }),
+  // Signed 2-minute link: opening it in the phone's browser saves the file (needs the OTP-issued token first).
+  downloadUrl: async (id: string, docToken: string) => {
+    const r = await request(`/documents/${id}/download-link`, {
+      headers: { 'X-Doc-Token': docToken },
+    });
+    return `${BASE_URL}${r.data.path}`;
+  },
+  update: (id: string, body: object) =>
+    request(`/documents/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   delete: (id: string) => request(`/documents/${id}`, { method: 'DELETE' }),
   upload: async (formData: FormData) => {
     const token = await getToken();

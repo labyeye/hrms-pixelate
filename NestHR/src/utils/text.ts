@@ -5,3 +5,10 @@ export function sentence(value?: string | null): string {
     .trim();
   return t ? t[0].toUpperCase() + t.slice(1).toLowerCase() : '';
 }
+
+/** "half_day" / "ON_LEAVE" -> "Half Day" / "On Leave". */
+export const titleCase = (v?: string | null) =>
+  (v ?? '')
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, c => c.toUpperCase());

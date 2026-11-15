@@ -154,7 +154,7 @@ export default function AssetsScreen() {
             </View>
             <View style={styles.infoDivider} />
             <View style={styles.infoCol}>
-              <Text style={styles.infoLabel}>ASSIGNED ON</Text>
+              <Text style={styles.infoLabel}>Assigned On</Text>
               <Text style={styles.infoVal}>
                 {item.assignedDate
                   ? new Date(item.assignedDate).toLocaleDateString('en-IN')

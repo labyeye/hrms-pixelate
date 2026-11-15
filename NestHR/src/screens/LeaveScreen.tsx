@@ -1205,7 +1205,7 @@ export default function LeaveScreen() {
                 showsVerticalScrollIndicator={false}
               >
                 <View>
-                  <Text style={styles.fieldLabel}>LEAVE TYPE</Text>
+                  <Text style={styles.fieldLabel}>Leave Type</Text>
                   <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
@@ -1357,7 +1357,7 @@ export default function LeaveScreen() {
               >
                 {/* Horizontal scrollable Leave Type chips */}
                 <View>
-                  <Text style={styles.fieldLabel}>LEAVE TYPE</Text>
+                  <Text style={styles.fieldLabel}>Leave Type</Text>
                   <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}

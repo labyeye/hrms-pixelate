@@ -8,6 +8,7 @@ import {
   Platform,
   StyleSheet,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Download } from 'lucide-react-native';
 import { API_BASE_URL } from '../../config/env';
 import { APP_VERSION } from '../../config/version';
@@ -33,25 +34,57 @@ const isOlder = (a: string, b: string) => {
   return false;
 };
 
+const SNOOZE_KEY = 'nesthr:update:snooze'; // { version, until }
+const SKIP_KEY = 'nesthr:update:skip'; // version the user chose "Not now" for
+const SNOOZE_MS = 24 * 60 * 60 * 1000;
+
 // Checks the backend on launch. Older than latestVersion -> dismissible
 // "Update available"; older than minVersion -> blocking, no dismiss.
 export default function UpdatePrompt() {
   const [info, setInfo] = useState<VersionInfo | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const [muted, setMuted] = useState(true); // true until storage says we may show it
 
   useEffect(() => {
     const ctrl = new AbortController();
-    fetch(`${API_BASE_URL}/app-version`, { signal: ctrl.signal })
-      .then(r => r.json())
-      .then(r => r?.success && setInfo(r.data))
-      .catch(() => {});
+    (async () => {
+      try {
+        const r = await (
+          await fetch(`${API_BASE_URL}/app-version`, { signal: ctrl.signal })
+        ).json();
+        if (!r?.success) return;
+        const data: VersionInfo = r.data;
+        let hide = false;
+        try {
+          const [skip, snooze] = await Promise.all([
+            AsyncStorage.getItem(SKIP_KEY),
+            AsyncStorage.getItem(SNOOZE_KEY),
+          ]);
+          const sn = snooze ? JSON.parse(snooze) : null;
+          hide =
+            skip === data.latestVersion ||
+            (sn?.version === data.latestVersion && sn.until > Date.now());
+        } catch {
+          /* storage unavailable: just show it */
+        }
+        setMuted(hide);
+        setInfo(data);
+      } catch {
+        /* offline: no prompt */
+      }
+    })();
     return () => ctrl.abort();
   }, []);
+
+  const close = (key: string, value: string) => {
+    AsyncStorage.setItem(key, value).catch(() => {});
+    setDismissed(true);
+  };
 
   if (!info) return null;
   const force = isOlder(APP_VERSION, info.minVersion);
   const optional = isOlder(APP_VERSION, info.latestVersion);
-  if (!force && !(optional && !dismissed)) return null;
+  if (!force && !(optional && !dismissed && !muted)) return null;
 
   const url = Platform.OS === 'ios' ? info.iosUrl : info.androidUrl;
 
@@ -78,9 +111,26 @@ export default function UpdatePrompt() {
             <Text style={s.primaryText}>Update now</Text>
           </TouchableOpacity>
           {!force && (
-            <TouchableOpacity onPress={() => setDismissed(true)}>
-              <Text style={s.later}>Later</Text>
-            </TouchableOpacity>
+            <View style={s.laterRow}>
+              <TouchableOpacity
+                onPress={() =>
+                  close(
+                    SNOOZE_KEY,
+                    JSON.stringify({
+                      version: info.latestVersion,
+                      until: Date.now() + SNOOZE_MS,
+                    }),
+                  )
+                }
+              >
+                <Text style={s.later}>Remind me later</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => close(SKIP_KEY, info.latestVersion)}
+              >
+                <Text style={s.later}>Not now</Text>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
       </View>
@@ -138,6 +188,7 @@ const s = StyleSheet.create({
     marginTop: 6,
   },
   primaryText: { fontFamily: FONT.bold, fontSize: 14, color: C.white },
+  laterRow: { flexDirection: 'row', gap: 24 },
   later: {
     fontFamily: FONT.bold,
     fontSize: 13,

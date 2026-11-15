@@ -76,8 +76,24 @@ import DashStatCard, { dashStatRow } from '../components/common/DashStatCard';
 import { TimePickerField } from '../components/common/DatePickerField';
 
 // Icon-only attendance table: fixed widths for the narrow columns, the employee column takes the rest.
-const T_ATT_PHONE = { status: 34, time: 56, hrs: 0, ot: 0, method: 0, loc: 0, act: 56 };
-const T_ATT_TABLET = { status: 44, time: 82, hrs: 54, ot: 46, method: 82, loc: 40, act: 32 };
+const T_ATT_PHONE = {
+  status: 34,
+  time: 56,
+  hrs: 0,
+  ot: 0,
+  method: 0,
+  loc: 0,
+  act: 56,
+};
+const T_ATT_TABLET = {
+  status: 44,
+  time: 82,
+  hrs: 54,
+  ot: 46,
+  method: 82,
+  loc: 40,
+  act: 32,
+};
 
 function openLocationInMaps(loc: { lat: number; lng: number }) {
   Linking.openURL(
@@ -206,7 +222,10 @@ export default function AttendanceScreen({ navigation }: any) {
         { status: statusFilter, sort: sortKey },
         true,
       );
-      Alert.alert('Saved', 'This filter and sort will open by default for you.');
+      Alert.alert(
+        'Saved',
+        'This filter and sort will open by default for you.',
+      );
     } catch (e: any) {
       Alert.alert('Could not save', e?.message || 'Please try again');
     }
@@ -950,66 +969,70 @@ export default function AttendanceScreen({ navigation }: any) {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <>
-            {!isEmployee ? (
-              <View style={dashStatRow}>
-                <DashStatCard
-                  index={0}
-                  label="Present"
-                  value={summary.present}
-                  icon={STATUS_CONFIG.present.icon}
-                  color={STATUS_CONFIG.present.color}
-                />
-                <DashStatCard
-                  index={1}
-                  label="Absent"
-                  value={summary.absent}
-                  icon={STATUS_CONFIG.absent.icon}
-                  color={STATUS_CONFIG.absent.color}
-                />
-                <DashStatCard
-                  index={2}
-                  label="Late"
-                  value={summary.late}
-                  icon={STATUS_CONFIG.late.icon}
-                  color={STATUS_CONFIG.late.color}
-                />
-                <DashStatCard
-                  index={3}
-                  label="Half Day"
-                  value={summary.half_day}
-                  icon={STATUS_CONFIG.half_day.icon}
-                  color={STATUS_CONFIG.half_day.color}
-                />
-              </View>
-            ) : null}
-            {(() => {
-              const W = isTablet ? T_ATT_TABLET : T_ATT_PHONE;
-              const hc = (width: number, icon: React.ReactNode) => (
-                <View style={{ width, alignItems: 'center' }}>{icon}</View>
-              );
-              return (
-                <View style={styles.tHead}>
-                  <View style={{ flex: 2.4, minWidth: 0 }}>
-                    <Users size={15} color={C.textMuted} />
-                  </View>
-                  {isTablet && hc(W.status, <Activity size={15} color={C.textMuted} />)}
-                  {hc(W.time, <LogIn size={15} color={C.success} />)}
-                  {hc(W.time, <LogOut size={15} color={C.danger} />)}
-                  {isTablet && (
-                    <>
-                      {hc(W.hrs, <Timer size={15} color={C.textMuted} />)}
-                      {hc(W.ot, <Hourglass size={15} color={C.warning} />)}
-                      {hc(W.method, <Fingerprint size={15} color="#7C3AED" />)}
-                      {hc(W.loc, <MapPin size={15} color={C.primary} />)}
-                      <View style={{ flex: 1, minWidth: 40 }}>
-                        <StickyNote size={15} color={C.textMuted} />
-                      </View>
-                    </>
-                  )}
-                  <View style={{ width: W.act }} />
+              {!isEmployee ? (
+                <View style={dashStatRow}>
+                  <DashStatCard
+                    index={0}
+                    label="Present"
+                    value={summary.present}
+                    icon={STATUS_CONFIG.present.icon}
+                    color={STATUS_CONFIG.present.color}
+                  />
+                  <DashStatCard
+                    index={1}
+                    label="Absent"
+                    value={summary.absent}
+                    icon={STATUS_CONFIG.absent.icon}
+                    color={STATUS_CONFIG.absent.color}
+                  />
+                  <DashStatCard
+                    index={2}
+                    label="Late"
+                    value={summary.late}
+                    icon={STATUS_CONFIG.late.icon}
+                    color={STATUS_CONFIG.late.color}
+                  />
+                  <DashStatCard
+                    index={3}
+                    label="Half Day"
+                    value={summary.half_day}
+                    icon={STATUS_CONFIG.half_day.icon}
+                    color={STATUS_CONFIG.half_day.color}
+                  />
                 </View>
-              );
-            })()}
+              ) : null}
+              {(() => {
+                const W = isTablet ? T_ATT_TABLET : T_ATT_PHONE;
+                const hc = (width: number, icon: React.ReactNode) => (
+                  <View style={{ width, alignItems: 'center' }}>{icon}</View>
+                );
+                return (
+                  <View style={styles.tHead}>
+                    <View style={{ flex: 2.4, minWidth: 0 }}>
+                      <Users size={15} color={C.textMuted} />
+                    </View>
+                    {isTablet &&
+                      hc(W.status, <Activity size={15} color={C.textMuted} />)}
+                    {hc(W.time, <LogIn size={15} color={C.success} />)}
+                    {hc(W.time, <LogOut size={15} color={C.danger} />)}
+                    {isTablet && (
+                      <>
+                        {hc(W.hrs, <Timer size={15} color={C.textMuted} />)}
+                        {hc(W.ot, <Hourglass size={15} color={C.warning} />)}
+                        {hc(
+                          W.method,
+                          <Fingerprint size={15} color="#7C3AED" />,
+                        )}
+                        {hc(W.loc, <MapPin size={15} color={C.primary} />)}
+                        <View style={{ flex: 1, minWidth: 40 }}>
+                          <StickyNote size={15} color={C.textMuted} />
+                        </View>
+                      </>
+                    )}
+                    <View style={{ width: W.act }} />
+                  </View>
+                );
+              })()}
             </>
           }
           ListFooterComponent={
@@ -1043,13 +1066,17 @@ export default function AttendanceScreen({ navigation }: any) {
             const overtime = (item as any).overtime;
             const earlyLeaving = (item as any).earlyLeaving;
             const verifyMode = (item as any).verifyMode;
-            const VerifyIcon = verifyMode ? VERIFY_MODE_ICONS[verifyMode] : null;
+            const VerifyIcon = verifyMode
+              ? VERIFY_MODE_ICONS[verifyMode]
+              : null;
             const hasLoc = !!(item.checkInLocation || item.checkOutLocation);
             const isVirtual = item._id.startsWith('v_');
             const canMenu =
               !isEmployee && !(isVirtual && item.status === 'weekend');
             const initials = emp
-              ? `${emp.firstName?.[0] || ''}${emp.lastName?.[0] || ''}`.toUpperCase()
+              ? `${emp.firstName?.[0] || ''}${
+                  emp.lastName?.[0] || ''
+                }`.toUpperCase()
               : '?';
             const sub = isEmployee
               ? new Date(item.date).toLocaleDateString('en-IN', {
@@ -1100,20 +1127,26 @@ export default function AttendanceScreen({ navigation }: any) {
                   <LogIn size={15} color={C.success} />
                   <Text style={styles.tTime}>{ciTime || '–'}</Text>
                   {!!item.checkIn && (
-                    <Text style={styles.tSub}>{fmtDay(item.checkIn as any)}</Text>
+                    <Text style={styles.tSub}>
+                      {fmtDay(item.checkIn as any)}
+                    </Text>
                   )}
                 </View>
                 <View style={styles.tDetailItem}>
                   <LogOut size={15} color={C.danger} />
                   <Text style={styles.tTime}>{coTime || '–'}</Text>
                   {!!item.checkOut && (
-                    <Text style={styles.tSub}>{fmtDay(item.checkOut as any)}</Text>
+                    <Text style={styles.tSub}>
+                      {fmtDay(item.checkOut as any)}
+                    </Text>
                   )}
                 </View>
                 {(!!workHours || overtime > 0 || earlyLeaving) && (
                   <View style={styles.tDetailItem}>
                     <Timer size={15} color={C.textMuted} />
-                    {!!workHours && <Text style={styles.tTime}>{workHours}h</Text>}
+                    {!!workHours && (
+                      <Text style={styles.tTime}>{workHours}h</Text>
+                    )}
                     {overtime > 0 && (
                       <Text style={[styles.tOt, { color: C.warning }]}>
                         +{overtime}
@@ -1151,166 +1184,192 @@ export default function AttendanceScreen({ navigation }: any) {
             ) : null;
             return (
               <View>
-              <View style={styles.tRow}>
-                {/* Employee: avatar, name, then a line of small icons (method, location, note) */}
-                <View style={styles.tEmpCell}>
-                  {emp?.avatar ? (
-                    <Image
-                      source={{ uri: emp.avatar }}
-                      style={[
-                        styles.tAvatar,
-                        { borderColor: isTablet ? C.primary : cfg.color },
-                      ]}
-                    />
-                  ) : (
-                    <View
-                      style={[
-                        styles.tAvatar,
-                        styles.empPhotoFallback,
-                        {
-                          backgroundColor: C.primary + '1A',
-                          borderColor: isTablet ? C.primary : cfg.color,
-                        },
-                      ]}
-                    >
-                      <Text style={[styles.empPhotoInitials, { color: C.primary, fontSize: 11 }]}>
-                        {initials}
-                      </Text>
-                    </View>
-                  )}
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={styles.tName} numberOfLines={2}>
-                      {emp ? `${emp.firstName} ${emp.lastName}` : 'Unknown'}
-                    </Text>
-                    <View style={styles.tSubRow}>
-                      {!!sub && (
-                        <Text style={styles.tSub} numberOfLines={1}>
-                          {sub}
-                        </Text>
-                      )}
-                    </View>
-                  </View>
-                </View>
-
-                {/* Status: icon only (tablet). On the phone the avatar border shows it. */}
-                {isTablet && (
-                  <View style={{ width: W.status, alignItems: 'center' }}>
-                    <View
-                      accessibilityLabel={sentence(item.status)}
-                      style={[
-                        styles.tStatusIcon,
-                        { backgroundColor: cfg.bg, borderColor: cfg.color },
-                      ]}
-                    >
-                      <StatusIcon size={14} color={cfg.color} />
-                    </View>
-                  </View>
-                )}
-
-                {timeCell(ciTime, fmtDay(item.checkIn as any))}
-                {timeCell(coTime, fmtDay(item.checkOut as any))}
-
-                {isTablet && (
-                  <>
-                    {/* Hours (+ a small icon when they left early) */}
-                    <View style={{ width: W.hrs, alignItems: 'center' }}>
-                      {workHours ? (
-                        <Text style={styles.tTime} numberOfLines={1} adjustsFontSizeToFit>
-                          {workHours}h
-                        </Text>
-                      ) : (
-                        <Text style={styles.tTimeEmpty}>–</Text>
-                      )}
-                      {earlyLeaving && (
-                        <LogOut size={11} color={C.primary} style={{ marginTop: 2 }} />
-                      )}
-                    </View>
-
-                    {/* Overtime */}
-                    <View style={{ width: W.ot, alignItems: 'center' }}>
-                      {overtime > 0 ? (
-                        <Text style={[styles.tTime, { color: C.warning }]}>{overtime}h</Text>
-                      ) : (
-                        <Text style={styles.tTimeEmpty}>–</Text>
-                      )}
-                    </View>
-
-                    {/* Method */}
-                    <View style={{ width: W.method, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                      {VerifyIcon ? (
-                        <>
-                          <VerifyIcon size={13} color="#7C3AED" />
-                          <Text style={styles.tSub} numberOfLines={1}>
-                            {VERIFY_MODE_LABELS[verifyMode] || sentence(verifyMode)}
-                          </Text>
-                        </>
-                      ) : (
-                        <Text style={styles.tTimeEmpty}>–</Text>
-                      )}
-                    </View>
-
-                    {/* Location */}
-                    <View style={{ width: W.loc, alignItems: 'center' }}>
-                      {hasLoc ? (
-                        <TouchableOpacity
-                          onPress={() => showLocationOptions(item)}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                <View style={styles.tRow}>
+                  {/* Employee: avatar, name, then a line of small icons (method, location, note) */}
+                  <View style={styles.tEmpCell}>
+                    {emp?.avatar ? (
+                      <Image
+                        source={{ uri: emp.avatar }}
+                        style={[
+                          styles.tAvatar,
+                          { borderColor: isTablet ? C.primary : cfg.color },
+                        ]}
+                      />
+                    ) : (
+                      <View
+                        style={[
+                          styles.tAvatar,
+                          styles.empPhotoFallback,
+                          {
+                            backgroundColor: C.primary + '1A',
+                            borderColor: isTablet ? C.primary : cfg.color,
+                          },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.empPhotoInitials,
+                            { color: C.primary, fontSize: 11 },
+                          ]}
                         >
-                          <MapPin size={16} color={C.primary} />
-                        </TouchableOpacity>
-                      ) : (
-                        <Text style={styles.tTimeEmpty}>–</Text>
-                      )}
-                    </View>
-
-                    {/* Note (takes the leftover width) */}
-                    <View style={{ flex: 1, minWidth: 40 }}>
-                      {item.notes ? (
-                        <Text style={styles.tSub} numberOfLines={2}>
-                          {item.notes}
+                          {initials}
                         </Text>
-                      ) : (
-                        <Text style={styles.tTimeEmpty}>–</Text>
-                      )}
+                      </View>
+                    )}
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={styles.tName} numberOfLines={2}>
+                        {emp ? `${emp.firstName} ${emp.lastName}` : 'Unknown'}
+                      </Text>
+                      <View style={styles.tSubRow}>
+                        {!!sub && (
+                          <Text style={styles.tSub} numberOfLines={1}>
+                            {sub}
+                          </Text>
+                        )}
+                      </View>
                     </View>
-                  </>
-                )}
+                  </View>
 
-                {/* ⋮ menu: edit a record, or mark present / absent for someone with no record */}
-                <View
-                  style={{
-                    width: W.act,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: isTablet ? 'center' : 'flex-end',
-                    gap: 8,
-                  }}
-                >
-                  {canMenu && (
-                    <TouchableOpacity
-                      onPress={() => setRowMenu(item)}
-                      hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
-                      accessibilityLabel="More actions"
-                    >
-                      <EllipsisVertical size={18} color="#475569" />
-                    </TouchableOpacity>
+                  {/* Status: icon only (tablet). On the phone the avatar border shows it. */}
+                  {isTablet && (
+                    <View style={{ width: W.status, alignItems: 'center' }}>
+                      <View
+                        accessibilityLabel={sentence(item.status)}
+                        style={[
+                          styles.tStatusIcon,
+                          { backgroundColor: cfg.bg, borderColor: cfg.color },
+                        ]}
+                      >
+                        <StatusIcon size={14} color={cfg.color} />
+                      </View>
+                    </View>
                   )}
-                  {!isTablet && (
-                    <TouchableOpacity
-                      onPress={() => toggleExpandAtt(item._id)}
-                      hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
-                      accessibilityLabel={isOpen ? 'Hide details' : 'Show details'}
-                    >
-                      {isOpen ? (
-                        <ChevronUp size={18} color={C.primary} />
-                      ) : (
-                        <ChevronDown size={18} color={C.primary} />
-                      )}
-                    </TouchableOpacity>
+
+                  {timeCell(ciTime, fmtDay(item.checkIn as any))}
+                  {timeCell(coTime, fmtDay(item.checkOut as any))}
+
+                  {isTablet && (
+                    <>
+                      {/* Hours (+ a small icon when they left early) */}
+                      <View style={{ width: W.hrs, alignItems: 'center' }}>
+                        {workHours ? (
+                          <Text
+                            style={styles.tTime}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                          >
+                            {workHours}h
+                          </Text>
+                        ) : (
+                          <Text style={styles.tTimeEmpty}>–</Text>
+                        )}
+                        {earlyLeaving && (
+                          <LogOut
+                            size={11}
+                            color={C.primary}
+                            style={{ marginTop: 2 }}
+                          />
+                        )}
+                      </View>
+
+                      {/* Overtime */}
+                      <View style={{ width: W.ot, alignItems: 'center' }}>
+                        {overtime > 0 ? (
+                          <Text style={[styles.tTime, { color: C.warning }]}>
+                            {overtime}h
+                          </Text>
+                        ) : (
+                          <Text style={styles.tTimeEmpty}>–</Text>
+                        )}
+                      </View>
+
+                      {/* Method */}
+                      <View
+                        style={{
+                          width: W.method,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 4,
+                        }}
+                      >
+                        {VerifyIcon ? (
+                          <>
+                            <VerifyIcon size={13} color="#7C3AED" />
+                            <Text style={styles.tSub} numberOfLines={1}>
+                              {VERIFY_MODE_LABELS[verifyMode] ||
+                                sentence(verifyMode)}
+                            </Text>
+                          </>
+                        ) : (
+                          <Text style={styles.tTimeEmpty}>–</Text>
+                        )}
+                      </View>
+
+                      {/* Location */}
+                      <View style={{ width: W.loc, alignItems: 'center' }}>
+                        {hasLoc ? (
+                          <TouchableOpacity
+                            onPress={() => showLocationOptions(item)}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          >
+                            <MapPin size={16} color={C.primary} />
+                          </TouchableOpacity>
+                        ) : (
+                          <Text style={styles.tTimeEmpty}>–</Text>
+                        )}
+                      </View>
+
+                      {/* Note (takes the leftover width) */}
+                      <View style={{ flex: 1, minWidth: 40 }}>
+                        {item.notes ? (
+                          <Text style={styles.tSub} numberOfLines={2}>
+                            {item.notes}
+                          </Text>
+                        ) : (
+                          <Text style={styles.tTimeEmpty}>–</Text>
+                        )}
+                      </View>
+                    </>
                   )}
+
+                  {/* ⋮ menu: edit a record, or mark present / absent for someone with no record */}
+                  <View
+                    style={{
+                      width: W.act,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: isTablet ? 'center' : 'flex-end',
+                      gap: 8,
+                    }}
+                  >
+                    {canMenu && (
+                      <TouchableOpacity
+                        onPress={() => setRowMenu(item)}
+                        hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+                        accessibilityLabel="More actions"
+                      >
+                        <EllipsisVertical size={18} color="#475569" />
+                      </TouchableOpacity>
+                    )}
+                    {!isTablet && (
+                      <TouchableOpacity
+                        onPress={() => toggleExpandAtt(item._id)}
+                        hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}
+                        accessibilityLabel={
+                          isOpen ? 'Hide details' : 'Show details'
+                        }
+                      >
+                        {isOpen ? (
+                          <ChevronUp size={18} color={C.primary} />
+                        ) : (
+                          <ChevronDown size={18} color={C.primary} />
+                        )}
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
-              </View>
-              {panel}
+                {panel}
               </View>
             );
           }}
@@ -2099,7 +2158,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
-  tEmpCell: { flex: 2.4, minWidth: 0,flexDirection: 'row', alignItems: 'center', gap: 6 },
+  tEmpCell: {
+    flex: 2.4,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   tAvatar: { width: 32, height: 32, borderRadius: 16, borderWidth: 2 },
   tName: { fontSize: 13, color: C.black, fontWeight: '400' },
   tSubRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
@@ -2138,7 +2203,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingTop: 10,
     paddingBottom: 4,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
     letterSpacing: 0.5,
   },
   rowMenuItem: {

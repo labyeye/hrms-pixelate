@@ -24,8 +24,8 @@ android {
         applicationId "com.nesthr"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 16
-        versionName "1.8"
+        versionCode 18
+        versionName "2.0"
     }
     signingConfigs {
         release {

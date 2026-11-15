@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { titleCase } from '../utils/text';
 import {
   View,
   Text,
@@ -43,6 +44,7 @@ import {
   authAPI,
   announcementAPI,
   attendanceSettingsAPI,
+  promotionAPI,
 } from '../api/api';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { PieChart } from 'react-native-gifted-charts';
@@ -333,7 +335,8 @@ function AdminDashboard({ navigation }: any) {
               })}
             </ScrollView>
             {(() => {
-              const t = TODAY_TABS.find(x => x.key === todayTab) || TODAY_TABS[0];
+              const t =
+                TODAY_TABS.find(x => x.key === todayTab) || TODAY_TABS[0];
               const Icon = t.icon;
               const value = Number(stats?.[t.key]) || 0;
               const total = Number(stats?.totalEmployees) || 0;
@@ -372,10 +375,6 @@ function AdminDashboard({ navigation }: any) {
               );
             })()}
           </FadeInUp>
-
-          
-
-          
 
           <View style={[styles.chartsRow, wide && styles.chartsRowWide]}>
             {!!stats?.dailyStats?.length && (
@@ -595,6 +594,7 @@ function EmployeeDashboard({ navigation }: any) {
   const [empProfile, setEmpProfile] = useState<any>(null);
   const [myAttendance, setMyAttendance] = useState<any[]>([]);
   const [latestPayroll, setLatestPayroll] = useState<any>(null);
+  const [growth, setGrowth] = useState<any>(null);
   const [essStats, setEssStats] = useState<any>(null);
   const [myBalance, setMyBalance] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -615,7 +615,7 @@ function EmployeeDashboard({ navigation }: any) {
 
   const load = useCallback(async () => {
     try {
-      const [profileRes, attRes, payRes, essRes, balRes] =
+      const [profileRes, attRes, payRes, essRes, balRes, growthRes] =
         await Promise.allSettled([
           employeeAPI.getMe(),
           attendanceAPI.getAll({
@@ -626,7 +626,11 @@ function EmployeeDashboard({ navigation }: any) {
           payrollAPI.getMy(),
           dashboardAPI.getEmployeeStats(),
           attendanceSettingsAPI.getMyBalance(),
+          promotionAPI.getMy(),
         ]);
+      if (growthRes.status === 'fulfilled' && growthRes.value?.success) {
+        setGrowth(growthRes.value.data);
+      }
       if (profileRes.status === 'fulfilled') {
         setEmpProfile(profileRes.value?.data || profileRes.value);
       }
@@ -927,7 +931,7 @@ function EmployeeDashboard({ navigation }: any) {
 
                 <View style={styles.essGridCard}>
                   <CheckCircle2 size={16} color={C.warning} />
-                  <Text style={styles.essGridCardLabel}>APPROVALS</Text>
+                  <Text style={styles.essGridCardLabel}>Approvals</Text>
                   <Text style={styles.essGridCardVal}>
                     {essStats.pendingApprovalsCount > 0
                       ? `${essStats.pendingApprovalsCount} Pending`
@@ -938,7 +942,7 @@ function EmployeeDashboard({ navigation }: any) {
 
                 <View style={styles.essGridCard}>
                   <IndianRupee size={16} color={C.success} />
-                  <Text style={styles.essGridCardLabel}>UNPAID SALARY</Text>
+                  <Text style={styles.essGridCardLabel}>Unpaid Salary</Text>
                   <Text style={styles.essGridCardVal}>
                     {essStats.pendingSalary?.length > 0
                       ? `${essStats.pendingSalary.length} Slips`
@@ -1107,7 +1111,7 @@ function EmployeeDashboard({ navigation }: any) {
                   ]}
                 >
                   <Text style={styles.attDayStatusText}>
-                    {activeRecord.status.replace(/_/g, ' ').toUpperCase()}
+                    {titleCase(activeRecord.status)}
                   </Text>
                 </View>
                 <View style={styles.attDayRow}>
@@ -1288,7 +1292,7 @@ function EmployeeDashboard({ navigation }: any) {
                       <CalendarOff size={14} color={C.primary} />
                     </View>
                     <Text style={styles.quickLabel}>
-                      {l.leaveType.replace(/_/g, ' ').toUpperCase()}
+                      {titleCase(l.leaveType)}
                     </Text>
                     <Text style={styles.quickVal}>
                       {l.daysUsed}/{l.daysAllowed}d
@@ -1318,12 +1322,63 @@ function EmployeeDashboard({ navigation }: any) {
                       {latestPayroll.year}
                     </Text>
                     <Text style={styles.payslipStatus}>
-                      {latestPayroll.status?.toUpperCase()}
+                      {titleCase(latestPayroll.status)}
                     </Text>
                   </View>
                 </View>
                 <Text style={styles.payslipNet}>
                   ₹{(latestPayroll.netSalary || 0).toLocaleString()}
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+          {/* Salary growth */}
+          {!!growth && (
+            <>
+              <Text style={styles.sectionLabel}>My Growth</Text>
+              <TouchableOpacity
+                style={styles.payslipCard}
+                onPress={() =>
+                  navigation.navigate('More', { screen: 'Promotions' })
+                }
+                activeOpacity={0.8}
+              >
+                <View style={styles.payslipLeft}>
+                  <TrendingUp size={20} color={C.primary} />
+                  <View>
+                    <Text style={styles.payslipMonth}>
+                      ₹
+                      {Math.round(growth.currentSalary || 0).toLocaleString(
+                        'en-IN',
+                      )}
+                    </Text>
+                    <Text style={styles.payslipStatus}>
+                      {growth.revisions?.length
+                        ? `${titleCase(
+                            growth.revisions[growth.revisions.length - 1].kind,
+                          )} · ${new Date(
+                            growth.revisions[
+                              growth.revisions.length - 1
+                            ].effectiveDate,
+                          ).toLocaleDateString('en-IN')}`
+                        : 'No revisions yet'}
+                    </Text>
+                  </View>
+                </View>
+                <Text
+                  style={[
+                    styles.payslipNet,
+                    {
+                      color:
+                        (growth.totalGrowthAmount || 0) >= 0
+                          ? C.success
+                          : C.danger,
+                    },
+                  ]}
+                >
+                  {(growth.totalGrowthAmount || 0) >= 0 ? '+' : '−'}
+                  {growth.totalGrowthPct ?? 0}%
                 </Text>
               </TouchableOpacity>
             </>
@@ -1345,6 +1400,24 @@ function EmployeeDashboard({ navigation }: any) {
             >
               <IndianRupee size={16} color={C.white} />
               <Text style={styles.quickActionText}>My Payslips</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={[styles.quickActions, { marginTop: 10 }]}>
+            <TouchableOpacity
+              style={[styles.quickActionBtn, { backgroundColor: C.success }]}
+              onPress={() =>
+                navigation.navigate('More', { screen: 'Promotions' })
+              }
+            >
+              <TrendingUp size={16} color={C.white} />
+              <Text style={styles.quickActionText}>My Growth</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.quickActionBtn, { backgroundColor: '#FA731C' }]}
+              onPress={() => navigation.navigate('More', { screen: 'Loans' })}
+            >
+              <IndianRupee size={16} color={C.white} />
+              <Text style={styles.quickActionText}>My Loans</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -1539,7 +1612,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '400',
     color: C.black,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
     marginBottom: 8,
   },
   essAnnounceRow: {
@@ -1573,7 +1646,7 @@ const styles = StyleSheet.create({
   essAnnounceBadgeText: {
     fontSize: 9,
     fontWeight: '400',
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
   },
   essAnnounceDot: {
     width: 8,
@@ -1599,7 +1672,7 @@ const styles = StyleSheet.create({
     color: C.white,
     fontSize: 10,
     fontWeight: '400',
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
   },
 
   loaderWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -1629,7 +1702,7 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 11,
     fontWeight: '400',
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
     color: C.textMuted,
     marginBottom: 10,
     marginTop: 10,
@@ -1704,7 +1777,7 @@ const styles = StyleSheet.create({
   todayLabel: {
     fontSize: 10,
     color: C.textMuted,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
     letterSpacing: 0.6,
   },
   todayNumRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
@@ -1724,7 +1797,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
     fontWeight: '400',
     color: C.textMuted,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
     letterSpacing: 0.6,
     textAlign: 'center',
   },
@@ -1832,7 +1905,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: C.textMuted,
     fontWeight: '400',
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
   },
 
   // Employee: Today card
@@ -1871,7 +1944,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: C.textMuted,
     fontWeight: '400',
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
   },
   todayTimeVal: { fontSize: 14, fontWeight: '400', color: C.black },
   todayAbsent: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -1912,7 +1985,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '400',
     color: C.black,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
   },
 
   // Employee: Payslip
@@ -1987,7 +2060,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '400',
     color: C.black,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
   },
   tabBtnTextActive: { color: C.white },
   tabBtnDate: {
@@ -2026,7 +2099,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '400',
     color: C.textMuted,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
     letterSpacing: 0.3,
   },
   attDayItemVal: { fontSize: 15, fontWeight: '400', color: C.black },
@@ -2056,7 +2129,7 @@ const styles = StyleSheet.create({
     color: C.white,
     fontSize: 13,
     fontWeight: '400',
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
   },
 
   // Photo edit badge on avatar
@@ -2188,7 +2261,7 @@ const styles = StyleSheet.create({
     fontFamily: FONT.bold,
     fontSize: 12,
     color: C.black,
-    textTransform: 'uppercase',
+    textTransform: 'capitalize',
   },
   payValue: {
     fontFamily: FONT.bold,

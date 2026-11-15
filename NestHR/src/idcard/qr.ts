@@ -4,7 +4,9 @@ const QR = require('qrcode/lib/core/qrcode');
 
 const cache = new Map<string, { size: number; dark: boolean[] }>();
 
-export function qrMatrix(value: string): { size: number; dark: boolean[] } | null {
+export function qrMatrix(
+  value: string,
+): { size: number; dark: boolean[] } | null {
   if (!value) return null;
   const hit = cache.get(value);
   if (hit) return hit;
