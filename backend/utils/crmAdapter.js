@@ -244,7 +244,7 @@ exports.create = async (b) => {
       try {
         await credits.enable(company._id);
         await credits.grantBonus(company._id, {
-          credits: 1000,
+          credits: 500,
           days: 365,
           refId: `welcome:${company._id}`,
           note: "Welcome credits",
