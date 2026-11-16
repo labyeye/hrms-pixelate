@@ -15,13 +15,14 @@ const {
   PLAN_SLABS,
   PLAN_LABEL,
   calculatePricing,
+  withGst,
 } = require("../utils/pricing");
 
 const getPlans = asyncHandler(async (req, res) => {
   const plans = PLAN_SLABS.map((slab) => ({
     label: PLAN_LABEL,
     maxEmployees: slab.maxEmployees,
-    yearlyPrice: slab.yearlyPrice,
+    prices: slab.prices,
   }));
   res.json({ success: true, data: plans });
 });
@@ -138,6 +139,7 @@ const createOrder = asyncHandler(async (req, res) => {
   const {
     employeeCount,
     gateway = "cashfree",
+    geoTracking = false,
     offerCode,
     company: companyDetails,
   } = req.body;
@@ -155,7 +157,7 @@ const createOrder = asyncHandler(async (req, res) => {
 
   let pricing;
   try {
-    pricing = calculatePricing(empCount);
+    pricing = calculatePricing(empCount, geoTracking === true);
   } catch (e) {
     res.status(400);
     throw e;
@@ -173,7 +175,8 @@ const createOrder = asyncHandler(async (req, res) => {
     existingSubscription &&
     existingSubscription.status === "active" &&
     existingSubscription.tier === tier &&
-    empCount > (existingSubscription.maxEmployees || 0);
+    (empCount > (existingSubscription.maxEmployees || 0) ||
+      (pricing.geoTracking && existingSubscription.geoTracking === false));
   let chargePricing = pricing;
   if (isSeatTopUp) {
     const diff = pricing.yearlyPrice - (existingSubscription.yearlyPrice || 0);
@@ -209,10 +212,11 @@ const createOrder = asyncHandler(async (req, res) => {
     validatedOffer = offer;
   }
 
-  const amountRupees =
+  const baseAmount =
     billingCycle === "yearly"
       ? chargePricing.yearlyPrice
       : chargePricing.monthlyPrice;
+  const amountRupees = withGst(baseAmount);
 
   // New signup: no Company exists yet. Company/Subscription are only created
   // once payment is verified — don't touch either collection here.
@@ -268,6 +272,7 @@ const createOrder = asyncHandler(async (req, res) => {
           company: existingCompany._id,
           plan: pricing.tierLabel,
           tier: pricing.tier,
+          geoTracking: pricing.geoTracking,
           employeeCount: empCount,
           ratePerEmployee: pricing.ratePerEmployee,
           monthlyPrice: pricing.monthlyPrice,
@@ -302,6 +307,7 @@ const createOrder = asyncHandler(async (req, res) => {
         employeeCount: empCount,
         billingCycle,
         tier: pricing.tier,
+        geoTracking: pricing.geoTracking,
         ratePerEmployee: pricing.ratePerEmployee,
         tierLabel: pricing.tierLabel,
         monthlyPrice: pricing.monthlyPrice,
@@ -318,6 +324,8 @@ const createOrder = asyncHandler(async (req, res) => {
       checkoutUrl: result.checkoutUrl,
       mode: result.mode,
       amount: amountRupees,
+      baseAmount,
+      gstAmount: Math.round((amountRupees - baseAmount) * 100) / 100,
       currency: "INR",
       employeeCount: empCount,
       ratePerEmployee: pricing.ratePerEmployee,
@@ -425,10 +433,11 @@ async function _createCompanyAndActivateSteps({
     createdBy: req.user._id,
   });
 
-  const amountPaid =
+  const amountPaid = withGst(
     pendingOrder.billingCycle === "yearly"
       ? pendingOrder.yearlyPrice
-      : pendingOrder.monthlyPrice;
+      : pendingOrder.monthlyPrice,
+  );
   saga.amount = amountPaid;
 
   const startDate = new Date();
@@ -447,6 +456,7 @@ async function _createCompanyAndActivateSteps({
     company: company._id,
     plan: pendingOrder.tierLabel,
     tier: pendingOrder.tier,
+    geoTracking: !!pendingOrder.geoTracking,
     employeeCount: pendingOrder.employeeCount,
     ratePerEmployee: pendingOrder.ratePerEmployee,
     monthlyPrice: pendingOrder.monthlyPrice,
@@ -604,9 +614,11 @@ async function _activateSubscriptionSteps({
   const planName = subscription.plan;
   const amountPaid =
     subscription.pendingChargeAmount ??
-    (subscription.billingCycle === "yearly"
-      ? subscription.yearlyPrice
-      : subscription.monthlyPrice);
+    withGst(
+      subscription.billingCycle === "yearly"
+        ? subscription.yearlyPrice
+        : subscription.monthlyPrice,
+    );
   saga.amount = amountPaid;
 
   const startDate = new Date();

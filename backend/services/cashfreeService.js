@@ -18,13 +18,13 @@ function creds() {
   return { id, secret };
 }
 
-async function cf(method, path, body) {
+async function cf(method, path, body, version = API_VERSION) {
   const { id, secret } = creds();
   const r = await fetch(baseUrl() + path, {
     method,
     headers: {
       "Content-Type": "application/json",
-      "x-api-version": API_VERSION,
+      "x-api-version": version,
       "x-client-id": id,
       "x-client-secret": secret,
     },
@@ -113,4 +113,62 @@ function verifyWebhook(rawBody, signature, timestamp) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-module.exports = { createOrder, verifyOrder, refund, verifyWebhook };
+// ---- Subscriptions / AutoPay mandate (ON_DEMAND plan: we decide when and how much to charge) -------------
+// ponytail: written from Cashfree's Subscriptions docs, never run against sandbox. Check field names there first.
+const SUBS_VERSION = "2025-01-01";
+const PLAN_ID = "nesthr_on_demand";
+const mandateMax = () => Number(process.env.AUTOPAY_MAX_AMOUNT) || 50000;
+
+async function ensurePlan() {
+  try {
+    await cf("POST", "/plans", {
+      plan_id: PLAN_ID, plan_name: "NestHR auto-pay", plan_type: "ON_DEMAND",
+      plan_currency: "INR", plan_max_amount: mandateMax(), plan_note: "NestHR renewal and WhatsApp credit refill",
+    }, SUBS_VERSION);
+  } catch (e) {
+    if (!(e.status === 409 || /exist|duplicate/i.test(e.message))) throw e;
+  }
+}
+
+async function createMandate({ subscriptionId, customer }) {
+  await ensurePlan();
+  const phone = String(customer.phone || "").replace(/\D/g, "").slice(-10);
+  const r = await cf("POST", "/subscriptions", {
+    subscription_id: subscriptionId,
+    customer_details: {
+      customer_name: customer.name, customer_email: customer.email,
+      customer_phone: phone.length === 10 ? phone : "9999999999",
+    },
+    plan_details: { plan_id: PLAN_ID },
+    authorization_details: { authorization_amount: 1, authorization_amount_refund: true, payment_methods: ["upi", "enach"] },
+    subscription_meta: { return_url: `${backendUrl()}/api/billing/cashfree-return?order_id=autopay` },
+    subscription_expiry_time: new Date(Date.now() + 10 * 365 * 24 * 3600 * 1000).toISOString(),
+  }, SUBS_VERSION);
+  return { sessionId: r.subscription_session_id, mode: isSandbox() ? "sandbox" : "production" };
+}
+
+const getMandate = async (subscriptionId) => {
+  const r = await cf("GET", `/subscriptions/${encodeURIComponent(subscriptionId)}`, undefined, SUBS_VERSION);
+  return { status: r.subscription_status };
+};
+
+async function chargeMandate({ subscriptionId, paymentId, amount, note }) {
+  return cf("POST", "/subscriptions/pay", {
+    subscription_id: subscriptionId, payment_id: paymentId, payment_type: "CHARGE",
+    payment_amount: Math.round(amount * 100) / 100, payment_remarks: String(note || "").slice(0, 40) || undefined,
+  }, SUBS_VERSION);
+}
+
+async function getMandatePayment(subscriptionId, paymentId) {
+  const r = await cf("GET", `/subscriptions/${encodeURIComponent(subscriptionId)}/payments/${encodeURIComponent(paymentId)}`, undefined, SUBS_VERSION);
+  const p = Array.isArray(r) ? r[0] : r;
+  return { status: p?.payment_status, cfPaymentId: p?.cf_payment_id ? String(p.cf_payment_id) : undefined };
+}
+
+const cancelMandate = (subscriptionId) =>
+  cf("POST", `/subscriptions/${encodeURIComponent(subscriptionId)}/manage`, { subscription_id: subscriptionId, action: "CANCEL" }, SUBS_VERSION);
+
+module.exports = {
+  createOrder, verifyOrder, refund, verifyWebhook,
+  mandateMax, createMandate, getMandate, chargeMandate, getMandatePayment, cancelMandate,
+};

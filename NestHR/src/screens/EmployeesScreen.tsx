@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import Reveal from '../components/motion/Reveal';
 import { titleCase } from '../utils/text';
 import {
   View,
@@ -301,7 +302,6 @@ export default function EmployeesScreen() {
   // Phone table: employees whose row is expanded to show every detail
   const [expanded, setExpanded] = useState<string[]>([]);
   const toggleExpand = (id: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpanded(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
     );
@@ -1585,7 +1585,7 @@ export default function EmployeesScreen() {
                 {node}
               </View>
             );
-            const panel = isOpen ? (
+            const panel = (<Reveal open={isOpen}>
               <View style={styles.tDetail}>
                 {detail(
                   'Employee ID',
@@ -1610,7 +1610,7 @@ export default function EmployeesScreen() {
                     </View>,
                   )}
               </View>
-            ) : null;
+            </Reveal>);
 
             return (
               <View>
@@ -3272,7 +3272,7 @@ export default function EmployeesScreen() {
                               keyboardType: 'numbers-and-punctuation',
                               placeholder: 'e.g. 77.2090',
                             })}
-                            {F('Radius (meters)', 'geofenceRadiusMeters', {
+                            {F(Number(form.geofenceRadiusMeters) >= 1000 ? `Radius (meters) = ${Number(form.geofenceRadiusMeters) / 1000} km` : 'Radius in METERS (100 km = 100000)', 'geofenceRadiusMeters', {
                               keyboardType: 'numeric',
                               placeholder: '200',
                             })}

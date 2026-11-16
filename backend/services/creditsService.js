@@ -84,6 +84,7 @@ async function reserve(companyId, { template, phone }) {
       note: reason,
     });
     checkLow(companyId).catch(() => {});
+    require("./autopayService").maybeRefill(companyId).catch(() => {});
     return { ok: false, reason };
   }
 
@@ -98,6 +99,7 @@ async function reserve(companyId, { template, phone }) {
       status: "reserved",
     });
     checkLow(companyId).catch(() => {});
+    require("./autopayService").maybeRefill(companyId).catch(() => {});
     return { ok: true, ledgerId: row._id };
   } catch (e) {
     // could not record the debit: give the credit back rather than charge without a trace

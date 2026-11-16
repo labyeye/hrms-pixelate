@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import Reveal from '../components/motion/Reveal';
 import {
   View,
   Text,
@@ -378,9 +379,10 @@ export default function AuditLogScreen() {
     return (
       <TouchableOpacity
         style={styles.card}
-        onPress={() =>
-          hasDetails ? setExpanded(isExpanded ? null : item._id) : undefined
-        }
+        onPress={() => {
+          if (!hasDetails) return;
+          setExpanded(isExpanded ? null : item._id);
+        }}
         activeOpacity={hasDetails ? 0.7 : 1}
       >
         <View style={styles.cardTop}>
@@ -421,7 +423,7 @@ export default function AuditLogScreen() {
           </View>
         </View>
 
-        {isExpanded && hasDetails && (
+        <Reveal open={!!(isExpanded && hasDetails)}>
           <View style={styles.detailBox}>
             {Object.entries(item.details!).map(([k, v]) => (
               <View key={k} style={styles.detailRow}>
@@ -430,7 +432,7 @@ export default function AuditLogScreen() {
               </View>
             ))}
           </View>
-        )}
+        </Reveal>
       </TouchableOpacity>
     );
   };

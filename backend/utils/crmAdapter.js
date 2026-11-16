@@ -8,6 +8,7 @@ const { helpers: H } = require("./crmAccounts");
 const terms = require("./terms");
 const credits = require("../services/creditsService");
 const cfg = require("../config/credits");
+const { PLAN_SLABS, GST_RATE } = require("./planFeatures");
 const CreditLedger = require("../models/CreditLedger");
 const CreditWallet = require("../models/CreditWallet");
 
@@ -26,7 +27,16 @@ const meta = {
   paymentStatusOptions: ["pending", "completed", "failed"],
   planOptions: null, // free text
   limitFields: [{ key: "maxEmployees", label: "Employee limit" }],
-  flagFields: [{ key: "whatsapp", label: "WhatsApp included" }],
+  flagFields: [
+    { key: "whatsapp", label: "WhatsApp included" },
+    {
+      key: "geoTracking",
+      label: "Geo plan: geo-fencing + live GPS tracking",
+      default: false,
+    },
+  ],
+  // Lets the dashboard prefill "Amount paid" (price + GST) from employee limit + geo flag.
+  pricing: { slabs: PLAN_SLABS, gstRate: GST_RATE, flag: "geoTracking" },
   roleOptions: ROLES,
   defaultRole: "hr_manager",
   ownerRole: "super_admin",
@@ -64,7 +74,10 @@ const subView = (s) =>
     customPlanName: s.customPlanName,
     customFeatures: s.customFeatures || [],
     limits: { maxEmployees: s.maxEmployees },
-    flags: { whatsapp: s.tier !== "web_mobile" },
+    flags: {
+      whatsapp: s.tier !== "web_mobile",
+      geoTracking: s.geoTracking !== false,
+    },
   };
 const userView = (u, ownerId) => ({
   id: u._id,
@@ -202,7 +215,14 @@ exports.create = async (b) => {
     const amountPaid = free ? 0 : Math.max(0, Number(b.amountPaid) || 0);
     const sub = await Subscription.create({
       company: company._id,
-      plan: b.plan || (free ? "Diwali Free" : "NestHR"),
+      plan:
+        b.plan ||
+        (free
+          ? "Diwali Free"
+          : b.flags?.geoTracking
+            ? "NestHR Geo Tracking"
+            : "NestHR"),
+      geoTracking: free ? true : b.flags?.geoTracking === true,
       tier: b.flags?.whatsapp === false ? "web_mobile" : "web_mobile_whatsapp",
       employeeCount: max,
       monthlyPrice: 0,
@@ -285,6 +305,8 @@ exports.setSubscription = async (id, b) => {
     );
   if (b.flags?.whatsapp !== undefined)
     set.tier = b.flags.whatsapp ? "web_mobile_whatsapp" : "web_mobile";
+  if (b.flags?.geoTracking !== undefined)
+    set.geoTracking = !!b.flags.geoTracking;
   if (b.startDate) set.startDate = H.toDate(b.startDate, "start date");
   if (b.validTill) set.renewalDate = H.toDate(b.validTill, "valid-till date");
   if (set.isTrial) set.trialEndDate = set.renewalDate || undefined;

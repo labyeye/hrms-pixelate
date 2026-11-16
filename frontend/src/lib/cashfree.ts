@@ -15,6 +15,17 @@ const loadSdk = (): Promise<boolean> =>
     document.body.appendChild(s);
   });
 
+/** Opens Cashfree's mandate authorization (UPI AutoPay / eNACH) for a session created by POST /autopay/setup. */
+export async function authorizeMandate(s: { sessionId: string; mode?: string }) {
+  if (!(await loadSdk()))
+    throw new Error("Failed to load payment checkout. Check your connection.");
+  const result = await window
+    .Cashfree({ mode: s.mode === "sandbox" ? "sandbox" : "production" })
+    .subscriptionsCheckout({ subsSessionId: s.sessionId, redirectTarget: "_modal" });
+  if (result?.error && !/cancel|closed|dismiss/i.test(String(result.error.message || "")))
+    throw new Error(result.error.message || "Authorization failed");
+}
+
 /**
  * Opens the Cashfree payment modal for an order created by the backend ({ paymentSessionId, mode }).
  * Resolves "done" when the customer finished a payment (the caller must still verify it with the backend),

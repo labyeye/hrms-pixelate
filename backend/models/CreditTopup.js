@@ -15,6 +15,7 @@ const schema = new mongoose.Schema(
     gst: { type: Number, required: true },
     total: { type: Number, required: true }, // what Cashfree charged
     orderId: { type: String, required: true, unique: true },
+    auto: { type: Boolean, default: false }, // charged from the auto-pay mandate (no checkout)
     paymentId: { type: String },
     status: { type: String, enum: ["created", "paid"], default: "created" },
     invoiceNumber: { type: String },

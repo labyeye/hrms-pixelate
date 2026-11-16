@@ -6,6 +6,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { billingAPI } from "@/services/api";
 import { buildInvoiceHTML } from "@/lib/buildInvoiceHTML";
+import AutoPayCard from "@/components/AutoPayCard";
 import {
   Check,
   Crown,
@@ -76,6 +77,12 @@ export default function BillingPage() {
   const isActive =
     sub?.status === "active" || sub?.status === "pending_renewal";
   const isCancelled = sub?.status === "cancelled";
+  // Free / lifetime grant (CRM): active, never paid, no invoices, renewal far in the future.
+  const isFree =
+    isActive &&
+    !isTrial &&
+    !(sub?.amountPaid > 0) &&
+    (invoices.length === 0 || (renewalDate?.getFullYear() ?? 0) >= 2090);
 
   const handleDownloadInvoice = (inv: any) => {
     setDownloading(inv._id);
@@ -150,12 +157,20 @@ export default function BillingPage() {
             <div>
               <p className="font-display font-bold text-white text-lg">
                 {sub?.customPlanName || currentPlan.name} Plan —{" "}
-                {isTrial ? "Free Trial" : isActive ? "Active" : "Inactive"}
+                {isTrial
+                  ? "Free Trial"
+                  : isFree
+                    ? "Free (Lifetime)"
+                    : isActive
+                      ? "Active"
+                      : "Inactive"}
               </p>
               <p className="text-sm font-medium text-white/70">
                 {isTrial && trialEndDate
                   ? `Trial ends: ${trialEndDate.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}`
-                  : renewalDate
+                  : isFree
+                    ? "No payment due — free forever"
+                    : renewalDate
                     ? `Next billing: ${renewalDate.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}`
                     : "No active subscription"}
               </p>
@@ -186,7 +201,9 @@ export default function BillingPage() {
                 : isCancelled
                   ? "Cancelling"
                   : isActive
-                    ? "Paid & Active"
+                    ? isFree
+                      ? "Free"
+                      : "Paid & Active"
                     : "Attention Required"}
             </div>
             {isCancelled && (
@@ -305,8 +322,9 @@ export default function BillingPage() {
           </p>
         </div>
 
-        {}
-        {}
+        {!isFree && <AutoPayCard />}
+
+        {!isFree && (
         <div className="border-2 p-4 sm:p-5 bg-white">
           <h3 className="font-display font-bold text-lg text-black mb-4">
             Invoice History
@@ -365,6 +383,7 @@ export default function BillingPage() {
             </div>
           )}
         </div>
+        )}
       </div>
     </AppLayout>
   );

@@ -69,6 +69,7 @@ import { C, useResponsive } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import { chooseExport } from '../utils/exporters';
 import SlideInCard from '../components/motion/SlideInCard';
+import Reveal from '../components/motion/Reveal';
 import HeaderIconBtn from '../components/common/HeaderIconBtn';
 import SearchModal from '../components/common/SearchModal';
 import FilterSortModal from '../components/common/FilterSortModal';
@@ -233,7 +234,6 @@ export default function AttendanceScreen({ navigation }: any) {
   // Phone table: rows opened with the arrow to show times, hours, method and location
   const [expandedAtt, setExpandedAtt] = useState<string[]>([]);
   const toggleExpandAtt = (id: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedAtt(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
     );
@@ -1108,7 +1108,8 @@ export default function AttendanceScreen({ navigation }: any) {
             );
             // Phone only: the arrow opens the columns the tablet table shows, plus method and location.
             const isOpen = !isTablet && expandedAtt.includes(item._id);
-            const panel = isOpen ? (
+            const panel = (
+  <Reveal open={isOpen}>
               <View style={styles.tDetail}>
                 <View style={[styles.tDetailItem, { width: '100%' }]}>
                   <View
@@ -1181,7 +1182,8 @@ export default function AttendanceScreen({ navigation }: any) {
                   </View>
                 )}
               </View>
-            ) : null;
+            </Reveal>
+            );
             return (
               <View>
                 <View style={styles.tRow}>

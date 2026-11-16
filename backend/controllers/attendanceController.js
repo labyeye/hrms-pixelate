@@ -666,7 +666,9 @@ const selfMarkAttendance = asyncHandler(async (req, res) => {
   // Out of range is not rejected: the check-in is recorded and parked in the
   // HR/Admin approval queue (same queue as late approvals) with the distance.
   const outOfRange =
-    geofenceMode === "specific" && distanceMeters > emp.geofenceRadiusMeters;
+    geofenceMode === "specific" &&
+    // GPS error (phone-reported accuracy, capped at 50m) is forgiven so small radii like 20m still work
+    distanceMeters - Math.min(accuracy || 0, 50) > emp.geofenceRadiusMeters;
 
   if (!Array.isArray(emp.faceDescriptor) || emp.faceDescriptor.length !== 128) {
     cleanup();

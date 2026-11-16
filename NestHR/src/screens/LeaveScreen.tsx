@@ -1,4 +1,5 @@
 import { sentence } from '../utils/text';
+import Reveal from '../components/motion/Reveal';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -81,7 +82,6 @@ export default function LeaveScreen() {
   // Phone: rows stay short; the arrow opens dates, reason and actions
   const [expandedLeave, setExpandedLeave] = useState<string[]>([]);
   const toggleExpandLeave = (id: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedLeave(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
     );
@@ -881,7 +881,7 @@ export default function LeaveScreen() {
                     )}
                   </View>
 
-                  {full && (
+                  <Reveal open={full}>
                     <>
                       <View style={styles.cardDivider} />
                       <View style={styles.statsRow}>
@@ -1000,7 +1000,7 @@ export default function LeaveScreen() {
                         </View>
                       )}
                     </>
-                  )}
+                  </Reveal>
                 </View>
               </SlideInCard>
             );

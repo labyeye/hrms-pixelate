@@ -23,6 +23,7 @@ const pendingOrderSchema = new mongoose.Schema(
       enum: ["web_mobile", "web_mobile_whatsapp"],
       required: true,
     },
+    geoTracking: { type: Boolean, default: false },
     ratePerEmployee: { type: Number, required: true },
     tierLabel: { type: String, required: true },
     monthlyPrice: { type: Number, required: true },

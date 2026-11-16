@@ -1,4 +1,5 @@
 import { sentence } from '../utils/text';
+import Reveal from '../components/motion/Reveal';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -644,9 +645,9 @@ export default function BiometricDeviceScreen() {
                       styles.tblRow,
                       i % 2 ? { backgroundColor: '#F8FAFF' } : null,
                     ]}
-                    onPress={() =>
-                      setExpandedDev(expandedDev === dev._id ? null : dev._id)
-                    }
+                    onPress={() => {
+                      setExpandedDev(expandedDev === dev._id ? null : dev._id);
+                    }}
                     activeOpacity={0.8}
                   >
                     <View style={{ flex: 2.4, paddingRight: 6 }}>
@@ -681,7 +682,7 @@ export default function BiometricDeviceScreen() {
                     )}
                   </TouchableOpacity>
 
-                  {expandedDev === dev._id && (
+                  <Reveal open={expandedDev === dev._id}>
                     <View style={styles.devDetail}>
                       {dev.activationCode && !dev.activated && (
                         <View style={styles.codeBox}>
@@ -722,7 +723,7 @@ export default function BiometricDeviceScreen() {
                         </Text>
                       </TouchableOpacity>
                     </View>
-                  )}
+                  </Reveal>
                 </View>
               ))}
             </View>
