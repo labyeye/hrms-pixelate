@@ -32,6 +32,7 @@ import {
   Camera,
   Trash2,
   X,
+  Receipt,
 } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
 import AppHeader from '../components/common/AppHeader';
@@ -1404,6 +1405,15 @@ function EmployeeDashboard({ navigation }: any) {
           </View>
           <View style={[styles.quickActions, { marginTop: 10 }]}>
             <TouchableOpacity
+              style={[styles.quickActionBtn, { backgroundColor: '#0284C7' }]}
+              onPress={() =>
+                navigation.navigate('More', { screen: 'Expenses' })
+              }
+            >
+              <Receipt size={16} color={C.white} />
+              <Text style={styles.quickActionText}>Claim Expense</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               style={[styles.quickActionBtn, { backgroundColor: C.success }]}
               onPress={() =>
                 navigation.navigate('More', { screen: 'Promotions' })
@@ -1412,6 +1422,8 @@ function EmployeeDashboard({ navigation }: any) {
               <TrendingUp size={16} color={C.white} />
               <Text style={styles.quickActionText}>My Growth</Text>
             </TouchableOpacity>
+          </View>
+          <View style={[styles.quickActions, { marginTop: 10 }]}>
             <TouchableOpacity
               style={[styles.quickActionBtn, { backgroundColor: '#FA731C' }]}
               onPress={() => navigation.navigate('More', { screen: 'Loans' })}

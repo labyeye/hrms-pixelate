@@ -29,6 +29,7 @@ import {
   ListChecks,
   Megaphone,
   Trash2,
+  Navigation,
 } from "lucide-react";
 
 export interface NavItem {
@@ -116,6 +117,12 @@ const allGroups: NavGroup[] = [
         href: "/biometric",
         icon: Fingerprint,
         roles: ["super_admin", "hr_manager"],
+      },
+      {
+        title: "Live Tracking",
+        href: "/live-tracking",
+        icon: Navigation,
+        roles: ["super_admin", "hr_manager", "hr_executive", "department_head"],
       },
     ],
   },

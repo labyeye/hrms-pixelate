@@ -896,6 +896,17 @@ export const expenseAPI = {
     }),
 };
 
+export const trackingAPI = {
+  getLive: () => request("/tracking/live"),
+  getHistory: (employeeId: string, date?: string) =>
+    request(`/tracking/history/${employeeId}${date ? `?date=${date}` : ""}`),
+  updateSettings: (body: { enabled?: boolean; intervalMinutes?: number }) =>
+    request("/tracking/settings", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+};
+
 export const taxAPI = {
   getMine: (fy: number) => request(`/tax/declaration?fy=${fy}`),
   saveMine: (fy: number, body: object) =>

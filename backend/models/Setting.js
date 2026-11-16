@@ -93,6 +93,10 @@ const settingSchema = new mongoose.Schema(
     otEnabled: { type: Boolean, default: true },
     otRate: { type: Number, default: 0 },
 
+    // GPS Live Tracking Add-on
+    gpsLiveTrackingEnabled: { type: Boolean, default: false },
+    gpsTrackingIntervalMinutes: { type: Number, default: 5 }, // ping frequency in minutes
+
     autoSalary: { type: Boolean, default: false },
     bioSync: { type: Boolean, default: true },
     smsEnabled: { type: Boolean, default: false },

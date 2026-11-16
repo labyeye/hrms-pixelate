@@ -29,6 +29,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { syncAnnouncementNotifications, leaveAPI } from '../api/api';
 import { setupPushNotifications } from '../services/pushNotificationService';
+import { useLiveTracking } from '../hooks/useLiveTracking';
 import TabBounce from '../components/motion/TabBounce';
 import DashboardScreen from '../screens/DashboardScreen';
 import EmployeesScreen from '../screens/EmployeesScreen';
@@ -43,6 +44,7 @@ import DepartmentsScreen from '../screens/DepartmentsScreen';
 import HolidaysScreen from '../screens/HolidaysScreen';
 import LoansScreen from '../screens/LoansScreen';
 import ExpensesScreen from '../screens/ExpensesScreen';
+import LiveTrackingScreen from '../screens/LiveTrackingScreen';
 import ReportsScreen from '../screens/ReportsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import AccountSecurityScreen from '../screens/AccountSecurityScreen';
@@ -88,6 +90,7 @@ function MoreNavigator() {
       <MoreStack.Screen name="Holidays" component={HolidaysScreen} />
       <MoreStack.Screen name="Loans" component={LoansScreen} />
       <MoreStack.Screen name="Expenses" component={ExpensesScreen} />
+      <MoreStack.Screen name="LiveTracking" component={LiveTrackingScreen} />
       <MoreStack.Screen name="Reports" component={ReportsScreen} />
       <MoreStack.Screen name="Settings" component={SettingsScreen} />
       <MoreStack.Screen
@@ -271,6 +274,9 @@ function CustomTabBar({
 export default function MainNavigator() {
   const { user } = useAuth();
   const isEmployee = user?.role === 'employee';
+
+  // Background GPS Live Tracking (only pings if enabled by company & employee is punched in)
+  useLiveTracking();
 
   // New announcements become in-app notifications: checked on open, when the app returns to the foreground, and every minute.
   useEffect(() => {

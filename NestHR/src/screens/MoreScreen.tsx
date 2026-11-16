@@ -45,6 +45,7 @@ import {
   LayoutGrid,
   Crown,
   Award,
+  Navigation,
 } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { C, useResponsive } from '../theme';
@@ -60,6 +61,7 @@ const MENU_ITEMS = [
   { key: 'Holidays', label: 'Holidays', icon: Sun },
   { key: 'Loans', label: 'Loans', icon: CreditCard },
   { key: 'Expenses', label: 'Expenses', icon: Receipt },
+  { key: 'LiveTracking', label: 'Live Tracking', icon: Navigation },
   { key: 'Reports', label: 'Reports', icon: BarChart2 },
   { key: 'Documents', label: 'Document Vault', icon: FolderOpen },
   { key: 'Credentials', label: 'Credentials', icon: KeyRound },

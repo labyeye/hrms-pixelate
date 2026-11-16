@@ -48,6 +48,7 @@ const MyLoansPage = lazy(() => import("./pages/MyLoansPage"));
 const EmployeeReportPage = lazy(() => import("./pages/EmployeeReportPage"));
 const LoansPage = lazy(() => import("./pages/LoansPage"));
 const ExpensesPage = lazy(() => import("./pages/ExpensesPage"));
+const LiveTrackingPage = lazy(() => import("./pages/LiveTrackingPage"));
 const TaxPage = lazy(() => import("./pages/TaxPage"));
 import NotFound from "./pages/NotFound";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
@@ -368,6 +369,14 @@ function AppRoutes() {
             element={
               <ProtectedRoute>
                 <ExpensesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/live-tracking"
+            element={
+              <ProtectedRoute>
+                <LiveTrackingPage />
               </ProtectedRoute>
             }
           />

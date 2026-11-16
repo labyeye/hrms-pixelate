@@ -109,6 +109,8 @@ const employeeSchema = new mongoose.Schema(
     geofenceLat: { type: Number },
     geofenceLng: { type: Number },
     geofenceRadiusMeters: { type: Number, default: 200 },
+    // GPS Live Tracking: whether this specific employee has field tracking enabled
+    gpsTrackingEnabled: { type: Boolean, default: false },
     workDaysPerWeek: { type: Number, default: 6 },
     workScheduleType: {
       type: String,

@@ -722,6 +722,22 @@ export const expenseAPI = {
     request('/expenses/policy', { method: 'PUT', body: JSON.stringify(body) }),
 };
 
+export const trackingAPI = {
+  ping: (body: {
+    latitude: number;
+    longitude: number;
+    accuracy?: number;
+    speed?: number;
+    battery?: number;
+    recordedAt?: string;
+  }) => request('/tracking/ping', { method: 'POST', body: JSON.stringify(body) }),
+  getLive: () => request('/tracking/live'),
+  getHistory: (employeeId: string, date?: string) =>
+    request(`/tracking/history/${employeeId}${date ? `?date=${date}` : ''}`),
+  updateSettings: (body: { enabled?: boolean; intervalMinutes?: number }) =>
+    request('/tracking/settings', { method: 'PUT', body: JSON.stringify(body) }),
+};
+
 export const departmentShiftAPI = {
   getAll: () => request('/departments'),
 };
