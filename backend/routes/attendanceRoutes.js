@@ -4,6 +4,8 @@ const {
   markAttendance,
   selfMarkAttendance,
   kioskFaceMark,
+  hikvisionPunch,
+  getHikvisionSetup,
   updateAttendance,
   bulkMarkAttendance,
   bulkUpdateAttendance,
@@ -19,6 +21,19 @@ const {
 } = require("../middleware/upload");
 const router = express.Router();
 
+// Hikvision terminal push: unauthenticated by JWT, secured by secret token in the path.
+// multer .any() parses the device's multipart body (snapshot files are discarded).
+router.post(
+  "/hikvision/:token",
+  require("multer")({ storage: require("multer").memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } }).any(),
+  hikvisionPunch,
+);
+router.get(
+  "/hikvision-setup",
+  protect,
+  authorize("super_admin", "hr_manager"),
+  getHikvisionSetup,
+);
 router.get("/", protect, getAttendance);
 router.get("/summary", protect, getMonthSummary);
 router.get("/daily-summary", protect, getDailySummary);

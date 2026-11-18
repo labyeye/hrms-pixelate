@@ -24,6 +24,7 @@ const companySchema = new mongoose.Schema(
     subscription: { type: mongoose.Schema.Types.ObjectId, ref: "Subscription" },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     lastLogin: { type: Date },
+    hikvisionToken: { type: String, unique: true, sparse: true, select: false },
   },
   { timestamps: true },
 );

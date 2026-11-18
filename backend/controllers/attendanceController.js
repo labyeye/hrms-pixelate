@@ -960,6 +960,114 @@ const kioskFaceMark = asyncHandler(async (req, res) => {
   });
 });
 
+// ── Hikvision access-terminal push (DS-K1T320 etc.) ──────────────────────────
+// Device POSTs each punch to /api/attendance/hikvision/:token (multipart with an
+// `event_log` JSON field, or plain JSON). Tenant is resolved from the secret token
+// via Company.hikvisionToken (generate in Attendance Settings). Always answers 200 so the device doesn't retry.
+const HIK_VERIFY_MODES = { 1: "card", 38: "fingerprint", 75: "face" };
+
+const hikvisionPunch = asyncHandler(async (req, res) => {
+  const company = await require("../models/Company")
+    .findOne({ hikvisionToken: req.params.token })
+    .select("_id");
+  if (!company) return res.status(401).json({ success: false });
+  const companyId = company._id;
+
+  let ev = req.body?.event_log ?? req.body;
+  if (typeof ev === "string") {
+    try {
+      ev = JSON.parse(ev);
+    } catch {
+      return res.json({ success: true, ignored: "unparseable" });
+    }
+  }
+  const ace = ev?.AccessControllerEvent;
+  const empNo = ace?.employeeNoString || ace?.employeeNo;
+  const verifyMode = HIK_VERIFY_MODES[ace?.subEventType];
+  if (!ace || !empNo || !verifyMode) {
+    return res.json({ success: true, ignored: "not a successful identity punch" });
+  }
+
+  const emp = await Employee.findOne({
+    company: companyId,
+    employeeId: String(empNo),
+    status: { $nin: ["terminated", "exited"] },
+  });
+  if (!emp) {
+    return res.json({ success: true, ignored: `unknown employee ${empNo}` });
+  }
+
+  // Trust the device clock only if it is sane; otherwise use server time.
+  let now = ev.dateTime ? new Date(ev.dateTime) : new Date();
+  if (isNaN(now) || Math.abs(Date.now() - now) > 24 * 3600 * 1000) now = new Date();
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+
+  if (employmentBoundsError(emp, d)) {
+    return res.json({ success: true, ignored: "outside employment dates" });
+  }
+
+  const record = await Attendance.findOne({ employee: emp._id, date: d });
+
+  if (!record?.checkIn) {
+    const holiday = await isHolidayDate(companyId, d);
+    const status = holiday
+      ? "holiday"
+      : await resolveStatus(emp._id, now, "present", companyId);
+    let approvalPending = false;
+    if (status === "late")
+      approvalPending = await handleLateAllowance(emp._id, companyId, d, now);
+    await Attendance.findOneAndUpdate(
+      { employee: emp._id, date: d },
+      {
+        employee: emp._id,
+        date: d,
+        status,
+        checkIn: holiday ? undefined : now,
+        approvalPending,
+        verifyMode,
+      },
+      { upsert: true, new: true },
+    );
+    notifyPunch(emp, companyId, "check_in", now);
+    notifyHrPunch(emp, companyId, "check_in", now);
+    return res.json({ success: true, type: "check_in" });
+  }
+
+  // Device fires repeats; ignore anything within a minute of check-in, and after check-out.
+  if (record.checkOut || now - record.checkIn < KIOSK_MIN_GAP_MS) {
+    return res.json({ success: true, ignored: "duplicate" });
+  }
+  const workHours = (now - record.checkIn) / 3600000;
+  const overtime = await calcOTHours(emp, now.toISOString());
+  const earlyLeaving = await calcEarlyLeaving(emp, now.toISOString(), companyId);
+  await Attendance.updateOne(
+    { _id: record._id },
+    { $set: { checkOut: now, workHours, overtime, earlyLeaving } },
+  );
+  notifyPunch(emp, companyId, "check_out", now);
+  notifyHrPunch(emp, companyId, "check_out", now, workHours);
+  res.json({ success: true, type: "check_out" });
+});
+
+// Admin: get (or create) this company's device push URL path. ?regenerate=1 rotates the token.
+const getHikvisionSetup = asyncHandler(async (req, res) => {
+  const Company = require("../models/Company");
+  const company = await Company.findById(req.user.company).select("+hikvisionToken");
+  if (!company.hikvisionToken || req.query.regenerate === "1") {
+    company.hikvisionToken = require("crypto").randomBytes(24).toString("hex");
+    await company.save({ validateModifiedOnly: true });
+  }
+  res.json({
+    success: true,
+    data: {
+      host: process.env.HIKVISION_PUBLIC_HOST || "hrms-backend.pixelatenest.com",
+      port: 80,
+      url: `/api/attendance/hikvision/${company.hikvisionToken}`,
+    },
+  });
+});
+
 const updateAttendance = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status, checkIn, checkOut, notes, overtime, verifyMode } = req.body;
@@ -1292,6 +1400,8 @@ module.exports = {
   markAttendance,
   selfMarkAttendance,
   kioskFaceMark,
+  hikvisionPunch,
+  getHikvisionSetup,
   updateAttendance,
   bulkMarkAttendance,
   bulkUpdateAttendance,

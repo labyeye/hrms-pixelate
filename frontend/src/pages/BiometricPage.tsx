@@ -39,9 +39,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EmployeeCombobox } from "@/components/employees/EmployeeCombobox";
+import { HikvisionSetupCard } from "@/components/biometric/HikvisionSetupCard";
 import { DeviceProtocolLog } from "@/components/biometric/DeviceProtocolLog";
 
-type Tab = "locations_devices" | "logs" | "adms";
+type Tab = "locations_devices" | "logs" | "adms" | "hikvision";
 
 interface Location {
   _id: string;
@@ -602,6 +603,12 @@ export default function BiometricPage() {
       label: "ADMS / ESSL Sync",
       sub: "Hardware device sync",
       icon: Radio,
+    },
+    {
+      id: "hikvision",
+      label: "Hikvision Setup",
+      sub: "Face terminal push",
+      icon: Fingerprint,
     },
     {
       id: "logs",
@@ -1616,6 +1623,7 @@ export default function BiometricPage() {
               </div>
             </div>
           )}
+          {tab === "hikvision" && <HikvisionSetupCard />}
           {tab === "adms" && (
             <div className="space-y-6">
               <div className="border-2 border-black p-5">
