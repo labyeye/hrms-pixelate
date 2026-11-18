@@ -1,4 +1,5 @@
 import { sentence } from '../utils/text';
+import Reveal from '../components/motion/Reveal';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -164,7 +165,6 @@ export default function PayrollScreen() {
   // Phone table: rows opened with the arrow to show the full breakdown
   const [expandedPay, setExpandedPay] = useState<string[]>([]);
   const toggleExpandPay = (id: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedPay(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
     );
@@ -971,7 +971,7 @@ export default function PayrollScreen() {
                     </TouchableOpacity>
                   </TouchableOpacity>
 
-                  {isOpen && (
+                  <Reveal open={isOpen}>
                     <View style={styles.tDetail}>
                       <View style={styles.tLine}>
                         <Text style={styles.tLineLabel}>{period}</Text>
@@ -1085,7 +1085,7 @@ export default function PayrollScreen() {
                           )}
                       </View>
                     </View>
-                  )}
+                  </Reveal>
                 </View>
               );
             }

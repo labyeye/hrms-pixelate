@@ -2263,7 +2263,12 @@ export default function EmployeesPage() {
                                 </div>
                                 <div>
                                   <label className="block text-xs font-bold text-black mb-1">
-                                    Radius (meters)
+                                    Radius (meters){" "}
+                                    <span className="font-normal text-gray-500">
+                                      {Number(form.geofenceRadiusMeters) >= 1000
+                                        ? `= ${(Number(form.geofenceRadiusMeters) / 1000).toLocaleString("en-IN")} km`
+                                        : "(1 km = 1000, 100 km = 100000)"}
+                                    </span>
                                   </label>
                                   <input
                                     type="number"

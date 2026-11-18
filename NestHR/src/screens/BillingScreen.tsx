@@ -92,6 +92,13 @@ export default function BillingScreen() {
     sub?.status === 'active' || sub?.status === 'pending_renewal';
   const isCancelled = sub?.status === 'cancelled';
   const expiry = isTrial ? sub?.trialEndDate : sub?.renewalDate;
+  // Free / lifetime grant (CRM): active, never paid, no invoices, renewal far in the future.
+  const isFree =
+    isActive &&
+    !isTrial &&
+    !(Number(sub?.amountPaid) > 0) &&
+    (invoices.length === 0 ||
+      (expiry ? new Date(expiry).getFullYear() : 0) >= 2090);
   const daysLeft = expiry
     ? Math.max(
         0,
@@ -202,12 +209,14 @@ export default function BillingScreen() {
                   : isCancelled
                   ? 'Cancelling'
                   : isActive
-                  ? 'Paid & Active'
+                  ? isFree
+                    ? 'Free (Lifetime)'
+                    : 'Paid & Active'
                   : 'Inactive'}
               </Text>
             </View>
           </View>
-          {!!expiry && (
+          {!!expiry && !isFree && (
             <View style={s.nextBill}>
               <Calendar size={14} color={C.textMuted} />
               <Text style={s.nextBillText}>
@@ -270,6 +279,7 @@ export default function BillingScreen() {
           </Text>
         </View>
 
+        {!isFree && (
         <View>
           <Text style={s.sectionTitle}>Invoice History</Text>
           {invoices.length === 0 ? (
@@ -332,6 +342,7 @@ export default function BillingScreen() {
             </View>
           )}
         </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

@@ -22,12 +22,12 @@ const FEATURES_BY_TIER = {
   },
 };
 
-// Flat yearly price per employee-count slab. Single plan with every feature
-// (tier "web_mobile_whatsapp"); above the last slab → contact sales.
+// Flat yearly price (ex-GST) per employee-count slab, two plans: "normal" and
+// "geo" (adds geo-fencing + live GPS tracking). Above the last slab → contact sales.
+const GST_RATE = 0.18;
 const PLAN_SLABS = [
-  { maxEmployees: 25, yearlyPrice: 6499 },
-  { maxEmployees: 50, yearlyPrice: 11999 },
-  { maxEmployees: 100, yearlyPrice: 18999 },
+  { maxEmployees: 25, prices: { normal: 7500, geo: 13000 } },
+  { maxEmployees: 50, prices: { normal: 13500, geo: 24000 } },
 ];
 
 // Fail-closed: no company doc or no subscription at all → most restrictive
@@ -47,4 +47,9 @@ async function getCompanyFeatures(companyId) {
   return FEATURES_BY_TIER[tier] || FEATURES_BY_TIER.web_mobile;
 }
 
-module.exports = { FEATURES_BY_TIER, PLAN_SLABS, getCompanyFeatures };
+module.exports = {
+  FEATURES_BY_TIER,
+  PLAN_SLABS,
+  GST_RATE,
+  getCompanyFeatures,
+};

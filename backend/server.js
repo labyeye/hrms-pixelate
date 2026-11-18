@@ -31,6 +31,7 @@ const { startCelebrationWishesJob } = require("./jobs/celebrationWishes");
 if (!process.env.NODE_APP_INSTANCE || process.env.NODE_APP_INSTANCE === "0") {
   startAttendanceAutoMarkJob();
   startCelebrationWishesJob();
+  require("./jobs/autopayRenewals").startAutopayRenewalsJob();
 }
 
 const app = express();
@@ -183,6 +184,7 @@ app.use("/api/performance", require("./routes/performanceRoutes"));
 app.use("/api/settings", require("./routes/settingRoutes"));
 app.use("/api/billing", require("./routes/billingRoutes"));
 app.use("/api/credits", require("./routes/creditsRoutes"));
+app.use("/api/autopay", require("./routes/autopayRoutes"));
 app.use("/api/payment-methods", require("./routes/paymentMethodRoutes"));
 app.use("/api/biometric", require("./routes/biometricRoutes"));
 app.use("/api/holidays", require("./routes/holidayRoutes"));

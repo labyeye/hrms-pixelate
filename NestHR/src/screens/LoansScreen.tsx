@@ -1,4 +1,5 @@
 import { sentence } from '../utils/text';
+import Reveal from '../components/motion/Reveal';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -91,7 +92,6 @@ export default function LoansScreen() {
   // Phone: short rows; the arrow opens EMI, reason, status and actions
   const [expandedLoans, setExpandedLoans] = useState<string[]>([]);
   const toggleExpandLoan = (id: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedLoans(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
     );
@@ -632,7 +632,7 @@ export default function LoansScreen() {
                       </TouchableOpacity>
                     )}
                   </View>
-                  {full && (
+                  <Reveal open={full}>
                     <>
                       <View style={styles.detailRow}>
                         {item.tenureMonths ? (
@@ -682,7 +682,7 @@ export default function LoansScreen() {
                         </View>
                       )}
                     </>
-                  )}
+                  </Reveal>
                 </View>
               </SlideInCard>
             );

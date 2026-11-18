@@ -30,6 +30,12 @@ async function webhook(req, res) {
     )
       return res.status(400).json({ success: false, message: "Bad signature" });
     const ev = JSON.parse(raw.toString("utf8"));
+    if (String(ev.type).startsWith("SUBSCRIPTION_")) {
+      require("../services/autopayService")
+        .onWebhook(ev)
+        .catch((e) => console.error("[AutoPay] webhook:", e.message));
+      return res.json({ success: true });
+    }
     const p = ev?.data?.payment;
     const orderId = ev?.data?.order?.order_id;
     if (

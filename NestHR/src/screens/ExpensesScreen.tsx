@@ -1,4 +1,5 @@
 import { sentence } from '../utils/text';
+import Reveal from '../components/motion/Reveal';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -164,7 +165,6 @@ export default function ExpensesScreen() {
   // Phone: short rows; the arrow opens category, approval steps and receipts
   const [expandedClaims, setExpandedClaims] = useState<string[]>([]);
   const toggleExpandClaim = (id: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedClaims(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
     );
@@ -504,7 +504,7 @@ export default function ExpensesScreen() {
               </TouchableOpacity>
             )}
           </View>
-          {full && (
+          <Reveal open={full}>
             <>
               {!!detailLine(c) && (
                 <Text style={styles.sub}>{detailLine(c)}</Text>
@@ -633,7 +633,7 @@ export default function ExpensesScreen() {
                 )}
               </View>
             </>
-          )}
+          </Reveal>
         </View>
       </SlideInCard>
     );

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import {
   PLAN_SLABS,
   MAX_SELF_SERVE_EMPLOYEES,
+  GST_RATE,
   SALES_URL,
   slabFor,
 } from "@/lib/planSlabs";
@@ -35,13 +36,19 @@ interface CompanyFormData {
   panNumber: string;
 }
 
+const GEO_FEATURES = [
+  "Geo-fencing for attendance",
+  "Live GPS tracking of field staff",
+  "Route history / breadcrumb trail",
+];
+
 const PLAN = {
   tier: "web_mobile_whatsapp" as const,
   name: "NestHR",
   features: [
     "Employee management",
     "Web / biometric-hardware attendance",
-    "Mobile app self check-in (face + geofence)",
+    "Mobile app self check-in (face recognition)",
     "Leave management",
     "Payroll processing",
     "Performance reviews",
@@ -129,7 +136,13 @@ export default function OnboardingPage() {
 
   const empCount = Number(employeeCount) || 0;
   const slab = slabFor(empCount);
-  const yearlyPrice = slab?.yearlyPrice ?? 0;
+  const [geo, setGeo] = useState(false);
+  const yearlyPrice = slab ? slab.prices[geo ? "geo" : "normal"] : 0;
+  const gstAmount = Math.round(yearlyPrice * GST_RATE * 100) / 100;
+  const totalPrice = yearlyPrice + gstAmount;
+  const inr = (n: number) =>
+    n.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+  const planName = geo ? "NestHR Geo Tracking" : PLAN.name;
   const monthlyEquiv = Math.round(yearlyPrice / 12);
 
   const handleCreateCompany = async (formData: CompanyFormData) => {
@@ -179,6 +192,7 @@ export default function OnboardingPage() {
         PLAN.tier,
         "yearly",
         "cashfree",
+        geo,
         user?.company ? undefined : companyForm!,
       );
       if (!res.success) throw new Error("Failed to create order");
@@ -351,8 +365,27 @@ export default function OnboardingPage() {
               </p>
             </div>
 
+            {/* Plan type */}
+            <div className="grid grid-cols-2 gap-3 max-w-md mx-auto mb-6">
+              {[
+                { id: false, label: "Standard" },
+                { id: true, label: "Geo Tracking" },
+              ].map((p) => (
+                <button
+                  key={p.label}
+                  onClick={() => setGeo(p.id)}
+                  className={cn(
+                    "border-2 border-black px-3 py-2 font-bold text-sm",
+                    geo === p.id ? "bg-[#024BAB] text-white" : "bg-white",
+                  )}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
             {/* Slab cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               {PLAN_SLABS.map((sl) => {
                 const isSelected = slab?.maxEmployees === sl.maxEmployees;
                 return (
@@ -374,10 +407,10 @@ export default function OnboardingPage() {
                       )}
                     </div>
                     <div className="font-display font-bold text-2xl text-[#024BAB]">
-                      ₹{sl.yearlyPrice.toLocaleString("en-IN")}
+                      ₹{sl.prices[geo ? "geo" : "normal"].toLocaleString("en-IN")}
                     </div>
                     <div className="text-xs text-gray-500 font-medium">
-                      /year
+                      /year + GST
                     </div>
                   </div>
                 );
@@ -385,7 +418,7 @@ export default function OnboardingPage() {
             </div>
 
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mb-4 max-w-2xl mx-auto">
-              {PLAN.features.map((f) => (
+              {[...PLAN.features, ...(geo ? GEO_FEATURES : [])].map((f) => (
                 <li key={f} className="flex items-start gap-2 text-xs">
                   <Check className="w-3.5 h-3.5 text-[#024BAB] shrink-0 mt-0.5" />
                   <span className="text-gray-700 font-medium">{f}</span>
@@ -445,7 +478,7 @@ export default function OnboardingPage() {
                 <div className="p-5 space-y-3">
                   <div className="flex justify-between items-center text-sm">
                     <span className="font-bold text-gray-600">Plan</span>
-                    <span className="font-bold text-black">{PLAN.name}</span>
+                    <span className="font-bold text-black">{planName}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
                     <span className="font-bold text-gray-600">Covers</span>
@@ -467,12 +500,24 @@ export default function OnboardingPage() {
                       ₹{monthlyEquiv.toLocaleString("en-IN")}/mo
                     </span>
                   </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="font-bold text-gray-600">Plan price</span>
+                    <span className="font-bold text-black">
+                      ₹{inr(yearlyPrice)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="font-bold text-gray-600">GST (18%)</span>
+                    <span className="font-bold text-black">
+                      ₹{inr(gstAmount)}
+                    </span>
+                  </div>
                   <div className="border-t-2 border-black pt-3 flex justify-between items-center">
                     <span className="font-bold text-sm uppercase">
                       Total / year
                     </span>
                     <span className="font-bold text-xl text-[#024BAB]">
-                      ₹{yearlyPrice.toLocaleString("en-IN")}
+                      ₹{inr(totalPrice)}
                     </span>
                   </div>
                 </div>
@@ -524,7 +569,7 @@ export default function OnboardingPage() {
                 ) : (
                   <>
                     <ExternalLink className="w-5 h-5" />
-                    Pay ₹{yearlyPrice.toLocaleString("en-IN")} via Cashfree
+                    Pay ₹{inr(totalPrice)} via Cashfree
                   </>
                 )}
               </button>

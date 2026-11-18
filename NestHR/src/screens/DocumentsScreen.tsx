@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
+import Reveal from '../components/motion/Reveal';
 import {
   View,
   Text,
@@ -193,8 +194,9 @@ export default function DocumentsScreen() {
     ).size,
   }));
 
-  const toggle = (id: string) =>
+  const toggle = (id: string) => {
     setExpanded(p => (p.includes(id) ? p.filter(x => x !== id) : [...p, id]));
+  };
 
   // ── Actions ──
   const startUpload = (employeeId = '', docType = 'other') => {
@@ -528,7 +530,7 @@ export default function DocumentsScreen() {
             )}
           </TouchableOpacity>
         )}
-        {open && renderDetails(e)}
+        <Reveal open={open}>{renderDetails(e)}</Reveal>
       </View>
     );
   };

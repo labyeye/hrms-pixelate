@@ -548,6 +548,26 @@ export const creditsAPI = {
     }),
 };
 
+export const autopayAPI = {
+  get: () => request<{ success: boolean; data: any }>("/autopay"),
+  setup: (body: unknown) =>
+    request<{ success: boolean; data: any }>("/autopay/setup", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  save: (body: unknown) =>
+    request<{ success: boolean; data: any }>("/autopay/settings", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  refresh: () =>
+    request<{ success: boolean; data: any }>("/autopay/refresh", {
+      method: "POST",
+    }),
+  cancel: () =>
+    request<{ success: boolean; data: any }>("/autopay", { method: "DELETE" }),
+};
+
 export const billingAPI = {
   getPlans: () => request<{ success: boolean; data: any }>("/billing/plans"),
   getSubscription: () =>
@@ -564,6 +584,7 @@ export const billingAPI = {
     tier: "web_mobile" | "web_mobile_whatsapp",
     billingCycle: "monthly" | "yearly",
     gateway: "cashfree" = "cashfree",
+    geoTracking = false,
     company?: {
       name: string;
       email: string;
@@ -581,6 +602,7 @@ export const billingAPI = {
         tier,
         billingCycle,
         gateway,
+        geoTracking,
         company,
       }),
     }),

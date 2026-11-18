@@ -1,6 +1,8 @@
 const LocationLog = require("../models/LocationLog");
 const Employee = require("../models/Employee");
 const Setting = require("../models/Setting");
+const Company = require("../models/Company");
+const Subscription = require("../models/Subscription");
 const Attendance = require("../models/Attendance");
 
 // Haversine formula to compute distance between two coords in kilometers
@@ -219,6 +221,19 @@ exports.updateTrackingSettings = async (req, res) => {
   try {
     const companyId = req.user.company;
     const { enabled, intervalMinutes } = req.body;
+
+    if (enabled) {
+      const company = await Company.findById(companyId).select("subscription");
+      const sub = company?.subscription
+        ? await Subscription.findById(company.subscription).select("geoTracking")
+        : null;
+      if (sub && sub.geoTracking === false)
+        return res.status(403).json({
+          success: false,
+          message:
+            "Live GPS tracking is part of the Geo Tracking plan. Contact Pixelate Nest to upgrade.",
+        });
+    }
 
     const setting = await Setting.findOneAndUpdate(
       { company: companyId },

@@ -13,6 +13,9 @@ const subscriptionSchema = new mongoose.Schema(
       enum: ["web_mobile", "web_mobile_whatsapp"],
       default: "web_mobile_whatsapp",
     },
+    // Geo plan: geo-fencing + live GPS tracking. Default true so pre-existing
+    // subscriptions keep the access they already had.
+    geoTracking: { type: Boolean, default: true },
     employeeCount: { type: Number },
     ratePerEmployee: { type: Number },
     monthlyPrice: { type: Number, required: true },
