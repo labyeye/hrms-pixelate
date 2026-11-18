@@ -43,6 +43,7 @@ const PASSWORD_OK = (pw) => typeof pw === "string" && !checkPasswordRules(pw);
 const PASSWORD_MSG =
   'Password needs 8+ characters with an uppercase, a lowercase, a number and a special character, no simple series like 1234 and nothing common like "password".';
 const { enrollFace } = require("../services/faceService");
+const hik = require("../services/hikvisionService");
 
 const createSchema = {
   firstName: { required: true, type: "string", minLength: 1, maxLength: 80 },
@@ -382,6 +383,7 @@ const createEmployee = [
       employeeId: employee.employeeId,
       name: `${employee.firstName} ${employee.lastName}`,
     });
+    hik.safePush(req.user.company, employee);
     res.status(201).json({ success: true, data: employee });
   }),
 ];
@@ -924,6 +926,7 @@ const enrollEmployeeFace = asyncHandler(async (req, res) => {
   employee.faceDescriptor = encoding;
   await employee.save();
 
+  hik.safePush(req.user.company, employee, req.file.buffer);
   res.json({ success: true, message: "Face enrolled successfully" });
 });
 

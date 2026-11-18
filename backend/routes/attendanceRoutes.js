@@ -6,6 +6,9 @@ const {
   kioskFaceMark,
   hikvisionPunch,
   getHikvisionSetup,
+  getHikvisionDevice,
+  saveHikvisionDevice,
+  syncHikvisionUsers,
   updateAttendance,
   bulkMarkAttendance,
   bulkUpdateAttendance,
@@ -34,6 +37,9 @@ router.get(
   authorize("super_admin", "hr_manager"),
   getHikvisionSetup,
 );
+router.get("/hikvision-device", protect, authorize("super_admin", "hr_manager"), getHikvisionDevice);
+router.put("/hikvision-device", protect, authorize("super_admin", "hr_manager"), saveHikvisionDevice);
+router.post("/hikvision-device/sync", protect, authorize("super_admin", "hr_manager"), syncHikvisionUsers);
 router.get("/", protect, getAttendance);
 router.get("/summary", protect, getMonthSummary);
 router.get("/daily-summary", protect, getDailySummary);

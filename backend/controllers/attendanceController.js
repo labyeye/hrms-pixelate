@@ -1053,6 +1053,75 @@ const hikvisionPunch = asyncHandler(async (req, res) => {
 });
 
 // Admin: get (or create) this company's device push URL path. ?regenerate=1 rotates the token.
+const hikDevicePublic = (c) => {
+  const d = c?.hikvisionDevice || {};
+  return { host: d.host || "", port: d.port || 80, https: !!d.https, username: d.username || "" };
+};
+
+const getHikvisionDevice = asyncHandler(async (req, res) => {
+  const c = await require("../models/Company").findById(req.user.company).select("hikvisionDevice").lean();
+  res.json({ success: true, data: hikDevicePublic(c) });
+});
+
+// Save device address/login (password optional on re-save), then verify we can reach it.
+const saveHikvisionDevice = asyncHandler(async (req, res) => {
+  const hik = require("../services/hikvisionService");
+  const Company = require("../models/Company");
+  const { host, port, https, username, password } = req.body;
+  if (!host || !username) {
+    res.status(400);
+    throw new Error("Device IP and username are required");
+  }
+  if (!/^[a-zA-Z0-9.-]+$/.test(host)) {
+    res.status(400);
+    throw new Error("Invalid device IP/host");
+  }
+  const company = await Company.findById(req.user.company).select("+hikvisionDevice.passwordEnc");
+  const prev = company.hikvisionDevice || {};
+  if (!password && !prev.passwordEnc) {
+    res.status(400);
+    throw new Error("Device password is required");
+  }
+  company.hikvisionDevice = {
+    host: host.trim(),
+    port: Number(port) || (https ? 443 : 80),
+    https: !!https,
+    username: String(username).trim(),
+    passwordEnc: password ? hik.sealPassword(String(password)) : prev.passwordEnc,
+  };
+  await company.save({ validateModifiedOnly: true });
+  let model;
+  try {
+    model = await hik.testDevice(await hik.getDevice(req.user.company));
+  } catch (e) {
+    return res.json({ success: true, connected: false, message: `Saved, but cannot connect: ${e.message}`, data: hikDevicePublic(company) });
+  }
+  res.json({ success: true, connected: true, message: `Connected to ${model}`, data: hikDevicePublic(company) });
+});
+
+// Push every active employee to the terminal (users only; faces need a photo upload).
+const syncHikvisionUsers = asyncHandler(async (req, res) => {
+  const hik = require("../services/hikvisionService");
+  const dev = await hik.getDevice(req.user.company);
+  if (!dev) {
+    res.status(400);
+    throw new Error("Save the device IP and login first");
+  }
+  const emps = await Employee.find({ company: req.user.company, status: { $nin: ["terminated", "exited"] } }).select("employeeId firstName lastName");
+  let ok = 0;
+  const failed = [];
+  for (const e of emps) {
+    try {
+      await hik.pushUser(dev, e);
+      ok++;
+    } catch (err) {
+      failed.push(`${e.employeeId}: ${err.message}`);
+      if (failed.length >= 3) break; // unreachable device / wrong login: stop early
+    }
+  }
+  res.json({ success: true, synced: ok, total: emps.length, failed });
+});
+
 const getHikvisionSetup = asyncHandler(async (req, res) => {
   const Company = require("../models/Company");
   const company = await Company.findById(req.user.company).select("+hikvisionToken");
@@ -1404,6 +1473,9 @@ module.exports = {
   kioskFaceMark,
   hikvisionPunch,
   getHikvisionSetup,
+  getHikvisionDevice,
+  saveHikvisionDevice,
+  syncHikvisionUsers,
   updateAttendance,
   bulkMarkAttendance,
   bulkUpdateAttendance,

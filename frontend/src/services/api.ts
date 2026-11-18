@@ -659,6 +659,11 @@ export const holidayAPI = {
 };
 
 export const biometricAPI = {
+  getHikvisionDevice: () => request("/attendance/hikvision-device"),
+  saveHikvisionDevice: (body: object) =>
+    request("/attendance/hikvision-device", { method: "PUT", body: JSON.stringify(body) }),
+  syncHikvisionUsers: () =>
+    request("/attendance/hikvision-device/sync", { method: "POST" }),
   getHikvisionSetup: (regenerate = false) =>
     request(`/attendance/hikvision-setup${regenerate ? "?regenerate=1" : ""}`),
   getLocations: () => request("/biometric/locations"),

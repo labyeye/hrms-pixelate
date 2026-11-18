@@ -25,6 +25,14 @@ const companySchema = new mongoose.Schema(
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     lastLogin: { type: Date },
     hikvisionToken: { type: String, unique: true, sparse: true, select: false },
+    // Outbound ISAPI target so new employees / face photos are pushed to the terminal.
+    hikvisionDevice: {
+      host: String,
+      port: Number,
+      https: Boolean,
+      username: String,
+      passwordEnc: { type: String, select: false },
+    },
   },
   { timestamps: true },
 );

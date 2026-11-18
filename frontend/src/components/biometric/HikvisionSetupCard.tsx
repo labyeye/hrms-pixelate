@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Copy, Loader2, RefreshCw, KeyRound } from "lucide-react";
 import { biometricAPI } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
@@ -91,6 +91,64 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
+function DeviceForm() {
+  const { toast } = useToast();
+  const [f, setF] = useState({ host: "", port: "80", https: false, username: "admin", password: "" });
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    biometricAPI
+      .getHikvisionDevice()
+      .then((r: any) => {
+        const d = r.data;
+        if (d?.host) setF((p) => ({ ...p, host: d.host, port: String(d.port), https: d.https, username: d.username }));
+      })
+      .catch(() => {});
+  }, []);
+
+  const run = async (fn: () => Promise<any>) => {
+    setBusy(true);
+    setMsg("");
+    try {
+      const r = await fn();
+      setMsg(r.message || `Synced ${r.synced}/${r.total} employees${r.failed?.length ? ". Errors: " + r.failed.join("; ") : ""}`);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+    setBusy(false);
+  };
+
+  const inp = "border-2 border-black px-3 py-2 text-sm w-full";
+  return (
+    <div className="border-2 border-black p-5">
+      <h2 className="font-display font-bold text-base mb-1">Push employees to the device</h2>
+      <p className="text-sm text-gray-600 mb-4">
+        Optional. Enter the device's IP and admin login so new employees (and face photos you
+        upload) are sent to the terminal automatically. The server must be able to reach this IP.
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+        <input className={inp} placeholder="Device IP (e.g. 192.168.1.32)" value={f.host} onChange={(e) => setF({ ...f, host: e.target.value })} />
+        <input className={inp} placeholder="Port" value={f.port} onChange={(e) => setF({ ...f, port: e.target.value })} />
+        <input className={inp} placeholder="Username" value={f.username} onChange={(e) => setF({ ...f, username: e.target.value })} />
+        <input className={inp} type="password" placeholder="Password (leave blank to keep saved)" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />
+      </div>
+      <label className="flex items-center gap-2 text-sm mb-3">
+        <input type="checkbox" checked={f.https} onChange={(e) => setF({ ...f, https: e.target.checked })} /> Device uses HTTPS
+      </label>
+      <div className="flex flex-wrap gap-3">
+        <button disabled={busy} onClick={() => run(() => biometricAPI.saveHikvisionDevice(f))} className="px-4 py-2 bg-[#024BAB] text-white font-bold border-2 border-black disabled:opacity-50">
+          Save &amp; test connection
+        </button>
+        <button disabled={busy} onClick={() => run(() => biometricAPI.syncHikvisionUsers())} className="px-4 py-2 font-bold border-2 border-black disabled:opacity-50">
+          Sync all employees now
+        </button>
+      </div>
+      {msg && <p className="text-sm mt-3">{msg}</p>}
+    </div>
+  );
+}
+
 export function HikvisionSetupCard() {
   const { toast } = useToast();
   const confirm = useConfirm();
@@ -156,6 +214,8 @@ export function HikvisionSetupCard() {
           </div>
         )}
       </div>
+
+      <DeviceForm />
 
       {STEPS.map((st, i) => (
         <div key={i} className="border-2 border-black p-5">
