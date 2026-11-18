@@ -1102,6 +1102,11 @@ const saveHikvisionDevice = asyncHandler(async (req, res) => {
 // Push every active employee to the terminal (users only; faces need a photo upload).
 const syncHikvisionUsers = asyncHandler(async (req, res) => {
   const hik = require("../services/hikvisionService");
+  if (await hik.agentAlive(req.user.company)) {
+    const all = await Employee.find({ company: req.user.company, status: { $nin: ["terminated", "exited"] } }).select("employeeId firstName lastName");
+    for (const e of all) await hik.enqueue(req.user.company, e);
+    return res.json({ success: true, synced: all.length, total: all.length, failed: [], message: `Queued ${all.length} employees for the site agent` });
+  }
   const dev = await hik.getDevice(req.user.company);
   if (!dev) {
     res.status(400);
@@ -1120,6 +1125,53 @@ const syncHikvisionUsers = asyncHandler(async (req, res) => {
     }
   }
   res.json({ success: true, synced: ok, total: emps.length, failed });
+});
+
+// ── Site agent: a small script on the client's LAN polls these (token in path = company secret). ──
+const agentCompany = async (token) =>
+  require("../models/Company").findOne({ hikvisionAgentToken: token }).select("_id");
+
+const getHikvisionAgentSetup = asyncHandler(async (req, res) => {
+  const Company = require("../models/Company");
+  const company = await Company.findById(req.user.company).select("+hikvisionAgentToken hikvisionAgentSeen");
+  if (!company.hikvisionAgentToken || req.query.regenerate === "1") {
+    company.hikvisionAgentToken = require("crypto").randomBytes(24).toString("hex");
+    await company.save({ validateModifiedOnly: true });
+  }
+  const seen = company.hikvisionAgentSeen;
+  res.json({
+    success: true,
+    data: {
+      server: `https://${process.env.HIKVISION_PUBLIC_HOST || "hrms-backend.pixelatenest.com"}`,
+      token: company.hikvisionAgentToken,
+      lastSeen: seen || null,
+      online: !!seen && Date.now() - new Date(seen) < 2 * 60 * 1000,
+    },
+  });
+});
+
+// Agent heartbeat + work: hands out up to 20 pending jobs and marks them "sent".
+const agentPoll = asyncHandler(async (req, res) => {
+  const company = await agentCompany(req.params.token);
+  if (!company) return res.status(401).json({ success: false });
+  const HikvisionJob = require("../models/HikvisionJob");
+  await require("../models/Company").updateOne({ _id: company._id }, { $set: { hikvisionAgentSeen: new Date() } });
+  // a job stuck in "sent" for >5 min (agent crashed) goes back to pending
+  await HikvisionJob.updateMany({ company: company._id, status: "sent", sentAt: { $lt: new Date(Date.now() - 5 * 60 * 1000) } }, { $set: { status: "pending" } });
+  const jobs = await HikvisionJob.find({ company: company._id, status: "pending" }).sort({ createdAt: 1 }).limit(20).lean();
+  if (jobs.length) await HikvisionJob.updateMany({ _id: { $in: jobs.map((j) => j._id) } }, { $set: { status: "sent", sentAt: new Date() } });
+  res.json({ success: true, jobs });
+});
+
+const agentResult = asyncHandler(async (req, res) => {
+  const company = await agentCompany(req.params.token);
+  if (!company) return res.status(401).json({ success: false });
+  const { ok, error } = req.body || {};
+  await require("../models/HikvisionJob").updateOne(
+    { _id: req.params.jobId, company: company._id },
+    { $set: { status: ok ? "done" : "failed", error: ok ? undefined : String(error || "").slice(0, 300) } },
+  );
+  res.json({ success: true });
 });
 
 const getHikvisionSetup = asyncHandler(async (req, res) => {
@@ -1476,6 +1528,9 @@ module.exports = {
   getHikvisionDevice,
   saveHikvisionDevice,
   syncHikvisionUsers,
+  getHikvisionAgentSetup,
+  agentPoll,
+  agentResult,
   updateAttendance,
   bulkMarkAttendance,
   bulkUpdateAttendance,

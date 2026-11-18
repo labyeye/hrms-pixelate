@@ -6,6 +6,9 @@ const {
   kioskFaceMark,
   hikvisionPunch,
   getHikvisionSetup,
+  getHikvisionAgentSetup,
+  agentPoll,
+  agentResult,
   getHikvisionDevice,
   saveHikvisionDevice,
   syncHikvisionUsers,
@@ -37,6 +40,13 @@ router.get(
   authorize("super_admin", "hr_manager"),
   getHikvisionSetup,
 );
+router.get("/hikvision-agent-files/:file", (req, res) => {
+  if (!["agent.js", "isapi.js"].includes(req.params.file)) return res.status(404).end();
+  res.type("text/plain").sendFile(require("path").join(__dirname, "../../hikvision-agent", req.params.file));
+});
+router.get("/hikvision-agent/:token/jobs", agentPoll);
+router.post("/hikvision-agent/:token/jobs/:jobId/result", agentResult);
+router.get("/hikvision-agent-setup", protect, authorize("super_admin", "hr_manager"), getHikvisionAgentSetup);
 router.get("/hikvision-device", protect, authorize("super_admin", "hr_manager"), getHikvisionDevice);
 router.put("/hikvision-device", protect, authorize("super_admin", "hr_manager"), saveHikvisionDevice);
 router.post("/hikvision-device/sync", protect, authorize("super_admin", "hr_manager"), syncHikvisionUsers);

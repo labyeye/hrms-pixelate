@@ -91,6 +91,71 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
+function AgentCard() {
+  const { toast } = useToast();
+  const confirm = useConfirm();
+  const [a, setA] = useState<{ server: string; token: string; online: boolean; lastSeen: string | null } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = async (regenerate = false) => {
+    setBusy(true);
+    try {
+      setA((await biometricAPI.getHikvisionAgentSetup(regenerate)).data);
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    }
+    setBusy(false);
+  };
+
+  const regen = async () => {
+    if (await confirm({ title: "Regenerate agent token?", description: "The running agent stops working until you restart it with the new token." })) load(true);
+  };
+
+  const cmd = a
+    ? `HRMS_TOKEN=${a.token} DEVICE_HOST=<device-ip> DEVICE_USER=admin DEVICE_PASS=<device-password> node agent.js`
+    : "";
+
+  return (
+    <div className="border-2 border-black p-5">
+      <h2 className="font-display font-bold text-base mb-1">Site agent (recommended)</h2>
+      <p className="text-sm text-gray-600 mb-4">
+        Lets NestHR add employees and face photos on the terminal even when it sits on your office
+        network. Run one small program on any always-on computer in the same network as the
+        terminal. It only connects out to NestHR: no VPN, no port forwarding.
+      </p>
+      {!a ? (
+        <button onClick={() => load(false)} disabled={busy} className="px-4 py-2 bg-[#024BAB] text-white font-bold border-2 border-black disabled:opacity-50">
+          Show agent setup
+        </button>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-sm font-bold">
+            Status:{" "}
+            <span className={a.online ? "text-green-700" : "text-red-600"}>
+              {a.online ? "Agent online" : "Agent not running"}
+            </span>
+            {a.lastSeen && <span className="font-normal text-gray-500"> (last seen {new Date(a.lastSeen).toLocaleString()})</span>}
+          </p>
+          <Field label="Agent token (private)" value={a.token} />
+          <ol className="list-decimal pl-5 space-y-1 text-sm text-gray-700">
+            <li>Install Node.js 18+ on that computer (nodejs.org).</li>
+            <li>
+              Download <a className="underline" href={`${a.server}/api/attendance/hikvision-agent-files/agent.js`}>agent.js</a> and{" "}
+              <a className="underline" href={`${a.server}/api/attendance/hikvision-agent-files/isapi.js`}>isapi.js</a> into one folder.
+            </li>
+            <li>In that folder run the command below (replace the device IP and password).</li>
+            <li>Status above turns green within a minute. Then click "Sync all employees now" or add employees as usual.</li>
+          </ol>
+          <Field label="Run command (Mac/Linux; on Windows set the same names as environment variables)" value={cmd} />
+          <button onClick={regen} disabled={busy} className="flex items-center gap-2 text-sm font-bold text-red-600">
+            <RefreshCw className="w-4 h-4" /> Regenerate agent token
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DeviceForm() {
   const { toast } = useToast();
   const [f, setF] = useState({ host: "", port: "80", https: false, username: "admin", password: "" });
@@ -122,7 +187,7 @@ function DeviceForm() {
   const inp = "border-2 border-black px-3 py-2 text-sm w-full";
   return (
     <div className="border-2 border-black p-5">
-      <h2 className="font-display font-bold text-base mb-1">Push employees to the device</h2>
+      <h2 className="font-display font-bold text-base mb-1">Direct push (only if the server can reach the device)</h2>
       <p className="text-sm text-gray-600 mb-4">
         Optional. Enter the device's IP and admin login so new employees (and face photos you
         upload) are sent to the terminal automatically. The server must be able to reach this IP.
@@ -214,6 +279,8 @@ export function HikvisionSetupCard() {
           </div>
         )}
       </div>
+
+      <AgentCard />
 
       <DeviceForm />
 
