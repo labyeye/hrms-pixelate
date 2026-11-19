@@ -5,13 +5,13 @@ import {
   Image,
   NativeScrollEvent,
   NativeSyntheticEvent,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { C, FONT } from '../../theme';
 const illustration1 = require('../../assets/images/Onboarding/1.png');
 const illustration2 = require('../../assets/images/Onboarding/2.png');
@@ -80,7 +80,10 @@ export default function IntroOnboardingScreen({ navigation }: any) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView
+      style={styles.safeArea}
+      edges={['top', 'bottom', 'left', 'right']}
+    >
       <View style={styles.header}>
         <Text style={styles.logo}>
           Nest<Text style={styles.logoAccent}>HR</Text>

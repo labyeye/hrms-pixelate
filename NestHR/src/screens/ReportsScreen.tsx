@@ -664,7 +664,7 @@ async function generateReport(
         const e = map.get(id);
         e.total++;
         if (rec.status === 'present') e.present++;
-        else if (rec.status === 'late') e.late++;
+        else if (rec.status === 'late' && !rec.approvalPending) e.late++;
         else if (rec.status === 'absent') e.absent++;
         else if (rec.status === 'on_leave') e.leave++;
         else if (rec.status === 'half_day') e.halfDay++;
@@ -705,7 +705,7 @@ async function generateReport(
       if (dept !== 'all') params.department = dept;
       const r = await attendanceAPI.getAll(params);
       const data: any[] = (r.data || []).filter(
-        (rec: any) => rec.status === 'late',
+        (rec: any) => rec.status === 'late' && !rec.approvalPending,
       );
       return {
         headers: [
@@ -871,7 +871,7 @@ async function generateReport(
         const e = map.get(id);
         e.total++;
         if (rec.status === 'present') e.present++;
-        else if (rec.status === 'late') e.late++;
+        else if (rec.status === 'late' && !rec.approvalPending) e.late++;
         else if (rec.status === 'absent') e.absent++;
         else if (rec.status === 'on_leave') e.leave++;
         else if (rec.status === 'half_day') e.halfDay++;

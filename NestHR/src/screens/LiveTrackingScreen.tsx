@@ -54,9 +54,12 @@ export default function LiveTrackingScreen() {
       ios: `maps:0,0?q=${label}@${lat},${lng}`,
       android: `geo:0,0?q=${lat},${lng}(${label})`,
     });
-    const url = scheme || `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+    const url =
+      scheme || `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
     Linking.openURL(url).catch(() => {
-      Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`);
+      Linking.openURL(
+        `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`,
+      );
     });
   };
 
@@ -80,7 +83,8 @@ export default function LiveTrackingScreen() {
           <View style={{ flex: 1, marginLeft: 10 }}>
             <Text style={styles.name}>{empName}</Text>
             <Text style={styles.sub}>
-              {emp?.designation || 'Staff'} {emp?.department ? `· ${emp.department}` : ''}
+              {emp?.designation || 'Staff'}{' '}
+              {emp?.department ? `· ${emp.department}` : ''}
             </Text>
           </View>
           <View style={styles.liveBadge}>
@@ -96,11 +100,16 @@ export default function LiveTrackingScreen() {
           </View>
           <View style={styles.metaItem}>
             <MapPin size={13} color="#6B7280" />
-            <Text style={styles.metaText}>{item.totalDistanceKm || 0} km today</Text>
+            <Text style={styles.metaText}>
+              {item.totalDistanceKm || 0} km today
+            </Text>
           </View>
           {loc?.battery != null && (
             <View style={styles.metaItem}>
-              <Battery size={13} color={loc.battery < 20 ? C.danger : '#6B7280'} />
+              <Battery
+                size={13}
+                color={loc.battery < 20 ? C.danger : '#6B7280'}
+              />
               <Text style={styles.metaText}>{loc.battery}%</Text>
             </View>
           )}
@@ -139,7 +148,8 @@ export default function LiveTrackingScreen() {
       <View style={styles.banner}>
         <ShieldAlert size={16} color={C.primary} />
         <Text style={styles.bannerText}>
-          Tracking is active only during duty hours (between punch-in and punch-out).
+          Tracking is active only during duty hours (between punch-in and
+          punch-out).
         </Text>
       </View>
 
@@ -172,7 +182,8 @@ export default function LiveTrackingScreen() {
                 <Navigation size={42} color="#D1D5DB" />
                 <Text style={styles.emptyTitle}>No field staff active</Text>
                 <Text style={styles.emptySubtitle}>
-                  Employees with live tracking enabled will appear here after punching in.
+                  Employees with live tracking enabled will appear here after
+                  punching in.
                 </Text>
               </View>
             }
@@ -341,4 +352,3 @@ const styles = StyleSheet.create({
     maxWidth: 260,
   },
 });
-

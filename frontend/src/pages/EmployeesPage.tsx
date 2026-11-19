@@ -2134,23 +2134,6 @@ export default function EmployeesPage() {
                         </button>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
-                        {form.otEnabled && (
-                          <div>
-                            <label className="block text-xs font-bold text-black mb-1">
-                              OT Rate (₹ / Hour)
-                            </label>
-                            <input
-                              type="number"
-                              min="0"
-                              value={form.otRate}
-                              onChange={(e) =>
-                                setForm({ ...form, otRate: e.target.value })
-                              }
-                              className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
-                              placeholder="e.g. 50"
-                            />
-                          </div>
-                        )}
                         <div>
                           <label className="block text-xs font-bold text-black mb-1">
                             Biometric User ID

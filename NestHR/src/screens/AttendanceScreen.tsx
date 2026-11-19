@@ -247,6 +247,8 @@ export default function AttendanceScreen({ navigation }: any) {
     checkIn: '',
     checkOut: '',
     notes: '',
+    overtime: '',
+    verifyMode: 'manual',
   });
 
   // Calendar modal state
@@ -453,14 +455,28 @@ export default function AttendanceScreen({ navigation }: any) {
   const openNew = () => {
     setEditRecord(null);
     setSelectedEmpId('');
-    setForm({ status: 'present', checkIn: '', checkOut: '', notes: '' });
+    setForm({
+      status: 'present',
+      checkIn: '',
+      checkOut: '',
+      notes: '',
+      overtime: '',
+      verifyMode: 'manual',
+    });
     setShowModal(true);
   };
 
   const openMarkForEmp = (empId: string) => {
     setEditRecord(null);
     setSelectedEmpId(empId);
-    setForm({ status: 'present', checkIn: '', checkOut: '', notes: '' });
+    setForm({
+      status: 'present',
+      checkIn: '',
+      checkOut: '',
+      notes: '',
+      overtime: '',
+      verifyMode: 'manual',
+    });
     setShowModal(true);
   };
 
@@ -499,6 +515,9 @@ export default function AttendanceScreen({ navigation }: any) {
       checkIn: isoToTime(record.checkIn),
       checkOut: isoToTime(record.checkOut),
       notes: record.notes || '',
+      overtime:
+        (record as any).overtime > 0 ? String((record as any).overtime) : '',
+      verifyMode: (record as any).verifyMode || 'manual',
     });
     setShowModal(true);
   };
@@ -533,7 +552,14 @@ export default function AttendanceScreen({ navigation }: any) {
       ? `${emp.firstName || ''} ${emp.lastName || ''}`.toLowerCase()
       : '';
     if (search && !name.includes(search.toLowerCase())) return false;
-    if (statusFilter && r.status !== statusFilter) return false;
+    if (statusFilter) {
+      const pending = r.status === 'late' && !!(r as any).approvalPending;
+      if (statusFilter === 'pending_approval') {
+        if (!pending) return false;
+      } else if (statusFilter === 'late') {
+        if (r.status !== 'late' || pending) return false;
+      } else if (r.status !== statusFilter) return false;
+    }
     return true;
   });
   if (sortKey) {
@@ -560,6 +586,10 @@ export default function AttendanceScreen({ navigation }: any) {
           checkIn: timeToISO(dateFilter, form.checkIn),
           checkOut: timeToISO(dateFilter, form.checkOut),
           notes: form.notes,
+          verifyMode: form.verifyMode,
+          ...(form.overtime.trim() !== ''
+            ? { overtime: parseFloat(form.overtime) || 0 }
+            : {}),
         });
       } else {
         if (!selectedEmpId) {
@@ -574,6 +604,10 @@ export default function AttendanceScreen({ navigation }: any) {
           checkIn: timeToISO(dateFilter, form.checkIn),
           checkOut: timeToISO(dateFilter, form.checkOut),
           notes: form.notes || undefined,
+          verifyMode: form.verifyMode,
+          ...(form.overtime.trim() !== ''
+            ? { overtime: parseFloat(form.overtime) || 0 }
+            : {}),
         });
       }
       closeModal();
@@ -595,7 +629,13 @@ export default function AttendanceScreen({ navigation }: any) {
   Object.keys(STATUS_CONFIG).forEach(s => {
     summary[s] = 0;
   });
+  let pendingApprovalCount = 0;
   mergedRows.forEach(r => {
+    // Late beyond the allowance waits for HR/Admin: count it separately, not as Late.
+    if (r.status === 'late' && (r as any).approvalPending) {
+      pendingApprovalCount++;
+      return;
+    }
     if (r.status in summary) summary[r.status]++;
   });
 
@@ -999,6 +1039,15 @@ export default function AttendanceScreen({ navigation }: any) {
                     icon={STATUS_CONFIG.half_day.icon}
                     color={STATUS_CONFIG.half_day.color}
                   />
+                  {pendingApprovalCount > 0 && (
+                    <DashStatCard
+                      index={4}
+                      label="Pending"
+                      value={pendingApprovalCount}
+                      icon={Clock}
+                      color="#A16207"
+                    />
+                  )}
                 </View>
               ) : null}
               {(() => {
@@ -1047,11 +1096,18 @@ export default function AttendanceScreen({ navigation }: any) {
           renderItem={({ item }) => {
             const W = isTablet ? T_ATT_TABLET : T_ATT_PHONE;
             const emp = item.employee as any;
-            const cfg = STATUS_CONFIG[item.status] || {
-              color: C.textMuted,
-              bg: '#F3F4F6',
-              icon: AlertCircle,
-            };
+            // Late beyond the allowance waits for HR/Admin: show it as pending, not as Late.
+            const isPending = item.status === 'late' && !!item.approvalPending;
+            const statusLabel = isPending
+              ? 'Pending approval'
+              : sentence(item.status);
+            const cfg = isPending
+              ? { color: '#A16207', bg: '#FEF9C3', icon: Clock }
+              : STATUS_CONFIG[item.status] || {
+                  color: C.textMuted,
+                  bg: '#F3F4F6',
+                  icon: AlertCircle,
+                };
             const StatusIcon = cfg.icon;
             const fmtTime = (d?: string) =>
               d
@@ -1109,80 +1165,82 @@ export default function AttendanceScreen({ navigation }: any) {
             // Phone only: the arrow opens the columns the tablet table shows, plus method and location.
             const isOpen = !isTablet && expandedAtt.includes(item._id);
             const panel = (
-  <Reveal open={isOpen}>
-              <View style={styles.tDetail}>
-                <View style={[styles.tDetailItem, { width: '100%' }]}>
-                  <View
-                    style={[
-                      styles.tStatusIcon,
-                      { backgroundColor: cfg.bg, borderColor: cfg.color },
-                    ]}
-                  >
-                    <StatusIcon size={14} color={cfg.color} />
+              <Reveal open={isOpen}>
+                <View style={styles.tDetail}>
+                  <View style={[styles.tDetailItem, { width: '100%' }]}>
+                    <View
+                      style={[
+                        styles.tStatusIcon,
+                        { backgroundColor: cfg.bg, borderColor: cfg.color },
+                      ]}
+                    >
+                      <StatusIcon size={14} color={cfg.color} />
+                    </View>
+                    <Text style={[styles.tTime, { color: cfg.color }]}>
+                      {statusLabel}
+                    </Text>
                   </View>
-                  <Text style={[styles.tTime, { color: cfg.color }]}>
-                    {sentence(item.status)}
-                  </Text>
-                </View>
-                <View style={styles.tDetailItem}>
-                  <LogIn size={15} color={C.success} />
-                  <Text style={styles.tTime}>{ciTime || '–'}</Text>
-                  {!!item.checkIn && (
-                    <Text style={styles.tSub}>
-                      {fmtDay(item.checkIn as any)}
-                    </Text>
-                  )}
-                </View>
-                <View style={styles.tDetailItem}>
-                  <LogOut size={15} color={C.danger} />
-                  <Text style={styles.tTime}>{coTime || '–'}</Text>
-                  {!!item.checkOut && (
-                    <Text style={styles.tSub}>
-                      {fmtDay(item.checkOut as any)}
-                    </Text>
-                  )}
-                </View>
-                {(!!workHours || overtime > 0 || earlyLeaving) && (
                   <View style={styles.tDetailItem}>
-                    <Timer size={15} color={C.textMuted} />
-                    {!!workHours && (
-                      <Text style={styles.tTime}>{workHours}h</Text>
-                    )}
-                    {overtime > 0 && (
-                      <Text style={[styles.tOt, { color: C.warning }]}>
-                        +{overtime}
+                    <LogIn size={15} color={C.success} />
+                    <Text style={styles.tTime}>{ciTime || '–'}</Text>
+                    {!!item.checkIn && (
+                      <Text style={styles.tSub}>
+                        {fmtDay(item.checkIn as any)}
                       </Text>
                     )}
-                    {earlyLeaving && <LogOut size={12} color={C.primary} />}
                   </View>
-                )}
-                {!!verifyMode && VerifyIcon && (
                   <View style={styles.tDetailItem}>
-                    <VerifyIcon size={15} color="#7C3AED" />
-                    <Text style={styles.tTime}>
-                      {VERIFY_MODE_LABELS[verifyMode] || sentence(verifyMode)}
-                    </Text>
+                    <LogOut size={15} color={C.danger} />
+                    <Text style={styles.tTime}>{coTime || '–'}</Text>
+                    {!!item.checkOut && (
+                      <Text style={styles.tSub}>
+                        {fmtDay(item.checkOut as any)}
+                      </Text>
+                    )}
                   </View>
-                )}
-                {hasLoc && (
-                  <TouchableOpacity
-                    style={[styles.tDetailItem, { width: '100%' }]}
-                    onPress={() => showLocationOptions(item)}
-                  >
-                    <MapPin size={15} color={C.primary} />
-                    <Text style={[styles.tTime, { color: C.primary }]}>
-                      Open location
-                    </Text>
-                  </TouchableOpacity>
-                )}
-                {!!item.notes && (
-                  <View style={[styles.tDetailItem, { width: '100%' }]}>
-                    <StickyNote size={15} color="#6B7280" />
-                    <Text style={[styles.tSub, { flex: 1 }]}>{item.notes}</Text>
-                  </View>
-                )}
-              </View>
-            </Reveal>
+                  {(!!workHours || overtime > 0 || earlyLeaving) && (
+                    <View style={styles.tDetailItem}>
+                      <Timer size={15} color={C.textMuted} />
+                      {!!workHours && (
+                        <Text style={styles.tTime}>{workHours}h</Text>
+                      )}
+                      {overtime > 0 && (
+                        <Text style={[styles.tOt, { color: C.warning }]}>
+                          +{overtime}
+                        </Text>
+                      )}
+                      {earlyLeaving && <LogOut size={12} color={C.primary} />}
+                    </View>
+                  )}
+                  {!!verifyMode && VerifyIcon && (
+                    <View style={styles.tDetailItem}>
+                      <VerifyIcon size={15} color="#7C3AED" />
+                      <Text style={styles.tTime}>
+                        {VERIFY_MODE_LABELS[verifyMode] || sentence(verifyMode)}
+                      </Text>
+                    </View>
+                  )}
+                  {hasLoc && (
+                    <TouchableOpacity
+                      style={[styles.tDetailItem, { width: '100%' }]}
+                      onPress={() => showLocationOptions(item)}
+                    >
+                      <MapPin size={15} color={C.primary} />
+                      <Text style={[styles.tTime, { color: C.primary }]}>
+                        Open location
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  {!!item.notes && (
+                    <View style={[styles.tDetailItem, { width: '100%' }]}>
+                      <StickyNote size={15} color="#6B7280" />
+                      <Text style={[styles.tSub, { flex: 1 }]}>
+                        {item.notes}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </Reveal>
             );
             return (
               <View>
@@ -1236,7 +1294,7 @@ export default function AttendanceScreen({ navigation }: any) {
                   {isTablet && (
                     <View style={{ width: W.status, alignItems: 'center' }}>
                       <View
-                        accessibilityLabel={sentence(item.status)}
+                        accessibilityLabel={statusLabel}
                         style={[
                           styles.tStatusIcon,
                           { backgroundColor: cfg.bg, borderColor: cfg.color },
@@ -1836,6 +1894,60 @@ export default function AttendanceScreen({ navigation }: any) {
                         value={form.checkOut}
                         onChange={v => setForm(p => ({ ...p, checkOut: v }))}
                       />
+                    </View>
+                  </View>
+
+                  <View>
+                    <Text style={styles.fieldLabel}>
+                      Overtime Hours (Optional)
+                    </Text>
+                    <TextInput
+                      style={styles.fieldInput}
+                      keyboardType="decimal-pad"
+                      value={form.overtime}
+                      onChangeText={v =>
+                        setForm(p => ({
+                          ...p,
+                          overtime: v.replace(/[^0-9.]/g, ''),
+                        }))
+                      }
+                      placeholder="e.g. 1.5 (blank = auto from shift)"
+                      placeholderTextColor={C.textLight}
+                    />
+                  </View>
+
+                  <View>
+                    <Text style={styles.fieldLabel}>Via (Verify Mode)</Text>
+                    <View
+                      style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
+                    >
+                      {[
+                        ['manual', 'Manual'],
+                        ['fingerprint', 'Fingerprint'],
+                        ['face', 'Face'],
+                        ['card', 'Card'],
+                        ['password', 'Password'],
+                      ].map(([v, l]) => (
+                        <TouchableOpacity
+                          key={v}
+                          style={[
+                            styles.selChip,
+                            form.verifyMode === v && styles.selChipActive,
+                          ]}
+                          onPress={() =>
+                            setForm(p => ({ ...p, verifyMode: v }))
+                          }
+                        >
+                          <Text
+                            style={[
+                              styles.selChipText,
+                              form.verifyMode === v && { color: C.white },
+                            ]}
+                          >
+                            {l}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
                     </View>
                   </View>
 

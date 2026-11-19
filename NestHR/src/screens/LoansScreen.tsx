@@ -42,6 +42,7 @@ import { useAuth } from '../contexts/AuthContext';
 import SlideInCard from '../components/motion/SlideInCard';
 import { C, useResponsive } from '../theme';
 import { CENTER } from '../components/common/centerModal';
+import { DatePickerField } from '../components/common/DatePickerField';
 import { chooseExport } from '../utils/exporters';
 import { pickSheet, shareTemplate } from '../utils/importSheet';
 import HeaderIconBtn from '../components/common/HeaderIconBtn';
@@ -65,6 +66,10 @@ const EMPTY_FORM = {
   amount: '',
   tenureMonths: '',
   reason: '',
+  // admin-only (same as the web form)
+  monthlyEmi: '',
+  disbursedOn: '',
+  remarks: '',
 };
 
 const IMPORT_HEADERS = [
@@ -177,10 +182,18 @@ export default function LoansScreen() {
       if (isEmployee) {
         await loanAPI.request(payload);
       } else {
+        const emi = form.monthlyEmi.trim()
+          ? parseFloat(form.monthlyEmi) || 0
+          : payload.tenureMonths > 0
+          ? Math.round(payload.amount / payload.tenureMonths)
+          : 0;
         await loanAPI.create({
           ...payload,
           employee: selectedEmpId,
           remainingBalance: payload.amount,
+          monthlyEmi: emi,
+          ...(form.disbursedOn ? { disbursedOn: form.disbursedOn } : {}),
+          ...(form.remarks.trim() ? { remarks: form.remarks.trim() } : {}),
         });
       }
       setShowForm(false);
@@ -820,6 +833,31 @@ export default function LoansScreen() {
                     keyboardType="numeric"
                   />
                 </View>
+                {!isEmployee && (
+                  <>
+                    <View>
+                      <Text style={styles.fieldLabel}>
+                        Monthly EMI (₹) (Optional)
+                      </Text>
+                      <TextInput
+                        style={styles.fieldInput}
+                        value={form.monthlyEmi}
+                        onChangeText={v =>
+                          setForm(p => ({ ...p, monthlyEmi: v }))
+                        }
+                        placeholder="0 = no EMI (auto from tenure if blank)"
+                        placeholderTextColor={C.textLight}
+                        keyboardType="numeric"
+                      />
+                    </View>
+                    <DatePickerField
+                      label="Disbursed On"
+                      optional
+                      value={form.disbursedOn}
+                      onChange={v => setForm(p => ({ ...p, disbursedOn: v }))}
+                    />
+                  </>
+                )}
                 <View>
                   <Text style={styles.fieldLabel}>Reason *</Text>
                   <TextInput
@@ -831,6 +869,19 @@ export default function LoansScreen() {
                     multiline
                   />
                 </View>
+                {!isEmployee && (
+                  <View>
+                    <Text style={styles.fieldLabel}>Remarks (Optional)</Text>
+                    <TextInput
+                      style={[styles.fieldInput, { minHeight: 60 }]}
+                      value={form.remarks}
+                      onChangeText={v => setForm(p => ({ ...p, remarks: v }))}
+                      placeholder="Internal notes"
+                      placeholderTextColor={C.textLight}
+                      multiline
+                    />
+                  </View>
+                )}
                 <TouchableOpacity
                   style={styles.submitBtn}
                   onPress={handleGiveLoan}

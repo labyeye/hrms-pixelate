@@ -357,7 +357,7 @@ const processPayroll = asyncHandler(async (req, res) => {
           attendanceOTHours += (rawOut - shiftEndMs) / 3_600_000;
         }
 
-        if (a.status === "late") {
+        if ((a.status === "late" && !a.approvalPending)) {
           lateCount++;
           // Hours lost = time between shift start and actual check-in
           const hoursLate = Math.max(
@@ -372,7 +372,7 @@ const processPayroll = asyncHandler(async (req, res) => {
         presentDays++;
         if (a.overtime > 0) attendanceOTHours += a.overtime;
 
-        if (a.status === "late") {
+        if ((a.status === "late" && !a.approvalPending)) {
           lateCount++;
           const rawIn = new Date(a.checkIn).getTime();
           const hoursLate = Math.max(
@@ -385,7 +385,7 @@ const processPayroll = asyncHandler(async (req, res) => {
         // Manual attendance without punch times — use full shift hours, no late tracking
         totalWorkHours += shiftHoursPerDay;
         presentDays++;
-        if (a.status === "late") lateCount++;
+        if ((a.status === "late" && !a.approvalPending)) lateCount++;
         if (a.overtime > 0) attendanceOTHours += a.overtime;
       }
     }
@@ -957,7 +957,7 @@ async function buildPayrollPreviews(companyId, m, y, employeeIds) {
         presentDays++;
         if (otEnabled && rawOut > shiftEndMs)
           attendanceOTHours += (rawOut - shiftEndMs) / 3_600_000;
-        if (a.status === "late") {
+        if ((a.status === "late" && !a.approvalPending)) {
           lateCount++;
           lateHoursLost += Math.max(
             0,
@@ -968,7 +968,7 @@ async function buildPayrollPreviews(companyId, m, y, employeeIds) {
         totalWorkHours += shiftHoursPerDay;
         presentDays++;
         if (a.overtime > 0) attendanceOTHours += a.overtime;
-        if (a.status === "late") {
+        if ((a.status === "late" && !a.approvalPending)) {
           lateCount++;
           lateHoursLost += Math.max(
             0,
@@ -979,7 +979,7 @@ async function buildPayrollPreviews(companyId, m, y, employeeIds) {
       } else if (["present", "late"].includes(a.status)) {
         totalWorkHours += shiftHoursPerDay;
         presentDays++;
-        if (a.status === "late") lateCount++;
+        if ((a.status === "late" && !a.approvalPending)) lateCount++;
         if (a.overtime > 0) attendanceOTHours += a.overtime;
       }
     }

@@ -739,7 +739,9 @@ function EmployeeDashboard({ navigation }: any) {
     a => ['present', 'late', 'half_day'].includes(a.status) || a.checkIn,
   ).length;
   const absentDays = myAttendance.filter(a => a.status === 'absent').length;
-  const lateDays = myAttendance.filter(a => a.status === 'late').length;
+  const lateDays = myAttendance.filter(
+    a => a.status === 'late' && !a.approvalPending,
+  ).length;
   const totalMarked = presentDays + absentDays;
   const attPct =
     totalMarked > 0 ? Math.round((presentDays / totalMarked) * 100) : 100;

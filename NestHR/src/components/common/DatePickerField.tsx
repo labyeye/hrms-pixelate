@@ -71,12 +71,17 @@ interface DatePickerFieldProps {
   required?: boolean;
   maximumDate?: Date;
   minimumDate?: Date;
+  /** Optional leading icon and "(Optional)" marker for the label. */
+  icon?: React.ComponentType<{ size?: number; color?: string }>;
+  optional?: boolean;
 }
 
 export function DatePickerField({
   label,
   value,
   onChange,
+  icon: Icon,
+  optional,
 }: DatePickerFieldProps) {
   const now = new Date();
   const parsed = value ? new Date(value + 'T00:00:00') : now;
@@ -119,7 +124,23 @@ export function DatePickerField({
 
   return (
     <View>
-      <Text style={s.label}>{label}</Text>
+      {Icon || optional ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          {Icon && <Icon size={14} color={C.textMuted} />}
+          <Text style={s.label}>
+            {label.replace(' *', '')}
+            {label.includes('*') && <Text style={{ color: C.danger }}> *</Text>}
+            {optional && (
+              <Text style={{ color: C.textMuted, textTransform: 'none' }}>
+                {' '}
+                (Optional)
+              </Text>
+            )}
+          </Text>
+        </View>
+      ) : (
+        <Text style={s.label}>{label}</Text>
+      )}
       <TouchableOpacity
         style={s.input}
         onPress={openPicker}

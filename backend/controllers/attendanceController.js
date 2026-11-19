@@ -486,7 +486,7 @@ const getTimingInsights = asyncHandler(async (req, res) => {
 });
 
 const markAttendance = asyncHandler(async (req, res) => {
-  const { employee, date, status, checkIn, checkOut, notes, verifyMode } =
+  const { employee, date, status, checkIn, checkOut, notes, verifyMode, overtime } =
     req.body;
 
   const emp = await Employee.findOne({
@@ -544,7 +544,10 @@ const markAttendance = asyncHandler(async (req, res) => {
       checkIn: holiday ? undefined : checkIn,
       checkOut: holiday ? undefined : checkOut,
       workHours,
-      overtime: autoOT,
+      overtime:
+        overtime !== undefined && overtime !== ""
+          ? Math.max(0, parseFloat(overtime) || 0)
+          : autoOT,
       earlyLeaving,
       approvalPending,
       verifyMode: verifyMode || "manual",

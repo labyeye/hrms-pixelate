@@ -92,6 +92,8 @@ export default function PayrollScreen() {
   const isEmployee = user?.role === 'employee';
   const { isTablet, maxContentWidth } = useResponsive();
   const [payrolls, setPayrolls] = useState<Payroll[]>([]);
+  const [payModal, setPayModal] = useState<Payroll | null>(null);
+  const [payMode, setPayMode] = useState('bank_transfer');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
@@ -265,32 +267,32 @@ export default function PayrollScreen() {
     ]);
   };
 
-  const handleMarkPaid = async (payroll: Payroll) => {
-    Alert.alert('Mark as Paid', 'Mark this payroll as paid?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Mark Paid',
-        onPress: async () => {
-          try {
-            await payrollAPI.markPaid(payroll._id);
-            await load();
-          } catch (e: any) {
-            Alert.alert('Error', e.message);
-          }
-        },
-      },
-    ]);
+  const handleMarkPaid = (payroll: Payroll) => {
+    setPayMode('bank_transfer');
+    setPayModal(payroll);
+  };
+
+  const confirmMarkPaid = async () => {
+    if (!payModal) return;
+    const target = payModal;
+    setPayModal(null);
+    try {
+      await payrollAPI.markPaid(target._id, payMode);
+      await load();
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    }
   };
 
   const handleGenerate = async (force = false) => {
     if (force) {
       Alert.alert(
-        'Reprocess Payroll',
-        'This will DELETE existing payroll records for this month (except paid) and recalculate. Continue?',
+        'Regenerate Payroll',
+        "This rebuilds this month's payroll (except paid ones) from attendance up to today. Loan EMIs and bonuses/penalties are restored first, so nothing is double-counted. Continue?",
         [
           { text: 'Cancel', style: 'cancel' },
           {
-            text: 'Yes, Reprocess',
+            text: 'Yes, Regenerate',
             style: 'destructive',
             onPress: () => doGenerate(true),
           },
@@ -1810,6 +1812,85 @@ export default function PayrollScreen() {
           </View>
         </Modal>
       )}
+
+      <Modal visible={!!payModal} transparent animationType="fade">
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'center',
+            padding: 24,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: C.white,
+              borderWidth: 2,
+              borderColor: C.black,
+              padding: 18,
+              gap: 12,
+            }}
+          >
+            <Text style={{ fontSize: 16, fontWeight: '600', color: C.black }}>
+              Mark as Paid
+            </Text>
+            <Text style={{ fontSize: 12, color: C.textMuted }}>
+              Mode of Payment
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {[
+                ['bank_transfer', 'Bank Transfer'],
+                ['cash', 'Cash'],
+                ['upi', 'UPI'],
+                ['cheque', 'Cheque'],
+              ].map(([v, l]) => (
+                <TouchableOpacity
+                  key={v}
+                  onPress={() => setPayMode(v)}
+                  style={{
+                    borderWidth: 2,
+                    borderColor: C.black,
+                    paddingHorizontal: 14,
+                    paddingVertical: 8,
+                    backgroundColor: payMode === v ? C.primary : C.white,
+                  }}
+                >
+                  <Text style={{ color: payMode === v ? C.white : C.black }}>
+                    {l}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  borderWidth: 2,
+                  borderColor: C.black,
+                  padding: 12,
+                  alignItems: 'center',
+                }}
+                onPress={() => setPayModal(null)}
+              >
+                <Text style={{ color: C.black }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  backgroundColor: C.primary,
+                  borderWidth: 2,
+                  borderColor: C.black,
+                  padding: 12,
+                  alignItems: 'center',
+                }}
+                onPress={confirmMarkPaid}
+              >
+                <Text style={{ color: C.white }}>Mark Paid</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

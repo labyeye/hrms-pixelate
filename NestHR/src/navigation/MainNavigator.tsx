@@ -43,6 +43,8 @@ import PerformanceReportScreen from '../screens/PerformanceReportScreen';
 import DepartmentsScreen from '../screens/DepartmentsScreen';
 import HolidaysScreen from '../screens/HolidaysScreen';
 import LoansScreen from '../screens/LoansScreen';
+import TaxScreen from '../screens/TaxScreen';
+import RolesScreen from '../screens/RolesScreen';
 import ExpensesScreen from '../screens/ExpensesScreen';
 import LiveTrackingScreen from '../screens/LiveTrackingScreen';
 import ReportsScreen from '../screens/ReportsScreen';
@@ -89,6 +91,8 @@ function MoreNavigator() {
       <MoreStack.Screen name="Departments" component={DepartmentsScreen} />
       <MoreStack.Screen name="Holidays" component={HolidaysScreen} />
       <MoreStack.Screen name="Loans" component={LoansScreen} />
+      <MoreStack.Screen name="Tax" component={TaxScreen} />
+      <MoreStack.Screen name="Roles" component={RolesScreen} />
       <MoreStack.Screen name="Expenses" component={ExpensesScreen} />
       <MoreStack.Screen name="LiveTracking" component={LiveTrackingScreen} />
       <MoreStack.Screen name="Reports" component={ReportsScreen} />

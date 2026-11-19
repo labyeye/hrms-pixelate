@@ -280,68 +280,68 @@ export default function BillingScreen() {
         </View>
 
         {!isFree && (
-        <View>
-          <Text style={s.sectionTitle}>Invoice History</Text>
-          {invoices.length === 0 ? (
-            <View style={s.emptyPlans}>
-              <Text style={s.emptyPlansText}>No invoices found</Text>
-            </View>
-          ) : (
-            <View style={s.invoiceCard}>
-              {invoices.slice(0, 20).map((inv: any, i: number) => (
-                <View
-                  key={inv._id || i}
-                  style={[s.invoiceRow, i > 0 && s.invoiceBorder]}
-                >
-                  <View style={s.invoiceLeft}>
-                    <Text style={s.invoicePlan}>
-                      {String(inv.invoiceNumber || inv.plan || 'Invoice')}
-                    </Text>
-                    <Text style={s.invoiceDate}>
-                      {fmtDate(inv.paidAt || inv.createdAt || inv.date)}
-                      {inv.billingCycle ? ` · ${inv.billingCycle}` : ''}
-                    </Text>
-                  </View>
-                  <View style={{ alignItems: 'flex-end', gap: 6 }}>
-                    <View style={s.invoiceAmount}>
-                      <IndianRupee size={14} color={C.black} />
-                      <Text style={s.invoiceAmountText}>
-                        {Number(inv.amount || 0).toLocaleString('en-IN')}
+          <View>
+            <Text style={s.sectionTitle}>Invoice History</Text>
+            {invoices.length === 0 ? (
+              <View style={s.emptyPlans}>
+                <Text style={s.emptyPlansText}>No invoices found</Text>
+              </View>
+            ) : (
+              <View style={s.invoiceCard}>
+                {invoices.slice(0, 20).map((inv: any, i: number) => (
+                  <View
+                    key={inv._id || i}
+                    style={[s.invoiceRow, i > 0 && s.invoiceBorder]}
+                  >
+                    <View style={s.invoiceLeft}>
+                      <Text style={s.invoicePlan}>
+                        {String(inv.invoiceNumber || inv.plan || 'Invoice')}
+                      </Text>
+                      <Text style={s.invoiceDate}>
+                        {fmtDate(inv.paidAt || inv.createdAt || inv.date)}
+                        {inv.billingCycle ? ` · ${inv.billingCycle}` : ''}
                       </Text>
                     </View>
-                    <View style={s.invoiceBottomRow}>
-                      <View
-                        style={[
-                          s.invStatus,
-                          {
-                            backgroundColor:
-                              inv.status === 'paid' ? C.success : C.warning,
-                          },
-                        ]}
-                      >
-                        <Text style={s.invStatusText}>
-                          {sentence(inv.status || 'paid')}
+                    <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                      <View style={s.invoiceAmount}>
+                        <IndianRupee size={14} color={C.black} />
+                        <Text style={s.invoiceAmountText}>
+                          {Number(inv.amount || 0).toLocaleString('en-IN')}
                         </Text>
                       </View>
-                      <TouchableOpacity
-                        style={s.downloadBtn}
-                        onPress={() => downloadInvoice(inv)}
-                        disabled={downloading === inv._id}
-                      >
-                        {downloading === inv._id ? (
-                          <ActivityIndicator size="small" color={C.white} />
-                        ) : (
-                          <Download size={14} color={C.white} />
-                        )}
-                        <Text style={s.downloadBtnText}>PDF</Text>
-                      </TouchableOpacity>
+                      <View style={s.invoiceBottomRow}>
+                        <View
+                          style={[
+                            s.invStatus,
+                            {
+                              backgroundColor:
+                                inv.status === 'paid' ? C.success : C.warning,
+                            },
+                          ]}
+                        >
+                          <Text style={s.invStatusText}>
+                            {sentence(inv.status || 'paid')}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={s.downloadBtn}
+                          onPress={() => downloadInvoice(inv)}
+                          disabled={downloading === inv._id}
+                        >
+                          {downloading === inv._id ? (
+                            <ActivityIndicator size="small" color={C.white} />
+                          ) : (
+                            <Download size={14} color={C.white} />
+                          )}
+                          <Text style={s.downloadBtnText}>PDF</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   </View>
-                </View>
-              ))}
-            </View>
-          )}
-        </View>
+                ))}
+              </View>
+            )}
+          </View>
         )}
       </ScrollView>
     </SafeAreaView>

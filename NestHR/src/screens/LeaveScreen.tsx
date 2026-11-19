@@ -104,6 +104,7 @@ export default function LeaveScreen() {
     reason: '',
     startHour: '',
     endHour: '',
+    days: '',
   });
   const [pickedDoc, setPickedDoc] = useState<any>(null);
   const [usageMap, setUsageMap] = useState<
@@ -268,11 +269,24 @@ export default function LeaveScreen() {
     try {
       const start = new Date(form.startDate);
       const end = isHourly ? start : new Date(form.endDate);
-      const days = isHourly
-        ? 0.125
-        : Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+      const rangeDays =
+        Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+      let days = isHourly ? 0.125 : rangeDays;
+      if (!isHourly && form.days.trim() !== '') {
+        const n = Number(form.days);
+        if (isNaN(n) || n < 0.5 || n > rangeDays) {
+          Alert.alert(
+            'Validation',
+            `Number of days must be between 0.5 and ${rangeDays} (the selected range). Use 0.5 for a half day.`,
+          );
+          setSaving(false);
+          return;
+        }
+        days = n;
+      }
+      const { days: _ignore, ...formRest } = form;
       const body = {
-        ...form,
+        ...formRest,
         endDate: isHourly ? form.startDate : form.endDate,
         days,
       };
@@ -291,6 +305,7 @@ export default function LeaveScreen() {
         reason: '',
         startHour: '',
         endHour: '',
+        days: '',
       });
       setPickedDoc(null);
       await load();
@@ -717,6 +732,73 @@ export default function LeaveScreen() {
                 }`.toUpperCase()
               : '?';
             const full = isTablet || expandedLeave.includes(item._id);
+            const tagsBlock = (compact: boolean) => (
+              <View
+                style={
+                  compact
+                    ? {
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: 8,
+                        marginTop: 10,
+                      }
+                    : { alignItems: 'flex-end', gap: 4, flexShrink: 1 }
+                }
+              >
+                <View style={styles.statusLine}>
+                  <View
+                    style={[
+                      styles.statusTag,
+                      {
+                        backgroundColor: cfg.bg,
+                        borderColor: cfg.color,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.statusTagText, { color: cfg.color }]}>
+                      {sentence(item.status)}
+                    </Text>
+                  </View>
+                  {item.status === 'approved' && (
+                    <View
+                      style={[
+                        styles.statusTag,
+                        (item as any).deductSalary
+                          ? {
+                              backgroundColor: '#FFF1E6',
+                              borderColor: C.secondary,
+                            }
+                          : {
+                              backgroundColor: '#E7F9F1',
+                              borderColor: C.success,
+                            },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.statusTagText,
+                          {
+                            color: (item as any).deductSalary
+                              ? C.secondary
+                              : C.success,
+                          },
+                        ]}
+                      >
+                        {(item as any).deductSalary ? 'Unpaid' : 'Paid'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <View style={styles.typeDays}>
+                  <Text style={styles.typeText}>
+                    {sentence(item.leaveType)}
+                  </Text>
+                  <Text style={styles.typeText}>{days ? `${days}d` : ''}</Text>
+                </View>
+              </View>
+            );
             return (
               <SlideInCard
                 index={index}
@@ -792,73 +874,7 @@ export default function LeaveScreen() {
                           </Text>
                         )}
                     </View>
-                    {full && (
-                      <View
-                        style={{
-                          alignItems: 'flex-end',
-                          gap: 4,
-                          flexShrink: 1,
-                        }}
-                      >
-                        <View style={styles.statusLine}>
-                          <View
-                            style={[
-                              styles.statusTag,
-                              {
-                                backgroundColor: cfg.bg,
-                                borderColor: cfg.color,
-                              },
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.statusTagText,
-                                { color: cfg.color },
-                              ]}
-                            >
-                              {sentence(item.status)}
-                            </Text>
-                          </View>
-                          {item.status === 'approved' && (
-                            <View
-                              style={[
-                                styles.statusTag,
-                                (item as any).deductSalary
-                                  ? {
-                                      backgroundColor: '#FFF1E6',
-                                      borderColor: C.secondary,
-                                    }
-                                  : {
-                                      backgroundColor: '#E7F9F1',
-                                      borderColor: C.success,
-                                    },
-                              ]}
-                            >
-                              <Text
-                                style={[
-                                  styles.statusTagText,
-                                  {
-                                    color: (item as any).deductSalary
-                                      ? C.secondary
-                                      : C.success,
-                                  },
-                                ]}
-                              >
-                                {(item as any).deductSalary ? 'Unpaid' : 'Paid'}
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                        <View style={styles.typeDays}>
-                          <Text style={styles.typeText}>
-                            {sentence(item.leaveType)}
-                          </Text>
-                          <Text style={styles.typeText}>
-                            {days ? `${days}d` : ''}
-                          </Text>
-                        </View>
-                      </View>
-                    )}
+                    {full && isTablet && tagsBlock(false)}
                     {!isTablet && (
                       <TouchableOpacity
                         onPress={() => toggleExpandLeave(item._id)}
@@ -880,6 +896,8 @@ export default function LeaveScreen() {
                       </TouchableOpacity>
                     )}
                   </View>
+
+                  {full && !isTablet && tagsBlock(true)}
 
                   <Reveal open={full}>
                     <>
@@ -1412,6 +1430,34 @@ export default function LeaveScreen() {
                         onChange={v => setForm(p => ({ ...p, endDate: v }))}
                       />
                     </View>
+                  </View>
+                )}
+
+                {form.leaveType !== 'hourly' && (
+                  <View>
+                    <Text style={styles.fieldLabel}>
+                      Number of Days (Optional)
+                    </Text>
+                    <TextInput
+                      style={styles.fieldInput}
+                      keyboardType="decimal-pad"
+                      value={form.days}
+                      onChangeText={v =>
+                        setForm(p => ({
+                          ...p,
+                          days: v.replace(/[^0-9.]/g, ''),
+                        }))
+                      }
+                      placeholder={
+                        form.startDate && form.endDate
+                          ? `${Math.max(
+                              1,
+                              daysBetween(form.startDate, form.endDate),
+                            )} (from dates)`
+                          : 'e.g. 0.5 for half day'
+                      }
+                      placeholderTextColor={C.textLight}
+                    />
                   </View>
                 )}
 

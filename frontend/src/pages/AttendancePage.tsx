@@ -130,6 +130,17 @@ const VERIFY_MODE_CONFIG: Record<
   },
 };
 
+// Late beyond the monthly allowance waits for HR/Admin ("Pending approval"); it is
+// neither a confirmed Late nor Present until resolved.
+const isPendingApproval = (r: any) =>
+  r?.status === "late" && !!r?.approvalPending;
+const matchesStatusFilter = (r: any, f: string) =>
+  f === "pending_approval"
+    ? isPendingApproval(r)
+    : f === "late"
+      ? r.status === "late" && !r.approvalPending
+      : r.status === f;
+
 const STATUS_COLORS: Record<string, string> = {
   present: "bg-[#00C48C]/10 text-[#00C48C] border-[#00C48C] px-2 py-0.5",
   absent: "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444] px-2 py-0.5",
@@ -139,6 +150,8 @@ const STATUS_COLORS: Record<string, string> = {
   holiday: "bg-[#A855F7]/10 text-[#A855F7] border-[#A855F7] px-2 py-0.5",
   weekend: "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
   not_checked_in: "bg-gray-100 text-gray-500 border-gray-300 px-2 py-0.5",
+  pending_approval:
+    "bg-[#EAB308]/10 text-[#A16207] border-[#EAB308] px-2 py-0.5",
 };
 
 const STATUS_ICONS: Record<string, React.ElementType> = {
@@ -345,6 +358,7 @@ export default function AttendancePage() {
       avgMins: number;
       days: number;
       late: number;
+      pendingApproval?: number;
       avgHours: number;
     }[];
   };
@@ -548,7 +562,8 @@ export default function AttendancePage() {
     present: records.filter((r) => r.status === "present").length,
     absent: records.filter((r) => r.status === "absent").length,
     halfDay: records.filter((r) => r.status === "half_day").length,
-    late: records.filter((r) => r.status === "late").length,
+    late: records.filter((r) => matchesStatusFilter(r, "late")).length,
+    pendingApproval: records.filter(isPendingApproval).length,
     earlyLeaving: records.filter((r) => {
       const rec = r as any;
       return rec.earlyLeaving || (r.status === "present" && rec.earlyCheckout);
@@ -580,7 +595,10 @@ export default function AttendancePage() {
   }).filter((d) => d.Present || d.Absent || d["On leave"]);
   const attendancePct = summary.total
     ? Math.round(
-        ((summary.present + summary.late + summary.halfDay * 0.5) /
+        ((summary.present +
+          summary.late +
+          summary.pendingApproval +
+          summary.halfDay * 0.5) /
           summary.total) *
           100,
       )
@@ -657,7 +675,7 @@ export default function AttendancePage() {
             rec.earlyLeaving || (r.status === "present" && rec.earlyCheckout)
           );
         })
-      : records.filter((r) => r.status === activeFilter)
+      : records.filter((r) => matchesStatusFilter(r, activeFilter))
     : records;
 
   let displayedRecords: any[];
@@ -682,8 +700,8 @@ export default function AttendancePage() {
         };
       });
     if (activeFilter && activeFilter !== "early_leaving") {
-      displayedRecords = displayedRecords.filter(
-        (r) => r.status === activeFilter,
+      displayedRecords = displayedRecords.filter((r) =>
+        matchesStatusFilter(r, activeFilter),
       );
     } else if (activeFilter === "early_leaving") {
       displayedRecords = displayedRecords.filter(
@@ -1003,6 +1021,12 @@ export default function AttendancePage() {
             {[
               { label: "Present", n: summary.present, color: "#00C48C", key: "present" },
               { label: "Late", n: summary.late, color: "#CA8A04", key: "late" },
+              {
+                label: "Pending approval",
+                n: summary.pendingApproval,
+                color: "#EAB308",
+                key: "pending_approval",
+              },
               { label: "Half day", n: summary.halfDay, color: "#F59E0B", key: "half_day" },
               { label: "Absent", n: summary.absent, color: "#EF4444", key: "absent" },
               { label: "On leave", n: summary.leave, color: "#3B82F6", key: "on_leave" },
@@ -1259,6 +1283,9 @@ export default function AttendancePage() {
           <option value="">All status</option>
           <option value="present">Present · {summary.present}</option>
           <option value="late">Late · {summary.late}</option>
+          <option value="pending_approval">
+            Pending approval · {summary.pendingApproval}
+          </option>
           <option value="half_day">Half day · {summary.halfDay}</option>
           <option value="early_leaving">
             Early leave · {summary.earlyLeaving}
@@ -1718,9 +1745,17 @@ export default function AttendancePage() {
                     <td className="px-4 py-3">
                       <div className="flex flex-col items-start gap-1">
                         <span
+                          title={
+                            (rec as any).approvalPending
+                              ? "Late beyond allowance - waiting for HR/Admin decision in Late Approvals"
+                              : undefined
+                          }
                           className={cn(
                             "border-2 text-[10px] capitalize flex items-center gap-1 w-fit",
-                            STATUS_COLORS[rec.status],
+                            (rec as any).approvalPending &&
+                              rec.status === "late"
+                              ? STATUS_COLORS.pending_approval
+                              : STATUS_COLORS[rec.status],
                           )}
                         >
                           <Icon className="w-3 h-3" />{" "}
@@ -1730,7 +1765,10 @@ export default function AttendancePage() {
                               ).toLocaleDateString("en-IN", {
                                 weekday: "long",
                               })
-                            : rec.status.replace("_", " ")}
+                            : (rec as any).approvalPending &&
+                                rec.status === "late"
+                              ? "Pending approval"
+                              : rec.status.replace("_", " ")}
                         </span>
                         {(rec as any).earlyLeaving && (
                           <span className="border-2 text-[10px] flex items-center gap-1 w-fit bg-[#3B82F6]/10 text-[#3B82F6] border-[#3B82F6] px-2 py-0.5">

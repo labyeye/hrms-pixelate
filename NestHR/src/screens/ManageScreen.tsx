@@ -14,6 +14,7 @@ import {
   FileText,
   Settings2,
   IdCard,
+  ShieldCheck,
   ChevronLeft,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -48,6 +49,13 @@ const TILES = [
     color: '#7C3AED',
     label: 'Offer Letters',
     desc: 'Letter templates',
+  },
+  {
+    key: 'Roles',
+    icon: ShieldCheck,
+    color: '#0F766E',
+    label: 'User Roles',
+    desc: 'Roles & permissions',
   },
   {
     key: 'IdCardDesigner',

@@ -35,6 +35,8 @@ import {
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { settingsAPI, authAPI } from '../api/api';
+import { launchImageLibrary } from 'react-native-image-picker';
+import { API_BASE_URL } from '../config/env';
 import { fmtCredits, useCreditBalance } from '../hooks/useCreditBalance';
 import { useAuth } from '../contexts/AuthContext';
 import { C } from '../theme';
@@ -47,6 +49,56 @@ export default function SettingsScreen() {
   const [loading, setLoading] = useState(true);
   const { credits } = useCreditBalance();
   const [saving, setSaving] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const serverOrigin = API_BASE_URL.replace(/\/api\/?$/, '');
+
+  const pickLogo = async () => {
+    const res = await launchImageLibrary({ mediaType: 'photo', quality: 0.9 });
+    const a = res.assets?.[0];
+    if (!a?.uri) return;
+    if ((a.fileSize || 0) > 5 * 1024 * 1024) {
+      Alert.alert('Too large', 'Logo must be 5 MB or smaller.');
+      return;
+    }
+    setLogoUploading(true);
+    try {
+      const r = await settingsAPI.uploadLogo({
+        uri: a.uri,
+        type: a.type || 'image/png',
+        name: a.fileName || 'logo.png',
+      });
+      setForm(p => ({ ...p, logoUrl: r.logoUrl } as any));
+      Alert.alert('Logo uploaded', 'Company logo saved.');
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
+  const pickChequeTemplate = async () => {
+    const res = await launchImageLibrary({
+      mediaType: 'photo',
+      includeBase64: true,
+      quality: 0.8,
+      maxWidth: 1600,
+      maxHeight: 1600,
+    });
+    const a = res.assets?.[0];
+    if (!a?.base64) return;
+    // sent as a data URL inside the JSON settings body (server JSON limit is 5 MB)
+    if (a.base64.length > 3.5 * 1024 * 1024) {
+      Alert.alert('Too large', 'Choose a smaller image (under ~2.5 MB).');
+      return;
+    }
+    setForm(
+      p =>
+        ({
+          ...p,
+          payrollChequeTemplate: `data:${a.type || 'image/jpeg'};base64,${a.base64}`,
+        } as any),
+    );
+  };
 
   // 2FA state
   const [twoFAEnabled, setTwoFAEnabled] = useState(false);
@@ -215,6 +267,104 @@ export default function SettingsScreen() {
                 </View>
               </View>
             ))}
+          </View>
+        </View>
+
+        {/* Branding */}
+        <View>
+          <View style={styles.sectionHeader}>
+            <Palette size={14} color={C.primary} />
+            <Text style={styles.sectionTitle}>Branding</Text>
+          </View>
+          <View style={[styles.card, { padding: 14, gap: 12 }]}>
+            <Text style={styles.fieldLabel}>Company Logo</Text>
+            <TouchableOpacity
+              style={{
+                borderWidth: 2,
+                borderStyle: 'dashed',
+                borderColor: C.black,
+                padding: 14,
+                alignItems: 'center',
+              }}
+              onPress={pickLogo}
+              disabled={logoUploading}
+            >
+              {logoUploading ? (
+                <ActivityIndicator color={C.primary} />
+              ) : (
+                <Text style={{ color: C.black }}>Tap to upload logo</Text>
+              )}
+            </TouchableOpacity>
+            {!!(form as any).logoUrl && (
+              <View style={{ gap: 10 }}>
+                <Image
+                  source={{ uri: `${serverOrigin}${(form as any).logoUrl}` }}
+                  style={{ width: 120, height: 60 }}
+                  resizeMode="contain"
+                />
+                <TouchableOpacity
+                  onPress={() => setForm(p => ({ ...p, logoUrl: '' } as any))}
+                >
+                  <Text style={{ color: C.danger }}>Remove logo</Text>
+                </TouchableOpacity>
+                <Text style={styles.fieldLabel}>Logo position on cheque</Text>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  {[
+                    ['X (pts)', 'chequeLogoX', 10],
+                    ['Y (pts)', 'chequeLogoY', 20],
+                    ['Width (pts)', 'chequeLogoW', 60],
+                  ].map(([label, key, def]) => (
+                    <View key={String(key)} style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 11, color: C.textMuted }}>
+                        {label}
+                      </Text>
+                      <TextInput
+                        style={styles.fieldInput}
+                        keyboardType="numeric"
+                        value={String((form as any)[key as string] ?? def)}
+                        onChangeText={v =>
+                          setForm(
+                            p =>
+                              ({
+                                ...p,
+                                [key as string]: Number(v) || 0,
+                              } as any),
+                          )
+                        }
+                      />
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            <Text style={[styles.fieldLabel, { marginTop: 6 }]}>
+              Payroll Cheque Template
+            </Text>
+            <Text style={{ fontSize: 11, color: C.textMuted }}>
+              Cheque/payslip background image (PNG or JPG). Save to apply.
+            </Text>
+            <TouchableOpacity
+              style={{
+                borderWidth: 2,
+                borderStyle: 'dashed',
+                borderColor: C.black,
+                padding: 14,
+                alignItems: 'center',
+              }}
+              onPress={pickChequeTemplate}
+            >
+              <Text style={{ color: C.black }}>
+                Tap to upload cheque template
+              </Text>
+            </TouchableOpacity>
+            {!!(form as any).payrollChequeTemplate && (
+              <Image
+                source={{ uri: (form as any).payrollChequeTemplate }}
+                style={{ width: '100%', height: 140 }}
+                resizeMode="contain"
+              />
+            )}
           </View>
         </View>
 

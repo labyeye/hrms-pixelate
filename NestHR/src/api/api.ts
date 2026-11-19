@@ -305,7 +305,43 @@ export const dashboardAPI = {
     request(`/dashboard/payroll-summary?month=${month}&year=${year}`),
 };
 
+type PickedFile = { uri: string; type: string; name: string };
+
 export const employeeAPI = {
+  // KYC scans (PAN / Aadhaar / Resume). Multipart, so it can't use the JSON request() helper.
+  uploadDocuments: async (
+    id: string,
+    files: {
+      aadhaarDoc?: PickedFile;
+      panDoc?: PickedFile;
+      resumeDoc?: PickedFile;
+    },
+  ) => {
+    const token = await getToken();
+    const formData = new FormData();
+    (['aadhaarDoc', 'panDoc', 'resumeDoc'] as const).forEach(k => {
+      if (files[k]) formData.append(k, files[k] as any);
+    });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 60_000);
+    try {
+      const res = await fetch(`${BASE_URL}/employees/${id}/documents`, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: formData,
+      });
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {}
+      if (!res.ok) throw new Error(data.message || statusMsg(res.status));
+      return data;
+    } finally {
+      clearTimeout(timer);
+    }
+  },
   // The server pages at 20 by default, which silently hid employees beyond the first 20.
   getAll: (params?: Record<string, string>) =>
     request(`/employees${qs({ limit: '5000', ...params })}`),
@@ -551,16 +587,20 @@ export const payrollAPI = {
     request('/payroll/process', { method: 'POST', body: JSON.stringify(body) }),
   update: (id: string, body: object) =>
     request(`/payroll/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
-  markPaid: (id: string) => request(`/payroll/${id}/paid`, { method: 'PUT' }),
+  markPaid: (id: string, paymentMode?: string) =>
+    request(`/payroll/${id}/paid`, {
+      method: 'PUT',
+      body: JSON.stringify({ paymentMode }),
+    }),
   markSlipReceived: (id: string) =>
     request(`/payroll/${id}/slip-received`, {
       method: 'PATCH',
       body: JSON.stringify({}),
     }),
-  bulkMarkPaid: (month: number, year: number) =>
+  bulkMarkPaid: (month: number, year: number, paymentMode?: string) =>
     request('/payroll/bulk-paid', {
       method: 'POST',
-      body: JSON.stringify({ month, year }),
+      body: JSON.stringify({ month, year, paymentMode }),
     }),
 };
 
@@ -603,6 +643,24 @@ export const performanceAPI = {
 
 export const settingsAPI = {
   get: () => request('/settings'),
+  // Company logo (multipart, field "logo"); returns { logoUrl }.
+  uploadLogo: async (file: { uri: string; type: string; name: string }) => {
+    const token = await getToken();
+    const formData = new FormData();
+    formData.append('logo', file as any);
+    const res = await fetch(`${BASE_URL}/settings/logo`, {
+      method: 'POST',
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: formData,
+    });
+    const text = await res.text();
+    let data: any = {};
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {}
+    if (!res.ok) throw new Error(data.message || statusMsg(res.status));
+    return data as { success: boolean; logoUrl: string };
+  },
   update: (settings: any) =>
     request('/settings', { method: 'PUT', body: JSON.stringify(settings) }),
 };
@@ -730,12 +788,16 @@ export const trackingAPI = {
     speed?: number;
     battery?: number;
     recordedAt?: string;
-  }) => request('/tracking/ping', { method: 'POST', body: JSON.stringify(body) }),
+  }) =>
+    request('/tracking/ping', { method: 'POST', body: JSON.stringify(body) }),
   getLive: () => request('/tracking/live'),
   getHistory: (employeeId: string, date?: string) =>
     request(`/tracking/history/${employeeId}${date ? `?date=${date}` : ''}`),
   updateSettings: (body: { enabled?: boolean; intervalMinutes?: number }) =>
-    request('/tracking/settings', { method: 'PUT', body: JSON.stringify(body) }),
+    request('/tracking/settings', {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
 };
 
 export const departmentShiftAPI = {
@@ -1360,4 +1422,21 @@ export const legalAPI = {
     });
     return r.data ?? r;
   },
+};
+
+export const taxAPI = {
+  getMine: (fy: number) => request(`/tax/declaration?fy=${fy}`),
+  saveMine: (fy: number, body: object) =>
+    request('/tax/declaration', {
+      method: 'PUT',
+      body: JSON.stringify({ ...body, fy }),
+    }),
+  list: (fy: number) => request(`/tax/declarations?fy=${fy}`),
+  review: (id: string, status: string, remark?: string) =>
+    request(`/tax/declarations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status, remark }),
+    }),
+  form16: (fy: number, employee?: string) =>
+    request(`/tax/form16?fy=${fy}${employee ? `&employee=${employee}` : ''}`),
 };

@@ -21,7 +21,10 @@ import {
   LayoutAnimation,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { DatePickerField } from '../components/common/DatePickerField';
+import {
+  DatePickerField,
+  TimePickerField,
+} from '../components/common/DatePickerField';
 import { getCurrentPosition } from '../utils/location';
 import {
   Search,
@@ -79,6 +82,7 @@ import {
   Square,
   SlidersHorizontal,
   Gift,
+  Camera,
 } from 'lucide-react-native';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import {
@@ -93,6 +97,7 @@ import {
 } from '../api/api';
 import { Employee } from '../types/hrms';
 import { C, useResponsive } from '../theme';
+import { useAuth } from '../contexts/AuthContext';
 import { CENTER } from '../components/common/centerModal';
 import SlideInCard from '../components/motion/SlideInCard';
 import HeaderIconBtn from '../components/common/HeaderIconBtn';
@@ -104,6 +109,9 @@ import { chooseExport } from '../utils/exporters';
 import { pickSheet, shareTemplate } from '../utils/importSheet';
 import PhoneField from '../components/common/PhoneField';
 import PickerField from '../components/common/PickerField';
+import DocumentPicker, {
+  types as docTypes,
+} from 'react-native-document-picker';
 import { lookupPincode, INDIA_STATES } from '../utils/pincode';
 
 const STATUS_COLOR: Record<string, string> = {
@@ -176,6 +184,134 @@ const TYPE_TINT: Record<string, { bg: string; fg: string }> = {
 };
 const GENDERS = ['male', 'female', 'other'];
 const WORK_DAYS = [5, 6, 7];
+const BANKS = [
+  'State Bank of India',
+  'HDFC Bank',
+  'ICICI Bank',
+  'Axis Bank',
+  'Kotak Mahindra Bank',
+  'Punjab National Bank',
+  'Bank of Baroda',
+  'Canara Bank',
+  'Union Bank of India',
+  'Bank of India',
+  'IndusInd Bank',
+  'Yes Bank',
+  'IDBI Bank',
+  'Indian Bank',
+  'Central Bank of India',
+  'Indian Overseas Bank',
+  'UCO Bank',
+  'Bank of Maharashtra',
+  'Punjab & Sind Bank',
+  'Federal Bank',
+  'IDFC FIRST Bank',
+  'South Indian Bank',
+  'Karnataka Bank',
+  'RBL Bank',
+  'Bandhan Bank',
+  'AU Small Finance Bank',
+  'Equitas Small Finance Bank',
+  'Ujjivan Small Finance Bank',
+  'Jammu & Kashmir Bank',
+  'City Union Bank',
+  'Karur Vysya Bank',
+  'Tamilnad Mercantile Bank',
+  'DCB Bank',
+  'IDBI Bank',
+  'India Post Payments Bank',
+  'Paytm Payments Bank',
+  'Airtel Payments Bank',
+  'Standard Chartered Bank',
+  'HSBC',
+  'Citibank',
+  'Deutsche Bank',
+  'DBS Bank India',
+];
+const BANK_OTHER = 'Other';
+// Label with a leading icon, a red * when compulsory, and "(Optional)" otherwise.
+function FieldLabel({
+  icon: Icon,
+  text,
+  required,
+  optional,
+}: {
+  icon: React.ComponentType<{ size?: number; color?: string }>;
+  text: string;
+  required?: boolean;
+  optional?: boolean;
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginBottom: 5,
+      }}
+    >
+      <Icon size={14} color={C.textMuted} />
+      <Text style={[styles.fieldLabel, { marginBottom: 0, flexShrink: 1 }]}>
+        {text}
+        {required && <Text style={{ color: C.danger }}> *</Text>}
+        {optional && (
+          <Text style={{ color: C.textMuted, textTransform: 'none' }}>
+            {' '}
+            (Optional)
+          </Text>
+        )}
+      </Text>
+    </View>
+  );
+}
+
+// Icon per form field (used by F()). Fields with a default value get no "(Optional)".
+const FIELD_ICONS: Record<string, React.ComponentType<any>> = {
+  firstName: User,
+  lastName: User,
+  email: Mail,
+  designation: Briefcase,
+  defaultPassword: KeyRound,
+  biometricUserId: Fingerprint,
+  customShiftBreak: Timer,
+  customShiftOtAfter: Timer,
+  geofenceLat: MapPin,
+  geofenceLng: MapPin,
+  geofenceRadiusMeters: Map,
+  monthlySalary: IndianRupee,
+  pfNumber: Hash,
+  uanNumber: Hash,
+  esicNumber: Hash,
+  address: Building,
+  permanentAddress: Building2,
+  panNumber: IdCard,
+  aadharNumber: IdCard,
+  fatherName: User,
+  motherName: User,
+  qualification: GraduationCap,
+  totalExperience: Briefcase,
+  previousCompany: Building2,
+  accountHolderName: UserCheck,
+  bankAccountNumber: CreditCard,
+  ifscCode: Landmark,
+};
+const NO_OPTIONAL_MARK = new Set([
+  'customShiftBreak',
+  'customShiftOtAfter',
+  'geofenceRadiusMeters',
+]);
+
+// 0=Sun … 6=Sat (same numbering the backend stores in customWorkDays)
+const WEEK_DAYS = [
+  { day: 1, label: 'Mon' },
+  { day: 2, label: 'Tue' },
+  { day: 3, label: 'Wed' },
+  { day: 4, label: 'Thu' },
+  { day: 5, label: 'Fri' },
+  { day: 6, label: 'Sat' },
+  { day: 0, label: 'Sun' },
+];
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 const STATUSES = ['active', 'inactive', 'on_leave', 'terminated', 'exited'];
 
 const EMPTY_FORM = {
@@ -193,6 +329,13 @@ const EMPTY_FORM = {
   defaultPassword: '',
   // Tab 2 Attendance
   workDaysPerWeek: 5,
+  workScheduleType: 'standard',
+  customWorkDays: [] as number[],
+  isCustomShift: false,
+  customShiftStart: '09:00',
+  customShiftEnd: '18:00',
+  customShiftBreak: '30',
+  customShiftOtAfter: '9',
   enableOvertime: false,
   otRate: '',
   biometricUserId: '',
@@ -225,10 +368,14 @@ const EMPTY_FORM = {
   bankAccountNumber: '',
   ifscCode: '',
   bankName: '',
+  bankOther: false,
   // Personal Details
   fatherName: '',
   motherName: '',
   spouseName: '',
+  marriageAnniversary: '',
+  role: 'employee',
+  headOfDepartment: '',
   maritalStatus: '',
   bloodGroup: '',
   nationality: 'Indian',
@@ -286,6 +433,70 @@ const TX_CONFIG: Record<
 const isTxType = (k: string | null): k is TxType => !!k && k in TX_CONFIG;
 
 export default function EmployeesScreen() {
+  const { user: authUser } = useAuth();
+  const [placeQuery, setPlaceQuery] = useState('');
+  const [placeResults, setPlaceResults] = useState<any[]>([]);
+  const [placeBusy, setPlaceBusy] = useState(false);
+  // Accepts a Google Maps link / "lat,lng" (exact) or a place name / address (OpenStreetMap search).
+  const findPlace = async () => {
+    const q = placeQuery.trim();
+    if (!q) return;
+    const m =
+      q.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
+      q.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) ||
+      q.match(/^(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)$/);
+    if (m) {
+      setForm(p => ({ ...p, geofenceLat: m[1], geofenceLng: m[2] }));
+      setPlaceResults([]);
+      setFormDirty(true);
+      return;
+    }
+    setPlaceBusy(true);
+    try {
+      const r = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=in&q=${encodeURIComponent(q)}`,
+      );
+      const list = await r.json();
+      setPlaceResults(Array.isArray(list) ? list : []);
+      if (!Array.isArray(list) || list.length === 0)
+        Alert.alert('Not found', 'No matching place. Try a fuller address.');
+    } catch {
+      setPlaceResults([]);
+      Alert.alert('Error', 'Could not search. Check your connection.');
+    } finally {
+      setPlaceBusy(false);
+    }
+  };
+  type DocKey = 'aadhaarDoc' | 'panDoc' | 'resumeDoc';
+  const [docFiles, setDocFiles] = useState<
+    Partial<Record<DocKey, { uri: string; type: string; name: string }>>
+  >({});
+  const pickDoc = async (key: DocKey) => {
+    try {
+      const f = await DocumentPicker.pickSingle({
+        type: [docTypes.pdf, docTypes.images],
+        copyTo: 'cachesDirectory',
+        mode: 'import',
+      });
+      if ((f.size || 0) > 5 * 1024 * 1024) {
+        Alert.alert('Too large', 'File must be 5 MB or smaller.');
+        return;
+      }
+      setDocFiles(p => ({
+        ...p,
+        [key]: {
+          uri: f.fileCopyUri || f.uri,
+          type: f.type || 'application/pdf',
+          name: f.name || `${key}.pdf`,
+        },
+      }));
+      setFormDirty(true);
+    } catch (e: any) {
+      if (!DocumentPicker.isCancel(e)) Alert.alert('Error', e.message);
+    }
+  };
+  const canAssignRole =
+    authUser?.role === 'super_admin' || authUser?.role === 'hr_manager';
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [filtered, setFiltered] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -450,6 +661,7 @@ export default function EmployeesScreen() {
   const openCreate = () => {
     setEditingEmp(null);
     setForm({ ...EMPTY_FORM });
+    setDocFiles({});
     setAvatarUri(null);
     setAvatarAsset(null);
     setFormDirty(false);
@@ -461,6 +673,7 @@ export default function EmployeesScreen() {
 
   const openEdit = (emp: Employee) => {
     setEditingEmp(emp);
+    setDocFiles({});
     setForm({
       firstName: emp.firstName || '',
       lastName: emp.lastName || '',
@@ -477,6 +690,14 @@ export default function EmployeesScreen() {
       status: emp.status || 'active',
       defaultPassword: '',
       workDaysPerWeek: (emp as any).workDaysPerWeek || 5,
+      workScheduleType:
+        (emp as any).workScheduleType === 'custom' ? 'custom' : 'standard',
+      customWorkDays: ((emp as any).customWorkDays || []) as number[],
+      isCustomShift: (emp as any).isCustomShift === true,
+      customShiftStart: (emp as any).customShift?.startTime || '09:00',
+      customShiftEnd: (emp as any).customShift?.endTime || '18:00',
+      customShiftBreak: String((emp as any).customShift?.breakMinutes ?? 30),
+      customShiftOtAfter: String((emp as any).customShift?.otAfterHours ?? 9),
       enableOvertime: !!(emp as any).enableOvertime,
       otRate: String((emp as any).otRate ?? ''),
       biometricUserId: (emp as any).biometricUserId || '',
@@ -517,9 +738,15 @@ export default function EmployeesScreen() {
       bankAccountNumber: (emp as any).bankAccountNumber || '',
       ifscCode: (emp as any).ifscCode || '',
       bankName: (emp as any).bankName || '',
+      bankOther: false,
       fatherName: (emp as any).fatherName || '',
       motherName: (emp as any).motherName || '',
       spouseName: (emp as any).spouseName || '',
+      marriageAnniversary: (emp as any).marriageAnniversary
+        ? String((emp as any).marriageAnniversary).split('T')[0]
+        : '',
+      role: 'employee',
+      headOfDepartment: '',
       maritalStatus: (emp as any).maritalStatus || '',
       bloodGroup: (emp as any).bloodGroup || '',
       nationality: (emp as any).nationality || 'Indian',
@@ -560,11 +787,30 @@ export default function EmployeesScreen() {
       if (form.geofenceLng.trim() === '' || isNaN(Number(form.geofenceLng)))
         errors.geofenceLng = 'Enter a valid longitude';
     }
+    if (
+      !editingEmp &&
+      form.role === 'department_head' &&
+      !form.headOfDepartment
+    )
+      errors.headOfDepartment = 'Select the department this person heads';
+    if (form.workScheduleType === 'custom' && form.customWorkDays.length === 0)
+      errors.customWorkDays = 'Select at least one working day';
+    if (form.isCustomShift) {
+      if (!HHMM.test(form.customShiftStart) || !HHMM.test(form.customShiftEnd))
+        errors.customShift = 'Set a valid start and end time';
+      else if (form.customShiftStart === form.customShiftEnd)
+        errors.customShift = 'Start and end time cannot be the same';
+    }
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) {
-      const tab1Fields = ['firstName', 'lastName', 'email'];
+      const tab1Fields = ['firstName', 'lastName', 'email', 'headOfDepartment'];
       const tab3Fields = ['monthlySalary'];
-      const tab2Fields = ['geofenceLat', 'geofenceLng'];
+      const tab2Fields = [
+        'geofenceLat',
+        'geofenceLng',
+        'customWorkDays',
+        'customShift',
+      ];
       const firstErr = Object.keys(errors)[0];
       if (tab1Fields.includes(firstErr)) setActiveTab(0);
       else if (tab2Fields.includes(firstErr)) setActiveTab(1);
@@ -621,6 +867,23 @@ export default function EmployeesScreen() {
           ? parseFloat(form.monthlySalary)
           : undefined,
         otRate: form.otRate ? parseFloat(form.otRate) : undefined,
+        workDaysPerWeek:
+          form.workScheduleType === 'custom'
+            ? form.customWorkDays.length
+            : form.workDaysPerWeek,
+        workScheduleType: form.workScheduleType,
+        customWorkDays:
+          form.workScheduleType === 'custom' ? form.customWorkDays : [],
+        isCustomShift: form.isCustomShift,
+        shift: form.isCustomShift ? undefined : form.shift || undefined,
+        customShift: form.isCustomShift
+          ? {
+              startTime: form.customShiftStart,
+              endTime: form.customShiftEnd,
+              breakMinutes: Number(form.customShiftBreak) || 30,
+              otAfterHours: Number(form.customShiftOtAfter) || 9,
+            }
+          : undefined,
         geofenceLat:
           form.geofenceLat.trim() === '' ? undefined : Number(form.geofenceLat),
         geofenceLng:
@@ -652,6 +915,16 @@ export default function EmployeesScreen() {
           Alert.alert(
             'Photo',
             'Employee saved but photo upload failed. You can retry later.',
+          );
+        }
+      }
+      if (savedId && Object.keys(docFiles).length > 0) {
+        try {
+          await employeeAPI.uploadDocuments(savedId, docFiles);
+        } catch (e: any) {
+          Alert.alert(
+            'Documents',
+            `Employee saved but the documents could not be uploaded (${e.message}). You can retry by editing the employee.`,
           );
         }
       }
@@ -884,10 +1157,12 @@ export default function EmployeesScreen() {
     const err = formErrors[key];
     return (
       <View>
-        <Text style={[styles.fieldLabel, isRequired && { color: C.black }]}>
-          {label.replace(' *', '')}
-          {isRequired && <Text style={{ color: C.danger }}> *</Text>}
-        </Text>
+        <FieldLabel
+          icon={FIELD_ICONS[key as string] || FileText}
+          text={label.replace(' *', '')}
+          required={isRequired}
+          optional={!isRequired && !NO_OPTIONAL_MARK.has(key as string)}
+        />
         <TextInput
           style={[
             styles.fieldInput,
@@ -1585,32 +1860,34 @@ export default function EmployeesScreen() {
                 {node}
               </View>
             );
-            const panel = (<Reveal open={isOpen}>
-              <View style={styles.tDetail}>
-                {detail(
-                  'Employee ID',
-                  <Text style={styles.tText}>{item.employeeId}</Text>,
-                )}
-                {!!desig &&
-                  detail(
-                    'Designation',
-                    <Text style={styles.tText}>{desig}</Text>,
+            const panel = (
+              <Reveal open={isOpen}>
+                <View style={styles.tDetail}>
+                  {detail(
+                    'Employee ID',
+                    <Text style={styles.tText}>{item.employeeId}</Text>,
                   )}
-                {!!phone && detail('Phone', phoneEl)}
-                {!!salary && detail('Salary', salaryEl)}
-                {detail('Type', typePill)}
-                {detail('Status', statusBadge)}
-                {(item as any).loanBalance > 0 &&
-                  detail(
-                    'Loan balance',
-                    <View style={[styles.loanBadge, { marginTop: 0 }]}>
-                      <Text style={styles.loanBadgeText}>
-                        ₹{Number((item as any).loanBalance).toLocaleString()}
-                      </Text>
-                    </View>,
-                  )}
-              </View>
-            </Reveal>);
+                  {!!desig &&
+                    detail(
+                      'Designation',
+                      <Text style={styles.tText}>{desig}</Text>,
+                    )}
+                  {!!phone && detail('Phone', phoneEl)}
+                  {!!salary && detail('Salary', salaryEl)}
+                  {detail('Type', typePill)}
+                  {detail('Status', statusBadge)}
+                  {(item as any).loanBalance > 0 &&
+                    detail(
+                      'Loan balance',
+                      <View style={[styles.loanBadge, { marginTop: 0 }]}>
+                        <Text style={styles.loanBadgeText}>
+                          ₹{Number((item as any).loanBalance).toLocaleString()}
+                        </Text>
+                      </View>,
+                    )}
+                </View>
+              </Reveal>
+            );
 
             return (
               <View>
@@ -2980,7 +3257,7 @@ export default function EmployeesScreen() {
                     })}
 
                     <View>
-                      <Text style={styles.fieldLabel}>Mobile</Text>
+                      <FieldLabel icon={Phone} text="Mobile" optional />
                       <PhoneField
                         value={form.phone}
                         onChange={v => {
@@ -2997,6 +3274,8 @@ export default function EmployeesScreen() {
 
                     <DatePickerField
                       label="JOINING DATE"
+                      icon={CalendarDays}
+                      optional
                       value={form.joiningDate}
                       onChange={v => {
                         setForm(p => ({ ...p, joiningDate: v }));
@@ -3004,9 +3283,15 @@ export default function EmployeesScreen() {
                       }}
                     />
 
-                    <View style={{ flexDirection: 'row', gap: 12 }}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.fieldLabel}>Gender</Text>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        gap: 8,
+                        alignItems: 'flex-end',
+                      }}
+                    >
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <FieldLabel icon={User} text="Gender" optional />
                         <PickerField
                           title="Select gender"
                           value={form.gender}
@@ -3022,8 +3307,12 @@ export default function EmployeesScreen() {
                         />
                       </View>
 
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.fieldLabel}>Department</Text>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <FieldLabel
+                          icon={Building2}
+                          text="Department"
+                          optional
+                        />
                         <PickerField
                           title="Select department"
                           value={form.department}
@@ -3041,30 +3330,101 @@ export default function EmployeesScreen() {
                           }}
                         />
                       </View>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <FieldLabel icon={Briefcase} text="Employment Type" />
+                        <PickerField
+                          title="Select employment type"
+                          value={form.employmentType}
+                          placeholder="Select employment type"
+                          options={EMP_TYPES.map(t => ({
+                            value: t,
+                            label: t
+                              .replace('_', ' ')
+                              .replace(/\b\w/g, c => c.toUpperCase()),
+                          }))}
+                          onChange={v => {
+                            setForm(p => ({ ...p, employmentType: v }));
+                            setFormDirty(true);
+                          }}
+                        />
+                      </View>
                     </View>
 
-                    <View>
-                      <Text style={styles.fieldLabel}>Employment Type</Text>
-                      <PickerField
-                        title="Select employment type"
-                        value={form.employmentType}
-                        placeholder="Select employment type"
-                        options={EMP_TYPES.map(t => ({
-                          value: t,
-                          label: t
-                            .replace('_', ' ')
-                            .replace(/\b\w/g, c => c.toUpperCase()),
-                        }))}
-                        onChange={v => {
-                          setForm(p => ({ ...p, employmentType: v }));
-                          setFormDirty(true);
-                        }}
-                      />
-                    </View>
+                    {!editingEmp && canAssignRole && (
+                      <>
+                        <View>
+                          <FieldLabel icon={ShieldCheck} text="Role" />
+                          <PickerField
+                            title="Select role"
+                            value={form.role}
+                            placeholder="Select role"
+                            options={[
+                              { value: 'employee', label: 'Employee' },
+                              {
+                                value: 'department_head',
+                                label: 'Department Head',
+                              },
+                              ...(authUser?.role === 'super_admin'
+                                ? [
+                                    {
+                                      value: 'hr_manager',
+                                      label: 'HR Manager',
+                                    },
+                                    { value: 'super_admin', label: 'Admin' },
+                                  ]
+                                : []),
+                            ]}
+                            onChange={v => {
+                              setForm(p => ({
+                                ...p,
+                                role: v,
+                                headOfDepartment:
+                                  v === 'department_head'
+                                    ? p.headOfDepartment
+                                    : '',
+                              }));
+                              setFormDirty(true);
+                            }}
+                          />
+                        </View>
+                        {form.role === 'department_head' && (
+                          <View>
+                            <FieldLabel
+                              icon={Building2}
+                              text="Head of Department"
+                              required
+                            />
+                            <PickerField
+                              title="Select department"
+                              value={form.headOfDepartment}
+                              placeholder="Select department"
+                              options={departments.map(d => ({
+                                value: d._id,
+                                label: d.name,
+                              }))}
+                              onChange={v => {
+                                setForm(p => ({ ...p, headOfDepartment: v }));
+                                setFormDirty(true);
+                                if (formErrors.headOfDepartment)
+                                  setFormErrors(p => ({
+                                    ...p,
+                                    headOfDepartment: '',
+                                  }));
+                              }}
+                            />
+                            {!!formErrors.headOfDepartment && (
+                              <Text style={styles.fieldError}>
+                                {formErrors.headOfDepartment}
+                              </Text>
+                            )}
+                          </View>
+                        )}
+                      </>
+                    )}
 
                     {editingEmp && (
                       <View>
-                        <Text style={styles.fieldLabel}>Status</Text>
+                        <FieldLabel icon={ShieldCheck} text="Status" />
                         <PickerField
                           title="Select status"
                           value={form.status}
@@ -3094,7 +3454,10 @@ export default function EmployeesScreen() {
                 {activeTab === 1 && (
                   <>
                     <View>
-                      <Text style={styles.fieldLabel}>Work Days Per Week</Text>
+                      <FieldLabel
+                        icon={CalendarDays}
+                        text="Work Days Per Week"
+                      />
                       <View
                         style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}
                       >
@@ -3103,30 +3466,115 @@ export default function EmployeesScreen() {
                             key={d}
                             style={[
                               styles.selChip,
-                              form.workDaysPerWeek === d &&
+                              form.workScheduleType === 'standard' &&
+                                form.workDaysPerWeek === d &&
                                 styles.selChipActive,
                             ]}
                             onPress={() =>
-                              setForm(p => ({ ...p, workDaysPerWeek: d }))
+                              setForm(p => ({
+                                ...p,
+                                workDaysPerWeek: d,
+                                workScheduleType: 'standard',
+                                customWorkDays: [],
+                              }))
                             }
                           >
                             <Text
                               style={[
                                 styles.selChipText,
-                                form.workDaysPerWeek === d && {
-                                  color: C.white,
-                                },
+                                form.workScheduleType === 'standard' &&
+                                  form.workDaysPerWeek === d && {
+                                    color: C.white,
+                                  },
                               ]}
                             >
                               {d} Days
                             </Text>
                           </TouchableOpacity>
                         ))}
+                        <TouchableOpacity
+                          style={[
+                            styles.selChip,
+                            form.workScheduleType === 'custom' &&
+                              styles.selChipActive,
+                          ]}
+                          onPress={() =>
+                            setForm(p => ({ ...p, workScheduleType: 'custom' }))
+                          }
+                        >
+                          <Text
+                            style={[
+                              styles.selChipText,
+                              form.workScheduleType === 'custom' && {
+                                color: C.white,
+                              },
+                            ]}
+                          >
+                            Custom
+                          </Text>
+                        </TouchableOpacity>
                       </View>
+                      {form.workScheduleType === 'custom' && (
+                        <View style={{ marginTop: 10 }}>
+                          <Text style={styles.toggleHint}>
+                            Select the days this employee works
+                          </Text>
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              flexWrap: 'wrap',
+                              gap: 8,
+                              marginTop: 8,
+                            }}
+                          >
+                            {WEEK_DAYS.map(({ day, label }) => {
+                              const on = form.customWorkDays.includes(day);
+                              return (
+                                <TouchableOpacity
+                                  key={day}
+                                  style={[
+                                    styles.selChip,
+                                    on && styles.selChipActive,
+                                  ]}
+                                  onPress={() =>
+                                    setForm(p => ({
+                                      ...p,
+                                      customWorkDays: on
+                                        ? p.customWorkDays.filter(
+                                            d => d !== day,
+                                          )
+                                        : [...p.customWorkDays, day],
+                                    }))
+                                  }
+                                >
+                                  <Text
+                                    style={[
+                                      styles.selChipText,
+                                      on && { color: C.white },
+                                    ]}
+                                  >
+                                    {label}
+                                  </Text>
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </View>
+                          {formErrors.customWorkDays ? (
+                            <Text style={{ color: C.danger, marginTop: 6 }}>
+                              {formErrors.customWorkDays}
+                            </Text>
+                          ) : form.customWorkDays.length > 0 ? (
+                            <Text style={[styles.toggleHint, { marginTop: 6 }]}>
+                              {form.customWorkDays.length} day(s) selected -
+                              attendance is tracked only on these days
+                            </Text>
+                          ) : null}
+                        </View>
+                      )}
                     </View>
                     <View style={styles.toggleRow}>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.fieldLabel}>Enable Overtime</Text>
+                        <FieldLabel icon={Timer} text="Enable Overtime" />
                         <Text style={styles.toggleHint}>
                           Allow OT calculation for this employee
                         </Text>
@@ -3140,17 +3588,12 @@ export default function EmployeesScreen() {
                         thumbColor={C.white}
                       />
                     </View>
-                    {form.enableOvertime &&
-                      F('OT Rate (₹/hr)', 'otRate', {
-                        keyboardType: 'numeric',
-                        placeholder: '50',
-                      })}
                     {F('Biometric User ID', 'biometricUserId', {
                       placeholder: 'Device user ID',
                       keyboardType: 'numeric',
                     })}
                     <View>
-                      <Text style={styles.fieldLabel}>Shift</Text>
+                      <FieldLabel icon={Timer} text="Shift" optional />
                       <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
@@ -3159,14 +3602,23 @@ export default function EmployeesScreen() {
                         <TouchableOpacity
                           style={[
                             styles.selChip,
-                            !form.shift && styles.selChipActive,
+                            !form.shift &&
+                              !form.isCustomShift &&
+                              styles.selChipActive,
                           ]}
-                          onPress={() => setForm(p => ({ ...p, shift: '' }))}
+                          onPress={() =>
+                            setForm(p => ({
+                              ...p,
+                              shift: '',
+                              isCustomShift: false,
+                            }))
+                          }
                         >
                           <Text
                             style={[
                               styles.selChipText,
-                              !form.shift && { color: C.white },
+                              !form.shift &&
+                                !form.isCustomShift && { color: C.white },
                             ]}
                           >
                             None
@@ -3177,23 +3629,100 @@ export default function EmployeesScreen() {
                             key={sh._id}
                             style={[
                               styles.selChip,
-                              form.shift === sh._id && styles.selChipActive,
+                              !form.isCustomShift &&
+                                form.shift === sh._id &&
+                                styles.selChipActive,
                             ]}
                             onPress={() =>
-                              setForm(p => ({ ...p, shift: sh._id }))
+                              setForm(p => ({
+                                ...p,
+                                shift: sh._id,
+                                isCustomShift: false,
+                              }))
                             }
                           >
                             <Text
                               style={[
                                 styles.selChipText,
-                                form.shift === sh._id && { color: C.white },
+                                !form.isCustomShift &&
+                                  form.shift === sh._id && { color: C.white },
                               ]}
                             >
                               {sh.name}
                             </Text>
                           </TouchableOpacity>
                         ))}
+                        <TouchableOpacity
+                          style={[
+                            styles.selChip,
+                            form.isCustomShift && styles.selChipActive,
+                          ]}
+                          onPress={() =>
+                            setForm(p => ({
+                              ...p,
+                              shift: '',
+                              isCustomShift: true,
+                            }))
+                          }
+                        >
+                          <Text
+                            style={[
+                              styles.selChipText,
+                              form.isCustomShift && { color: C.white },
+                            ]}
+                          >
+                            Custom
+                          </Text>
+                        </TouchableOpacity>
                       </ScrollView>
+                      {form.isCustomShift && (
+                        <View style={{ gap: 12, marginTop: 12 }}>
+                          <View style={{ flexDirection: 'row', gap: 12 }}>
+                            <View style={{ flex: 1 }}>
+                              <TimePickerField
+                                label="Start Time"
+                                value={form.customShiftStart}
+                                onChange={v =>
+                                  setForm(p => ({ ...p, customShiftStart: v }))
+                                }
+                              />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <TimePickerField
+                                label="End Time"
+                                value={form.customShiftEnd}
+                                onChange={v =>
+                                  setForm(p => ({ ...p, customShiftEnd: v }))
+                                }
+                              />
+                            </View>
+                          </View>
+                          <View style={{ flexDirection: 'row', gap: 12 }}>
+                            <View style={{ flex: 1 }}>
+                              {F('Break (minutes)', 'customShiftBreak', {
+                                keyboardType: 'numeric',
+                                placeholder: '30',
+                              })}
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              {F('OT After (hours)', 'customShiftOtAfter', {
+                                keyboardType: 'numeric',
+                                placeholder: '9',
+                              })}
+                            </View>
+                          </View>
+                          {formErrors.customShift ? (
+                            <Text style={{ color: C.danger }}>
+                              {formErrors.customShift}
+                            </Text>
+                          ) : (
+                            <Text style={styles.toggleHint}>
+                              This custom shift applies only to this employee
+                              for attendance and payroll.
+                            </Text>
+                          )}
+                        </View>
+                      )}
                     </View>
 
                     {/* Mobile geofenced attendance */}
@@ -3207,9 +3736,10 @@ export default function EmployeesScreen() {
                     </Text>
                     <View style={styles.toggleRow}>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.fieldLabel}>
-                          Allow Mobile Camera Check-in/out
-                        </Text>
+                        <FieldLabel
+                          icon={Camera}
+                          text="Allow Mobile Camera Check-in/out"
+                        />
                         <Text style={styles.toggleHint}>
                           Employee can mark attendance from the app with a
                           selfie, from anywhere or only at a specific location
@@ -3264,18 +3794,83 @@ export default function EmployeesScreen() {
                           </Text>
                         ) : (
                           <>
-                            {F('Latitude', 'geofenceLat', {
+                            <View>
+                              <FieldLabel
+                                icon={MapPin}
+                                text="Find office location"
+                                optional
+                              />
+                              <View style={{ flexDirection: 'row', gap: 8 }}>
+                                <TextInput
+                                  style={[styles.fieldInput, { flex: 1 }]}
+                                  value={placeQuery}
+                                  onChangeText={setPlaceQuery}
+                                  onSubmitEditing={findPlace}
+                                  returnKeyType="search"
+                                  placeholder="Office name / address, or paste a Google Maps link"
+                                  placeholderTextColor={C.textLight}
+                                />
+                                <TouchableOpacity
+                                  style={{
+                                    backgroundColor: C.primary,
+                                    borderWidth: 2,
+                                    borderColor: C.black,
+                                    paddingHorizontal: 16,
+                                    justifyContent: 'center',
+                                  }}
+                                  onPress={findPlace}
+                                  disabled={placeBusy}
+                                >
+                                  <Text style={{ color: C.white }}>
+                                    {placeBusy ? '...' : 'Find'}
+                                  </Text>
+                                </TouchableOpacity>
+                              </View>
+                              {placeResults.map(r => (
+                                <TouchableOpacity
+                                  key={String(r.place_id)}
+                                  style={{
+                                    borderWidth: 1,
+                                    borderTopWidth: 0,
+                                    borderColor: '#00000040',
+                                    padding: 10,
+                                  }}
+                                  onPress={() => {
+                                    setForm(p => ({
+                                      ...p,
+                                      geofenceLat: String(r.lat),
+                                      geofenceLng: String(r.lon),
+                                    }));
+                                    setPlaceResults([]);
+                                    setFormDirty(true);
+                                  }}
+                                >
+                                  <Text style={{ fontSize: 12, color: C.black }}>
+                                    {r.display_name}
+                                  </Text>
+                                </TouchableOpacity>
+                              ))}
+                            </View>
+                            {F('Latitude *', 'geofenceLat', {
                               keyboardType: 'numbers-and-punctuation',
                               placeholder: 'e.g. 28.6139',
                             })}
-                            {F('Longitude', 'geofenceLng', {
+                            {F('Longitude *', 'geofenceLng', {
                               keyboardType: 'numbers-and-punctuation',
                               placeholder: 'e.g. 77.2090',
                             })}
-                            {F(Number(form.geofenceRadiusMeters) >= 1000 ? `Radius (meters) = ${Number(form.geofenceRadiusMeters) / 1000} km` : 'Radius in METERS (100 km = 100000)', 'geofenceRadiusMeters', {
-                              keyboardType: 'numeric',
-                              placeholder: '200',
-                            })}
+                            {F(
+                              Number(form.geofenceRadiusMeters) >= 1000
+                                ? `Radius (meters) = ${
+                                    Number(form.geofenceRadiusMeters) / 1000
+                                  } km`
+                                : 'Radius in METERS (100 km = 100000)',
+                              'geofenceRadiusMeters',
+                              {
+                                keyboardType: 'numeric',
+                                placeholder: '200',
+                              },
+                            )}
                             <TouchableOpacity
                               style={[
                                 styles.selChip,
@@ -3307,10 +3902,16 @@ export default function EmployeesScreen() {
                     {/* Row 1: Monthly Salary & PF Number */}
                     <View style={{ flexDirection: 'row', gap: 12 }}>
                       <View style={{ flex: 1 }}>
-                        {F('Monthly Salary (₹) *', 'monthlySalary', {
-                          keyboardType: 'numeric',
-                          placeholder: '50000',
-                        })}
+                        {F(
+                          editingEmp
+                            ? 'Monthly Salary (₹)'
+                            : 'Monthly Salary (₹) *',
+                          'monthlySalary',
+                          {
+                            keyboardType: 'numeric',
+                            placeholder: '50000',
+                          },
+                        )}
                       </View>
                       <View style={{ flex: 1 }}>
                         {F('PF Number', 'pfNumber', {
@@ -3403,12 +4004,18 @@ export default function EmployeesScreen() {
                   <>
                     <DatePickerField
                       label="Date of Birth"
+                      icon={CalendarDays}
+                      optional
                       value={form.dateOfBirth}
                       onChange={v => setForm(p => ({ ...p, dateOfBirth: v }))}
                       maximumDate={new Date()}
                     />
                     <View>
-                      <Text style={styles.fieldLabel}>Emergency Contact</Text>
+                      <FieldLabel
+                        icon={PhoneCall}
+                        text="Emergency Contact"
+                        optional
+                      />
                       <PhoneField
                         value={form.emergencyContact}
                         onChange={v => {
@@ -3425,9 +4032,10 @@ export default function EmployeesScreen() {
                     {AddressBlock('')}
                     <View style={styles.toggleRow}>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.fieldLabel}>
-                          Permanent address same as current
-                        </Text>
+                        <FieldLabel
+                          icon={Building2}
+                          text="Permanent address same as current"
+                        />
                         <Text style={styles.toggleHint}>
                           Turn off to enter a different permanent address
                         </Text>
@@ -3448,15 +4056,15 @@ export default function EmployeesScreen() {
                         {AddressBlock('permanent')}
                       </>
                     )}
-                    <View style={{ flexDirection: 'row', gap: 12 }}>
-                      <View style={{ flex: 1 }}>
+                    <View style={{ gap: 12 }}>
+                      <View>
                         {F('PAN Number', 'panNumber', {
                           placeholder: 'ABCDE1234F',
                           autoCapitalize: 'characters',
                           maxLength: 10,
                         })}
                       </View>
-                      <View style={{ flex: 1 }}>
+                      <View>
                         {F('Aadhar Number', 'aadharNumber', {
                           placeholder: '12-digit Aadhar',
                           keyboardType: 'numeric',
@@ -3464,21 +4072,78 @@ export default function EmployeesScreen() {
                         })}
                       </View>
                     </View>
-                    <View style={{ flexDirection: 'row', gap: 12 }}>
-                      <View style={{ flex: 1 }}>
+                    {(
+                      [
+                        ['panDoc', 'PAN Document'],
+                        ['aadhaarDoc', 'Aadhaar Document'],
+                        ['resumeDoc', 'Resume / CV'],
+                      ] as [DocKey, string][]
+                    ).map(([k, label]) => (
+                      <View key={k}>
+                        <FieldLabel icon={FileText} text={label} optional />
+                        <TouchableOpacity
+                          style={[
+                            styles.fieldInput,
+                            {
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: 8,
+                            },
+                          ]}
+                          onPress={() => pickDoc(k)}
+                        >
+                          <Text
+                            numberOfLines={1}
+                            style={{
+                              flex: 1,
+                              color: docFiles[k] ? C.black : C.textLight,
+                            }}
+                          >
+                            {docFiles[k]
+                              ? docFiles[k]!.name
+                              : (editingEmp as any)?.[k]
+                              ? 'Uploaded - tap to replace'
+                              : 'Tap to upload (PDF/JPG/PNG, max 5MB)'}
+                          </Text>
+                          {docFiles[k] ? (
+                            <TouchableOpacity
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                              onPress={() =>
+                                setDocFiles(p => {
+                                  const n = { ...p };
+                                  delete n[k];
+                                  return n;
+                                })
+                              }
+                            >
+                              <X size={16} color={C.danger} />
+                            </TouchableOpacity>
+                          ) : (
+                            <Upload size={16} color={C.textMuted} />
+                          )}
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                    <View style={{ gap: 12 }}>
+                      <View>
                         {F('Father Name', 'fatherName', {
                           placeholder: "Father's name",
                         })}
                       </View>
-                      <View style={{ flex: 1 }}>
+                      <View>
                         {F('Mother Name', 'motherName', {
                           placeholder: "Mother's name",
                         })}
                       </View>
                     </View>
-                    <View style={{ flexDirection: 'row', gap: 12 }}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.fieldLabel}>Marital Status</Text>
+                    <View style={{ gap: 12 }}>
+                      <View>
+                        <FieldLabel
+                          icon={HeartHandshake}
+                          text="Marital Status"
+                          optional
+                        />
                         <PickerField
                           title="Select marital status"
                           value={form.maritalStatus}
@@ -3496,8 +4161,12 @@ export default function EmployeesScreen() {
                         />
                       </View>
 
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.fieldLabel}>Blood Group</Text>
+                      <View>
+                        <FieldLabel
+                          icon={Droplet}
+                          text="Blood Group"
+                          optional
+                        />
                         <PickerField
                           title="Select blood group"
                           value={form.bloodGroup}
@@ -3524,8 +4193,24 @@ export default function EmployeesScreen() {
                       F('Spouse Name', 'spouseName', {
                         placeholder: "Spouse's name",
                       })}
+                    {form.maritalStatus === 'married' && (
+                      <DatePickerField
+                        label="Marriage Anniversary"
+                        icon={HeartHandshake}
+                        optional
+                        value={form.marriageAnniversary}
+                        onChange={v => {
+                          setForm(p => ({ ...p, marriageAnniversary: v }));
+                          setFormDirty(true);
+                        }}
+                      />
+                    )}
                     <View>
-                      <Text style={styles.fieldLabel}>Alternate Phone</Text>
+                      <FieldLabel
+                        icon={Phone}
+                        text="Alternate Phone"
+                        optional
+                      />
                       <PhoneField
                         value={form.alternatePhone}
                         onChange={v => {
@@ -3539,13 +4224,13 @@ export default function EmployeesScreen() {
                     {F('Qualification', 'qualification', {
                       placeholder: 'e.g. B.Tech, MBA',
                     })}
-                    <View style={{ flexDirection: 'row', gap: 12 }}>
-                      <View style={{ flex: 1 }}>
+                    <View style={{ gap: 12 }}>
+                      <View>
                         {F('Total Experience', 'totalExperience', {
                           placeholder: 'e.g. 3 years',
                         })}
                       </View>
-                      <View style={{ flex: 1 }}>
+                      <View>
                         {F('Previous Company', 'previousCompany', {
                           placeholder: 'Last employer name',
                         })}
@@ -3568,9 +4253,46 @@ export default function EmployeesScreen() {
                       placeholder: 'e.g. SBIN0001234',
                       autoCapitalize: 'characters',
                     })}
-                    {F('Bank Name', 'bankName', {
-                      placeholder: 'e.g. State Bank of India',
-                    })}
+                    {(() => {
+                      const isOther =
+                        form.bankOther ||
+                        (!!form.bankName && !BANKS.includes(form.bankName));
+                      return (
+                        <>
+                          <View>
+                            <FieldLabel
+                              icon={Landmark}
+                              text="Bank Name"
+                              optional
+                            />
+                            <PickerField
+                              title="Select bank"
+                              value={isOther ? BANK_OTHER : form.bankName}
+                              placeholder="Select bank"
+                              options={[
+                                ...Array.from(new Set(BANKS)).map(b => ({
+                                  value: b,
+                                  label: b,
+                                })),
+                                { value: BANK_OTHER, label: 'Other' },
+                              ]}
+                              onChange={v => {
+                                setForm(p =>
+                                  v === BANK_OTHER
+                                    ? { ...p, bankOther: true, bankName: '' }
+                                    : { ...p, bankOther: false, bankName: v },
+                                );
+                                setFormDirty(true);
+                              }}
+                            />
+                          </View>
+                          {isOther &&
+                            F('Other Bank Name', 'bankName', {
+                              placeholder: 'Type the bank name',
+                            })}
+                        </>
+                      );
+                    })()}
                   </>
                 )}
 
