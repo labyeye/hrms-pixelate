@@ -378,6 +378,12 @@ const createEmployee = [
       qualification: qualification || undefined,
       totalExperience: totalExperience || undefined,
       previousCompany: previousCompany || undefined,
+      // The form sends these on create too; they used to be dropped (only the edit path saved them).
+      ...Object.fromEntries(
+        ["otEnabled", "otRate", "geofenceAttendanceEnabled", "geofenceMode", "geofenceLat", "geofenceLng", "geofenceRadiusMeters", "workDaysPerWeek", "workScheduleType", "customWorkDays"]
+          .filter((k) => req.body[k] !== undefined && req.body[k] !== "")
+          .map((k) => [k, req.body[k]]),
+      ),
     });
 
     await logAudit(req, "employee_created", "Employee", employee._id, {
