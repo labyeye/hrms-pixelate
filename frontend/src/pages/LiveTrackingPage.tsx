@@ -18,12 +18,16 @@ export default function LiveTrackingPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [logs, setLogs] = useState<any[]>([]);
+  const [waiting, setWaiting] = useState<any[]>([]);
+  const [enabled, setEnabled] = useState(true);
   const [search, setSearch] = useState("");
 
   const load = useCallback(async () => {
     try {
       const res = await trackingAPI.getLive();
       setLogs(res.data || []);
+      setWaiting((res as any).waiting || []);
+      setEnabled((res as any).enabled !== false);
     } catch (err: any) {
       toast({
         title: "Failed to load live tracking",
@@ -61,6 +65,27 @@ export default function LiveTrackingPage() {
           </p>
         </div>
 
+        {!enabled && (
+          <div className="border-2 border-black bg-[#FEF3C7] p-4 flex items-center justify-between gap-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+            <p className="text-xs font-medium text-black">
+              <span className="font-bold">Live tracking is OFF</span> for your company, so no location is being recorded.
+            </p>
+            <button
+              onClick={async () => {
+                try {
+                  await trackingAPI.updateSettings({ enabled: true });
+                  load();
+                } catch (err: any) {
+                  toast({ title: "Could not turn on", description: err.message, variant: "destructive" });
+                }
+              }}
+              className="border-2 border-black bg-[#024BAB] text-white px-4 py-2 text-xs font-bold uppercase tracking-wider shrink-0"
+            >
+              Turn on
+            </button>
+          </div>
+        )}
+
         {/* Action Header */}
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
           <div className="relative w-full sm:w-72">
@@ -97,7 +122,7 @@ export default function LiveTrackingPage() {
               Loading field positions...
             </p>
           </div>
-        ) : filtered.length === 0 ? (
+        ) : filtered.length === 0 && waiting.length === 0 ? (
           <div className="border-2 border-black bg-white p-12 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             <Navigation className="w-12 h-12 text-gray-300 mx-auto mb-3" />
             <h3 className="text-sm font-bold uppercase tracking-wider text-black">
@@ -199,6 +224,18 @@ export default function LiveTrackingPage() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {!loading && waiting.length > 0 && (
+          <div className="border-2 border-black bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <h3 className="text-xs font-bold uppercase tracking-wider mb-2">No location received today ({waiting.length})</h3>
+            <p className="text-xs text-muted-foreground mb-3">Not checked in yet, app not opened, or location permission off.</p>
+            <div className="flex flex-wrap gap-2">
+              {waiting.filter((e) => !search.trim() || `${e.firstName} ${e.lastName} ${e.employeeId}`.toLowerCase().includes(search.toLowerCase())).map((e) => (
+                <span key={e._id} className="border border-black px-2 py-1 text-xs font-medium">{e.firstName} {e.lastName} · {e.employeeId}</span>
+              ))}
+            </div>
           </div>
         )}
       </div>

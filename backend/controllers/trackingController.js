@@ -52,7 +52,8 @@ exports.recordPing = async (req, res) => {
 
     // Check if employee has tracking enabled
     const employee = await Employee.findById(employeeId);
-    if (!employee || !employee.gpsTrackingEnabled) {
+    // Nothing in the UI ever set the per-employee flag, so tracking never started: the company switch decides.
+    if (!employee) {
       return res.json({
         success: true,
         message: "Live tracking is not active for this employee",
@@ -171,9 +172,18 @@ exports.getLiveTracking = async (req, res) => {
       .populate("employee", "firstName lastName employeeId designation avatar department phone")
       .select("employee lastLocation totalDistanceKm updatedAt");
 
+    const setting = await Setting.findOne({ company: companyId }).select("gpsLiveTrackingEnabled");
+    const seen = new Set(logs.map((l) => String(l.employee?._id)));
+    const waiting = (
+      await Employee.find({ company: companyId, status: { $nin: ["terminated", "exited"] } })
+        .select("firstName lastName employeeId designation")
+        .lean()
+    ).filter((e) => !seen.has(String(e._id)));
     res.json({
       success: true,
       data: logs,
+      waiting,
+      enabled: !!setting?.gpsLiveTrackingEnabled,
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
