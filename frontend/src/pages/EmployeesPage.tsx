@@ -1,3 +1,4 @@
+import GeofencePicker, { GMAPS_KEY } from "@/components/common/GeofencePicker";
 import { useState, useEffect, useCallback, useRef } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
 import { writeSheet, readRows } from "@/lib/sheets";
@@ -2313,6 +2314,15 @@ export default function EmployeesPage() {
                                   />
                                 </div>
                               </div>
+                              {GMAPS_KEY && (
+                                <GeofencePicker
+                                  lat={form.geofenceLat}
+                                  lng={form.geofenceLng}
+                                  radius={form.geofenceRadiusMeters}
+                                  onChange={(la, ln) => setForm((f) => ({ ...f, geofenceLat: la, geofenceLng: ln }))}
+                                />
+                              )}
+                              {!GMAPS_KEY && (
                               <div className="mb-3">
                                 <label className="text-xs font-bold uppercase tracking-wider block mb-1">
                                   Find office location
@@ -2356,6 +2366,7 @@ export default function EmployeesPage() {
                                   Small business names are often missing in this search. Then open the place in Google Maps and paste its link here.
                                 </p>
                               </div>
+                              )}
                               <button
                                 type="button"
                                 onClick={() => {
