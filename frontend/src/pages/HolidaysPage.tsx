@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { holidayAPI } from "@/services/api";
+import { holidayAPI, departmentAPI, employeeAPI } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useConfirm } from "@/hooks/use-confirm";
@@ -33,7 +33,28 @@ interface Holiday {
   type: "national" | "optional" | "restricted";
   description?: string;
   isActive: boolean;
+  scope?: "all" | "departments" | "employees";
+  departments?: string[];
+  employees?: string[];
 }
+
+interface HolidayForm {
+  name: string;
+  type: Holiday["type"];
+  description: string;
+  scope: "all" | "departments" | "employees";
+  departments: string[];
+  employees: string[];
+}
+
+const EMPTY_FORM: HolidayForm = {
+  name: "",
+  type: "national",
+  description: "",
+  scope: "all",
+  departments: [],
+  employees: [],
+};
 
 const TYPE_META = {
   national: {
@@ -99,11 +120,32 @@ export default function HolidaysPage() {
   // Clicked calendar day (YYYY-MM-DD) -> modal listing its holidays + add/edit form
   const [dayModal, setDayModal] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    name: "",
-    type: "national" as Holiday["type"],
-    description: "",
-  });
+  const [form, setForm] = useState<HolidayForm>(EMPTY_FORM);
+  const [depts, setDepts] = useState<{ _id: string; name: string }[]>([]);
+  const [emps, setEmps] = useState<
+    { _id: string; firstName: string; lastName: string; employeeId?: string }[]
+  >([]);
+  const [empSearch, setEmpSearch] = useState("");
+
+  useEffect(() => {
+    if (!canManage) return;
+    departmentAPI
+      .getAll()
+      .then((r: any) => setDepts(r.data || []))
+      .catch(() => {});
+    employeeAPI
+      .getAll({ status: "active" })
+      .then((r: any) => setEmps(r.data || []))
+      .catch(() => {});
+  }, [canManage]);
+
+  const toggleIn = (key: "departments" | "employees", id: string) =>
+    setForm((p) => ({
+      ...p,
+      [key]: p[key].includes(id)
+        ? p[key].filter((x) => x !== id)
+        : [...p[key], id],
+    }));
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -130,7 +172,7 @@ export default function HolidaysPage() {
   const closeDay = () => {
     setDayModal(null);
     setEditingId(null);
-    setForm({ name: "", type: "national", description: "" });
+    setForm(EMPTY_FORM);
   };
 
   const handleSave = async () => {
@@ -144,11 +186,35 @@ export default function HolidaysPage() {
       });
       return;
     }
+    if (form.scope === "departments" && form.departments.length === 0) {
+      setActionModal({
+        show: true,
+        type: "error",
+        title: "Select departments",
+        message: "Choose at least one department, or switch to All employees.",
+      });
+      return;
+    }
+    if (form.scope === "employees" && form.employees.length === 0) {
+      setActionModal({
+        show: true,
+        type: "error",
+        title: "Select employees",
+        message: "Choose at least one employee, or switch to All employees.",
+      });
+      return;
+    }
+    const who =
+      form.scope === "all"
+        ? "all employees"
+        : form.scope === "departments"
+          ? `${form.departments.length} department(s)`
+          : `${form.employees.length} selected employee(s)`;
     const ok = await confirm({
       title: editingId ? "Save changes?" : "Add this holiday?",
       description: editingId
         ? "This will update the holiday details."
-        : "Attendance of all employees will be marked as holiday for this day.",
+        : `Attendance of ${who} will be marked as holiday for this day.`,
     });
     if (!ok) return;
     setSaving(true);
@@ -158,7 +224,7 @@ export default function HolidaysPage() {
       else await holidayAPI.create({ ...form, date: dayModal });
       toast({ title: editingId ? "Holiday updated" : "Holiday added" });
       setEditingId(null);
-      setForm({ name: "", type: "national", description: "" });
+      setForm(EMPTY_FORM);
       await load();
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
@@ -186,7 +252,14 @@ export default function HolidaysPage() {
 
   const startEdit = (h: Holiday) => {
     setEditingId(h._id);
-    setForm({ name: h.name, type: h.type, description: h.description || "" });
+    setForm({
+      name: h.name,
+      type: h.type,
+      description: h.description || "",
+      scope: h.scope || "all",
+      departments: (h.departments || []).map(String),
+      employees: (h.employees || []).map(String),
+    });
   };
 
   const shift = (delta: number) => {
@@ -486,6 +559,13 @@ export default function HolidaysPage() {
                         >
                           {TYPE_META[h.type].label}
                         </p>
+                        <p className="text-[10px] font-bold text-gray-600 mt-0.5">
+                          {h.scope === "departments"
+                            ? `${h.departments?.length || 0} department(s)`
+                            : h.scope === "employees"
+                              ? `${h.employees?.length || 0} employee(s)`
+                              : "All employees"}
+                        </p>
                         {h.description && (
                           <p className="text-xs text-gray-600 mt-1">
                             {h.description}
@@ -546,6 +626,85 @@ export default function HolidaysPage() {
                       Restricted - limited to specific employees
                     </option>
                   </select>
+                  <select
+                    value={form.scope}
+                    onChange={(e) =>
+                      setForm((p) => ({
+                        ...p,
+                        scope: e.target.value as HolidayForm["scope"],
+                      }))
+                    }
+                    className="w-full border-2 border-black px-3 py-2 text-sm font-medium bg-white focus:outline-none"
+                  >
+                    <option value="all">Applies to: All employees</option>
+                    <option value="departments">
+                      Applies to: Selected departments
+                    </option>
+                    <option value="employees">
+                      Applies to: Selected employees
+                    </option>
+                  </select>
+                  {form.scope === "departments" && (
+                    <div className="border-2 border-black max-h-40 overflow-y-auto divide-y divide-gray-200">
+                      {depts.length === 0 && (
+                        <p className="p-3 text-xs text-gray-500">
+                          No departments found.
+                        </p>
+                      )}
+                      {depts.map((d) => (
+                        <label
+                          key={d._id}
+                          className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={form.departments.includes(d._id)}
+                            onChange={() => toggleIn("departments", d._id)}
+                          />
+                          {d.name}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                  {form.scope === "employees" && (
+                    <div className="space-y-2">
+                      <input
+                        value={empSearch}
+                        onChange={(e) => setEmpSearch(e.target.value)}
+                        placeholder="Search employee..."
+                        className="w-full border-2 border-black px-3 py-2 text-sm font-medium focus:outline-none"
+                      />
+                      <div className="border-2 border-black max-h-44 overflow-y-auto divide-y divide-gray-200">
+                        {emps
+                          .filter((e) =>
+                            `${e.firstName} ${e.lastName} ${e.employeeId || ""}`
+                              .toLowerCase()
+                              .includes(empSearch.toLowerCase()),
+                          )
+                          .map((e) => (
+                            <label
+                              key={e._id}
+                              className="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-gray-50"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={form.employees.includes(e._id)}
+                                onChange={() => toggleIn("employees", e._id)}
+                              />
+                              {e.firstName} {e.lastName}
+                              {e.employeeId && (
+                                <span className="text-xs text-gray-500">
+                                  ({e.employeeId})
+                                </span>
+                              )}
+                            </label>
+                          ))}
+                      </div>
+                      <p className="text-xs text-gray-600">
+                        {form.employees.length} selected
+                      </p>
+                    </div>
+                  )}
                   <input
                     value={form.description}
                     onChange={(e) =>
@@ -577,11 +736,7 @@ export default function HolidaysPage() {
                       <button
                         onClick={() => {
                           setEditingId(null);
-                          setForm({
-                            name: "",
-                            type: "national",
-                            description: "",
-                          });
+                          setForm(EMPTY_FORM);
                         }}
                         className="border-2 border-black px-4 py-2 font-bold text-sm uppercase"
                       >

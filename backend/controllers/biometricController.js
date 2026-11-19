@@ -342,7 +342,7 @@ const recordBiometric = asyncHandler(async (req, res) => {
       throw new Error("NFC card not registered on this device");
     }
     employee = await Employee.findById(card.employee).select(
-      "firstName lastName employeeId phone",
+      "firstName lastName employeeId phone department",
     );
   } else if (method === "pin" || method === "face") {
     if (!employeeId) {
@@ -352,7 +352,7 @@ const recordBiometric = asyncHandler(async (req, res) => {
     employee = await Employee.findOne({
       _id: employeeId,
       company: device.company,
-    }).select("firstName lastName employeeId phone");
+    }).select("firstName lastName employeeId phone department");
     if (!employee) {
       res.status(404);
       throw new Error("Employee not found");
@@ -366,7 +366,7 @@ const recordBiometric = asyncHandler(async (req, res) => {
   const today = new Date(now);
   today.setHours(0, 0, 0, 0);
 
-  const holiday = await isHolidayDate(device.company, today);
+  const holiday = await isHolidayDate(device.company, today, employee);
 
   const lastTodayLog = await BiometricLog.findOne({
     employee: employee._id,

@@ -4,7 +4,7 @@ const Employee = require("../models/Employee");
 const Shift = require("../models/Shift");
 const Leave = require("../models/Leave");
 const DeductionRule = require("../models/DeductionRule");
-const { isHolidayDate } = require("../controllers/holidayController");
+const { holidayResolver } = require("../controllers/holidayController");
 
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
 
@@ -57,7 +57,7 @@ async function processDate(targetDate, istMinutesNow, onlyCompany) {
     ],
   })
     .select(
-      "_id company shift isCustomShift customShift otEnabled workScheduleType customWorkDays workDaysPerWeek joinDate exitDate",
+      "_id company shift isCustomShift customShift otEnabled workScheduleType customWorkDays workDaysPerWeek joinDate exitDate department",
     )
     .lean();
 
@@ -78,8 +78,12 @@ async function processDate(targetDate, istMinutesNow, onlyCompany) {
   }
 
   for (const [companyId, companyEmps] of Object.entries(byCompany)) {
-    const isHoliday = await isHolidayDate(companyId, targetDate);
-    if (isHoliday) continue;
+    const holidays = await holidayResolver(companyId, targetDate);
+    if (
+      holidays.list.length &&
+      holidays.list.every((h) => !h.scope || h.scope === "all")
+    )
+      continue; // company-wide holiday: nothing to mark for anyone
 
     // Company rule for "checked in but never checked out" (default: half day, as before).
     const rule = await DeductionRule.findOne({ company: companyId })
@@ -107,6 +111,7 @@ async function processDate(targetDate, istMinutesNow, onlyCompany) {
         leaveByEmp.set(String(l.employee), l);
 
     for (const emp of companyEmps) {
+      if (holidays.forEmployee(emp)) continue; // holiday for this employee's department/list
       // Skip days outside the employee's employment period entirely.
       if (emp.joinDate) {
         const jd = toISTMidnight(

@@ -6,7 +6,7 @@ const Shift = require("../models/Shift");
 const DeductionRule = require("../models/DeductionRule");
 const AttendanceBalance = require("../models/AttendanceBalance");
 const LateApproval = require("../models/LateApproval");
-const { isHolidayDate } = require("./holidayController");
+const { isHolidayDate, holidayResolver } = require("./holidayController");
 const { safePagination } = require("../middleware/validate");
 const { sendAttendanceStatus, notifyHrPunch } = require("../services/whatsappService");
 const { validateMagicBytes } = require("../middleware/upload");
@@ -507,7 +507,7 @@ const markAttendance = asyncHandler(async (req, res) => {
     throw new Error(boundsError);
   }
 
-  const holiday = await isHolidayDate(req.user.company, d);
+  const holiday = await isHolidayDate(req.user.company, d, emp);
   const computedStatus = holiday
     ? "holiday"
     : await resolveStatus(employee, checkIn, status);
@@ -700,7 +700,7 @@ const selfMarkAttendance = asyncHandler(async (req, res) => {
   const d = new Date(now);
   d.setHours(0, 0, 0, 0);
 
-  const holiday = await isHolidayDate(req.user.company, d);
+  const holiday = await isHolidayDate(req.user.company, d, emp);
   const selfieUrl = `${req.protocol}://${req.get("host")}/uploads/attendance-selfies/${req.file.filename}`;
   const location = { lat, lng, accuracy, distanceMeters };
 
@@ -878,7 +878,7 @@ const kioskFaceMark = asyncHandler(async (req, res) => {
   }
 
   if (!record?.checkIn) {
-    const holiday = await isHolidayDate(req.user.company, d);
+    const holiday = await isHolidayDate(req.user.company, d, emp);
     const status = holiday
       ? "holiday"
       : await resolveStatus(emp._id, now, "present", req.user.company);
@@ -1012,7 +1012,7 @@ const hikvisionPunch = asyncHandler(async (req, res) => {
   const record = await Attendance.findOne({ employee: emp._id, date: d });
 
   if (!record?.checkIn) {
-    const holiday = await isHolidayDate(companyId, d);
+    const holiday = await isHolidayDate(companyId, d, emp);
     const status = holiday
       ? "holiday"
       : await resolveStatus(emp._id, now, "present", companyId);
@@ -1308,11 +1308,11 @@ const bulkMarkAttendance = asyncHandler(async (req, res) => {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
 
-  const holiday = await isHolidayDate(req.user.company, d);
+  const holidays = await holidayResolver(req.user.company, d);
 
   const companyEmployees = await Employee.find({
     company: req.user.company,
-  }).select("_id joinDate exitDate");
+  }).select("_id joinDate exitDate department");
   const companyEmpMap = new Map(
     companyEmployees.map((e) => [e._id.toString(), e]),
   );
@@ -1323,21 +1323,26 @@ const bulkMarkAttendance = asyncHandler(async (req, res) => {
     return !employmentBoundsError(emp, d);
   });
 
-  const ops = filteredRecords.map((r) => ({
-    updateOne: {
-      filter: { employee: r.employee, date: d },
-      update: {
-        $set: {
-          status: holiday ? "holiday" : r.status,
-          checkIn: holiday ? undefined : r.checkIn,
-          checkOut: holiday ? undefined : r.checkOut,
-          notes: holiday ? `Holiday: ${holiday.name}` : undefined,
-          markedBy: req.user._id,
+  let holiday = null; // any holiday that applied to at least one record (for the message)
+  const ops = filteredRecords.map((r) => {
+    const h = holidays.forEmployee(companyEmpMap.get(r.employee.toString()));
+    if (h) holiday = h;
+    return {
+      updateOne: {
+        filter: { employee: r.employee, date: d },
+        update: {
+          $set: {
+            status: h ? "holiday" : r.status,
+            checkIn: h ? undefined : r.checkIn,
+            checkOut: h ? undefined : r.checkOut,
+            notes: h ? `Holiday: ${h.name}` : undefined,
+            markedBy: req.user._id,
+          },
         },
+        upsert: true,
       },
-      upsert: true,
-    },
-  }));
+    };
+  });
 
   if (ops.length > 0) await Attendance.bulkWrite(ops);
   res.json({
@@ -1384,11 +1389,7 @@ const bulkUpdateAttendance = asyncHandler(async (req, res) => {
 
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
-  const holiday = await isHolidayDate(req.user.company, d);
-  if (holiday) {
-    res.status(400);
-    throw new Error(`${date} is a holiday (${holiday.name}); attendance can't be edited`);
-  }
+  const holidays = await holidayResolver(req.user.company, d);
 
   const at = (hhmmStr, addDays = 0) =>
     new Date(new Date(`${date}T${hhmmStr}:00+05:30`).getTime() + addDays * 86400000);
@@ -1415,6 +1416,14 @@ const bulkUpdateAttendance = asyncHandler(async (req, res) => {
     const boundsError = employmentBoundsError(emp, d);
     if (boundsError) {
       skipped.push({ employee: id, reason: boundsError });
+      continue;
+    }
+    const empHoliday = holidays.forEmployee(emp);
+    if (empHoliday) {
+      skipped.push({
+        employee: id,
+        reason: `${date} is a holiday (${empHoliday.name}); attendance can't be edited`,
+      });
       continue;
     }
     const existing = existingMap.get(String(emp._id)) || null;

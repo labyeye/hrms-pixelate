@@ -23,6 +23,7 @@ import {
   Pencil,
   Trash2,
   Paperclip,
+  Eye,
 } from "lucide-react";
 import { ActionModal } from "@/components/ui/ActionModal";
 import { ImageCropModal } from "@/components/documents/ImageCropModal";
@@ -221,6 +222,9 @@ export default function LeavePage() {
   const [editLeave, setEditLeave] = useState<LeaveRequest | null>(null);
   const [editForm, setEditForm] = useState<LeaveForm>(EMPTY_FORM);
   const [editSaving, setEditSaving] = useState(false);
+
+  // Eye icon: read-only view of a leave's reason
+  const [reasonView, setReasonView] = useState<LeaveRequest | null>(null);
 
   // Rejection reason modal
   const [rejectModal, setRejectModal] = useState<{
@@ -712,7 +716,6 @@ export default function LeavePage() {
                   ["Duration", ""],
                   ["Days", "w-14"],
                   ["Pay", "w-24"],
-                  ["Reason", "min-w-[240px] w-1/4"],
                   ["Status", ""],
                   ["Actions", ""],
                 ].map(([h, w]) => (
@@ -797,9 +800,6 @@ export default function LeavePage() {
                       </span>
                     )}
                   </td>
-                  <td className="px-3 py-3 text-xs text-black min-w-[240px] whitespace-normal break-words">
-                    {leave.reason}
-                  </td>
                   <td className="px-3 py-3">
                     <div className="flex flex-row items-center gap-1 whitespace-nowrap">
                       <span
@@ -814,6 +814,14 @@ export default function LeavePage() {
                   </td>
                   <td className="px-3 py-3">
                     <div className="flex flex-nowrap items-center gap-1 whitespace-nowrap">
+                      <button
+                        onClick={() => setReasonView(leave)}
+                        className="p-1.5 border-2 border-transparent hover:border-black hover:bg-gray-100 transition-colors"
+                        title="View reason"
+                        aria-label="View leave reason"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-black" />
+                      </button>
                       {/* Approve / Reject — admin only, pending leaves */}
                       {isAdmin && leave.status === "pending" && (
                         <>
@@ -1260,6 +1268,55 @@ export default function LeavePage() {
               >
                 Got it
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {reasonView && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+          onClick={() => setReasonView(null)}
+        >
+          <div
+            className="bg-white border-2 border-black w-full max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b-2 border-black">
+              <h3 className="font-bold text-sm uppercase tracking-wider">
+                Leave reason
+              </h3>
+              <button
+                onClick={() => setReasonView(null)}
+                aria-label="Close"
+                className="p-1 hover:bg-gray-100"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-4 space-y-3 text-sm">
+              <p className="text-xs text-gray-600 font-medium">
+                {`${(reasonView.employee as any)?.firstName ?? ""} ${(reasonView.employee as any)?.lastName ?? ""}`.trim()}
+                {" · "}
+                {formatDate(reasonView.startDate)}
+                {reasonView.endDate &&
+                reasonView.endDate !== reasonView.startDate
+                  ? ` – ${formatDate(reasonView.endDate)}`
+                  : ""}
+              </p>
+              <p className="whitespace-pre-wrap break-words text-black">
+                {reasonView.reason?.trim() || "No reason provided."}
+              </p>
+              {reasonView.rejectionReason && (
+                <div className="border-t border-gray-200 pt-3">
+                  <p className="text-[10px] font-bold uppercase text-red-600">
+                    Rejection reason
+                  </p>
+                  <p className="whitespace-pre-wrap break-words">
+                    {reasonView.rejectionReason}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

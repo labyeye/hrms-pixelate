@@ -15,6 +15,14 @@ const holidaySchema = new mongoose.Schema(
       default: "national",
     },
     description: { type: String },
+    // Who the holiday applies to: whole company, selected departments, or a list of employees.
+    scope: {
+      type: String,
+      enum: ["all", "departments", "employees"],
+      default: "all",
+    },
+    departments: [{ type: mongoose.Schema.Types.ObjectId, ref: "Department" }],
+    employees: [{ type: mongoose.Schema.Types.ObjectId, ref: "Employee" }],
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true },
