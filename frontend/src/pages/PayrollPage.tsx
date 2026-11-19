@@ -1725,7 +1725,7 @@ export default function PayrollPage() {
                   onClick={() => {
                     if (
                       !confirm(
-                        `Force reprocess will DELETE existing payroll for ${month}/${year} (not paid) and recalculate. Continue?`,
+                        `Regenerate will rebuild the payroll for ${month}/${year} (not paid) from attendance up to today. Loan EMIs and bonuses/penalties are restored first, so nothing is double-counted. Paid payrolls are not changed. Continue?`,
                       )
                     )
                       return;
@@ -1734,7 +1734,7 @@ export default function PayrollPage() {
                   disabled={processing}
                   className="border-2 bg-red-600 text-white px-4 py-2.5 text-sm font-bold disabled:opacity-50"
                 >
-                  Force Reprocess
+                  Regenerate (latest attendance)
                 </button>
                 <button
                   onClick={() => {

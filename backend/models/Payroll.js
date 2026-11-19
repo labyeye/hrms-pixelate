@@ -28,6 +28,15 @@ const payrollSchema = new mongoose.Schema(
     esi: { type: Number, default: 0 },
     tds: { type: Number, default: 0 },
     loanDeduction: { type: Number, default: 0 },
+    // What this run consumed, so a regenerate can undo it exactly.
+    appliedTransactions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Transaction" }],
+    loanApplications: [
+      {
+        loan: { type: mongoose.Schema.Types.ObjectId, ref: "Loan" },
+        amount: { type: Number, default: 0 },
+        cleared: { type: Boolean, default: false },
+      },
+    ],
     otherDeductions: { type: Number, default: 0 },
     totalDeductions: { type: Number, default: 0 },
     netSalary: { type: Number, required: true },

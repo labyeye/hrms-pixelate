@@ -127,20 +127,75 @@ const processPayroll = asyncHandler(async (req, res) => {
 
   const { startDate, endDate } = getPayPeriod(y, m, settings);
 
-  // force=true: delete existing records for this month and reprocess
+  // force=true (Regenerate): undo what the previous run consumed, delete it, then
+  // recompute from attendance up to today. Paid payrolls are never touched.
+  const legacyLoanBlocked = [];
   if (force) {
     const empIds = employees.map((e) => e._id);
-    await Payroll.deleteMany({
+    let old = await Payroll.find({
       company: req.user.company,
       month: m,
       year: y,
       employee: { $in: empIds },
-      status: { $ne: "paid" }, // never delete paid payrolls
+      status: { $ne: "paid" },
     });
+    // Old payrolls that took a loan EMI but did not record which loan can't be
+    // reversed safely (regenerating would deduct the EMI twice) - leave them alone.
+    legacyLoanBlocked.push(
+      ...old.filter(
+        (po) => po.loanDeduction > 0 && !(po.loanApplications || []).length,
+      ),
+    );
+    old = old.filter((po) => !legacyLoanBlocked.includes(po));
+    for (const po of old) {
+      // 1. Give back loan EMIs taken by that run.
+      for (const la of po.loanApplications || []) {
+        if (!la.loan || !(la.amount > 0)) continue;
+        const loan = await Loan.findById(la.loan);
+        if (!loan) continue;
+        loan.remainingBalance += la.amount;
+        if (la.cleared && loan.status === "cleared") {
+          loan.status = "active";
+          loan.clearedOn = undefined;
+        }
+        await loan.save();
+        await Employee.findByIdAndUpdate(po.employee, {
+          $inc: { loanBalance: la.amount },
+        });
+      }
+      // 2. Re-open the bonuses/penalties/OT it marked applied.
+      if (po.appliedTransactions?.length) {
+        await Transaction.updateMany(
+          { _id: { $in: po.appliedTransactions }, status: "applied" },
+          { status: "pending" },
+        );
+      } else {
+        // Payroll created before tracking existed: reopen that period's applied items.
+        await Transaction.updateMany(
+          {
+            employee: po.employee,
+            company: req.user.company,
+            status: "applied",
+            date: { $gte: po.payPeriodStart, $lte: po.payPeriodEnd },
+          },
+          { status: "pending" },
+        );
+      }
+    }
+    await Payroll.deleteMany({ _id: { $in: old.map((o) => o._id) } });
   }
 
   const payrolls = [];
   const skipped = []; // reported back so HR sees who got no payroll and why
+  for (const po of legacyLoanBlocked) {
+    const e = employees.find((x) => String(x._id) === String(po.employee));
+    skipped.push({
+      employee: po.employee,
+      name: e ? `${e.firstName} ${e.lastName}` : "",
+      reason:
+        "Not regenerated: this payroll has a loan EMI from before regeneration tracking. Adjust manually (edit the payroll).",
+    });
+  }
 
   // One query per collection for the whole run (was 4 sequential queries per employee).
   const empIdList = employees.map((e) => e._id);
@@ -422,6 +477,7 @@ const processPayroll = asyncHandler(async (req, res) => {
       const newBalance = Math.max(0, loan.remainingBalance - emi);
       loanUpdates.push({
         id: loan._id,
+        amount: emi,
         newBalance,
         cleared: newBalance === 0,
       });
@@ -452,6 +508,12 @@ const processPayroll = asyncHandler(async (req, res) => {
       earlyCheckoutDeduction: 0,
       penaltyAmount: totalPenalties,
       loanDeduction,
+      appliedTransactions: txIds,
+      loanApplications: loanUpdates.map((u) => ({
+        loan: u.id,
+        amount: u.amount,
+        cleared: u.cleared,
+      })),
       otherDeductions: preDeductions,
       totalDeductions,
       netSalary,
