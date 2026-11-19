@@ -264,6 +264,34 @@ export default function EmployeesPage() {
   const [formTab, setFormTab] = useState(0);
   const [editEmp, setEditEmp] = useState<Employee | null>(null);
   const [form, setForm] = useState<EmployeeFormData>(EMPTY_FORM);
+  const [placeQuery, setPlaceQuery] = useState("");
+  const [placeResults, setPlaceResults] = useState<any[]>([]);
+  const [placeBusy, setPlaceBusy] = useState(false);
+  // Accepts a Google Maps link / "lat,lng" (exact) or a place name / address (OpenStreetMap search).
+  const findPlace = async () => {
+    const q = placeQuery.trim();
+    if (!q) return;
+    const m =
+      q.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
+      q.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) ||
+      q.match(/^(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)$/);
+    if (m) {
+      setForm((f) => ({ ...f, geofenceLat: m[1], geofenceLng: m[2] }));
+      setPlaceResults([]);
+      return;
+    }
+    setPlaceBusy(true);
+    try {
+      const r = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=in&q=${encodeURIComponent(q)}`,
+      );
+      setPlaceResults(await r.json());
+    } catch {
+      setPlaceResults([]);
+    } finally {
+      setPlaceBusy(false);
+    }
+  };
   const [docFiles, setDocFiles] = useState<{
     aadhaarDoc?: File;
     panDoc?: File;
@@ -2284,6 +2312,49 @@ export default function EmployeesPage() {
                                     placeholder="200"
                                   />
                                 </div>
+                              </div>
+                              <div className="mb-3">
+                                <label className="text-xs font-bold uppercase tracking-wider block mb-1">
+                                  Find office location
+                                </label>
+                                <div className="flex gap-2">
+                                  <input
+                                    value={placeQuery}
+                                    onChange={(e) => setPlaceQuery(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        findPlace();
+                                      }
+                                    }}
+                                    placeholder="Office name / address, or paste a Google Maps link"
+                                    className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={findPlace}
+                                    disabled={placeBusy}
+                                    className="text-xs font-bold border-2 border-black bg-[#024BAB] text-white px-4"
+                                  >
+                                    {placeBusy ? "..." : "Find"}
+                                  </button>
+                                </div>
+                                {placeResults.map((r) => (
+                                  <button
+                                    key={r.place_id}
+                                    type="button"
+                                    onClick={() => {
+                                      setForm({ ...form, geofenceLat: String(r.lat), geofenceLng: String(r.lon) });
+                                      setPlaceResults([]);
+                                    }}
+                                    className="block w-full text-left text-xs border border-black/30 border-t-0 px-3 py-2 hover:bg-[#024BAB]/5"
+                                  >
+                                    {r.display_name}
+                                  </button>
+                                ))}
+                                <p className="text-[11px] text-muted-foreground mt-1">
+                                  Small business names are often missing in this search. Then open the place in Google Maps and paste its link here.
+                                </p>
                               </div>
                               <button
                                 type="button"
