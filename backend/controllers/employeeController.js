@@ -31,7 +31,7 @@ async function nextEmployeeId(company) {
     const last = await Employee.findOne({ company }).sort({ createdAt: -1 });
     return last ? parseInt(last.employeeId?.replace(/\D/g, "") || "0") : 0;
   });
-  const prefix = (await require("../models/Company").findById(company).select("employeeIdPrefix").lean())?.employeeIdPrefix || "EMP";
+  const prefix = (await require("../models/Setting").findOne({ company }).select("employeeIdPrefix").lean())?.employeeIdPrefix || "EMP";
   return prefix === "EMP" ? `EMP${String(seq).padStart(4, "0")}` : `${prefix}${seq}`;
 }
 

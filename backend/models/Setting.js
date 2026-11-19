@@ -12,6 +12,14 @@ const settingSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    // New employee IDs: EMP -> EMP0001, anything else -> <prefix><number> (BSF1101).
+    employeeIdPrefix: {
+      type: String,
+      default: "EMP",
+      trim: true,
+      uppercase: true,
+      match: [/^[A-Z]{1,6}$/, "Prefix must be 1-6 letters"],
+    },
     companyGST: {
       type: String,
       default: "",

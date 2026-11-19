@@ -1191,6 +1191,18 @@ export default function SettingsPage() {
                       }}
                     />
                     <InputField
+                      label="Employee ID prefix"
+                      name="employeeIdPrefix"
+                      value={settings?.employeeIdPrefix || "EMP"}
+                      maxLength={6}
+                      placeholder="EMP"
+                      title="Letters only. New employees get e.g. EMP0001, or BSF1101 for prefix BSF"
+                      onChange={(e) => {
+                        const v = e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 6);
+                        handleChange({ ...e, target: { ...e.target, name: "employeeIdPrefix", value: v } });
+                      }}
+                    />
+                    <InputField
                       label="Website"
                       name="companyWebsite"
                       value={settings?.companyWebsite || ""}

@@ -28,8 +28,6 @@ const companySchema = new mongoose.Schema(
     // On-site agent (hikvision-agent/agent.js): own secret, last poll time.
     hikvisionAgentToken: { type: String, unique: true, sparse: true, select: false },
     hikvisionAgentSeen: Date,
-    // Employee ID prefix. Default EMP -> EMP0001; any other prefix -> <prefix><number> (BSF1101).
-    employeeIdPrefix: { type: String, default: "EMP", trim: true, uppercase: true, maxlength: 6 },
     // Outbound ISAPI target so new employees / face photos are pushed to the terminal.
     hikvisionDevice: {
       host: String,
