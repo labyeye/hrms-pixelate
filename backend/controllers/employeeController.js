@@ -31,7 +31,8 @@ async function nextEmployeeId(company) {
     const last = await Employee.findOne({ company }).sort({ createdAt: -1 });
     return last ? parseInt(last.employeeId?.replace(/\D/g, "") || "0") : 0;
   });
-  return `EMP${String(seq).padStart(4, "0")}`;
+  const prefix = (await require("../models/Company").findById(company).select("employeeIdPrefix").lean())?.employeeIdPrefix || "EMP";
+  return prefix === "EMP" ? `EMP${String(seq).padStart(4, "0")}` : `${prefix}${seq}`;
 }
 
 // Passwords an admin types for someone else: 8-128 chars with at least one letter and one digit.
