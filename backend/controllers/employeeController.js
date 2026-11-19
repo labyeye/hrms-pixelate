@@ -621,6 +621,13 @@ const updateEmployee = [
       }
     }
 
+    // The login account shows User.name, so keep it in step with the employee's name.
+    if (req.body.firstName !== undefined || req.body.lastName !== undefined) {
+      await User.findByIdAndUpdate(employee.user, {
+        name: `${employee.firstName} ${employee.lastName || ""}`.trim(),
+      });
+    }
+
     await employee.save();
     await employee.populate("department", "name code");
     await logAudit(req, "employee_updated", "Employee", employee._id, {
