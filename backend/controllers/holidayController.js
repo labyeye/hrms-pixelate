@@ -147,12 +147,24 @@ async function announceHoliday(holiday) {
     timeZone: "UTC",
   });
   const type = holiday.type[0].toUpperCase() + holiday.type.slice(1);
+  // covered employees + every admin/HR (HR gets it even if not covered); one message per phone number
+  const hr = await wa.getHrRecipients(holiday.company);
+  const seen = new Set();
+  const targets = [
+    ...emps.map((e) => ({ phone: e.phone, name: e.firstName })),
+    ...hr.map((h) => ({ phone: h.phone, name: "Team" })),
+  ].filter((t) => {
+    const k = String(t.phone || "").replace(/\D/g, "").slice(-10);
+    if (!k || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
   (async () => {
-    for (const e of emps) {
+    for (const t of targets) {
       try {
         await wa.sendHolidayAnnouncement(
-          e.phone,
-          [e.firstName, holiday.name, type, date, company?.name || ""],
+          t.phone,
+          [t.name, holiday.name, type, date, company?.name || ""],
           holiday.company,
         );
       } catch (err) {
@@ -160,7 +172,7 @@ async function announceHoliday(holiday) {
       }
     }
   })();
-  return emps.length;
+  return targets.length;
 }
 
 const HOLIDAY_TYPES =["national", "optional", "restricted"];

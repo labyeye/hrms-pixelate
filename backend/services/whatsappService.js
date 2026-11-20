@@ -1050,16 +1050,15 @@ async function sendCelebration(kind, phone, params, companyId) {
 }
 
 /**
- * Holiday announcement to one employee. Template from env WHATSAPP_HOLIDAY_TEMPLATE (create it in Meta, category Utility),
+ * Holiday announcement to one person. Template: neshr_holiday (Meta, category Utility)
  * body: "Hi {{1}}, {{2}} will be a {{3}} holiday on {{4}}. Enjoy! - {{5}}"
  * params: first name, holiday name, type label (National/Optional/Restricted), date, company name.
  */
 async function sendHolidayAnnouncement(phone, params, companyId) {
-  const tpl = process.env.WHATSAPP_HOLIDAY_TEMPLATE;
-  if (!tpl || !phone) return false;
+  if (!phone) return false;
   const s = await getCompanySetting("whatsappNotifyHoliday", companyId);
   if (!s) return false;
-  await sendTemplate(phone, tpl, params, s.whatsappLang || "en", [], companyId);
+  await sendTemplate(phone, "neshr_holiday", params, s.whatsappLang || "en", [], companyId);
   return true;
 }
 
@@ -1087,6 +1086,12 @@ async function notifyHrPunch(emp, companyId, kind, time, workHours) {
         .lean(),
     ]);
     const users = await withEmployeePhone(rawUsers);
+    // the employee's own copy (biometric/ADMS paths already send it themselves)
+    if (emp.phone) {
+      const own = { firstName: emp.firstName, locationName: "App", time, workHours };
+      if (kind === "check_in") await sendCheckIn(emp.phone, own, companyId);
+      else await sendCheckOut(emp.phone, own, companyId);
+    }
     const send = kind === "check_in" ? sendCheckInHR : sendCheckOutHR;
     const info = {
       empName: `${emp.firstName} ${emp.lastName || ""}`.trim(),
