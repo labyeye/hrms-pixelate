@@ -2,6 +2,8 @@ const { notifyEmployee } = require("../services/inAppNotificationService");
 const asyncHandler = require("express-async-handler");
 const LateApproval = require("../models/LateApproval");
 const Attendance = require("../models/Attendance");
+const Employee = require("../models/Employee");
+const { sendLateResolved } = require("../services/whatsappService");
 
 // ?status=pending|approved|rejected  -> that status only
 // ?month=&year= (optional status=all)  -> every record of that month, pending and marked, for the date-strip view
@@ -75,6 +77,20 @@ const resolveLateApproval = asyncHandler(async (req, res) => {
     body: `Your attendance for ${new Date(approval.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} was marked ${resolvedStatus.replace("_", " ")}`,
     data: { screen: "Attendance" },
   });
+
+  // WhatsApp to the employee (fire-and-forget; sendLateResolved never throws)
+  Employee.findById(approval.employee)
+    .select("firstName phone")
+    .lean()
+    .then((emp) => {
+      if (emp?.phone)
+        sendLateResolved(
+          emp.phone,
+          { firstName: emp.firstName, date: approval.date, status: resolvedStatus },
+          req.user.company,
+        );
+    })
+    .catch((e) => console.error("[WhatsApp] late resolved lookup:", e.message));
 
   res.json({ success: true, data: approval });
 });

@@ -77,6 +77,7 @@ const settingSchema = new mongoose.Schema(
 
     whatsappEnabled: { type: Boolean, default: false },
     whatsappNotifyCheckIn: { type: Boolean, default: true },
+    whatsappNotifyHoliday: { type: Boolean, default: true }, // holiday announcement to covered employees (HR opts in per holiday)
     whatsappNotifyCelebrations: { type: Boolean, default: true }, // birthday + wedding anniversary wishes to employees
     whatsappNotifyLeave: { type: Boolean, default: true },
     whatsappNotifyPayroll: { type: Boolean, default: true },

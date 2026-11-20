@@ -287,6 +287,38 @@ async function sendCheckOut(
   }
 }
 
+/**
+ * Template: neshr_late_resolved
+ * Body:  Hi {{1}}, your late arrival on {{2}} has been reviewed. Your attendance is marked {{3}}.
+ */
+async function sendLateResolved(phone, { firstName, date, status }, companyId) {
+  try {
+    const s = await getCompanySetting(
+      "whatsappNotifyCheckIn",
+      companyId,
+      "employee",
+      "whatsappSendPunchAlert",
+    );
+    if (!s) return;
+    const d = new Date(date).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+    const label = status === "half_day" ? "Half Day" : status[0].toUpperCase() + status.slice(1);
+    await sendTemplate(
+      phone,
+      "neshr_late_resolved",
+      [firstName, d, label],
+      s.whatsappLang || "en",
+      [],
+      companyId,
+    );
+  } catch (err) {
+    console.error("[WhatsApp] sendLateResolved:", err.message);
+  }
+}
+
 // ─── Leave ────────────────────────────────────────────────────────────────────
 
 /**
@@ -1017,17 +1049,44 @@ async function sendCelebration(kind, phone, params, companyId) {
   return true;
 }
 
+/**
+ * Holiday announcement to one employee. Template from env WHATSAPP_HOLIDAY_TEMPLATE (create it in Meta, category Utility),
+ * body: "Hi {{1}}, {{2}} will be a {{3}} holiday on {{4}}. Enjoy! - {{5}}"
+ * params: first name, holiday name, type label (National/Optional/Restricted), date, company name.
+ */
+async function sendHolidayAnnouncement(phone, params, companyId) {
+  const tpl = process.env.WHATSAPP_HOLIDAY_TEMPLATE;
+  if (!tpl || !phone) return false;
+  const s = await getCompanySetting("whatsappNotifyHoliday", companyId);
+  if (!s) return false;
+  await sendTemplate(phone, tpl, params, s.whatsappLang || "en", [], companyId);
+  return true;
+}
+
+/** Fills a missing User.phone from the linked Employee profile (HR managers are often employees too). */
+async function withEmployeePhone(users) {
+  const need = users.filter((u) => !u.phone).map((u) => u._id);
+  if (!need.length) return users;
+  const Employee = require("../models/Employee");
+  const emps = await Employee.find({ user: { $in: need }, phone: { $nin: [null, ""] } })
+    .select("user phone")
+    .lean();
+  const by = new Map(emps.map((e) => [String(e.user), e.phone]));
+  return users.map((u) => (u.phone ? u : { ...u, phone: by.get(String(u._id)) || u.phone }));
+}
+
 /** Web/mobile/kiosk punch -> WhatsApp copy to every admin/HR (super_admin falls back to the company phone). */
 async function notifyHrPunch(emp, companyId, kind, time, workHours) {
   try {
     const User = require("../models/User");
     const Company = require("../models/Company");
-    const [company, users] = await Promise.all([
+    const [company, rawUsers] = await Promise.all([
       Company.findById(companyId).select("phone").lean(),
       User.find({ company: companyId, role: { $in: ["super_admin", "hr_manager"] } })
         .select("phone role")
         .lean(),
     ]);
+    const users = await withEmployeePhone(rawUsers);
     const send = kind === "check_in" ? sendCheckInHR : sendCheckOutHR;
     const info = {
       empName: `${emp.firstName} ${emp.lastName || ""}`.trim(),
@@ -1049,12 +1108,13 @@ async function notifyHrPunch(emp, companyId, kind, time, workHours) {
 async function getHrRecipients(companyId) {
   const User = require("../models/User");
   const Company = require("../models/Company");
-  const [company, users] = await Promise.all([
+  const [company, rawUsers] = await Promise.all([
     Company.findById(companyId).select("phone").lean(),
     User.find({ company: companyId, role: { $in: ["super_admin", "hr_manager"] } })
       .select("phone role")
       .lean(),
   ]);
+  const users = await withEmployeePhone(rawUsers);
   return users.map((u) => ({
     _id: u._id,
     phone: u.phone || (u.role === "super_admin" ? company?.phone : null),
@@ -1066,6 +1126,8 @@ module.exports = {
   notifyHrPunch,
   sendPhoneOtp,
   sendCelebration,
+  sendHolidayAnnouncement,
+  sendLateResolved,
   sendCheckIn,
   sendCheckOut,
   sendCheckInHR,

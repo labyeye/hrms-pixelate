@@ -124,7 +124,46 @@ async function unmarkHolidayAttendance(holiday) {
   });
 }
 
-const HOLIDAY_TYPES = ["national", "optional", "restricted"];
+// WhatsApp announcement to everyone the holiday covers (all / departments / employees). Sends in the background; returns how many are queued.
+async function announceHoliday(holiday) {
+  const Company = require("../models/Company");
+  const wa = require("../services/whatsappService");
+  const [company, emps] = await Promise.all([
+    Company.findById(holiday.company).select("name").lean(),
+    Employee.find({
+      company: holiday.company,
+      ...scopeFilter(holiday),
+      status: "active",
+      phone: { $nin: [null, ""] },
+    })
+      .select("firstName phone")
+      .lean(),
+  ]);
+  const date = holiday.date.toLocaleDateString("en-IN", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  const type = holiday.type[0].toUpperCase() + holiday.type.slice(1);
+  (async () => {
+    for (const e of emps) {
+      try {
+        await wa.sendHolidayAnnouncement(
+          e.phone,
+          [e.firstName, holiday.name, type, date, company?.name || ""],
+          holiday.company,
+        );
+      } catch (err) {
+        console.error("[WhatsApp] holiday announce:", err.message);
+      }
+    }
+  })();
+  return emps.length;
+}
+
+const HOLIDAY_TYPES =["national", "optional", "restricted"];
 
 const getHolidays = asyncHandler(async (req, res) => {
   const { limit, skip } = safePagination(req.query, 100, 400);
@@ -177,9 +216,10 @@ const createHoliday = asyncHandler(async (req, res) => {
   });
 
   const marked = await markHolidayAttendance(holiday);
+  const notified = req.body.notify ? await announceHoliday(holiday) : 0;
   res
     .status(201)
-    .json({ success: true, data: holiday, attendanceMarked: marked });
+    .json({ success: true, data: holiday, attendanceMarked: marked, notified });
 });
 
 const updateHoliday = asyncHandler(async (req, res) => {

@@ -45,6 +45,7 @@ interface HolidayForm {
   scope: "all" | "departments" | "employees";
   departments: string[];
   employees: string[];
+  notify?: boolean;
 }
 
 const EMPTY_FORM: HolidayForm = {
@@ -221,8 +222,15 @@ export default function HolidaysPage() {
     try {
       if (editingId)
         await holidayAPI.update(editingId, { ...form, date: dayModal });
-      else await holidayAPI.create({ ...form, date: dayModal });
-      toast({ title: editingId ? "Holiday updated" : "Holiday added" });
+      let notified = 0;
+      if (!editingId) {
+        const r: any = await holidayAPI.create({ ...form, date: dayModal });
+        notified = r?.notified || 0;
+      }
+      toast({
+        title: editingId ? "Holiday updated" : "Holiday added",
+        description: notified ? `WhatsApp queued for ${notified} employee(s)` : undefined,
+      });
       setEditingId(null);
       setForm(EMPTY_FORM);
       await load();
@@ -713,6 +721,18 @@ export default function HolidaysPage() {
                     placeholder="Description (optional)"
                     className="w-full border-2 border-black px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#024BAB]"
                   />
+                  {!editingId && (
+                    <label className="flex items-center gap-2 text-sm font-bold">
+                      <input
+                        type="checkbox"
+                        checked={!!form.notify}
+                        onChange={(e) =>
+                          setForm((p) => ({ ...p, notify: e.target.checked }))
+                        }
+                      />
+                      Announce on WhatsApp to covered employees
+                    </label>
+                  )}
                   <div className="flex gap-2">
                     <button
                       onClick={handleSave}
