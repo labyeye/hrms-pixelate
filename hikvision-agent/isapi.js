@@ -41,17 +41,26 @@ async function isapi(dev, method, path, { body, contentType } = {}) {
   const base = { ...(buf ? { "Content-Type": contentType || "application/json", "Content-Length": buf.length } : {}) };
   const r = await rawRequest(dev, method, path, base, buf);
   if (r.status !== 401) return r;
-  const ch = r.headers["www-authenticate"] || "";
-  const get = (k) => (ch.match(new RegExp(`${k}="?([^",]+)"?`)) || [])[1];
-  const realm = get("realm"), nonce = get("nonce"), qop = get("qop") ? "auth" : "";
+  // The device may offer several challenges (MD5 and SHA-256). Prefer SHA-256, fall back to MD5.
+  const raw = r.headers["www-authenticate"];
+  const all = (Array.isArray(raw) ? raw.join(", ") : raw || "");
+  const chals = all.split(/,\s*(?=Digest\s)/i).filter(Boolean);
+  const pick = chals.find((c) => /algorithm="?SHA-256/i.test(c)) || chals[0] || all;
+  const get = (k) => (pick.match(new RegExp(`${k}="?([^",]+)"?`)) || [])[1];
+  const realm = get("realm"), nonce = get("nonce"), opaque = get("opaque");
+  const sha = /algorithm="?SHA-256/i.test(pick);
+  const qop = get("qop") ? "auth" : "";
   if (!nonce) return r;
+  const hash = (x) => crypto.createHash(sha ? "sha256" : "md5").update(x).digest("hex");
   const nc = "00000001", cnonce = crypto.randomBytes(8).toString("hex");
-  const ha1 = md5(`${dev.username}:${realm}:${dev.password}`);
-  const ha2 = md5(`${method}:${path}`);
+  const ha1 = hash(`${dev.username}:${realm}:${dev.password}`);
+  const ha2 = hash(`${method}:${path}`);
   const response = qop
-    ? md5(`${ha1}:${nonce}:${nc}:${cnonce}:${qop}:${ha2}`)
-    : md5(`${ha1}:${nonce}:${ha2}`);
+    ? hash(`${ha1}:${nonce}:${nc}:${cnonce}:${qop}:${ha2}`)
+    : hash(`${ha1}:${nonce}:${ha2}`);
   let auth = `Digest username="${dev.username}", realm="${realm}", nonce="${nonce}", uri="${path}", response="${response}"`;
+  if (sha) auth += `, algorithm=SHA-256`;
+  if (opaque) auth += `, opaque="${opaque}"`;
   if (qop) auth += `, qop=${qop}, nc=${nc}, cnonce="${cnonce}"`;
   return rawRequest(dev, method, path, { ...base, Authorization: auth }, buf);
 }
