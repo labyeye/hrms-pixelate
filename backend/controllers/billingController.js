@@ -222,11 +222,15 @@ const createOrder = asyncHandler(async (req, res) => {
   // once payment is verified — don't touch either collection here.
   let newCompanyDetails = null;
   if (!existingCompany) {
-    const { name, email, phone, industry, website, gstNumber, panNumber } =
+    const { name, email, phone, industry, website, gstNumber, panNumber, address, city, state, pincode } =
       companyDetails || {};
     if (!name || !phone) {
       res.status(400);
       throw new Error("Company name and phone are required");
+    }
+    if (!address?.trim() || !city?.trim() || !state?.trim() || !/^\d{6}$/.test(String(pincode || "").trim())) {
+      res.status(400);
+      throw new Error("Company address, city, state and a 6-digit pincode are required");
     }
     const emailToUse = email || req.user.email;
     if (await Company.findOne({ email: emailToUse })) {
@@ -241,6 +245,10 @@ const createOrder = asyncHandler(async (req, res) => {
       website,
       gstNumber,
       panNumber,
+      address: address.trim(),
+      city: city.trim(),
+      state: state.trim(),
+      pincode: String(pincode).trim(),
     };
   }
 
@@ -304,6 +312,10 @@ const createOrder = asyncHandler(async (req, res) => {
         website: newCompanyDetails.website,
         gstNumber: newCompanyDetails.gstNumber,
         panNumber: newCompanyDetails.panNumber,
+        address: newCompanyDetails.address,
+        city: newCompanyDetails.city,
+        state: newCompanyDetails.state,
+        pincode: newCompanyDetails.pincode,
         employeeCount: empCount,
         billingCycle,
         tier: pricing.tier,
@@ -429,6 +441,10 @@ async function _createCompanyAndActivateSteps({
     website: pendingOrder.website,
     gstNumber: pendingOrder.gstNumber,
     panNumber: pendingOrder.panNumber,
+    address: pendingOrder.address,
+    city: pendingOrder.city,
+    state: pendingOrder.state,
+    pincode: pendingOrder.pincode,
     status: "active",
     createdBy: req.user._id,
   });

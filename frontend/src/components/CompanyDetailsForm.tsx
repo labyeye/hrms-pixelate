@@ -12,6 +12,10 @@ interface CompanyDetailsFormProps {
     website: string;
     gstNumber: string;
     panNumber: string;
+    address: string;
+    city: string;
+    state: string;
+    pincode: string;
   }) => Promise<void>;
   loading?: boolean;
   error?: string;
@@ -32,6 +36,10 @@ export default function CompanyDetailsForm({
     website: "",
     gstNumber: "",
     panNumber: "",
+    address: "",
+    city: "",
+    state: "",
+    pincode: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,6 +57,15 @@ export default function CompanyDetailsForm({
     }
     if (!validators.phone(form.phone)) {
       onError("Phone number must have 10-15 digits");
+      return;
+    }
+
+    if (!form.address.trim() || !form.city.trim() || !form.state.trim()) {
+      onError("Address, city and state are required");
+      return;
+    }
+    if (!/^\d{6}$/.test(form.pincode.trim())) {
+      onError("Pincode must be 6 digits");
       return;
     }
 
@@ -173,6 +190,31 @@ export default function CompanyDetailsForm({
           className="w-full px-3 py-2.5 text-sm font-medium bg-white border-2 border-black focus:outline-none focus:ring-2 focus:ring-[#024BAB] focus:ring-offset-2"
         />
       </div>
+
+      {[
+        ["address", "Address *", "Building, street, area"],
+        ["city", "City *", "e.g. Noida"],
+        ["state", "State *", "e.g. Uttar Pradesh"],
+        ["pincode", "Pincode *", "6 digits"],
+      ].map(([k, label, ph]) => (
+        <div key={k} className="space-y-2">
+          <label className="block text-xs font-bold uppercase tracking-wider text-black">
+            {label}
+          </label>
+          <input
+            type="text"
+            value={(form as any)[k]}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                [k]: k === "pincode" ? e.target.value.replace(/\D/g, "").slice(0, 6) : e.target.value,
+              })
+            }
+            placeholder={ph}
+            className="w-full px-3 py-2.5 text-sm font-medium bg-white border-2 border-black focus:outline-none focus:ring-2 focus:ring-[#024BAB] focus:ring-offset-2"
+          />
+        </div>
+      ))}
 
       {}
       <div className="space-y-2">

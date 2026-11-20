@@ -15,6 +15,10 @@ const pendingOrderSchema = new mongoose.Schema(
     website: { type: String },
     gstNumber: { type: String },
     panNumber: { type: String },
+    address: { type: String },
+    city: { type: String },
+    state: { type: String },
+    pincode: { type: String },
 
     employeeCount: { type: Number, required: true },
     billingCycle: { type: String, enum: ["monthly", "yearly"], required: true },

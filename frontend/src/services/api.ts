@@ -593,6 +593,10 @@ export const billingAPI = {
       website: string;
       gstNumber: string;
       panNumber: string;
+      address: string;
+      city: string;
+      state: string;
+      pincode: string;
     },
   ) =>
     request<{ success: boolean; data: any }>("/billing/create-order", {

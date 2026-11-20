@@ -34,6 +34,10 @@ interface CompanyFormData {
   website: string;
   gstNumber: string;
   panNumber: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
 }
 
 const GEO_FEATURES = [
