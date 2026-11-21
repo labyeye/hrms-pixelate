@@ -134,6 +134,7 @@ interface EmployeeFormData {
   geofenceLat: string;
   geofenceLng: string;
   geofenceRadiusMeters: string;
+  geofenceStrict: boolean;
   shift: string;
   shiftName: string;
   isCustomShift: boolean;
@@ -206,6 +207,7 @@ const EMPTY_FORM: EmployeeFormData = {
   geofenceLat: "",
   geofenceLng: "",
   geofenceRadiusMeters: "200",
+  geofenceStrict: false,
   shift: "",
   shiftName: "",
   isCustomShift: false,
@@ -464,6 +466,7 @@ export default function EmployeesPage() {
           ? String((emp as any).geofenceLng)
           : "",
       geofenceRadiusMeters: String((emp as any).geofenceRadiusMeters || 200),
+      geofenceStrict: (emp as any).geofenceStrict === true,
       shift: (emp as any).shift?._id || (emp as any).shift || "",
       shiftName: (emp as any).shiftName || "",
       isCustomShift: (emp as any).isCustomShift === true,
@@ -604,6 +607,7 @@ export default function EmployeesPage() {
         geofenceLng:
           form.geofenceLng.trim() === "" ? undefined : Number(form.geofenceLng),
         geofenceRadiusMeters: Number(form.geofenceRadiusMeters) || 200,
+        geofenceStrict: form.geofenceStrict,
         customShift: form.isCustomShift
           ? {
               startTime: form.customShift.startTime,
@@ -2297,6 +2301,17 @@ export default function EmployeesPage() {
                                   />
                                 </div>
                               </div>
+                              <label className="flex items-start gap-2 mb-3 text-xs">
+                                <input
+                                  type="checkbox"
+                                  checked={form.geofenceStrict}
+                                  onChange={(e) => setForm({ ...form, geofenceStrict: e.target.checked })}
+                                  className="mt-0.5"
+                                />
+                                <span>
+                                  <b>Strict mode</b> — reject check-in/out outside the radius (no HR approval). Also requires a precise GPS fix.
+                                </span>
+                              </label>
                               {GMAPS_KEY && (
                                 <GeofencePicker
                                   lat={form.geofenceLat}

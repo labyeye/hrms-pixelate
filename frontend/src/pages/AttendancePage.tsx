@@ -270,6 +270,7 @@ export default function AttendancePage() {
   };
   // Bulk edit: employees ticked in the table + what to apply to them (all optional, at least one needed)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [photoPreview, setPhotoPreview] = useState<{ url: string; title: string } | null>(null);
   const [bulk, setBulk] = useState({ status: "", checkIn: "", checkOut: "" });
   const [bulkSaving, setBulkSaving] = useState(false);
   const [deptFilter, setDeptFilter] = useState("");
@@ -1637,6 +1638,7 @@ export default function AttendancePage() {
                   "Hours",
                   "OT Hrs",
                   "Via",
+                  "Photo",
                   "Status",
                   "Location",
                   ...(isEmployee ? [] : [""]),
@@ -1739,6 +1741,42 @@ export default function AttendancePage() {
                             <ModeIcon className="w-3 h-3" />
                             {cfg.label}
                           </span>
+                        );
+                      })()}
+                    </td>
+                    <td className="px-4 py-3">
+                      {(() => {
+                        const name = `${(rec.employee as any)?.firstName ?? ""} ${(rec.employee as any)?.lastName ?? ""}`.trim();
+                        const shots = [
+                          { url: (rec as any).checkInSelfie, tag: "In" },
+                          { url: (rec as any).checkOutSelfie, tag: "Out" },
+                        ].filter((x) => x.url);
+                        if (!shots.length)
+                          return <span className="text-muted-foreground text-xs">—</span>;
+                        return (
+                          <div className="flex items-center gap-1.5">
+                            {shots.map((x) => (
+                              <button
+                                key={x.tag}
+                                type="button"
+                                title={`Check-${x.tag.toLowerCase()} photo`}
+                                onClick={() =>
+                                  setPhotoPreview({ url: x.url, title: `${name} — Check ${x.tag}` })
+                                }
+                                className="relative"
+                              >
+                                <img
+                                  src={x.url}
+                                  alt={`${name} check ${x.tag}`}
+                                  loading="lazy"
+                                  className="w-9 h-9 object-cover border-2 border-black rounded"
+                                />
+                                <span className="absolute -bottom-1 -right-1 bg-black text-white text-[8px] font-bold px-1 rounded">
+                                  {x.tag}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
                         );
                       })()}
                     </td>
@@ -2088,6 +2126,27 @@ export default function AttendancePage() {
                 ),
               )}
             </div>
+          </div>
+        </div>
+      )}
+      {photoPreview && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/70 flex items-center justify-center p-4"
+          onClick={() => setPhotoPreview(null)}
+        >
+          <div
+            className="bg-white border-2 border-black p-3 max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-sm font-bold mb-2">{photoPreview.title}</p>
+            <img src={photoPreview.url} alt={photoPreview.title} className="w-full max-h-[70vh] object-contain" />
+            <button
+              type="button"
+              onClick={() => setPhotoPreview(null)}
+              className="mt-3 w-full border-2 border-black py-1.5 text-xs font-bold hover:bg-black hover:text-white"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}

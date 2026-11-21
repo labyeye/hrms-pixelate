@@ -679,6 +679,11 @@ export default function SettingsScreen() {
                 'Request Advance / Payment',
                 'Employees can raise advance salary requests',
               ],
+              [
+                'allowEmployeeFaceReset',
+                'Allow Employees to Reset Face',
+                'When off, only HR/Admin can reset an employee’s enrolled face',
+              ],
             ],
           },
           {

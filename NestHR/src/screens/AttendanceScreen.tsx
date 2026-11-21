@@ -60,6 +60,7 @@ import {
 import {
   attendanceAPI,
   employeeAPI,
+  settingsAPI,
   attendanceCorrectionAPI,
   preferencesAPI,
 } from '../api/api';
@@ -281,8 +282,13 @@ export default function AttendanceScreen({ navigation }: any) {
     null,
   );
 
+  const [canResetFace, setCanResetFace] = useState(true);
   const loadMyEmployee = useCallback(() => {
     if (!isEmployee) return;
+    settingsAPI
+      .get()
+      .then(res => setCanResetFace(res.data?.allowEmployeeFaceReset !== false))
+      .catch(() => {});
     employeeAPI
       .getMe()
       .then(res => setMyEmployee(res.data || null))
@@ -917,7 +923,7 @@ export default function AttendanceScreen({ navigation }: any) {
                 </Text>
               </View>
             )}
-            {hasFaceEnrolled && (
+            {hasFaceEnrolled && canResetFace && (
               <TouchableOpacity
                 onPress={handleResetFace}
                 style={{ marginTop: 12 }}

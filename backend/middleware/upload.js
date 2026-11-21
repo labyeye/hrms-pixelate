@@ -256,7 +256,17 @@ const uploadFaceEnrollPhoto = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
 }).single("photo");
 
+// Persists an in-memory photo (kiosk punch) to the same folder as app selfies and returns its file name.
+const saveAttendanceSelfieBuffer = async (file, companyId, employeeId) => {
+  const dir = path.join(UPLOAD_BASE, "attendance-selfies");
+  await fs.promises.mkdir(dir, { recursive: true });
+  const name = `${safeId(companyId)}_${safeId(employeeId)}_${Date.now()}_${crypto.randomBytes(8).toString("hex")}${IMAGE_EXT[file.mimetype] || ".jpg"}`;
+  await fs.promises.writeFile(path.join(dir, name), file.buffer);
+  return name;
+};
+
 module.exports = {
+  saveAttendanceSelfieBuffer,
   uploadIdCardImage,
   uploadEmployeeDocs,
   uploadCompanyLogo,

@@ -9,7 +9,7 @@ const LateApproval = require("../models/LateApproval");
 const { isHolidayDate, holidayResolver } = require("./holidayController");
 const { safePagination } = require("../middleware/validate");
 const { sendAttendanceStatus, notifyHrPunch } = require("../services/whatsappService");
-const { validateMagicBytes } = require("../middleware/upload");
+const { validateMagicBytes, saveAttendanceSelfieBuffer } = require("../middleware/upload");
 const { verifyFace, enrollFace } = require("../services/faceService");
 const { logAudit } = require("../utils/auditLogger");
 const { notifyEmployee } = require("../services/inAppNotificationService");
@@ -666,6 +666,24 @@ const selfMarkAttendance = asyncHandler(async (req, res) => {
     geofenceMode === "specific"
       ? haversineMeters(lat, lng, emp.geofenceLat, emp.geofenceLng)
       : null;
+  // Strict mode: outside the radius (or GPS too imprecise to prove otherwise) is a hard rejection.
+  if (geofenceMode === "specific" && emp.geofenceStrict) {
+    const maxAccuracy = Math.max(20, emp.geofenceRadiusMeters || 0);
+    if (accuracy == null || accuracy > maxAccuracy) {
+      cleanup();
+      res.status(400);
+      throw new Error(
+        `GPS signal is not precise enough (±${accuracy != null ? Math.round(accuracy) : "?"}m). Move to an open area and try again.`,
+      );
+    }
+    if (distanceMeters > emp.geofenceRadiusMeters) {
+      cleanup();
+      res.status(403);
+      throw new Error(
+        `You are ${Math.round(distanceMeters)}m from the allowed location. You must be within ${emp.geofenceRadiusMeters}m to mark attendance.`,
+      );
+    }
+  }
   // Out of range is not rejected: the check-in is recorded and parked in the
   // HR/Admin approval queue (same queue as late approvals) with the distance.
   const outOfRange =
@@ -849,6 +867,9 @@ const kioskFaceMark = asyncHandler(async (req, res) => {
   const d = new Date(now);
   d.setHours(0, 0, 0, 0);
   const who = { name, employeeId: emp.employeeId };
+  // Keep the kiosk photo so admins can see who actually punched (same folder/URL shape as app selfies).
+  const saveKioskSelfie = async () =>
+    `${req.protocol}://${req.get("host")}/uploads/attendance-selfies/${await saveAttendanceSelfieBuffer(req.file, req.user.company, emp._id)}`;
 
   const boundsError = employmentBoundsError(emp, d);
   if (boundsError) {
@@ -902,6 +923,7 @@ const kioskFaceMark = asyncHandler(async (req, res) => {
         checkIn: holiday ? undefined : now,
         approvalPending,
         verifyMode: "face",
+        checkInSelfie: holiday ? undefined : await saveKioskSelfie(),
         markedBy: req.user._id,
       },
       { upsert: true, new: true },
@@ -950,7 +972,15 @@ const kioskFaceMark = asyncHandler(async (req, res) => {
   const earlyLeaving = await calcEarlyLeaving(emp, now.toISOString());
   await Attendance.updateOne(
     { _id: record._id },
-    { $set: { checkOut: now, workHours, overtime, earlyLeaving } },
+    {
+      $set: {
+        checkOut: now,
+        workHours,
+        overtime,
+        earlyLeaving,
+        checkOutSelfie: await saveKioskSelfie(),
+      },
+    },
   );
   notifyPunch(emp, req.user.company, "check_out", now);
   notifyHrPunch(emp, req.user.company, "check_out", now, workHours);

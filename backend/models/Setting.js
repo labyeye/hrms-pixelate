@@ -130,6 +130,8 @@ const settingSchema = new mongoose.Schema(
     essAllowAdvance: { type: Boolean, default: false },
     essAllowHoliday: { type: Boolean, default: true },
     essAllowMissPunch: { type: Boolean, default: true },
+    // When off, employees cannot reset/re-enroll their own face from the app (HR can still do it).
+    allowEmployeeFaceReset: { type: Boolean, default: true },
   },
   { timestamps: true },
 );

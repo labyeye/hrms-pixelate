@@ -2094,6 +2094,11 @@ export default function SettingsPage() {
                       label: "Request Advance / Payment",
                       sub: "Employees can raise advance salary requests",
                     },
+                    {
+                      key: "allowEmployeeFaceReset",
+                      label: "Allow Employees to Reset Face",
+                      sub: "When off, only HR/Admin can reset an employee's enrolled face",
+                    },
                   ].map(({ key, label, sub }) => (
                     <div
                       key={key}

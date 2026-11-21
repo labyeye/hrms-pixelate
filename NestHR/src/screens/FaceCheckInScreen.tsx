@@ -21,7 +21,7 @@ import { useFaceDetector } from 'react-native-vision-camera-face-detector';
 import { Worklets } from 'react-native-worklets-core';
 import { X, CheckCircle2, AlertCircle } from 'lucide-react-native';
 import { attendanceAPI } from '../api/api';
-import { getCurrentPosition } from '../utils/location';
+import { getPreciseLocation } from '../utils/location';
 import { C } from '../theme';
 
 // How long a face must be steadily present before we auto-capture + submit.
@@ -87,7 +87,7 @@ export default function FaceCheckInScreen({ navigation, route }: any) {
     setStatus('capturing');
     try {
       // GPS fix runs while the shutter fires instead of after it.
-      const coordsPromise = getCurrentPosition();
+      const coordsPromise = getPreciseLocation();
       coordsPromise.catch(() => {});
       const photo = await cameraRef.current?.takePhoto({ flash: 'off' });
       if (!photo?.path) throw new Error('Could not capture photo. Try again.');

@@ -70,6 +70,7 @@ export interface Employee {
   geofenceLat?: number;
   geofenceLng?: number;
   geofenceRadiusMeters?: number;
+  geofenceStrict?: boolean;
 }
 
 export interface AttendanceRecord {

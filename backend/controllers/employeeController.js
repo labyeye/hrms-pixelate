@@ -380,7 +380,7 @@ const createEmployee = [
       previousCompany: previousCompany || undefined,
       // The form sends these on create too; they used to be dropped (only the edit path saved them).
       ...Object.fromEntries(
-        ["otEnabled", "otRate", "geofenceAttendanceEnabled", "geofenceMode", "geofenceLat", "geofenceLng", "geofenceRadiusMeters", "workDaysPerWeek", "workScheduleType", "customWorkDays"]
+        ["otEnabled", "otRate", "geofenceAttendanceEnabled", "geofenceMode", "geofenceLat", "geofenceLng", "geofenceRadiusMeters", "geofenceStrict", "workDaysPerWeek", "workScheduleType", "customWorkDays"]
           .filter((k) => req.body[k] !== undefined && req.body[k] !== "")
           .map((k) => [k, req.body[k]]),
       ),
@@ -446,6 +446,7 @@ const updateEmployee = [
       "geofenceLat",
       "geofenceLng",
       "geofenceRadiusMeters",
+      "geofenceStrict",
       // Personal details
       "fatherName",
       "motherName",
@@ -964,6 +965,11 @@ const enrollMyFace = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("Photo is required");
   }
+  // Re-enrolling over an existing face is a reset in disguise, so it follows the same switch.
+  if (employee.faceDescriptor?.length === 128 && !(await employeeFaceResetAllowed(req.user.company))) {
+    res.status(403);
+    throw new Error("Face reset is disabled by your company. Contact HR.");
+  }
 
   const encoding = await enrollFace(
     req.file.buffer,
@@ -990,7 +996,16 @@ const resetEmployeeFace = asyncHandler(async (req, res) => {
   res.json({ success: true, message: "Face reset — please enroll again" });
 });
 
+const employeeFaceResetAllowed = async (company) => {
+  const s = await require("../models/Setting").findOne({ company }).select("allowEmployeeFaceReset").lean();
+  return s?.allowEmployeeFaceReset !== false;
+};
+
 const resetMyFace = asyncHandler(async (req, res) => {
+  if (!(await employeeFaceResetAllowed(req.user.company))) {
+    res.status(403);
+    throw new Error("Face reset is disabled by your company. Contact HR.");
+  }
   const employee = await Employee.findOneAndUpdate(
     { user: req.user._id, company: req.user.company },
     { $set: { faceDescriptor: [] } },
