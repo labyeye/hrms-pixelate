@@ -997,7 +997,7 @@ async function generateReport(
           sentence(emp.employmentType),
           sentence(emp.status),
           fmtCur(emp.salary || 0),
-          fmtDate(emp.joiningDate),
+          fmtDate(emp.joinDate || emp.joiningDate),
         ]),
       };
     }

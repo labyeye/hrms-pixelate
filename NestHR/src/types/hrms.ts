@@ -51,7 +51,8 @@ export interface Employee {
   designation?: string;
   employmentType: 'full_time' | 'part_time' | 'contract' | 'intern';
   status: 'active' | 'inactive' | 'terminated' | 'on_leave';
-  joiningDate: string;
+  joinDate?: string; // what the server stores
+  joiningDate?: string; // legacy name, kept so old code still compiles
   salary?: number;
   salaryHistory?: {
     _id?: string;

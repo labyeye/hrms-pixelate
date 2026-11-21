@@ -321,7 +321,7 @@ const EMPTY_FORM = {
   email: '',
   phone: '',
   designation: '',
-  joiningDate: '',
+  joinDate: '',
   gender: '',
   department: '',
   employmentType: 'full_time',
@@ -680,7 +680,11 @@ export default function EmployeesScreen() {
       email: emp.email || '',
       phone: (emp as any).phone || '',
       designation: emp.designation || '',
-      joiningDate: emp.joiningDate ? emp.joiningDate.split('T')[0] : '',
+      joinDate: (emp as any).joinDate
+        ? String((emp as any).joinDate).split('T')[0]
+        : (emp as any).joiningDate
+        ? String((emp as any).joiningDate).split('T')[0]
+        : '',
       gender: (emp as any).gender || '',
       department:
         typeof emp.department === 'object'
@@ -776,6 +780,9 @@ export default function EmployeesScreen() {
     const errors: Record<string, string> = {};
     if (!form.firstName.trim()) errors.firstName = 'First name is required';
     if (!form.lastName.trim()) errors.lastName = 'Last name is required';
+    if (!form.designation.trim())
+      errors.designation = 'Designation is required';
+    if (!form.joinDate) errors.joinDate = 'Joining date is required';
     if (!form.email.trim()) errors.email = 'Email is required';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       errors.email = 'Enter a valid email address';
@@ -803,7 +810,14 @@ export default function EmployeesScreen() {
     }
     setFormErrors(errors);
     if (Object.keys(errors).length > 0) {
-      const tab1Fields = ['firstName', 'lastName', 'email', 'headOfDepartment'];
+      const tab1Fields = [
+        'firstName',
+        'lastName',
+        'email',
+        'designation',
+        'joinDate',
+        'headOfDepartment',
+      ];
       const tab3Fields = ['monthlySalary'];
       const tab2Fields = [
         'geofenceLat',
@@ -2360,9 +2374,10 @@ export default function EmployeesScreen() {
                         [
                           CalendarDays,
                           'Joining Date',
-                          detailEmp.joiningDate
+                          (detailEmp as any).joinDate || detailEmp.joiningDate
                             ? new Date(
-                                detailEmp.joiningDate,
+                                (detailEmp as any).joinDate ||
+                                  detailEmp.joiningDate,
                               ).toLocaleDateString('en-IN', {
                                 day: '2-digit',
                                 month: 'short',
@@ -3268,18 +3283,19 @@ export default function EmployeesScreen() {
                       />
                     </View>
 
-                    {F('Designation', 'designation', {
+                    {F('Designation *', 'designation', {
                       placeholder: 'e.g. Software Engineer',
                     })}
 
                     <DatePickerField
-                      label="JOINING DATE"
+                      label="Joining Date *"
                       icon={CalendarDays}
-                      optional
-                      value={form.joiningDate}
+                      value={form.joinDate}
                       onChange={v => {
-                        setForm(p => ({ ...p, joiningDate: v }));
+                        setForm(p => ({ ...p, joinDate: v }));
                         setFormDirty(true);
+                        if (formErrors.joinDate)
+                          setFormErrors(p => ({ ...p, joinDate: '' }));
                       }}
                     />
 
