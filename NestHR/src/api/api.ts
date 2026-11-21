@@ -445,6 +445,8 @@ export const employeeAPI = {
 };
 
 export const attendanceAPI = {
+  mobileDetails: (params: Record<string, string>) =>
+    request(`/attendance/mobile-details${qs(params)}`),
   getAll: (params?: Record<string, string>) =>
     request(`/attendance${qs(params)}`),
   mark: (body: object) =>

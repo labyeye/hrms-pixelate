@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { buildReportHTML, ReportCompany } from "@/lib/reportPrintHTML";
+import { buildMobileAttendanceHTML, fmtPunchDate, fmtPunchTime, MobilePunch } from "@/lib/mobileAttendancePrint";
 import { writeSheet } from "@/lib/sheets";
 import {
   BarChart,
@@ -312,6 +313,14 @@ const REPORTS: ReportDef[] = [
     desc: "Attendance report grouped by location/branch showing all employees presence data.",
     category: "attendance",
     icon: Building2,
+    available: true,
+  },
+  {
+    id: "mobile-attendance-details",
+    name: "Mobile Daily Attendance Details",
+    desc: "Selfie, time, address and GPS coordinates of every app check-in/out. Pick one employee and download as PDF.",
+    category: "attendance",
+    icon: FileText,
     available: true,
   },
   {
@@ -3776,6 +3785,157 @@ function PunchLogDetailGen({
   );
 }
 
+function MobileAttendanceDetailsGen({
+  company,
+}: {
+  departments: any[];
+  company: ReportCompany;
+}) {
+  const now = new Date();
+  const [month, setMonth] = useState(String(now.getMonth() + 1));
+  const [year, setYear] = useState(String(now.getFullYear()));
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [empId, setEmpId] = useState("all");
+  const [data, setData] = useState<MobilePunch[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    employeeAPI
+      .getAll({ limit: "5000", status: "active" })
+      .then((r: any) => r.success && setEmployees(r.data))
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    load();
+  }, [month, year, empId]);
+  async function load() {
+    setLoading(true);
+    try {
+      const params: Record<string, string> = { month, year };
+      if (empId !== "all") params.employeeId = empId;
+      const r = await attendanceAPI.mobileDetails(params);
+      setData(r.success ? r.data : []);
+    } catch {
+      setData([]);
+    }
+    setLoading(false);
+  }
+
+  const emp = employees.find((e) => e._id === empId);
+  const empName = emp ? `${emp.firstName} ${emp.lastName || ""}`.trim() : "All Employees";
+  const period = `${MONTHS[+month - 1]} ${year}`;
+  const headers = ["S.No.", "Emp Code", "Emp Name", "Date", "Time", "Type", "Actual Location"];
+  const rows = data.map((p, i) => [
+    String(i + 1),
+    p.employeeCode,
+    p.employeeName,
+    fmtPunchDate(p.date),
+    fmtPunchTime(p.time),
+    p.type,
+    `${p.address ? p.address + " " : ""}Lat: ${p.lat.toFixed(6)} Lng: ${p.lng.toFixed(6)}`,
+  ]);
+
+  function downloadPDF() {
+    const win = window.open("", "_blank");
+    if (!win) return;
+    // Wait for the selfies to load before the print dialog opens.
+    writePrintDocument(
+      win,
+      buildMobileAttendanceHTML(data, { period, companyName: company?.name, forEmployee: empName }),
+      false,
+    );
+    win.addEventListener("load", () => win.print());
+    setTimeout(() => win.print(), 2500);
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <NbSelect value={empId} onChange={setEmpId} className="w-56">
+          <option value="all">All Employees</option>
+          {employees.map((e) => (
+            <option key={e._id} value={e._id}>
+              {e.firstName} {e.lastName} ({e.employeeId})
+            </option>
+          ))}
+        </NbSelect>
+        <NbSelect value={month} onChange={setMonth} className="w-32">
+          {MONTHS.map((m, i) => (
+            <option key={m} value={String(i + 1)}>
+              {m}
+            </option>
+          ))}
+        </NbSelect>
+        <NbSelect value={year} onChange={setYear} className="w-28">
+          {YEARS.map((y) => (
+            <option key={y} value={String(y)}>
+              {y}
+            </option>
+          ))}
+        </NbSelect>
+        <div className="ml-auto flex gap-2">
+          <button
+            disabled={!data.length}
+            onClick={() => exportCSV([headers, ...rows], `mobile_attendance_${period.replace(" ", "_")}.csv`)}
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-white disabled:opacity-40"
+          >
+            <Download className="w-4 h-4" /> CSV
+          </button>
+          <button
+            disabled={!data.length}
+            onClick={downloadPDF}
+            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white disabled:opacity-40"
+          >
+            <Printer className="w-4 h-4" /> PDF
+          </button>
+        </div>
+      </div>
+      {loading ? (
+        <LoadingState />
+      ) : data.length === 0 ? (
+        <EmptyState msg="No mobile (app) punches for this period" />
+      ) : (
+        <div className="border-2 border-black bg-white overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-[#024BAB] text-white text-xs uppercase">
+                {["S.No.", "Emp Code", "Emp Name", "Date", "Time", "Actual Location", "Photo"].map((h) => (
+                  <th key={h} className="text-left px-3 py-2">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((p, i) => (
+                <tr key={i} className="border-b">
+                  <td className="px-3 py-2">{i + 1}</td>
+                  <td className="px-3 py-2">{p.employeeCode}</td>
+                  <td className="px-3 py-2 font-semibold">{p.employeeName}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">{fmtPunchDate(p.date)}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">
+                    {fmtPunchTime(p.time)}{" "}
+                    <span className={cn("text-[10px] font-bold px-1.5 py-0.5", p.type === "IN" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")}>
+                      {p.type}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-xs max-w-[320px]">
+                    {p.address && <div>{p.address}</div>}
+                    Lat : {p.lat.toFixed(6)} Lng : {p.lng.toFixed(6)}
+                  </td>
+                  <td className="px-3 py-2">
+                    {p.selfie ? <img src={p.selfie} alt="" className="w-12 h-14 object-cover border" /> : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function LocationwiseGen({
   departments,
   company,
@@ -4131,6 +4291,7 @@ const REPORT_COMPONENT: Record<
   "bonus-report": BonusReportGen,
   "overtime-summary": OvertimeSummaryGen,
   "punch-log": PunchLogDetailGen,
+  "mobile-attendance-details": MobileAttendanceDetailsGen,
   locationwise: LocationwiseGen,
   "attendance-inout-vertical": AttendanceInOutVerticalGen,
   "attendance-history": AttendanceHistoryGen,

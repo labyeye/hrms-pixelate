@@ -1,6 +1,7 @@
 const express = require("express");
 const {
   getAttendance,
+  getMobileAttendanceDetails,
   markAttendance,
   selfMarkAttendance,
   kioskFaceMark,
@@ -50,6 +51,7 @@ router.get("/hikvision-agent-setup", protect, authorize("super_admin", "hr_manag
 router.get("/hikvision-device", protect, authorize("super_admin", "hr_manager"), getHikvisionDevice);
 router.put("/hikvision-device", protect, authorize("super_admin", "hr_manager"), saveHikvisionDevice);
 router.post("/hikvision-device/sync", protect, authorize("super_admin", "hr_manager"), syncHikvisionUsers);
+router.get("/mobile-details", protect, getMobileAttendanceDetails);
 router.get("/", protect, getAttendance);
 router.get("/summary", protect, getMonthSummary);
 router.get("/daily-summary", protect, getDailySummary);

@@ -72,6 +72,13 @@ const YEARS = Array.from(
   (_, i) => new Date().getFullYear() - 2 + i,
 );
 
+const fmtPunchDate = (iso: string) =>
+  new Date(iso)
+    .toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Kolkata' })
+    .replace(/\//g, '-');
+const fmtPunchTime = (iso: string) =>
+  new Date(iso).toLocaleTimeString('en-GB', { hour12: false, timeZone: 'Asia/Kolkata' });
+
 type Category = 'payroll' | 'attendance' | 'employee';
 const CAT_COLORS: Record<Category, string> = {
   payroll: C.primary,
@@ -303,6 +310,15 @@ const REPORTS: ReportDef[] = [
     desc: 'Punch counts and unique employees per location.',
     category: 'attendance',
     icon: Building2,
+    color: C.success,
+    needsMonth: true,
+  },
+  {
+    id: 'mobile-attendance-details',
+    label: 'Mobile Daily Attendance Details',
+    desc: 'Selfie, time, address and GPS of every app check-in/out for one employee. Export as PDF.',
+    category: 'attendance',
+    icon: Clock,
     color: C.success,
     needsMonth: true,
   },
@@ -1479,6 +1495,9 @@ function ReportModal({
 
   // Employee report sub-state
   const isEmpReport = report?.id === 'employee-report';
+  const isMobileDetails = report?.id === 'mobile-attendance-details';
+  const needsEmpPicker = isEmpReport || isMobileDetails;
+  const [punches, setPunches] = useState<any[]>([]);
   const [empSearch, setEmpSearch] = useState('');
   const [allEmployees, setAllEmployees] = useState<any[]>([]);
   const [empLoading, setEmpLoading] = useState(false);
@@ -1503,7 +1522,7 @@ function ReportModal({
 
   useEffect(() => {
     if (visible && report?.needsDept) loadDepts();
-    if (visible && isEmpReport) loadEmployees();
+    if (visible && needsEmpPicker) loadEmployees();
     if (visible) {
       setHeaders([]);
       setRows([]);
@@ -1511,14 +1530,34 @@ function ReportModal({
       setSelectedEmp(null);
       setEmpSearch('');
     }
-  }, [visible, report, loadDepts, isEmpReport, loadEmployees]);
+  }, [visible, report, loadDepts, needsEmpPicker, loadEmployees]);
 
   const handleGenerate = async () => {
     if (!report) return;
     setLoading(true);
     try {
       let result: { headers: string[]; rows: string[][] };
-      if (isEmpReport && selectedEmp) {
+      if (isMobileDetails && selectedEmp) {
+        const r = await attendanceAPI.mobileDetails({
+          employeeId: selectedEmp._id,
+          month,
+          year,
+        });
+        const list: any[] = r.data || [];
+        setPunches(list);
+        result = {
+          headers: ['S.No.', 'Emp Code', 'Emp Name', 'Date', 'Time', 'Type', 'Actual Location'],
+          rows: list.map((p, i) => [
+            String(i + 1),
+            p.employeeCode,
+            p.employeeName,
+            fmtPunchDate(p.date),
+            fmtPunchTime(p.time),
+            p.type,
+            `${p.address ? p.address + ' ' : ''}Lat: ${p.lat.toFixed(6)} Lng: ${p.lng.toFixed(6)}`,
+          ]),
+        };
+      } else if (isEmpReport && selectedEmp) {
         result = await generateEmployeeReport(
           empSubType,
           selectedEmp._id,
@@ -1551,6 +1590,40 @@ function ReportModal({
     if (!headers.length) return;
     const label = report?.label || 'Report';
     const period = `${MONTHS[+month - 1]} ${year}`;
+
+    if (isMobileDetails) {
+      const esc = (s: any) =>
+        String(s ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      const body = punches
+        .map((p, i) => {
+          const img = /^https?:\/\//i.test(p.selfie || '')
+            ? `<img src="${esc(p.selfie)}" class="ph"/>`
+            : '—';
+          return `<tr><td>${i + 1}</td><td>${esc(p.employeeCode)}</td><td class="nm">${esc(p.employeeName)}</td><td>${fmtPunchDate(p.date)}</td><td>${fmtPunchTime(p.time)}<br/><span class="tag ${p.type === 'IN' ? 'in' : 'out'}">${p.type}</span></td><td class="loc">${p.address ? esc(p.address) + '<br/>' : ''}Lat : ${p.lat.toFixed(6)}<br/>Lng : ${p.lng.toFixed(6)}</td><td>${img}</td></tr>`;
+        })
+        .join('');
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><style>
+      @page{size:A4 portrait;margin:12mm 10mm}*{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:Arial,sans-serif;font-size:11px;color:#111}
+      .hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #024BAB;padding-bottom:8px;margin-bottom:10px}
+      .hdr img{height:34px}.t{font-size:15px;font-weight:700;color:#024BAB;text-align:right}.s{font-size:10px;color:#6B7280;text-align:right;margin-top:2px}
+      table{border-collapse:collapse;width:100%}th{background:#024BAB;color:#fff;text-align:left;padding:7px 8px;font-size:10px;text-transform:uppercase}
+      td{padding:7px 8px;border-bottom:1px solid #E5E7EB;vertical-align:middle;font-size:10.5px}thead{display:table-header-group}tr{page-break-inside:avoid}
+      .nm{font-weight:700}.loc{line-height:1.45;width:34%}.ph{width:56px;height:60px;object-fit:cover;border-radius:3px;border:1px solid #D1D5DB}
+      .tag{display:inline-block;margin-top:2px;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700}.in{background:#DCFCE7;color:#15803D}.out{background:#FEE2E2;color:#B91C1C}
+      </style></head><body><div class="hdr"><img src="${NESTHR_LOGO_B64}"/><div><div class="t">Mobile Daily Attendance Details</div><div class="s">${esc(selectedEmp?.firstName)} ${esc(selectedEmp?.lastName || '')} · ${period}</div></div></div>
+      <table><thead><tr><th>S.No.</th><th>Emp Code</th><th>Emp Name</th><th>Date</th><th>Time</th><th>Actual Location</th><th>Photo</th></tr></thead><tbody>${body}</tbody></table></body></html>`;
+      try {
+        await RNPrint.print({ html });
+      } catch (e: any) {
+        Alert.alert('Error', e.message || 'PDF generation failed');
+      }
+      return;
+    }
 
     const STATUS_COLORS: Record<string, string> = {
       present: 'background:#DCFCE7;color:#15803D;border:1px solid #86EFAC',
@@ -1723,7 +1796,7 @@ function ReportModal({
               stickyHeaderIndices={[]}
             >
               {/* Employee picker — only for employee-report */}
-              {isEmpReport && (
+              {needsEmpPicker && (
                 <View style={ms.filterBlock}>
                   <Text style={ms.filterLabel}>Step 1 — Select Employee</Text>
                   <View style={ms.searchRow}>
@@ -1805,7 +1878,7 @@ function ReportModal({
                     </ScrollView>
                   )}
 
-                  {selectedEmp && (
+                  {selectedEmp && isEmpReport && (
                     <>
                       <Text style={[ms.filterLabel, { marginTop: 16 }]}>
                         Step 2 — Report Type
@@ -1978,11 +2051,11 @@ function ReportModal({
                   ms.genBtn,
                   {
                     backgroundColor: report.color,
-                    opacity: isEmpReport && !selectedEmp ? 0.4 : 1,
+                    opacity: needsEmpPicker && !selectedEmp ? 0.4 : 1,
                   },
                 ]}
                 onPress={handleGenerate}
-                disabled={loading || (isEmpReport && !selectedEmp)}
+                disabled={loading || (needsEmpPicker && !selectedEmp)}
               >
                 {loading ? (
                   <ActivityIndicator color={C.white} />

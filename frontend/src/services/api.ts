@@ -321,6 +321,8 @@ export const employeeAPI = {
 };
 
 export const attendanceAPI = {
+  mobileDetails: (params: Record<string, string>) =>
+    request(`/attendance/mobile-details?${new URLSearchParams(params).toString()}`),
   getAll: (params?: Record<string, string>) => {
     const q = params ? "?" + new URLSearchParams(params).toString() : "";
     return request(`/attendance${q}`);

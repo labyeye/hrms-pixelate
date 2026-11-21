@@ -13,6 +13,7 @@ const { validateMagicBytes, saveAttendanceSelfieBuffer } = require("../middlewar
 const { verifyFace, enrollFace } = require("../services/faceService");
 const { logAudit } = require("../utils/auditLogger");
 const { notifyEmployee } = require("../services/inAppNotificationService");
+const { reverseGeocode } = require("../utils/geocode");
 
 const istTime = (d = new Date()) =>
   new Date(d).toLocaleTimeString("en-IN", {
@@ -802,6 +803,18 @@ const selfMarkAttendance = asyncHandler(async (req, res) => {
     );
   }
 
+  // Resolve the street address in the background so reports can show it (never blocks the punch).
+  reverseGeocode(lat, lng)
+    .then((address) =>
+      address
+        ? Attendance.updateOne(
+            { _id: record._id },
+            { $set: { [action === "checkin" ? "checkInLocation.address" : "checkOutLocation.address"]: address } },
+          )
+        : null,
+    )
+    .catch(() => {});
+
   const pendingApproval =
     action === "checkin" && outOfRange && !!record.approvalPending;
   if (!pendingApproval) {
@@ -1560,7 +1573,97 @@ const getMonthSummary = asyncHandler(async (req, res) => {
   res.json({ success: true, data: summary });
 });
 
+// "Mobile Daily Attendance Details": one row per app punch (check-in / check-out) with selfie, time,
+// lat/lng and street address. Employees see only their own; HR/admin pick an employee (or all).
+const getMobileAttendanceDetails = asyncHandler(async (req, res) => {
+  const { employeeId, month, year, from, to } = req.query;
+  let start, end;
+  if (from && to) {
+    start = new Date(from);
+    end = new Date(to);
+  } else {
+    const m = parseInt(month, 10);
+    const y = parseInt(year, 10);
+    if (Number.isNaN(m) || Number.isNaN(y)) {
+      res.status(400);
+      throw new Error("month & year (or from & to) are required");
+    }
+    start = new Date(y, m - 1, 1);
+    end = new Date(y, m, 0);
+  }
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    res.status(400);
+    throw new Error("Invalid date range");
+  }
+  start.setHours(0, 0, 0, 0);
+  end.setHours(23, 59, 59, 999);
+
+  let empFilter;
+  if (req.user.role === "employee") {
+    const self = await Employee.findOne({ user: req.user._id }).select("_id");
+    if (!self) return res.json({ success: true, data: [] });
+    empFilter = self._id;
+  } else if (employeeId) {
+    const ok = await Employee.exists({ _id: employeeId, company: req.user.company });
+    if (!ok) return res.json({ success: true, data: [] });
+    empFilter = employeeId;
+  } else {
+    const ids = await Employee.find({ company: req.user.company }).select("_id");
+    empFilter = { $in: ids.map((e) => e._id) };
+  }
+
+  const records = await Attendance.find({
+    employee: empFilter,
+    date: { $gte: start, $lte: end },
+    $or: [{ "checkInLocation.lat": { $ne: null } }, { "checkOutLocation.lat": { $ne: null } }],
+  })
+    .populate("employee", "firstName lastName employeeId")
+    .sort({ date: 1 })
+    .limit(2000);
+
+  const punches = [];
+  for (const r of records) {
+    for (const [type, at, loc, selfie] of [
+      ["IN", r.checkIn, r.checkInLocation, r.checkInSelfie],
+      ["OUT", r.checkOut, r.checkOutLocation, r.checkOutSelfie],
+    ]) {
+      if (!at || loc?.lat == null) continue;
+      punches.push({
+        recordId: r._id,
+        field: type === "IN" ? "checkInLocation" : "checkOutLocation",
+        employeeCode: r.employee?.employeeId || "",
+        employeeName: r.employee ? `${r.employee.firstName} ${r.employee.lastName || ""}`.trim() : "",
+        date: r.date,
+        time: at,
+        type,
+        selfie: selfie || null,
+        lat: loc.lat,
+        lng: loc.lng,
+        accuracy: loc.accuracy ?? null,
+        address: loc.address || null,
+      });
+    }
+  }
+  punches.sort((a, b) => new Date(a.time) - new Date(b.time));
+
+  // Backfill addresses for older punches (capped so the request stays fast; filled over repeat opens).
+  const missing = punches.filter((p) => !p.address).slice(0, 12);
+  for (const p of missing) {
+    const address = await reverseGeocode(p.lat, p.lng);
+    if (address) {
+      p.address = address;
+      Attendance.updateOne({ _id: p.recordId }, { $set: { [`${p.field}.address`]: address } }).catch(() => {});
+    }
+  }
+
+  res.json({
+    success: true,
+    data: punches.map(({ recordId, field, ...rest }) => rest),
+  });
+});
+
 module.exports = {
+  getMobileAttendanceDetails,
   getAttendance,
   markAttendance,
   selfMarkAttendance,
