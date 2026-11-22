@@ -293,6 +293,7 @@ export default function AttendancePage() {
   }, []);
   const [windowStart, setWindowStart] = useState<number>(1);
   const [markingAbsent, setMarkingAbsent] = useState(false);
+  const [faceRecord, setFaceRecord] = useState<AttendanceRecord | null>(null);
   const [locationRecord, setLocationRecord] = useState<AttendanceRecord | null>(
     null,
   );
@@ -1816,14 +1817,27 @@ export default function AttendancePage() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      {rec.checkInLocation || rec.checkOutLocation ? (
-                        <button
-                          onClick={() => setLocationRecord(rec)}
-                          title="View check-in/check-out location"
-                          className="p-1.5 border-2 border-black hover:bg-[#024BAB] hover:text-white transition-colors"
-                        >
-                          <MapPin className="w-3 h-3" />
-                        </button>
+                      {rec.checkInLocation || rec.checkOutLocation || (rec as any).checkInSelfie || (rec as any).checkOutSelfie ? (
+                        <div className="flex items-center gap-1.5">
+                          {(rec.checkInLocation || rec.checkOutLocation) && (
+                            <button
+                              onClick={() => setLocationRecord(rec)}
+                              title="View check-in/check-out location"
+                              className="p-1.5 border-2 border-black hover:bg-[#024BAB] hover:text-white transition-colors"
+                            >
+                              <MapPin className="w-3 h-3" />
+                            </button>
+                          )}
+                          {((rec as any).checkInSelfie || (rec as any).checkOutSelfie) && (
+                            <button
+                              onClick={() => setFaceRecord(rec)}
+                              title="View check-in/check-out face photos"
+                              className="p-1.5 border-2 border-black hover:bg-[#024BAB] hover:text-white transition-colors"
+                            >
+                              <ScanFace className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
                       ) : (
                         <span className="text-muted-foreground text-xs">—</span>
                       )}
@@ -2125,6 +2139,55 @@ export default function AttendancePage() {
                   </div>
                 ),
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {faceRecord && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setFaceRecord(null)}
+        >
+          <div className="border-2 bg-white w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-5 border-b-2 border-black">
+              <h3 className="font-display font-bold text-lg flex items-center gap-2">
+                <ScanFace className="w-5 h-5 text-[#024BAB]" />
+                Attendance Face Capture
+              </h3>
+              <button onClick={() => setFaceRecord(null)}>
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5">
+              <p className="text-xs text-muted-foreground mb-4">
+                {(faceRecord.employee as any)?.firstName} {(faceRecord.employee as any)?.lastName} —{" "}
+                {new Date(faceRecord.date).toLocaleDateString("en-IN")}
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { label: "Check In", url: (faceRecord as any).checkInSelfie, time: faceRecord.checkIn },
+                  { label: "Check Out", url: (faceRecord as any).checkOutSelfie, time: faceRecord.checkOut },
+                ].map(({ label, url, time }) => (
+                  <div key={label} className="border-2 border-black/10 p-2">
+                    <p className="text-xs font-bold mb-1.5">
+                      {label}
+                      {time && (
+                        <span className="font-normal text-muted-foreground">
+                          {" · "}
+                          {new Date(time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      )}
+                    </p>
+                    {url ? (
+                      <img src={url} alt={`${label} face`} className="w-full aspect-[3/4] object-cover border border-black/20" />
+                    ) : (
+                      <div className="w-full aspect-[3/4] flex items-center justify-center text-xs text-muted-foreground bg-gray-50 border border-dashed">
+                        No photo
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

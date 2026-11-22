@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { buildReportHTML, ReportCompany } from "@/lib/reportPrintHTML";
-import { buildMobileAttendanceHTML, fmtPunchDate, fmtPunchTime, MobilePunch } from "@/lib/mobileAttendancePrint";
+import { buildDetailedAttendanceHTML, buildMobileAttendanceHTML, fmtPunchDate, fmtPunchTime, MobilePunch } from "@/lib/mobileAttendancePrint";
 import { writeSheet } from "@/lib/sheets";
 import {
   BarChart,
@@ -1976,6 +1976,7 @@ function AttendanceReportGen({
   const [dept, setDept] = useState("all");
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [photos, setPhotos] = useState(true);
 
   useEffect(() => {
     load();
@@ -2000,7 +2001,15 @@ function AttendanceReportGen({
     "Check In",
     "Check Out",
     "Work Hours",
+    "OT Hrs",
+    "Via",
+    "Check-In Location",
+    "Check-Out Location",
   ];
+  const locStr = (l: any) =>
+    l && l.lat != null
+      ? `${l.address ? l.address + " " : ""}(${Number(l.lat).toFixed(5)}, ${Number(l.lng).toFixed(5)})`
+      : "—";
   const rows = data.map((rec) => [
     formatDate(rec.date),
     rec.employee ? `${rec.employee.firstName} ${rec.employee.lastName}` : "—",
@@ -2019,8 +2028,25 @@ function AttendanceReportGen({
           minute: "2-digit",
         })
       : "—",
-    rec.workHours ? `${rec.workHours}h` : "—",
+    rec.workHours ? `${Number(rec.workHours).toFixed(1)}h` : "—",
+    rec.overtime ? `${Number(rec.overtime).toFixed(1)}h` : "—",
+    rec.verifyMode === "geo_camera" ? "App (Selfie+GPS)" : rec.verifyMode || "—",
+    locStr(rec.checkInLocation),
+    locStr(rec.checkOutLocation),
   ]);
+
+  function printDetailed() {
+    const win = window.open("", "_blank");
+    if (!win) return;
+    writePrintDocument(
+      win,
+      buildDetailedAttendanceHTML(data, { period: `${MONTHS[+month - 1]} ${year}`, companyName: company?.name, photos }),
+      false,
+    );
+    // let the selfies load before the print dialog opens
+    win.addEventListener("load", () => win.print());
+    setTimeout(() => win.print(), 3000);
+  }
 
   return (
     <div className="space-y-4">
@@ -2048,19 +2074,15 @@ function AttendanceReportGen({
           ))}
         </NbSelect>
         <div className="ml-auto flex gap-2">
+          <label className="flex items-center gap-1.5 text-xs font-semibold px-2">
+            <input type="checkbox" checked={photos} onChange={(e) => setPhotos(e.target.checked)} />
+            Include photos
+          </label>
           <button
-            onClick={() =>
-              printReport(
-                "Employee Attendance Report",
-                `${MONTHS[+month - 1]} ${year}`,
-                headers,
-                rows,
-                { company, reportCategory: "Attendance" },
-              )
-            }
+            onClick={printDetailed}
             className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-white"
           >
-            <Printer className="w-4 h-4" /> Print
+            <Printer className="w-4 h-4" /> Print / PDF
           </button>
           <button
             onClick={() =>

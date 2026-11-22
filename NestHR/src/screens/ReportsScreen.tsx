@@ -386,12 +386,17 @@ function fmtCur(n: number) {
 }
 
 // ── Data generators ─────────────────────────────────────────────────────────────
+const locStr = (l: any) =>
+  l && l.lat != null
+    ? `${l.address ? l.address + ' ' : ''}(${Number(l.lat).toFixed(5)}, ${Number(l.lng).toFixed(5)})`
+    : '—';
+
 async function generateReport(
   id: string,
   month: string,
   year: string,
   dept: string,
-): Promise<{ headers: string[]; rows: string[][] }> {
+): Promise<{ headers: string[]; rows: string[][]; raw?: any[] }> {
   switch (id) {
     case 'pay-report': {
       const r = await payrollAPI.getAll({ month, year });
@@ -810,7 +815,12 @@ async function generateReport(
           'Check In',
           'Check Out',
           'Work Hours',
+          'OT Hrs',
+          'Via',
+          'Check-In Location',
+          'Check-Out Location',
         ],
+        raw: data,
         rows: data.map((rec: any) => [
           fmtDate(rec.date),
           rec.employee
@@ -821,7 +831,11 @@ async function generateReport(
           sentence(rec.status),
           fmt(rec.checkIn),
           fmt(rec.checkOut),
-          rec.workingHours ? `${rec.workingHours}h` : '—',
+          rec.workHours ? `${Number(rec.workHours).toFixed(1)}h` : '—',
+          rec.overtime ? `${Number(rec.overtime).toFixed(1)}h` : '—',
+          rec.verifyMode === 'geo_camera' ? 'App (Selfie+GPS)' : rec.verifyMode || '—',
+          locStr(rec.checkInLocation),
+          locStr(rec.checkOutLocation),
         ]),
       };
     }
@@ -1498,6 +1512,7 @@ function ReportModal({
   const isMobileDetails = report?.id === 'mobile-attendance-details';
   const needsEmpPicker = isEmpReport || isMobileDetails;
   const [punches, setPunches] = useState<any[]>([]);
+  const [attRaw, setAttRaw] = useState<any[]>([]);
   const [empSearch, setEmpSearch] = useState('');
   const [allEmployees, setAllEmployees] = useState<any[]>([]);
   const [empLoading, setEmpLoading] = useState(false);
@@ -1566,6 +1581,7 @@ function ReportModal({
         );
       } else {
         result = await generateReport(report.id, month, year, dept);
+        setAttRaw(result.raw || []);
       }
       setHeaders(result.headers);
       setRows(result.rows);
@@ -1590,6 +1606,40 @@ function ReportModal({
     if (!headers.length) return;
     const label = report?.label || 'Report';
     const period = `${MONTHS[+month - 1]} ${year}`;
+
+    if (report?.id === 'attendance-report' && attRaw.length) {
+      const esc = (s: any) =>
+        String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      const t12 = (iso?: string) =>
+        iso ? new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' }) : '—';
+      const ph = (u?: string) => (/^https?:\/\//i.test(u || '') ? `<br/><img src="${esc(u)}" class="ph"/>` : '');
+      const loc = (l: any) =>
+        l && l.lat != null
+          ? `${l.address ? esc(l.address) + '<br/>' : ''}<span class="mut">${Number(l.lat).toFixed(5)}, ${Number(l.lng).toFixed(5)}</span>`
+          : '—';
+      const body = attRaw
+        .map((r: any, i: number) => {
+          const e = r.employee || {};
+          return `<tr><td>${i + 1}</td><td>${esc(e.employeeId)}</td><td class="nm">${esc(`${e.firstName ?? ''} ${e.lastName ?? ''}`)}<br/><span class="mut">${esc(e.department?.name)}</span></td><td>${fmtPunchDate(r.date)}</td><td class="st">${esc(String(r.status || '').replace('_', ' '))}</td><td>${t12(r.checkIn)}${ph(r.checkInSelfie)}</td><td>${t12(r.checkOut)}${ph(r.checkOutSelfie)}</td><td>${r.workHours ? Number(r.workHours).toFixed(1) + 'h' : '—'}${r.overtime ? `<br/><span class="mut">OT ${Number(r.overtime).toFixed(1)}h</span>` : ''}</td><td class="loc"><b>In:</b> ${loc(r.checkInLocation)}<br/><b>Out:</b> ${loc(r.checkOutLocation)}</td></tr>`;
+        })
+        .join('');
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><style>
+      @page{size:A4 landscape;margin:10mm}*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:10px;color:#111}
+      .hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #024BAB;padding-bottom:8px;margin-bottom:8px}.hdr img{height:32px}
+      .t{font-size:15px;font-weight:700;color:#024BAB;text-align:right}.s{font-size:10px;color:#6B7280;text-align:right}
+      table{border-collapse:collapse;width:100%}th{background:#024BAB;color:#fff;text-align:left;padding:6px;font-size:9px;text-transform:uppercase}
+      td{padding:6px;border-bottom:1px solid #E5E7EB;vertical-align:top}thead{display:table-header-group}tr{page-break-inside:avoid}
+      .nm{font-weight:700}.mut{color:#6B7280;font-size:9px}.loc{width:26%;line-height:1.4}.st{text-transform:capitalize;font-weight:700}
+      .ph{width:40px;height:44px;object-fit:cover;border-radius:3px;border:1px solid #D1D5DB;margin-top:3px}
+      </style></head><body><div class="hdr"><img src="${NESTHR_LOGO_B64}"/><div><div class="t">Attendance Report — Detailed</div><div class="s">${period}</div></div></div>
+      <table><thead><tr><th>#</th><th>Emp ID</th><th>Employee</th><th>Date</th><th>Status</th><th>Check In</th><th>Check Out</th><th>Hours</th><th>Location</th></tr></thead><tbody>${body}</tbody></table></body></html>`;
+      try {
+        await RNPrint.print({ html });
+      } catch (e: any) {
+        Alert.alert('Error', e.message || 'PDF generation failed');
+      }
+      return;
+    }
 
     if (isMobileDetails) {
       const esc = (s: any) =>
