@@ -9,6 +9,7 @@ import { cn, formatDate } from "@/lib/utils";
 import { EmployeeCombobox } from "@/components/employees/EmployeeCombobox";
 import { ExportMenu } from "@/components/ui/ExportMenu";
 import { ImportButton } from "@/components/ui/ImportButton";
+import { FilePicker, TaskFilesPanel, TaskAttachment } from "@/components/tasks/TaskFiles";
 import {
   Dialog,
   DialogContent,
@@ -73,6 +74,12 @@ interface Task {
   priority: string;
   status: string;
   dueDate?: string;
+  startDate?: string;
+  estimatedHours?: number;
+  tags?: string[];
+  instructions?: string;
+  checklist?: Array<{ _id: string; text: string; done: boolean }>;
+  attachments?: TaskAttachment[];
   createdAt: string;
   late?: boolean;
   comments?: Array<{
@@ -141,13 +148,21 @@ export default function TasksPage() {
     localStorage.setItem(viewStorageKey, v);
   };
 
-  const [form, setForm] = useState({
+  const EMPTY_FORM = {
     title: "",
     description: "",
+    instructions: "",
     assignedTo: "",
     priority: "medium",
+    startDate: "",
     dueDate: "",
-  });
+    estimatedHours: "",
+    tags: "",
+  };
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [checklist, setChecklist] = useState<{ _id?: string; text: string }[]>([]);
+  const [newItem, setNewItem] = useState("");
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
   const fetchTasks = async () => {
     try {
@@ -189,14 +204,12 @@ export default function TasksPage() {
     return g;
   }, [filtered]);
 
-  const resetForm = () =>
-    setForm({
-      title: "",
-      description: "",
-      assignedTo: "",
-      priority: "medium",
-      dueDate: "",
-    });
+  const resetForm = () => {
+    setForm(EMPTY_FORM);
+    setChecklist([]);
+    setNewItem("");
+    setPendingFiles([]);
+  };
 
   const openCreate = () => {
     setEditingTask(null);
@@ -209,10 +222,16 @@ export default function TasksPage() {
     setForm({
       title: task.title,
       description: task.description || "",
+      instructions: task.instructions || "",
       assignedTo: task.assignedTo?._id || "",
       priority: task.priority,
+      startDate: task.startDate ? task.startDate.slice(0, 10) : "",
       dueDate: task.dueDate ? task.dueDate.slice(0, 10) : "",
+      estimatedHours: task.estimatedHours != null ? String(task.estimatedHours) : "",
+      tags: (task.tags || []).join(", "),
     });
+    setChecklist((task.checklist || []).map((i) => ({ _id: i._id, text: i.text })));
+    setPendingFiles([]);
     setSelected(null);
     setCreateOpen(true);
   };
@@ -235,11 +254,17 @@ export default function TasksPage() {
     }
     setSubmitting(true);
     try {
+      const body = {
+        ...form,
+        tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
+        checklist,
+      };
       if (editingTask) {
-        await taskAPI.update(editingTask._id, form);
+        await taskAPI.update(editingTask._id, body);
+        if (pendingFiles.length) await taskAPI.addFiles(editingTask._id, pendingFiles, "reference");
         toast({ title: "Task updated" });
       } else {
-        await taskAPI.create(form);
+        await taskAPI.create(body, pendingFiles);
         toast({ title: "Task assigned" });
       }
       resetForm();
@@ -853,7 +878,7 @@ export default function TasksPage() {
           }
         }}
       >
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-display">
               {editingTask ? "Edit Task" : "Assign a Task"}
@@ -928,6 +953,94 @@ export default function TasksPage() {
                 className="w-full border-2 border-black px-3 py-2 text-sm outline-none resize-none"
               />
             </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-black">
+                Detailed instructions
+              </label>
+              <textarea
+                rows={4}
+                value={form.instructions}
+                onChange={(e) => setForm({ ...form, instructions: e.target.value })}
+                maxLength={5000}
+                placeholder="Step-by-step: what exactly should be done, standards, links, contacts…"
+                className="w-full border-2 border-black px-3 py-2 text-sm outline-none resize-none"
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-black">Start Date</label>
+                <input
+                  type="date"
+                  value={form.startDate}
+                  onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+                  className="w-full border-2 border-black px-3 py-2 text-sm outline-none"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-black">Est. Hours</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={form.estimatedHours}
+                  onChange={(e) => setForm({ ...form, estimatedHours: e.target.value })}
+                  className="w-full border-2 border-black px-3 py-2 text-sm outline-none"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-black">Tags</label>
+                <input
+                  value={form.tags}
+                  onChange={(e) => setForm({ ...form, tags: e.target.value })}
+                  placeholder="design, urgent"
+                  className="w-full border-2 border-black px-3 py-2 text-sm outline-none"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-black">
+                Checklist (sub-steps)
+              </label>
+              {checklist.map((it, i) => (
+                <div key={it._id || i} className="flex items-center gap-2 text-sm border border-black/20 px-2 py-1">
+                  <span className="flex-1">{it.text}</span>
+                  <button type="button" onClick={() => setChecklist(checklist.filter((_, j) => j !== i))}>
+                    <X className="w-4 h-4 text-[#EF4444]" />
+                  </button>
+                </div>
+              ))}
+              <div className="flex gap-2">
+                <input
+                  value={newItem}
+                  onChange={(e) => setNewItem(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (newItem.trim()) {
+                        setChecklist([...checklist, { text: newItem.trim() }]);
+                        setNewItem("");
+                      }
+                    }
+                  }}
+                  maxLength={200}
+                  placeholder="Add a step and press Enter"
+                  className="flex-1 border-2 border-black px-3 py-1.5 text-sm outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (newItem.trim()) {
+                      setChecklist([...checklist, { text: newItem.trim() }]);
+                      setNewItem("");
+                    }
+                  }}
+                  className="border-2 border-black px-3 text-sm font-bold"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+            <FilePicker files={pendingFiles} onChange={setPendingFiles} />
             <div className="flex justify-end gap-2 pt-1">
               <button
                 type="button"
@@ -959,7 +1072,7 @@ export default function TasksPage() {
         open={!!selected}
         onOpenChange={(open) => !open && setSelected(null)}
       >
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto">
           {selected && (
             <>
               <DialogHeader>
@@ -1007,6 +1120,58 @@ export default function TasksPage() {
                   {selected.description || "No description provided."}
                 </p>
 
+                {selected.instructions && (
+                  <div className="border-2 border-black/10 bg-[#F8FAFF] p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground mb-1">
+                      Instructions
+                    </p>
+                    <p className="text-sm whitespace-pre-wrap text-black">{selected.instructions}</p>
+                  </div>
+                )}
+
+                {(selected.startDate || selected.estimatedHours != null || !!selected.tags?.length) && (
+                  <div className="flex items-center gap-2 flex-wrap text-xs">
+                    {selected.startDate && (
+                      <span className="border border-black/20 px-2 py-0.5">Starts {formatDate(selected.startDate)}</span>
+                    )}
+                    {selected.estimatedHours != null && (
+                      <span className="border border-black/20 px-2 py-0.5">Est. {selected.estimatedHours} h</span>
+                    )}
+                    {selected.tags?.map((t) => (
+                      <span key={t} className="bg-[#024BAB]/10 text-[#024BAB] border border-[#024BAB]/30 px-2 py-0.5 font-bold">
+                        #{t}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {!!selected.checklist?.length && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold uppercase text-black">
+                      Checklist ({selected.checklist.filter((i) => i.done).length}/{selected.checklist.length})
+                    </p>
+                    {selected.checklist.map((i) => (
+                      <label key={i._id} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={i.done}
+                          onChange={async (e) => {
+                            try {
+                              const r = await taskAPI.toggleChecklist(selected._id, i._id, e.target.checked);
+                              setSelected({ ...selected, checklist: r.data.checklist });
+                              fetchTasks();
+                            } catch (err: any) {
+                              toast({ title: err.message, variant: "destructive" });
+                            }
+                          }}
+                          className="w-4 h-4 accent-[#024BAB]"
+                        />
+                        <span className={i.done ? "line-through text-muted-foreground" : ""}>{i.text}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div className="border-2 border-black/10 p-2">
                     <p className="text-muted-foreground font-bold uppercase tracking-wide text-[10px]">
@@ -1053,6 +1218,18 @@ export default function TasksPage() {
                     ))}
                   </div>
                 </div>
+
+                <TaskFilesPanel
+                  taskId={selected._id}
+                  attachments={selected.attachments || []}
+                  isManager={canAssign}
+                  isAssignee={selected.assignedTo?._id === ((user as any)?._id || (user as any)?.id)}
+                  meId={(user as any)?._id || (user as any)?.id}
+                  onUpdated={(t) => {
+                    setSelected({ ...selected, attachments: t.attachments });
+                    fetchTasks();
+                  }}
+                />
 
                 {!!selected.statusHistory?.length && (
                   <div className="border-t-2 border-black/10 pt-4 space-y-2">

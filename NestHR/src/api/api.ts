@@ -1268,26 +1268,87 @@ export const announcementAPI = {
     request(`/announcements/${id}/acknowledge`, { method: 'POST' }),
 };
 
+export type TaskBody = {
+  title: string;
+  description?: string;
+  instructions?: string;
+  assignedTo: string;
+  priority?: string;
+  startDate?: string;
+  dueDate?: string;
+  estimatedHours?: number | string;
+  tags?: string[];
+  checklist?: { _id?: string; text: string; done?: boolean }[];
+};
+export type PickedFile = { uri: string; type: string; name: string; size?: number };
+
+async function taskUpload(path: string, method: string, fd: FormData) {
+  const token = await getToken();
+  const controller = new AbortController();
+  // videos are big: allow 5 minutes
+  const timer = setTimeout(() => controller.abort(), 300_000);
+  try {
+    const res = await fetch(`${BASE_URL}${path}`, {
+      method,
+      signal: controller.signal,
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: fd,
+    });
+    const text = await res.text();
+    let data: any = {};
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {}
+    if (!res.ok) throw new Error(data.message || statusMsg(res.status));
+    return data;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export const taskAPI = {
   getAll: (params?: Record<string, string>) => request(`/tasks${qs(params)}`),
   getOne: (id: string) => request(`/tasks/${id}`),
-  create: (body: {
-    title: string;
-    description?: string;
-    assignedTo: string;
-    priority?: string;
-    dueDate?: string;
-  }) => request('/tasks', { method: 'POST', body: JSON.stringify(body) }),
-  update: (
+  // Files go as multipart (arrays JSON-encoded); without files it stays plain JSON.
+  create: async (body: TaskBody, files: PickedFile[] = []) => {
+    if (!files.length)
+      return request('/tasks', { method: 'POST', body: JSON.stringify(body) });
+    const fd = new FormData();
+    Object.entries(body).forEach(([k, v]) => {
+      if (v === undefined || v === null || v === '') return;
+      fd.append(k, Array.isArray(v) ? JSON.stringify(v) : String(v));
+    });
+    files.forEach(f =>
+      fd.append('files', { uri: f.uri, type: f.type, name: f.name } as any),
+    );
+    return taskUpload('/tasks', 'POST', fd);
+  },
+  update: (id: string, body: Partial<TaskBody>) =>
+    request(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  addFiles: (
     id: string,
-    body: {
-      title?: string;
-      description?: string;
-      assignedTo?: string;
-      priority?: string;
-      dueDate?: string;
-    },
-  ) => request(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+    files: PickedFile[],
+    purpose: 'reference' | 'work',
+  ) => {
+    const fd = new FormData();
+    fd.append('purpose', purpose);
+    files.forEach(f =>
+      fd.append('files', { uri: f.uri, type: f.type, name: f.name } as any),
+    );
+    return taskUpload(`/tasks/${id}/files`, 'POST', fd);
+  },
+  deleteFile: (id: string, fileId: string) =>
+    request(`/tasks/${id}/files/${fileId}`, { method: 'DELETE' }),
+  // Signed short-lived URL: works in <Image> and opens in the phone's browser / viewer
+  fileUrl: async (id: string, fileId: string, download = false) => {
+    const r = await request(`/tasks/${id}/files/${fileId}/link`);
+    return `${BASE_URL}${r.data.path}${download ? '?download=1' : ''}`;
+  },
+  toggleChecklist: (id: string, itemId: string, done: boolean) =>
+    request(`/tasks/${id}/checklist/${itemId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ done }),
+    }),
   updateStatus: (id: string, status: string) =>
     request(`/tasks/${id}/status`, {
       method: 'PATCH',

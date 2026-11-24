@@ -265,7 +265,26 @@ const saveAttendanceSelfieBuffer = async (file, companyId, employeeId) => {
   return name;
 };
 
+// Task attachments (reference images / videos / documents and submitted work). Private folder, never served statically.
+// Content is verified after upload (taskController.vetTaskFiles) because the client's MIME type cannot be trusted.
+const taskFileStorage = multer.diskStorage({
+  destination(_req, _file, cb) {
+    const dir = path.join(UPLOAD_BASE, "task-files");
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename(_req, _file, cb) {
+    cb(null, `${Date.now()}_${crypto.randomBytes(12).toString("hex")}.upload`);
+  },
+});
+
+const uploadTaskFiles = multer({
+  storage: taskFileStorage,
+  limits: { fileSize: 100 * 1024 * 1024, files: 10 },
+}).array("files", 10);
+
 module.exports = {
+  uploadTaskFiles,
   saveAttendanceSelfieBuffer,
   uploadIdCardImage,
   uploadEmployeeDocs,

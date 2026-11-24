@@ -35,7 +35,8 @@ import {
   User,
   X,
 } from 'lucide-react-native';
-import { employeeAPI, taskAPI } from '../api/api';
+import { employeeAPI, taskAPI, PickedFile } from '../api/api';
+import { PendingFiles, TaskFilesPanel } from '../components/tasks/TaskFiles';
 import { useAuth } from '../contexts/AuthContext';
 import { DatePickerField } from '../components/common/DatePickerField';
 import HeaderIconBtn from '../components/common/HeaderIconBtn';
@@ -78,9 +79,13 @@ const PRIORITIES = ['low', 'medium', 'high'] as const;
 const EMPTY_FORM = {
   title: '',
   description: '',
+  instructions: '',
   assignedTo: '',
   priority: 'medium',
+  startDate: '',
   dueDate: '',
+  estimatedHours: '',
+  tags: '',
 };
 
 const IMPORT_HEADERS = [
@@ -138,6 +143,9 @@ export default function TasksScreen() {
   const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [checklist, setChecklist] = useState<{ _id?: string; text: string }[]>([]);
+  const [newItem, setNewItem] = useState('');
+  const [pendingFiles, setPendingFiles] = useState<PickedFile[]>([]);
 
   const load = useCallback(async () => {
     try {
@@ -182,6 +190,9 @@ export default function TasksScreen() {
   const openCreate = () => {
     setEditing(null);
     setForm(EMPTY_FORM);
+    setChecklist([]);
+    setNewItem('');
+    setPendingFiles([]);
     setFormOpen(true);
   };
 
@@ -190,10 +201,17 @@ export default function TasksScreen() {
     setForm({
       title: t.title,
       description: t.description || '',
+      instructions: t.instructions || '',
       assignedTo: t.assignedTo?._id || '',
       priority: t.priority,
+      startDate: t.startDate ? t.startDate.slice(0, 10) : '',
       dueDate: t.dueDate ? t.dueDate.slice(0, 10) : '',
+      estimatedHours: t.estimatedHours != null ? String(t.estimatedHours) : '',
+      tags: (t.tags || []).join(', '),
     });
+    setChecklist((t.checklist || []).map((i: any) => ({ _id: i._id, text: i.text })));
+    setNewItem('');
+    setPendingFiles([]);
     setSelected(null);
     setFormOpen(true);
   };
@@ -205,8 +223,19 @@ export default function TasksScreen() {
     }
     setSaving(true);
     try {
-      if (editing) await taskAPI.update(editing._id, form);
-      else await taskAPI.create(form);
+      const body = {
+        ...form,
+        tags: form.tags
+          .split(',')
+          .map(t => t.trim())
+          .filter(Boolean),
+        checklist,
+      };
+      if (editing) {
+        await taskAPI.update(editing._id, body);
+        if (pendingFiles.length)
+          await taskAPI.addFiles(editing._id, pendingFiles, 'reference');
+      } else await taskAPI.create(body, pendingFiles);
       setFormOpen(false);
       await load();
     } catch (e: any) {
@@ -691,6 +720,80 @@ export default function TasksScreen() {
                     Assigned by: {selected.assignedBy?.name || '—'}
                   </Text>
                   <Text style={s.meta}>Due: {fmt(selected.dueDate)}</Text>
+                  {selected.startDate ? (
+                    <Text style={s.meta}>Starts: {fmt(selected.startDate)}</Text>
+                  ) : null}
+                  {selected.estimatedHours != null ? (
+                    <Text style={s.meta}>
+                      Estimated: {selected.estimatedHours} h
+                    </Text>
+                  ) : null}
+                  {(selected.tags || []).length > 0 && (
+                    <Text style={[s.meta, { color: C.primary }]}>
+                      {selected.tags.map((t: string) => `#${t}`).join('  ')}
+                    </Text>
+                  )}
+                  {selected.instructions ? (
+                    <>
+                      <Text style={s.section}>Instructions</Text>
+                      <Text style={s.body}>{selected.instructions}</Text>
+                    </>
+                  ) : null}
+                  {(selected.checklist || []).length > 0 && (
+                    <>
+                      <Text style={s.section}>
+                        Checklist (
+                        {selected.checklist.filter((i: any) => i.done).length}/
+                        {selected.checklist.length})
+                      </Text>
+                      {selected.checklist.map((i: any) => (
+                        <TouchableOpacity
+                          key={i._id}
+                          style={{ flexDirection: 'row', gap: 8, paddingVertical: 4 }}
+                          onPress={async () => {
+                            try {
+                              const r: any = await taskAPI.toggleChecklist(
+                                selected._id,
+                                i._id,
+                                !i.done,
+                              );
+                              setSelected({ ...selected, checklist: r.data.checklist });
+                              load();
+                            } catch (e: any) {
+                              Alert.alert('Error', e?.message || 'Failed');
+                            }
+                          }}
+                        >
+                          <Text style={{ color: i.done ? C.success : C.black }}>
+                            {i.done ? '☑' : '☐'}
+                          </Text>
+                          <Text
+                            style={[
+                              s.body,
+                              { flex: 1 },
+                              i.done && { textDecorationLine: 'line-through', color: '#6B7280' },
+                            ]}
+                          >
+                            {i.text}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </>
+                  )}
+
+                  <TaskFilesPanel
+                    taskId={selected._id}
+                    attachments={selected.attachments || []}
+                    isManager={canAssign}
+                    isAssignee={
+                      selected.assignedTo?._id === ((user as any)?._id || (user as any)?.id)
+                    }
+                    meId={(user as any)?._id || (user as any)?.id}
+                    onUpdated={(t: any) => {
+                      setSelected({ ...selected, attachments: t.attachments });
+                      load();
+                    }}
+                  />
 
                   <Text style={s.section}>Update status</Text>
                   <View style={s.statusRow}>
@@ -807,6 +910,16 @@ export default function TasksScreen() {
                   multiline
                   maxLength={2000}
                 />
+                <Text style={s.label}>Detailed instructions</Text>
+                <TextInput
+                  style={[s.input, { height: 110, textAlignVertical: 'top' }]}
+                  value={form.instructions}
+                  onChangeText={v => setForm(f => ({ ...f, instructions: v }))}
+                  multiline
+                  maxLength={5000}
+                  placeholder="Step-by-step: what exactly to do, standards, links, contacts…"
+                  placeholderTextColor="#9CA3AF"
+                />
                 <Text style={s.label}>Assign to *</Text>
                 <ScrollView style={s.pickList} nestedScrollEnabled>
                   {employees
@@ -854,10 +967,73 @@ export default function TasksScreen() {
                   ))}
                 </View>
                 <DatePickerField
+                  label="Start date"
+                  value={form.startDate}
+                  onChange={v => setForm(f => ({ ...f, startDate: v }))}
+                />
+                <DatePickerField
                   label="Due date"
                   value={form.dueDate}
                   onChange={v => setForm(f => ({ ...f, dueDate: v }))}
                 />
+                <Text style={s.label}>Estimated hours</Text>
+                <TextInput
+                  style={s.input}
+                  value={form.estimatedHours}
+                  onChangeText={v => setForm(f => ({ ...f, estimatedHours: v }))}
+                  keyboardType="numeric"
+                />
+                <Text style={s.label}>Tags (comma separated)</Text>
+                <TextInput
+                  style={s.input}
+                  value={form.tags}
+                  onChangeText={v => setForm(f => ({ ...f, tags: v }))}
+                  placeholder="design, urgent"
+                  placeholderTextColor="#9CA3AF"
+                />
+                <Text style={s.label}>Checklist (sub-steps)</Text>
+                {checklist.map((it, i) => (
+                  <View
+                    key={it._id || i}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}
+                  >
+                    <Text style={[s.body, { flex: 1 }]}>• {it.text}</Text>
+                    <TouchableOpacity
+                      onPress={() => setChecklist(checklist.filter((_, j) => j !== i))}
+                      hitSlop={8}
+                    >
+                      <X size={18} color={C.danger} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TextInput
+                    style={[s.input, { flex: 1 }]}
+                    value={newItem}
+                    onChangeText={setNewItem}
+                    placeholder="Add a step"
+                    placeholderTextColor="#9CA3AF"
+                    maxLength={200}
+                    onSubmitEditing={() => {
+                      if (newItem.trim()) {
+                        setChecklist([...checklist, { text: newItem.trim() }]);
+                        setNewItem('');
+                      }
+                    }}
+                  />
+                  <TouchableOpacity
+                    style={[s.sendBtn, { alignSelf: 'center', paddingHorizontal: 14, paddingVertical: 10 }]}
+                    onPress={() => {
+                      if (newItem.trim()) {
+                        setChecklist([...checklist, { text: newItem.trim() }]);
+                        setNewItem('');
+                      }
+                    }}
+                  >
+                    <Text style={{ color: '#fff' }}>Add</Text>
+                  </TouchableOpacity>
+                </View>
+                <PendingFiles files={pendingFiles} onChange={setPendingFiles} />
                 <TouchableOpacity
                   style={[s.saveBtn, saving && { opacity: 0.6 }]}
                   onPress={save}

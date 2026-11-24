@@ -1117,28 +1117,70 @@ export const supportAPI = {
     }),
 };
 
+export interface TaskBody {
+  title: string;
+  description?: string;
+  instructions?: string;
+  assignedTo: string;
+  priority?: string;
+  startDate?: string;
+  dueDate?: string;
+  estimatedHours?: number | string;
+  tags?: string[];
+  checklist?: { _id?: string; text: string; done?: boolean }[];
+}
+
+async function uploadForm(endpoint: string, method: string, fd: FormData) {
+  const token = getToken();
+  const res = await fetch(`${BASE_URL}${endpoint}`, {
+    method,
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: fd,
+  });
+  const data = await res.json().catch(() => ({}) as any);
+  if (!res.ok) throw new Error(data.message || statusMsg(res.status));
+  return data;
+}
+
 export const taskAPI = {
   getAll: (params?: Record<string, string>) => {
     const q = params ? "?" + new URLSearchParams(params).toString() : "";
     return request(`/tasks${q}`);
   },
   getOne: (id: string) => request(`/tasks/${id}`),
-  create: (body: {
-    title: string;
-    description?: string;
-    assignedTo: string;
-    priority?: string;
-    dueDate?: string;
-  }) => request("/tasks", { method: "POST", body: JSON.stringify(body) }),
+  // With files the request goes out as multipart (arrays are JSON-encoded); without, plain JSON as before.
+  create: async (body: TaskBody, files: File[] = []) => {
+    if (!files.length)
+      return request("/tasks", { method: "POST", body: JSON.stringify(body) });
+    const fd = new FormData();
+    Object.entries(body).forEach(([k, v]) => {
+      if (v === undefined || v === null || v === "") return;
+      fd.append(k, Array.isArray(v) ? JSON.stringify(v) : String(v));
+    });
+    files.forEach((f) => fd.append("files", f));
+    return uploadForm("/tasks", "POST", fd);
+  },
+  addFiles: (id: string, files: File[], purpose: "reference" | "work") => {
+    const fd = new FormData();
+    fd.append("purpose", purpose);
+    files.forEach((f) => fd.append("files", f));
+    return uploadForm(`/tasks/${id}/files`, "POST", fd);
+  },
+  deleteFile: (id: string, fileId: string) =>
+    request(`/tasks/${id}/files/${fileId}`, { method: "DELETE" }),
+  // Signed, short-lived URL usable in <img>/<video>/<a>
+  fileUrl: async (id: string, fileId: string, download = false) => {
+    const r = await request(`/tasks/${id}/files/${fileId}/link`);
+    return `${BASE_URL}${r.data.path}${download ? "?download=1" : ""}`;
+  },
+  toggleChecklist: (id: string, itemId: string, done: boolean) =>
+    request(`/tasks/${id}/checklist/${itemId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ done }),
+    }),
   update: (
     id: string,
-    body: {
-      title?: string;
-      description?: string;
-      assignedTo?: string;
-      priority?: string;
-      dueDate?: string;
-    },
+    body: Partial<TaskBody>,
   ) => request(`/tasks/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   updateStatus: (id: string, status: string) =>
     request(`/tasks/${id}/status`, {
