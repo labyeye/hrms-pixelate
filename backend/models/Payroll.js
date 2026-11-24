@@ -24,7 +24,8 @@ const payrollSchema = new mongoose.Schema(
     otherAllowances: { type: Number, default: 0 },
     bonusAmount: { type: Number, default: 0 }, // one-off bonus paid in this month (separate from allowances)
     grossSalary: { type: Number, required: true },
-    pf: { type: Number, default: 0 },
+    pf: { type: Number, default: 0 }, // employee PF deducted
+    employerPf: { type: Number, default: 0 }, // employer PF (part of CTC, not paid to the employee)
     esi: { type: Number, default: 0 },
     tds: { type: Number, default: 0 },
     loanDeduction: { type: Number, default: 0 },

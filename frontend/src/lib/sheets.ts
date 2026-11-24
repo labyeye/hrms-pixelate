@@ -107,3 +107,104 @@ export async function readObjects(
       return o;
     });
 }
+
+export interface ReportSheetMeta {
+  title: string;
+  period?: string;
+  companyName?: string;
+  generatedBy?: string;
+}
+
+// Professional report workbook: title block, styled header, number formats, zebra rows, totals row, frozen header, print-ready.
+export async function writeReportSheet(
+  filename: string,
+  meta: ReportSheetMeta,
+  headers: string[],
+  rows: unknown[][],
+) {
+  const { analyzeColumns, parseNum } = await import("./reportPrintHTML");
+  const ExcelJS = await load();
+  const wb = new ExcelJS.Workbook();
+  wb.creator = meta.companyName || "NestHR";
+  wb.created = new Date();
+  const ws = wb.addWorksheet((meta.title || "Report").slice(0, 31), {
+    views: [{ state: "frozen", ySplit: 6 }],
+  });
+  const cols = Math.max(headers.length, 4);
+  const { numeric, money } = analyzeColumns(headers, rows);
+
+  const band = (r: number, text: string, size: number, bold: boolean, color = "FF111111") => {
+    ws.mergeCells(r, 1, r, cols);
+    const c = ws.getCell(r, 1);
+    c.value = text;
+    c.font = { name: "Calibri", size, bold, color: { argb: color } };
+    c.alignment = { vertical: "middle", horizontal: "left" };
+  };
+  band(1, meta.companyName || "NestHR", 16, true, "FF024BAB");
+  band(2, meta.title, 13, true);
+  band(3, [meta.period && `Period: ${meta.period}`, `Generated: ${new Date().toLocaleString("en-IN")}`, meta.generatedBy && `By: ${meta.generatedBy}`].filter(Boolean).join("   |   "), 10, false, "FF6B7280");
+  band(4, `Total records: ${rows.length}`, 10, false, "FF6B7280");
+  ws.getRow(1).height = 24;
+
+  const headRow = ws.getRow(6);
+  headers.forEach((h, i) => {
+    const c = headRow.getCell(i + 1);
+    c.value = h;
+    c.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
+    c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF024BAB" } };
+    c.alignment = { vertical: "middle", horizontal: numeric[i] ? "right" : "left", wrapText: true };
+    c.border = { bottom: { style: "thin", color: { argb: "FF012F6B" } } };
+  });
+  headRow.height = 22;
+
+  rows.forEach((r, ri) => {
+    const row = ws.getRow(7 + ri);
+    headers.forEach((_, ci) => {
+      const raw = r[ci];
+      const n = numeric[ci] ? parseNum(raw) : null;
+      const c = row.getCell(ci + 1);
+      c.value = n !== null ? n : ((raw ?? "") as any);
+      if (n !== null) {
+        c.numFmt = money[ci] ? "#,##0.00;[Red]-#,##0.00" : "General";
+        c.alignment = { horizontal: "right" };
+      }
+      c.border = { bottom: { style: "hair", color: { argb: "FFD1D5DB" } } };
+      if (ri % 2 === 1) c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8FAFF" } };
+    });
+  });
+
+  const last = 6 + rows.length;
+  if (rows.length > 1 && money.some(Boolean)) {
+    const t = ws.getRow(last + 1);
+    headers.forEach((_, ci) => {
+      const c = t.getCell(ci + 1);
+      if (ci === 0) c.value = "TOTAL";
+      if (money[ci]) {
+        const L = ws.getColumn(ci + 1).letter;
+        c.value = { formula: `SUM(${L}7:${L}${last})` } as any;
+        c.numFmt = "#,##0.00;[Red]-#,##0.00";
+        c.alignment = { horizontal: "right" };
+      }
+      c.font = { bold: true };
+      c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFF6FF" } };
+      c.border = { top: { style: "medium", color: { argb: "FF024BAB" } } };
+    });
+  }
+
+  ws.columns.forEach((col, i) => {
+    const longest = Math.max(
+      String(headers[i] ?? "").length,
+      ...rows.slice(0, 200).map((r) => String(r[i] ?? "").length),
+    );
+    col.width = Math.min(Math.max(longest + 3, 10), 40);
+  });
+  ws.autoFilter = { from: { row: 6, column: 1 }, to: { row: Math.max(last, 6), column: headers.length } };
+  ws.pageSetup = { orientation: headers.length > 7 ? "landscape" : "portrait", fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9 };
+  ws.headerFooter.oddFooter = "&L&8" + (meta.companyName || "NestHR") + " - Confidential&R&8Page &P of &N";
+
+  download(
+    await wb.xlsx.writeBuffer(),
+    filename,
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  );
+}

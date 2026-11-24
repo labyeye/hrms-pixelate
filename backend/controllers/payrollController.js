@@ -1,4 +1,5 @@
 const asyncHandler = require("express-async-handler");
+const { pfBreakdown, pfOnWage } = require("../utils/pf");
 const Payroll = require("../models/Payroll");
 const Employee = require("../models/Employee");
 const Attendance = require("../models/Attendance");
@@ -249,7 +250,8 @@ const processPayroll = asyncHandler(async (req, res) => {
 
     const workDaysPerWeek = emp.workDaysPerWeek ?? 6;
     const workingDays = getWorkingDays(startDate, endDate, workDaysPerWeek);
-    const salary = emp.salary ?? 0;
+    const pfInfo = pfBreakdown(emp.salary ?? 0, emp.pfEnabled);
+    const salary = pfInfo.grossSalary; // CTC minus employer PF when PF is on
     const dailyRate = workingDays > 0 ? salary / workingDays : 0;
 
     const empShift = getEffectiveShift(emp);
@@ -459,7 +461,8 @@ const processPayroll = asyncHandler(async (req, res) => {
       absentDeduction +
       earlyCheckoutDeduction +
       totalPenalties;
-    let salaryAfterDeductions = Math.max(0, grossSalary - preDeductions);
+    const pfDeduction = emp.pfEnabled ? pfOnWage(earnedSalary - absentDeduction) : 0;
+    let salaryAfterDeductions = Math.max(0, grossSalary - preDeductions - pfDeduction);
 
     for (const loan of activeLoans) {
       if (loan.remainingBalance <= 0) continue;
@@ -483,7 +486,7 @@ const processPayroll = asyncHandler(async (req, res) => {
       });
     }
 
-    const totalDeductions = preDeductions + loanDeduction;
+    const totalDeductions = preDeductions + pfDeduction + loanDeduction;
     const netSalary = Math.max(0, grossSalary - totalDeductions);
 
     payrolls.push({
@@ -501,6 +504,8 @@ const processPayroll = asyncHandler(async (req, res) => {
       bonusAmount: totalBonus,
       otPay: attendanceOTPay + totalOT,
       grossSalary,
+      pf: pfDeduction,
+      employerPf: emp.pfEnabled ? pfOnWage(earnedSalary - absentDeduction) : 0,
       lateDeductionAmount: lateDeduction,
       halfDayDeduction: halfDayDeduction,
       absentDays: absentCount,
@@ -870,7 +875,8 @@ async function buildPayrollPreviews(companyId, m, y, employeeIds) {
 
     const workDaysPerWeek = emp.workDaysPerWeek ?? 6;
     const workingDays = getWorkingDays(startDate, endDate, workDaysPerWeek);
-    const salary = emp.salary ?? 0;
+    const pfInfo = pfBreakdown(emp.salary ?? 0, emp.pfEnabled);
+    const salary = pfInfo.grossSalary; // CTC minus employer PF when PF is on
     const dailyRate = workingDays > 0 ? salary / workingDays : 0;
 
     const empShift = getEffectiveShift(emp);
@@ -1033,7 +1039,8 @@ async function buildPayrollPreviews(companyId, m, y, employeeIds) {
       earnedSalary + totalAllowances + totalBonus + totalOT + attendanceOTPay;
     const preDeductions =
       lateDeduction + halfDayDeduction + absentDeduction + totalPenalties;
-    let salaryAfterDeductions = Math.max(0, grossSalary - preDeductions);
+    const pfDeduction = emp.pfEnabled ? pfOnWage(earnedSalary - absentDeduction) : 0;
+    let salaryAfterDeductions = Math.max(0, grossSalary - preDeductions - pfDeduction);
     for (const loan of activeLoans) {
       if (loan.remainingBalance <= 0) continue;
       const emi = Math.min(
@@ -1045,7 +1052,7 @@ async function buildPayrollPreviews(companyId, m, y, employeeIds) {
       loanDeduction += emi;
       salaryAfterDeductions -= emi;
     }
-    const totalDeductions = preDeductions + loanDeduction;
+    const totalDeductions = preDeductions + pfDeduction + loanDeduction;
     const netSalary = Math.max(0, grossSalary - totalDeductions);
     const alreadyProcessed = processedSet.has(String(emp._id));
 
@@ -1076,6 +1083,7 @@ async function buildPayrollPreviews(companyId, m, y, employeeIds) {
       bonusAmount: totalBonus,
       otPay: attendanceOTPay + totalOT,
       grossSalary,
+      pf: pfDeduction,
       halfDayCount,
       lateCount,
       lateDeductionAmount: lateDeduction,

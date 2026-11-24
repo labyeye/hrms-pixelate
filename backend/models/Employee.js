@@ -92,6 +92,8 @@ const employeeSchema = new mongoose.Schema(
       workingHours: { type: Number, default: 8 },
       otAfterHours: { type: Number, default: 9 },
     },
+    // When on, `salary` is the CTC: employer PF is carved out of it and employee PF is deducted (see utils/pf.js).
+    pfEnabled: { type: Boolean, default: false },
     pfNumber: { type: String, default: "" },
     esicNumber: { type: String, default: "" },
     uanNumber: { type: String, default: "" },

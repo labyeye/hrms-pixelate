@@ -883,9 +883,9 @@ export const loanAPI = {
   delete: (id: string) => request(`/loans/${id}`, { method: "DELETE" }),
 };
 
-export const expenseAPI = {
+export const reimbursementAPI = {
   getAll: (status?: string) =>
-    request(`/expenses${status ? `?status=${status}` : ""}`),
+    request(`/reimbursements${status ? `?status=${status}` : ""}`),
   create: async (form: FormData, id?: string) => {
     const token = getToken();
     const res = await fetch(`${BASE_URL}/expenses${id ? `/${id}` : ""}`, {
@@ -903,13 +903,13 @@ export const expenseAPI = {
     note?: string,
     approvedAmount?: number,
   ) =>
-    request(`/expenses/${id}/action`, {
+    request(`/reimbursements/${id}/action`, {
       method: "PUT",
       body: JSON.stringify({ action, note, approvedAmount }),
     }),
-  remove: (id: string) => request(`/expenses/${id}`, { method: "DELETE" }),
+  remove: (id: string) => request(`/reimbursements/${id}`, { method: "DELETE" }),
   resubmit: (id: string, body: Record<string, any> = {}) =>
-    request(`/expenses/${id}/resubmit`, {
+    request(`/reimbursements/${id}/resubmit`, {
       method: "POST",
       body: JSON.stringify(body),
     }),
@@ -917,20 +917,44 @@ export const expenseAPI = {
     id: string,
     body: { mode: string; reference?: string; paidOn?: string },
   ) =>
-    request(`/expenses/${id}/pay`, { method: "PUT", body: JSON.stringify(body) }),
+    request(`/reimbursements/${id}/pay`, { method: "PUT", body: JSON.stringify(body) }),
   downloadBill: (id: string, index = 0) =>
-    downloadFile(`/expenses/${id}/bill/${index}`, "bill"),
-  getPolicy: () => request("/expenses/policy"),
+    downloadFile(`/reimbursements/${id}/bill/${index}`, "bill"),
+  getPolicy: () => request("/reimbursements/policy"),
   savePolicy: (body: {
     limits: Record<string, number>;
     billRequiredAbove: number;
-  }) => request("/expenses/policy", { method: "PUT", body: JSON.stringify(body) }),
-  getWorkflow: () => request("/expenses/workflow"),
+  }) => request("/reimbursements/policy", { method: "PUT", body: JSON.stringify(body) }),
+  getWorkflow: () => request("/reimbursements/workflow"),
   saveWorkflow: (steps: { role: string; aboveAmount: number }[]) =>
-    request("/expenses/workflow", {
+    request("/reimbursements/workflow", {
       method: "PUT",
       body: JSON.stringify({ steps }),
     }),
+};
+
+// Company spending ledger (admin / HR only). Staff claims live in reimbursementAPI.
+export const companyExpenseAPI = {
+  getAll: (params?: { month?: number; year?: number; category?: string }) => {
+    const q = new URLSearchParams();
+    Object.entries(params || {}).forEach(([k, v]) => v !== undefined && v !== "" && q.set(k, String(v)));
+    const qs = q.toString();
+    return request(`/company-expenses${qs ? `?${qs}` : ""}`);
+  },
+  save: async (form: FormData, id?: string) => {
+    const token = getToken();
+    const res = await fetch(`${BASE_URL}/company-expenses${id ? `/${id}` : ""}`, {
+      method: id ? "PUT" : "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+    const data = await res.json().catch(() => ({}) as any);
+    if (!res.ok) throw new Error(data.message || statusMsg(res.status));
+    return data;
+  },
+  remove: (id: string) => request(`/company-expenses/${id}`, { method: "DELETE" }),
+  downloadBill: (id: string, index = 0) =>
+    downloadFile(`/company-expenses/${id}/bill/${index}`, "bill"),
 };
 
 export const trackingAPI = {

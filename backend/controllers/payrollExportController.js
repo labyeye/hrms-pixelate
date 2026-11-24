@@ -4,6 +4,7 @@ const Payroll = require("../models/Payroll");
 const LEDGERS = {
   salaryExpense: "Salary Expense",
   pf: "PF Payable",
+  employerPf: "Employer PF Expense",
   esi: "ESI Payable",
   tds: "TDS Payable",
   loan: "Loan Recovery",
@@ -55,6 +56,11 @@ function tallyLedgerEntry(ledger, amount, isDebit) {
 function buildTallyVoucher(p, date) {
   const lines = [tallyLedgerEntry(LEDGERS.salaryExpense, p.grossSalary, true)];
   if (p.pf > 0) lines.push(tallyLedgerEntry(LEDGERS.pf, p.pf, false));
+  if (p.employerPf > 0) {
+    // employer share is a company cost on top of gross: Dr expense / Cr PF payable keeps the voucher balanced
+    lines.push(tallyLedgerEntry(LEDGERS.employerPf, p.employerPf, true));
+    lines.push(tallyLedgerEntry(LEDGERS.pf, p.employerPf, false));
+  }
   if (p.esi > 0) lines.push(tallyLedgerEntry(LEDGERS.esi, p.esi, false));
   if (p.tds > 0) lines.push(tallyLedgerEntry(LEDGERS.tds, p.tds, false));
   if (p.loanDeduction > 0)
@@ -141,6 +147,10 @@ const exportZoho = asyncHandler(async (req, res) => {
     const contact = empName(p);
     const rows = [[LEDGERS.salaryExpense, p.grossSalary, 0]];
     if (p.pf > 0) rows.push([LEDGERS.pf, 0, p.pf]);
+    if (p.employerPf > 0) {
+      rows.push([LEDGERS.employerPf, p.employerPf, 0]);
+      rows.push([LEDGERS.pf, 0, p.employerPf]);
+    }
     if (p.esi > 0) rows.push([LEDGERS.esi, 0, p.esi]);
     if (p.tds > 0) rows.push([LEDGERS.tds, 0, p.tds]);
     if (p.loanDeduction > 0) rows.push([LEDGERS.loan, 0, p.loanDeduction]);

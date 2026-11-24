@@ -588,6 +588,7 @@ export default function PayrollPage() {
     { name: "Half day", value: sumOf((p) => p.halfDayDeduction) },
     { name: "Early out", value: sumOf((p) => p.earlyCheckoutDeduction) },
     { name: "Penalty", value: sumOf((p) => p.penaltyAmount) },
+    { name: "PF", value: sumOf((p) => p.pf) },
     { name: "Loan/advance", value: sumOf((p) => p.loanDeduction) },
   ]
     .filter((d) => d.value > 0)
@@ -738,6 +739,13 @@ export default function PayrollPage() {
       cell: (p) => money(p.bonusAmount, "+", "text-[#A855F7]"),
     },
     {
+      key: "pf",
+      label: "PF",
+      cls: "text-[#FA731C]",
+      val: (p) => p.pf ?? 0,
+      cell: (p) => money(p.pf, "-", "text-[#FA731C]"),
+    },
+    {
       key: "loan",
       label: "Loan / Advance",
       cls: "text-[#FA731C]",
@@ -864,6 +872,8 @@ export default function PayrollPage() {
                 header: "Loan/Advance",
                 value: (p: any) => p.loanDeduction || 0,
               },
+              { header: "PF (Employee)", value: (p: any) => p.pf || 0 },
+              { header: "PF (Employer)", value: (p: any) => p.employerPf || 0 },
               { header: "Gross", value: (p: any) => p.grossSalary },
               { header: "Net Salary", value: (p: any) => p.netSalary },
               { header: "Status", value: (p: any) => p.status },

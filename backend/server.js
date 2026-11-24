@@ -196,6 +196,8 @@ app.use(
 app.use("/api/late-approvals", require("./routes/lateApprovalRoutes"));
 app.use("/api/loans", require("./routes/loanRoutes"));
 app.use("/api/expenses", require("./routes/expenseRoutes"));
+app.use("/api/reimbursements", require("./routes/expenseRoutes")); // staff claims (same router; /expenses kept for older app builds)
+app.use("/api/company-expenses", require("./routes/companyExpenseRoutes")); // company spending ledger
 app.use("/api/tracking", require("./routes/trackingRoutes"));
 app.use("/api/tax", require("./routes/taxRoutes"));
 app.use("/api/shifts", require("./routes/shiftRoutes"));

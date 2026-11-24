@@ -348,6 +348,7 @@ const EMPTY_FORM = {
   geofenceRadiusMeters: '200',
   // Tab 3 Salary
   monthlySalary: '',
+  pfEnabled: false,
   pfNumber: '',
   uanNumber: '',
   esicNumber: '',
@@ -721,6 +722,7 @@ export default function EmployeesScreen() {
       monthlySalary: String(
         (emp as any).monthlySalary || (emp as any).salary || '',
       ),
+      pfEnabled: !!(emp as any).pfEnabled,
       pfNumber: (emp as any).pfNumber || '',
       uanNumber: (emp as any).uanNumber || '',
       esicNumber: (emp as any).esicNumber || '',
@@ -786,6 +788,8 @@ export default function EmployeesScreen() {
     if (!form.email.trim()) errors.email = 'Email is required';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       errors.email = 'Enter a valid email address';
+    if (form.pfEnabled && !form.pfNumber.trim())
+      errors.pfNumber = 'PF number is required when PF deduction is on';
     if (!editingEmp && !form.monthlySalary)
       errors.monthlySalary = 'Monthly salary is required';
     if (form.geofenceAttendanceEnabled && form.geofenceMode === 'specific') {
@@ -818,7 +822,7 @@ export default function EmployeesScreen() {
         'joinDate',
         'headOfDepartment',
       ];
-      const tab3Fields = ['monthlySalary'];
+      const tab3Fields = ['monthlySalary', 'pfNumber'];
       const tab2Fields = [
         'geofenceLat',
         'geofenceLng',
@@ -3915,27 +3919,101 @@ export default function EmployeesScreen() {
                 {/* ── Tab 3: Salary ── */}
                 {activeTab === 2 && (
                   <>
-                    {/* Row 1: Monthly Salary & PF Number */}
-                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                    {/* Monthly salary (CTC when PF is on) */}
+                    {F(
+                      (form.pfEnabled ? 'Monthly CTC (₹)' : 'Monthly Salary (₹)') +
+                        (editingEmp ? '' : ' *'),
+                      'monthlySalary',
+                      {
+                        keyboardType: 'numeric',
+                        placeholder: '50000',
+                      },
+                    )}
+
+                    {/* PF deduction */}
+                    <View style={[styles.toggleRow, { paddingHorizontal: 0 }]}>
                       <View style={{ flex: 1 }}>
-                        {F(
-                          editingEmp
-                            ? 'Monthly Salary (₹)'
-                            : 'Monthly Salary (₹) *',
-                          'monthlySalary',
-                          {
-                            keyboardType: 'numeric',
-                            placeholder: '50000',
-                          },
-                        )}
+                        <Text style={styles.toggleLabel}>PF deduction</Text>
+                        <Text style={styles.toggleDesc}>
+                          Salary above becomes CTC; employer + employee PF are carved out
+                        </Text>
                       </View>
-                      <View style={{ flex: 1 }}>
-                        {F('PF Number', 'pfNumber', {
+                      <Switch
+                        value={form.pfEnabled}
+                        onValueChange={v => {
+                          setForm(f => ({ ...f, pfEnabled: v }));
+                          setFormDirty(true);
+                        }}
+                        trackColor={{ false: '#E5E7EB', true: C.primary }}
+                        thumbColor={C.white}
+                      />
+                    </View>
+                    {form.pfEnabled && (
+                      <>
+                        {F('PF Number *', 'pfNumber', {
                           placeholder: 'PF account no.',
                           autoCapitalize: 'characters',
                         })}
-                      </View>
-                    </View>
+                        {(() => {
+                          const ctc = parseFloat(form.monthlySalary) || 0;
+                          if (!ctc) return null;
+                          const pf = (w: number) =>
+                            Math.round(Math.min(Math.max(w, 0), 15000) * 12) / 100;
+                          const employerPf = pf(ctc);
+                          const gross = ctc - employerPf;
+                          const employeePf = pf(gross);
+                          const inr = (n: number) =>
+                            '₹' + n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+                          const rows: [string, string][] = [
+                            ['Monthly CTC', inr(ctc)],
+                            ['− Employer PF (12%, cap ₹15,000)', inr(employerPf)],
+                            ['Gross salary', inr(gross)],
+                            ['− Employee PF (12%, cap ₹15,000)', inr(employeePf)],
+                          ];
+                          return (
+                            <View
+                              style={{
+                                borderWidth: 1,
+                                borderColor: C.border,
+                                borderRadius: 10,
+                                padding: 12,
+                                marginBottom: 12,
+                              }}
+                            >
+                              <Text style={styles.fieldLabel}>In-hand calculation</Text>
+                              {rows.map(([l, v]) => (
+                                <View
+                                  key={l}
+                                  style={{
+                                    flexDirection: 'row',
+                                    justifyContent: 'space-between',
+                                    paddingVertical: 2,
+                                  }}
+                                >
+                                  <Text style={styles.toggleDesc}>{l}</Text>
+                                  <Text style={styles.toggleLabel}>{v}</Text>
+                                </View>
+                              ))}
+                              <View
+                                style={{
+                                  flexDirection: 'row',
+                                  justifyContent: 'space-between',
+                                  marginTop: 6,
+                                  paddingTop: 6,
+                                  borderTopWidth: 1,
+                                  borderTopColor: C.border,
+                                }}
+                              >
+                                <Text style={styles.toggleLabel}>In-hand per month</Text>
+                                <Text style={[styles.toggleLabel, { color: C.primary }]}>
+                                  {inr(gross - employeePf)}
+                                </Text>
+                              </View>
+                            </View>
+                          );
+                        })()}
+                      </>
+                    )}
 
                     {/* Row 2: UAN Number & ESIC Number */}
                     <View style={{ flexDirection: 'row', gap: 12 }}>
@@ -4394,6 +4472,14 @@ function InfoSection({
 }
 
 const styles = StyleSheet.create({
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+  },
+  toggleLabel: { fontSize: 13, fontWeight: '600', color: C.black },
+  toggleDesc: { fontSize: 11, color: '#6B7280', marginTop: 1 },
   safe: { flex: 1, backgroundColor: C.bg },
   header: {
     flexDirection: 'row',

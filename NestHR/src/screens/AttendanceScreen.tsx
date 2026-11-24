@@ -56,7 +56,11 @@ import {
   ChevronDown,
   ChevronUp,
   Hourglass,
+  ScanFace,
 } from 'lucide-react-native';
+import AttendanceFacesModal, {
+  AttendanceFaces,
+} from '../components/AttendanceFacesModal';
 import {
   attendanceAPI,
   employeeAPI,
@@ -192,6 +196,7 @@ export default function AttendanceScreen({ navigation }: any) {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [facesView, setFacesView] = useState<AttendanceFaces | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [dateFilter, setDateFilter] = useState(toDateStr(new Date()));
@@ -1237,6 +1242,26 @@ export default function AttendanceScreen({ navigation }: any) {
                       </Text>
                     </TouchableOpacity>
                   )}
+                  {!!((item as any).checkInSelfie || (item as any).checkOutSelfie) && (
+                    <TouchableOpacity
+                      style={[styles.tDetailItem, { width: '100%' }]}
+                      onPress={() =>
+                        setFacesView({
+                          name: emp ? `${emp.firstName} ${emp.lastName}` : undefined,
+                          date: String(item.date).slice(0, 10),
+                          checkIn: item.checkIn as any,
+                          checkOut: item.checkOut as any,
+                          checkInPhoto: (item as any).checkInSelfie,
+                          checkOutPhoto: (item as any).checkOutSelfie,
+                        })
+                      }
+                    >
+                      <ScanFace size={15} color={C.primary} />
+                      <Text style={[styles.tTime, { color: C.primary }]}>
+                        View face photos
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                   {!!item.notes && (
                     <View style={[styles.tDetailItem, { width: '100%' }]}>
                       <StickyNote size={15} color="#6B7280" />
@@ -1502,6 +1527,8 @@ export default function AttendanceScreen({ navigation }: any) {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      <AttendanceFacesModal data={facesView} onClose={() => setFacesView(null)} />
 
       {/* Calendar picker modal */}
       <Modal

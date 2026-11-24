@@ -332,12 +332,12 @@ const actOnExpense = asyncHandler(async (req, res) => {
     notifyEmployee(expense.employee, {
       company: req.user.company,
       type: `expense_${expense.status}`,
-      title: expense.status === "approved" ? "Expense approved" : "Expense rejected",
+      title: expense.status === "approved" ? "Reimbursement approved" : "Reimbursement rejected",
       body:
         expense.status === "approved"
           ? `Your claim "${expense.title}" was approved for ₹${expense.approvedAmount}`
           : `Your claim "${expense.title}" was rejected${step.note ? `: ${step.note}` : ""}`,
-      data: { screen: "Expenses", id: String(expense._id) },
+      data: { screen: "Reimbursements", id: String(expense._id) },
     });
   }
   res.json({ success: true, data: expense });

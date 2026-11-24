@@ -717,9 +717,9 @@ export const loanAPI = {
 
 type BillFile = { uri: string; type: string; name: string };
 
-export const expenseAPI = {
+export const reimbursementAPI = {
   getAll: (params?: Record<string, string>) =>
-    request(`/expenses${qs(params)}`),
+    request(`/reimbursements${qs(params)}`),
   // Multipart create/edit (up to 5 bills). Pass id to edit a draft.
   save: async (body: Record<string, any>, bills: BillFile[], id?: string) => {
     const token = await getToken();
@@ -757,29 +757,72 @@ export const expenseAPI = {
     note?: string,
     approvedAmount?: number,
   ) =>
-    request(`/expenses/${id}/action`, {
+    request(`/reimbursements/${id}/action`, {
       method: 'PUT',
       body: JSON.stringify({ action, note, approvedAmount }),
     }),
-  remove: (id: string) => request(`/expenses/${id}`, { method: 'DELETE' }),
+  remove: (id: string) => request(`/reimbursements/${id}`, { method: 'DELETE' }),
   resubmit: (id: string) =>
-    request(`/expenses/${id}/resubmit`, { method: 'POST', body: '{}' }),
+    request(`/reimbursements/${id}/resubmit`, { method: 'POST', body: '{}' }),
   markPaid: (
     id: string,
     body: { mode: string; reference?: string; paidOn?: string },
   ) =>
-    request(`/expenses/${id}/pay`, {
+    request(`/reimbursements/${id}/pay`, {
       method: 'PUT',
       body: JSON.stringify(body),
     }),
   // Short-lived signed URL for opening a bill in the phone's browser / PDF viewer.
   billUrl: async (id: string, index: number) => {
-    const r = await request(`/expenses/${id}/bill-link/${index}`);
+    const r = await request(`/reimbursements/${id}/bill-link/${index}`);
     return `${BASE_URL}${r.data.path}`;
   },
-  getPolicy: () => request('/expenses/policy'),
+  getPolicy: () => request('/reimbursements/policy'),
   savePolicy: (body: object) =>
-    request('/expenses/policy', { method: 'PUT', body: JSON.stringify(body) }),
+    request('/reimbursements/policy', { method: 'PUT', body: JSON.stringify(body) }),
+};
+
+// Company spending ledger (admin / HR only). Staff claims live in reimbursementAPI.
+export const companyExpenseAPI = {
+  getAll: (params?: Record<string, string>) =>
+    request(`/company-expenses${qs(params)}`),
+  save: async (body: Record<string, any>, bills: BillFile[], id?: string) => {
+    const token = await getToken();
+    const formData = new FormData();
+    Object.entries(body).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== '')
+        formData.append(k, String(v));
+    });
+    bills.forEach(b => formData.append('bills', b as any));
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30_000);
+    try {
+      const res = await fetch(
+        `${BASE_URL}/company-expenses${id ? `/${id}` : ''}`,
+        {
+          method: id ? 'PUT' : 'POST',
+          signal: controller.signal,
+          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: formData,
+        },
+      );
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {}
+      if (!res.ok) throw new Error(data.message || statusMsg(res.status));
+      return data;
+    } finally {
+      clearTimeout(timer);
+    }
+  },
+  remove: (id: string) =>
+    request(`/company-expenses/${id}`, { method: 'DELETE' }),
+  billUrl: async (id: string, index: number) => {
+    const r = await request(`/company-expenses/${id}/bill-link/${index}`);
+    return `${BASE_URL}${r.data.path}`;
+  },
 };
 
 export const trackingAPI = {

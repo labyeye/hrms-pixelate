@@ -49,6 +49,7 @@ export function buildPayslipHTML(payroll: any, companyName?: string): string {
     { label: 'Late Deduction', value: payroll.lateDeductionAmount || 0 },
     { label: 'Half-Day Deduction', value: payroll.halfDayDeduction || 0 },
     { label: 'Penalty', value: payroll.penaltyAmount || 0 },
+    { label: 'Provident Fund (PF)', value: payroll.pf || 0 },
     { label: 'Loan / Advance EMI', value: payroll.loanDeduction || 0 },
   ];
 

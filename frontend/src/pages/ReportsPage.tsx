@@ -4,7 +4,8 @@ import nesthrlogo from "../../assets/nesthr.png";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { buildReportHTML, ReportCompany } from "@/lib/reportPrintHTML";
 import { buildDetailedAttendanceHTML, buildMobileAttendanceHTML, fmtPunchDate, fmtPunchTime, MobilePunch } from "@/lib/mobileAttendancePrint";
-import { writeSheet } from "@/lib/sheets";
+import { writeReportSheet } from "@/lib/sheets";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   BarChart,
   Bar,
@@ -358,8 +359,11 @@ const REPORTS: ReportDef[] = [
   },
 ];
 
+// Company + user details shared by every export on this page (set once from ReportsPage).
+let reportBrand: { company?: ReportCompany; generatedBy?: string } = {};
+
 function exportCSV(rows: string[][], filename: string) {
-  const csv = rows
+  const csv = "\uFEFF" + rows
     .map((r) =>
       r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(","),
     )
@@ -374,7 +378,22 @@ function exportCSV(rows: string[][], filename: string) {
 }
 
 function exportXLSX(rows: string[][], filename: string) {
-  void writeSheet(filename.replace(".csv", ".xlsx"), "Report", rows);
+  const file = filename.replace(".csv", ".xlsx");
+  const title = file
+    .replace(/\.xlsx$/, "")
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  void writeReportSheet(
+    file,
+    {
+      title,
+      companyName: reportBrand.company?.name,
+      generatedBy: reportBrand.generatedBy,
+    },
+    rows[0] ?? [],
+    rows.slice(1),
+  );
 }
 
 function printReport(
@@ -386,14 +405,75 @@ function printReport(
     company?: ReportCompany;
     reportCategory?: string;
     generatedFor?: string;
+    generatedBy?: string;
+    filters?: string;
   } = {},
 ) {
   const win = window.open("", "_blank");
   if (!win) return;
   writePrintDocument(
     win,
-    buildReportHTML(title, period, headers, rows, opts),
+    buildReportHTML(title, period, headers, rows, {
+      generatedBy: reportBrand.generatedBy,
+      ...opts,
+      company: opts.company ?? reportBrand.company,
+    }),
     true,
+  );
+}
+
+// One consistent action bar for every tabular report: PDF/Print + CSV + Excel, all in the shared professional format.
+function ExportBar({
+  headers,
+  rows,
+  file,
+  company,
+  print = true,
+}: {
+  headers: string[];
+  rows: string[][];
+  file: string; // e.g. pf_register_May_2026.csv
+  company?: ReportCompany;
+  print?: boolean;
+}) {
+  const base = file.replace(/\.csv$/i, "");
+  const m = base.match(/_([A-Za-z]+)_(\d{4})$/) || base.match(/_()(\d{4})$/);
+  const period = m ? [m[1], m[2]].filter(Boolean).join(" ") : "All Time";
+  const ACR: Record<string, string> = { pf: "PF", esic: "ESIC", esi: "ESI", ot: "OT" };
+  const title = (m ? base.slice(0, m.index) : base)
+    .split("_")
+    .filter(Boolean)
+    .map((w) => ACR[w.toLowerCase()] || w[0].toUpperCase() + w.slice(1))
+    .join(" ");
+  const btn =
+    "flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold text-white disabled:opacity-40";
+  const off = rows.length === 0;
+  return (
+    <>
+      {print && (
+        <button
+          disabled={off}
+          onClick={() => printReport(title, period, headers, rows, { company })}
+          className={cn(btn, "bg-white !text-black")}
+        >
+          <Printer className="w-4 h-4" /> PDF / Print
+        </button>
+      )}
+      <button
+        disabled={off}
+        onClick={() => exportCSV([headers, ...rows], file)}
+        className={cn(btn, "bg-[#024BAB]")}
+      >
+        <Download className="w-4 h-4" /> CSV
+      </button>
+      <button
+        disabled={off}
+        onClick={() => exportXLSX([headers, ...rows], file)}
+        className={cn(btn, "bg-[#00C48C]")}
+      >
+        <Download className="w-4 h-4" /> Excel
+      </button>
+    </>
   );
 }
 
@@ -828,17 +908,7 @@ function SalaryRegisterGen({
           >
             <Printer className="w-4 h-4" /> Print
           </button>
-          <button
-            onClick={() =>
-              exportCSV(
-                [headers, ...rows],
-                `salary_register_${MONTHS[+month - 1]}_${year}.csv`,
-              )
-            }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <ExportBar headers={headers} rows={rows} file={`salary_register_${MONTHS[+month - 1]}_${year}.csv`} company={company} print={false} />
         </div>
       </div>
       {data.length > 0 && (
@@ -977,14 +1047,7 @@ function SalaryHistoryGen({
           >
             <Printer className="w-4 h-4" /> Print
           </button>
-          <button
-            onClick={() =>
-              exportCSV([headers, ...tableRows], "salary_history_report.csv")
-            }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <ExportBar headers={headers} rows={tableRows} file={"salary_history_report.csv"} company={company} print={false} />
         </div>
       </div>
       {loading ? (
@@ -1062,17 +1125,7 @@ function NetSalaryGen({
           ))}
         </NbSelect>
         <div className="ml-auto flex gap-2">
-          <button
-            onClick={() =>
-              exportCSV(
-                [headers, ...rows],
-                `net_salary_${MONTHS[+month - 1]}_${year}.csv`,
-              )
-            }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <ExportBar headers={headers} rows={rows} file={`net_salary_${MONTHS[+month - 1]}_${year}.csv`} company={company} print={true} />
         </div>
       </div>
       {loading ? (
@@ -1203,6 +1256,7 @@ function SalarySlipGen({
   <div class="row"><span class="lbl">TDS</span><span class="amt">₹${(p.tds || 0).toLocaleString("en-IN")}</span></div>
   ${(p.deductions || []).map((d: any) => `<div class="row"><span class="lbl">${d.label}</span><span class="amt">₹${Number(d.amount || 0).toLocaleString("en-IN")}</span></div>`).join("")}
   <div class="row total"><span>Total Deductions</span><span>₹${(p.totalDeductions || 0).toLocaleString("en-IN")}</span></div>
+  ${p.employerPf > 0 ? `<div class="row"><span class="lbl" style="color:#6B7280;font-size:10px;">Employer PF contribution (part of CTC, not deducted from pay)</span><span class="amt" style="color:#6B7280;font-size:10px;">₹${Number(p.employerPf).toLocaleString("en-IN")}</span></div>` : ""}
 
   <div class="row net"><span>NET PAY</span><span>₹${(p.netSalary || 0).toLocaleString("en-IN")}</span></div>
 
@@ -1444,17 +1498,7 @@ function PFRegisterGen({
           ))}
         </NbSelect>
         <div className="ml-auto flex gap-2">
-          <button
-            onClick={() =>
-              exportCSV(
-                [headers, ...rows],
-                `pf_register_${MONTHS[+month - 1]}_${year}.csv`,
-              )
-            }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <ExportBar headers={headers} rows={rows} file={`pf_register_${MONTHS[+month - 1]}_${year}.csv`} company={company} print={true} />
         </div>
       </div>
       {loading ? (
@@ -1532,17 +1576,7 @@ function ESICRegisterGen({
           ))}
         </NbSelect>
         <div className="ml-auto flex gap-2">
-          <button
-            onClick={() =>
-              exportCSV(
-                [headers, ...rows],
-                `esic_register_${MONTHS[+month - 1]}_${year}.csv`,
-              )
-            }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <ExportBar headers={headers} rows={rows} file={`esic_register_${MONTHS[+month - 1]}_${year}.csv`} company={company} print={true} />
         </div>
       </div>
       {loading ? (
@@ -1618,17 +1652,7 @@ function BankUploadGen({
           ))}
         </NbSelect>
         <div className="ml-auto flex gap-2">
-          <button
-            onClick={() =>
-              exportCSV(
-                [headers, ...rows],
-                `bank_upload_${MONTHS[+month - 1]}_${year}.csv`,
-              )
-            }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <ExportBar headers={headers} rows={rows} file={`bank_upload_${MONTHS[+month - 1]}_${year}.csv`} company={company} print={true} />
         </div>
       </div>
       {loading ? (
@@ -1747,17 +1771,7 @@ function AbsentLeaveSummaryGen({
           ))}
         </NbSelect>
         <div className="ml-auto flex gap-2">
-          <button
-            onClick={() =>
-              exportCSV(
-                [headers, ...rows],
-                `absent_leave_summary_${MONTHS[+month - 1]}_${year}.csv`,
-              )
-            }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <ExportBar headers={headers} rows={rows} file={`absent_leave_summary_${MONTHS[+month - 1]}_${year}.csv`} company={company} print={true} />
         </div>
       </div>
       {loading ? (
@@ -1860,17 +1874,7 @@ function LateComingGen({
           ))}
         </NbSelect>
         <div className="ml-auto flex gap-2">
-          <button
-            onClick={() =>
-              exportCSV(
-                [headers, ...rows],
-                `late_coming_${MONTHS[+month - 1]}_${year}.csv`,
-              )
-            }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <ExportBar headers={headers} rows={rows} file={`late_coming_${MONTHS[+month - 1]}_${year}.csv`} company={company} print={true} />
         </div>
       </div>
       {loading ? (
@@ -1943,14 +1947,7 @@ function DesignationSummaryGen({
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <button
-          onClick={() =>
-            exportCSV([headers, ...rows], `designation_summary.csv`)
-          }
-          className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white"
-        >
-          <Download className="w-4 h-4" /> Export CSV
-        </button>
+        <ExportBar headers={headers} rows={rows} file={`designation_summary.csv`} company={company} print={true} />
       </div>
       {loading ? (
         <LoadingState />
@@ -2084,17 +2081,7 @@ function AttendanceReportGen({
           >
             <Printer className="w-4 h-4" /> Print / PDF
           </button>
-          <button
-            onClick={() =>
-              exportCSV(
-                [headers, ...rows],
-                `attendance_${MONTHS[+month - 1]}_${year}.csv`,
-              )
-            }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <ExportBar headers={headers} rows={rows} file={`attendance_${MONTHS[+month - 1]}_${year}.csv`} company={company} print={true} />
         </div>
       </div>
       {loading ? (
@@ -2193,17 +2180,7 @@ function AttendanceInOutGen({
           ))}
         </NbSelect>
         <div className="ml-auto flex gap-2">
-          <button
-            onClick={() =>
-              exportCSV(
-                [headers, ...rows],
-                `attendance_inout_${MONTHS[+month - 1]}_${year}.csv`,
-              )
-            }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <ExportBar headers={headers} rows={rows} file={`attendance_inout_${MONTHS[+month - 1]}_${year}.csv`} company={company} print={true} />
         </div>
       </div>
       {loading ? (
@@ -2321,17 +2298,7 @@ function AttendanceSummaryGen({
           ))}
         </NbSelect>
         <div className="ml-auto flex gap-2">
-          <button
-            onClick={() =>
-              exportCSV(
-                [headers, ...rows],
-                `attendance_summary_${MONTHS[+month - 1]}_${year}.csv`,
-              )
-            }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <ExportBar headers={headers} rows={rows} file={`attendance_summary_${MONTHS[+month - 1]}_${year}.csv`} company={company} print={true} />
         </div>
       </div>
       {loading ? (
@@ -2432,14 +2399,7 @@ function LeaveReportGen({
           ))}
         </NbSelect>
         <div className="ml-auto flex gap-2">
-          <button
-            onClick={() =>
-              exportCSV([headers, ...rows], `leave_report_${year}.csv`)
-            }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <ExportBar headers={headers} rows={rows} file={`leave_report_${year}.csv`} company={company} print={true} />
         </div>
       </div>
       {loading ? (
@@ -2532,17 +2492,7 @@ function MissPunchGen({
           ))}
         </NbSelect>
         <div className="ml-auto flex gap-2">
-          <button
-            onClick={() =>
-              exportCSV(
-                [headers, ...rows],
-                `miss_punch_${MONTHS[+month - 1]}_${year}.csv`,
-              )
-            }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <ExportBar headers={headers} rows={rows} file={`miss_punch_${MONTHS[+month - 1]}_${year}.csv`} company={company} print={true} />
         </div>
       </div>
       {loading ? (
@@ -2646,14 +2596,7 @@ function EmployeeDirectoryGen({
           >
             <Printer className="w-4 h-4" /> Print
           </button>
-          <button
-            onClick={() =>
-              exportCSV([headers, ...rows], `employee_directory.csv`)
-            }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <ExportBar headers={headers} rows={rows} file={`employee_directory.csv`} company={company} print={false} />
         </div>
       </div>
       {loading ? (
@@ -3147,6 +3090,8 @@ function TallyExportGen({
     "Half Day Deduction",
     "Penalty",
     "Loan / Advance EMI",
+    "PF (Employee)",
+    "PF (Employer)",
     "Total Deductions",
     "Net Salary",
     "Working Days",
@@ -3173,6 +3118,8 @@ function TallyExportGen({
       p.halfDayDeduction || 0,
       p.penaltyAmount || 0,
       p.loanDeduction || 0,
+      p.pf || 0,
+      p.employerPf || 0,
       p.totalDeductions || 0,
       p.netSalary || 0,
       p.workingDays || 0,
@@ -3333,17 +3280,7 @@ function EarlyGoingSummaryGen({
           >
             <Printer className="w-4 h-4" /> Print
           </button>
-          <button
-            onClick={() =>
-              exportCSV(
-                [headers, ...rows],
-                `early_going_${MONTHS[+month - 1]}_${year}.csv`,
-              )
-            }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <ExportBar headers={headers} rows={rows} file={`early_going_${MONTHS[+month - 1]}_${year}.csv`} company={company} print={false} />
         </div>
       </div>
       {loading ? (
@@ -3437,12 +3374,7 @@ function LoanReportGen({
           >
             <Printer className="w-4 h-4" /> Print
           </button>
-          <button
-            onClick={() => exportCSV([headers, ...rows], "loan_report.csv")}
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <ExportBar headers={headers} rows={rows} file={"loan_report.csv"} company={company} print={false} />
         </div>
       </div>
       {loading ? (
@@ -3556,14 +3488,7 @@ function BonusReportGen({
           >
             <Printer className="w-4 h-4" /> Print
           </button>
-          <button
-            onClick={() =>
-              exportCSV([headers, ...rows], `bonus_report_${year}.csv`)
-            }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <ExportBar headers={headers} rows={rows} file={`bonus_report_${year}.csv`} company={company} print={false} />
         </div>
       </div>
       <p className="text-xs text-muted-foreground">
@@ -3692,17 +3617,7 @@ function OvertimeSummaryGen({
           >
             <Printer className="w-4 h-4" /> Print
           </button>
-          <button
-            onClick={() =>
-              exportCSV(
-                [headers, ...rows],
-                `overtime_summary_${MONTHS[+month - 1]}_${year}.csv`,
-              )
-            }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <ExportBar headers={headers} rows={rows} file={`overtime_summary_${MONTHS[+month - 1]}_${year}.csv`} company={company} print={false} />
         </div>
       </div>
       {loading ? (
@@ -3783,17 +3698,7 @@ function PunchLogDetailGen({
           ))}
         </NbSelect>
         <div className="ml-auto flex gap-2">
-          <button
-            onClick={() =>
-              exportCSV(
-                [headers, ...rows],
-                `punch_log_${MONTHS[+month - 1]}_${year}.csv`,
-              )
-            }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <ExportBar headers={headers} rows={rows} file={`punch_log_${MONTHS[+month - 1]}_${year}.csv`} company={company} print={true} />
         </div>
       </div>
       {loading ? (
@@ -4052,17 +3957,7 @@ function LocationwiseGen({
           >
             <Printer className="w-4 h-4" /> Print
           </button>
-          <button
-            onClick={() =>
-              exportCSV(
-                [headers, ...rows],
-                `locationwise_${MONTHS[+month - 1]}_${year}.csv`,
-              )
-            }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <ExportBar headers={headers} rows={rows} file={`locationwise_${MONTHS[+month - 1]}_${year}.csv`} company={company} print={false} />
         </div>
       </div>
       {loading ? (
@@ -4171,17 +4066,7 @@ function AttendanceInOutVerticalGen({
           ))}
         </NbSelect>
         <div className="ml-auto flex gap-2">
-          <button
-            onClick={() =>
-              exportCSV(
-                [headers, ...rows],
-                `attendance_inout_vertical_${MONTHS[+month - 1]}_${year}.csv`,
-              )
-            }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <ExportBar headers={headers} rows={rows} file={`attendance_inout_vertical_${MONTHS[+month - 1]}_${year}.csv`} company={company} print={true} />
         </div>
       </div>
       {loading ? (
@@ -4264,14 +4149,7 @@ function AttendanceHistoryGen({
           Shows attendance changes made from this point forward.
         </p>
         <div className="ml-auto flex gap-2">
-          <button
-            onClick={() =>
-              exportCSV([headers, ...rows], "attendance_history.csv")
-            }
-            className="flex items-center gap-2 border-2 border-black px-3 py-2 text-sm font-semibold bg-[#024BAB] text-white"
-          >
-            <Download className="w-4 h-4" /> Export CSV
-          </button>
+          <ExportBar headers={headers} rows={rows} file={"attendance_history.csv"} company={company} print={true} />
         </div>
       </div>
       {loading ? (
@@ -4881,6 +4759,8 @@ function AnalyticsTab({
 }
 
 export default function ReportsPage() {
+  const { user } = useAuth();
+  reportBrand.generatedBy = user?.name || undefined;
   const [departments, setDepartments] = useState<any[]>([]);
   const [company, setCompany] = useState<ReportCompany>({ name: "NestHR" });
   const [search, setSearch] = useState("");
@@ -4897,10 +4777,16 @@ export default function ReportsPage() {
       .get()
       .then((r) => {
         if (r.success && r.data) {
-          setCompany({
+          const c: ReportCompany = {
             name: r.data.companyName || "NestHR",
             logo: r.data.logoUrl || undefined,
-          });
+            address: r.data.companyAddress || undefined,
+            gstin: r.data.companyGST || undefined,
+            phone: r.data.companyPhone || undefined,
+            email: r.data.companyEmail || undefined,
+          };
+          setCompany(c);
+          reportBrand = { ...reportBrand, company: c };
         }
       })
       .catch(() => {});

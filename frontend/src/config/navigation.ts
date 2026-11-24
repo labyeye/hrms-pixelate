@@ -22,6 +22,7 @@ import {
   FileText,
   Banknote,
   Receipt,
+  Wallet,
   LogOut,
   Shield,
   LifeBuoy,
@@ -148,10 +149,16 @@ const allGroups: NavGroup[] = [
         roles: ["employee"],
       },
       {
+        title: "Reimbursements",
+        href: "/reimbursements",
+        icon: Wallet,
+        roles: ["super_admin", "hr_manager", "hr_executive", "department_head", "employee"],
+      },
+      {
         title: "Expenses",
         href: "/expenses",
         icon: Receipt,
-        roles: ["super_admin", "hr_manager", "hr_executive", "department_head", "employee"],
+        roles: ["super_admin", "hr_manager"],
       },
       {
         title: "Tax & Form 16",

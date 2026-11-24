@@ -128,7 +128,9 @@ export default function NotificationsScreen() {
     if (!screen) return;
     if (screen === 'Leave' || screen === 'Attendance')
       navigation.navigate(screen);
-    else if (['Expenses', 'Loans', 'Payroll', 'Tasks'].includes(screen))
+    else if (screen === 'Expenses' || screen === 'Reimbursements')
+      navigation.navigate('More', { screen: 'Reimbursements' }); // 'Expenses' = older claim notifications
+    else if (['Loans', 'Payroll', 'Tasks'].includes(screen))
       navigation.navigate('More', { screen });
   };
 

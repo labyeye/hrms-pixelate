@@ -61,6 +61,7 @@ const MENU_ITEMS = [
   { key: 'Holidays', label: 'Holidays', icon: Sun },
   { key: 'Loans', label: 'Loans', icon: CreditCard },
   { key: 'Tax', label: 'Tax & Form 16', icon: Receipt },
+  { key: 'Reimbursements', label: 'Reimbursements', icon: Receipt },
   { key: 'Expenses', label: 'Expenses', icon: Receipt },
   { key: 'LiveTracking', label: 'Live Tracking', icon: Navigation },
   { key: 'Reports', label: 'Reports', icon: BarChart2 },
@@ -112,6 +113,7 @@ const GROUPS: { title: string; color: string; keys: string[] }[] = [
       'Payroll',
       'Loans',
       'Tax',
+      'Reimbursements',
       'Expenses',
       'Performance',
       'Promotions',
@@ -181,7 +183,9 @@ export default function MoreScreen({ navigation }: any) {
 
   const q = query.trim().toLowerCase();
   const visible = MENU_ITEMS.filter(
-    item => item.key !== 'Trash' || TRASH_ROLES.includes(user?.role || ''),
+    item =>
+      (item.key !== 'Trash' && item.key !== 'Expenses') ||
+      TRASH_ROLES.includes(user?.role || ''), // Trash + company Expenses ledger: admin / HR only
   ).map(item => ({
     ...item,
     label:

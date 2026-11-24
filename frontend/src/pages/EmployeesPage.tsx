@@ -123,6 +123,7 @@ interface EmployeeFormData {
   bankName: string;
   uanNumber: string;
   esicNumber: string;
+  pfEnabled: boolean;
   pfNumber: string;
   workDaysPerWeek: string;
   workScheduleType: string;
@@ -196,6 +197,7 @@ const EMPTY_FORM: EmployeeFormData = {
   bankName: "",
   uanNumber: "",
   esicNumber: "",
+  pfEnabled: false,
   pfNumber: "",
   workDaysPerWeek: "6",
   workScheduleType: "standard",
@@ -448,6 +450,7 @@ export default function EmployeesPage() {
       bankName: (emp as any).bankName || "",
       uanNumber: (emp as any).uanNumber || "",
       esicNumber: (emp as any).esicNumber || "",
+      pfEnabled: !!(emp as any).pfEnabled,
       pfNumber: (emp as any).pfNumber || "",
       workDaysPerWeek: String((emp as any).workDaysPerWeek || 6),
       workScheduleType: (emp as any).workScheduleType || "standard",
@@ -581,6 +584,15 @@ export default function EmployeesPage() {
         : "This will create a new employee record.",
     });
     if (!ok) return;
+    if (form.pfEnabled && !form.pfNumber.trim()) {
+      setActionModal({
+        show: true,
+        type: "error",
+        title: "PF Number Required",
+        message: "Enter the PF number when PF deduction is turned on.",
+      });
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -594,6 +606,8 @@ export default function EmployeesPage() {
             }
           : {}),
         salary: Number(form.salary) || 0,
+        pfEnabled: form.pfEnabled,
+        pfNumber: form.pfEnabled ? form.pfNumber.trim() : form.pfNumber,
         workDaysPerWeek:
           form.workScheduleType === "custom"
             ? form.customWorkDays.length
@@ -2352,7 +2366,7 @@ export default function EmployeesPage() {
                                     key={r.place_id}
                                     type="button"
                                     onClick={() => {
-                                      setForm({ ...form, geofenceLat: String(r.lat), geofenceLng: String(r.lon) });
+                                      setForm((f) => ({ ...f, geofenceLat: String(r.lat), geofenceLng: String(r.lon) }));
                                       setPlaceResults([]);
                                     }}
                                     className="block w-full text-left text-xs border border-black/30 border-t-0 px-3 py-2 hover:bg-[#024BAB]/5"
@@ -2371,15 +2385,16 @@ export default function EmployeesPage() {
                                   if (!navigator.geolocation) return;
                                   navigator.geolocation.getCurrentPosition(
                                     (pos) => {
-                                      setForm({
-                                        ...form,
+                                      // functional update: `form` captured at click time is stale by the time the browser answers
+                                      setForm((f) => ({
+                                        ...f,
                                         geofenceLat: String(
                                           pos.coords.latitude,
                                         ),
                                         geofenceLng: String(
                                           pos.coords.longitude,
                                         ),
-                                      });
+                                      }));
                                     },
                                     () => {
                                       setActionModal({
@@ -2622,7 +2637,7 @@ export default function EmployeesPage() {
                       </p>
                       <div>
                         <label className="block text-xs font-bold text-black mb-1">
-                          Monthly Salary (₹ / Month)
+                          {form.pfEnabled ? "Monthly CTC (₹ / Month)" : "Monthly Salary (₹ / Month)"}
                         </label>
                         <input
                           type="number"
@@ -2635,6 +2650,56 @@ export default function EmployeesPage() {
                           className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
                           placeholder="e.g. 15000"
                         />
+                        <label className="flex items-center gap-2 mt-3 text-xs font-bold cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={form.pfEnabled}
+                            onChange={(e) => setForm({ ...form, pfEnabled: e.target.checked })}
+                            className="w-4 h-4 accent-[#024BAB]"
+                          />
+                          PF deduction (salary above is CTC)
+                        </label>
+                        {form.pfEnabled && (
+                          <div className="mt-2">
+                            <label className="block text-xs font-bold text-black mb-1">PF Number</label>
+                            <input
+                              type="text"
+                              value={form.pfNumber}
+                              onChange={(e) => setForm({ ...form, pfNumber: e.target.value })}
+                              className="border-2 border-black w-full px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#024BAB]/30"
+                              placeholder="PF account number"
+                            />
+                          </div>
+                        )}
+                        {form.salary && form.pfEnabled && (() => {
+                          const ctc = Number(form.salary) || 0;
+                          const ceil = (w: number) => Math.round(Math.min(Math.max(w, 0), 15000) * 12) / 100;
+                          const employerPf = ceil(ctc);
+                          const gross = ctc - employerPf;
+                          const employeePf = ceil(gross);
+                          const inHand = gross - employeePf;
+                          const inr = (n: number) => `₹${n.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+                          return (
+                            <div className="mt-3 border-2 border-black bg-[#F8FAFF] p-3">
+                              <p className="text-[10px] font-bold uppercase text-[#024BAB] mb-2">In-hand calculation (full month)</p>
+                              {[
+                                ["Monthly CTC", inr(ctc)],
+                                ["− Employer PF (12%, wage capped ₹15,000)", inr(employerPf)],
+                                ["Gross salary", inr(gross)],
+                                ["− Employee PF (12%, wage capped ₹15,000)", inr(employeePf)],
+                              ].map(([l, v]) => (
+                                <div key={l} className="flex justify-between text-xs py-0.5">
+                                  <span className="text-muted-foreground">{l}</span>
+                                  <span className="font-bold">{v}</span>
+                                </div>
+                              ))}
+                              <div className="flex justify-between text-sm font-bold border-t-2 border-black mt-2 pt-2">
+                                <span>In-hand per month</span>
+                                <span className="text-[#024BAB]">{inr(inHand)}</span>
+                              </div>
+                            </div>
+                          );
+                        })()}
                         {form.salary && (
                           <div className="mt-3 grid grid-cols-2 gap-2">
                             {[

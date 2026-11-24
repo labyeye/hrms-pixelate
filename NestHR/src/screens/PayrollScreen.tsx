@@ -354,6 +354,7 @@ export default function PayrollScreen() {
       ).toLocaleString()}`,
       `Half Day       : -₹${(payroll.halfDayDeduction || 0).toLocaleString()}`,
       `Penalty        : -₹${(payroll.penaltyAmount || 0).toLocaleString()}`,
+      `PF             : -₹${(payroll.pf || 0).toLocaleString()}`,
       `Loan EMI       : -₹${(payroll.loanDeduction || 0).toLocaleString()}`,
       `Total Deductions: -₹${(payroll.totalDeductions || 0).toLocaleString()}`,
       ``,
@@ -497,6 +498,8 @@ export default function PayrollScreen() {
     { header: 'Allowance', value: (p: any) => p.otherAllowances || 0 },
     { header: 'Bonus', value: (p: any) => p.bonusAmount || 0 },
     { header: 'Loan/Advance', value: (p: any) => p.loanDeduction || 0 },
+    { header: 'PF (Employee)', value: (p: any) => p.pf || 0 },
+    { header: 'PF (Employer)', value: (p: any) => p.employerPf || 0 },
     { header: 'Gross', value: (p: any) => p.grossSalary },
     { header: 'Net Salary', value: (p: any) => p.netSalary },
     { header: 'Status', value: (p: any) => p.status },
@@ -856,6 +859,7 @@ export default function PayrollScreen() {
               { l: 'Penalty', v: p.penaltyAmount, sign: '-', c: C.danger },
               { l: 'Allowance', v: p.otherAllowances, sign: '+', c: C.success },
               { l: 'Bonus', v: p.bonusAmount, sign: '+', c: '#A855F7' },
+              { l: 'PF', v: p.pf, sign: '-', c: C.danger },
               { l: 'Loan', v: p.loanDeduction, sign: '-', c: C.secondary },
             ].filter(x => (x.v || 0) > 0);
 
@@ -907,6 +911,7 @@ export default function PayrollScreen() {
                 ['Half day', p.halfDayDeduction],
                 ['Early out', p.earlyCheckoutDeduction],
                 ['Penalty', p.penaltyAmount],
+                ['PF', p.pf],
                 ['Loan / advance', p.loanDeduction],
               ];
               return (

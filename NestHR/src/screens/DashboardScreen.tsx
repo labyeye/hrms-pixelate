@@ -1409,11 +1409,11 @@ function EmployeeDashboard({ navigation }: any) {
             <TouchableOpacity
               style={[styles.quickActionBtn, { backgroundColor: '#0284C7' }]}
               onPress={() =>
-                navigation.navigate('More', { screen: 'Expenses' })
+                navigation.navigate('More', { screen: 'Reimbursements' })
               }
             >
               <Receipt size={16} color={C.white} />
-              <Text style={styles.quickActionText}>Claim Expense</Text>
+              <Text style={styles.quickActionText}>Claim Reimbursement</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.quickActionBtn, { backgroundColor: C.success }]}

@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { NESTHR_LOGO_B64 } from '../assets/nesthrLogoB64';
 import RNPrint from 'react-native-print';
+import { buildReportHTML, ReportCompany } from '../utils/buildReportHTML';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   BarChart2,
@@ -47,7 +48,10 @@ import {
   loanAPI,
   biometricAPI,
   auditAPI,
+  settingsAPI,
 } from '../api/api';
+import { useAuth } from '../contexts/AuthContext';
+import { API_BASE_URL } from '../config/env';
 import { C, useResponsive, tabletContainerStyle } from '../theme';
 import { CENTER } from '../components/common/centerModal';
 import AnalyticsView from '../components/reports/AnalyticsView';
@@ -1050,6 +1054,8 @@ async function generateReport(
           'Half Day Deduction',
           'Penalty',
           'Loan / Advance EMI',
+          'PF (Employee)',
+          'PF (Employer)',
           'Total Deductions',
           'Net Salary',
           'Working Days',
@@ -1076,6 +1082,8 @@ async function generateReport(
             p.halfDayDeduction || 0,
             p.penaltyAmount || 0,
             p.loanDeduction || 0,
+            p.pf || 0,
+            p.employerPf || 0,
             p.totalDeductions || 0,
             p.netSalary || 0,
             p.workingDays || 0,
@@ -1502,6 +1510,32 @@ function ReportModal({
   const [year, setYear] = useState(String(now.getFullYear()));
   const [dept, setDept] = useState('all');
   const [departments, setDepartments] = useState<any[]>([]);
+  const { user } = useAuth();
+  const [reportCompany, setReportCompany] = useState<ReportCompany>({
+    name: 'NestHR',
+  });
+  useEffect(() => {
+    if (!visible) return;
+    settingsAPI
+      .get()
+      .then((r: any) => {
+        const d = r?.data;
+        if (d)
+          setReportCompany({
+            name: d.companyName || 'NestHR',
+            logo: d.logoUrl
+              ? /^(https?:|data:)/i.test(d.logoUrl)
+                ? d.logoUrl
+                : API_BASE_URL.replace(/\/api\/?$/, '') + d.logoUrl
+              : undefined,
+            address: d.companyAddress || undefined,
+            gstin: d.companyGST || undefined,
+            phone: d.companyPhone || undefined,
+            email: d.companyEmail || undefined,
+          });
+      })
+      .catch(() => {});
+  }, [visible]);
   const [headers, setHeaders] = useState<string[]>([]);
   const [rows, setRows] = useState<string[][]>([]);
   const [loading, setLoading] = useState(false);
@@ -1675,136 +1709,19 @@ function ReportModal({
       return;
     }
 
-    const STATUS_COLORS: Record<string, string> = {
-      present: 'background:#DCFCE7;color:#15803D;border:1px solid #86EFAC',
-      late: 'background:#FFF7ED;color:#C2410C;border:1px solid #FED7AA',
-      absent: 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA',
-      'half day': 'background:#FEFCE8;color:#A16207;border:1px solid #FDE68A',
-      half_day: 'background:#FEFCE8;color:#A16207;border:1px solid #FDE68A',
-      'on leave': 'background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE',
-      on_leave: 'background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE',
-      leave: 'background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE',
-      holiday: 'background:#FAF5FF;color:#7C3AED;border:1px solid #DDD6FE',
-      weekend: 'background:#F9FAFB;color:#6B7280;border:1px solid #E5E7EB',
-      paid: 'background:#DCFCE7;color:#15803D;border:1px solid #86EFAC',
-      pending: 'background:#FFF7ED;color:#C2410C;border:1px solid #FED7AA',
-      approved: 'background:#DCFCE7;color:#15803D;border:1px solid #86EFAC',
-      rejected: 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA',
-      cancelled: 'background:#F9FAFB;color:#6B7280;border:1px solid #E5E7EB',
-      active: 'background:#DCFCE7;color:#15803D;border:1px solid #86EFAC',
-      inactive: 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA',
-      terminated: 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA',
-      missing: 'background:#FEF2F2;color:#B91C1C;border:1px solid #FECACA',
-    };
-    const AVATAR_PALETTE = [
-      '#024BAB',
-      '#00C48C',
-      '#FA731C',
-      '#7C3AED',
-      '#0891B2',
-      '#DC2626',
-    ];
-    function avatarBg(name: string) {
-      let h = 0;
-      for (let i = 0; i < name.length; i++)
-        h = (h * 31 + name.charCodeAt(i)) & 0xffffffff;
-      return AVATAR_PALETTE[Math.abs(h) % AVATAR_PALETTE.length];
-    }
-    function initials(name: string) {
-      return name
-        .split(' ')
-        .filter(Boolean)
-        .slice(0, 2)
-        .map(w => w[0].toUpperCase())
-        .join('');
-    }
-
-    const nameColIdx = headers.findIndex(h =>
-      ['employee', 'name', 'employee name'].includes(h.toLowerCase()),
-    );
-    const statusColIdx = headers.findIndex(h =>
-      ['status', 'payment status'].includes(h.toLowerCase()),
-    );
-
-    const thCells = headers
-      .map(
-        h =>
-          `<th style="background:#024BAB;color:#fff;padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;">${h}</th>`,
-      )
-      .join('');
-
-    const trRows = rows
-      .map(
-        (row, i) =>
-          `<tr style="background:${i % 2 === 0 ? '#fff' : '#F8FAFF'}">
-        ${row
-          .map((cell, ci) => {
-            let content = cell;
-            if (ci === statusColIdx) {
-              const key = cell.toLowerCase().trim();
-              const style = STATUS_COLORS[key];
-              if (style)
-                content = `<span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;text-transform:uppercase;${style}">${cell}</span>`;
-            } else if (ci === nameColIdx && cell && cell !== '—') {
-              const bg = avatarBg(cell);
-              const ini = initials(cell);
-              content = `<span style="display:inline-flex;align-items:center;gap:6px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:${bg};color:#fff;font-size:9px;font-weight:700;flex-shrink:0;">${ini}</span><span>${cell}</span></span>`;
-            }
-            return `<td style="padding:7px 10px;border-bottom:1px solid #E5E7EB;font-size:11px;white-space:nowrap;vertical-align:middle;">${content}</td>`;
-          })
-          .join('')}
-      </tr>`,
-      )
-      .join('');
-
-    const now = new Date().toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    const html = buildReportHTML(label, period, headers, rows, {
+      company: { ...reportCompany },
+      generatedBy: user?.name,
+      reportCategory: report?.category
+        ? String(report.category).replace(/^./, c => c.toUpperCase())
+        : undefined,
+      filters:
+        dept && dept !== 'all'
+          ? `Department: ${
+              departments.find(d => d._id === dept)?.name || dept
+            }`
+          : undefined,
     });
-
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${label}</title>
-    <style>
-      @page { size: A4 landscape; margin: 15mm 12mm 20mm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font-size:9px;color:#6B7280; } }
-      *{box-sizing:border-box;margin:0;padding:0}
-      body{font-family:Arial,sans-serif;font-size:12px;color:#111}
-      .hdr{display:flex;align-items:flex-start;justify-content:space-between;border-bottom:3px solid #024BAB;padding-bottom:10px;margin-bottom:14px}
-      .hdr-l{display:flex;align-items:center;gap:12px}
-      .logo{height:38px}
-      .brand{font-size:11px;color:#6B7280;line-height:1.4}
-      .brand b{font-size:18px;color:#024BAB;display:block;font-weight:900}
-      .meta{text-align:right}
-      .meta-title{font-size:16px;font-weight:700;color:#024BAB}
-      .meta-period{font-size:11px;color:#6B7280;margin-top:2px}
-      .meta-gen{font-size:9px;color:#9CA3AF;margin-top:2px}
-      .stat{border-left:3px solid #024BAB;padding:4px 10px;margin-bottom:12px;display:inline-block}
-      .stat-v{font-size:16px;font-weight:700;color:#024BAB}
-      .stat-l{font-size:9px;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.5px}
-      table{border-collapse:collapse;width:100%;table-layout:auto}
-      thead{display:table-header-group}
-      tr{page-break-inside:avoid}
-      .footer{margin-top:14px;border-top:1px solid #E5E7EB;padding-top:6px;display:flex;justify-content:space-between;font-size:9px;color:#9CA3AF}
-    </style></head><body>
-      <div class="hdr">
-        <div class="hdr-l">
-          <img src="${NESTHR_LOGO_B64}" class="logo" alt="NestHR"/>
-          <div class="brand"><b>NestHR</b>Human Resource Management System</div>
-        </div>
-        <div class="meta">
-          <div class="meta-title">${label}</div>
-          <div class="meta-period">${period}</div>
-          <div class="meta-gen">Generated: ${now}</div>
-        </div>
-      </div>
-      <div class="stat"><div class="stat-v">${rows.length}</div><div class="stat-l">Total Records</div></div>
-      <table>
-        <thead><tr>${thCells}</tr></thead>
-        <tbody>${trRows}</tbody>
-      </table>
-      <div class="footer"><span>NestHR — Confidential HR Report</span><span>${label} · ${period}</span></div>
-    </body></html>`;
     try {
       await RNPrint.print({ html });
     } catch (e: any) {
