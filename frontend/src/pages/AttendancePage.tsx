@@ -183,7 +183,20 @@ export default function AttendancePage() {
   const [view, setView] = useViewTab("attendance");
   const { toast } = useToast();
   const confirm = useConfirm();
-  const isEmployee = user?.role === "employee";
+  // Everyone except the super admin has their own attendance; HR managers and
+  // department heads can switch between the team view and "My Attendance".
+  const hasSelfAttendance = !!user && user.role !== "super_admin";
+  const [myEmpId, setMyEmpId] = useState<string | null>(null);
+  const [mineOnly, setMineOnly] = useState(false);
+  useEffect(() => {
+    if (!hasSelfAttendance || user?.role === "employee") return;
+    employeeAPI
+      .getMe()
+      .then((r: any) => setMyEmpId(r?.data?._id || null))
+      .catch(() => {});
+  }, [hasSelfAttendance, user?.role]);
+  const isEmployee =
+    user?.role === "employee" || (mineOnly && !!myEmpId);
   const isAdmin = user?.role === "super_admin" || user?.role === "hr_manager";
   const [kioskOpen, setKioskOpen] = useState(false);
   const now = new Date();
@@ -310,7 +323,14 @@ export default function AttendancePage() {
     try {
       const attRes = await attendanceAPI.getAll(
         isEmployee
-          ? { month: String(month), year: String(year), limit: "5000" }
+          ? {
+              month: String(month),
+              year: String(year),
+              limit: "5000",
+              ...(user?.role !== "employee" && myEmpId
+                ? { employeeId: myEmpId }
+                : {}),
+            }
           : { date: selectedDate || todayStr, limit: "5000" },
       );
       if (my !== reqId.current) return; // a newer request superseded this one
@@ -341,7 +361,7 @@ export default function AttendancePage() {
     } catch {}
     if (my === reqId.current) setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [month, year, isEmployee, selectedDate]);
+  }, [month, year, isEmployee, selectedDate, myEmpId]);
 
   useEffect(() => {
     load();
@@ -926,7 +946,15 @@ export default function AttendancePage() {
               },
             ]}
           />
-          {isAdmin && (
+          {user?.role !== "employee" && hasSelfAttendance && myEmpId && (
+            <button
+              onClick={() => setMineOnly((v) => !v)}
+              className="border-2 bg-white text-[#024BAB] px-4 py-2 text-sm flex items-center gap-1.5"
+            >
+              {mineOnly ? "Team Attendance" : "My Attendance"}
+            </button>
+          )}
+          {isAdmin && !isEmployee && (
             <button
               onClick={() => setKioskOpen(true)}
               className="border-2 bg-white text-[#024BAB] px-4 py-2 text-sm flex items-center gap-1.5"

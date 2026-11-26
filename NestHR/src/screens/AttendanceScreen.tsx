@@ -192,6 +192,8 @@ function isoToTime(iso: string | undefined): string {
 export default function AttendanceScreen({ navigation }: any) {
   const { user } = useAuth();
   const isEmployee = user?.role === 'employee';
+  // Everyone except the super admin marks their own attendance (HR managers and department heads too).
+  const hasSelfAttendance = !!user && user.role !== 'super_admin';
   const { isTablet, maxContentWidth } = useResponsive();
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
@@ -289,7 +291,7 @@ export default function AttendanceScreen({ navigation }: any) {
 
   const [canResetFace, setCanResetFace] = useState(true);
   const loadMyEmployee = useCallback(() => {
-    if (!isEmployee) return;
+    if (!hasSelfAttendance) return;
     settingsAPI
       .get()
       .then(res => setCanResetFace(res.data?.allowEmployeeFaceReset !== false))
@@ -298,7 +300,7 @@ export default function AttendanceScreen({ navigation }: any) {
       .getMe()
       .then(res => setMyEmployee(res.data || null))
       .catch(() => {});
-  }, [isEmployee]);
+  }, [hasSelfAttendance]);
 
   useEffect(() => {
     loadMyEmployee();
@@ -310,7 +312,16 @@ export default function AttendanceScreen({ navigation }: any) {
 
   const todayStr = toDateStr(new Date());
   const todayRecord =
-    isEmployee && dateFilter === todayStr ? records[0] : undefined;
+    dateFilter !== todayStr
+      ? undefined
+      : isEmployee
+      ? records[0]
+      : hasSelfAttendance && myEmployee
+      ? records.find(
+          (r: any) =>
+            String(r.employee?._id || r.employee) === String(myEmployee._id),
+        )
+      : undefined;
 
   const handleEnrollFace = async () => {
     const ok = await requestSelfMarkPermissions();
@@ -450,11 +461,11 @@ export default function AttendanceScreen({ navigation }: any) {
 
   useFocusEffect(
     useCallback(() => {
-      if (isEmployee) {
+      if (hasSelfAttendance) {
         load(false);
         loadMyEmployee();
       }
-    }, [isEmployee, load, loadMyEmployee]),
+    }, [hasSelfAttendance, load, loadMyEmployee]),
   );
 
   const onRefresh = async () => {
@@ -852,7 +863,7 @@ export default function AttendanceScreen({ navigation }: any) {
         </TouchableOpacity>
       </View>
 
-      {isEmployee && todayRecord?.approvalPending && (
+      {hasSelfAttendance && todayRecord?.approvalPending && (
         <View style={styles.approvalBanner}>
           <AlertCircle size={14} color={C.warning} />
           <Text style={styles.approvalBannerText}>
@@ -862,7 +873,7 @@ export default function AttendanceScreen({ navigation }: any) {
         </View>
       )}
 
-      {isEmployee &&
+      {hasSelfAttendance &&
         myEmployee?.geofenceAttendanceEnabled &&
         dateFilter === todayStr && (
           <View style={styles.selfMarkCard}>
