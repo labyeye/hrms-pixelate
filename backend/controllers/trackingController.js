@@ -64,13 +64,14 @@ exports.recordPing = async (req, res) => {
     // Duty-Hour Guard: check if employee has checked in and not yet checked out today
     const now = new Date();
     const todayStr = now.toISOString().slice(0, 10);
-    const startOfDay = new Date(todayStr);
-    const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
+    // Attendance has no company field (the employee already scopes it), and check-in stores the row
+    // at server-local midnight — match it the same way the attendance controller does.
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
     const attendance = await Attendance.findOne({
-      company: companyId,
       employee: employeeId,
-      date: { $gte: startOfDay, $lt: endOfDay },
+      date: today,
     });
 
     // If no check-in yet, or already checked out: do not record
@@ -126,6 +127,7 @@ exports.recordPing = async (req, res) => {
           latitude,
           longitude,
           accuracy,
+          speed: speed ?? null,
           battery,
           updatedAt: pingTime,
         },
@@ -137,6 +139,7 @@ exports.recordPing = async (req, res) => {
         latitude,
         longitude,
         accuracy,
+        speed: speed ?? null,
         battery,
         updatedAt: pingTime,
       };
@@ -197,6 +200,13 @@ exports.getEmployeeRouteHistory = async (req, res) => {
     const companyId = req.user.company;
     const { employeeId } = req.params;
     const dateStr = req.query.date || new Date().toISOString().slice(0, 10);
+
+    if (req.user.role === "employee") {
+      const self = await Employee.findOne({ user: req.user._id, company: companyId }).select("_id");
+      if (!self || String(self._id) !== String(employeeId)) {
+        return res.status(403).json({ success: false, message: "Not allowed" });
+      }
+    }
 
     const log = await LocationLog.findOne({
       company: companyId,

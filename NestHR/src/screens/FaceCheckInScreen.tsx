@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Linking,
   Platform,
+  DeviceEventEmitter,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useIsFocused } from '@react-navigation/native';
@@ -116,6 +117,8 @@ export default function FaceCheckInScreen({ navigation, route }: any) {
 
       // The server now records the punch in the notification inbox (and pushes it).
       setStatus('success');
+      // Starts (check-in) or stops (check-out) live location tracking.
+      DeviceEventEmitter.emit('attendance:changed', { action });
       setTimeout(() => navigation.goBack(), 900);
     } catch (e: any) {
       setErrorMessage(e.message || 'Verification failed. Please try again.');

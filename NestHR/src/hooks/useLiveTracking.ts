@@ -1,69 +1,76 @@
-import { useEffect, useRef } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
+import { useEffect } from 'react';
+import { AppState, DeviceEventEmitter } from 'react-native';
 import { getCurrentPosition } from '../utils/location';
 import { trackingAPI } from '../api/api';
 import { useAuth } from '../contexts/AuthContext';
+import {
+  isLiveTrackingRunning,
+  requestBackgroundLocationPermission,
+  startLiveTracking,
+  stopLiveTracking,
+} from '../services/liveTracker';
 
-const DEFAULT_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const CHECK_MS = 5 * 60 * 1000;
 
 /**
- * Lightweight periodic location tracker hook for field employees.
- * Active when:
- * 1. User is signed in
- * 2. Runs periodically to record duty breadcrumbs
- * 3. Server enforces Duty-Hour Guard (only saves if employee has active punch-in without punch-out)
+ * Decides when the live tracker runs. It sends one location to the server; if the server
+ * records it (tracking on for the company, checked in, not checked out) the continuous
+ * background tracker starts. It re-checks on app open, every 5 minutes while the app is open,
+ * and right after a check-in or check-out.
  */
 export function useLiveTracking() {
   const { user } = useAuth();
-  const timerRef = useRef<any>(null);
-  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || user.role === 'super_admin') return;
+    let alive = true;
+    let asked = false;
 
-    let isMounted = true;
-
-    const sendPing = async () => {
+    const check = async () => {
+      if (isLiveTrackingRunning()) return;
       try {
         const coords = await getCurrentPosition();
-        if (!coords || !isMounted) return;
-
-        await trackingAPI.ping({
+        if (!coords || !alive) return;
+        const res: any = await trackingAPI.ping({
           latitude: coords.latitude,
           longitude: coords.longitude,
           accuracy: coords.accuracy,
           recordedAt: new Date().toISOString(),
         });
+        const onDuty =
+          res?.trackingEnabled !== false &&
+          res?.dutyActive !== false &&
+          res?.data?.dutyActive === true;
+        if (!onDuty || !alive) return;
+        if (!asked) {
+          asked = true;
+          await requestBackgroundLocationPermission();
+        }
+        if (alive) await startLiveTracking();
       } catch {
-        // Silently catch GPS timeouts or network errors
+        // GPS timeout / offline: try again on the next check
       }
     };
 
-    // Send initial ping on startup
-    sendPing();
-
-    // Setup periodic heartbeats
-    timerRef.current = setInterval(() => {
-      if (appStateRef.current === 'active') {
-        sendPing();
-      }
-    }, DEFAULT_INTERVAL_MS);
-
-    const subscription = AppState.addEventListener('change', nextAppState => {
-      if (
-        appStateRef.current.match(/inactive|background/) &&
-        nextAppState === 'active'
-      ) {
-        // App came to foreground - send immediate refresh ping
-        sendPing();
-      }
-      appStateRef.current = nextAppState;
-    });
+    check();
+    const timer = setInterval(() => {
+      if (AppState.currentState === 'active') check();
+    }, CHECK_MS);
+    const appSub = AppState.addEventListener(
+      'change',
+      st => st === 'active' && check(),
+    );
+    const attSub = DeviceEventEmitter.addListener('attendance:changed', () =>
+      // Check-out: the next ping is refused and the tracker stops itself. Check-in: start now.
+      setTimeout(check, 1500),
+    );
 
     return () => {
-      isMounted = false;
-      if (timerRef.current) clearInterval(timerRef.current);
-      subscription.remove();
+      alive = false;
+      clearInterval(timer);
+      appSub.remove();
+      attSub.remove();
+      stopLiveTracking();
     };
   }, [user]);
 }

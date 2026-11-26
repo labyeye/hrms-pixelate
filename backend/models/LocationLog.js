@@ -38,6 +38,7 @@ const locationLogSchema = new mongoose.Schema(
       latitude: Number,
       longitude: Number,
       accuracy: Number,
+      speed: Number,
       battery: Number,
       updatedAt: Date,
     },
