@@ -42,7 +42,7 @@ const meta = {
   ownerRole: "super_admin",
   createLimitDefaults: { maxEmployees: 50 },
   supportsFree: true, // "Free / lifetime" checkbox on create
-  freeLabel: "Free plan: up to 10 employees, lifetime (no payment, never expires)",
+  freeLabel: "Free plan: up to 10 employees, valid 100 years (no payment)",
   supportsCredits: true, // balance + usage log + manual grant in Manage dialog
   createExtraFields: [
     { key: "gstNumber", label: "GST number" },
@@ -232,7 +232,9 @@ exports.create = async (b) => {
       maxEmployees: maxEmp,
       billingCycle: "monthly",
       startDate: new Date(),
-      renewalDate: free ? new Date("2099-12-31") : H.addMonths(b.months),
+      renewalDate: free
+        ? new Date(new Date().setFullYear(new Date().getFullYear() + 100))
+        : H.addMonths(b.months),
       status: "active",
       // non-owner logins need "completed"; a free grant is complete by definition
       paymentStatus: free || amountPaid > 0 ? "completed" : "pending",
