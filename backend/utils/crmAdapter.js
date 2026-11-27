@@ -42,6 +42,7 @@ const meta = {
   ownerRole: "super_admin",
   createLimitDefaults: { maxEmployees: 50 },
   supportsFree: true, // "Free / lifetime" checkbox on create
+  freeLabel: "Free plan: up to 10 employees, lifetime (no payment, never expires)",
   supportsCredits: true, // balance + usage log + manual grant in Manage dialog
   createExtraFields: [
     { key: "gstNumber", label: "GST number" },
@@ -212,22 +213,23 @@ exports.create = async (b) => {
       createdBy: user._id,
     });
     const free = b.free === true;
+    const maxEmp = free ? 10 : max; // free lifetime plan is capped at 10 employees
     const amountPaid = free ? 0 : Math.max(0, Number(b.amountPaid) || 0);
     const sub = await Subscription.create({
       company: company._id,
       plan:
         b.plan ||
         (free
-          ? "Diwali Free"
+          ? "Free (up to 10 employees)"
           : b.flags?.geoTracking
             ? "NestHR Geo Tracking"
             : "NestHR"),
-      geoTracking: free ? true : b.flags?.geoTracking === true,
+      geoTracking: free ? false : b.flags?.geoTracking === true,
       tier: b.flags?.whatsapp === false ? "web_mobile" : "web_mobile_whatsapp",
-      employeeCount: max,
+      employeeCount: maxEmp,
       monthlyPrice: 0,
       yearlyPrice: 0,
-      maxEmployees: max,
+      maxEmployees: maxEmp,
       billingCycle: "monthly",
       startDate: new Date(),
       renewalDate: free ? new Date("2099-12-31") : H.addMonths(b.months),
