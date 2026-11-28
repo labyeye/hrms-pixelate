@@ -19,6 +19,10 @@ const getSettings = asyncHandler(async (req, res) => {
 const updateSettings = asyncHandler(async (req, res) => {
   const company = req.user.company;
   const update = bodyFor(Setting, req.body);
+  // Whether employees may reset their own face is the super admin's call alone
+  if ("allowEmployeeFaceReset" in update && req.user.role !== "super_admin") {
+    delete update.allowEmployeeFaceReset;
+  }
   if ("idCardTemplate" in update) {
     try {
       update.idCardTemplate = sanitizeIdCardTemplate(update.idCardTemplate);

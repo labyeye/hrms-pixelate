@@ -46,6 +46,7 @@ import {
   Crown,
   Award,
   Navigation,
+  ChevronRight,
 } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { C, useResponsive } from '../theme';
@@ -214,8 +215,6 @@ export default function MoreScreen({ navigation }: any) {
       { text: 'Logout', style: 'destructive', onPress: () => logout() },
     ]);
 
-  let cardIdx = 1;
-
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={C.white} />
@@ -282,7 +281,7 @@ export default function MoreScreen({ navigation }: any) {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.scroll,
-          { paddingBottom: insets.bottom + 32 },
+          { paddingBottom: insets.bottom + 110 },
           isTablet && {
             maxWidth: maxContentWidth,
             width: '100%',
@@ -321,8 +320,12 @@ export default function MoreScreen({ navigation }: any) {
                     {user.email}
                   </Text>
                 )}
-                <View style={styles.premiumPill}>
-                  <Text style={styles.premiumPillText}>{user?.role}</Text>
+                <View style={styles.rolePill}>
+                  <Text style={styles.roleText}>
+                    {(user?.role || 'employee')
+                      .replace(/_/g, ' ')
+                      .toUpperCase()}
+                  </Text>
                 </View>
               </View>
 
@@ -347,44 +350,40 @@ export default function MoreScreen({ navigation }: any) {
           </View>
         </SlideInCard>
 
-        {/* Grouped 3-column tiles with staggered SlideInCard */}
-        {sections.map(g => (
-          <View key={g.title}>
-            <View style={styles.grid}>
-              {g.items.map(item => {
+        {/* Grouped list sections (same design as NestLeads) */}
+        {sections.map((g, gi) => (
+          <SlideInCard key={g.title} index={gi + 1}>
+            <View style={styles.sectionHead}>
+              <View style={[styles.sectionBar, { backgroundColor: g.color }]} />
+              <Text style={styles.sectionTitle}>{g.title}</Text>
+              <View style={styles.sectionLine} />
+              <Text style={styles.sectionCount}>{g.items.length}</Text>
+            </View>
+            <View style={styles.listCard}>
+              {g.items.map((item, idx) => {
                 const Icon = item.icon;
-                const currentIdx = cardIdx++;
                 return (
-                  <SlideInCard
+                  <TouchableOpacity
                     key={item.key}
-                    index={currentIdx}
-                    style={styles.tileWrap}
+                    style={[
+                      styles.listRow,
+                      idx < g.items.length - 1 && styles.listRowDivider,
+                    ]}
+                    activeOpacity={0.7}
+                    onPress={() => navigation.navigate(item.key)}
                   >
-                    <TouchableOpacity
-                      style={styles.tile}
-                      activeOpacity={0.8}
-                      onPress={() => navigation.navigate(item.key)}
-                    >
-                      <View
-                        style={[
-                          styles.tileIcon,
-                          {
-                            backgroundColor: g.color + '1A',
-                            borderColor: g.color,
-                          },
-                        ]}
-                      >
-                        <Icon size={22} color={g.color} />
-                      </View>
-                      <Text style={styles.tileLabel} numberOfLines={1}>
-                        {item.label}
-                      </Text>
-                    </TouchableOpacity>
-                  </SlideInCard>
+                    <View style={styles.listIcon}>
+                      <Icon size={22} color={g.color} />
+                    </View>
+                    <Text style={styles.listLabel} numberOfLines={1}>
+                      {item.label}
+                    </Text>
+                    <ChevronRight size={18} color="#6B7280" />
+                  </TouchableOpacity>
                 );
               })}
             </View>
-          </View>
+          </SlideInCard>
         ))}
 
         {sections.length === 0 && (
@@ -424,7 +423,7 @@ const styles = StyleSheet.create({
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerTitle: { fontSize: 20, fontWeight: '400', color: C.black },
-  scroll: { padding: 16, gap: 16 },
+  scroll: { padding: 16, gap: 22 },
 
   hero: { ...box, backgroundColor: C.white, padding: 14 },
   heroRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -466,24 +465,17 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     marginTop: 2,
   },
-  premiumPill: {
+  rolePill: {
     alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
     marginTop: 6,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FFDE00',
     borderWidth: 2,
     borderColor: C.black,
     borderRadius: 4,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
-  premiumPillText: {
-    fontSize: 10,
-    fontWeight: '400',
-    color: C.black,
-  },
+  roleText: { fontSize: 10, fontWeight: '400', color: C.black },
   heroActions: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -499,34 +491,32 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  tileWrap: {
-    width: '31.3%',
-  },
-  tile: {
-    ...box,
-    backgroundColor: C.white,
-    width: '100%',
-    paddingVertical: 12,
-    paddingHorizontal: 6,
-    gap: 6,
+  sectionHead: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
   },
-  tileIcon: {
-    width: 42,
-    height: 42,
-    borderWidth: 2,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 2,
-  },
-  tileLabel: {
-    fontSize: 12,
-    fontWeight: '400',
+  sectionBar: { width: 4, height: 16, borderRadius: 2 },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
     color: C.black,
-    textAlign: 'center',
+    letterSpacing: 0.3,
   },
+  sectionLine: { flex: 1, height: 1, backgroundColor: '#E5E7EB' },
+  sectionCount: { fontSize: 11, fontWeight: '700', color: '#6B7280' },
+  listCard: { ...box, backgroundColor: C.white, overflow: 'hidden' },
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  listRowDivider: { borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  listIcon: { width: 28, alignItems: 'center', justifyContent: 'center' },
+  listLabel: { flex: 1, fontSize: 15, fontWeight: '500', color: C.black },
   empty: { alignItems: 'center', paddingVertical: 40, gap: 8 },
   emptyText: { fontSize: 14, fontWeight: '400', color: '#6B7280' },
   versionText: {

@@ -100,10 +100,11 @@ router.post(
   },
 );
 
+// Only the super admin may wipe an employee's enrolled face
 router.delete(
   "/:id/face-enroll",
   protect,
-  authorize("super_admin", "hr_manager"),
+  authorize("super_admin"),
   resetEmployeeFace,
 );
 

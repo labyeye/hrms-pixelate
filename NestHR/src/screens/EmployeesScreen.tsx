@@ -83,6 +83,7 @@ import {
   SlidersHorizontal,
   Gift,
   Camera,
+  ScanFace,
 } from 'lucide-react-native';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import {
@@ -455,7 +456,9 @@ export default function EmployeesScreen() {
     setPlaceBusy(true);
     try {
       const r = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=in&q=${encodeURIComponent(q)}`,
+        `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&countrycodes=in&q=${encodeURIComponent(
+          q,
+        )}`,
       );
       const list = await r.json();
       setPlaceResults(Array.isArray(list) ? list : []);
@@ -979,6 +982,35 @@ export default function EmployeesScreen() {
 
   const openAction = async (action: string) => {
     if (!detailEmp) return;
+    if (action === 'resetFace') {
+      const emp = detailEmp;
+      Alert.alert(
+        'Reset face?',
+        `This removes ${emp.firstName}'s enrolled face. They must enroll again before they can check in from the app.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Reset',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await employeeAPI.resetFace(emp._id);
+                Alert.alert(
+                  'Face reset',
+                  `${emp.firstName} can now enroll a new face from their app.`,
+                );
+              } catch (e: any) {
+                Alert.alert(
+                  'Could not reset face',
+                  e.message || 'Please try again',
+                );
+              }
+            },
+          },
+        ],
+      );
+      return;
+    }
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
     const month = now.getMonth() + 1;
@@ -1149,6 +1181,17 @@ export default function EmployeesScreen() {
       icon: KeyRound,
       color: '#4F46E5',
     },
+    // Only the super admin can wipe an employee's enrolled face
+    ...(authUser?.role === 'super_admin'
+      ? [
+          {
+            key: 'resetFace',
+            label: 'Reset Face',
+            icon: ScanFace,
+            color: C.danger,
+          },
+        ]
+      : []),
   ];
 
   const closeForm = () => {
@@ -3865,7 +3908,9 @@ export default function EmployeesScreen() {
                                     setFormDirty(true);
                                   }}
                                 >
-                                  <Text style={{ fontSize: 12, color: C.black }}>
+                                  <Text
+                                    style={{ fontSize: 12, color: C.black }}
+                                  >
                                     {r.display_name}
                                   </Text>
                                 </TouchableOpacity>
@@ -3921,8 +3966,9 @@ export default function EmployeesScreen() {
                   <>
                     {/* Monthly salary (CTC when PF is on) */}
                     {F(
-                      (form.pfEnabled ? 'Monthly CTC (₹)' : 'Monthly Salary (₹)') +
-                        (editingEmp ? '' : ' *'),
+                      (form.pfEnabled
+                        ? 'Monthly CTC (₹)'
+                        : 'Monthly Salary (₹)') + (editingEmp ? '' : ' *'),
                       'monthlySalary',
                       {
                         keyboardType: 'numeric',
@@ -3935,7 +3981,8 @@ export default function EmployeesScreen() {
                       <View style={{ flex: 1 }}>
                         <Text style={styles.toggleLabel}>PF deduction</Text>
                         <Text style={styles.toggleDesc}>
-                          Salary above becomes CTC; employer + employee PF are carved out
+                          Salary above becomes CTC; employer + employee PF are
+                          carved out
                         </Text>
                       </View>
                       <Switch
@@ -3958,17 +4005,27 @@ export default function EmployeesScreen() {
                           const ctc = parseFloat(form.monthlySalary) || 0;
                           if (!ctc) return null;
                           const pf = (w: number) =>
-                            Math.round(Math.min(Math.max(w, 0), 15000) * 12) / 100;
+                            Math.round(Math.min(Math.max(w, 0), 15000) * 12) /
+                            100;
                           const employerPf = pf(ctc);
                           const gross = ctc - employerPf;
                           const employeePf = pf(gross);
                           const inr = (n: number) =>
-                            '₹' + n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+                            '₹' +
+                            n.toLocaleString('en-IN', {
+                              maximumFractionDigits: 2,
+                            });
                           const rows: [string, string][] = [
                             ['Monthly CTC', inr(ctc)],
-                            ['− Employer PF (12%, cap ₹15,000)', inr(employerPf)],
+                            [
+                              '− Employer PF (12%, cap ₹15,000)',
+                              inr(employerPf),
+                            ],
                             ['Gross salary', inr(gross)],
-                            ['− Employee PF (12%, cap ₹15,000)', inr(employeePf)],
+                            [
+                              '− Employee PF (12%, cap ₹15,000)',
+                              inr(employeePf),
+                            ],
                           ];
                           return (
                             <View
@@ -3980,7 +4037,9 @@ export default function EmployeesScreen() {
                                 marginBottom: 12,
                               }}
                             >
-                              <Text style={styles.fieldLabel}>In-hand calculation</Text>
+                              <Text style={styles.fieldLabel}>
+                                In-hand calculation
+                              </Text>
                               {rows.map(([l, v]) => (
                                 <View
                                   key={l}
@@ -4004,8 +4063,15 @@ export default function EmployeesScreen() {
                                   borderTopColor: C.border,
                                 }}
                               >
-                                <Text style={styles.toggleLabel}>In-hand per month</Text>
-                                <Text style={[styles.toggleLabel, { color: C.primary }]}>
+                                <Text style={styles.toggleLabel}>
+                                  In-hand per month
+                                </Text>
+                                <Text
+                                  style={[
+                                    styles.toggleLabel,
+                                    { color: C.primary },
+                                  ]}
+                                >
                                   {inr(gross - employeePf)}
                                 </Text>
                               </View>

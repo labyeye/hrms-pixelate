@@ -1004,7 +1004,7 @@ const resetEmployeeFace = asyncHandler(async (req, res) => {
 
 const employeeFaceResetAllowed = async (company) => {
   const s = await require("../models/Setting").findOne({ company }).select("allowEmployeeFaceReset").lean();
-  return s?.allowEmployeeFaceReset !== false;
+  return s?.allowEmployeeFaceReset === true;
 };
 
 const resetMyFace = asyncHandler(async (req, res) => {

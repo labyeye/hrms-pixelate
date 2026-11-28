@@ -289,12 +289,12 @@ export default function AttendanceScreen({ navigation }: any) {
     null,
   );
 
-  const [canResetFace, setCanResetFace] = useState(true);
+  const [canResetFace, setCanResetFace] = useState(false);
   const loadMyEmployee = useCallback(() => {
     if (!hasSelfAttendance) return;
     settingsAPI
       .get()
-      .then(res => setCanResetFace(res.data?.allowEmployeeFaceReset !== false))
+      .then(res => setCanResetFace(res.data?.allowEmployeeFaceReset === true))
       .catch(() => {});
     employeeAPI
       .getMe()
@@ -1253,12 +1253,16 @@ export default function AttendanceScreen({ navigation }: any) {
                       </Text>
                     </TouchableOpacity>
                   )}
-                  {!!((item as any).checkInSelfie || (item as any).checkOutSelfie) && (
+                  {!!(
+                    (item as any).checkInSelfie || (item as any).checkOutSelfie
+                  ) && (
                     <TouchableOpacity
                       style={[styles.tDetailItem, { width: '100%' }]}
                       onPress={() =>
                         setFacesView({
-                          name: emp ? `${emp.firstName} ${emp.lastName}` : undefined,
+                          name: emp
+                            ? `${emp.firstName} ${emp.lastName}`
+                            : undefined,
                           date: String(item.date).slice(0, 10),
                           checkIn: item.checkIn as any,
                           checkOut: item.checkOut as any,
@@ -1539,7 +1543,10 @@ export default function AttendanceScreen({ navigation }: any) {
         </TouchableOpacity>
       </Modal>
 
-      <AttendanceFacesModal data={facesView} onClose={() => setFacesView(null)} />
+      <AttendanceFacesModal
+        data={facesView}
+        onClose={() => setFacesView(null)}
+      />
 
       {/* Calendar picker modal */}
       <Modal

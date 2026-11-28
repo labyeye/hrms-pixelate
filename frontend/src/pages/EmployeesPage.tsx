@@ -2457,14 +2457,16 @@ export default function EmployeesPage() {
                                   ? "Enrolling…"
                                   : "Upload Face Photo"}
                               </button>
-                              <button
-                                type="button"
-                                disabled={faceEnrolling}
-                                onClick={handleResetFace}
-                                className="ml-2 text-xs font-bold text-red-600 border-2 border-red-600 px-3 py-2 disabled:opacity-50"
-                              >
-                                Reset Face
-                              </button>
+                              {authUser?.role === "super_admin" && (
+                                <button
+                                  type="button"
+                                  disabled={faceEnrolling}
+                                  onClick={handleResetFace}
+                                  className="ml-2 text-xs font-bold text-red-600 border-2 border-red-600 px-3 py-2 disabled:opacity-50"
+                                >
+                                  Reset Face
+                                </button>
+                              )}
                             </div>
                           ) : (
                             <div className="mt-4 pt-4 border-t border-black/10">

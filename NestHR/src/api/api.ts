@@ -362,6 +362,8 @@ export const employeeAPI = {
       method: 'POST',
       body: JSON.stringify({ password }),
     }),
+  resetFace: (id: string) =>
+    request(`/employees/${id}/face-enroll`, { method: 'DELETE' }),
   resetMyFace: () => request('/employees/me/face-enroll', { method: 'DELETE' }),
   enrollMyFace: async (uri: string, type: string, fileName: string) => {
     const token = await getToken();
@@ -761,7 +763,8 @@ export const reimbursementAPI = {
       method: 'PUT',
       body: JSON.stringify({ action, note, approvedAmount }),
     }),
-  remove: (id: string) => request(`/reimbursements/${id}`, { method: 'DELETE' }),
+  remove: (id: string) =>
+    request(`/reimbursements/${id}`, { method: 'DELETE' }),
   resubmit: (id: string) =>
     request(`/reimbursements/${id}/resubmit`, { method: 'POST', body: '{}' }),
   markPaid: (
@@ -779,7 +782,10 @@ export const reimbursementAPI = {
   },
   getPolicy: () => request('/reimbursements/policy'),
   savePolicy: (body: object) =>
-    request('/reimbursements/policy', { method: 'PUT', body: JSON.stringify(body) }),
+    request('/reimbursements/policy', {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
 };
 
 // Company spending ledger (admin / HR only). Staff claims live in reimbursementAPI.
@@ -1280,7 +1286,12 @@ export type TaskBody = {
   tags?: string[];
   checklist?: { _id?: string; text: string; done?: boolean }[];
 };
-export type PickedFile = { uri: string; type: string; name: string; size?: number };
+export type PickedFile = {
+  uri: string;
+  type: string;
+  name: string;
+  size?: number;
+};
 
 async function taskUpload(path: string, method: string, fd: FormData) {
   const token = await getToken();

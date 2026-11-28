@@ -95,7 +95,9 @@ export default function SettingsScreen() {
       p =>
         ({
           ...p,
-          payrollChequeTemplate: `data:${a.type || 'image/jpeg'};base64,${a.base64}`,
+          payrollChequeTemplate: `data:${a.type || 'image/jpeg'};base64,${
+            a.base64
+          }`,
         } as any),
     );
   };
@@ -679,11 +681,16 @@ export default function SettingsScreen() {
                 'Request Advance / Payment',
                 'Employees can raise advance salary requests',
               ],
-              [
-                'allowEmployeeFaceReset',
-                'Allow Employees to Reset Face',
-                'When off, only HR/Admin can reset an employee’s enrolled face',
-              ],
+              // only the super admin decides whether staff may reset their own face
+              ...(user?.role === 'super_admin'
+                ? [
+                    [
+                      'allowEmployeeFaceReset',
+                      'Allow Employees to Reset Their Own Face',
+                      'Adds a "Reset my face" option in the employee app. When off, only the super admin can reset a face.',
+                    ],
+                  ]
+                : []),
             ],
           },
           {
