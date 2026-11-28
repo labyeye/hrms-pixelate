@@ -958,7 +958,9 @@ export const companyExpenseAPI = {
 };
 
 export const trackingAPI = {
-  getLive: () => request("/tracking/live"),
+  getLive: (date?: string) => request(`/tracking/live${date ? `?date=${date}` : ""}`),
+  getTimeline: (employeeId: string, date?: string) =>
+    request(`/tracking/timeline/${employeeId}${date ? `?date=${date}` : ""}`),
   getHistory: (employeeId: string, date?: string) =>
     request(`/tracking/history/${employeeId}${date ? `?date=${date}` : ""}`),
   updateSettings: (body: { enabled?: boolean; intervalMinutes?: number }) =>

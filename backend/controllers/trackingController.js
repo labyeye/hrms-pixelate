@@ -166,7 +166,10 @@ exports.recordPing = async (req, res) => {
 exports.getLiveTracking = async (req, res) => {
   try {
     const companyId = req.user.company;
-    const todayStr = new Date().toISOString().slice(0, 10);
+    // ?date=YYYY-MM-DD shows a past day; default is today
+    const todayStr = /^\d{4}-\d{2}-\d{2}$/.test(req.query.date || "")
+      ? req.query.date
+      : new Date().toISOString().slice(0, 10);
 
     const logs = await LocationLog.find({
       company: companyId,
@@ -229,6 +232,134 @@ exports.getEmployeeRouteHistory = async (req, res) => {
     res.json({
       success: true,
       data: log,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// GET /api/tracking/timeline/:employeeId?date=YYYY-MM-DD
+// The day as a story: check-in, each place they stopped (with address), each trip between stops, check-out.
+const STOP_RADIUS_KM = 0.12; // points within 120 m of each other count as one place
+const STOP_MIN_MS = 8 * 60 * 1000; // staying 8+ minutes counts as a stop
+
+function buildTimeline(pings) {
+  const pts = pings
+    .filter((p) => p.latitude != null && p.longitude != null && p.recordedAt)
+    .sort((a, b) => new Date(a.recordedAt) - new Date(b.recordedAt));
+  const clusters = [];
+  for (const p of pts) {
+    const c = clusters[clusters.length - 1];
+    if (c && getDistanceKm(c.lat, c.lng, p.latitude, p.longitude) <= STOP_RADIUS_KM) {
+      c.points.push(p);
+      c.to = p.recordedAt;
+    } else {
+      clusters.push({ lat: p.latitude, lng: p.longitude, from: p.recordedAt, to: p.recordedAt, points: [p] });
+    }
+  }
+  const events = [];
+  let trip = null;
+  const addTripPoint = (p) => {
+    if (!trip) trip = { type: "move", from: p.recordedAt, to: p.recordedAt, km: 0, last: p };
+    else {
+      const d = getDistanceKm(trip.last.latitude, trip.last.longitude, p.latitude, p.longitude);
+      if (d >= 0.03 && d < 50) trip.km += d;
+      trip.to = p.recordedAt;
+      trip.last = p;
+    }
+  };
+  const closeTrip = () => {
+    if (trip && trip.km >= 0.05) {
+      events.push({ type: "move", from: trip.from, to: trip.to, km: Math.round(trip.km * 100) / 100 });
+    }
+    trip = null;
+  };
+  for (const c of clusters) {
+    const dur = new Date(c.to) - new Date(c.from);
+    if (dur >= STOP_MIN_MS) {
+      addTripPoint(c.points[0]);
+      closeTrip();
+      const n = c.points.length;
+      events.push({
+        type: "stop",
+        from: c.from,
+        to: c.to,
+        minutes: Math.round(dur / 60000),
+        latitude: c.points.reduce((s, p) => s + p.latitude, 0) / n,
+        longitude: c.points.reduce((s, p) => s + p.longitude, 0) / n,
+      });
+      trip = { type: "move", from: c.to, to: c.to, km: 0, last: c.points[n - 1] };
+    } else {
+      c.points.forEach(addTripPoint);
+    }
+  }
+  closeTrip();
+
+  // Merge "stop, short hop, stop" at the same place into one longer stop (GPS drift, moving between rooms).
+  const merged = [];
+  for (const e of events) {
+    const prev = merged[merged.length - 1];
+    const prev2 = merged[merged.length - 2];
+    if (e.type === "stop" && prev?.type === "move" && prev.km < 0.25 && prev2?.type === "stop" &&
+        getDistanceKm(prev2.latitude, prev2.longitude, e.latitude, e.longitude) < 0.25) {
+      merged.pop();
+      prev2.to = e.to;
+      prev2.minutes = Math.round((new Date(e.to) - new Date(prev2.from)) / 60000);
+      continue;
+    }
+    if (e.type === "stop" && prev?.type === "stop" &&
+        getDistanceKm(prev.latitude, prev.longitude, e.latitude, e.longitude) < 0.25) {
+      prev.to = e.to;
+      prev.minutes = Math.round((new Date(e.to) - new Date(prev.from)) / 60000);
+      continue;
+    }
+    merged.push(e);
+  }
+  return merged;
+}
+
+exports.getEmployeeTimeline = async (req, res) => {
+  try {
+    const companyId = req.user.company;
+    const { employeeId } = req.params;
+    const dateStr = /^\d{4}-\d{2}-\d{2}$/.test(req.query.date || "")
+      ? req.query.date
+      : new Date().toISOString().slice(0, 10);
+
+    const emp = await Employee.findOne({ _id: employeeId, company: companyId }).select(
+      "firstName lastName employeeId designation user",
+    );
+    if (!emp) return res.status(404).json({ success: false, message: "Employee not found" });
+    if (req.user.role === "employee" && String(emp.user) !== String(req.user._id)) {
+      return res.status(403).json({ success: false, message: "Not allowed" });
+    }
+
+    const log = await LocationLog.findOne({ company: companyId, employee: employeeId, date: dateStr });
+    // Attendance rows are stored at server-local midnight
+    const day = new Date(`${dateStr}T00:00:00`);
+    const att = await Attendance.findOne({ employee: employeeId, date: day }).select("checkIn checkOut status");
+
+    const events = buildTimeline(log?.pings || []);
+    // Name up to 8 stops (free OpenStreetMap lookup: about 1 per second, cached after the first time)
+    const { reverseGeocode } = require("../utils/geocode");
+    for (const e of events.filter((x) => x.type === "stop").slice(0, 8)) {
+      e.address = await reverseGeocode(e.latitude, e.longitude);
+    }
+    if (att?.checkIn) events.unshift({ type: "checkin", at: att.checkIn });
+    if (att?.checkOut) events.push({ type: "checkout", at: att.checkOut });
+
+    res.json({
+      success: true,
+      data: {
+        employee: emp,
+        date: dateStr,
+        totalDistanceKm: log?.totalDistanceKm || 0,
+        pingCount: log?.pings?.length || 0,
+        firstPingAt: log?.pings?.[0]?.recordedAt || null,
+        lastPingAt: log?.lastLocation?.updatedAt || null,
+        route: (log?.pings || []).map((p) => [p.latitude, p.longitude]),
+        events,
+      },
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

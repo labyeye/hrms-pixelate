@@ -21,6 +21,9 @@ router.get(
   trackingController.getEmployeeRouteHistory,
 );
 
+// Day timeline: check-in, stops with addresses, trips, check-out
+router.get("/timeline/:employeeId", protect, trackingController.getEmployeeTimeline);
+
 // Add-on configuration settings
 router.put(
   "/settings",

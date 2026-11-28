@@ -16,6 +16,10 @@ import {
   Search,
   Gauge,
   X,
+  CalendarDays,
+  LogIn,
+  LogOut,
+  Car,
 } from "lucide-react";
 
 const POLL_MS = 15_000;
@@ -24,8 +28,8 @@ const STALE_MS = 15 * 60_000; // older than 15 min = signal lost
 
 type Freshness = "live" | "recent" | "lost";
 
-function freshness(updatedAt?: string): Freshness {
-  if (!updatedAt) return "lost";
+function freshness(updatedAt?: string, past = false): Freshness {
+  if (!updatedAt || past) return "lost";
   const age = Date.now() - new Date(updatedAt).getTime();
   if (age <= LIVE_MS) return "live";
   if (age <= STALE_MS) return "recent";
@@ -51,6 +55,11 @@ function ago(updatedAt?: string) {
   if (m < 60) return `${m} min ago`;
   return new Date(updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
+
+const todayStr = () => new Date().toISOString().slice(0, 10);
+const hhmm = (d?: string) =>
+  d ? new Date(d).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—";
+const mins = (n: number) => (n >= 60 ? `${Math.floor(n / 60)} h ${n % 60} min` : `${n} min`);
 
 function initials(emp: any) {
   return `${emp?.firstName?.[0] || ""}${emp?.lastName?.[0] || ""}`.toUpperCase() || "?";
@@ -100,11 +109,14 @@ export default function LiveTrackingPage() {
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [route, setRoute] = useState<[number, number][]>([]);
+  const [timeline, setTimeline] = useState<any>(null);
+  const [date, setDate] = useState(todayStr());
+  const isToday = date === todayStr();
   const [, setTick] = useState(0);
 
   const load = useCallback(async () => {
     try {
-      const res = await trackingAPI.getLive();
+      const res = await trackingAPI.getLive(date);
       setLogs(res.data || []);
       setWaiting((res as any).waiting || []);
       setEnabled((res as any).enabled !== false);
@@ -118,24 +130,27 @@ export default function LiveTrackingPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [toast]);
+  }, [toast, date]);
 
-  const loadRoute = useCallback(async (employeeId: string) => {
-    try {
-      const res: any = await trackingAPI.getHistory(employeeId);
-      const pts: [number, number][] = (res?.data?.pings || [])
-        .filter((p: any) => p.latitude != null && p.longitude != null)
-        .map((p: any) => [p.latitude, p.longitude]);
-      setRoute(pts);
-    } catch {
-      setRoute([]);
-    }
-  }, []);
+  const loadTimeline = useCallback(
+    async (employeeId: string) => {
+      try {
+        const res: any = await trackingAPI.getTimeline(employeeId, date);
+        setRoute((res?.data?.route || []).filter((p: any) => p[0] != null && p[1] != null));
+        setTimeline(res?.data || null);
+      } catch {
+        setRoute([]);
+        setTimeline(null);
+      }
+    },
+    [date],
+  );
 
   useEffect(() => {
     load();
+    // past days don't change, so only today is polled
     const interval = setInterval(() => {
-      if (document.visibilityState === "visible") load();
+      if (isToday && document.visibilityState === "visible") load();
     }, POLL_MS);
     // re-render the "x s ago" labels and colours between polls
     const clock = setInterval(() => setTick((t) => t + 1), 5_000);
@@ -143,16 +158,17 @@ export default function LiveTrackingPage() {
       clearInterval(interval);
       clearInterval(clock);
     };
-  }, [load]);
+  }, [load, isToday]);
 
-  // Keep the selected person's trail growing as new points arrive.
+  // Keep the selected person's trail and timeline growing as new points arrive.
   useEffect(() => {
     if (!selectedId) {
       setRoute([]);
+      setTimeline(null);
       return;
     }
-    loadRoute(selectedId);
-  }, [selectedId, logs, loadRoute]);
+    loadTimeline(selectedId);
+  }, [selectedId, logs, loadTimeline]);
 
   const located = useMemo(
     () => logs.filter((l) => l.lastLocation?.latitude != null && l.lastLocation?.longitude != null),
@@ -181,7 +197,9 @@ export default function LiveTrackingPage() {
       ? route
       : [[selected.lastLocation.latitude, selected.lastLocation.longitude]]
     : located.map((l) => [l.lastLocation.latitude, l.lastLocation.longitude]);
-  const fitKey = selected ? `sel:${selectedId}:${route.length ? "route" : "pt"}` : `all:${located.length > 0}`;
+  const fitKey = selected
+    ? `${date}:sel:${selectedId}:${route.length ? "route" : "pt"}`
+    : `${date}:all:${located.length > 0}`;
 
   return (
     <AppLayout title="Live Field Tracking">
@@ -217,12 +235,39 @@ export default function LiveTrackingPage() {
         )}
 
         <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-          <div className="flex items-center gap-4 text-xs font-bold">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#16A34A] animate-pulse" /> {liveCount} live
-            </span>
-            <span className="text-muted-foreground">{located.length} on duty today</span>
-            <span className="text-muted-foreground">Updates every {POLL_MS / 1000}s</span>
+          <div className="flex flex-wrap items-center gap-4 text-xs font-bold">
+            <label className="flex items-center gap-2 border-2 border-black bg-white px-3 py-1.5">
+              <CalendarDays className="w-3.5 h-3.5" />
+              <input
+                id="tracking-date"
+                type="date"
+                value={date}
+                max={todayStr()}
+                onChange={(e) => {
+                  if (!e.target.value) return;
+                  setSelectedId(null);
+                  setLoading(true);
+                  setDate(e.target.value);
+                }}
+                className="bg-transparent text-xs font-bold focus:outline-none"
+              />
+            </label>
+            {isToday ? (
+              <>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#16A34A] animate-pulse" /> {liveCount} live
+                </span>
+                <span className="text-muted-foreground">{located.length} on duty today</span>
+                <span className="text-muted-foreground">Updates every {POLL_MS / 1000}s</span>
+              </>
+            ) : (
+              <>
+                <span className="text-muted-foreground">{located.length} tracked on this day</span>
+                <button onClick={() => { setSelectedId(null); setDate(todayStr()); }} className="underline text-[#024BAB]">
+                  Back to today
+                </button>
+              </>
+            )}
           </div>
           <button
             onClick={() => {
@@ -271,7 +316,7 @@ export default function LiveTrackingPage() {
                   sorted.map((item) => {
                     const emp = item.employee;
                     const loc = item.lastLocation;
-                    const f = freshness(loc?.updatedAt);
+                    const f = freshness(loc?.updatedAt, !isToday);
                     const id = String(emp?._id);
                     const active = id === selectedId;
                     return (
@@ -293,10 +338,17 @@ export default function LiveTrackingPage() {
                             {emp ? `${emp.firstName} ${emp.lastName}` : "Field Employee"}
                           </span>
                           <span className="block text-[11px] text-muted-foreground">
-                            <span style={{ color: COLORS[f] }} className="font-bold">
-                              {LABELS[f]}
-                            </span>{" "}
-                            · {ago(loc?.updatedAt)} · {item.totalDistanceKm || 0} km
+                            {isToday ? (
+                              <>
+                                <span style={{ color: COLORS[f] }} className="font-bold">
+                                  {LABELS[f]}
+                                </span>{" "}
+                                · {ago(loc?.updatedAt)}
+                              </>
+                            ) : (
+                              <>Last seen {hhmm(loc?.updatedAt)}</>
+                            )}{" "}
+                            · {item.totalDistanceKm || 0} km
                           </span>
                         </span>
                       </button>
@@ -306,7 +358,7 @@ export default function LiveTrackingPage() {
                 {waiting.length > 0 && (
                   <div className="p-3">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
-                      No location today ({waiting.length})
+                      No location {isToday ? "today" : "on this day"} ({waiting.length})
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {waiting
@@ -337,8 +389,9 @@ export default function LiveTrackingPage() {
                 style={{ height: "100%", width: "100%" }}
               >
                 <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                  url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  maxZoom={19}
                 />
                 <FitBounds points={fitPoints} fitKey={fitKey} />
                 {selected && route.length > 1 && (
@@ -351,7 +404,7 @@ export default function LiveTrackingPage() {
                 )}
                 {located.map((item) => {
                   const id = String(item.employee?._id);
-                  const f = freshness(item.lastLocation?.updatedAt);
+                  const f = freshness(item.lastLocation?.updatedAt, !isToday);
                   const isSel = id === selectedId;
                   return (
                     <Marker
@@ -390,10 +443,11 @@ export default function LiveTrackingPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs mb-3">
                     <span className="flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5" /> {ago(selected.lastLocation?.updatedAt)}
+                      <Clock className="w-3.5 h-3.5" />{" "}
+                      {isToday ? ago(selected.lastLocation?.updatedAt) : `Last ${hhmm(selected.lastLocation?.updatedAt)}`}
                     </span>
                     <span className="flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5" /> {selected.totalDistanceKm || 0} km today
+                      <MapPin className="w-3.5 h-3.5" /> {selected.totalDistanceKm || 0} km {isToday ? "today" : ""}
                     </span>
                     <span className="flex items-center gap-1.5">
                       <Gauge className="w-3.5 h-3.5" />
@@ -417,6 +471,98 @@ export default function LiveTrackingPage() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {selected && timeline && (
+          <div className="border-2 border-black bg-white p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
+              <h3 className="text-sm font-bold uppercase tracking-wider">
+                Day timeline · {selected.employee?.firstName} {selected.employee?.lastName}
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                {new Date(`${date}T00:00:00`).toLocaleDateString("en-IN", {
+                  weekday: "short",
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })}{" "}
+                · {timeline.totalDistanceKm || 0} km · {timeline.pingCount} location points
+              </p>
+            </div>
+            {timeline.events?.length ? (
+              <ol className="flex flex-col">
+                {timeline.events.map((e: any, i: number) => {
+                  const last = i === timeline.events.length - 1;
+                  const icon =
+                    e.type === "checkin" ? (
+                      <LogIn className="w-3.5 h-3.5" />
+                    ) : e.type === "checkout" ? (
+                      <LogOut className="w-3.5 h-3.5" />
+                    ) : e.type === "stop" ? (
+                      <MapPin className="w-3.5 h-3.5" />
+                    ) : (
+                      <Car className="w-3.5 h-3.5" />
+                    );
+                  const tone =
+                    e.type === "checkin"
+                      ? "bg-[#DCFCE7] text-[#166534]"
+                      : e.type === "checkout"
+                        ? "bg-[#FEE2E2] text-[#991B1B]"
+                        : e.type === "stop"
+                          ? "bg-[#EFF6FF] text-[#024BAB]"
+                          : "bg-gray-100 text-gray-600";
+                  return (
+                    <li key={i} className="grid grid-cols-[64px_28px_1fr] gap-3">
+                      <span className="text-xs font-bold tabular-nums pt-1.5">
+                        {hhmm(e.at || e.from)}
+                      </span>
+                      <span className="flex flex-col items-center">
+                        <span className={`w-7 h-7 rounded-full flex items-center justify-center border border-black ${tone}`}>
+                          {icon}
+                        </span>
+                        {!last && <span className="w-px flex-1 bg-gray-300 my-1" />}
+                      </span>
+                      <div className={`pt-1 ${last ? "" : "pb-4"}`}>
+                        {e.type === "checkin" && <p className="text-sm font-bold">Checked in</p>}
+                        {e.type === "checkout" && <p className="text-sm font-bold">Checked out</p>}
+                        {e.type === "move" && (
+                          <p className="text-sm">
+                            <span className="font-bold">Travelled {e.km} km</span>{" "}
+                            <span className="text-muted-foreground">
+                              {hhmm(e.from)} – {hhmm(e.to)}
+                            </span>
+                          </p>
+                        )}
+                        {e.type === "stop" && (
+                          <>
+                            <p className="text-sm">
+                              <span className="font-bold">Stopped {mins(e.minutes)}</span>{" "}
+                              <span className="text-muted-foreground">
+                                {hhmm(e.from)} – {hhmm(e.to)}
+                              </span>
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {e.address || `${e.latitude.toFixed(5)}, ${e.longitude.toFixed(5)}`}{" "}
+                              <a
+                                href={`https://www.google.com/maps/search/?api=1&query=${e.latitude},${e.longitude}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="underline text-[#024BAB]"
+                              >
+                                Map
+                              </a>
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            ) : (
+              <p className="text-xs text-muted-foreground">No movement recorded for this day yet.</p>
+            )}
           </div>
         )}
       </div>
